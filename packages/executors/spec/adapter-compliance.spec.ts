@@ -74,7 +74,13 @@ async function waitForFile(file: string) {
   assert.ok(fs.existsSync(file), `fixture did not start: ${file}`)
 }
 
-async function fakeApi() {
+type FakeToolCall = { id: string; name: string; arguments: string }
+interface FakeApiProfile {
+  readonly turn1ToolCalls?: readonly FakeToolCall[]
+  readonly finalMessage?: string
+  readonly onRequest?: (parsed: any, callNumber: number) => void
+}
+async function fakeApi(profile: FakeApiProfile = {}) {
   let calls = 0
   const server = http.createServer(async (req, res) => {
     if (req.url?.endsWith('/models')) { res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"data":[]}'); return }
@@ -82,9 +88,18 @@ async function fakeApi() {
     for await (const chunk of req) body += chunk
     calls++
     if (process.env.VAO_API_HANG === '1') return
-    const response = calls === 1 && JSON.parse(body).tools
-      ? { choices: [{ message: { role: 'assistant', content: '', tool_calls: [{ id: '1', type: 'function', function: { name: 'read_file', arguments: '{"path":"src/a.ts"}' } }, { id: '2', type: 'function', function: { name: 'run_command', arguments: '{"command":"npm run build"}' } }, { id: '3', type: 'function', function: { name: 'edit_file', arguments: '{"path":"src/a.ts","old_string":"a","new_string":"b"}' } }] }, finish_reason: 'tool_calls' }], usage: { prompt_tokens: 11, completion_tokens: 5 } }
-      : { choices: [{ message: { role: 'assistant', content: '任务完成' }, finish_reason: 'stop' }], usage: { prompt_tokens: 13, completion_tokens: 7 } }
+    const parsed = JSON.parse(body)
+    profile.onRequest?.(parsed, calls)
+    const defaultCalls = [
+      { id: '1', name: 'read_file', arguments: JSON.stringify({ path: 'src/a.ts' }) },
+      { id: '2', name: 'run_command', arguments: JSON.stringify({ command: 'npm run build' }) },
+      { id: '3', name: 'edit_file', arguments: JSON.stringify({ path: 'src/a.ts', old_string: 'a', new_string: 'b' }) },
+    ] as const
+    const toolCalls = profile.turn1ToolCalls?.length ? profile.turn1ToolCalls : defaultCalls
+    const finalMsg = profile.finalMessage ?? '任务完成'
+    const response = calls === 1 && parsed.tools
+      ? { choices: [{ message: { role: 'assistant', content: '', tool_calls: toolCalls.map((tc) => ({ id: tc.id, type: 'function', function: { name: tc.name, arguments: tc.arguments } })) }, finish_reason: 'tool_calls' }], usage: { prompt_tokens: 11, completion_tokens: 5 } }
+      : { choices: [{ message: { role: 'assistant', content: finalMsg }, finish_reason: 'stop' }], usage: { prompt_tokens: 13, completion_tokens: 7 } }
     res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(response))
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -230,38 +245,120 @@ test('FIX 1: real adapter compliance suite (14 checks per adapter)', async (t) =
         }
       })
 
-      await t.test(`${kind}: 7-read_only is actually enforced via worker flags`, async () => {
+      await t.test(`${kind}: 7-read_only is actually enforced`, async () => {
         const capture = path.join(tempRoot, `${kind}-c7.json`)
-        const adapter = kind === 'openai'
-          ? new OpenAICompatAdapter({ group: { type: 'openai-api', baseUrl: api.baseUrl, model: 'fake', noKey: true, vision: false } })
-          : cliAdapter(kind as 'claude' | 'codex', { VAO_CAPTURE: capture })
-        const spec = baseSpec(`${kind}-c7`, { access: 'read_only' })
-        const handle = await adapter.start(spec)
-        const result = await assertResolved(handle)
-        assert.ok(result.outcome)
-        if (kind === 'claude') {
-          await waitForFile(capture)
-          const args = JSON.parse(fs.readFileSync(capture, 'utf8')).argv as string[]
-          assert.ok(args.includes('--disallowedTools'), 'claude must pass --disallowedTools in read_only mode')
-          const disallowedIdx = args.indexOf('--disallowedTools')
-          const disallowedAfter = args.slice(disallowedIdx + 1).filter((a) => !a.startsWith('--'))
-          assert.ok(disallowedAfter.some((x) => x.split(',').includes('Write') || x.includes('Write')), 'write tools must be disallowed: ' + disallowedAfter.join(','))
-        } else if (kind === 'codex') {
-          await waitForFile(capture)
-          const args = JSON.parse(fs.readFileSync(capture, 'utf8')).argv as string[]
-          assert.ok(args.includes('read-only'), 'codex must pass -s read-only in read_only mode')
+        if (kind === 'openai') {
+          let writeToolResponse: string | undefined
+          let readonlyWriteAttempted = false
+          const roWorkdir = fs.mkdtempSync(path.join(tempRoot, `${kind}-readonly-workdir-`))
+          const readonlyApi = await fakeApi({
+            turn1ToolCalls: [{
+              id: 'tc-forbidden-write',
+              name: 'write_file',
+              arguments: JSON.stringify({ path: 'forbidden.txt', content: 'should not be written' }),
+            }],
+            finalMessage: 'read_only run finished',
+            onRequest: (parsed, callNumber) => {
+              if (callNumber >= 2 && Array.isArray(parsed.messages)) {
+                const toolMsg = parsed.messages.find((m: any) => m.role === 'tool' && m.tool_call_id === 'tc-forbidden-write')
+                if (toolMsg) { readonlyWriteAttempted = true; writeToolResponse = String(toolMsg.content) }
+              }
+            },
+          })
+          try {
+            const adapter = new OpenAICompatAdapter({ group: { type: 'openai-api', baseUrl: readonlyApi.baseUrl, model: 'fake', noKey: true, vision: false } })
+            const spec = baseSpec(`${kind}-c7`, { access: 'read_only', workdir: roWorkdir })
+            const handle = await adapter.start(spec)
+            const result = await assertResolved(handle)
+            // 1. execution completes deterministically
+            assert.ok(result.outcome, `expected outcome present, got ${JSON.stringify(result)}`)
+            // 2+3. forbidden.txt does not exist in spec.workdir
+            assert.equal(fs.existsSync(path.join(roWorkdir, 'forbidden.txt')), false,
+              'write_file must not be executed under read_only: forbidden.txt still appeared in roWorkdir')
+            // 4. tool response MUST indicate read-only rejection (runtime guard text).
+            assert.ok(readonlyWriteAttempted, 'the fake model must actually have attempted the write tool call (tool role message missing)')
+            assert.ok(
+              typeof writeToolResponse === 'string' && writeToolResponse.length > 0 &&
+                (writeToolResponse.includes('只读') || writeToolResponse.includes('不能改文件')),
+              `tool response should indicate read-only rejection, actual: ${JSON.stringify(writeToolResponse)}`,
+            )
+            // 5. no write occurs outside spec.workdir either
+            const forbiddenSiblings = (function scan(p: string, depth = 0, found: string[] = []) {
+              if (depth > 3) return found
+              for (const entry of fs.readdirSync(p, { withFileCount: false } as any) as any) {
+                const name: string = entry.name ?? String(entry)
+                if (name === 'forbidden.txt') found.push(path.join(p, name))
+                const full = path.join(p, name)
+                try { if (fs.statSync(full).isDirectory()) scan(full, depth + 1, found) } catch {}
+              }
+              return found
+            })(tempRoot)
+            assert.deepEqual(forbiddenSiblings, [],
+              `forbidden.txt was written somewhere under tempRoot even with read_only: ${forbiddenSiblings.join(',')}`)
+          } finally {
+            await readonlyApi.close()
+          }
+        } else {
+          const adapter = cliAdapter(kind as 'claude' | 'codex', { VAO_CAPTURE: capture })
+          const spec = baseSpec(`${kind}-c7`, { access: 'read_only' })
+          const handle = await adapter.start(spec)
+          const result = await assertResolved(handle)
+          assert.ok(result.outcome)
+          if (kind === 'claude') {
+            await waitForFile(capture)
+            const args = JSON.parse(fs.readFileSync(capture, 'utf8')).argv as string[]
+            assert.ok(args.includes('--disallowedTools'), 'claude must pass --disallowedTools in read_only mode')
+            const disallowedIdx = args.indexOf('--disallowedTools')
+            const disallowedAfter = args.slice(disallowedIdx + 1).filter((a) => !a.startsWith('--'))
+            assert.ok(disallowedAfter.some((x) => x.split(',').includes('Write') || x.includes('Write')), 'write tools must be disallowed: ' + disallowedAfter.join(','))
+          } else if (kind === 'codex') {
+            await waitForFile(capture)
+            const args = JSON.parse(fs.readFileSync(capture, 'utf8')).argv as string[]
+            assert.ok(args.includes('read-only'), 'codex must pass -s read-only in read_only mode')
+          }
         }
       })
 
       await t.test(`${kind}: 8-spec.workdir is used instead of default constructor workdir`, async () => {
         const capture = path.join(tempRoot, `${kind}-c8.json`)
-        const adapter = kind === 'openai'
-          ? new OpenAICompatAdapter({ group: { type: 'openai-api', baseUrl: api.baseUrl, model: 'fake', noKey: true, vision: false } })
-          : cliAdapter(kind as 'claude' | 'codex', { VAO_CAPTURE: capture })
-        const spec = baseSpec(`${kind}-c8`, { workdir: otherWorkdir })
-        const handle = await adapter.start(spec)
-        await assertResolved(handle)
-        if (kind !== 'openai') {
+        if (kind === 'openai') {
+          const defaultWorkdir = fs.mkdtempSync(path.join(tempRoot, `${kind}-default-workdir-`))
+          const executionWorkdir = fs.mkdtempSync(path.join(tempRoot, `${kind}-execution-workdir-`))
+          const wdApi = await fakeApi({
+            turn1ToolCalls: [{
+              id: 'tc-wd-proof',
+              name: 'write_file',
+              arguments: JSON.stringify({ path: 'workdir-proof.txt', content: 'execution scoped' }),
+            }],
+            finalMessage: 'wrote proof file successfully',
+          })
+          try {
+            const adapter = new OpenAICompatAdapter({
+              workdir: defaultWorkdir,
+              group: { type: 'openai-api', baseUrl: wdApi.baseUrl, model: 'fake', noKey: true, vision: false },
+            })
+            const spec = baseSpec(`${kind}-c8`, { workdir: executionWorkdir, access: 'read_write' })
+            const handle = await adapter.start(spec)
+            const result = await assertResolved(handle)
+            assert.ok(result.outcome)
+            const executionProof = path.join(executionWorkdir, 'workdir-proof.txt')
+            const defaultProof = path.join(defaultWorkdir, 'workdir-proof.txt')
+            // 1. proof file under executionWorkdir
+            assert.ok(fs.existsSync(executionProof),
+              `workdir-proof.txt should exist under spec.workdir=${executionWorkdir} (actual exists? ${fs.existsSync(executionProof)})`)
+            // 2. content correct
+            assert.equal(fs.readFileSync(executionProof, 'utf8'), 'execution scoped')
+            // 3. proof NOT under defaultWorkdir (constructor default was not used for tool writes)
+            assert.equal(fs.existsSync(defaultProof), false,
+              `workdir-proof.txt must NOT exist under default constructor workdir=${defaultWorkdir}`)
+          } finally {
+            await wdApi.close()
+          }
+        } else {
+          const adapter = cliAdapter(kind as 'claude' | 'codex', { VAO_CAPTURE: capture })
+          const spec = baseSpec(`${kind}-c8`, { workdir: otherWorkdir })
+          const handle = await adapter.start(spec)
+          await assertResolved(handle)
           await waitForFile(capture)
           const info = JSON.parse(fs.readFileSync(capture, 'utf8'))
           assert.equal(info.cwd, otherWorkdir, `expected cwd=${otherWorkdir}, got ${info.cwd}`)

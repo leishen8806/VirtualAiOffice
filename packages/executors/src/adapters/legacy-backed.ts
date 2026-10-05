@@ -81,6 +81,7 @@ export interface LegacyAdapterOptions {
   readonly group?: Record<string, any>
   readonly resolveTool?: (grant: ToolGrant) => Record<string, any> | undefined
   readonly logDir?: string
+  readonly workdir?: string
 }
 
 export class LegacyBackedAdapter implements ExecutorAdapter {
@@ -89,7 +90,7 @@ export class LegacyBackedAdapter implements ExecutorAdapter {
   private readonly caps: ExecutorCapabilities
 
   constructor(private readonly adapterId: string, Worker: LegacyWorkerCtor, options: LegacyAdapterOptions = {}, caps: ExecutorCapabilities) {
-    this.worker = new Worker(options.group || {}, { workdir: '.', logDir: options.logDir || '', autonomy: 'full' })
+    this.worker = new Worker(options.group || {}, { workdir: options.workdir ?? '.', logDir: options.logDir || '', autonomy: 'full' })
     this.caps = caps
     this.resolveTool = options.resolveTool
   }
