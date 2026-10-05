@@ -3,6 +3,8 @@ import type { ExecutorEvent } from '../activity.js'
 import { validateExecutionSpec } from '../contract.js'
 import { commandActivity } from '../activity.js'
 import { BaseWorker } from '../../runtime/index.js'
+import { mapLegacyActivity } from './activity-map.js'
+import { mapLegacyResult } from './result-map.js'
 
 type LegacyWorker = BaseWorker & {
   run(options: Record<string, unknown>): Promise<Record<string, any>>
@@ -37,29 +39,14 @@ class EventQueue implements AsyncIterable<ExecutorEvent> {
   }
 }
 
-function eventFromLegacy(value: any): ExecutorEvent | null {
-  const activity = value?.activity
-  if (!activity) return null
-  return { kind: 'activity', at: new Date().toISOString(), activity }
-}
-
 function toolConfig(grants: readonly ToolGrant[], resolveTool?: (grant: ToolGrant) => Record<string, any> | undefined) {
-  return grants.map((grant) => resolveTool?.(grant)).filter(Boolean)
-}
-
-function resultFromLegacy(value: any, started: number): ExecutionResult {
-  const usage = value?.usage || {}
-  const outcome = value?.outcome || (value?.ok ? 'succeeded' : value?.error === '被叫停' ? 'cancelled' : 'failed')
-  return {
-    outcome,
-    summary: String(value?.text || ''),
-    ...(value?.error ? { error: String(value.error) } : {}),
-    ...(value?.sessionId ? { sessionRef: String(value.sessionId) } : {}),
-    ...(value?.cost != null ? { costUsd: Number(value.cost) } : {}),
-    ...(usage.in != null || usage.input_tokens != null ? { tokensIn: Number(usage.in ?? usage.input_tokens ?? 0) } : {}),
-    ...(usage.out != null || usage.output_tokens != null ? { tokensOut: Number(usage.out ?? usage.output_tokens ?? 0) } : {}),
-    durationMs: Number(value?.durationMs || Date.now() - started),
-  }
+  if (!grants.length) return []
+  if (!resolveTool) throw new Error(`required tool grant could not be resolved: ${grants[0]!.id}`)
+  return grants.map((grant) => {
+    const resolved = resolveTool(grant)
+    if (!resolved) throw new Error(`required tool grant could not be resolved: ${grant.id}`)
+    return resolved
+  })
 }
 
 export interface LegacyAdapterOptions {
@@ -86,6 +73,7 @@ export class LegacyBackedAdapter implements ExecutorAdapter {
   async start(spec: ExecutionSpec): Promise<ExecutionHandle> {
     const problems = validateExecutionSpec(spec, this.caps)
     if (problems.length) throw new Error(problems.join('; '))
+    const tools = toolConfig(spec.tools, this.resolveTool)
     const queue = new EventQueue()
     const controller: any = new (globalThis as any).AbortController()
     this.controllers.set(spec.executionId, controller)
@@ -97,12 +85,12 @@ export class LegacyBackedAdapter implements ExecutorAdapter {
       workdir: spec.workdir,
       timeoutMs: spec.budget.maxDurationMs,
       signal: controller.signal,
-      tools: toolConfig(spec.tools, this.resolveTool),
+      tools,
       onActivity: (value: any) => {
-        const event = eventFromLegacy(value)
+        const event = mapLegacyActivity(value)
         if (event) queue.push(event)
       },
-    })).then((value) => resultFromLegacy(value, started)).catch((error) => ({ outcome: 'failed' as const, summary: '', error: String(error?.message || error), durationMs: Date.now() - started })).finally(() => {
+    })).then((value) => mapLegacyResult(value, started)).catch((error) => ({ outcome: 'failed' as const, summary: '', error: String(error?.message || error), durationMs: Date.now() - started })).finally(() => {
       this.controllers.delete(spec.executionId)
       queue.end()
     })

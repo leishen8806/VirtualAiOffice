@@ -3,7 +3,7 @@ import { CLAUDE_DENY, SAFE_COMMANDS } from './policy.js'
 import { describeClaudeTool, describeMcpCall, shortPath, splitMcpName } from './format.js'
 import { firstLine, truncate } from './text.js'
 import { spawnCmd } from './process.js'
-import { legacyActivity } from './activity.js'
+import { legacyActivity, commandActivity } from './activity.js'
 import { BaseWorker } from './base-worker.js'
 
 function cleanCmd(cmd) {
@@ -14,6 +14,16 @@ function cleanCmd(cmd) {
   const ps = cmd.match(/-Command\s+(['"]?)([\s\S]*)\1$/i)
   if (ps) return ps[2]
   return cmd
+}
+
+function claudeActivity(name, input = {}, workdir) {
+  const file = input.file_path || input.path || input.notebook_path || ''
+  if (name === 'Read') return { type: 'file.read', path: shortPath(file, workdir) }
+  if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(name)) return { type: 'file.write', path: shortPath(file, workdir) }
+  if (name === 'Bash') return commandActivity(input.command || '')
+  if (['Grep', 'Glob'].includes(name)) return { type: 'search', query: String(input.pattern || input.glob || input.query || ''), ...(input.path ? { path: shortPath(input.path, workdir) } : {}) }
+  if (name.startsWith('mcp__')) return { type: 'tool.call', tool: name }
+  return { type: 'tool.call', tool: name }
 }
 
 /** Parser for `claude -p --output-format stream-json --verbose`. */
@@ -33,11 +43,11 @@ export function createClaudeParser(workdir) {
       if (ev.type === 'system' && ev.subtype === 'init') sessionId = ev.session_id || ''
       else if (ev.type === 'assistant') {
         for (const b of ev.message?.content || []) {
-          if (b.type === 'tool_use') out.push(legacyActivity('tool', describeClaudeTool(b.name, b.input || {}, workdir)))
+          if (b.type === 'tool_use') out.push(legacyActivity('tool', describeClaudeTool(b.name, b.input || {}, workdir), { activity: claudeActivity(b.name, b.input || {}, workdir) }))
           else if (b.type === 'text' && b.text?.trim()) {
             lastText = b.text
-            out.push(legacyActivity('say', firstLine(b.text)))
-          } else if (b.type === 'thinking') out.push(legacyActivity('think', '思考中…'))
+            out.push(legacyActivity('say', firstLine(b.text), { activity: { type: 'message', text: b.text } }))
+          } else if (b.type === 'thinking') out.push(legacyActivity('think', '思考中…', { activity: { type: 'thinking' } }))
         }
       } else if (ev.type === 'result') result = ev
       return out
@@ -87,18 +97,18 @@ export function createCodexParser(workdir) {
           sessionId = ev.thread_id || ''
           break
         case 'item.started':
-          if (it.type === 'command_execution') out.push(legacyActivity('tool', `跑 ${truncate(cleanCmd(it.command).split('\n')[0], 60)}`))
-          else if (it.type === 'mcp_tool_call') out.push(legacyActivity('tool', describeMcpCall(it.server, it.tool, parseArgs(it.arguments))))
-          else if (it.type === 'web_search') out.push(legacyActivity('tool', `上网查 ${truncate(it.query, 40)}`))
+          if (it.type === 'command_execution') out.push(legacyActivity('tool', `跑 ${truncate(cleanCmd(it.command).split('\n')[0], 60)}`, { activity: commandActivity(cleanCmd(it.command)) }))
+          else if (it.type === 'mcp_tool_call') out.push(legacyActivity('tool', describeMcpCall(it.server, it.tool, parseArgs(it.arguments)), { activity: { type: 'tool.call', tool: `${it.server || ''}.${it.tool || ''}` } }))
+          else if (it.type === 'web_search') out.push(legacyActivity('tool', `上网查 ${truncate(it.query, 40)}`, { activity: { type: 'search', query: String(it.query || '') } }))
           break
         case 'item.completed':
           if (it.type === 'agent_message') {
             lastMessage = it.text || lastMessage
-            out.push(legacyActivity('say', firstLine(it.text)))
+            out.push(legacyActivity('say', firstLine(it.text), { activity: { type: 'message', text: it.text || '' } }))
           } else if (it.type === 'file_change') {
             const files = (it.changes || []).map((c) => shortPath(c.path, workdir)).join('、')
-            out.push(legacyActivity('tool', `改 ${truncate(files, 60)}`))
-          } else if (it.type === 'reasoning') out.push(legacyActivity('think', firstLine(it.text, 50) || '思考中…'))
+            out.push(legacyActivity('tool', `改 ${truncate(files, 60)}`, { activity: { type: 'file.write', path: files } }))
+          } else if (it.type === 'reasoning') out.push(legacyActivity('think', firstLine(it.text, 50) || '思考中…', { activity: { type: 'thinking' } }))
           else if (it.type === 'command_execution' && it.exit_code != null && it.exit_code !== 0)
             out.push(legacyActivity('warn', `命令没跑通（退出码 ${it.exit_code}）`))
           else if (it.type === 'todo_list') out.push(legacyActivity('tool', '列待办清单'))
@@ -119,9 +129,9 @@ export function createCodexParser(workdir) {
             const m = ev.msg
             if (m.type === 'agent_message') {
               lastMessage = m.message || lastMessage
-              out.push(legacyActivity('say', firstLine(m.message)))
-            } else if (m.type === 'exec_command_begin') out.push(legacyActivity('tool', `跑 ${truncate(cleanCmd(m.command), 60)}`))
-            else if (m.type === 'patch_apply_begin') out.push(legacyActivity('tool', `改 ${Object.keys(m.changes || {}).map((p) => shortPath(p, workdir)).join('、')}`))
+              out.push(legacyActivity('say', firstLine(m.message), { activity: { type: 'message', text: m.message || '' } }))
+            } else if (m.type === 'exec_command_begin') out.push(legacyActivity('tool', `跑 ${truncate(cleanCmd(m.command), 60)}`, { activity: commandActivity(cleanCmd(m.command)) }))
+            else if (m.type === 'patch_apply_begin') out.push(legacyActivity('tool', `改 ${Object.keys(m.changes || {}).map((p) => shortPath(p, workdir)).join('、')}`, { activity: { type: 'file.write', path: Object.keys(m.changes || {}).map((p) => shortPath(p, workdir)).join('、') } }))
             else if (m.type === 'error') failed = m.message || 'error'
           }
       }

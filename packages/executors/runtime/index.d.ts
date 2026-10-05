@@ -13,7 +13,9 @@ export const WORKER_TYPES: Record<string, typeof BaseWorker>
 export function createClaudeParser(workdir?: string): any
 export function createCodexParser(workdir?: string): any
 export function describeClaudeTool(name: string, input?: Record<string, any>, workdir?: string): string
+export function describeTool(name: string, input?: Record<string, any>): string
 export function describeMcpCall(server: string, tool: string, args?: Record<string, any>): string
+export function shortPath(value: string, workdir?: string): string
 export function splitMcpName(name: string): { server: string; tool: string } | null
 export function mcpResult(result: any): any
 export function legacyActivity(kind: string, text: string, extra?: Record<string, any>): any
@@ -24,6 +26,7 @@ export function killTree(child: any): void
 export function firstLine(value: unknown, n?: number): string
 export function truncate(value: unknown, n: number): string
 export function fillEnv(value: unknown): unknown
+export function sleep(ms: number): Promise<void>
 export const isWin: boolean
 export const CLAUDE_DENY: readonly string[]
 export const SAFE_COMMANDS: readonly string[]

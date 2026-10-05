@@ -3,8 +3,9 @@ import { ClaudeCliWorker, CodexCliWorker, createClaudeParser, createCodexParser 
 import { describeClaudeTool } from './format.js'
 import { OpenAIWorker, Toolbox, TOOLS, describeTool } from './openai-worker.js'
 import { McpClient, mcpResult } from './mcp-client.js'
+import { legacyActivity, commandActivity } from './activity.js'
 
-export { BaseWorker, ClaudeCliWorker, CodexCliWorker, createClaudeParser, createCodexParser, describeClaudeTool, OpenAIWorker, Toolbox, TOOLS, describeTool, McpClient, mcpResult }
+export { BaseWorker, ClaudeCliWorker, CodexCliWorker, createClaudeParser, createCodexParser, describeClaudeTool, OpenAIWorker, Toolbox, TOOLS, describeTool, McpClient, mcpResult, legacyActivity, commandActivity }
 export { describeMcpCall, shortPath, splitMcpName } from './format.js'
 export { isWin, killTree, runShell, spawnCmd } from './process.js'
 export { fillEnv, firstLine, sleep, truncate } from './text.js'

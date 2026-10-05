@@ -15,7 +15,8 @@
     "test": "node --test",
     "build:packages": "tsc -b",
     "test:packages": "tsc -b && node --test packages/*/dist-spec/*.spec.js",
-    "test:all": "npm test && npm run test:packages"
+    "verify:packaged-layout": "node scripts/verify-packaged-layout.mjs",
+    "test:all": "npm test && npm run test:packages && npm run verify:packaged-layout"
   },
   "files": [
     "bin",

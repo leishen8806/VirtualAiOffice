@@ -9,7 +9,7 @@ import { describeMcpCall } from './format.js'
 import { fillEnv, firstLine, sleep, truncate } from './text.js'
 import { killTree, runShell } from './process.js'
 import { BaseWorker } from './base-worker.js'
-import { legacyActivity } from './activity.js'
+import { legacyActivity, commandActivity } from './activity.js'
 
 const fn = (name, description, properties, required = []) => ({
   type: 'function',
@@ -32,6 +32,15 @@ export const TOOLS = [
   fn('run_command', '在工作目录里运行一条 shell 命令，返回输出和退出码。不要运行会一直挂着的命令（开发服务器、watch）', { command: str('命令'), timeout_sec: int('超时秒数，默认 120，最多 600') }, ['command']),
 ]
 const WRITE_TOOLS = new Set(['write_file', 'edit_file'])
+
+function toolActivity(name, args = {}) {
+  if (name === 'read_file') return { type: 'file.read', path: String(args.path || '') }
+  if (name === 'write_file' || name === 'edit_file') return { type: 'file.write', path: String(args.path || '') }
+  if (name === 'search') return { type: 'search', query: String(args.pattern || ''), ...(args.path ? { path: String(args.path) } : {}) }
+  if (name === 'run_command') return commandActivity(args.command || '')
+  if (name.includes('__')) return { type: 'tool.call', tool: name }
+  return { type: 'tool.call', tool: name }
+}
 
 export function describeTool(name, a = {}) {
   switch (name) {
@@ -293,7 +302,7 @@ export class OpenAIWorker extends BaseWorker {
       const client = new McpClient(t.server, { command: t.command, args: t.args || [], env: t.env || {}, cwd: workdir })
       clients.push(client)
       this.plugins.add(client)
-      onActivity(legacyActivity('tool', `准备${t.name}`))
+      onActivity(legacyActivity('tool', `准备${t.name}`, { activity: { type: 'tool.call', tool: t.name } }))
       try {
         for (const mt of await client.start()) {
           const name = fnName(t.server, mt.name)
@@ -302,7 +311,7 @@ export class OpenAIWorker extends BaseWorker {
         }
         names.push(t.name)
       } catch (e) {
-        onActivity(legacyActivity('warn', `${t.name}没启动起来：${truncate(e.message, 60)}`))
+        onActivity(legacyActivity('warn', `${t.name}没启动起来：${truncate(e.message, 60)}`, { activity: { type: 'message', text: e.message } }))
         client.close()
       }
     }
@@ -404,7 +413,7 @@ export class OpenAIWorker extends BaseWorker {
         log?.write(`\n[assistant] ${text}\n`)
         messages.push({ role: 'assistant', content: message.content ?? null, ...(calls.length ? { tool_calls: calls } : {}) })
         if (!calls.length) return finish({ ok: true, text: lastText })
-        if (text) onActivity(legacyActivity('say', firstLine(text)))
+        if (text) onActivity(legacyActivity('say', firstLine(text), { activity: { type: 'message', text } }))
         const images = []
         for (const call of calls) {
           const name = call.function?.name
@@ -416,7 +425,7 @@ export class OpenAIWorker extends BaseWorker {
           const route = kit.routes.get(name)
           if (!args) out = '错误：参数不是合法的 JSON（可能输出太长被截断了）。大文件请分几次写。'
           else if (route) {
-            onActivity(legacyActivity('tool', describeMcpCall(route.server, route.tool, args)))
+            onActivity(legacyActivity('tool', describeMcpCall(route.server, route.tool, args), { activity: { type: 'tool.call', tool: `${route.server}.${route.tool}` } }))
             try {
               const r = mcpResult(await route.client.call(route.tool, args))
               out = clip(r.text, 30000)
@@ -426,7 +435,7 @@ export class OpenAIWorker extends BaseWorker {
               out = `错误：${e.message}`
             }
           } else {
-            onActivity(legacyActivity('tool', describeTool(name, args)))
+            onActivity(legacyActivity('tool', describeTool(name, args), { activity: toolActivity(name, args) }))
             out = await box.exec(name, args)
           }
           log?.write(`[tool ${name}] ${truncate(JSON.stringify(args), 300)}\n${truncate(out, 600)}\n`)
