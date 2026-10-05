@@ -35,9 +35,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Leeeger1/niuma-studio.git"
+    "url": "git+https://github.com/leishen8806/VirtualAiOffice.git"
   },
-  "homepage": "https://github.com/Leeeger1/niuma-studio",
+  "homepage": "https://github.com/leishen8806/VirtualAiOffice",
   "keywords": [
     "ai",
     "agents",

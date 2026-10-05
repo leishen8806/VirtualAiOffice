@@ -133,7 +133,7 @@ test('claude and codex output parsers', () => {
   const p = createClaudeParser('/proj')
   p.feed(JSON.stringify({ type: 'system', subtype: 'init', session_id: 's1' }))
   const acts = p.feed(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: '我先看看' }, { type: 'tool_use', name: 'Edit', input: { file_path: '/proj/src/a.js' } }] } }))
-  assert.deepEqual(acts.map((a) => a.text), ['我先看看', '改 src/a.js'])
+  assert.deepEqual(acts.map((a) => a.text), ['我先看看', `改 ${path.join('src', 'a.js')}`])
   p.feed(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: '完成', total_cost_usd: 0.12 }))
   assert.deepEqual(p.finish({ code: 0, stderr: '' }), { ok: true, text: '完成', error: '', cost: 0.12, sessionId: 's1' })
   assert.equal(describeClaudeTool('Bash', { command: "bash -lc 'npm test'" }), '跑 npm test')
@@ -144,7 +144,7 @@ test('claude and codex output parsers', () => {
     { type: 'item.completed', item: { type: 'file_change', changes: [{ path: '/proj/test/x.js', kind: 'add' }] } },
     { type: 'item.completed', item: { type: 'agent_message', text: '都好了' } },
   ]
-  assert.deepEqual(lines.flatMap((l) => c.feed(JSON.stringify(l))).map((a) => a.text), ['跑 npm test', '改 test/x.js', '都好了'])
+  assert.deepEqual(lines.flatMap((l) => c.feed(JSON.stringify(l))).map((a) => a.text), ['跑 npm test', `改 ${path.join('test', 'x.js')}`, '都好了'])
   assert.equal(c.finish({ code: 0, stderr: '' }, '/nonexistent').text, '都好了')
   const bad = createCodexParser('/proj')
   bad.feed(JSON.stringify({ type: 'turn.failed', error: { message: 'quota' } }))
