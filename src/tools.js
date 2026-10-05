@@ -7,6 +7,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fillEnv, isWin, truncate } from './util.js'
+export { describeMcpCall, splitMcpName } from '../packages/executors/runtime/index.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ALL_TYPES = ['claude-cli', 'codex-cli', 'openai-api']
@@ -15,7 +16,6 @@ function npx(pkg, extra = []) {
   // Claude Code and Codex start MCP servers without a shell, so on Windows npx needs cmd /c.
   return isWin ? { command: 'cmd', args: ['/c', 'npx', '-y', pkg, ...extra] } : { command: 'npx', args: ['-y', pkg, ...extra] }
 }
-
 export function builtinTools() {
   const headless = process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY
   // Page snapshots and screenshots go here instead of cluttering the project (and its git save points).
@@ -236,57 +236,4 @@ export class ToolCatalog {
     if (!t?.command) return null
     return { command: t.command, args: t.args.map(String), env: Object.fromEntries(Object.entries(t.env).map(([k, v]) => [k, fillEnv(String(v))])) }
   }
-}
-
-// ---- how tool calls look in the speech bubbles ------------------------------------------------------
-
-const BROWSER_ZH = {
-  browser_navigate: (a) => `打开网页 ${truncate(a.url, 40)}`,
-  browser_navigate_back: () => '网页后退',
-  browser_click: (a) => `点 ${truncate(a.element || a.ref, 30)}`,
-  browser_type: (a) => `输入 “${truncate(a.text, 24)}”`,
-  browser_fill_form: () => '填表单',
-  browser_select_option: (a) => `选择 ${truncate([].concat(a.values || []).join('、'), 24)}`,
-  browser_press_key: (a) => `按 ${a.key}`,
-  browser_hover: (a) => `悬停 ${truncate(a.element, 30)}`,
-  browser_snapshot: () => '看网页内容',
-  browser_take_screenshot: () => '网页截图',
-  browser_wait_for: () => '等网页加载',
-  browser_tabs: () => '切换标签页',
-  browser_close: () => '关掉浏览器',
-  browser_evaluate: () => '在网页里跑脚本',
-  browser_file_upload: () => '上传文件',
-  browser_install: () => '安装浏览器',
-  browser_console_messages: () => '看网页控制台',
-  browser_network_requests: () => '看网络请求',
-  browser_resize: () => '调整窗口大小',
-  browser_drag: () => '在网页里拖动',
-  browser_handle_dialog: () => '处理弹窗',
-}
-const DESKTOP_ZH = {
-  screenshot: () => '看屏幕',
-  click: (a) => `${a.double ? '双击' : a.button === 'right' ? '右键点' : '点击'}屏幕 (${a.x}, ${a.y})`,
-  move: (a) => `移动鼠标到 (${a.x}, ${a.y})`,
-  drag: () => '拖动鼠标',
-  scroll: (a) => `滚动${{ up: '上', down: '下', left: '左', right: '右' }[a.direction] || ''}`,
-  type: (a) => `打字 “${truncate(a.text, 24)}”`,
-  key: (a) => `按 ${a.keys}`,
-  open: (a) => `打开 ${truncate(a.target, 30)}`,
-  wait: () => '等一下',
-}
-
-export function describeMcpCall(server, tool, args = {}) {
-  const s = String(server || '')
-  const a = args && typeof args === 'object' ? args : {}
-  try {
-    if (/browser|playwright/i.test(s) && BROWSER_ZH[tool]) return BROWSER_ZH[tool](a)
-    if (/desktop/i.test(s) && DESKTOP_ZH[tool]) return DESKTOP_ZH[tool](a)
-  } catch {}
-  return `用插件 ${s}.${tool}`
-}
-
-/** Split a Claude Code tool name like mcp__niuma_browser__browser_click. */
-export function splitMcpName(name) {
-  const m = String(name || '').match(/^mcp__(.+?)__(.+)$/)
-  return m ? { server: m[1], tool: m[2] } : null
 }

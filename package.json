@@ -23,6 +23,7 @@
     "public",
     "fake",
     "skills",
+    "packages/executors/runtime",
     "niuma.config.example.json"
   ],
   "engines": {

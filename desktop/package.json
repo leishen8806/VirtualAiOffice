@@ -46,6 +46,11 @@
         "to": "core/src"
       },
       {
+        "from": "../packages/executors/runtime",
+        "to": "core/packages/executors/runtime",
+        "filter": ["**/*.js", "**/*.d.ts"]
+      },
+      {
         "from": "../public",
         "to": "core/public"
       },

@@ -1,21 +1,10 @@
-import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-
-export const isWin = process.platform === 'win32'
-
-export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-export function truncate(s, n) {
-  s = String(s ?? '')
-  return s.length > n ? s.slice(0, n - 1) + '…' : s
-}
-
-export function firstLine(s, n = 80) {
-  const line = String(s ?? '').trim().split('\n').find((l) => l.trim()) || ''
-  return truncate(line.replace(/\*\*|`/g, '').replace(/^[#>\s]+/, '').trim(), n)
-}
+import { isWin, killTree, runShell, spawnCmd } from '../packages/executors/runtime/process.js'
+import { fillEnv, firstLine, sleep, truncate } from '../packages/executors/runtime/text.js'
+import { SKIP_DIRS } from '../packages/executors/runtime/policy.js'
+export { isWin, killTree, runShell, spawnCmd, fillEnv, firstLine, sleep, truncate, SKIP_DIRS }
 
 export function expandHome(p) {
   if (!p) return p
@@ -65,151 +54,6 @@ function matchBrace(s, start) {
   return -1
 }
 
-function winQuote(a) {
-  a = String(a)
-  if (/^[\w\-.:\\/=,@+]+$/.test(a)) return a
-  return '"' + a.replace(/"/g, '\\"') + '"'
-}
-
-/**
- * Spawn a CLI, feed it stdin, stream stdout line by line.
- * `command` may be a string ("claude") or an array ([node, "/path/fake.mjs"]).
- */
-export function spawnCmd(command, args, opts = {}) {
-  const { cwd, env, input, onLine, collect = false, timeoutMs } = opts
-  const [cmd, ...pre] = Array.isArray(command) ? command : [command]
-  const argv = [...pre, ...args]
-  const childEnv = { ...process.env, ...env }
-  // A nested `claude -p` refuses to start when it thinks it is inside another Claude Code session.
-  delete childEnv.CLAUDECODE
-
-  let child
-  try {
-    child = isWin
-      ? spawn([cmd, ...argv].map(winQuote).join(' '), { cwd, env: childEnv, shell: true, windowsHide: true })
-      : spawn(cmd, argv, { cwd, env: childEnv, detached: true })
-  } catch (e) {
-    return { child: null, kill() {}, done: Promise.resolve({ code: -1, stdout: '', stderr: e.message, error: e }) }
-  }
-
-  let stdout = ''
-  let stderr = ''
-  let buf = ''
-  let timedOut = false
-  let killed = false
-
-  const kill = () => {
-    if (killed || child.exitCode !== null) return
-    killed = true
-    killTree(child)
-  }
-
-  const done = new Promise((resolve) => {
-    let timer
-    if (timeoutMs) {
-      timer = setTimeout(() => {
-        timedOut = true
-        kill()
-      }, timeoutMs)
-      timer.unref?.()
-    }
-    child.stdout.setEncoding('utf8')
-    child.stderr.setEncoding('utf8')
-    child.stdout.on('data', (chunk) => {
-      if (collect) stdout += chunk
-      if (!onLine) return
-      buf += chunk
-      let i
-      while ((i = buf.indexOf('\n')) !== -1) {
-        const line = buf.slice(0, i).replace(/\r$/, '')
-        buf = buf.slice(i + 1)
-        if (line.trim()) onLine(line)
-      }
-    })
-    child.stderr.on('data', (chunk) => {
-      stderr = (stderr + chunk).slice(-6000)
-    })
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ code: -1, stdout, stderr: stderr + e.message, error: e, timedOut, killed })
-    })
-    child.on('close', (code, signal) => {
-      clearTimeout(timer)
-      if (onLine && buf.trim()) onLine(buf.trim())
-      resolve({ code: code ?? -1, signal, stdout, stderr, timedOut, killed })
-    })
-  })
-
-  child.stdin.on('error', () => {})
-  if (input != null) child.stdin.end(input)
-  else child.stdin.end()
-
-  return { child, kill, done }
-}
-
-/** Kill a child and everything it started (the child must be spawned detached on Unix). */
-export function killTree(child) {
-  try {
-    if (isWin) spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true })
-    else process.kill(-child.pid, 'SIGTERM')
-  } catch {
-    try {
-      child.kill('SIGTERM')
-    } catch {}
-  }
-  if (!isWin) {
-    setTimeout(() => {
-      try {
-        process.kill(-child.pid, 'SIGKILL')
-      } catch {}
-    }, 3000).unref()
-  }
-}
-
-/** Run a shell command line (used by the built-in API agent's run_command tool). */
-export function runShell(command, { cwd, timeoutMs = 120000, onSpawn } = {}) {
-  return new Promise((resolve) => {
-    const env = { ...process.env }
-    delete env.CLAUDECODE
-    let child
-    try {
-      child = spawn(command, { cwd, env, shell: true, detached: !isWin, windowsHide: true })
-    } catch (e) {
-      resolve({ code: -1, out: e.message, timedOut: false })
-      return
-    }
-    onSpawn?.(child)
-    let out = ''
-    let timedOut = false
-    const add = (d) => {
-      out += d.toString()
-      if (out.length > 400000) out = out.slice(-400000)
-    }
-    child.stdout.on('data', add)
-    child.stderr.on('data', add)
-    child.stdin.on('error', () => {})
-    child.stdin.end()
-    const timer = setTimeout(() => {
-      timedOut = true
-      killTree(child)
-    }, timeoutMs)
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ code: -1, out: out + e.message, timedOut })
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve({ code: code ?? -1, out, timedOut })
-    })
-  })
-}
-
-/** Replace ${NAME} with environment variables, so API keys can stay out of config files. */
-export function fillEnv(value) {
-  if (typeof value !== 'string') return value
-  return value.replace(/\$\{(\w+)\}/g, (_, k) => process.env[k] ?? '')
-}
-
 /** Small git/filesystem snapshot so the planner knows what project it is looking at. */
 export async function projectContext(workdir) {
   const git = async (...a) => {
@@ -245,8 +89,6 @@ export async function projectContext(workdir) {
     status: truncate(status.trim(), 1500),
   }
 }
-
-export const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.venv', 'venv', '__pycache__', '.niuma', 'target', '.pytest_cache', '.mypy_cache', '.playwright-mcp'])
 
 function walk(root, depth, rel = '', out = []) {
   if (depth < 0 || out.length > 300) return out
