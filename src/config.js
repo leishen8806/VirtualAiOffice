@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { expandHome } from './util.js'
+export { CLAUDE_DENY, SAFE_COMMANDS } from '../packages/executors/runtime/policy.js'
 
 export const DEFAULTS = {
   port: 7777,
@@ -58,21 +59,6 @@ export const DEFAULTS = {
 }
 
 // Commands Claude may never run on its own, whatever the autonomy level.
-export const CLAUDE_DENY = [
-  'Bash(sudo:*)',
-  'Bash(git push:*)',
-  'Bash(git reset --hard:*)',
-  'Bash(git clean:*)',
-  'Bash(rm -rf /:*)',
-  'Bash(rm -rf ~:*)',
-]
-
-// Command prefixes allowed in "safe" autonomy.
-export const SAFE_COMMANDS = [
-  'git status', 'git diff', 'git log', 'git show', 'ls', 'cat', 'mkdir',
-  'npm', 'npx', 'pnpm', 'yarn', 'node', 'python', 'python3', 'pip', 'pytest', 'go', 'cargo', 'make',
-]
-
 function isObj(v) {
   return v && typeof v === 'object' && !Array.isArray(v)
 }

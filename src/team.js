@@ -1,5 +1,5 @@
 // The company: project groups (项目组, one per model backend) and employees (员工, one per skill).
-import { COST_ZH, TIER_ZH } from './models.js'
+import { COST_ZH, TIER_ZH, modelProfile } from './models.js'
 import { loadSkills, skillDirs } from './skills.js'
 import { ToolCatalog } from './tools.js'
 import { ClaudeCliWorker, CodexCliWorker } from './workers/cli.js'
@@ -40,6 +40,8 @@ export class Team {
         continue
       }
       const w = new Cls(g, ctx)
+      // Legacy UI code still consumes model profiles; keep that view at the boundary.
+      w.profileFor = (difficulty = 'medium') => modelProfile({ ...g, model: w.modelFor(difficulty) })
       w.name = g.name || g.id
       const brand = BRAND_COLORS.find(([re]) => re.test(`${g.id} ${g.model || ''} ${g.baseUrl || ''}`))
       w.color = g.color || brand?.[1] || PALETTE[extra++ % PALETTE.length]
