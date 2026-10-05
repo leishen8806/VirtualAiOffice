@@ -412,8 +412,8 @@ export class OpenAIWorker extends BaseWorker {
         if (text) lastText = text
         log?.write(`\n[assistant] ${text}\n`)
         messages.push({ role: 'assistant', content: message.content ?? null, ...(calls.length ? { tool_calls: calls } : {}) })
-        if (!calls.length) return finish({ ok: true, text: lastText })
         if (text) onActivity(legacyActivity('say', firstLine(text), { activity: { type: 'message', text } }))
+        if (!calls.length) return finish({ ok: true, text: lastText })
         const images = []
         for (const call of calls) {
           const name = call.function?.name

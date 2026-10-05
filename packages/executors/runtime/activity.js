@@ -1,11 +1,19 @@
-const TYPES = { tool: 'tool.call', say: 'message', think: 'thinking', warn: 'message' }
 const TEST_COMMAND = /(^|\s|\/)(npm|pnpm|yarn)\s+(run\s+)?test\b|\b(pytest|vitest|jest|mocha|go\s+test|cargo\s+test|node\s+--test)\b/
 
-/** Preserve legacy enumerable fields while attaching the Stage 1A activity payload. */
+/**
+ * Preserve legacy enumerable shape {kind, text} exactly for the office UI.
+ *
+ * The non-enumerable canonical `activity` payload is attached ONLY when the caller
+ * supplies `extra.activity` explicitly with machine-readable data. Display-only
+ * bubbles (warnings, todo-list labels, localized plugin-preparation strings, …)
+ * must NOT be reconstructed from localized `kind`/`text` — callers that omit
+ * `extra.activity` get no structured ExecutorEvent for that line.
+ */
 export function legacyActivity(kind, text, extra = {}) {
-  const value = extra.activity || (kind === 'tool' ? { type: 'tool.call', tool: text, ...extra } : { type: TYPES[kind] || 'message', ...(kind === 'think' ? {} : { text }), ...extra })
   const out = { kind, text }
-  Object.defineProperty(out, 'activity', { value, enumerable: false })
+  if (extra && extra.activity !== undefined) {
+    Object.defineProperty(out, 'activity', { value: extra.activity, enumerable: false })
+  }
   return out
 }
 

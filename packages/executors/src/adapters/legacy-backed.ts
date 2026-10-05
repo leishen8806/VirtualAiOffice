@@ -1,16 +1,44 @@
 import type { ExecutionHandle, ExecutionResult, ExecutionSpec, ExecutorAdapter, ExecutorCapabilities, ToolGrant } from '../contract.js'
-import type { ExecutorEvent } from '../activity.js'
+import type { ExecutorEvent, ExecutionActivity } from '../activity.js'
 import { validateExecutionSpec } from '../contract.js'
 import { commandActivity } from '../activity.js'
 import { BaseWorker } from '../../runtime/index.js'
-import { mapLegacyActivity } from './activity-map.js'
-import { mapLegacyResult } from './result-map.js'
 
 type LegacyWorker = BaseWorker & {
   run(options: Record<string, unknown>): Promise<Record<string, any>>
 }
 
 type LegacyWorkerCtor = new (group: Record<string, any>, context: Record<string, any>) => LegacyWorker
+
+export function mapLegacyActivities(value: any): ExecutorEvent[] {
+  const raw = value?.activity
+  if (raw == null) return []
+  const at = new Date().toISOString()
+  const toEvent = (activity: ExecutionActivity) => ({ kind: 'activity' as const, at, activity })
+  if (Array.isArray(raw)) return raw.map(toEvent)
+  return [toEvent(raw as ExecutionActivity)]
+}
+
+export function mapLegacyResult(value: any, started = Date.now()): ExecutionResult {
+  const usage = value?.usage || {}
+  const input = usage.in ?? usage.input_tokens
+  const output = usage.out ?? usage.output_tokens
+  const explicit = value?.outcome
+  const outcome: ExecutionResult['outcome'] = explicit &&
+    ['succeeded', 'failed', 'timed_out', 'cancelled'].includes(explicit)
+      ? explicit
+      : (value?.ok ? 'succeeded' : 'failed')
+  return {
+    outcome,
+    summary: String(value?.text || ''),
+    ...(value?.error ? { error: String(value.error) } : {}),
+    ...(value?.sessionId ? { sessionRef: String(value.sessionId) } : {}),
+    ...(value?.cost != null ? { costUsd: Number(value.cost) } : {}),
+    ...(input != null ? { tokensIn: Number(input) } : {}),
+    ...(output != null ? { tokensOut: Number(output) } : {}),
+    durationMs: Number(value?.durationMs || Date.now() - started),
+  }
+}
 
 class EventQueue implements AsyncIterable<ExecutorEvent> {
   private values: ExecutorEvent[] = []
@@ -52,6 +80,7 @@ function toolConfig(grants: readonly ToolGrant[], resolveTool?: (grant: ToolGran
 export interface LegacyAdapterOptions {
   readonly group?: Record<string, any>
   readonly resolveTool?: (grant: ToolGrant) => Record<string, any> | undefined
+  readonly logDir?: string
 }
 
 export class LegacyBackedAdapter implements ExecutorAdapter {
@@ -60,7 +89,7 @@ export class LegacyBackedAdapter implements ExecutorAdapter {
   private readonly caps: ExecutorCapabilities
 
   constructor(private readonly adapterId: string, Worker: LegacyWorkerCtor, options: LegacyAdapterOptions = {}, caps: ExecutorCapabilities) {
-    this.worker = new Worker(options.group || {}, { workdir: '.', logDir: '.', autonomy: 'full' })
+    this.worker = new Worker(options.group || {}, { workdir: '.', logDir: options.logDir || '', autonomy: 'full' })
     this.caps = caps
     this.resolveTool = options.resolveTool
   }
@@ -87,8 +116,7 @@ export class LegacyBackedAdapter implements ExecutorAdapter {
       signal: controller.signal,
       tools,
       onActivity: (value: any) => {
-        const event = mapLegacyActivity(value)
-        if (event) queue.push(event)
+        for (const event of mapLegacyActivities(value)) queue.push(event)
       },
     })).then((value) => mapLegacyResult(value, started)).catch((error) => ({ outcome: 'failed' as const, summary: '', error: String(error?.message || error), durationMs: Date.now() - started })).finally(() => {
       this.controllers.delete(spec.executionId)

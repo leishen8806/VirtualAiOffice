@@ -106,8 +106,12 @@ export function createCodexParser(workdir) {
             lastMessage = it.text || lastMessage
             out.push(legacyActivity('say', firstLine(it.text), { activity: { type: 'message', text: it.text || '' } }))
           } else if (it.type === 'file_change') {
-            const files = (it.changes || []).map((c) => shortPath(c.path, workdir)).join('、')
-            out.push(legacyActivity('tool', `改 ${truncate(files, 60)}`, { activity: { type: 'file.write', path: files } }))
+            const rels = (it.changes || []).map((c) => shortPath(c.path, workdir))
+            const display = rels.join('、')
+            const writes = rels.map((p) => ({ type: 'file.write', path: p }))
+            out.push(legacyActivity('tool', `改 ${truncate(display, 60)}`, {
+              activity: writes.length === 0 ? undefined : writes.length === 1 ? writes[0] : writes,
+            }))
           } else if (it.type === 'reasoning') out.push(legacyActivity('think', firstLine(it.text, 50) || '思考中…', { activity: { type: 'thinking' } }))
           else if (it.type === 'command_execution' && it.exit_code != null && it.exit_code !== 0)
             out.push(legacyActivity('warn', `命令没跑通（退出码 ${it.exit_code}）`))
@@ -131,7 +135,14 @@ export function createCodexParser(workdir) {
               lastMessage = m.message || lastMessage
               out.push(legacyActivity('say', firstLine(m.message), { activity: { type: 'message', text: m.message || '' } }))
             } else if (m.type === 'exec_command_begin') out.push(legacyActivity('tool', `跑 ${truncate(cleanCmd(m.command), 60)}`, { activity: commandActivity(cleanCmd(m.command)) }))
-            else if (m.type === 'patch_apply_begin') out.push(legacyActivity('tool', `改 ${Object.keys(m.changes || {}).map((p) => shortPath(p, workdir)).join('、')}`, { activity: { type: 'file.write', path: Object.keys(m.changes || {}).map((p) => shortPath(p, workdir)).join('、') } }))
+            else if (m.type === 'patch_apply_begin') {
+              const rels = Object.keys(m.changes || {}).map((p) => shortPath(p, workdir))
+              const display = rels.join('、')
+              const writes = rels.map((p) => ({ type: 'file.write', path: p }))
+              out.push(legacyActivity('tool', `改 ${truncate(display, 60)}`, {
+                activity: writes.length === 0 ? undefined : writes.length === 1 ? writes[0] : writes,
+              }))
+            }
             else if (m.type === 'error') failed = m.message || 'error'
           }
       }

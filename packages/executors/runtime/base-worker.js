@@ -53,6 +53,7 @@ export class BaseWorker {
 
   openLog(label, prompt) {
     try {
+      if (!this.logDir) return null
       fs.mkdirSync(this.logDir, { recursive: true })
       const stamp = new Date().toISOString().replace(/[:.]/g, '-')
       const ws = fs.createWriteStream(path.join(this.logDir, `${stamp}-${this.id}-${label}.log`))
