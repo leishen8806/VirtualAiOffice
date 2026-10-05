@@ -20,7 +20,7 @@ import fs from 'node:fs'
 const kind = process.env.VAO_FAKE_KIND
 const capture = process.env.VAO_CAPTURE
 if (capture) fs.writeFileSync(capture, JSON.stringify({ cwd: process.cwd(), argv: process.argv }))
-if (process.env.VAO_HANG === '1') await new Promise(() => {})
+if (process.env.VAO_HANG === '1') await new Promise(() => setInterval(() => {}, 1000))
 if (kind === 'claude') {
   console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: 'claude-session' }))
   console.log(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: 'src/a.ts' } }, { type: 'text', text: 'done' }] } }))
@@ -54,6 +54,12 @@ async function events(handle: Awaited<ReturnType<ExecutorAdapter['start']>>) {
 
 function assertResolved(handle: Awaited<ReturnType<ExecutorAdapter['start']>>) {
   return handle.result.then((result) => { assert.ok(result.outcome); return result })
+}
+
+async function waitForFile(file: string) {
+  const deadline = Date.now() + 3000
+  while (!fs.existsSync(file) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10))
+  assert.ok(fs.existsSync(file), `fixture did not start: ${file}`)
 }
 
 async function fakeApi() {
@@ -91,6 +97,7 @@ test('real adapters share the execution contract without paid API calls', async 
       const adapter = cliAdapter(kind, { VAO_HANG: '1', VAO_CAPTURE: capture })
       const spec = baseSpec(`${kind}-cancel`, { access: 'read_only', workdir: otherWorkdir, budget: { maxDurationMs: 3000 } })
       const handle = await adapter.start(spec)
+      await waitForFile(capture)
       await adapter.cancel(spec.executionId); await adapter.cancel(spec.executionId)
       const result = await assertResolved(handle)
       assert.equal(result.outcome, 'cancelled')
@@ -100,7 +107,7 @@ test('real adapters share the execution contract without paid API calls', async 
     })
     await t.test(`${kind} timeout resolves as timed_out`, async () => {
       const adapter = cliAdapter(kind, { VAO_HANG: '1' })
-      const handle = await adapter.start(baseSpec(`${kind}-timeout`, { budget: { maxDurationMs: 30 } }))
+      const handle = await adapter.start(baseSpec(`${kind}-timeout`, { budget: { maxDurationMs: 250 } }))
       assert.equal((await assertResolved(handle)).outcome, 'timed_out')
     })
   }
