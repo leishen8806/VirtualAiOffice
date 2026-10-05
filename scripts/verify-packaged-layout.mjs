@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -46,6 +46,48 @@ async function waitForHttp(url, child) {
   throw new Error(`fake rehearsal did not respond: ${url}`)
 }
 
+function waitForClose(child, timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      if (settled) return
+      settled = true
+      resolve(false)
+    }, timeoutMs)
+    const done = (code) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(code)
+    }
+    if (child.exitCode != null) {
+      done(child.exitCode)
+    } else {
+      child.once('exit', done)
+      child.once('close', done)
+    }
+  })
+}
+
+async function stopChildTree(child) {
+  if (!child || child.exitCode != null) return true
+  const started = Date.now()
+  if (process.platform === 'win32') {
+    try {
+      spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore', timeout: 10000 })
+    } catch {
+      // tolerate: taskkill itself can throw if the process already vanished
+    }
+  } else {
+    try { child.kill('SIGTERM') } catch {}
+  }
+  const remaining = Math.max(500, 5000 - (Date.now() - started))
+  const closed = await waitForClose(child, remaining)
+  // ensure close event explicitly waited on bounded timeout (3-5s)
+  return closed !== false
+}
+
+let validationOk = false
 try {
   for (const entry of resources) copyResource(entry)
   for (const required of ['src', 'bin', 'fake', 'packages/executors/runtime']) {
@@ -65,10 +107,18 @@ try {
   try {
     await waitForHttp(`http://127.0.0.1:${port}/`, child)
   } finally {
-    if (child.exitCode == null) child.kill()
-    await new Promise((resolve) => child.once('close', resolve))
+    await stopChildTree(child)
   }
+  validationOk = true
   console.log('packaged layout ok: reconstructed core starts fake NiuMa and returns HTTP 200')
 } finally {
-  fs.rmSync(temp, { recursive: true, force: true })
+  try {
+    fs.rmSync(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
+  } catch (error) {
+    if (validationOk) {
+      console.warn(`warning: unable to remove packaged-layout temp directory: ${temp}: ${error.message}`)
+    } else {
+      throw error
+    }
+  }
 }
