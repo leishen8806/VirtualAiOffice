@@ -58,7 +58,10 @@ export function parseVerdict(text) {
   return all[all.length - 1][1].toUpperCase() === 'APPROVE' ? 'approve' : 'changes'
 }
 
-/** The acceptance check ends with a ```json block; take the last one that has a "done" field. */
+/**
+ * The acceptance check ends with a ```json block; take the last one that has a "done" field.
+ * Fail closed: output without a parseable verdict is NOT a pass (`unparsed: true`, `done: false`).
+ */
 export function extractVerdict(text) {
   const blocks = [...String(text || '').matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)].map((m) => m[1]).reverse()
   for (const b of blocks) {
@@ -69,7 +72,7 @@ export function extractVerdict(text) {
   }
   const o = extractJson(text)
   if (o && typeof o === 'object' && 'done' in o) return normalizeVerdict(o)
-  return { done: true, problems: [], tasks: [], unparsed: true }
+  return { done: false, problems: ['验收没有给出可以解析的结论'], tasks: [], unparsed: true }
 }
 
 function normalizeVerdict(o) {
@@ -449,6 +452,8 @@ export class Coordinator extends EventEmitter {
       if (!this.tasks.some((t) => ['code', 'fix'].includes(t.kind) && t.status === 'done')) break
       verdict = await this.verify(base)
       if (this.stopFlag || verdict.done) break
+      // No usable verdict (verifier missing, crashed, or unparseable): stop and leave it to the boss.
+      if (verdict.needsHuman) break
       if (this.iteration >= (this.config.maxIterations ?? 3)) {
         this.addMessage('shaniu', `验收还差一点（${verdict.problems.join('；') || '细节'}），可是已经返工 ${this.iteration} 轮了，剩下的请主人定夺～`)
         break
@@ -616,15 +621,18 @@ export class Coordinator extends EventEmitter {
       error: res.ok ? '' : res.error || '失败',
       status: res.ok ? 'done' : this.stopFlag ? 'cancelled' : 'failed',
     })
+    // Fail closed: a review without a VERDICT line has not approved anything. Treat it as a failed
+    // review, so it is handed to another reviewer and its dependents do not proceed on silence.
+    if (t.kind === 'review' && t.status === 'done') {
+      t.verdict = parseVerdict(t.result)
+      if (t.verdict === 'unknown') Object.assign(t, { status: 'failed', error: '审查没有给出明确结论（缺少 VERDICT 行）' })
+    }
     this.record(t)
 
     if (t.status === 'failed' && t.kind !== 'verify' && t.attempts.length < (this.config.maxRetries ?? 1)) {
       if (this.handOff(t)) return
     }
-    if (t.kind === 'review' && t.status === 'done') {
-      t.verdict = parseVerdict(t.result)
-      if (t.verdict === 'changes') this.scheduleFix(t)
-    }
+    if (t.kind === 'review' && t.status === 'done' && t.verdict === 'changes') this.scheduleFix(t)
     this.emitTask(t)
     if (t.status === 'done') this.setAgent(t.agent, { status: 'done', text: t.verdict === 'changes' ? '有几处要改' : '搞定！', taskId: null })
     else if (t.status === 'cancelled') this.setAgent(t.agent, { status: 'idle', text: '', taskId: null })
@@ -830,9 +838,16 @@ export class Coordinator extends EventEmitter {
     )
   }
 
+  /**
+   * Fail closed: only a parsed `"done": true` counts as a pass. A missing verifier, a crashed or
+   * timed-out check, or output without a verdict returns `needsHuman: true` and never `done: true`.
+   */
   async verify(base) {
     const who = this.verifier()
-    if (!who) return { done: true, problems: [], tasks: [] }
+    if (!who) {
+      this.addMessage('shaniu', '没有能做验收的员工，傻妞不敢算这一轮通过，请主人自己检查一下改动～')
+      return { done: false, needsHuman: true, problems: ['没有可用的验收员'], tasks: [] }
+    }
     const emp = this.team.employee(who)
     // If this round built or tested web pages in a browser, the checker gets one too.
     const tools = this.tasks.some((x) => x.tools.includes('browser')) && this.team.canUse(who, ['browser']) ? ['browser'] : []
@@ -861,13 +876,20 @@ export class Coordinator extends EventEmitter {
     this.tasks.push(t)
     this.emitTask(t)
     await this.dispatch(t)
-    if (this.stopFlag) return { done: true, problems: [], tasks: [] }
+    if (this.stopFlag) return { done: false, stopped: true, problems: [], tasks: [] }
     await this.runTask(t)
     if (t.status !== 'done') {
-      this.addMessage('shaniu', `验收没跑成（${truncate(t.error, 60)}），这一轮就先到这里。`)
-      return { done: true, problems: [], tasks: [] }
+      this.addMessage('shaniu', `验收没跑成（${truncate(t.error, 60)}），这一轮不算通过，请主人检查后再决定。`)
+      return { done: false, needsHuman: true, problems: [`验收没跑成：${t.error || '未知原因'}`], tasks: [] }
     }
     const v = extractVerdict(t.result)
+    if (v.unparsed) {
+      Object.assign(t, { status: 'failed', error: '验收没有给出明确结论（找不到结果 JSON）', verdict: null })
+      this.emitTask(t)
+      this.setAgent(who, { status: 'error', text: '验收结论看不懂', taskId: null })
+      this.addMessage('shaniu', '验收员没有给出明确的结论，傻妞不敢算它通过。这一轮先停在这里，请主人检查改动后再决定～')
+      return { ...v, needsHuman: true }
+    }
     t.verdict = v.done ? 'approve' : 'changes'
     this.emitTask(t)
     this.setAgent(who, { status: 'done', text: v.done ? '验收通过！' : '还差一点', taskId: null })

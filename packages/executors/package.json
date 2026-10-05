@@ -1,0 +1,22 @@
+{
+  "name": "@vao/executors",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Executor adapter contract (Role -> Execution Policy -> Executor Adapter -> Model/CLI/Tool) and structured execution activity.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@vao/domain": "0.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

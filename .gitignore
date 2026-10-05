@@ -3,3 +3,7 @@ node_modules/
 niuma.config.json
 *.log
 .DS_Store
+# Build output of the new TypeScript packages (packages/*)
+packages/*/dist/
+packages/*/dist-spec/
+*.tsbuildinfo

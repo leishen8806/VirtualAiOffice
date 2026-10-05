@@ -6,10 +6,16 @@
   "bin": {
     "niuma": "bin/niuma.js"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "start": "node bin/niuma.js",
     "rehearsal": "node bin/niuma.js --fake",
-    "test": "node --test"
+    "test": "node --test",
+    "build:packages": "tsc -b",
+    "test:packages": "tsc -b && node --test packages/*/dist-spec/*.spec.js",
+    "test:all": "npm test && npm run test:packages"
   },
   "files": [
     "bin",
@@ -21,6 +27,10 @@
   ],
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "~26.2.0",
+    "typescript": "~6.0.3"
   },
   "license": "MIT",
   "repository": {
