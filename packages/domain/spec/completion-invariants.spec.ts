@@ -47,6 +47,36 @@ test('completion: fails closed on missing, errored, skipped, stale or self-repor
   }
 })
 
+test('completion: review evidence cannot be reused across code revisions', () => {
+  const policy: CompletionPolicy = { requiredChecks: [], requireAiReview: true, requireHumanApproval: false }
+  const oldReview = evaluateCompletion(policy, [evidence({ kind: 'review', source: 'ai', status: 'pass', commitSha: 'old999' })], target)
+  assert.equal(oldReview.outcome, 'needs_human', 'review of an old commit is stale')
+  assert.deepEqual(oldReview.evidenceIds, [])
+  const { commitSha: _omit, ...unpinned } = evidence({ kind: 'review', source: 'ai', status: 'pass' })
+  const missing = evaluateCompletion(policy, [unpinned], target)
+  assert.equal(missing.outcome, 'needs_human', 'review with no commit cannot satisfy a concrete target commit')
+  assert.deepEqual(missing.evidenceIds, [])
+  assert.equal(evaluateCompletion(policy, [evidence({ kind: 'review', source: 'ai', status: 'pass' })], target).outcome, 'passed')
+  // Only same-commit evidence is judged: a stale pass cannot mask a current failure.
+  assert.equal(evaluateCompletion(policy, [evidence({ kind: 'review', source: 'ai', status: 'pass', commitSha: 'old999' }), evidence({ kind: 'review', source: 'ai', status: 'fail' })], target).outcome, 'failed')
+})
+
+test('completion: human approval evidence is bound to the current revision', () => {
+  const policy: CompletionPolicy = { requiredChecks: [], requireAiReview: false, requireHumanApproval: true }
+  assert.equal(evaluateCompletion(policy, [evidence({ kind: 'approval', source: 'human', status: 'pass', commitSha: 'old999' })], target).outcome, 'needs_human')
+  const { commitSha: _omit, ...unpinned } = evidence({ kind: 'approval', source: 'human', status: 'pass' })
+  assert.equal(evaluateCompletion(policy, [unpinned], target).outcome, 'needs_human')
+  assert.equal(evaluateCompletion(policy, [evidence({ kind: 'approval', source: 'human', status: 'pass' })], target).outcome, 'passed')
+})
+
+test('completion: non-code tasks (no target commit) may use non-commit evidence only', () => {
+  const policy: CompletionPolicy = { requiredChecks: [], requireAiReview: true, requireHumanApproval: false }
+  const nonCode = { taskId: 't1', commitSha: null }
+  const { commitSha: _omit, ...unpinned } = evidence({ kind: 'review', source: 'ai', status: 'pass' })
+  assert.equal(evaluateCompletion(policy, [unpinned], nonCode).outcome, 'passed')
+  assert.equal(evaluateCompletion(policy, [evidence({ kind: 'review', source: 'ai', status: 'pass', commitSha: 'abc123' })], nonCode).outcome, 'needs_human')
+})
+
 test('completion: nothing configured, or no commit, means unverified', () => {
   const none = evaluateCompletion({ requiredChecks: [], requireAiReview: false, requireHumanApproval: false }, [], target)
   assert.equal(none.outcome, 'needs_human')

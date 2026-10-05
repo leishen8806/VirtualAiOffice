@@ -47,7 +47,7 @@ const EXPECTED: Record<TaskState, Partial<Record<TaskEvent['type'], TaskState>>>
   READY: { START: 'RUNNING', REQUIRE_HUMAN: 'WAITING_HUMAN', GIVE_UP: 'FAILED', CANCEL: 'CANCELLED' },
   RUNNING: { EXECUTION_SUCCEEDED: 'VERIFYING', EXECUTION_FAILED: 'READY', REQUIRE_HUMAN: 'WAITING_HUMAN', CANCEL: 'CANCELLED' },
   VERIFYING: { COMPLETION_DECIDED: 'DONE', REQUIRE_HUMAN: 'WAITING_HUMAN', CANCEL: 'CANCELLED' },
-  WAITING_HUMAN: { HUMAN_RESUMED: 'READY', HUMAN_ACCEPTED: 'DONE', CANCEL: 'CANCELLED' },
+  WAITING_HUMAN: { HUMAN_RESUMED: 'READY', HUMAN_ACCEPTED: 'VERIFYING', CANCEL: 'CANCELLED' },
   BLOCKED: { UNBLOCKED: 'READY', CANCEL: 'CANCELLED' },
   DONE: {},
   FAILED: {},
@@ -85,13 +85,29 @@ test('task: unknown completion goes to a human, never to DONE', () => {
   assert.equal(unknown.outcome, 'needs_human')
   assert.equal(transitionTask('VERIFYING', { type: 'COMPLETION_DECIDED', decision: unknown }), 'WAITING_HUMAN')
   assert.equal(transitionTask('WAITING_HUMAN', resumed), 'READY')
-  assert.equal(transitionTask('WAITING_HUMAN', accepted), 'DONE')
+  assert.equal(transitionTask('WAITING_HUMAN', accepted), 'VERIFYING', 'human acceptance never yields DONE directly')
+})
+
+test('task: human acceptance reaches DONE only through evaluateCompletion', () => {
+  const humanPolicy: CompletionPolicy = { requiredChecks: ['unit_test'], requireAiReview: false, requireHumanApproval: true }
+  const machine = evidence({ kind: 'unit_test', source: 'machine', status: 'pass' })
+  const human = evidence({ kind: 'approval', source: 'human', status: 'pass' })
+  let state = transitionTask('WAITING_HUMAN', accepted)
+  assert.equal(state, 'VERIFYING')
+  // Without the recorded human evidence the decision alone cannot complete the task.
+  const without = evaluateCompletion(humanPolicy, [machine], target)
+  assert.equal(without.outcome, 'needs_human')
+  assert.equal(transitionTask(state, { type: 'COMPLETION_DECIDED', decision: without }), 'WAITING_HUMAN')
+  state = transitionTask('WAITING_HUMAN', accepted)
+  const withHuman = evaluateCompletion(humanPolicy, [machine, human], target)
+  assert.equal(withHuman.outcome, 'passed')
+  assert.equal(transitionTask(state, { type: 'COMPLETION_DECIDED', decision: withHuman }), 'DONE')
 })
 
 test('task: illegal transitions fail explicitly', () => {
   assert.throws(() => transitionTask('PENDING', SAMPLES.START), IllegalTransitionError, 'cannot start with unmet dependencies')
   assert.throws(() => transitionTask('RUNNING', SAMPLES.COMPLETION_DECIDED), IllegalTransitionError, 'cannot be judged before the attempt ends')
-  assert.throws(() => transitionTask('READY', SAMPLES.HUMAN_ACCEPTED), IllegalTransitionError, 'no DONE without verification or a waiting human')
+  assert.throws(() => transitionTask('READY', SAMPLES.HUMAN_ACCEPTED), IllegalTransitionError, 'acceptance needs a waiting human')
   assert.throws(() => transitionTask('DONE', SAMPLES.CANCEL), IllegalTransitionError, 'terminal')
 })
 

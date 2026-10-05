@@ -4,7 +4,7 @@
 // - Allowed status values are generated from the domain constants: the schema cannot drift from
 //   the state machines.
 // - Two invariants are enforced again at the database level (defense in depth): approvals are
-//   decided only by humans, and events are append-only.
+//   decided only by real human members (CHECK + triggers against members.kind), and events are append-only.
 // - Plain SQL strings, no driver import: the same migrations run on node:sqlite or any SQLite driver.
 
 import {
@@ -191,6 +191,20 @@ CREATE TABLE approvals (
   )
 );
 CREATE INDEX approvals_subject ON approvals(subject_kind, subject_id);
+
+-- decided_by_kind is only a claim; check it against the real member record (INSERT and UPDATE).
+CREATE TRIGGER approvals_decider_is_human_insert BEFORE INSERT ON approvals
+WHEN NEW.decision <> 'pending'
+  AND NOT EXISTS (SELECT 1 FROM members WHERE id = NEW.decided_by AND kind = 'human')
+BEGIN SELECT RAISE(ABORT, 'approvals can only be decided by a human member'); END;
+CREATE TRIGGER approvals_decider_is_human_update BEFORE UPDATE ON approvals
+WHEN NEW.decision <> 'pending'
+  AND NOT EXISTS (SELECT 1 FROM members WHERE id = NEW.decided_by AND kind = 'human')
+BEGIN SELECT RAISE(ABORT, 'approvals can only be decided by a human member'); END;
+-- A member who decided approvals cannot later be turned into an agent.
+CREATE TRIGGER members_human_decider_kind_locked BEFORE UPDATE OF kind ON members
+WHEN NEW.kind <> 'human' AND EXISTS (SELECT 1 FROM approvals WHERE decided_by = OLD.id)
+BEGIN SELECT RAISE(ABORT, 'a member who decided approvals must stay human'); END;
 
 CREATE TABLE events (
   seq             INTEGER PRIMARY KEY AUTOINCREMENT,

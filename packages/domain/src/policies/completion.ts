@@ -43,6 +43,8 @@ export interface CompletionDecision {
 /**
  * Fail-closed completion rule (ADR-001, Evidence-based Done):
  * - Machine checks count only if produced by the system (`source: 'machine'`) against the same commit.
+ * - AI review and human approval evidence must also match the target commit exactly; evidence with no
+ *   commit is usable only for non-code tasks (`target.commitSha === null`).
  * - Missing, errored, skipped, stale or unparseable evidence never passes; it needs a human.
  * - A failing check or a rejecting review is repairable (`failed`).
  * - With nothing configured to check, the task is unverified and needs a human.
@@ -56,8 +58,11 @@ export function evaluateCompletion(
   const unknown: string[] = []
   const supporting: Id[] = []
   const mine = evidence.filter((e) => e.taskId === target.taskId)
-  // Evidence produced against another commit is stale.
-  const current = mine.filter((e) => e.commitSha === undefined || e.commitSha === target.commitSha)
+  // Evidence produced against another revision is stale. The match is strict for every kind
+  // (machine, AI review, human approval): for a code-bearing target, unpinned evidence does not
+  // count either, so a review cannot be reused across code revisions. Only a non-code target
+  // (commitSha === null) accepts evidence that is not tied to a commit.
+  const current = mine.filter((e) => (e.commitSha ?? null) === target.commitSha)
 
   const nothingRequired = policy.requiredChecks.length === 0 && !policy.requireAiReview && !policy.requireHumanApproval
   if (nothingRequired) unknown.push('no completion evidence is configured for this task, so it is unverified')
@@ -66,7 +71,7 @@ export function evaluateCompletion(
     unknown.push('machine checks are required but there is no commit to verify')
   } else {
     for (const kind of policy.requiredChecks) {
-      const latest = newest(current.filter((e) => e.kind === kind && e.source === 'machine' && e.commitSha === target.commitSha))
+      const latest = newest(current.filter((e) => e.kind === kind && e.source === 'machine'))
       judge(kind, latest)
     }
   }

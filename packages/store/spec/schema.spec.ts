@@ -82,9 +82,32 @@ test('schema: only humans can decide approvals, even if the domain check is bypa
   )
   insert.run('a-pending', 'pending', null, null, NOW, null)
   insert.run('a-human', 'approved', 'owner', 'human', NOW, NOW)
-  assert.throws(() => insert.run('a-agent', 'approved', 'agent-1', 'agent', NOW, NOW), /CHECK constraint failed/)
-  assert.throws(() => insert.run('a-nobody', 'approved', null, null, NOW, NOW), /CHECK constraint failed/)
-  assert.throws(() => db.exec(`UPDATE approvals SET decision = 'approved', decided_by = 'agent-1', decided_by_kind = 'agent', decided_at = '${NOW}' WHERE id = 'a-pending'`), /CHECK constraint failed/)
+  assert.throws(() => insert.run('a-agent', 'approved', 'agent-1', 'agent', NOW, NOW), /CHECK constraint failed|decided by a human member/)
+  assert.throws(() => insert.run('a-nobody', 'approved', null, null, NOW, NOW), /CHECK constraint failed|decided by a human member/)
+  assert.throws(() => db.exec(`UPDATE approvals SET decision = 'approved', decided_by = 'agent-1', decided_by_kind = 'agent', decided_at = '${NOW}' WHERE id = 'a-pending'`), /CHECK constraint failed|decided by a human member/)
+  db.close()
+})
+
+test('schema: decided_by must be a real human member, not just claim decided_by_kind = human', { skip }, () => {
+  const db = open()
+  seed(db)
+  const insert = db.prepare(
+    `INSERT INTO approvals (id, project_id, gate, subject_kind, subject_id, decision, decided_by, decided_by_kind, requested_at, decided_at) VALUES (?, 'p1', 'requirement', 'requirement', 'r1', ?, ?, ?, ?, ?)`,
+  )
+  // Spoof: an existing agent member, claiming to be human.
+  assert.throws(() => insert.run('a-spoof', 'approved', 'agent-1', 'human', NOW, NOW), /decided by a human member/)
+  // Non-existent member: also rejected.
+  assert.throws(() => insert.run('a-ghost', 'approved', 'ghost', 'human', NOW, NOW), /decided by a human member|FOREIGN KEY/)
+  // UPDATE path: a pending approval cannot be decided by the agent with a spoofed kind.
+  insert.run('a-pending', 'pending', null, null, NOW, null)
+  assert.throws(() => db.exec(`UPDATE approvals SET decision = 'approved', decided_by = 'agent-1', decided_by_kind = 'human', decided_at = '${NOW}' WHERE id = 'a-pending'`), /decided by a human member/)
+  // An already-decided approval cannot be re-pointed at the agent either.
+  insert.run('a-human', 'approved', 'owner', 'human', NOW, NOW)
+  assert.throws(() => db.exec(`UPDATE approvals SET decided_by = 'agent-1' WHERE id = 'a-human'`), /decided by a human member/)
+  // The legitimate human path still works, including via UPDATE.
+  db.exec(`UPDATE approvals SET decision = 'approved', decided_by = 'owner', decided_by_kind = 'human', decided_at = '${NOW}' WHERE id = 'a-pending'`)
+  // A member who has decided approvals cannot be flipped to an agent afterwards.
+  assert.throws(() => db.exec(`UPDATE members SET kind = 'agent' WHERE id = 'owner'`), /must stay human/)
   db.close()
 })
 

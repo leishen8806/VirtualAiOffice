@@ -19,6 +19,7 @@ export type TaskEvent =
   /** A gate, an ambiguity, or an agent asking for help: wait for a person. */
   | { readonly type: 'REQUIRE_HUMAN'; readonly reason: string }
   | { readonly type: 'HUMAN_RESUMED'; readonly approval: Approval }
+  /** A human accepted the work: records the decision and re-enters VERIFYING. It never yields DONE itself. */
   | { readonly type: 'HUMAN_ACCEPTED'; readonly approval: Approval }
   /** Attempts exhausted under the execution policy. */
   | { readonly type: 'GIVE_UP'; readonly reason: string }
@@ -61,9 +62,13 @@ export const taskMachine = createMachine<TaskState, TaskEvent>('Task', TASK_STAT
       assertHumanApproval(e.approval, { gate: ['task_resume', 'task_start'] })
       return 'READY'
     },
+    // Human authority is preserved, but acceptance is not a completion bypass: it only records the
+    // decision and sends the task back through completion evaluation. The orchestration layer records
+    // human Evidence (kind 'approval', source 'human', current commit) and `evaluateCompletion()`
+    // alone decides DONE via COMPLETION_DECIDED.
     HUMAN_ACCEPTED: (e) => {
       assertHumanApproval(e.approval, { gate: 'task_acceptance' })
-      return 'DONE'
+      return 'VERIFYING'
     },
     CANCEL: 'CANCELLED',
   },

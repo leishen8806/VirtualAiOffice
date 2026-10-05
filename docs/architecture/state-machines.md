@@ -53,7 +53,7 @@ stateDiagram-v2
   RUNNING --> WAITING_HUMAN: REQUIRE_HUMAN
   VERIFYING --> WAITING_HUMAN: REQUIRE_HUMAN
   WAITING_HUMAN --> READY: HUMAN_RESUMED（人）
-  WAITING_HUMAN --> DONE: HUMAN_ACCEPTED（人）
+  WAITING_HUMAN --> VERIFYING: HUMAN_ACCEPTED（人；记录决定，不直接完成）
   READY --> FAILED: GIVE_UP（尝试次数耗尽）
   DONE --> [*]
   FAILED --> [*]
@@ -68,7 +68,7 @@ stateDiagram-v2
 | `READY` | `START` → `RUNNING`；`REQUIRE_HUMAN` → `WAITING_HUMAN`；`GIVE_UP` → `FAILED`；`CANCEL` |
 | `RUNNING` | `EXECUTION_SUCCEEDED` → `VERIFYING`；`EXECUTION_FAILED` → `READY`；`REQUIRE_HUMAN`；`CANCEL` |
 | `VERIFYING` | `COMPLETION_DECIDED` → `DONE` / `READY` / `WAITING_HUMAN`；`REQUIRE_HUMAN`；`CANCEL` |
-| `WAITING_HUMAN` | `HUMAN_RESUMED` → `READY`（门 `task_resume` 或 `task_start`）；`HUMAN_ACCEPTED` → `DONE`（门 `task_acceptance`）；`CANCEL` |
+| `WAITING_HUMAN` | `HUMAN_RESUMED` → `READY`（门 `task_resume` 或 `task_start`）；`HUMAN_ACCEPTED` → `VERIFYING`（门 `task_acceptance`；人工验收只记录决定并重新进入完成判定，**不**直接 `DONE`）；`CANCEL` |
 | `BLOCKED` | `UNBLOCKED` → `READY`；`CANCEL` |
 
 ### 完成规则（Evidence-based Done）
@@ -111,6 +111,7 @@ Execution 创建时直接处于 `RUNNING`，其余状态都是终态。执行器
 | 新增 Task `PENDING → CANCELLED` | 需求在任务开始前被撤回时，未开始的任务必须能够终结；其他非终态都允许取消，`PENDING` 不应例外 |
 | `VERIFYING` 的三个出口合并为一个事件 `COMPLETION_DECIDED` | 去向由证据判定的结果决定，而不是由调用方选择，从而保证 `DONE` 只能来自证据 |
 | `HUMAN_RESUMED` / `HUMAN_ACCEPTED` 需要审批记录 | 落实“Agent 不能作为最终审批人” |
+| `HUMAN_ACCEPTED` 的目标由 `DONE` 改为 `VERIFYING`（架构评审修正） | 原设计让人工验收绕过 `evaluateCompletion()` / `CompletionDecision`，违反“`DONE` 只有一条、由证据决定的路径”。现在流程是：`WAITING_HUMAN` → 记录人的决定 → 记录人工 Evidence（`kind: approval`、`source: human`、当前 commit）→ `VERIFYING` → `COMPLETION_DECIDED` → `DONE`。人的权威保留（Agent 不能验收；需要人工批准的任务其 `CompletionPolicy.requireHumanApproval = true`），但不存在未被记录的完成旁路 |
 
 以上调整都不改变 ADR-001 的方向。
 

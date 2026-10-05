@@ -39,7 +39,7 @@ COMMIT                                      ← 任何异常 → ROLLBACK
 | `task_deps` | 任务依赖 | 禁止自依赖 |
 | `executions` | 每次尝试 | `(task_id, attempt)` 唯一；`attempt ≥ 1` |
 | `evidence` | 证据 | `kind`、`source`、`status` 来自领域常量 |
-| `approvals` | 人工审批 | **只有人能做决定**：已决定的审批必须有 `decided_by`，且 `decided_by_kind = 'human'`；待定审批不能有决定人 |
+| `approvals` | 人工审批 | **只有人能做决定**：已决定的审批必须有 `decided_by`，且 `decided_by_kind = 'human'`；待定审批不能有决定人。**数据库触发器**还要求 `decided_by` 指向 `members` 中 `kind = 'human'` 的真实记录（防止 `decided_by_kind` 被独立伪造），覆盖 INSERT 与 UPDATE；已有决定的成员也不能被改成 Agent |
 | `events` | 只追加事件日志；`seq` 为自增主键 | **只追加**：触发器拒绝 `UPDATE` 和 `DELETE`；`id` 唯一 |
 
 ### 为什么比 15 张表少
