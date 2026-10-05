@@ -1,0 +1,14 @@
+{
+  "//": "Solution file: `tsc -b` builds every new package and its specs in dependency order.",
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/domain/tsconfig.spec.json" },
+    { "path": "packages/events" },
+    { "path": "packages/events/tsconfig.spec.json" },
+    { "path": "packages/executors" },
+    { "path": "packages/executors/tsconfig.spec.json" },
+    { "path": "packages/store" },
+    { "path": "packages/store/tsconfig.spec.json" }
+  ]
+}

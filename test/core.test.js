@@ -29,7 +29,8 @@ test('extractJson / parseVerdict / extractVerdict', () => {
   assert.equal(parseVerdict('VERDICT: CHANGES_REQUESTED\nverdict: approve'), 'approve')
   const v = extractVerdict('检查过程\n```js\nconst x = 1\n```\n结论\n```json\n{"done": false, "problems": ["少了导出"], "tasks": [{"id":"f1"}]}\n```')
   assert.deepEqual(v, { done: false, problems: ['少了导出'], tasks: [{ id: 'f1' }] })
-  assert.equal(extractVerdict('看不懂的输出').done, true)
+  // Fail closed (ADR-001): output without a verdict must never count as a pass.
+  assert.equal(extractVerdict('看不懂的输出').done, false)
 })
 
 test('config merges groups and employees by id', () => {
