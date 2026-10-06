@@ -154,11 +154,11 @@
       : st.fake
         ? '<p class="banner-note">现在是彩排模式，员工都是替身。关掉彩排模式（桌面版在菜单「项目」里）再来接入真员工。</p>'
         : st.busy
-          ? '<p class="banner-note">傻妞手上还有活，接入新员工要等这一轮做完。</p>'
+          ? '<p class="banner-note">协调器手上还有活，接入新员工要等这一轮做完。</p>'
           : ''
     const node = st.node?.ok
       ? ''
-      : `<div class="card warn-card"><b>电脑上还没有 Node.js</b><p class="desc">Claude Code 和 Codex 都要用它。装好以后把牛马工作室完全退出再打开。</p>
+      : `<div class="card warn-card"><b>电脑上还没有 Node.js</b><p class="desc">Claude Code 和 Codex 都要用它。装好以后把智序工场完全退出再打开。</p>
          <div class="row">${st.platform === 'win32' ? '<button type="button" class="primary" data-act="login" data-tool="node">一键安装 Node.js</button>' : ''}<a class="btn-link" href="https://nodejs.org/zh-cn/download" target="_blank" rel="noopener">打开 Node.js 下载页 ↗</a></div>${noteHtml('node')}</div>`
     const presets = st.presets.map((p) => `<button type="button" class="preset${pick?.id === p.id ? ' on' : ''}" data-act="pick" data-id="${esc(p.id)}"><b>${esc(p.name)}</b><span>${esc(p.note || '')}</span></button>`).join('')
     dlg.innerHTML = `
@@ -217,7 +217,7 @@
       return render()
     }
     if (act === 'recheck') {
-      const r = await call('/api/setup/recheck', {}, 'groups', '傻妞正在重新点名…')
+      const r = await call('/api/setup/recheck', {}, 'groups', '协调器正在重新点名…')
       if (r?.ok) note('groups', '点完名了。', 'ok')
       return refresh()
     }
@@ -276,7 +276,7 @@
     if (!logs[ev.tool]) return
     if (ev.line) logs[ev.tool].push(ev.line)
     if (ev.done) {
-      note(ev.tool, ev.ok ? '装好了！傻妞已经重新点名。下一步点「登录」。' : ev.error || '安装失败', ev.ok ? 'ok' : 'bad')
+      note(ev.tool, ev.ok ? '装好了！协调器已经重新点名。下一步点「登录」。' : ev.error || '安装失败', ev.ok ? 'ok' : 'bad')
       refresh()
       return
     }

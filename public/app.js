@@ -1,4 +1,4 @@
-/* Wires the page to the 傻妞 server (Server-Sent Events) or, when there is no server, to the demo. */
+/* Wires the page to the 办公室协调器 server (Server-Sent Events) or, when there is no server, to the demo. */
 ;(function () {
   'use strict'
 
@@ -323,7 +323,7 @@
       card.innerHTML = `
         <div class="group-head"><b>${esc(g.name)}</b><span class="gtype">${esc(g.typeLabel || g.type)}</span><span class="gstate ${g.available ? '' : 'off'}">${g.available ? '在岗' : '未到岗'}</span></div>
         <div class="gmodels">${g.available ? esc(uniq.size > 1 ? models.join(' · ') : `模型 ${g.models?.medium || '默认'}`) : esc(g.note || '')}</div>
-        ${g.available && g.tools?.length ? `<div class="gtools" title="要用到时傻妞会自动配好"><em>工具</em>${g.tools.map((t) => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
+        ${g.available && g.tools?.length ? `<div class="gtools" title="要用到时系统会自动配置"><em>工具</em>${g.tools.map((t) => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
         <ul class="staff">${staff.map((e) => empRow(e)).join('')}</ul>`
       box.appendChild(card)
     }
@@ -458,7 +458,7 @@
             ${t.why ? `<div><h3>为什么派给 ${esc(t.who)}</h3><p>${esc(t.why)}</p></div>` : ''}
             ${t.tools?.length ? `<div><h3>配的工具</h3><p>${esc(t.tools.map((x) => TOOL_ZH[x] || x).join('、'))}</p></div>` : ''}
             ${attempts ? `<div><h3>换过人</h3><ul class="log">${attempts}</ul></div>` : ''}
-            <div><h3>傻妞的交代</h3><pre>${esc(t.kind === 'verify' ? '对照主人的需求整体验收（只看不改）' : t.prompt)}</pre></div>
+            <div><h3>协调器任务说明</h3><pre>${esc(t.kind === 'verify' ? '对照主人的需求整体验收（只看不改）' : t.prompt)}</pre></div>
             ${log ? `<div><h3>过程</h3><ul class="log">${log}</ul></div>` : ''}
             ${t.result ? `<div><h3>汇报</h3><pre>${esc(t.result)}</pre></div>` : ''}
           </div>
@@ -498,7 +498,7 @@
     const el = $('#banner')
     if (state.mode === 'demo') {
       el.innerHTML =
-        '这是演示：员工都是演员，不会真的改代码。项目开源在 <a href="https://github.com/Leeeger1/niuma-studio" target="_blank" rel="noopener">GitHub</a>，下载后运行 <code>node bin/niuma.js 你的项目目录</code>，他们就会真的开工。'
+        '这是演示：员工都是演员，不会真的改代码。项目开源在 <a href="https://github.com/leishen8806/VirtualAiOffice" target="_blank" rel="noopener">GitHub</a>，下载后运行 <code>node bin/niuma.js 你的项目目录</code>，他们就会真的开工。'
       el.hidden = false
     } else if (state.mode === 'fake') {
       el.innerHTML = /Electron/.test(navigator.userAgent)

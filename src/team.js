@@ -36,7 +36,7 @@ export class Team {
       if (!g || g.enabled === false || !g.id) continue
       const Cls = TYPES[g.type]
       if (!Cls) {
-        console.warn(`[傻妞] 项目组 ${g.id} 的 type「${g.type}」不认识，可选：${Object.keys(TYPES).join(' / ')}`)
+        console.warn(`[智序工场] 项目组 ${g.id} 的 type「${g.type}」不认识，可选：${Object.keys(TYPES).join(' / ')}`)
         continue
       }
       const w = new Cls(g, ctx)

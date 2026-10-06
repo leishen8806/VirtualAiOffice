@@ -28,7 +28,7 @@
     ['sky.0', '天空（上）'],
     ['sky.1', '天空（中）'],
     ['sky.2', '天空（下）'],
-    ['boss', '傻妞的桌子'],
+    ['boss', '协调器的桌子'],
   ]
   const ROOM_MORE = [
     ['floorLine', '地板缝'],
@@ -42,7 +42,7 @@
     ['rug', '地毯'],
     ['frame', '窗框'],
     ['frameEdge', '窗框描边'],
-    ['bossEdge', '傻妞桌子描边'],
+    ['bossEdge', '协调器桌子描边'],
     ['plant.0', '植物（亮）'],
     ['plant.1', '植物（暗）'],
     ['pot', '花盆'],
@@ -252,7 +252,7 @@
           info.server
             ? `保存到 <code>${esc(info.dir || '~/.niuma/skins')}</code> <button type="button" class="link" data-act="folder">打开文件夹</button> · 也可以直接改里面的文件，回到窗口就生效`
             : '网页演示里皮肤存在这个浏览器里；「导出文件」可以存到电脑上或发给别人。'
-        } · <a href="https://github.com/Leeeger1/niuma-studio/blob/main/docs/skin-guide.md" target="_blank" rel="noopener">皮肤说明</a></p>
+        } · <a href="https://github.com/leishen8806/VirtualAiOffice/blob/main/docs/skin-guide.md" target="_blank" rel="noopener">皮肤说明</a></p>
         ${info.errors?.length ? `<details class="errors"><summary>有 ${info.errors.length} 个皮肤文件读的时候出了问题</summary><ul>${info.errors.map((e) => `<li><code>${esc(e.file)}</code>：${esc(e.message)}</li>`).join('')}</ul></details>` : ''}
       </div>`
   }

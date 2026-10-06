@@ -102,7 +102,7 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
       // 「接入员工」会装软件、开终端、写配置：只给本机用，局域网里的手机不行。
       if (url.pathname.startsWith('/api/setup')) {
         if (!setup) return send(res, 404, 'Not found')
-        if (!fromThisComputer(req)) return json(res, 403, { ok: false, error: '只能在运行牛马工作室的那台电脑上接入员工' })
+        if (!fromThisComputer(req)) return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上接入员工' })
         if (req.method === 'GET' && url.pathname === '/api/setup') {
           try {
             return json(res, 200, await setup.status())
@@ -121,7 +121,7 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
         }
       }
       if (url.pathname.startsWith('/api/skins/') && !fromThisComputer(req)) {
-        return json(res, 403, { ok: false, error: '只能在运行牛马工作室的那台电脑上改皮肤' })
+        return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上改皮肤' })
       }
 
       if (req.method === 'POST') {

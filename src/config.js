@@ -89,7 +89,7 @@ function readJson(file) {
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'))
   } catch (e) {
-    if (e.code !== 'ENOENT') console.warn(`[傻妞] 读取配置 ${file} 失败：${e.message}`)
+    if (e.code !== 'ENOENT') console.warn(`[智序工场] 读取配置 ${file} 失败：${e.message}`)
     return null
   }
 }

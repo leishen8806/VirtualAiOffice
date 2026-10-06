@@ -172,7 +172,7 @@
           else this.vacant.push(seat)
         }
       }
-      this.seats.shaniu = { x: this.cx, top: FRONT, emp: { id: 'shaniu', name: '傻妞' }, boss: true, side: 1 }
+      this.seats.shaniu = { x: this.cx, top: FRONT, emp: { id: 'shaniu', name: '办公室协调器' }, boss: true, side: 1 }
       for (const e of this.roster.employees) {
         this.st[e.id] ||= { status: e.available ? 'idle' : 'offline', available: e.available }
         this.st[e.id].available = e.available
@@ -471,7 +471,7 @@
         this.overlay.appendChild(e)
         return e
       }
-      add('sign', '牛马工作室', this.cx, 14)
+      add('sign', '智序工场', this.cx, 14)
       for (const p of this.pods) add('pod-sign', p.g.name + (p.g.available ? '' : ' · 未到岗'), p.x + p.w / 2, FLOOR_Y - 42, p.g.color)
       for (const [id, s] of Object.entries(this.seats)) add('tag' + (s.boss ? ' tag-boss' : ''), s.emp.name, s.x, s.top + 22, s.boss ? '' : s.pod.g.color)
       for (const v of this.vacant) add('tag tag-vacant', '招人中', v.x, v.top + 22)

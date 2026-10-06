@@ -104,7 +104,7 @@ for (const g of coord.team.groups.values()) {
   lines.push(`  ${g.available ? '✓' : '✗'} ${g.name.padEnd(12)} ${g.available ? g.version || '在岗' : g.note}  ·  ${staff.join('、')}`)
 }
 console.log(`
-  ♥ 牛马工作室 · 总管傻妞${args.fake ? '（彩排模式）' : ''}
+  ♥ 智序工场 · 办公室协调器${args.fake ? '（彩排模式）' : ''}
 
   工作目录  ${workdir}
   自主程度  ${config.autonomy === 'safe' ? '安全模式（命令走白名单）' : '全自动'}${config.git?.autoCommit ? '，每轮自动存档' : ''}

@@ -224,14 +224,14 @@ export class Coordinator extends EventEmitter {
     const hello = hour < 6 ? '主人还没睡呀' : hour < 12 ? '主人早上好' : hour < 18 ? '主人下午好' : '主人晚上好'
     const staff = this.team.employees.filter((e) => this.team.isAvailable(e.id)).length
     const team = on.length
-      ? `${on.map((g) => g.name).join('、')}共 ${staff} 位牛马已就位`
+      ? `${on.map((g) => g.name).join('、')}共 ${staff} 位成员已就位`
       : '可是一个项目组都没到岗（没找到 claude / codex 命令，也没配置 API）。点上面的「接入员工」，一键就能把员工请来'
-    this.addMessage('shaniu', `${hello}！牛马工作室开工啦～ ${team}。工作目录是 \`${this.workdir}\`。需求说得模糊也没关系，剩下的交给傻妞！`)
+    this.addMessage('shaniu', `${hello}！智序工场已启动～ ${team}。工作目录是 \`${this.workdir}\`。需求说得模糊也没关系，接下来由办公室协调器安排！`)
   }
 
   /** 配置改了（比如刚接入了新员工）：按新配置重新组队、点名，不用重启。 */
   async reconfigure(config) {
-    if (this.busy) throw new Error('傻妞手上还有活，等这一轮做完再调整')
+    if (this.busy) throw new Error('协调器手上还有活，等这一轮做完再调整')
     this.config = config
     this.team = new Team(config, { root: this.root, workdir: this.workdir, logDir: config.logDir })
     await this.team.check()
@@ -398,7 +398,7 @@ export class Coordinator extends EventEmitter {
     if (cmd?.type === 'help') return this.addMessage('shaniu', HELP)
     if (cmd?.type === 'reset') {
       this.history = []
-      return this.addMessage('shaniu', '好哒，之前聊的傻妞先放下了，我们重新开始～')
+      return this.addMessage('shaniu', '好哒，之前聊的先放下了，我们重新开始～')
     }
     if (cmd?.type === 'team') return this.addMessage('shaniu', this.teamMessage())
     if (cmd?.type === 'tools') return this.addMessage('shaniu', this.toolsMessage())
@@ -468,7 +468,7 @@ export class Coordinator extends EventEmitter {
       this.tasks.push(...follow)
       this.emitEvent({ type: 'iteration', iteration: this.iteration, problems: verdict.problems })
       for (const t of follow) this.emitTask(t)
-      this.addMessage('shaniu', `验收发现还没完全做好：${verdict.problems.join('；') || '有几处不到位'}。傻妞安排第 ${this.iteration} 轮继续！`)
+      this.addMessage('shaniu', `验收发现还没完全做好：${verdict.problems.join('；') || '有几处不到位'}。办公室协调器安排第 ${this.iteration} 轮继续！`)
     }
 
     const commit = await this.gitFinish(text)
@@ -480,11 +480,11 @@ export class Coordinator extends EventEmitter {
   async makePlan(text) {
     if (!this.brain()) {
       return {
-        reply: '呜，一个在岗的项目组都没有，傻妞一个人可写不了代码。请先安装并登录 Claude Code（`npm i -g @anthropic-ai/claude-code`）或 Codex（`npm i -g @openai/codex`），或者在配置里接一个 API 项目组，然后重启我。',
+        reply: '呜，一个在岗的项目组都没有，办公室协调器一个人可写不了代码。请先安装并登录 Claude Code（`npm i -g @anthropic-ai/claude-code`）或 Codex（`npm i -g @openai/codex`），或者在配置里接一个 API 项目组，然后重启我。',
         tasks: [],
       }
     }
-    this.setAgent('shaniu', { status: 'thinking', text: '让傻妞想想怎么安排…' })
+    this.setAgent('shaniu', { status: 'thinking', text: '让办公室协调器想想怎么安排…' })
     try {
       const context = await projectContext(this.workdir)
       const prompt = plannerPrompt({ userText: text, team: this.team, stats: this.stats, context, history: this.history })
@@ -494,7 +494,7 @@ export class Coordinator extends EventEmitter {
         raw = await this.think(`${prompt}\n\n（上一次你没有按格式输出。这次只输出那个 JSON 对象，别的什么都不要写。）`, `plan-r${this.round + 1}-retry`)
         obj = extractJson(raw)
       }
-      if (!obj || typeof obj !== 'object') return { reply: truncate(raw.trim(), 2000) || '唔……傻妞没想明白，主人能再说具体一点吗？', tasks: [] }
+      if (!obj || typeof obj !== 'object') return { reply: truncate(raw.trim(), 2000) || '唔……办公室协调器暂时无法判断，主人能再说具体一点吗？', tasks: [] }
       const meeting = obj.meeting && typeof obj.meeting === 'object' ? obj.meeting : null
       return { reply: String(obj.reply || '明白，这就安排！'), tasks: Array.isArray(obj.tasks) ? obj.tasks : [], meeting }
     } finally {
@@ -660,7 +660,7 @@ export class Coordinator extends EventEmitter {
     })
     this.emitTask(t)
     this.setAgent(prev.agent, { status: 'error', text: truncate(prev.error, 60), taskId: null })
-    this.addMessage('shaniu', `${prev.who}这次没搞定（${truncate(prev.error, 60)}），傻妞换${emp.name}接手！`)
+    this.addMessage('shaniu', `${prev.who}这次没搞定（${truncate(prev.error, 60)}），办公室协调器已安排${emp.name}接手！`)
     return true
   }
 
@@ -715,7 +715,7 @@ export class Coordinator extends EventEmitter {
     this.tasks.splice(this.tasks.indexOf(review) + 1, 0, fix, recheck)
     this.emitTask(fix)
     this.emitTask(recheck)
-    this.addMessage('shaniu', `${review.who}挑出了几处问题，傻妞让${fix.who}返工一下，改完再复审～`)
+    this.addMessage('shaniu', `${review.who}挑出了几处问题，系统让${fix.who}返工一下，改完再复审～`)
   }
 
   // ---- project meeting -------------------------------------------------------------
@@ -801,7 +801,7 @@ export class Coordinator extends EventEmitter {
       'shaniu',
       result?.minutes
         ? `会开完啦！${chair.name}拍板了方案${this.meeting.file ? `，纪要存在 \`${this.meeting.file}\`` : ''}：\n\n${truncate(result.minutes, 2500)}`
-        : '会上没讨论出结果，傻妞按原计划安排。',
+        : '会上没讨论出结果，协调器按原计划安排。',
     )
     return result
   }
@@ -845,7 +845,7 @@ export class Coordinator extends EventEmitter {
   async verify(base) {
     const who = this.verifier()
     if (!who) {
-      this.addMessage('shaniu', '没有能做验收的员工，傻妞不敢算这一轮通过，请主人自己检查一下改动～')
+      this.addMessage('shaniu', '没有能做验收的员工，协调器不敢算这一轮通过，请主人自己检查一下改动～')
       return { done: false, needsHuman: true, problems: ['没有可用的验收员'], tasks: [] }
     }
     const emp = this.team.employee(who)
@@ -887,7 +887,7 @@ export class Coordinator extends EventEmitter {
       Object.assign(t, { status: 'failed', error: '验收没有给出明确结论（找不到结果 JSON）', verdict: null })
       this.emitTask(t)
       this.setAgent(who, { status: 'error', text: '验收结论看不懂', taskId: null })
-      this.addMessage('shaniu', '验收员没有给出明确的结论，傻妞不敢算它通过。这一轮先停在这里，请主人检查改动后再决定～')
+      this.addMessage('shaniu', '验收员没有给出明确的结论，协调器不敢算它通过。这一轮先停在这里，请主人检查改动后再决定～')
       return { ...v, needsHuman: true }
     }
     t.verdict = v.done ? 'approve' : 'changes'
@@ -903,10 +903,10 @@ export class Coordinator extends EventEmitter {
     try {
       if (!(await git.isRepo(this.workdir))) {
         if (!this.config.git.autoInit || !(await git.initRepo(this.workdir))) return null
-        await git.commitAll(this.workdir, '傻妞：初始化仓库（开工前的原始文件）')
+        await git.commitAll(this.workdir, '智序工场：初始化仓库（开工前的原始文件）')
         this.addMessage('system', '已把工作目录初始化成 Git 仓库并存了一档：每一轮都会自动存档，说「/撤销」就能撤回。')
       } else if (await git.isDirty(this.workdir)) {
-        const h = await git.commitAll(this.workdir, '傻妞：开工前存档（主人未提交的改动）')
+        const h = await git.commitAll(this.workdir, '智序工场：开工前存档（主人未提交的改动）')
         if (h) this.addMessage('system', `开工前先把你没提交的改动存了一档：${h.slice(0, 7)}`)
       }
       return await git.head(this.workdir)
@@ -920,7 +920,7 @@ export class Coordinator extends EventEmitter {
     try {
       if (!(await git.isRepo(this.workdir))) return null
       const lines = this.tasks.filter((t) => t.kind !== 'verify').map((t) => `- [${STATUS_ZH[t.status] || t.status}] ${t.title}（${t.who}）`)
-      const h = await git.commitAll(this.workdir, `傻妞${this.stopFlag ? '（中途叫停）' : ''}：${truncate(text.replace(/\s+/g, ' '), 60)}\n\n${lines.join('\n')}`)
+      const h = await git.commitAll(this.workdir, `智序工场${this.stopFlag ? '（中途叫停）' : ''}：${truncate(text.replace(/\s+/g, ' '), 60)}\n\n${lines.join('\n')}`)
       if (h) {
         this.lastCommit = h
         this.emitEvent({ type: 'commit', commit: h })
@@ -932,7 +932,7 @@ export class Coordinator extends EventEmitter {
   }
 
   async undo() {
-    if (!this.lastCommit) return this.addMessage('shaniu', '没有可以撤销的存档哦（傻妞只撤销自己这次启动后做的改动）。')
+    if (!this.lastCommit) return this.addMessage('shaniu', '没有可以撤销的存档哦（协调器只撤销自己这次启动后做的改动）。')
     const r = await git.revertCommit(this.workdir, this.lastCommit)
     if (r.ok) {
       this.addMessage('shaniu', `已撤回上一轮的改动（${this.lastCommit.slice(0, 7)}），撤销本身也存了档：${r.hash.slice(0, 7)}。`)
@@ -944,7 +944,7 @@ export class Coordinator extends EventEmitter {
   // ---- hiring --------------------------------------------------------------------------
 
   async hire(description) {
-    if (!this.brain()) return this.addMessage('shaniu', '现在没有能帮傻妞写岗位说明的项目组。')
+    if (!this.brain()) return this.addMessage('shaniu', '现在没有能帮协调器写岗位说明的项目组。')
     this.setAgent('shaniu', { status: 'thinking', text: '写招聘启事…' })
     try {
       const raw = await this.think(hirePrompt({ description, team: this.team }), 'hire')
@@ -990,7 +990,7 @@ export class Coordinator extends EventEmitter {
       if (this.toolsIntroduced.has(x.id)) continue
       this.toolsIntroduced.add(x.id)
       const download = x.source === 'builtin' && x.id === 'browser' ? '（第一次用会自动下载插件，稍等一小会儿）' : ''
-      this.addMessage('shaniu', `这个活要用${x.name}，傻妞给${t.who}配好啦～${download}`)
+      this.addMessage('shaniu', `这个活要用${x.name}，系统已为${t.who}配置所需工具～${download}`)
     }
   }
 
@@ -1003,7 +1003,7 @@ export class Coordinator extends EventEmitter {
       const from = x.source === 'installed' ? '（主人自己装的）' : x.source === 'config' ? '（配置里加的）' : ''
       return `- **${x.name}**${from}：${x.description}\n  能用的组：${who.length ? who.join('、') : '暂时没有'}`
     })
-    return `工具柜里现在有这些插件。派活时需要哪个，傻妞会自动给员工配好，第一次用会自动下载：\n${lines.join('\n')}\n\n想加别的插件：装进 Claude Code（\`claude mcp add …\`）或 Codex，傻妞重启后会自动发现；也可以写进配置文件的 \`tools\` 里。`
+    return `工具柜里现在有这些插件。派活时需要哪个，系统会自动给员工配好，第一次用会自动下载：\n${lines.join('\n')}\n\n想加别的插件：装进 Claude Code（\`claude mcp add …\`）或 Codex，重启智序工场后会自动发现；也可以写进配置文件的 \`tools\` 里。`
   }
 
   teamMessage() {

@@ -1,4 +1,4 @@
-/* Pixel office: 傻妞 runs a studio whose project groups (one per model) sit in team pods.
+/* Pixel office: 办公室协调器 runs a studio whose project groups (one per model) sit in team pods.
    Everything is procedural fillRect art on a small canvas; names and speech are HTML overlays. */
 ;(function () {
   'use strict'
@@ -185,7 +185,7 @@
           else this.vacant.push(seat)
         }
       }
-      this.seats.shaniu = { x: this.cx, top: FRONT, emp: { id: 'shaniu', name: '傻妞' }, look: SHANIU, boss: true }
+      this.seats.shaniu = { x: this.cx, top: FRONT, emp: { id: 'shaniu', name: '办公室协调器' }, look: SHANIU, boss: true }
       this.table = { x: this.cx, y: BACK + 6 }
       for (const e of this.roster.employees) {
         this.st[e.id] ||= { status: e.available ? 'idle' : 'offline', available: e.available, doneAt: -99 }
@@ -216,7 +216,7 @@
         this.overlay.appendChild(el)
         return el
       }
-      add('sign', '牛马工作室', this.cx, 20)
+      add('sign', '智序工场', this.cx, 20)
       for (const p of this.pods) add('pod-sign', p.g.name + (p.g.available ? '' : ' · 未到岗'), p.x + p.w / 2, 70, p.g.color)
       for (const [id, s] of Object.entries(this.seats)) add('tag' + (s.boss ? ' tag-boss' : ''), s.emp.name, s.x, s.top + 16, s.boss ? '' : s.pod.g.color)
       for (const v of this.vacant) add('tag tag-vacant', '招人中', v.x, v.top + 16)

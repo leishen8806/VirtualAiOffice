@@ -45,7 +45,7 @@ export async function isDirty(dir) {
 
 async function identity(dir) {
   const email = (await git(dir, 'config', 'user.email')).out
-  return email ? [] : ['-c', 'user.name=傻妞', '-c', 'user.email=shaniu@localhost']
+  return email ? [] : ['-c', 'user.name=智序工场', '-c', 'user.email=office-coordinator@localhost']
 }
 
 /** Stage everything (minus the excludes) and commit. Returns the new commit hash, or null if nothing changed. */
@@ -60,7 +60,7 @@ export async function commitAll(dir, message) {
 
 /** Undo a commit with a new "revert" commit (history is kept, nothing is lost). */
 export async function revertCommit(dir, hash) {
-  if (await isDirty(dir)) await commitAll(dir, '傻妞：撤销前存档')
+  if (await isDirty(dir)) await commitAll(dir, '智序工场：撤销前存档')
   const r = await git(dir, ...(await identity(dir)), 'revert', '--no-edit', hash)
   if (r.code === 0) return { ok: true, hash: await head(dir) }
   await git(dir, 'revert', '--abort')

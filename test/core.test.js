@@ -232,7 +232,7 @@ test('when a group fails, its tasks are handed to someone else', async (t) => {
   assert.equal(t1.attempts[0].agent, 'architect')
   assert.notEqual(c.team.employee(t1.agent).group, 'claude')
   assert.equal(t1.status, 'done')
-  assert.ok(c.messages.some((m) => /换.+接手/.test(m.text)))
+  assert.ok(c.messages.some((m) => /安排.+接手|换.+接手/.test(m.text)))
 })
 
 test('greetings need no tasks; /团队 lists staff; /招人 hires a new employee', async (t) => {

@@ -178,7 +178,7 @@
     o.colors = { ...skin.colors }
     if (skin.base !== 'pixel') o.room = { ...skin.room }
     if (images && Object.keys(images).length) o.images = { ...images }
-    return `// 牛马工作室皮肤「${skin.name}」。可以直接改这个文件，说明见 docs/skin-guide.md\n${JSON.stringify(o, null, 2)}\n`
+    return `// 智序工场皮肤「${skin.name}」。可以直接改这个文件，说明见 docs/skin-guide.md\n${JSON.stringify(o, null, 2)}\n`
   }
 
   // ---- 一个主色配一整套 -----------------------------------------------------------------
