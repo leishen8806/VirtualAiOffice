@@ -1,4 +1,4 @@
-/* Wires the page to the 办公室协调器 server (Server-Sent Events) or, when there is no server, to the demo. */
+/* Wires the page to the Helix orchestrator server (Server-Sent Events) or, when there is no server, to the demo. */
 ;(function () {
   'use strict'
 
@@ -17,6 +17,104 @@
   const openTasks = new Set()
   const faces = new Map()
   let transport = null
+
+  function statusToV2(s) {
+    return { idle: 'IDLE', thinking: 'THINKING', working: 'WORKING', meeting: 'REVIEWING', walking: 'WORKING', done: 'DONE', error: 'BLOCKED', offline: 'OFFLINE' }[s] || 'IDLE'
+  }
+  function deriveCoreRuntimeFromState() {
+    const Shell = globalThis.VAOCoreShell
+    const mode = state.mode === 'fake' ? 'fake' : state.mode === 'demo' ? 'demo' : 'live'
+    const groups = state.roster.groups || []
+    const employees = state.roster.employees || []
+    const runtimeStatus = state.mode === 'fake' ? 'fake' : state.mode === 'demo' ? 'demo' : (transport && transport.status === 'live') ? 'live' : 'connecting'
+    const workspaceName = groups.length ? '智序工场 · 工作区' : '当前工作区'
+    const projectName = state.workdir ? (state.workdir.split(/[\\/]/).filter(Boolean).pop() || state.workdir) : '未指定项目'
+
+    const members = { human: [], ai: [] }
+    const seatStates = { helix: statusToV2('thinking') }
+    const seatKinds = { helix: 'system' }
+    const seatMembers = { helix: 'Helix' }
+    const seatModels = {}
+    for (const e of employees) {
+      const role = e.group || 'architect'
+      // Honor existing runtime semantics: employees are AI unless explicitly .human=true or role is product/qa/reviewer.
+      const humanFlag = e.human || e.kind === 'human' || e.isHuman || ['product', 'qa', 'reviewer', 'docs'].includes(role) && (e.human === true)
+      const aiFlag = !humanFlag
+      const member = { id: e.id, name: e.name || e.id, role, model: e.model || '', online: e.available !== false && statusToV2(state.agents[e.id]?.status || 'idle') !== 'OFFLINE' }
+      if (aiFlag) members.ai.push(member)
+      else members.human.push(member)
+      seatKinds[role] = seatKinds[role] || (aiFlag ? 'ai' : 'human')
+      seatMembers[role] = seatMembers[role] || e.name || e.id
+      if (e.model) seatModels[role] = seatModels[role] || e.model
+      const st = state.agents[e.id]?.status
+      if (st) seatStates[role] = seatStates[role] || statusToV2(st)
+    }
+    const waitingHuman = []
+    if (state.tasks?.length) for (const t of state.tasks) {
+      if (t.kind === 'human' || t.status === 'waiting' || t.waiting === true) {
+        const role = t.role || t.whoId || ''
+        const member = t.member || (role && seatMembers[role])
+        waitingHuman.push({ id: `wait-${t.id || String(Math.random()).slice(2, 8)}`, role, member, title: t.title || '等待人工确认', sinceMs: t.sinceMs || Date.now(), required: !!t.required })
+      }
+    }
+    const runtime = {
+      workspace: { id: '', name: workspaceName, path: state.workdir || '' },
+      project: { id: '', name: projectName },
+      members,
+      runtimeStatus,
+      waitingHuman,
+    }
+    const conversation = []
+    if (state.messages?.length) {
+      for (const m of state.messages.slice(-30)) {
+        const text = m.text || m.content || ''
+        if (!text) continue
+        if (m.from === 'shaniu' || m.role === 'orchestrator' || m.from === 'orchestrator' || m.from === 'coordinator' || m.fromId === 'shaniu') {
+          conversation.push({ who: 'Helix', side: 'helix', text, at: m.at })
+        } else if (m.from === 'user' || m.role === 'user' || !m.from) {
+          conversation.push({ who: '你', side: 'user', text, at: m.at })
+        } else {
+          conversation.push({ who: m.from || '员工', side: 'helix', text: `[${m.from || '员工'}] ${text}`, at: m.at })
+        }
+      }
+    }
+    const decisions = []
+    if (state.meeting?.items?.length) {
+      for (const it of state.meeting.items.slice(0, 5)) decisions.push((it.title || it.text || String(it)).slice(0, 80))
+    } else if (state.lastCommit) decisions.push(`最近存档：${String(state.lastCommit).slice(0, 12)}`)
+    const recent = []
+    for (const t of (state.tasks || []).slice(-8)) {
+      if (t.at || t.statusAt) recent.push({ at: t.at || t.statusAt, text: `${t.id || ''} ${t.title || ''} · ${AGENT_STATUS[t.status] || t.status || ''}`.trim() })
+    }
+    const helix = {
+      state: seatStates.helix || (runtimeStatus === 'live' ? 'THINKING' : 'IDLE'),
+      header: { label: 'HELIX', zh: '系统编排中枢', en: 'System Orchestrator' },
+      conversation,
+      summary: state.meeting?.summary || (state.busy ? '正在处理本轮任务，等待员工响应…' : (runtimeStatus === 'connecting' ? '连接中。说点什么开始工作。' : '待机中，准备好接收新任务。')),
+      decisions,
+      waiting: waitingHuman,
+      recent: recent.sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 10),
+    }
+    const v2Tasks = []
+    if (state.tasks?.length) for (const t of state.tasks) {
+      const v2 = {
+        id: t.id,
+        title: t.title || t.text || '',
+        status: ({ running: 'running', pending: 'pending', done: 'done', failed: 'failed', skipped: 'offline', cancelled: 'offline' }[t.status] || 'pending'),
+        difficulty: DIFF[t.difficulty] || t.difficulty || '中',
+        kind: KIND[t.kind] || t.kind || '开发',
+        role: t.role || t.agentId || emp(t.agentId)?.group || '',
+        who: t.who || (t.agentId ? emp(t.agentId)?.name : ''),
+        whoId: t.agentId || t.empId,
+        evidence: [],
+        deps: t.deps || [],
+      }
+      if (t.sinceMs || t.waiting === true || t.kind === 'human') { v2.sinceMs = t.sinceMs || Date.now(); v2.required = !!t.required }
+      v2Tasks.push(v2)
+    }
+    const seatSnapshot = { seatStates, seatKinds, seatMembers, seatModels, tasks: v2Tasks, edges: [] }
+    return { mode, runtime, helix, snapshot: seatSnapshot }
+  }
 
   // ---- skins -------------------------------------------------------------------
   // 二次元皮肤用 anime.js（SVG），像素复古用 office.js（canvas）；两者接口一样，可以随时切换。
@@ -105,6 +203,8 @@
 
   function restoreClassicLayoutScaffold() {
     // If destroyed by Core bootstrap, restore the .app skeleton nodes (empty) used by legacy renderers.
+    // Classic themes (anime/office/pixel) keep their art; visible copy updated to Helix branding per Fix 5.
+    // Compat ids (shaniu, niuma*) internally preserved.
     if (document.querySelector('.app')) return
     const app = document.createElement('div')
     app.className = 'app'
@@ -112,7 +212,7 @@
       <header class="top">
         <div class="brand">
           <span class="wordmark">智序工场</span>
-          <span class="wordmark-sub">Virtual AI Office · 办公室协调器</span>
+          <span class="wordmark-sub">Virtual AI Office · Helix</span>
           <span class="tagline">人类与 AI，共同把事情做完</span>
         </div>
         <button type="button" id="open-setup" class="btn-setup" aria-label="接入员工或模型配置">接入员工</button>
@@ -126,23 +226,23 @@
         <section class="stage-wrap" aria-label="智序工场 · 虚拟办公室">
           <div class="stage">
             <div class="scene" id="scene">
-              <canvas id="office" width="404" height="216" role="img" aria-label="智序工场：办公室协调器坐在中间，各项目组的员工坐在两边的工位上"></canvas>
+              <canvas id="office" width="404" height="216" role="img" aria-label="智序工场：Helix 位于中央，各项目组的员工坐在两边的工位上"></canvas>
               <div class="overlay" id="overlay" aria-hidden="true"></div>
             </div>
           </div>
           <div class="team" id="team" aria-label="项目组和员工"></div>
         </section>
-        <aside class="chat" aria-label="与办公室协调器对话">
+        <aside class="chat" aria-label="与 Helix 对话">
           <div class="panel-head">
-            <h2>和办公室协调器说</h2>
+            <h2>和 Helix 说</h2>
             <button type="button" id="stop" class="btn-stop" hidden>全部停下</button>
           </div>
           <div id="banner" class="banner" hidden></div>
           <div id="messages" class="messages" aria-live="polite"></div>
           <div class="suggest" id="suggest"></div>
           <form id="composer" class="composer">
-            <label for="input" class="sr-only">给办公室协调器的消息</label>
-            <textarea id="input" rows="2" placeholder="随便说，比如：帮我做一个记账小网站"></textarea>
+            <label for="input" class="sr-only">给 Helix 的消息</label>
+            <textarea id="input" rows="2" placeholder="跟 Helix 说说要做什么，说的模糊也没关系：他会开会、拆任务、派给合适的员工，做完自己验收"></textarea>
             <button type="submit" id="send" class="btn-send">发送</button>
           </form>
           <p class="hint">Enter 发送 · Shift+Enter 换行 · <code>@员工</code> 点名 · <code>/招人</code> <code>/工具</code> <code>/团队</code> <code>/撤销</code> <code>/stop</code></p>
@@ -155,7 +255,7 @@
           </div>
           <div id="meeting" class="meeting-card" hidden></div>
           <ol id="tasks" class="tasks"></ol>
-          <p id="tasks-empty" class="empty">还没有任务。跟办公室协调器说说要做什么，说得模糊也没关系：她会开会、拆任务、派给合适的员工，做完自己验收。</p>
+          <p id="tasks-empty" class="empty">还没有任务。跟 Helix 说说要做什么，说得模糊也没关系：他会开会、拆任务、派给合适的员工，做完自己验收。</p>
         </section>
       </main>
     `
@@ -189,6 +289,12 @@
     renderSkins()
   }
 
+  function refreshCoreHandle() {
+    if (!coreHandle) return
+    const derived = deriveCoreRuntimeFromState()
+    coreHandle.update({ runtime: derived.runtime, helix: derived.helix, snapshot: derived.snapshot })
+  }
+
   function makeOffice(def) {
     const root = document.documentElement
     destroyCoreShell()
@@ -201,20 +307,26 @@
       setVars = []
       const Shell = globalThis.VAOCoreShell
       if (!Shell) return null
-      const snapshot = {
-        tasks: state.tasks,
-        seatStates: Object.fromEntries(Object.entries(state.agents).map(([k, v]) => {
-          const role = state.roster?.employees?.find((e) => e.id === k)?.group || k
-          const st = v.status === 'idle' ? 'IDLE' : v.status === 'thinking' ? 'THINKING' : v.status === 'working' ? 'WORKING' : v.status === 'meeting' ? 'REVIEWING' : v.status === 'error' ? 'BLOCKED' : 'IDLE'
-          return [role, st]
-        })),
-      }
+      const derived = deriveCoreRuntimeFromState()
       coreHandle = Shell.bootstrap({
-        snapshot,
+        mode: derived.mode,
+        runtime: derived.runtime,
+        helix: derived.helix,
+        snapshot: derived.snapshot,
         onThemeChange: (id) => setSkin(id),
         onConversationSend: (t) => send(t),
       })
-      return { destroy: () => destroyCoreShell(), setRoster: () => {}, setAgent: () => {}, setTasks: () => {}, meeting: () => {}, say: () => {}, dispatch: () => {}, activity: () => {}, portrait: () => '' }
+      return {
+        destroy: () => destroyCoreShell(),
+        setRoster() { refreshCoreHandle() },
+        setAgent() { refreshCoreHandle() },
+        setTasks() { refreshCoreHandle() },
+        meeting() { refreshCoreHandle() },
+        say() { refreshCoreHandle() },
+        dispatch() { refreshCoreHandle() },
+        activity() { refreshCoreHandle() },
+        portrait: () => '',
+      }
     }
     // Legacy classic branch: anime.js (SVG) or office.js (canvas pixel).
     root.dataset.skin = def.base

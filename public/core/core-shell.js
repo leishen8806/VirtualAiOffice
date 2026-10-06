@@ -33,9 +33,9 @@
   ]
   const CLASSIC_IDS = CLASSIC_SKIN_ORDER.map(([id]) => id)
 
-  const DEFAULT_RUNTIME = {
-    workspace: { id: 'ws-demo', name: '智序工场', path: 'e:\\VirtualAIOffice\\repo' },
-    project: { id: 'visual-v2-a', name: 'Visual V2-A · Core Shell' },
+  const DEMO_RUNTIME = Object.freeze({
+    workspace: { id: 'ws-demo', name: '智序工场 · 演示数据', path: 'e:\\VirtualAIOffice\\repo' },
+    project: { id: 'visual-v2-a-demo', name: 'Visual V2-A Demo（演示）' },
     members: {
       human: [
         { id: 'm-product', name: '李产品', role: 'product', online: true },
@@ -43,38 +43,66 @@
         { id: 'm-reviewer', name: '张审查', role: 'reviewer', online: false },
       ],
       ai: [
-        { id: 'a-architect', name: 'Codex', model: 'o3-mini', role: 'architect', online: true },
-        { id: 'a-frontend', name: 'Claude 4.5 Sonnet', model: 'Claude', role: 'frontend', online: true },
-        { id: 'a-backend', name: 'DeepSeek V3', model: 'DeepSeek', role: 'backend', online: true },
-        { id: 'a-docs', name: 'Gemini 2.5 Flash', model: 'Gemini', role: 'docs', online: false },
+        { id: 'a-architect', name: 'Codex Demo', model: 'demo-model', role: 'architect', online: true },
+        { id: 'a-frontend', name: 'Claude Demo', model: 'demo-model', role: 'frontend', online: true },
+        { id: 'a-backend', name: 'DeepSeek Demo', model: 'demo-model', role: 'backend', online: true },
+        { id: 'a-docs', name: 'Gemini Demo', model: 'demo-model', role: 'docs', online: false },
       ],
     },
-    runtimeStatus: 'live', // live / fake / demo / off
+    runtimeStatus: 'demo',
     waitingHuman: [
-      { id: 'w-1', role: 'product', member: '李产品', title: '确认 §5.1 颜色 token 规格对比表', sinceMs: Date.now() - 14 * 60 * 1000, required: true },
+      { id: 'w-demo-1', role: 'product', member: '李产品', title: '【DEMO】确认 §5.1 颜色 token 规格对比表', sinceMs: Date.now() - 14 * 60 * 1000, required: true },
     ],
+  })
+
+  const HELIX_DEMO = Object.freeze({
+    state: 'THINKING',
+    header: { label: 'HELIX', zh: '系统编排中枢（演示）', en: 'System Orchestrator · DEMO' },
+    conversation: [
+      { who: 'Helix', side: 'helix', text: '【DEMO 演示数据】已读取项目 Visual V2-A 基线 demo fixtures。' },
+      { who: '你', side: 'user', text: '【DEMO】把 Core 主题设为默认，并在选择器里把 5 个老皮肤归类到「经典主题」。' },
+      { who: 'Helix', side: 'helix', text: '【DEMO 演示数据】已登记：skin-format.js + src/skins.js 加入 id=core。' },
+    ],
+    summary: '【DEMO 演示数据】V2-A 第一阶段：Core Shell / Helix / Office Canvas 渲染器 demo fixtures，仅 fake/demo 模式显示。',
+    decisions: [
+      '【DEMO】主题 id=core，显示名「智序·Core」',
+      '【DEMO】Helix 计入官方角色数 → 恰好 8',
+      '【DEMO】WAITING_HUMAN 琥珀色环 + hand glyph',
+    ],
+    waiting: DEMO_RUNTIME.waitingHuman,
+    recent: [
+      { at: Date.now() - 20 * 60000, text: '【DEMO】最近活动 1' },
+      { at: Date.now() - 10 * 60000, text: '【DEMO】最近活动 2' },
+      { at: Date.now() - 2 * 60000, text: '【DEMO】最近活动 3' },
+    ],
+  })
+
+  function runtimeMode(options = {}) {
+    const raw = String(options.mode || options.runtime?.runtimeStatus || 'live').toLowerCase()
+    if (raw === 'fake' || raw === 'demo') return 'demo'
+    return 'live'
   }
 
-  const HELIX_DEMO = {
-    state: 'THINKING',
-    header: { label: 'HELIX', zh: '系统编排中枢', en: 'System Orchestrator' },
-    conversation: [
-      { who: 'Helix', side: 'helix', text: '已读取项目 Visual V2-A 基线：main PR#8 合并完成。正在把 8 个座位的视觉原语映射到 Core 画布。' },
-      { who: '你', side: 'user', text: '把 Core 主题设为默认，并在选择器里把 5 个老皮肤归类到「经典主题」。' },
-      { who: 'Helix', side: 'helix', text: '已登记：skin-format.js + src/skins.js 加入 id=core。正在写入 index.html 5 个脚本的加载顺序。' },
-    ],
-    summary: 'V2-A 第一阶段：Core Shell / Helix / Office Canvas 渲染器已就绪，正在准备验收清单 16 项。',
-    decisions: [
-      '主题 id=core，显示名「智序·Core」（不与 legacy 皮肤名冲突）',
-      'Helix 计入官方角色数 → 恰好 8（不加第 9 GenericSeat）',
-      'WAITING_HUMAN 琥珀色环 + hand glyph，不虚构 live 数据',
-    ],
-    waiting: DEFAULT_RUNTIME.waitingHuman,
-    recent: [
-      { at: Date.now() - 20 * 60000, text: 'PR #8 docs/visual-identity-v2 合并到 main' },
-      { at: Date.now() - 10 * 60000, text: '建立分支 visual-v2/core-shell-a 并写入 3 个 Core 原语文件' },
-      { at: Date.now() - 2 * 60000, text: '写入 office 画布 + shell 壳层渲染器' },
-    ],
+  function buildEmptyRuntime() {
+    return {
+      workspace: { id: '', name: '当前工作区', path: '' },
+      project: { id: '', name: '未指定项目' },
+      members: { human: [], ai: [] },
+      runtimeStatus: 'connecting',
+      waitingHuman: [],
+    }
+  }
+
+  function buildEmptyHelix() {
+    return {
+      state: 'IDLE',
+      header: { label: 'HELIX', zh: '系统编排中枢', en: 'System Orchestrator' },
+      conversation: [],
+      summary: '暂无摘要。跟 Helix 说点什么开始。',
+      decisions: [],
+      waiting: [],
+      recent: [],
+    }
   }
 
   function el(tag, attrs = {}, html = '') {
@@ -199,8 +227,11 @@
     return wrap
   }
 
-  function renderGlobalBar({ runtime, currentThemeId, onThemeChange, onToggleHelix }) {
+  function renderGlobalBar({ runtime, currentThemeId, onThemeChange, onToggleHelix, mode }) {
     const bar = el('header', { id: 'global-bar' })
+    const demoBanner = mode === 'demo'
+      ? el('span', { style: { display:'inline-flex',alignItems:'center',gap:'5px',padding:'2px 8px',borderRadius:'999px',fontSize:'11px',fontWeight:'700',border:'1px solid var(--thinking)',background:'color-mix(in srgb, var(--thinking) 16%, transparent)',color:'var(--thinking)',letterSpacing:'.08em' } }, '● 演示数据 · DEMO')
+      : null
     const brand = el('div', { class: 'brand-block' }, `
       <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--orchestrator) 55%,var(--accent)),var(--orchestrator));display:grid;place-items:center;color:#fff;font-weight:900;">序</div>
       <div>
@@ -208,9 +239,10 @@
         <div class="wordmark-sub">Virtual AI Office</div>
       </div>
     `)
-    const wsChip = el('span', { class: 'workspace-chip pill-runtime', title: String(runtime.workspace.path || '') }, `${esc(runtime.workspace.name)} · ${esc(runtime.project.name)}`)
-    const runtimePill = el('span', { class: `pill-runtime ${runtime.runtimeStatus}` },
-      runtime.runtimeStatus === 'live' ? '● 已连接' : runtime.runtimeStatus === 'fake' ? '● 彩排模式' : runtime.runtimeStatus === 'demo' ? '● 演示' : '● 断开')
+    const wsChip = el('span', { class: 'workspace-chip pill-runtime', title: String(runtime.workspace.path || '') }, `${esc(runtime.workspace.name || '当前工作区')} · ${esc(runtime.project.name || '未指定项目')}`)
+    const status = ['live','fake','demo','off','connecting'].includes(runtime.runtimeStatus) ? runtime.runtimeStatus : 'connecting'
+    const statusText = status === 'live' ? '● 已连接' : status === 'fake' ? '● 彩排模式' : status === 'demo' ? '● 演示' : status === 'off' ? '● 断开' : '● 连接中'
+    const runtimePill = el('span', { class: `pill-runtime ${status}` }, statusText)
     const waiting = runtime.waitingHuman?.length
       ? el('span', { class: 'pill-wait' }, `👋 等待人类 · ${runtime.waitingHuman.length}`)
       : null
@@ -227,7 +259,9 @@
     const grow = el('div', { class: 'grow' })
     const sep1 = el('div', { class: 'sep' })
     const sep2 = el('div', { class: 'sep' })
+    const sep3 = el('div', { class: 'sep' })
     bar.appendChild(brand)
+    if (demoBanner) { bar.appendChild(sep3); bar.appendChild(demoBanner) }
     bar.appendChild(sep1)
     bar.appendChild(wsChip)
     bar.appendChild(sep2)
@@ -244,42 +278,53 @@
   function renderRail({ runtime, onPickSeat }) {
     const rail = el('aside', { id: 'organization-rail', 'aria-label': '组织栏' })
     const roles = (Chars?.ROLES || []).slice()
+    const humanMembers = runtime?.members?.human || []
+    const aiMembers = runtime?.members?.ai || []
+    const wsName = runtime?.workspace?.name || '当前工作区'
+    const projName = runtime?.project?.name || '未指定项目'
     const wsSec = el('div', { class: 'rail-section' })
     wsSec.appendChild(el('h3', {}, 'Workspace · 工作区'))
     wsSec.appendChild(el('div', { class: 'rail-item' }, `
       <span style="width:24px;height:24px;border-radius:7px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;color:var(--text-muted);">
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 6 H14"/></svg>
       </span>
-      <div><div class="title">${esc(runtime.workspace.name)}</div><div class="meta">${esc(runtime.project.name)} · ${roles.length} 个角色</div></div>
-      <span style="width:8px;height:8px;border-radius:999px;background:var(--done);"></span>
+      <div><div class="title">${esc(wsName)}</div><div class="meta">${esc(projName)} · ${roles.length} 个角色</div></div>
+      <span style="width:8px;height:8px;border-radius:999px;background:${runtime?.runtimeStatus === 'live' ? 'var(--done)' : 'var(--thinking)'};"></span>
     `))
     const rolesSec = el('div', { class: 'rail-section' })
-    rolesSec.appendChild(el('h3', {}, 'Roles · 角色（官方 8）'))
+    rolesSec.appendChild(el('h3', {}, `Roles · 角色（官方 ${roles.length}）`))
     for (const r of roles) {
+      const hasH = humanMembers.find((m) => m.role === r.id)
+      const hasA = aiMembers.find((m) => m.role === r.id)
+      const kindBadge = r.id === 'helix' ? 'system' : (hasH ? 'human' : (hasA ? 'ai' : 'human'))
       const item = el('div', { class: 'rail-item', onClick: () => onPickSeat?.(r.id) }, `
         ${Chars?.emblem(r, 24)}
         <div><div class="title">${esc(r.zh)}</div><div class="meta">${esc(r.en)}</div></div>
-        ${States?.BADGE?.[r.id === 'helix' ? 'system' : (runtime.members.human.find((m) => m.role === r.id) ? 'human' : 'ai')]?.({ size: 14 }) || ''}
+        ${States?.BADGE?.[kindBadge]?.({ size: 14 }) || ''}
       `)
       rolesSec.appendChild(item)
     }
     const humanSec = el('div', { class: 'rail-section' })
-    humanSec.appendChild(el('h3', {}, `Human · 人类（${runtime.members.human.length}）`))
-    for (const m of runtime.members.human) {
+    humanSec.appendChild(el('h3', {}, `Human · 人类（${humanMembers.length}）`))
+    if (humanMembers.length === 0) {
+      humanSec.appendChild(el('div', { style: { padding: '6px 8px', fontSize: '12px', color: 'var(--text-muted)' } }, '暂无成员数据'))
+    } else for (const m of humanMembers) {
       const r = Chars?.role(m.role)
       humanSec.appendChild(el('div', { class: 'rail-item' }, `
         ${memberAvatar(m, 'human')}
-        <div><div class="title">${esc(m.name)}</div><div class="meta">${r ? esc(r.zh) : esc(m.role)}</div></div>
+        <div><div class="title">${esc(m.name)}</div><div class="meta">${r ? esc(r.zh) : esc(m.role || '')}</div></div>
         <span style="width:8px;height:8px;border-radius:999px;background:${m.online ? 'var(--done)' : 'var(--offline)'};"></span>
       `))
     }
     const aiSec = el('div', { class: 'rail-section' })
-    aiSec.appendChild(el('h3', {}, `AI Agents · 智能体（${runtime.members.ai.length}）`))
-    for (const a of runtime.members.ai) {
+    aiSec.appendChild(el('h3', {}, `AI Agents · 智能体（${aiMembers.length}）`))
+    if (aiMembers.length === 0) {
+      aiSec.appendChild(el('div', { style: { padding: '6px 8px', fontSize: '12px', color: 'var(--text-muted)' } }, '暂无成员数据'))
+    } else for (const a of aiMembers) {
       const r = Chars?.role(a.role)
       aiSec.appendChild(el('div', { class: 'rail-item' }, `
         ${memberAvatar(a, 'ai')}
-        <div><div class="title">${esc(a.name)}</div><div class="meta">${r ? esc(r.zh) : esc(a.role)} · 模型 ${esc(a.model || '默认')}</div></div>
+        <div><div class="title">${esc(a.name)}</div><div class="meta">${r ? esc(r.zh) : esc(a.role || '')}${a.model ? ` · 模型 ${esc(a.model)}` : ''}</div></div>
         <span style="width:8px;height:8px;border-radius:999px;background:${a.online ? 'var(--thinking)' : 'var(--offline)'};"></span>
       `))
     }
@@ -292,6 +337,10 @@
 
   function renderHelixPanel({ helix, runtime }, composer = {}) {
     const pane = el('div', { id: 'helix-panel-inner' })
+    const conv = (helix.conversation || []).slice()
+    const decisions = (helix.decisions || []).slice()
+    const recent = (helix.recent || []).slice()
+    const waiting = (runtime?.waitingHuman || []).slice()
     const st = States?.STATES?.[helix.state] || States.STATES.IDLE
     const header = el('div', { class: 'helix-head helix-block' }, `
       <div style="width:36px;height:36px;border-radius:11px;border:1.6px double var(--orchestrator);background:linear-gradient(180deg,transparent 30%,rgba(143,130,255,0.12));display:grid;place-items:center;color:var(--orchestrator);">
@@ -306,17 +355,19 @@
     `)
     pane.appendChild(header)
 
-    const conv = el('div', { class: 'helix-block helix-conv' })
-    conv.appendChild(el('h4', {}, '对话 · Conversation'))
-    for (const m of helix.conversation) {
+    const convBlock = el('div', { class: 'helix-block helix-conv' })
+    convBlock.appendChild(el('h4', {}, '对话 · Conversation'))
+    if (conv.length === 0) {
+      convBlock.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--text-muted)', padding: '10px 10px', border: '1px dashed var(--line)', borderRadius: '10px' } }, '暂无对话。跟 Helix 说点什么开始。'))
+    } else for (const m of conv) {
       const side = m.side === 'user' ? 'user' : 'helix'
       const bubble = el('div', { class: `helix-msg ${side}` })
       if (side === 'helix') bubble.innerHTML = `<div style="font-size:10.5px;color:var(--orchestrator);letter-spacing:.1em;font-weight:700;margin-bottom:3px;">HELIX</div>${esc(m.text)}`
       else bubble.innerHTML = `<div style="font-size:10.5px;color:var(--accent);letter-spacing:.1em;font-weight:700;margin-bottom:3px;">你</div>${esc(m.text)}`
-      conv.appendChild(bubble)
+      convBlock.appendChild(bubble)
     }
     const cwrap = el('div', { class: 'helix-block' })
-    cwrap.appendChild(conv)
+    cwrap.appendChild(convBlock)
     const cform = el('form', { class: 'helix-composer', onsubmit: (e) => { e.preventDefault(); const ta = cform.querySelector('textarea'); if (ta.value.trim()) composer.onSend?.(ta.value.trim()); ta.value = '' } })
     cform.innerHTML = `
       <textarea rows="2" placeholder="跟 Helix 说点什么…（回车发送，Shift+回车换行）" aria-label="给 Helix 的消息"></textarea>
@@ -330,28 +381,31 @@
 
     const sum = el('div', { class: 'helix-block' })
     sum.appendChild(el('h4', {}, '摘要 · Summary'))
-    sum.appendChild(el('div', { style: { fontSize: '12.5px', lineHeight: '19px', color: 'var(--text)', padding: '8px 10px', borderRadius: '10px', background: 'var(--panel-2)', border: '1px solid var(--line)' } }, esc(helix.summary)))
+    sum.appendChild(el('div', { style: { fontSize: '12.5px', lineHeight: '19px', color: 'var(--text)', padding: '8px 10px', borderRadius: '10px', background: 'var(--panel-2)', border: '1px solid var(--line)' } }, esc(helix.summary || '暂无摘要。')))
     pane.appendChild(sum)
 
     const dec = el('div', { class: 'helix-block' })
     dec.appendChild(el('h4', {}, '决议 · Decisions'))
-    dec.appendChild(el('ol', { class: 'helix-list' }, helix.decisions.map((d) => `<li>${esc(d)}</li>`).join('')))
+    if (decisions.length === 0) dec.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--text-muted)' } }, '暂无决议。'))
+    else dec.appendChild(el('ol', { class: 'helix-list' }, decisions.map((d) => `<li>${esc(d)}</li>`).join('')))
     pane.appendChild(dec)
 
-    const wait = el('div', { class: 'helix-block' })
-    wait.appendChild(el('h4', {}, `等待人类 · Waiting Human（${runtime.waitingHuman.length}）`))
-    for (const w of runtime.waitingHuman) {
+    const waitBlock = el('div', { class: 'helix-block' })
+    waitBlock.appendChild(el('h4', {}, `等待人类 · Waiting Human（${waiting.length}）`))
+    if (waiting.length === 0) waitBlock.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--text-muted)' } }, '0 等待人类项。'))
+    else for (const w of waiting) {
       const r = Chars?.role(w.role)
-      wait.appendChild(el('div', { style: { marginTop: '8px' } }, States?.HumanActionMarker?.render({
+      waitBlock.appendChild(el('div', { style: { marginTop: '8px' } }, States?.HumanActionMarker?.render({
         role: r?.zh || w.role, member: w.member, sinceMs: w.sinceMs, required: w.required,
       }) || ''))
-      if (w.title) wait.appendChild(el('div', { style: { marginTop: '4px', fontSize: '12px', color: 'var(--text)', paddingLeft: '2px' } }, esc(w.title)))
+      if (w.title) waitBlock.appendChild(el('div', { style: { marginTop: '4px', fontSize: '12px', color: 'var(--text)', paddingLeft: '2px' } }, esc(w.title)))
     }
-    pane.appendChild(wait)
+    pane.appendChild(waitBlock)
 
     const rec = el('div', { class: 'helix-block' })
     rec.appendChild(el('h4', {}, '最近 · Recent'))
-    rec.appendChild(el('ol', { class: 'helix-list', style: { paddingLeft: '0', listStyle: 'none', display: 'grid', gap: '6px' } }, helix.recent.map((x) => `<li style="display:grid;grid-template-columns:64px 1fr;gap:6px;align-items:baseline;"><span style="color:var(--text-muted);font-size:11px;">${esc(ago(x.at))}</span><span style="color:var(--text);">${esc(x.text)}</span></li>`).join('')))
+    if (recent.length === 0) rec.appendChild(el('div', { style: { fontSize: '12px', color: 'var(--text-muted)' } }, '暂无活动。'))
+    else rec.appendChild(el('ol', { class: 'helix-list', style: { paddingLeft: '0', listStyle: 'none', display: 'grid', gap: '6px' } }, recent.map((x) => `<li style="display:grid;grid-template-columns:64px 1fr;gap:6px;align-items:baseline;"><span style="color:var(--text-muted);font-size:11px;">${esc(ago(x.at))}</span><span style="color:var(--text);">${esc(x.text)}</span></li>`).join('')))
     pane.appendChild(rec)
     return pane
   }
@@ -387,8 +441,12 @@
     document.documentElement.removeAttribute('data-skin')
     document.documentElement.removeAttribute('data-skin-id')
     injectShellCss()
-    const runtime = options.runtime || DEFAULT_RUNTIME
-    const helix = options.helix || HELIX_DEMO
+    const mode = runtimeMode(options)
+    const useFixtures = mode === 'demo'
+    const runtime = options.runtime && Object.keys(options.runtime).length ? options.runtime
+      : (useFixtures ? JSON.parse(JSON.stringify(DEMO_RUNTIME)) : buildEmptyRuntime())
+    const helix = options.helix && Object.keys(options.helix).length ? options.helix
+      : (useFixtures ? JSON.parse(JSON.stringify(HELIX_DEMO)) : buildEmptyHelix())
 
     destroyExistingClassic()
 
@@ -411,9 +469,10 @@
       currentThemeId: 'core',
       onThemeChange: (id) => { options.onThemeChange?.(id) },
       onToggleHelix: () => setHelixDrawer(!helixDrawerOpen),
+      mode,
     })
     const rail = renderRail({ runtime, onPickSeat: options.onPickSeat })
-    const canvas = el('main', { id: 'office-canvas', role: 'main', 'aria-label': '办公室画布' })
+    const canvas = el('main', { id: 'office-canvas', role: 'main', 'aria-label': 'Helix 位于中央, 周围 7 个角色席位的办公室画布' })
     const helixPanel = el('aside', { id: 'helix-panel', 'aria-label': 'Helix 系统编排中枢面板' })
     const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) })
     helixPanel.appendChild(innerHelixPanel)
@@ -433,19 +492,36 @@
       else if (id === 'office') document.getElementById('office-canvas')?.scrollIntoView({ behavior: 'smooth' })
     }))
 
-    const officeHandle = Office.attach(canvas, { snapshot: options.snapshot || null })
+    const officeHandle = Office.attach(canvas, { snapshot: options.snapshot || null, mode })
     canvas.addEventListener('vao:seat-selected', (e) => options.onPickSeat?.(e.detail.role))
     canvas.addEventListener('vao:task-selected', (e) => options.onPickTask?.(e.detail.taskId))
 
     const handle = {
+      mode,
       nodes: { bar, rail, canvas, helixPanel, overlay, helixDrawer },
       office: officeHandle,
-      update(next) {
+      update(next = {}) {
+        if (next.runtime) Object.assign(runtime, next.runtime)
+        if (next.helix) Object.assign(helix, next.helix)
         if (next.runtime || next.helix) {
           helixPanel.innerHTML = ''
-          helixPanel.appendChild(renderHelixPanel({ helix: next.helix || helix, runtime: next.runtime || runtime }, { onSend: (t) => options.onConversationSend?.(t) }))
+          helixPanel.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) }))
         }
         if (next.snapshot) officeHandle.update(next.snapshot)
+        if (next.runtime) {
+          const newRail = renderRail({ runtime, onPickSeat: options.onPickSeat })
+          rail.replaceWith(newRail)
+          handle.nodes.rail = newRail
+          const newBar = renderGlobalBar({
+            runtime,
+            currentThemeId: 'core',
+            onThemeChange: (id) => { options.onThemeChange?.(id) },
+            onToggleHelix: () => setHelixDrawer(!helixDrawerOpen),
+            mode,
+          })
+          bar.replaceWith(newBar)
+          handle.nodes.bar = newBar
+        }
       },
       destroy() {
         officeHandle.destroy()
@@ -468,9 +544,12 @@
     renderRail,
     renderHelixPanel,
     renderMobileNav,
+    runtimeMode,
+    buildEmptyRuntime,
+    buildEmptyHelix,
     CLASSIC_IDS,
     CLASSIC_SKIN_ORDER,
-    DEFAULT_RUNTIME,
+    DEMO_RUNTIME,
     HELIX_DEMO,
   })
   globalThis.VAOCoreShell = api

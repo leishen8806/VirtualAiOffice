@@ -22,8 +22,9 @@
   const ROLES = C ? C.ROLES : []
   const HELIX_INDEX = 0
 
-  // Demo / fake data for canvas when no runtime snapshot loaded yet (§19: rehearsal fixtures, not live).
-  const DEMO_SEAT_STATES = {
+  // Demo / fake data for canvas only in fake/demo mode. NEVER used in live mode.
+  // Live mode uses empty honest states when no snapshot data provided.
+  const DEMO_SEAT_STATES = Object.freeze({
     helix: 'THINKING',
     product: 'IDLE',
     architect: 'THINKING',
@@ -32,8 +33,8 @@
     qa: 'IDLE',
     reviewer: 'REVIEWING',
     docs: 'IDLE',
-  }
-  const DEMO_SEAT_KIND = {
+  })
+  const DEMO_SEAT_KIND = Object.freeze({
     helix: 'system',
     product: 'human',
     architect: 'ai',
@@ -42,65 +43,55 @@
     qa: 'human',
     reviewer: 'human',
     docs: 'ai',
-  }
-  const DEMO_SEAT_MEMBER = {
+  })
+  const DEMO_SEAT_MEMBER = Object.freeze({
     product: '李产品',
-    architect: 'Codex',
-    frontend: 'Claude 4.5 Sonnet',
-    backend: 'DeepSeek V3',
+    architect: 'Codex (演示)',
+    frontend: 'Claude (演示)',
+    backend: 'DeepSeek (演示)',
     qa: '王测试',
     reviewer: '张审查',
-    docs: 'Gemini 2.5 Flash',
-  }
-  const DEMO_SEAT_MODEL = {
-    architect: 'o3-mini',
-    frontend: 'Claude',
-    backend: 'DeepSeek',
-    docs: 'Gemini',
-  }
+    docs: 'Gemini (演示)',
+  })
+  const DEMO_SEAT_MODEL = Object.freeze({
+    architect: 'demo',
+    frontend: 'demo',
+    backend: 'demo',
+    docs: 'demo',
+  })
   const DEMO_PORT_COUNTS = Object.freeze({
     Requirements: 3, Tasks: 8, Executions: 5, Reviews: 2, Evidence: 11, 'Human Actions': 1,
   })
 
   const DEMO_TASKS = Object.freeze([
     {
-      id: 'T-101', title: 'Core Shell 布局脚手架', status: 'done', difficulty: '易', kind: '开发',
+      id: 'DEMO-101', title: '【DEMO】Core Shell 布局脚手架', status: 'done', difficulty: '易', kind: '开发',
       role: 'frontend', who: '前端工程师', whoId: 'frontend',
       evidence: [{ kind: 'build', state: 'pass', sha: 'a31f' }, { kind: 'test', state: 'pass', sha: 'a31f' }],
       deps: [],
     },
     {
-      id: 'T-104', title: 'Helix 6 端口可视数据接入', status: 'running', difficulty: '中', kind: '开发',
+      id: 'DEMO-104', title: '【DEMO】Helix 6 端口可视数据接入', status: 'running', difficulty: '中', kind: '开发',
       role: 'backend', who: '后端工程师', whoId: 'backend',
       evidence: [{ kind: 'build', state: 'pass' }, { kind: 'test', state: 'missing' }],
-      deps: ['T-101'],
+      deps: ['DEMO-101'],
     },
     {
-      id: 'T-105', title: 'Office Canvas 8 座位栅格布局', status: 'running', difficulty: '中', kind: '开发',
-      role: 'frontend', who: '前端工程师', whoId: 'frontend',
-      evidence: [{ kind: 'build', state: 'pass' }, { kind: 'review', state: 'stale', sha: '55b1' }],
-      deps: ['T-101'],
-    },
-    {
-      id: 'T-110', title: 'V2-A 可视化验收清单', status: 'pending', difficulty: '中', kind: '审查',
-      role: 'reviewer', who: '审查员', whoId: 'reviewer',
-      evidence: [],
-      deps: ['T-104', 'T-105'],
-    },
-    {
-      id: 'T-112', title: '等待人类：确认设计规格 §5.1 颜色 token', status: 'pending', difficulty: '易', kind: 'human',
+      id: 'DEMO-112', title: '【DEMO】等待人类：确认设计规格 §5.1', status: 'pending', difficulty: '易', kind: 'human',
       role: 'product', who: '产品经理', whoId: 'product', sinceMs: Date.now() - 14 * 60 * 1000, required: true,
       evidence: [{ kind: 'human', state: 'missing' }],
       deps: [],
     },
   ])
 
-  const DEMO_EDGES = [
-    ['T-101', 'T-104', 'ready'],
-    ['T-101', 'T-105', 'ready'],
-    ['T-104', 'T-110', 'waiting'],
-    ['T-105', 'T-110', 'waiting'],
-  ]
+  const DEMO_EDGES = Object.freeze([
+    ['DEMO-101', 'DEMO-104', 'ready'],
+  ])
+
+  function officeMode(opts = {}) {
+    const raw = String(opts.mode || 'live').toLowerCase()
+    return raw === 'fake' || raw === 'demo' ? 'demo' : 'live'
+  }
 
   function taskCard(task) {
     const St = S?.STATES
@@ -130,7 +121,7 @@
     const role = task.role ? C?.role(task.role) : null
     return S?.HumanActionMarker?.render({
       role: role?.zh || task.who || '负责角色待定',
-      member: task.who ? DEMO_SEAT_MEMBER[task.whoId] || undefined : undefined,
+      member: task.member || undefined,
       sinceMs: task.sinceMs,
       required: task.required,
     }) || ''
@@ -146,44 +137,50 @@
     </svg>`
   }
 
-  function renderSeatRow(snapshot, roleIds, opts = {}) {
+  function renderSeatRow(snapshot, roleIds, mode, opts = {}) {
+    const useFixtures = mode === 'demo'
     return roleIds.map((rid) => {
       if (rid === 'helix') return ''
-      const seatState = snapshot?.seatStates?.[rid] || DEMO_SEAT_STATES[rid] || 'IDLE'
-      const kind = snapshot?.seatKinds?.[rid] || DEMO_SEAT_KIND[rid]
-      const memberName = snapshot?.seatMembers?.[rid] || DEMO_SEAT_MEMBER[rid]
-      const model = snapshot?.seatModels?.[rid] || DEMO_SEAT_MODEL[rid]
+      const seatState = snapshot?.seatStates?.[rid] || (useFixtures ? DEMO_SEAT_STATES[rid] : 'IDLE')
+      const kind = snapshot?.seatKinds?.[rid] || (useFixtures ? DEMO_SEAT_KIND[rid] : (rid === 'product' || rid === 'qa' || rid === 'reviewer' ? 'human' : 'ai'))
+      const memberName = snapshot?.seatMembers?.[rid] || (useFixtures ? DEMO_SEAT_MEMBER[rid] : undefined)
+      const model = snapshot?.seatModels?.[rid] || (useFixtures ? DEMO_SEAT_MODEL[rid] : undefined)
       const seatOpts = { state: seatState, kind, memberName, model, slot: opts.slots?.[rid] }
       return C?.renderSeat(rid, seatOpts) || ''
     }).join('')
   }
 
-  function renderHelix(snapshot) {
-    const state = snapshot?.seatStates?.helix || DEMO_SEAT_STATES.helix || 'THINKING'
+  function renderHelix(snapshot, mode) {
+    const useFixtures = mode === 'demo'
+    const state = snapshot?.seatStates?.helix || (useFixtures ? DEMO_SEAT_STATES.helix : 'IDLE')
     const kind = 'system'
+    const portCounts = snapshot?.portCounts || (useFixtures ? DEMO_PORT_COUNTS : null)
     return C?.renderHelixCore({
       state,
       kind,
       memberName: 'Helix',
-      portCounts: snapshot?.portCounts || DEMO_PORT_COUNTS,
+      portCounts,
+      slot: snapshot?.slot,
     }) || ''
   }
 
   /**
    * Office Canvas attach.
    * @param {HTMLElement} mount Canvas mount element (typically #office-canvas).
-   * @param {{ snapshot?: any }} opts
+   * @param {{ snapshot?: any, mode?: 'live'|'fake'|'demo' }} opts
    */
   function attach(mount, opts = {}) {
     if (!mount) throw new Error('VAOCoreOffice.attach: mount element required')
     if (!C || !S) throw new Error('VAOCoreOffice: missing VAOCoreCharacters / VAOCoreStates (load order)')
 
     mount.classList.add('v2-canvas')
+    const mode = officeMode(opts)
+    const useFixtures = mode === 'demo'
     const snapshot = opts.snapshot || null
 
     const ringRoles = ROLES.filter((r) => r.id !== 'helix').map((r) => r.id)
-    const tasks = snapshot?.tasks || DEMO_TASKS
-    const edges = snapshot?.edges || DEMO_EDGES
+    const tasks = snapshot?.tasks?.length ? snapshot.tasks.slice() : (useFixtures ? JSON.parse(JSON.stringify(DEMO_TASKS)) : [])
+    const edges = snapshot?.edges?.length ? snapshot.edges.slice() : (useFixtures ? JSON.parse(JSON.stringify(DEMO_EDGES)) : [])
     const waitingHuman = tasks.filter((t) => t.kind === 'human' || t.sinceMs)
 
     const roleTasksMap = {}
@@ -200,32 +197,35 @@
 
     const helixSlotHtml = waitingHuman.length ? `<div style="padding-top:10px;display:grid;gap:6px;min-width:240px;">${waitingHuman.slice(0, 2).map(humanWaitingCard).join('')}</div>` : ''
 
+    const demoBanner = useFixtures ? `<div aria-label="演示数据" style="margin:12px 20px 0;padding:6px 10px;border:1px solid var(--thinking);background:color-mix(in srgb, var(--thinking) 14%, transparent);color:var(--thinking);border-radius:10px;font-size:11.5px;font-weight:700;letter-spacing:.08em;">● 演示数据 · DEMO（仅 fake/demo 模式显示）</div>` : ''
+
     const canvasInner = `
+      ${demoBanner}
       ${edgeSVG(edges)}
       <div class="canvas-grid" style="position:relative;z-index:2;display:grid;grid-template-columns:repeat(3, 1fr);grid-template-rows:auto auto auto;gap:24px 20px;padding:28px 20px 40px;align-items:start;">
         <div class="zone zone-planning" data-zone="planning" style="grid-column:1;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['product'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['product'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-human" data-zone="human" style="grid-column:2;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['architect'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['architect'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-docs-top" data-zone="docs-top" style="grid-column:3;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['reviewer'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['reviewer'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-build-left" data-zone="build-left" style="grid-column:1;grid-row:2;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['frontend'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['frontend'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-helix" data-zone="helix" style="grid-column:2;grid-row:2;display:flex;justify-content:center;">
-          ${renderHelix({ ...snapshot, slot: helixSlotHtml })}
+          ${renderHelix({ ...snapshot, slot: helixSlotHtml }, mode)}
         </div>
         <div class="zone zone-build-right" data-zone="build-right" style="grid-column:3;grid-row:2;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['backend'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['backend'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-verify" data-zone="verify" style="grid-column:1;grid-row:3;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['qa'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['qa'], mode, { slots: seatSlots })}
         </div>
         <div class="zone zone-docs" data-zone="docs" style="grid-column:3;grid-row:3;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['docs'], { slots: seatSlots })}
+          ${renderSeatRow(snapshot, ['docs'], mode, { slots: seatSlots })}
         </div>
       </div>
       <section class="canvas-rail" style="padding:0 20px 28px;display:grid;gap:16px;">
@@ -234,7 +234,7 @@
           <span style="font-size:12px;color:var(--text-muted);">${tasks.length} 项 · ${waitingHuman.length} 项等待人类</span>
         </div>
         <div class="rail-tasks" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
-          ${tasks.map(taskCard).join('')}
+          ${tasks.map(taskCard).join('') || `<div style="padding:16px 14px;border:1px dashed var(--line);border-radius:10px;color:var(--text-muted);font-size:12px;">暂无任务。任务导入后在此处显示。</div>`}
         </div>
       </section>
       <style>
@@ -286,9 +286,10 @@
     })
 
     return {
+      mode,
       mount,
       update(nextSnapshot) {
-        attach(mount, { snapshot: nextSnapshot })
+        attach(mount, { snapshot: nextSnapshot, mode })
       },
       destroy() {
         mount.innerHTML = ''
@@ -299,6 +300,7 @@
 
   const api = Object.freeze({
     attach,
+    officeMode,
     _internals: { taskCard, humanWaitingCard, edgeSVG, DEMO_TASKS, DEMO_EDGES, DEMO_PORT_COUNTS, DEMO_SEAT_STATES, DEMO_SEAT_KIND, DEMO_SEAT_MEMBER, DEMO_SEAT_MODEL, HELIX_INDEX },
   })
   globalThis.VAOCoreOffice = api

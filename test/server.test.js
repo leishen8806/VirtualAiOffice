@@ -46,7 +46,7 @@ test('serves the page with a document shell and blocks path traversal', async (t
   assert.match(page.body, /^<!doctype html>/)
   assert.match(page.body, /智序工场/)
   assert.match(page.body, /Virtual AI Office/)
-  assert.match(page.body, /办公室协调器/)
+  assert.match(page.body, /Helix/)
   assert.equal((await req('/app.js')).status, 200)
   assert.notEqual((await req('/../package.json')).status, 200)
   assert.notEqual((await req('/%2e%2e/package.json')).status, 200)
