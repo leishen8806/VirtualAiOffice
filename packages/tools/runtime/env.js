@@ -6,23 +6,37 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 import { fileURLToPath } from 'node:url'
 
 /**
- * 严格环境展开：缺失 `${VAR}` 不做空替换，返回 MissingEnvError。
- * 兼容型的宽松 fillEnv 留在 executors/runtime/text.js（Legacy 仍用它）。
+ * Stage 1B-A placeholder (metadata only, not strict).
+ *
+ * Legacy ToolCatalog.spec() uses lenient fillEnv() from executors/runtime/text.js
+ * (unset ${VAR} expands to empty to preserve legacy behavior).
+ *
+ * This module exists to hold the ENV-layer architecture symbols needed by the
+ * shared package surface. STRICT ENV-VALIDATION / MissingEnvError FAIL-CLOSED
+ * enforcement belongs to Stage 1B-B and is NOT performed here.
  */
 export class MissingEnvError extends Error {
   constructor(name) {
-    super(`missing env ${name}`)
+    super(`missing env ${name} (Stage 1B-A placeholder — not thrown by Stage 1B-A runtime)`)
     this.name = 'MissingEnvError'
     this.envName = name
   }
 }
 
+/**
+ * Stage 1B-A variant: LENIENT expansion (same semantics as legacy fillEnv).
+ *
+ * For Stage 1B-A we deliberately do NOT throw MissingEnvError — legacy code
+ * paths (which are the ONLY consumers exercised today) rely on empty-string
+ * fallbacks for unset variables. A future Stage 1B-B import will re-import a
+ * strict variant here (or replace the implementation) once the new core wires
+ * up orchestration-level env validation.
+ */
 export function expandEnv(value, env = process.env) {
   if (typeof value !== 'string') return value
   return value.replace(/\$\{(\w+)\}/g, (_, k) => {
     const v = env[k]
-    if (v === undefined || v === null) throw new MissingEnvError(k)
-    return v
+    return v === undefined || v === null ? '' : String(v)
   })
 }
 

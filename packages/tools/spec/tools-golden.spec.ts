@@ -100,7 +100,13 @@ test('builtins: legacy niuma_* identifiers + future-neutral vao_* coexist withou
 test('Playwright MCP pinned version: no @latest anywhere; spec uses semver pin', () => {
   // D4：共享定义中不得出现 @latest；这条测试防回退
   const bt = builtinTools()
-  const pkg = String(bt.browser.command === 'npx' ? bt.browser.args[2] : bt.browser.args[3])
+  // Cross-platform: locate the package semantically (never use positional index).
+  // Windows playwrightNpx prefixes: cmd /c npx -y pkg ……
+  // POSIX playwrightNpx prefixes: npx -y pkg ……
+  // Find the ONLY arg starting with the package scope.
+  const pkgCandidates = bt.browser.args.filter((a: unknown) => String(a).startsWith('@playwright/mcp@'))
+  assert.equal(pkgCandidates.length, 1, `args must contain exactly one @playwright/mcp@ entry, got ${pkgCandidates.length}: ${JSON.stringify(bt.browser.args)}`)
+  const pkg = String(pkgCandidates[0])
   assert.ok(!pkg.endsWith('@latest'), `browser package must not be floating @latest: ${pkg}`)
   assert.ok(pkg.startsWith('@playwright/mcp@'), `browser pkg must start with @playwright/mcp@: ${pkg}`)
   // 常量与 args 必须一致（单一来源）

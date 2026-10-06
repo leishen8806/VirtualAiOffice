@@ -12,7 +12,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
  * 这个版本号是 Stage 1B-A 实施时选定并验证的（至少 initialize + tools/list）。
  * 升级需要显式改这里 + CI / 回归测试。
  */
-export const PLAYWRIGHT_MCP_PINNED_VERSION = '1.49.0'
+export const PLAYWRIGHT_MCP_PINNED_VERSION = '0.0.83'
 export const PLAYWRIGHT_MCP_PINNED_SPEC = `@playwright/mcp@${PLAYWRIGHT_MCP_PINNED_VERSION}`
 
 export const LEGACY_COMPAT_OUT = () => path.join(os.homedir(), '.niuma', 'browser')

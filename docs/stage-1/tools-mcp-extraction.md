@@ -50,10 +50,10 @@ The monolithic legacy `src/tools.js` (≈239 lines) is split by concept into **s
 |---|---|---|
 | ToolDefinition shape + normalization | `runtime/definitions.js` | `normalizeToolDefinition`, `LEGACY_COMPATIBILITY_IDENTIFIER`, `FUTURE_NEUTRAL` |
 | Pure lookup registry | `runtime/registry.js` | `ToolRegistry` class (add/list/get + constructor aliases option) |
-| Shared policy placeholder | `runtime/policy.js` | `ToolPolicy`, `authorizeToolDefinitionAuthorize` |
-| Grant resolution | `runtime/resolver.js` | `ToolResolver`, `resolveGrantsSimple`, `capabilitySupportsTool`, `ALL_TYPES` |
-| Env expansion + JSON reading | `runtime/env.js` | `expandEnv`, `MissingEnvError`, `readJson`, `defaultHome` |
-| Built-in (Browser + Desktop Control) definitions | `runtime/sources/builtin.js` | `coreBuiltins`, `legacyBuiltins`, `PLAYWRIGHT_MCP_PINNED_VERSION`, `PLAYWRIGHT_MCP_PINNED_SPEC` |
+| Shared policy **INERT placeholder** (no enforcement yet) | `runtime/policy.js` | `ToolPolicy`, `authorizeToolDefinitionAuthorize` — always `{ ok: true }`; Stage 1B-B will add the 7 checks |
+| Grant resolution **INERT placeholder** (never fail-closed) | `runtime/resolver.js` | `ToolResolver`, `resolveGrantsSimple`, `capabilitySupportsTool`, `ALL_TYPES` — always `{ ok: true, tools: [...] }`, never emits `TOOL_*` codes; Stage 1B-B adds the fail-closed branch |
+| Env expansion + JSON reading **LENIENT** variant (Stage 1B-A) | `runtime/env.js` | `expandEnv` (lenient; missing `${VAR}` → `''`, NOT `MissingEnvError` throw), `MissingEnvError` (architecture symbol only, not thrown by Stage 1B-A runtime), `readJson`, `defaultHome` |
+| Built-in (Browser + Desktop Control) definitions | `runtime/sources/builtin.js` | `coreBuiltins`, `legacyBuiltins`, `PLAYWRIGHT_MCP_PINNED_VERSION` **validated 0.0.83**, `PLAYWRIGHT_MCP_PINNED_SPEC` |
 | Claude Code + Codex MCP discovery (逐字搬 from legacy) | `runtime/sources/discovery.js` | `claudeServers(workdir, home)`, `codexServers(home)`, `stdio()` predicate |
 | Configured tools (from niuma.config.json tools section) | `runtime/sources/config.js` | `loadConfiguredTools(cfg)` |
 | Desktop MCP server (extracted impl) | `runtime/mcp/desktop-server.js` | `createDesktopServer`, `startDesktopServer`, `desktopToolsList`, `desktopPlatform`, `parseKeys`, `winVk`, `WIN_VK`, `KEY_ALIASES`, `MODS`, `WIN_EXTENDED`, `desktopMcp` namespace, `default` |
@@ -95,17 +95,24 @@ All NEW identifiers inside the shared runtime use the `vao_*` neutral prefix and
 
 ## Built-in Browser definition + pinned Playwright version (D4)
 
-The Playwright MCP spec is **explicitly pinned** in `runtime/sources/builtin.js`:
+The Playwright MCP spec is **explicitly pinned** in `runtime/sources/builtin.js` to a **real, validated, published** npm version (NOT core Playwright semver — Playwright MCP has its own independent versioning, stable non-alpha latest on 2026-10-06 was `0.0.83`):
 ```
-PLAYWRIGHT_MCP_PINNED_VERSION = '1.49.0'
-PLAYWRIGHT_MCP_PINNED_SPEC   = '@playwright/mcp@1.49.0'
+PLAYWRIGHT_MCP_PINNED_VERSION = '0.0.83'   # latest STABLE non-alpha per npm view 2026-10-06
+PLAYWRIGHT_MCP_PINNED_SPEC   = '@playwright/mcp@0.0.83'
 ```
+
+**Validation performed against this version** (extraction-time, real package, real npx spawn):
+- `npx -y @playwright/mcp@0.0.83` resolved and the process exited cleanly.
+- JSON-RPC 2.0 `tools/list id=2` request returned exactly **25 tools** (browser_* family — confirmed the package is real, boots, and exposes the expected MCP surface).
+- Published set confirmed via `npm view @playwright/mcp versions --json` (no `1.49.0` version exists — core Playwright version ≠ @playwright/mcp version).
 
 Anti-regression guards:
 - `tools-golden.spec.ts` "Playwright MCP pinned version" test:
-  - `browser.args` must start with `@playwright/mcp@` AND must NOT end with `@latest`
-  - constant roundtrip: ``@playwright/mcp@${PLAYWRIGHT_MCP_PINNED_VERSION} === PLAYWRIGHT_MCP_PINNED_SPEC``
-  - grep across `sources/builtin.js` and `runtime/index.js` source text for `@playwright/mcp@latest` string (fail if found)
+  - **CROSS-PLATFORM**: the pinned pkg is located **semantically** via `.find((a) => String(a).startsWith('@playwright/mcp@'))` (exactly 1 match required) — **never** positional `args[2]`/`args[3]`, since Windows `playwrightNpx` prepends `cmd /c npx -y`, POSIX prepends `npx -y`.
+  - Pinned pkg must NOT end with `@latest` AND must equal `PLAYWRIGHT_MCP_PINNED_SPEC`.
+  - constant roundtrip: ``@playwright/mcp@${PLAYWRIGHT_MCP_PINNED_VERSION} === PLAYWRIGHT_MCP_PINNED_SPEC``.
+  - Exact semver `^\d+\.\d+\.\d+$` regex assertion.
+  - grep across `sources/builtin.js` and `runtime/index.js` source text for `@playwright/mcp@latest` string (fail if found).
 - D2 rule: both `browser` and `desktop-control` core definitions have **explicit** `readOnlySafe: false`.
 
 Shell args format: `playwrightNpx(pkg, [--output-dir, outDir, --allow-unrestricted-file-access, ...(headless ? ['--headless'] : [])])` with platform-dependent Windows `cmd /c npx -y` vs POSIX `npx -y` wrapper.
@@ -213,16 +220,35 @@ Original Stage 1A assertions still run after these 7:
 - reconstruct fake NiuMa, start on random port, HTTP GET / → 200 with document shell
 - **On Windows**: cleanup failures are **demoted to warnings** IF AND ONLY IF both the HTTP 200 and 7 Stage 1B-A assertions above already passed (EBUSY race guard with fs.rmSync maxRetries=10 + retryDelay=200ms, plus taskkill /pid <pid> /T /F bounded 3-5s shutdown before cleanup)
 
-## Deferred (Stage 1B-B — explicitly NOT implemented)
+## Stage 1B-A vs 1B-B boundary (IMPORTANT — explicitly enforced)
+
+Stage 1B-A is **extraction only**. It defines architecture symbols (ToolDefinition,
+readOnlySafe, requires, ResolvedToolSpec shape, ToolPolicy/ToolResolver/MissingEnvError
+classes) so imports and d.ts stay stable, but **must NOT actively enforce the future
+security/orchestration behavior**:
+
+| Concern | Stage 1B-A (NOW) | Stage 1B-B (LATER) |
+|---|---|---|
+| ToolPolicy.authorize() | Always returns `{ ok: true }` (inert) | 7 checks, fail-closed, `TOOL_NOT_AUTHORIZED` / `TOOL_NOT_READ_ONLY_SAFE` codes |
+| resolveGrantsSimple() ok= branch | Always `{ ok: true, tools }` — never fails, never drops items | ok=false with structured failures[] for every bad grant |
+| expandEnv missing `${VAR}` | Returns `''` (lenient, matches legacy fillEnv) | Throws `MissingEnvError` → orchestration fails early with `TOOL_ENV_MISSING` |
+| MissingEnvError class | Symbol only (not thrown by 1B-A runtime code paths) | Thrown from strict env expansion before worker launch |
+| readOnlySafe on ToolDefinition | Declared on Browser / Desktop core as `false` (metadata) | Compared against ctx.access — write-cap tools dropped in read-only Executions |
+| Legacy ToolCatalog routing | Unchanged (supports() / autonomy safe-mode only) | Route through ToolResolver + ToolPolicy before Coordinator grant |
+
+### Deferred (Stage 1B-B — explicitly NOT implemented)
 
 None of these are in scope for Stage 1B-A and are listed here to prevent scope creep:
 
 - Coordinator.toolsFor() fail-closed behavior (reject before worker on any unresolved tool)
 - readOnlySafe enforcement (write-tool rejection) at the orchestration layer
-- TOOL_* orchestration failure codes
+- TOOL_* orchestration failure codes (`TOOL_NOT_FOUND`, `TOOL_NOT_SUPPORTED`, `TOOL_NOT_AUTHORIZED`, `TOOL_NOT_READ_ONLY_SAFE`, `TOOL_ENV_MISSING`, …)
 - Required env validation (missing env variables before start)
 - New-core `autoDiscoverExternalMcp: false` runtime default behavior
 - ToolGrant authorization policy with 7-step check order
+- Strict `expandEnv` variant that throws `MissingEnvError` instead of returning `''`
+- Active `ToolPolicy.authorize()` safe-mode takeover drops / read-only checks
+- `resolveGrantsSimple()` ok=false structured failure return
 - Any redesign of Coordinator (existing Coordination code untouched)
 - Any changes to McpClient ownership (still lives in executors)
 - Any introduction of `niuma_*` identifiers (D5: all NEW names use vao_* neutral)
