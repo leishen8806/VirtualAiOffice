@@ -88,6 +88,8 @@
     ['DEMO-101', 'DEMO-104', 'ready'],
   ])
 
+  function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) }
+
   function officeMode(opts = {}) {
     const raw = String(opts.mode || 'live').toLowerCase()
     return raw === 'fake' || raw === 'demo' ? 'demo' : 'live'
@@ -165,7 +167,11 @@
   }
 
   /**
-   * Office Canvas attach.
+   * Office Canvas attach (VIS-3/6/7: 6-zone continuous office floor).
+   * Zones: HELIX COMMAND HUB (center) / PLANNING (NW product+architect) / ENGINEERING (NE frontend+backend) /
+   *        QUALITY (SW qa+reviewer) / KNOWLEDGE (SE docs) / HUMAN AREA (conditional).
+   * Depth layers: z-1 floor grid → z0 workstation base/partitions → z1 seated people → z2 screens/whiteboards → z3 connections.
+   * Tasks: empty → small inline hint; non-empty → narrow footer activity strip.
    * @param {HTMLElement} mount Canvas mount element (typically #office-canvas).
    * @param {{ snapshot?: any, mode?: 'live'|'fake'|'demo' }} opts
    */
@@ -195,74 +201,163 @@
       seatSlots[rid] = first ? taskCard(first) : ''
     }
 
-    const helixSlotHtml = waitingHuman.length ? `<div style="padding-top:10px;display:grid;gap:6px;min-width:240px;">${waitingHuman.slice(0, 2).map(humanWaitingCard).join('')}</div>` : ''
+    const hum1 = snapshot?.seatMembers?.product || (useFixtures ? DEMO_SEAT_MEMBER.product : undefined)
+    const hum2 = snapshot?.seatMembers?.qa || (useFixtures ? DEMO_SEAT_MEMBER.qa : undefined)
+    const hum3 = snapshot?.seatMembers?.reviewer || (useFixtures ? DEMO_SEAT_MEMBER.reviewer : undefined)
+    const humanCount = [hum1, hum2, hum3].filter(Boolean).length
 
-    const demoBanner = useFixtures ? `<div aria-label="演示数据" style="margin:12px 20px 0;padding:6px 10px;border:1px solid var(--thinking);background:color-mix(in srgb, var(--thinking) 14%, transparent);color:var(--thinking);border-radius:10px;font-size:11.5px;font-weight:700;letter-spacing:.08em;">● 演示数据 · DEMO（仅 fake/demo 模式显示）</div>` : ''
+    const helixSlotHtml = waitingHuman.length ? `<div style="padding-top:6px;display:grid;gap:5px;min-width:220px;">${waitingHuman.slice(0, 2).map(humanWaitingCard).join('')}</div>` : ''
+
+    const demoBanner = useFixtures ? `<div aria-label="演示数据" style="position:relative;z-index:5;margin:10px 18px 0;padding:5px 9px;border:1px solid var(--thinking);background:color-mix(in srgb, var(--thinking) 14%, transparent);color:var(--thinking);border-radius:9px;font-size:11px;font-weight:700;letter-spacing:.08em;display:inline-block;left:0;">● 演示数据 · DEMO（仅 fake/demo 模式显示）</div>` : ''
+
+    const zoneLabel = (id, zh, en) => `<div class="zone-label" data-zone-label="${id}" aria-hidden="true" style="position:absolute;top:4px;left:6px;z-index:3;display:inline-flex;align-items:baseline;gap:5px;padding:1px 7px;border-radius:8px;background:rgba(255,255,255,0.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border:1px solid rgba(0,0,0,0.06);">
+      <span style="font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--text);opacity:.78;">${id}</span>
+      <span style="font-size:9.5px;color:var(--text-muted);letter-spacing:.02em;">${zh} · ${en}</span>
+    </div>`
+
+    const workstationShell = (rid, roleIds, zoneId) => {
+      if (!Array.isArray(roleIds)) roleIds = [roleIds]
+      return `<div class="workstation work-${rid}" style="position:relative;padding:16px 12px 10px;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 90%,transparent),color-mix(in srgb,var(--panel-2) 82%,transparent));border:1px solid rgba(0,0,0,0.07);border-radius:14px;box-shadow:0 5px 16px rgba(18,24,40,.10),0 1px 2px rgba(18,24,40,.05);backdrop-filter:blur(2px);">
+        ${roleIds.map((r) => renderSeatRow(snapshot, [r], mode, { slots: seatSlots })).join('')}
+      </div>`
+    }
+
+    const humanAreaBlock = (() => {
+      if (humanCount === 0) return ''
+      return `<div class="zone zone-human-area" data-zone="human-area" style="position:relative;grid-column:1 / -1;grid-row:4;padding:14px 16px 12px;background:linear-gradient(180deg,color-mix(in srgb,var(--waiting-human) 9%,transparent),color-mix(in srgb,var(--panel-2) 80%,transparent));border-top:1px solid rgba(0,0,0,0.07);">
+        ${zoneLabel('HUMAN', '人类区', 'Human Area')}
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding-top:6px;align-items:flex-start;">
+          ${hum1 ? `<div class="human-chip" style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow-1);">${S?.BADGE?.human?.({ size: 16 }) || ''}<span style="font-size:12px;font-weight:600;color:var(--text);">产品经理 · ${esc(hum1)}</span></div>` : ''}
+          ${hum2 ? `<div class="human-chip" style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow-1);">${S?.BADGE?.human?.({ size: 16 }) || ''}<span style="font-size:12px;font-weight:600;color:var(--text);">QA · ${esc(hum2)}</span></div>` : ''}
+          ${hum3 ? `<div class="human-chip" style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow-1);">${S?.BADGE?.human?.({ size: 16 }) || ''}<span style="font-size:12px;font-weight:600;color:var(--text);">审查员 · ${esc(hum3)}</span></div>` : ''}
+        </div>
+      </div>`
+    })()
+
+    const taskBlock = (() => {
+      if (tasks.length === 0) {
+        return `<div class="task-empty-hint" aria-label="暂无任务" style="position:absolute;right:14px;bottom:12px;z-index:5;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.55);border:1px dashed rgba(0,0,0,0.14);backdrop-filter:blur(3px);color:var(--text-muted);font-size:11px;">· 暂无任务 · 导入后显示在活动区</div>`
+      }
+      return `<section class="task-strip" aria-label="活动任务条" style="position:relative;grid-column:1 / -1;grid-row:5;z-index:4;margin:0 18px 18px;padding:4px 8px;background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 94%,transparent),color-mix(in srgb,var(--panel-2) 88%,transparent));border:1px solid rgba(0,0,0,0.07);border-radius:12px;box-shadow:0 3px 12px rgba(18,24,40,.08);">
+        <div style="display:flex;gap:6px;align-items:center;overflow:auto;padding:2px 0;">
+          ${tasks.map((t) => {
+            const St = S?.STATES
+            const stateKey = ({ done: 'DONE', running: 'WORKING', pending: 'IDLE', failed: 'BLOCKED', skipped: 'OFFLINE' })[t.status] || 'IDLE'
+            const color = St ? `var(--${St[stateKey].key})` : 'var(--accent)'
+            return `<article class="task-chip" data-task="${t.id}" data-role="${t.role}" style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:9px;background:var(--panel);border:1px solid var(--line);cursor:pointer;">
+              <span style="width:3px;height:16px;border-radius:999px;background:${color};"></span>
+              <span style="font-size:10.5px;color:var(--text-muted);font-family:var(--mono);font-weight:700;">${esc(t.id)}</span>
+              <span style="font-size:11.5px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${esc(t.title)}</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;color:${color};">${S?.stateGlyphSvg?.(stateKey, 11) || ''}<span style="font-size:10px;line-height:1;">${St?.[stateKey]?.zh || ''}</span></span>
+            </article>`
+          }).join('')}
+        </div>
+      </section>`
+    })()
+
+    const floorBackdrop = `
+      <svg class="office-floor" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;">
+        <defs>
+          <pattern id="iso-grid" width="40" height="24" patternUnits="userSpaceOnUse" patternTransform="skewX(-16)">
+            <path d="M 40 0 L 0 0 0 24" fill="none" stroke="color-mix(in srgb, var(--canvas-grid) 60%, transparent)" stroke-width="0.6" opacity=".55"/>
+          </pattern>
+          <linearGradient id="floor-vignette" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--canvas-floor)"/>
+            <stop offset="100%" stop-color="color-mix(in srgb, var(--canvas-floor) 92%, var(--panel-2))"/>
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#floor-vignette)"/>
+        <rect width="100%" height="100%" fill="url(#iso-grid)"/>
+      </svg>
+      <svg class="office-paths" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;">
+        <g stroke="color-mix(in srgb, var(--orchestrator) 22%, transparent)" stroke-width="1.2" fill="none" stroke-dasharray="2 3" opacity=".85">
+          <path class="path-helix-planning" d="M 50% 38% L 22% 22%"/>
+          <path class="path-helix-engineering" d="M 50% 38% L 78% 22%"/>
+          <path class="path-helix-quality" d="M 50% 38% L 22% 78%"/>
+          <path class="path-helix-knowledge" d="M 50% 38% L 78% 78%"/>
+        </g>
+        <g stroke="color-mix(in srgb, var(--line) 70%, transparent)" stroke-width="1" fill="none" opacity=".45">
+          <path class="walk-h" d="M 8% 50% L 92% 50%"/>
+          <path class="walk-v" d="M 50% 12% L 50% 92%"/>
+        </g>
+      </svg>
+      <div class="glass-partition glass-a" aria-hidden="true" style="position:absolute;left:50%;top:10%;width:0;height:64%;border-left:1px solid rgba(120,130,160,.12);backdrop-filter:blur(1px);z-index:1;"></div>
+      <div class="glass-partition glass-b" aria-hidden="true" style="position:absolute;left:10%;top:50%;width:80%;height:0;border-top:1px solid rgba(120,130,160,.12);backdrop-filter:blur(1px);z-index:1;"></div>`
 
     const canvasInner = `
+      ${floorBackdrop}
       ${demoBanner}
       ${edgeSVG(edges)}
-      <div class="canvas-grid" style="position:relative;z-index:2;display:grid;grid-template-columns:repeat(3, 1fr);grid-template-rows:auto auto auto;gap:24px 20px;padding:28px 20px 40px;align-items:start;">
-        <div class="zone zone-planning" data-zone="planning" style="grid-column:1;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['product'], mode, { slots: seatSlots })}
+      <div class="office-plan" style="position:relative;z-index:2;display:grid;grid-template-columns:1fr 1.05fr 1fr;grid-template-rows:auto auto auto auto auto;gap:18px 16px;padding:26px 20px 22px;align-items:stretch;">
+
+        <div class="zone zone-planning" data-zone="planning" style="position:relative;grid-column:1;grid-row:1 / span 2;min-height:240px;">
+          ${zoneLabel('PLANNING', '规划工作室', 'Planning Studio')}
+          <div style="display:grid;gap:12px;padding-top:18px;height:100%;">
+            ${workstationShell('planning-product', 'product', 'planning')}
+            ${workstationShell('planning-architect', 'architect', 'planning')}
+          </div>
         </div>
-        <div class="zone zone-human" data-zone="human" style="grid-column:2;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['architect'], mode, { slots: seatSlots })}
+
+        <div class="zone zone-helix-hub" data-zone="helix-hub" style="position:relative;grid-column:2;grid-row:1 / span 3;min-height:360px;">
+          ${zoneLabel('HELIX', '指挥中枢', 'Command Hub')}
+          <div style="display:grid;place-items:center;padding-top:22px;height:calc(100% - 22px);">
+            ${renderHelix({ ...snapshot, slot: helixSlotHtml }, mode)}
+          </div>
         </div>
-        <div class="zone zone-docs-top" data-zone="docs-top" style="grid-column:3;grid-row:1;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['reviewer'], mode, { slots: seatSlots })}
+
+        <div class="zone zone-engineering" data-zone="engineering" style="position:relative;grid-column:3;grid-row:1 / span 2;min-height:240px;">
+          ${zoneLabel('ENGINEERING', '工程站', 'Engineering Pod')}
+          <div style="display:grid;gap:12px;padding-top:18px;height:100%;">
+            ${workstationShell('eng-frontend', 'frontend', 'engineering')}
+            ${workstationShell('eng-backend', 'backend', 'engineering')}
+          </div>
         </div>
-        <div class="zone zone-build-left" data-zone="build-left" style="grid-column:1;grid-row:2;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['frontend'], mode, { slots: seatSlots })}
+
+        <div class="zone zone-quality" data-zone="quality" style="position:relative;grid-column:1;grid-row:3 / span 2;min-height:240px;">
+          ${zoneLabel('QUALITY', '质检工作室', 'Quality Studio')}
+          <div style="display:grid;gap:12px;padding-top:18px;height:100%;">
+            ${workstationShell('qa-qa', 'qa', 'quality')}
+            ${workstationShell('qa-reviewer', 'reviewer', 'quality')}
+          </div>
         </div>
-        <div class="zone zone-helix" data-zone="helix" style="grid-column:2;grid-row:2;display:flex;justify-content:center;">
-          ${renderHelix({ ...snapshot, slot: helixSlotHtml }, mode)}
+
+        <div class="zone zone-knowledge" data-zone="knowledge" style="position:relative;grid-column:3;grid-row:3 / span 2;min-height:240px;">
+          ${zoneLabel('KNOWLEDGE', '文档角', 'Knowledge Corner')}
+          <div style="display:grid;gap:12px;padding-top:18px;height:100%;">
+            ${workstationShell('docs-docs', 'docs', 'knowledge')}
+          </div>
         </div>
-        <div class="zone zone-build-right" data-zone="build-right" style="grid-column:3;grid-row:2;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['backend'], mode, { slots: seatSlots })}
-        </div>
-        <div class="zone zone-verify" data-zone="verify" style="grid-column:1;grid-row:3;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['qa'], mode, { slots: seatSlots })}
-        </div>
-        <div class="zone zone-docs" data-zone="docs" style="grid-column:3;grid-row:3;display:flex;justify-content:center;">
-          ${renderSeatRow(snapshot, ['docs'], mode, { slots: seatSlots })}
-        </div>
+
+        ${humanAreaBlock}
       </div>
-      <section class="canvas-rail" style="padding:0 20px 28px;display:grid;gap:16px;">
-        <div class="rail-head" style="display:flex;justify-content:space-between;align-items:baseline;">
-          <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--text);letter-spacing:.02em;">任务看板 · Kanban</h3>
-          <span style="font-size:12px;color:var(--text-muted);">${tasks.length} 项 · ${waitingHuman.length} 项等待人类</span>
-        </div>
-        <div class="rail-tasks" style="display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
-          ${tasks.map(taskCard).join('') || `<div style="padding:16px 14px;border:1px dashed var(--line);border-radius:10px;color:var(--text-muted);font-size:12px;">暂无任务。任务导入后在此处显示。</div>`}
-        </div>
-      </section>
+      ${taskBlock}
+
       <style>
         @media (max-width:1024px){
-          .v2-canvas .canvas-grid{grid-template-columns:repeat(4,1fr);grid-template-rows:auto auto auto;}
-          .v2-canvas .zone-helix{grid-column:1 / -1;grid-row:1;}
-          .v2-canvas [data-zone="planning"],.v2-canvas [data-zone="human"],.v2-canvas [data-zone="docs-top"],.v2-canvas [data-zone="build-left"]{grid-row:2;}
-          .v2-canvas [data-zone="build-right"],.v2-canvas [data-zone="verify"],.v2-canvas [data-zone="docs"],.v2-canvas [data-zone="build-left"]~[data-zone]{grid-row:3;}
+          .v2-canvas .office-plan{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto auto auto auto;gap:14px 12px;padding:18px 14px 16px;}
+          .v2-canvas .zone-helix-hub{grid-column:1 / -1;grid-row:1;min-height:300px;}
+          .v2-canvas .zone-planning{grid-column:1;grid-row:2 / span 2;}
+          .v2-canvas .zone-engineering{grid-column:2;grid-row:2 / span 2;}
+          .v2-canvas .zone-quality{grid-column:1;grid-row:4 / span 2;}
+          .v2-canvas .zone-knowledge{grid-column:2;grid-row:4 / span 2;}
+          .v2-canvas .zone-human-area{grid-row:6;}
+          .v2-canvas .task-strip{grid-row:7;}
         }
         @media (max-width:640px){
-          .v2-canvas .canvas-grid{grid-template-columns:1fr;grid-template-rows:auto;gap:12px;padding:12px 10px 18px;}
-          .v2-canvas .zone{grid-column:1 !important;grid-row:auto !important;}
-          .v2-canvas .canvas-rail{padding:0 10px 18px;}
-          .v2-canvas .canvas-rail .rail-tasks{grid-template-columns:1fr;}
+          .v2-canvas .office-plan{grid-template-columns:1fr;grid-template-rows:auto;gap:12px;padding:14px 10px 14px;}
+          .v2-canvas .office-plan .zone{grid-column:1 !important;grid-row:auto !important;min-height:auto !important;}
+          .v2-canvas .office-plan .zone-helix-hub{min-height:240px !important;}
+          .v2-canvas .task-strip{grid-column:1 !important;grid-row:auto !important;margin:0 10px 14px;}
         }
-        .v2-canvas{background:
-          linear-gradient(var(--canvas-floor),var(--canvas-floor)),
-          repeating-linear-gradient(0deg,transparent 0 47px,var(--canvas-grid) 47px 48px),
-          repeating-linear-gradient(90deg,transparent 0 47px,var(--canvas-grid) 47px 48px);
-        background-blend-mode:normal;min-height:100%;}
+        .v2-canvas{background:var(--canvas-floor);min-height:100%;position:relative;}
         .v2-canvas .task-card:hover{border-color:var(--accent);cursor:pointer;transition:border-color var(--dur-base) var(--ease);}
         .v2-canvas .seat{cursor:pointer;}
-        .v2-canvas .seat:hover .nameplate{border-color:var(--accent);transition:border-color var(--dur-base) var(--ease);}
+        .v2-canvas .task-chip:hover{border-color:var(--accent);transition:border-color var(--dur-base) var(--ease);}
+        .v2-canvas .workstation:hover{box-shadow:0 6px 20px rgba(18,24,40,.14),0 1px 2px rgba(18,24,40,.05);transition:box-shadow var(--dur-base) var(--ease);}
       </style>
     `
     mount.innerHTML = canvasInner
 
-    // Selection handlers (seat/task)
     mount.querySelectorAll('.seat').forEach((seat) => {
       seat.addEventListener('click', () => {
         mount.querySelectorAll('.seat').forEach((s) => s.classList.remove('is-selected'))
@@ -275,9 +370,9 @@
         mount.dispatchEvent(ev)
       })
     })
-    mount.querySelectorAll('.task-card').forEach((card) => {
+    mount.querySelectorAll('.task-card, .task-chip').forEach((card) => {
       card.addEventListener('click', () => {
-        mount.querySelectorAll('.task-card').forEach((c) => c.style.outline = '')
+        mount.querySelectorAll('.task-card, .task-chip').forEach((c) => c.style.outline = '')
         card.style.setProperty('outline', '2px solid var(--accent)')
         card.style.setProperty('outline-offset', '2px')
         const ev = new CustomEvent('vao:task-selected', { bubbles: true, detail: { taskId: card.dataset.task } })

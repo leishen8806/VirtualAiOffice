@@ -223,83 +223,358 @@
 
   const ROLE_IDS = Object.freeze(ROLES.map((r) => r.id))
 
-  // Seat = figure + nameplate + stateRing + (optional) taskCard slot.
-  // Rendering contract stable so V2-B final artwork drop-in doesn't change call site.
+  // Workstation surface component library (VIS-5: workstation defines role visually).
+  // Each renders a ~70-110px wide desk surface with role-identifying props in front of seated figure.
+  const WORKSTATION = {
+    product: () => `
+      <svg class="ws-surface ws-whiteboard" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <defs><linearGradient id="wbProdFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f4f6fb"/>
+        </linearGradient></defs>
+        <rect x="6" y="4" width="98" height="48" rx="4" fill="url(#wbProdFill)" stroke="rgba(0,0,0,.12)" stroke-width="1"/>
+        <g stroke="var(--role-product)" stroke-width=".8" fill="none" opacity=".78">
+          <rect x="12" y="10" width="22" height="14" rx="1.5"/>
+          <rect x="38" y="10" width="26" height="14" rx="1.5"/>
+          <rect x="68" y="10" width="32" height="14" rx="1.5"/>
+          <path d="M14 19 h18 M14 22 h14 M40 19 h20 M40 22 h16 M70 19 h26 M70 22 h22"/>
+        </g>
+        <g fill="var(--role-product)" opacity=".85">
+          <rect x="14" y="30" width="8" height="4" rx="1"/>
+          <rect x="24" y="32" width="10" height="3" rx="1" fill="var(--role-architect)" opacity=".7"/>
+          <rect x="36" y="30" width="12" height="4" rx="1" fill="var(--role-frontend)" opacity=".75"/>
+          <circle cx="60" cy="34" r="2.5" fill="var(--role-qa)" opacity=".7"/>
+          <rect x="72" y="32" width="16" height="3" rx="1" fill="var(--role-docs)" opacity=".75"/>
+        </g>
+        <g stroke="rgba(0,0,0,.1)" stroke-width="1">
+          <line x1="55" y1="52" x2="52" y2="58"/>
+          <line x1="55" y1="52" x2="58" y2="58"/>
+        </g>
+        <rect x="10" y="50" width="90" height="3" rx="1" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    architect: () => `
+      <svg class="ws-surface ws-blueprint" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <rect x="4" y="18" width="102" height="30" rx="3" fill="rgba(255,255,255,.7)" stroke="rgba(0,0,0,.09)" stroke-width=".8"/>
+        <rect x="10" y="8" width="58" height="16" rx="2" fill="color-mix(in srgb,var(--role-architect) 10%,transparent)" stroke="color-mix(in srgb,var(--role-architect) 45%,transparent)" stroke-width=".8"/>
+        <g stroke="var(--role-architect)" stroke-width=".7" fill="none" opacity=".85">
+          <path d="M14 30 L28 30 L28 42 L14 42 Z"/>
+          <path d="M34 28 L60 28 L60 44 L34 44 Z"/>
+          <circle cx="76" cy="36" r="5"/>
+          <path d="M76 31 L76 41 M71 36 L81 36" opacity=".6"/>
+          <rect x="90" y="28" width="14" height="16" rx="1" stroke-dasharray="2 1.5"/>
+        </g>
+        <g fill="var(--role-architect)" opacity=".45">
+          <circle cx="18" cy="44" r="1.4"/><circle cx="58" cy="44" r="1.4"/>
+        </g>
+        <rect x="4" y="48" width="102" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    frontend: () => `
+      <svg class="ws-surface ws-dual-monitor" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <g>
+          <rect x="6" y="8" width="44" height="30" rx="2" fill="#111827" stroke="rgba(0,0,0,.25)" stroke-width=".8"/>
+          <rect x="8" y="10" width="40" height="26" rx="1" fill="color-mix(in srgb,var(--role-frontend) 14%,#ffffff22)"/>
+          <g fill="#fff" opacity=".9">
+            <rect x="10" y="12" width="14" height="3" rx="1"/>
+            <rect x="10" y="17" width="36" height="1.5" rx=".7" opacity=".65"/>
+            <rect x="10" y="20" width="28" height="1.5" rx=".7" opacity=".5"/>
+            <rect x="10" y="23" width="32" height="1.5" rx=".7" opacity=".55"/>
+            <rect x="10" y="26" width="22" height="1.5" rx=".7" opacity=".45"/>
+            <circle cx="44" cy="14" r="1.6" fill="var(--role-frontend)" opacity=".85"/>
+          </g>
+          <rect x="24" y="38" width="8" height="6" rx="1" fill="rgba(0,0,0,.18)"/>
+          <rect x="18" y="44" width="20" height="3" rx="1" fill="rgba(0,0,0,.2)"/>
+        </g>
+        <g>
+          <rect x="60" y="8" width="44" height="30" rx="2" fill="#111827" stroke="rgba(0,0,0,.25)" stroke-width=".8"/>
+          <rect x="62" y="10" width="40" height="26" rx="1" fill="color-mix(in srgb,var(--role-frontend) 10%,#ffffff22)"/>
+          <g stroke="var(--role-frontend)" stroke-width=".9" fill="none" opacity=".8">
+            <path d="M66 14 L78 14 L80 22 L70 28 L64 22 Z"/>
+            <circle cx="92" cy="20" r="2.5"/>
+            <rect x="68" y="30" width="28" height="3" rx="1"/>
+          </g>
+          <rect x="78" y="38" width="8" height="6" rx="1" fill="rgba(0,0,0,.18)"/>
+          <rect x="72" y="44" width="20" height="3" rx="1" fill="rgba(0,0,0,.2)"/>
+        </g>
+        <rect x="4" y="49" width="102" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    backend: () => `
+      <svg class="ws-surface ws-server-rack" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <rect x="14" y="6" width="82" height="46" rx="3" fill="rgba(255,255,255,.6)" stroke="rgba(0,0,0,.1)" stroke-width=".9"/>
+        <g stroke="rgba(0,0,0,.15)" stroke-width=".6" fill="none">
+          <line x1="14" y1="16" x2="96" y2="16"/>
+          <line x1="14" y1="26" x2="96" y2="26"/>
+          <line x1="14" y1="36" x2="96" y2="36"/>
+        </g>
+        <g>
+          <g fill="var(--role-backend)" opacity=".75">
+            <circle cx="22" cy="11" r="1.6"/><circle cx="26" cy="11" r="1.6" opacity=".65"/>
+            <rect x="34" y="9.5" width="18" height="3" rx="1"/>
+            <circle cx="86" cy="11" r="1.6"/><circle cx="90" cy="11" r="1.6" opacity=".5"/>
+          </g>
+          <g fill="var(--working)" opacity=".65">
+            <circle cx="22" cy="21" r="1.6"/><rect x="34" y="19.5" width="22" height="3" rx="1"/>
+            <circle cx="88" cy="21" r="1.4"/>
+          </g>
+          <g fill="var(--idle)" opacity=".55">
+            <circle cx="22" cy="31" r="1.6"/><rect x="34" y="29.5" width="26" height="3" rx="1"/>
+          </g>
+          <g fill="var(--role-docs)" opacity=".55">
+            <circle cx="22" cy="41" r="1.6"/><rect x="34" y="39.5" width="30" height="3" rx="1"/>
+          </g>
+        </g>
+        <g stroke="var(--role-backend)" stroke-width=".6" fill="none" opacity=".6">
+          <path d="M96 18 Q104 14 100 6 L96 10" stroke-dasharray="1.5 1"/>
+        </g>
+        <rect x="10" y="52" width="90" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    qa: () => `
+      <svg class="ws-surface ws-testbench" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <rect x="8" y="6" width="94" height="30" rx="3" fill="rgba(255,255,255,.75)" stroke="rgba(0,0,0,.1)" stroke-width=".8"/>
+        <rect x="12" y="10" width="86" height="6" rx="2" fill="rgba(0,0,0,.04)"/>
+        <g>
+          <rect x="12" y="20" width="12" height="10" rx="1.5" fill="color-mix(in srgb,var(--done) 20%,transparent)" stroke="var(--done)" stroke-width=".7"/>
+          <path d="M15 25 l2 2 l4 -4" stroke="var(--done)" stroke-width="1.4" fill="none"/>
+          <rect x="28" y="20" width="12" height="10" rx="1.5" fill="color-mix(in srgb,var(--working) 22%,transparent)" stroke="var(--working)" stroke-width=".7"/>
+          <circle cx="34" cy="25" r="2" fill="none" stroke="var(--working)" stroke-width="1.2" stroke-dasharray="2 1.2"/>
+          <rect x="44" y="20" width="12" height="10" rx="1.5" fill="color-mix(in srgb,var(--blocked) 20%,transparent)" stroke="var(--blocked)" stroke-width=".7"/>
+          <path d="M48 23 L52 27 M52 23 L48 27" stroke="var(--blocked)" stroke-width="1.3"/>
+          <rect x="60" y="20" width="12" height="10" rx="1.5" fill="color-mix(in srgb,var(--role-qa) 20%,transparent)" stroke="var(--role-qa)" stroke-width=".7"/>
+          <circle cx="66" cy="25" r="1.5" fill="var(--role-qa)"/>
+          <path d="M66 20 L66 23 L69 26" stroke="var(--role-qa)" stroke-width="1" fill="none"/>
+          <rect x="76" y="20" width="24" height="10" rx="1.5" fill="rgba(0,0,0,.04)" stroke="rgba(0,0,0,.12)" stroke-width=".6"/>
+          <g fill="var(--role-qa)" opacity=".7">
+            <rect x="79" y="22.5" width="6" height="1.6" rx=".8"/><rect x="79" y="25.5" width="14" height="1.6" rx=".8"/>
+          </g>
+        </g>
+        <g stroke="rgba(0,0,0,.25)" stroke-width=".6" fill="none" opacity=".55">
+          <path d="M12 40 L22 40 L20 50 L55 50 L53 40 L98 40"/>
+        </g>
+        <rect x="4" y="52" width="102" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    reviewer: () => `
+      <svg class="ws-surface ws-review" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <g>
+          <rect x="4" y="8" width="50" height="40" rx="3" fill="rgba(255,255,255,.7)" stroke="rgba(0,0,0,.1)" stroke-width=".8"/>
+          <rect x="8" y="12" width="42" height="4" rx="1" fill="color-mix(in srgb,var(--role-reviewer) 20%,transparent)"/>
+          <g fill="rgba(0,0,0,.55)" opacity=".75">
+            <rect x="8" y="20" width="42" height="1.5" rx=".7"/>
+            <rect x="8" y="23" width="36" height="1.5" rx=".7" opacity=".85"/>
+            <rect x="8" y="26" width="40" height="1.5" rx=".7" opacity=".75"/>
+            <rect x="8" y="29" width="30" height="1.5" rx=".7" opacity=".65"/>
+            <rect x="8" y="32" width="38" height="1.5" rx=".7" opacity=".6"/>
+          </g>
+          <g stroke="var(--done)" stroke-width="1.4" fill="none" opacity=".9">
+            <path d="M40 23 l-2 2 l-3 -3"/>
+            <path d="M42 32 l-2 2 l-5 -5" stroke="var(--blocked)" opacity=".8"/>
+            <path d="M38 30 l-1 1 l-1 -1" stroke="var(--reviewing)" opacity=".9"/>
+          </g>
+        </g>
+        <g>
+          <rect x="58" y="8" width="48" height="40" rx="3" fill="rgba(255,255,255,.7)" stroke="rgba(0,0,0,.1)" stroke-width=".8"/>
+          <line x1="82" y1="8" x2="82" y2="48" stroke="rgba(0,0,0,.15)" stroke-width=".8"/>
+          <g stroke="var(--role-reviewer)" stroke-width=".6" fill="none" opacity=".85">
+            <rect x="62" y="14" width="38" height="2" rx="1"/>
+            <path d="M62 20 l2 4 l2 -4 l2 4 l2 -4 l2 4"/>
+            <rect x="62" y="30" width="12" height="10" rx="1.5" fill="color-mix(in srgb,var(--done) 14%,transparent)"/>
+            <rect x="78" y="30" width="22" height="10" rx="1.5" fill="color-mix(in srgb,var(--blocked) 12%,transparent)"/>
+          </g>
+          <path d="M65 34 l1.5 2 l3 -3" stroke="var(--done)" stroke-width="1.2" fill="none"/>
+          <path d="M82 33 L86 37 M86 33 L82 37" stroke="var(--blocked)" stroke-width="1.2"/>
+        </g>
+        <rect x="4" y="52" width="102" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+    docs: () => `
+      <svg class="ws-surface ws-library" viewBox="0 0 110 60" width="108" height="60" aria-hidden="true" style="position:relative;display:block;margin:0 auto;">
+        <g>
+          <rect x="6" y="10" width="100" height="12" rx="2" fill="rgba(0,0,0,.04)" stroke="rgba(0,0,0,.08)" stroke-width=".6"/>
+          <g>
+            <rect x="10" y="12" width="6" height="8" rx=".8" fill="var(--role-product)" opacity=".65"/>
+            <rect x="17" y="12" width="5" height="8" rx=".8" fill="var(--role-architect)" opacity=".7"/>
+            <rect x="23" y="12" width="7" height="8" rx=".8" fill="var(--role-frontend)" opacity=".68"/>
+            <rect x="31" y="12" width="5" height="8" rx=".8" fill="var(--role-backend)" opacity=".72"/>
+            <rect x="37" y="12" width="6" height="8" rx=".8" fill="var(--role-qa)" opacity=".66"/>
+            <rect x="44" y="12" width="6" height="8" rx=".8" fill="var(--role-reviewer)" opacity=".7"/>
+            <rect x="51" y="12" width="8" height="8" rx=".8" fill="var(--role-docs)" opacity=".78"/>
+            <rect x="60" y="12" width="6" height="8" rx=".8" fill="var(--role-frontend)" opacity=".55"/>
+            <rect x="67" y="12" width="5" height="8" rx=".8" fill="var(--role-backend)" opacity=".6"/>
+            <rect x="73" y="12" width="8" height="8" rx=".8" fill="var(--role-product)" opacity=".55"/>
+            <rect x="82" y="12" width="6" height="8" rx=".8" fill="var(--role-architect)" opacity=".6"/>
+            <rect x="89" y="12" width="5" height="8" rx=".8" fill="var(--role-docs)" opacity=".85"/>
+          </g>
+        </g>
+        <g>
+          <rect x="6" y="30" width="60" height="22" rx="3" fill="rgba(255,255,255,.78)" stroke="rgba(0,0,0,.1)" stroke-width=".8"/>
+          <g fill="rgba(0,0,0,.5)" opacity=".7">
+            <rect x="10" y="34" width="22" height="2" rx="1"/>
+            <rect x="10" y="38" width="48" height="1.4" rx=".7" opacity=".75"/>
+            <rect x="10" y="41" width="42" height="1.4" rx=".7" opacity=".65"/>
+            <rect x="10" y="44" width="38" height="1.4" rx=".7" opacity=".55"/>
+          </g>
+          <g transform="translate(10 33.5)">
+            <path d="M0 0 L3 2 L6 0" stroke="var(--role-docs)" stroke-width=".9" fill="none" opacity=".9"/>
+          </g>
+        </g>
+        <g>
+          <rect x="72" y="30" width="34" height="22" rx="3" fill="rgba(0,0,0,.04)" stroke="rgba(0,0,0,.1)" stroke-width=".8"/>
+          <g stroke="var(--role-docs)" stroke-width=".6" fill="none" opacity=".85">
+            <circle cx="89" cy="39" r="4"/>
+            <path d="M89 35 L89 43 M85 39 L93 39" opacity=".5"/>
+            <rect x="75" y="44" width="26" height="4" rx="1.5" stroke-dasharray="1.5 1"/>
+          </g>
+          <rect x="78" y="33" width="18" height="2.5" rx="1" fill="var(--role-docs)" opacity=".4"/>
+        </g>
+        <rect x="4" y="54" width="102" height="3" rx="1.5" fill="rgba(0,0,0,.08)"/>
+      </svg>`,
+  }
+
+  // Seat = workstation surface (defines role visually) + seated figure (smaller 0.85 scale, behind desk)
+  //   + state overlay pill + slim nameplate tag beneath workstation.
+  // Visual footprint ~110-145px wide per workstation (matches user 100-150px req).
   function renderSeat(roleId, options = {}) {
     const r = role(roleId)
-    if (!r) {
-      // Fallback GenericSeat (not official; not counted in 8)
-      return renderGenericSeat(options)
-    }
+    if (!r) return renderGenericSeat(options)
     const S = globalThis.VAOCoreStates
     const state = options.state || 'IDLE'
-    const fig = figure(r, 1.1)
-    const ring = S && S.ringCss ? `<div class="seat-ring state-${S.STATES[state]?.key || state.toLowerCase()}" style="position:absolute;left:50%;top:60px;transform:translate(-50%,0);${S.ringCss(state, { size: 56 })}box-sizing:border-box;border-radius:${56 * 0.42}px / ${56 * 0.22}px;"></div>` : ''
-    const stateGlyph = S ? `<span style="position:absolute;left:50%;top:46px;transform:translate(-50%,0);color:var(--${S.STATES[state]?.key || 'idle'});background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 4px;display:inline-flex;box-shadow:var(--shadow-1);">${S.stateGlyphSvg(state, 12)}<span style="font-size:10px;line-height:12px;padding:0 2px 0 3px;">${S.STATES[state]?.zh || ''}</span></span>` : ''
+    const fig = figure(r, 0.85)
+    const wsSVG = WORKSTATION[roleId] ? WORKSTATION[roleId]() : ''
+    const stateKey = S?.STATES?.[state]?.key || state.toLowerCase()
+    const ring = S && S.ringCss ? `<div class="seat-ring state-${stateKey}" style="position:absolute;left:50%;top:54px;transform:translate(-50%,0);${S.ringCss(state, { size: 44 })}box-sizing:border-box;border-radius:${44 * 0.42}px / ${44 * 0.22}px;opacity:.8;"></div>` : ''
+    const stateGlyph = S ? `<span style="position:absolute;right:6px;top:4px;z-index:4;color:var(--${stateKey});background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:1px 5px;display:inline-flex;box-shadow:var(--shadow-1);align-items:center;gap:2px;">${S.stateGlyphSvg(state, 11)}<span style="font-size:9.5px;line-height:11px;padding:0 1.5px 0 2.5px;">${S.STATES[state]?.zh || ''}</span></span>` : ''
     const plate = nameplate(r, options)
-    return `<div class="seat seat-${r.id}" role="listitem" aria-label="${r.zh} ${r.en} 座位" data-role="${r.id}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:170px;padding:14px 8px 8px;background:transparent;">
-      ${ring}
-      <div style="position:relative;width:88px;height:96px;display:grid;place-items:end center;">${fig}</div>
-      ${stateGlyph}
-      ${plate}
-      ${options.slot ? `<div class="seat-slot" style="margin-top:4px;width:100%;">${options.slot}</div>` : ''}
+    return `<div class="seat seat-${r.id}" role="listitem" aria-label="${r.zh} ${r.en} 座位" data-role="${r.id}" style="position:relative;display:grid;grid-template-rows:auto auto;justify-items:center;gap:6px;min-width:128px;padding:12px 6px 6px;background:transparent;">
+      <div class="workstation-stack" style="position:relative;width:118px;height:130px;display:grid;justify-items:center;">
+        ${ring}
+        <div class="ws-seated-figure" style="position:absolute;left:50%;top:2px;transform:translate(-50%,0);z-index:2;">${fig}</div>
+        <div class="ws-surface-wrap" style="position:absolute;left:0;right:0;bottom:0;z-index:3;">${wsSVG}</div>
+        ${stateGlyph}
+      </div>
+      <div style="z-index:3;">${plate}</div>
+      ${options.slot ? `<div class="seat-slot" style="margin-top:2px;width:100%;z-index:3;">${options.slot}</div>` : ''}
     </div>`
   }
 
   function renderGenericSeat(options = {}) {
-    const role = GENERIC
-    const r = role
-    const fig = `<svg viewBox="0 0 32 56" width="35.2" height="61.6" focusable="false"><title>通用座位</title>
+    const r = GENERIC
+    const fig = `<svg viewBox="0 0 32 56" width="30" height="52" focusable="false"><title>通用座位</title>
       ${OPERATOR_BASE}
     </svg>`
     const plate = `<div class="nameplate" style="display:grid;grid-template-columns:4px auto;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-control);padding:4px 8px 4px 4px;">
       <span style="width:4px;height:100%;background:${r.accent};border-radius:999px;"></span>
       <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);line-height:18px;">${options.name || r.zh}</div>
-        <div style="font-size:11.5px;color:var(--text-muted);line-height:16px;">${options.en || r.en}</div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--text);line-height:17px;">${options.name || r.zh}</div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:15px;">${options.en || r.en}</div>
       </div>
     </div>`
-    return `<div class="seat seat-generic" data-role="generic" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:170px;padding:14px 8px 8px;background:transparent;">
-      <div style="width:88px;height:96px;display:grid;place-items:end center;">${fig}</div>
+    return `<div class="seat seat-generic" data-role="generic" style="position:relative;display:grid;grid-template-rows:auto auto;justify-items:center;gap:6px;min-width:128px;padding:12px 6px 6px;background:transparent;">
+      <div style="position:relative;width:118px;height:130px;display:grid;place-items:end center;">
+        <div style="position:absolute;left:50%;top:8px;transform:translate(-50%,0);">${fig}</div>
+        <div style="position:absolute;bottom:0;left:10px;right:10px;height:36px;border-radius:10px;background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);"></div>
+      </div>
       ${plate}
     </div>`
   }
 
-  // === HELIX VISUAL PRIMITIVE (elevated, 6 ports + node network motif) ===
+  // === HELIX VISUAL PRIMITIVE (VIS-4: semi-circular command desk) ===
+  // Helix = human-like operator standing behind semicircular command desk
+  //   + 2–3 small desk screens + subtle orchestration connection lines to zone corners.
   function renderHelixCore(opts = {}) {
     const r = role('helix')
     const S = globalThis.VAOCoreStates
     const state = opts.state || 'IDLE'
-    const fig = figure(r, 1.2)
-    // 6 ports: Requirements/Tasks/Executions/Reviews/Evidence/Human-Actions (§3.1)
-    const ports = ['Requirements', 'Tasks', 'Executions', 'Reviews', 'Evidence', 'Human Actions']
-    const zh = { Requirements: '需求', Tasks: '任务', Executions: '执行', Reviews: '评审', Evidence: '证据', 'Human Actions': '人类行动' }
-    const portCounts = opts.portCounts || {}
-    const elevatedPlatform = `
-      <div class="helix-platform" style="position:absolute;left:50%;top:78px;transform:translate(-50%,0);width:172px;height:36px;background:linear-gradient(180deg, color-mix(in srgb, var(--orchestrator) 22%, var(--panel)), var(--panel-2));border:1.5px solid var(--orchestrator);border-radius:86px / 18px;box-shadow:0 6px 18px color-mix(in srgb, var(--orchestrator) 18%, transparent);display:grid;place-items:center;">
-        <div style="display:flex;gap:14px;padding:0 14px;align-items:center;">
-          ${ports.map((p, i) => `<span class="port port-${i}" data-port="${p}" title="${p} · ${zh[p]}${portCounts[p] != null ? ' ' + portCounts[p] : ''}" style="display:inline-flex;align-items:center;gap:4px;color:${portCounts[p] > 0 ? 'var(--orchestrator)' : 'var(--text-muted)'};">
-            <span style="width:6px;height:6px;border-radius:999px;border:1.4px solid currentColor;${portCounts[p] > 0 ? 'background:currentColor;' : ''}"></span>
-            <span style="font-size:10px;line-height:1;font-family:var(--mono);font-weight:600;">${portCounts[p] != null ? portCounts[p] : '—'}</span>
-          </span>`).join('')}
-        </div>
-      </div>`
-    const base = renderSeat('helix', { ...opts, slot: '' })
-    // Inject platform before nameplate + emit 6 ports + elevated ring.
-    return `<div class="seat seat-helix seat-helix-core" data-role="helix" aria-label="Helix 系统编排中枢 中心座位" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:220px;padding:14px 8px 8px;background:transparent;">
-      <div style="position:relative;width:132px;height:132px;display:grid;place-items:center;">
-        <div class="helix-ring" style="position:absolute;width:132px;height:132px;border-radius:132px;border:1.4px dashed color-mix(in srgb, var(--orchestrator) 55%, transparent);box-sizing:border-box;animation:helix-pulse 2.4s ease-in-out infinite alternate;"></div>
-        <div style="position:relative;display:grid;place-items:end center;width:96px;height:108px;">${fig}</div>
+    const fig = figure(r, 1.15)
+    const stateKey = S?.STATES?.[state]?.key || state.toLowerCase()
+    const deskSVG = `
+      <svg class="helix-desk" viewBox="0 0 220 110" width="210" height="105" aria-hidden="true" style="position:relative;display:block;margin:0 auto;z-index:3;">
+        <defs>
+          <linearGradient id="hdTop" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 24%,var(--panel))"/>
+            <stop offset="100%" stop-color="color-mix(in srgb,var(--orchestrator) 12%,var(--panel-2))"/>
+          </linearGradient>
+          <radialGradient id="hdGlow" cx="50%" cy="0%" r="80%">
+            <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 22%,transparent)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="110" cy="106" rx="92" ry="5" fill="rgba(0,0,0,.18)"/>
+        <path d="M20 80 Q 110 -14 200 80 L 196 102 Q 110 70 24 102 Z" fill="url(#hdTop)" stroke="color-mix(in srgb,var(--orchestrator) 55%,var(--line))" stroke-width="1.4"/>
+        <path d="M28 82 Q 110 0 192 82" fill="url(#hdGlow)" opacity=".8"/>
+        <g stroke="rgba(0,0,0,.08)" stroke-width=".8" fill="none" opacity=".7">
+          <line x1="40" y1="92" x2="40" y2="102"/>
+          <line x1="80" y1="96" x2="80" y2="104"/>
+          <line x1="140" y1="96" x2="140" y2="104"/>
+          <line x1="180" y1="92" x2="180" y2="102"/>
+        </g>
+        <g>
+          <rect x="30" y="54" width="36" height="24" rx="2.5" fill="#0f1522" stroke="rgba(0,0,0,.2)" stroke-width=".8"/>
+          <rect x="32" y="56" width="32" height="20" rx="1.2" fill="color-mix(in srgb,var(--thinking) 22%,#ffffff22)"/>
+          <g fill="#fff" opacity=".9">
+            <rect x="34" y="58" width="10" height="2" rx="1"/>
+            <rect x="34" y="62" width="26" height="1.3" rx=".6" opacity=".6"/>
+            <rect x="34" y="65" width="20" height="1.3" rx=".6" opacity=".5"/>
+            <rect x="34" y="68" width="24" height="1.3" rx=".6" opacity=".45"/>
+          </g>
+        </g>
+        <g>
+          <rect x="92" y="44" width="36" height="30" rx="3" fill="#0f1522" stroke="color-mix(in srgb,var(--orchestrator) 60%,#0f1522)" stroke-width="1"/>
+          <rect x="94" y="46" width="32" height="26" rx="1.5" fill="color-mix(in srgb,var(--orchestrator) 24%,#ffffff22)"/>
+          <g stroke="var(--orchestrator)" stroke-width=".7" fill="none" opacity=".9">
+            <circle cx="110" cy="55" r="3.5" fill="none"/>
+            <path d="M110 51.5 L110 58.5 M106.5 55 L113.5 55" opacity=".7"/>
+            <path d="M98 64 L106 64 L108 68 L112 62 L116 68 L120 64 L122 64"/>
+            <rect x="96" y="68" width="28" height="2.5" rx="1.2" opacity=".8"/>
+          </g>
+        </g>
+        <g>
+          <rect x="154" y="54" width="36" height="24" rx="2.5" fill="#0f1522" stroke="rgba(0,0,0,.2)" stroke-width=".8"/>
+          <rect x="156" y="56" width="32" height="20" rx="1.2" fill="color-mix(in srgb,var(--working) 22%,#ffffff22)"/>
+          <g>
+            <circle cx="164" cy="62" r="2" fill="var(--working)"/>
+            <circle cx="172" cy="62" r="2" fill="var(--reviewing)" opacity=".85"/>
+            <circle cx="180" cy="62" r="2" fill="var(--waiting-human)" opacity=".8"/>
+            <rect x="160" y="68" width="24" height="3" rx="1.5" fill="rgba(255,255,255,.25)"/>
+            <rect x="160" y="72" width="18" height="1.6" rx=".8" fill="rgba(255,255,255,.18)"/>
+          </g>
+        </g>
+      </svg>`
+
+    const connLines = `
+      <svg class="helix-connections" viewBox="0 0 260 230" width="100%" height="100%" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:1;">
+        <defs>
+          <linearGradient id="connOrch" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 80%,transparent)"/>
+            <stop offset="100%" stop-color="color-mix(in srgb,var(--orchestrator) 14%,transparent)"/>
+          </linearGradient>
+        </defs>
+        <g stroke="url(#connOrch)" stroke-width=".95" fill="none" stroke-dasharray="1.5 2.2" opacity=".78">
+          <path d="M130 150 Q 50 110 16 40"/>
+          <path d="M130 150 Q 80 70 130 20"/>
+          <path d="M130 150 Q 210 110 244 40"/>
+          <path d="M130 150 Q 50 190 30 218"/>
+          <path d="M130 150 Q 210 190 230 218"/>
+        </g>
+        <g fill="var(--orchestrator)" opacity=".55">
+          <circle cx="16" cy="40" r="1.6"/>
+          <circle cx="130" cy="20" r="1.6"/>
+          <circle cx="244" cy="40" r="1.6"/>
+          <circle cx="30" cy="218" r="1.6"/>
+          <circle cx="230" cy="218" r="1.6"/>
+        </g>
+      </svg>`
+
+    const plate = nameplate(r, opts)
+
+    return `<div class="seat seat-helix seat-helix-core" data-role="helix" aria-label="Helix 系统编排中枢 指挥台" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:240px;padding:12px 6px 4px;background:transparent;">
+      <div class="helix-hub-stack" style="position:relative;width:230px;height:230px;">
+        ${connLines}
+        <div class="helix-operator" style="position:absolute;left:50%;top:18px;transform:translate(-50%,0);z-index:4;">${fig}</div>
+        ${S ? `<span style="position:absolute;left:50%;top:4px;transform:translate(-50%,0);z-index:5;color:var(--orchestrator);background:var(--panel);border:1.4px solid color-mix(in srgb, var(--orchestrator) 50%, var(--line));border-radius:999px;padding:2px 8px;display:inline-flex;box-shadow:var(--shadow-1);align-items:center;gap:3.5px;">
+          ${S.stateGlyphSvg(state, 13)}
+          <span style="font-size:11px;line-height:13px;font-weight:700;">HELIX · ${S.STATES[state]?.zh || S.STATES[state]?.label || state}</span>
+        </span>` : ''}
+        <div style="position:absolute;left:0;right:0;bottom:4px;z-index:4;">${deskSVG}</div>
       </div>
-      ${elevatedPlatform}
-      ${S ? `<span style="position:absolute;left:50%;top:38px;transform:translate(-50%,0);color:var(--orchestrator);background:var(--panel);border:1.4px solid color-mix(in srgb, var(--orchestrator) 55%, var(--line));border-radius:999px;padding:2px 7px;display:inline-flex;box-shadow:var(--shadow-1);align-items:center;gap:3px;">
-        ${S.stateGlyphSvg(state, 13)}
-        <span style="font-size:11px;line-height:12px;font-weight:600;">HELIX · ${S.STATES[state]?.label || state}</span>
-      </span>` : ''}
-      ${nameplate(r, opts)}
+      <div style="z-index:4;">${plate}</div>
       ${opts.slot || ''}
-    </div>
-    <style>@keyframes helix-pulse{to{transform:scale(1.04);opacity:.7;}}</style>`
+    </div>`
   }
 
   const api = Object.freeze({

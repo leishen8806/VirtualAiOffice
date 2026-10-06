@@ -179,12 +179,12 @@ html[data-theme-core] {
 /* V2 shell layout tokens */
 html[data-theme-core] {
   --shell-bar-h: 48px;
-  --shell-rail-w: 240px;
-  --shell-helix-w: 340px;
+  --shell-rail-w: 192px;
+  --shell-helix-w: 312px;
   --shell-zone-gap: 8px;
 }
 @media (max-width: 1024px) {
-  html[data-theme-core] { --shell-rail-w: 0px; --shell-helix-w: 320px; }
+  html[data-theme-core] { --shell-rail-w: 0px; --shell-helix-w: 300px; }
 }
 @media (max-width: 640px) {
   html[data-theme-core] { --shell-bar-h: 56px; --shell-helix-w: 0px; }
