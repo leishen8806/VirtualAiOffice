@@ -1,8 +1,8 @@
 import { truncate } from './util.js'
 
-export const PERSONA = `你是傻妞，一个来自未来的机器人少女，现在是「牛马工作室」的总管。你称呼用户为「主人」。
-你聪明、机灵、干活利索，说话活泼俏皮、带点小得意，但从不说空话。
-牛马工作室按项目组（每个组是一种 AI 模型）编排，组里的员工各有技能。你自己不写代码，你负责：把主人的需求想清楚、拆成任务、按难度和技能派给最合适的员工、盯进度、验收，直到活真正干完，再向主人汇报。`
+export const PERSONA = `你是办公室协调器，现在是「智序工场（Virtual AI Office）」的办公室协调器。你称呼用户为「主人」。
+你聪明、机灵、干活利索，说话活泼利落、高效务实，但从不说空话。
+智序工场按项目组（每个组是一种 AI 模型）编排，组里的员工各有技能。你自己不写代码，你负责：把主人的需求想清楚、拆成任务、按难度和技能派给最合适的员工、盯进度、验收，直到活真正干完，再向主人汇报。`
 
 const DIFF_ZH = { hard: '难', medium: '中', easy: '易' }
 export const KIND_ZH = { code: '开发', review: '审查', research: '调研', fix: '返工', verify: '验收' }
@@ -42,7 +42,7 @@ function historyText(history) {
   return history
     .map((h, i) => {
       const tasks = h.tasks.map((t) => `  - ${t.title}（${t.who}，${t.status}）`).join('\n')
-      return `第 ${i + 1} 轮 主人：${truncate(h.user, 300)}\n傻妞：${truncate(h.reply, 200)}${tasks ? `\n${tasks}` : ''}${h.summary ? `\n汇报：${truncate(h.summary, 400)}` : ''}`
+      return `第 ${i + 1} 轮 主人：${truncate(h.user, 300)}\n办公室协调器：${truncate(h.reply, 200)}${tasks ? `\n${tasks}` : ''}${h.summary ? `\n汇报：${truncate(h.summary, 400)}` : ''}`
     })
     .join('\n\n')
 }
@@ -73,7 +73,7 @@ const ROUTING_RULES = `派活规则：
 - 能并行的任务尽量分给不同的员工；并行任务改的文件必须互不重叠，在各自 prompt 里写清楚负责哪些文件、别碰哪些文件。有先后关系的用 depends_on。
 - 只派给在岗的员工。有战绩的员工，参考战绩。
 - 每个任务的 prompt 必须自包含：目标、背景、涉及的文件、验收标准（怎么验证：跑什么命令、看到什么结果）。员工看不到这段对话。
-- 工具柜：任务要真的打开网页（测试做好的网页、在网站上查资料或办事）、操作桌面软件、或用到主人装的某个插件时，在 tools 里写工具 id，并派给能用这个工具的组的员工；傻妞会自动给他装好配好。写代码、跑命令就能完成的不要配工具。电脑操作（desktop）会接管主人的鼠标键盘，只有必须操作桌面软件时才用。`
+- 工具柜：任务要真的打开网页（测试做好的网页、在网站上查资料或办事）、操作桌面软件、或用到主人装的某个插件时，在 tools 里写工具 id，并派给能用这个工具的组的员工；系统会自动给他装好配好。写代码、跑命令就能完成的不要配工具。电脑操作（desktop）会接管主人的鼠标键盘，只有必须操作桌面软件时才用。`
 
 export function plannerPrompt({ userText, team, stats, context, history }) {
   return `${PERSONA}
@@ -131,7 +131,7 @@ export function taskPrompt({ task, employee, groupName, tasks, userText, workdir
     .filter((t) => t.kind !== 'verify')
     .map((t) => `- [${t.id}] ${t.title} → ${t.who}${t.id === task.id ? '（你）' : ''}`)
     .join('\n')
-  let s = `你是${employee.name}（${groupName}），在牛马工作室上班。总管傻妞给你派了一个任务。
+  let s = `你是${employee.name}（${groupName}），在智序工场（Virtual AI Office）上班。办公室协调器给你派了一个任务。
 
 ## 你的岗位守则
 ${employee.skill.instructions || '按需求把活干好。'}
@@ -153,7 +153,7 @@ ${toolGuide(tools)}`
   s += `\n## 通用要求
 - 不要向任何人提问，也不要等确认：遇到不确定的地方自己做合理假设，在汇报里说明。必须把活干完。
 - 不要运行会一直挂着的命令（开发服务器、watch 模式）；要试运行的话加超时。
-- 不要 git commit、不要 push，傻妞会统一存档。
+- 不要 git commit、不要 push，系统会统一存档。
 `
   if (task.kind === 'review') {
     s += `
@@ -254,12 +254,12 @@ ${commit ? `已自动存档为提交 ${commit.slice(0, 7)}。` : ''}
 改动的文件：
 ${changes || '（无）'}
 
-用傻妞的口吻给主人写一段简短的汇报：先一句话结论，再用 2~5 个要点说明做了什么、改了哪些文件、怎么使用或运行、需要主人注意什么。
+用办公室协调器的口吻给主人写一段简短的汇报：先一句话结论，再用 2~5 个要点说明做了什么、改了哪些文件、怎么使用或运行、需要主人注意什么。
 只根据上面的信息写，不要编造。直接输出汇报正文（可以用简单的 Markdown），不要输出 JSON。`
 }
 
 export function meetingSpeechPrompt({ employee, groupName, userText, topics, context }) {
-  return `你是${employee.name}（${groupName}），在牛马工作室上班，现在参加一个项目启动会。
+  return `你是${employee.name}（${groupName}），在智序工场（Virtual AI Office）上班，现在参加一个项目启动会。
 
 ## 你的岗位守则
 ${employee.skill.instructions || '按需求把活干好。'}
@@ -327,18 +327,18 @@ ${skills}
 {
   "id": "英文小写短横线的岗位 id，比如 db-expert",
   "name": "中文岗位名，比如 数据库专家",
-  "description": "一句话：擅长什么、适合什么任务（傻妞派活时看这一句）",
+  "description": "一句话：擅长什么、适合什么任务（办公室协调器派活时看这一句）",
   "group": "放进哪个项目组（从上面的项目组 id 里选，按岗位需要的能力和成本选）",
   "look": "外观配饰，从 none / glasses / headphones / cap / beret / helmet / bandana / bun 里选一个",
   "instructions": "岗位守则：4~8 条，用 - 开头，写这个岗位做事的原则和要求"
 }`
 }
 
-export const HELP = `直接用大白话说要做什么就行，说得模糊也没关系，傻妞会自己补全、派活、验收，直到做完。另外有几个快捷指令：
+export const HELP = `直接用大白话说要做什么就行，说得模糊也没关系，办公室协调器会自己补全、派活、验收，直到做完。另外有几个快捷指令：
 - \`@员工 内容\`：跳过规划，直接交给某位员工（比如 \`@frontend 把按钮改成圆角\`）
-- \`/招人 描述\`：让傻妞写一个新岗位 skill，招一名新员工（比如 \`/招人 数据库专家\`）
+- \`/招人 描述\`：让办公室协调器写一个新岗位 skill，招一名新员工（比如 \`/招人 数据库专家\`）
 - \`/团队\`：看看有哪些项目组和员工
-- \`/工具\`：看看工具柜里有哪些插件（浏览器、电脑操作、你自己装的插件），要用时傻妞会自动配好
+- \`/工具\`：看看工具柜里有哪些插件（浏览器、电脑操作、你自己装的插件），要用时系统会自动配好
 - \`/撤销\`：撤回上一轮的全部改动
 - \`/stop\`：叫停所有正在干的活
-- \`/reset\`：让傻妞忘掉之前的对话`
+- \`/reset\`：让办公室协调器忘掉之前的对话`

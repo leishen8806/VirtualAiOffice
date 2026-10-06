@@ -1,6 +1,6 @@
 // 接入员工：网页（和桌面版）里的「接入员工」面板背后的活。
 // 一键安装 / 登录 Claude Code、Codex，填网址和 Key 接入 API 员工，测试连接；
-// 改动写进 ~/.niuma/config.json，然后让傻妞马上重新点名，不用重启。
+// 改动写进 ~/.niuma/config.json，然后让协调器马上重新点名，不用重启。
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -108,7 +108,7 @@ function loggedIn(tool) {
 }
 
 /** 在一个新的终端窗口里跑命令（登录要人来点，所以放到能看见的窗口里）。 */
-export function openTerminal(command, title = '牛马工作室') {
+export function openTerminal(command, title = '智序工场') {
   const detach = (child) => {
     child.on('error', () => {})
     child.unref()
@@ -294,7 +294,7 @@ export function createSetup({ coord, reload, fake = false }) {
     if (tool === 'node') {
       if (!isWin) throw new Error('请打开 https://nodejs.org 下载安装 Node.js（选 LTS 版本）')
       if (!openTerminal('winget install -e --id OpenJS.NodeJS.LTS', '安装 Node.js')) throw new Error('打不开终端')
-      return { ok: true, hint: '装好以后把牛马工作室完全退出再打开。' }
+      return { ok: true, hint: '装好以后把智序工场完全退出再打开。' }
     }
     if (!CLI[tool]) throw new Error('不认识的工具')
     if (!openTerminal(CLI[tool].login, `登录 ${CLI[tool].name}`)) throw new Error(`没找到终端程序，请自己打开终端运行：${CLI[tool].login}`)
@@ -323,7 +323,7 @@ export function createSetup({ coord, reload, fake = false }) {
 
   async function saveApi(input) {
     guard()
-    if (coord.busy) throw new Error('傻妞手上还有活，等这一轮做完再接入新员工')
+    if (coord.busy) throw new Error('协调器手上还有活，等这一轮做完再接入新员工')
     const preset = PRESETS.find((p) => p.id === input.preset) || PRESETS.find((p) => p.id === 'custom')
     const models = Object.fromEntries(['hard', 'medium', 'easy'].map((k) => [k, String(input.models?.[k] || '').trim()]).filter(([, v]) => v))
     // 没填中档就拿难活或杂活的模型顶上：派活时找不到模型名会直接失败。
@@ -362,7 +362,7 @@ export function createSetup({ coord, reload, fake = false }) {
 
   async function remove(id) {
     guard()
-    if (coord.busy) throw new Error('傻妞手上还有活，等这一轮做完再调整')
+    if (coord.busy) throw new Error('协调器手上还有活，等这一轮做完再调整')
     const cfg = readUserConfig()
     const groups = (cfg.groups || []).filter((g) => g.id !== id)
     if (groups.length === (cfg.groups || []).length) throw new Error('这个组不是在这里接入的，去对应的配置文件里改')
@@ -374,7 +374,7 @@ export function createSetup({ coord, reload, fake = false }) {
 
   async function recheck() {
     guard()
-    if (coord.busy) throw new Error('傻妞手上还有活，等这一轮做完再检查')
+    if (coord.busy) throw new Error('协调器手上还有活，等这一轮做完再检查')
     ensurePath()
     await reload()
     return { ok: true }

@@ -27,7 +27,7 @@ function staff(prompt) {
 
 export function classify(prompt) {
   const request = between(prompt, '主人的原始需求', '##') || between(prompt, '## 主人刚刚说', '## 你要决定')
-  if (prompt.includes('用傻妞的口吻给主人写一段简短的汇报')) return { mode: 'summary' }
+  if (prompt.includes('用办公室协调器的口吻给主人写一段简短的汇报')) return { mode: 'summary' }
   if (prompt.includes('主人想招一名新员工')) return { mode: 'hire', request: between(prompt, '主人想招一名新员工：', '\n') }
   if (prompt.includes('现在参加一个项目启动会')) return { mode: 'speech', who: prompt.match(/^你是(.+?)（/)?.[1] || '员工' }
   if (prompt.includes('这次项目启动会由你主持拍板')) return { mode: 'minutes', request: between(prompt, '## 主人的需求', '##'), staff: staff(prompt) }
@@ -51,19 +51,19 @@ const pick = (staff, ...want) => want.find((w) => staff.includes(w)) || staff[0]
 
 export function plan(request, staff = []) {
   if (request.length < 6 || /^(你好|hi|hello|在吗|谢谢|早|晚安)/i.test(request)) {
-    return { reply: '傻妞在呢！（彩排模式：说一个开发需求，傻妞就派活给大家～）', tasks: [] }
+    return { reply: '协调器在呢！（彩排模式：说一个开发需求，办公室协调器就派活给大家～）', tasks: [] }
   }
   const topic = request.replace(/\s+/g, ' ').slice(0, 12)
   const strict = request.includes('严格')
   if (meetingNeeded(request)) {
     return {
-      reply: '这是个新项目，傻妞先拉架构师、前端和后端开个短会，把框架、目录和数据库定下来再开工！',
+      reply: '这是个新项目，先拉架构师、前端和后端开个短会，把框架、目录和数据库定下来再开工！',
       meeting: { needed: true, topics: ['技术框架', '目录结构', '数据存储和表设计'], attendees: pick3(staff) },
       tasks: [],
     }
   }
   return {
-    reply: `收到！傻妞先做个假设：纯前端实现、数据存在浏览器里。架构师搭骨架，前端和后端同时开工，文档交给便宜的同事，最后审查。`,
+    reply: `收到！先做个假设：纯前端实现、数据存在浏览器里。架构师搭骨架，前端和后端同时开工，文档交给便宜的同事，最后审查。`,
     tasks: [
       { id: 't1', title: `搭骨架：${topic}`, agent: pick(staff, 'architect'), difficulty: 'hard', why: '整体结构要想清楚，交给最强的', kind: 'code', depends_on: [], prompt: `为「${request}」搭好项目骨架。` },
       { id: 't2', title: '页面与交互', agent: pick(staff, 'frontend'), difficulty: 'medium', why: '前端对口', kind: 'code', depends_on: ['t1'], prompt: '实现页面和交互。只改 src/ui。' },

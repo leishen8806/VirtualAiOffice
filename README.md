@@ -1,48 +1,48 @@
-# 牛马工作室
+# 智序工场 · Virtual AI Office
 
-一家 AI 牛马组成的二次元软件工作室。你只跟总管**傻妞**说话：她听懂你要什么（说得模糊也没关系），召集员工开项目会、按难度和技能派活、盯进度、安排审查和验收，没做完就自己组织下一轮，直到真正做完，再向你汇报。整个过程不需要你插手。
+一家人类与 AI 协作的虚拟办公室。你只跟**办公室协调器**沟通：它听懂你要什么（说得模糊也没关系），召集员工开项目会、按难度和技能派活、盯进度、安排审查和验收，没做完就自己组织下一轮，直到真正做完，再向你汇报。整个过程不需要你插手。
 
-工作室按**项目组**编排，每个项目组就是一种 AI 模型：Claude Code、Codex、DeepSeek、中转站 API……组里坐着各有技能的**员工**，每个员工就是一个 skill 文件。所有人在同一间办公室里上班：谁在读哪个文件、跑什么命令，头顶气泡里都看得到；开会时大家走到会议桌边发言；派活时傻妞会起身把任务单送到工位上；干完了会举手欢呼，出错了会冒冷汗。
+办公室按**项目组**编排，每个项目组就是一种 AI 模型：Claude Code、Codex、DeepSeek、中转站 API……组里坐着各有技能的**员工**，每个员工就是一个 skill 文件。所有人在同一间办公室里上班：谁在读哪个文件、跑什么命令，头顶气泡里都看得到；开会时大家走到会议桌边发言；派活时协调器会起身把任务单送到工位上；干完了会举手欢呼，出错了会冒冷汗。
 
-![牛马工作室演示](docs/demo-anime.gif)
+![智序工场演示](docs/demo-anime.gif)
 
-**有桌面软件**：Windows / macOS / Linux 安装包在 [Releases](https://github.com/Leeeger1/niuma-studio/releases) 下载，装好双击就能用。**有好几套皮肤**，一键切换：
+**有桌面软件**：Windows / macOS / Linux 安装包在 [Releases](https://github.com/leishen8806/VirtualAiOffice/releases) 下载，装好双击就能用。**有好几套皮肤**，一键切换：
 
-![四套二次元皮肤：樱花、夜班、赛博霓虹、猫耳咖啡](docs/skins.png)
+![五套二次元皮肤：樱花、夜班、赛博霓虹、猫耳咖啡、像素复古](docs/skins.png)
 
-演示视频（像素版，傻妞语音讲解 + 字幕，1 分 54 秒）：[1080p](docs/niuma-demo.mp4) · [2K](docs/niuma-demo-2k.mp4)
+演示视频（像素版，办公室协调器讲解 + 字幕，1 分 54 秒）：[1080p](docs/niuma-demo.mp4) · [2K](docs/niuma-demo-2k.mp4)
 
 ## 一个需求是怎么被做完的
 
-1. **听**：你说「帮我做个记账小网站」。傻妞自己补全细节（技术栈、功能范围、数据怎么存），把假设告诉你，不反问。
-2. **开会**：新项目、大功能、要选框架或设计数据库时，傻妞拉 2～4 位相关员工开项目会。每人从自己的岗位出发发言，架构师拍板，写出会议纪要（技术栈、目录结构、数据库表设计、接口约定）。纪要存进项目的 `docs/meetings/`，之后每个任务都必须照着做。小改动不开会。
+1. **听**：你说「帮我做个记账小网站」。办公室协调器自己补全细节（技术栈、功能范围、数据怎么存），把假设告诉你，不反问。
+2. **开会**：新项目、大功能、要选框架或设计数据库时，协调器拉 2～4 位相关员工开项目会。每人从自己的岗位出发发言，架构师拍板，写出会议纪要（技术栈、目录结构、数据库表设计、接口约定）。纪要存进项目的 `docs/meetings/`，之后每个任务都必须照着做。小改动不开会。
 3. **派活**：按纪要拆成任务，给每个任务定难度（难/中/易），挑技能对口的员工。难题交给强模型，杂活交给便宜的模型，同一个项目组也会按难度自动切换型号（比如 Claude 组：难用 Opus、中用 Sonnet、易用 Haiku）。任务板上写着为什么派给他。
-4. **干活**：互不依赖的任务同时开工，前一个人的汇报会自动交给下一个人。要打开网页、操作电脑上的软件、或者用你装过的插件时，傻妞派活时顺手把工具配好，第一次用自动下载，不用你装也不用你配。
+4. **干活**：互不依赖的任务同时开工，前一个人的汇报会自动交给下一个人。要打开网页、操作电脑上的软件、或者用你装过的插件时，系统派活时顺手把工具配好，第一次用自动下载，不用你装也不用你配。
 5. **审查**：有代码改动时，由没写这段代码的员工审查；不通过就退回返工，再复审。
-6. **验收**：全部做完后，验收员对照你的原始需求实际检查，能跑的都跑一遍。没做完就列出问题，傻妞自动安排下一轮，最多 3 轮。
-7. **兜底**：有人失败（额度用完、报错、超时），傻妞把任务换给别的员工接手。
+6. **验收**：全部做完后，验收员对照你的原始需求实际检查，能跑的都跑一遍。没做完就列出问题，办公室协调器自动安排下一轮，最多 3 轮。
+7. **兜底**：有人失败（额度用完、报错、超时），办公室协调器把任务换给别的员工接手。
 8. **存档**：每一轮开工前、完工后都自动 `git commit`，说一句「/撤销」就能撤回整轮改动。
 
 ## 亮点
 
-- **说句模糊的话就行**：傻妞自己补全细节、不反问，干完自己验收，没做完自动再来一轮。
+- **说句模糊的话就行**：协调器自己补全细节、不反问，干完自己验收，没做完自动再来一轮。
 - **开项目会**：新项目先讨论框架、目录和数据库，纪要存进项目，所有人照着做。
 - **按难度派活**：难题给强模型，杂活给便宜模型，同一个组也会按难度切换型号。
 - **什么模型都能当员工**：Claude Code、Codex、DeepSeek、通义、Kimi、智谱、中转站、本地模型……见 [接入 API 指南](docs/api-guide.md)。
 - **点一下就接员工**：软件里的「接入员工」面板，Claude Code、Codex 一键安装、登录；DeepSeek、通义、Kimi、中转站……选一家填上 Key 就能接，不用碰配置文件。
-- **skill 就是员工**：写一个 Markdown 岗位说明就多一名员工，或者让傻妞 `/招人`。
-- **自动配工具**：浏览器、电脑操作（看屏幕、点鼠标、打字）、你在 Claude Code / Codex 里装过的插件，用得上时傻妞自动配给员工。
+- **skill 就是员工**：写一个 Markdown 岗位说明就多一名员工，或者让办公室协调器 `/招人`。
+- **自动配工具**：浏览器、电脑操作（看屏幕、点鼠标、打字）、你在 Claude Code / Codex 里装过的插件，用得上时系统自动配给员工。
 - **放心全自动**：每轮自动 git 存档，一句 `/撤销` 撤回；危险命令一律拦截。
 - **桌面软件 + 多皮肤**：装好就用；樱花、夜班、赛博霓虹、猫耳咖啡、像素复古五套皮肤随时切换，还能**自己做皮肤**：点点颜色实时预览，或者照模板写一个文件，做好了导出发给朋友。
 - **零依赖**：命令行版只要 Node 18+，不用 `npm install`。
 
 ## 下载桌面版（推荐）
 
-到 [Releases](https://github.com/Leeeger1/niuma-studio/releases) 下载对应系统的安装包：
+到 [Releases](https://github.com/leishen8806/VirtualAiOffice/releases) 下载对应系统的安装包：
 
 | 系统 | 下载哪个 | 怎么装 |
 |---|---|---|
-| Windows | `niuma-studio-版本号-win-x64.exe` | 双击安装，桌面上会有「牛马工作室」图标 |
+| Windows | `niuma-studio-版本号-win-x64.exe` | 双击安装，桌面上会有「智序工场」图标 |
 | macOS | `niuma-studio-版本号-mac-universal.dmg` | 拖进「应用程序」。安装包没有苹果签名，第一次打开要在图标上右键 → 打开 |
 | Linux | `niuma-studio-版本号-linux-x86_64.AppImage` | `chmod +x` 以后双击 |
 
@@ -61,9 +61,9 @@
 - **Claude Code / Codex**：点「一键安装」，装好后点「登录」，在弹出的窗口里登录账号，再点「测试」看它能不能回话。电脑上还没有 Node.js 时面板会提示先装（Windows 上也能一键装）。
 - **API 员工**：选一家（DeepSeek、通义千问、Kimi、智谱、硅基流动、OpenRouter、中转站、本地模型或自定义），填上 API Key（中转站和自定义还要填地址和模型名），点「测试并接入」。测试通过，新的项目组马上坐进工位，不用重启。
 - 接入的设置和 Key 只存在你自己电脑上的 `~/.niuma/config.json`（只有你的账号能读），不进项目文件夹、不上传。点「移除」就能让这组员工回家。
-- 这个面板只能在运行牛马工作室的那台电脑上用，局域网里的手机打不开。
+- 这个面板只能在运行智序工场的那台电脑上用，局域网里的手机打不开。
 
-桌面版里已经带好了傻妞，不用另外装 Node；只有 Claude Code / Codex 需要 Node.js。命令行版打开的网页里也有同样的「接入员工」按钮。
+桌面版里已经带好了办公室协调器，不用另外装 Node；只有 Claude Code / Codex 需要 Node.js。命令行版打开的网页里也有同样的「接入员工」按钮。
 
 想自己打包：`cd desktop && npm install && npm run dist`，安装包在 `desktop/dist/`。推一个 `v` 开头的标签（比如 `v0.2.0`），GitHub Actions 会在三个系统上各打一个包并发布到 Releases。
 
@@ -75,14 +75,14 @@
   - Codex：`npm i -g @openai/codex`，运行一次 `codex` 登录
   - 或者任意 OpenAI 兼容的 API（DeepSeek、中转站、通义、Kimi、GLM、本地模型……），见下文
 
-不需要 `npm install`，傻妞没有任何第三方依赖。
+不需要 `npm install`，系统没有任何第三方依赖。
 
 ## 快速开始
 
 最省事：一行装好，之后在任何目录都能敲 `niuma`（需要 Node 18+ 和 Git）。
 
 ```bash
-npm install -g github:Leeeger1/niuma-studio
+npm install -g github:leishen8806/VirtualAiOffice
 
 niuma --fake                 # 先彩排，不花钱、不改文件
 niuma D:\code\my-project     # 真干活，传项目目录（空文件夹也行）
@@ -91,18 +91,18 @@ niuma D:\code\my-project     # 真干活，传项目目录（空文件夹也行�
 也可以克隆下来直接跑：
 
 ```bash
-git clone https://github.com/Leeeger1/niuma-studio.git
-cd niuma-studio
+git clone https://github.com/leishen8806/VirtualAiOffice.git
+cd VirtualAiOffice
 
 # 先彩排：用替身员工演一遍完整流程，不花钱、不改文件
 node bin/niuma.js --fake
 
-# 真干活：把你的项目目录传进去（空文件夹也行，傻妞会从零开始建项目）
+# 真干活：把你的项目目录传进去（空文件夹也行，协调器会从零开始建项目）
 node bin/niuma.js ~/code/my-project
 # Windows：node bin\niuma.js D:\code\my-project
 ```
 
-浏览器会自动打开 `http://localhost:7777`。克隆的方式想在任何目录直接敲 `niuma`，在仓库目录里运行一次 `npm link`。更新到最新版：再跑一遍 `npm install -g github:Leeeger1/niuma-studio`。
+浏览器会自动打开 `http://localhost:7777`。克隆的方式想在任何目录直接敲 `niuma`，在仓库目录里运行一次 `npm link`。更新到最新版：再跑一遍 `npm install -g github:leishen8806/VirtualAiOffice`。
 
 ## 公司架构
 
@@ -112,7 +112,7 @@ node bin/niuma.js ~/code/my-project
 |---|---|---|
 | `claude-cli` | Claude Code 命令行，自带读写文件、跑命令等全套工具 | 装好 `claude` 即可。走中转站就在 `env` 里设 `ANTHROPIC_BASE_URL` 和 `ANTHROPIC_AUTH_TOKEN` |
 | `codex-cli` | Codex 命令行 | 装好 `codex` 即可 |
-| `openai-api` | 任意 OpenAI 兼容接口。傻妞内置了一个编程员工，会列目录、读写文件、精确替换、搜索、跑命令 | 填 `baseUrl`、`apiKey`（或 `apiKeyEnv`）和模型名 |
+| `openai-api` | 任意 OpenAI 兼容接口。系统内置了一个编程员工，会列目录、读写文件、精确替换、搜索、跑命令 | 填 `baseUrl`、`apiKey`（或 `apiKeyEnv`）和模型名 |
 
 默认有 Claude 组和 Codex 组。在配置里加项目组就是多一片工位（「接入员工」面板就是帮你把这段配置写进 `~/.niuma/config.json`）。**详细的接入方法（DeepSeek、中转站、通义、Kimi、智谱、硅基流动、OpenRouter、本地模型，以及怎么让 Claude Code 走中转）见 [接入 API 指南](docs/api-guide.md)。**简单的例子：
 
@@ -146,10 +146,10 @@ node bin/niuma.js ~/code/my-project
 ```
 
 - `models` 按难度指定型号；只写 `model` 就是所有难度都用它。
-- API Key 建议放环境变量：`apiKeyEnv` 写变量名，或者在任何字段里用 `${变量名}`。不要把 Key 直接写进项目目录里的配置文件（傻妞的自动存档会跳过 `niuma.config.json` 和 `.env`，但放在 `~/.niuma/config.json` 更稳妥）。
-- 其他可选字段：`color`（工位颜色）、`maxParallel`（这个组同时最多干几件活）、`strengths` / `tier` / `cost`（覆盖傻妞对这个模型的判断）、`price`（每百万 token 的输入/输出价格，用来在任务板上显示花费）、`headers`、`maxTokens`、`temperature`、`extraArgs`（传给命令行的额外参数）、`enabled: false`（整组放假）。
+- API Key 建议放环境变量：`apiKeyEnv` 写变量名，或者在任何字段里用 `${变量名}`。不要把 Key 直接写进项目目录里的配置文件（系统的自动存档会跳过 `niuma.config.json` 和 `.env`，但放在 `~/.niuma/config.json` 更稳妥）。
+- 其他可选字段：`color`（工位颜色）、`maxParallel`（这个组同时最多干几件活）、`strengths` / `tier` / `cost`（覆盖协调器对这个模型的判断）、`price`（每百万 token 的输入/输出价格，用来在任务板上显示花费）、`headers`、`maxTokens`、`temperature`、`extraArgs`（传给命令行的额外参数）、`enabled: false`（整组放假）。
 
-傻妞认识常见模型的档次和价位（Opus/Sonnet/Haiku、GPT、Codex、DeepSeek、Qwen、Kimi、GLM、Gemini……），没认出来的按 `tier`、`cost` 字段或者默认值算。
+办公室协调器认识常见模型的档次和价位（Opus/Sonnet/Haiku、GPT、Codex、DeepSeek、Qwen、Kimi、GLM、Gemini……），没认出来的按 `tier`、`cost` 字段或者默认值算。
 
 ### 员工 = skill
 
@@ -167,12 +167,12 @@ look: glasses
 - 做完用真实数据跑一遍
 ```
 
-- `description` 是傻妞派活时看的那一句，写清楚擅长什么。
+- `description` 是协调器派活时看的那一句，写清楚擅长什么。
 - `group` 写这个员工坐在哪个项目组。
 - `look` 是像素小人的配饰：`none` `glasses` `headphones` `cap` `beret` `helmet` `bandana` `bun`。
 - 正文是岗位守则，这个员工每次干活都会先读它。
 
-**把文件放进 `~/.niuma/skills/`（所有项目通用）或 `项目目录/.niuma/skills/`（只在这个项目），它就是一名新员工。**也支持 `名字/SKILL.md` 的文件夹写法。或者直接对傻妞说「/招人 数据库专家」，她会自己写好岗位说明，把人招进合适的项目组。
+**把文件放进 `~/.niuma/skills/`（所有项目通用）或 `项目目录/.niuma/skills/`（只在这个项目），它就是一名新员工。**也支持 `名字/SKILL.md` 的文件夹写法。或者直接对协调器说「/招人 数据库专家」，它会自己写好岗位说明，把人招进合适的项目组。
 
 内置岗位在 `skills/` 目录：全栈工程师、架构师、前端工程师、后端工程师、测试工程师、代码审查员、排错专家、文档专员。默认编制是 Claude 组坐架构师、前端、审查员，Codex 组坐后端、测试、排错专家。在配置里用 `employees` 调整：
 
@@ -190,17 +190,17 @@ look: glasses
 
 ### 工具柜 = 插件
 
-员工除了读写文件、跑命令，还能用插件（MCP）。你不用装也不用配：傻妞派活时判断这件事要不要工具，要的话自动配给能用它的员工。插件只对那一次任务生效，不会改你 Claude Code / Codex 的设置。
+员工除了读写文件、跑命令，还能用插件（MCP）。你不用装也不用配：协调器派活时判断这件事要不要工具，要的话自动配给能用它的员工。插件只对那一次任务生效，不会改你 Claude Code / Codex 的设置。
 
 | 工具 | 能做什么 | 谁能用 |
 |---|---|---|
 | 浏览器 | 打开网页、点按钮、填表、读内容、截图（[Playwright MCP](https://github.com/microsoft/playwright-mcp)，第一次用时自动下载） | 所有项目组 |
-| 电脑操作 | 看屏幕截图、移动鼠标、点击、打字（支持中文）、按快捷键、打开软件（傻妞自带，零依赖） | 能看图的模型：Claude 组；API 组在组配置里写 `"vision": true` 才给 |
-| 你装的插件 | 你在 Claude Code（`claude mcp add …`）或 Codex 里装过的 MCP 插件，傻妞启动时自动发现 | 本地插件所有组都能借用；远程插件只有装它的那个组能用 |
+| 电脑操作 | 看屏幕截图、移动鼠标、点击、打字（支持中文）、按快捷键、打开软件（系统自带，零依赖） | 能看图的模型：Claude 组；API 组在组配置里写 `"vision": true` 才给 |
+| 你装的插件 | 你在 Claude Code（`claude mcp add …`）或 Codex 里装过的 MCP 插件，系统启动时自动发现 | 本地插件所有组都能借用；远程插件只有装它的那个组能用 |
 
 - 说 `/工具` 看看工具柜里有什么、谁能用。网页左边的项目组卡片上也标着各组能用的工具。
-- **电脑操作会接管鼠标键盘**：开始前傻妞会提醒你先别碰；同一时间只让一个员工操作电脑；员工被要求只碰和任务有关的窗口，遇到登录、付款、删除、给别人发消息这类操作会停下来写进汇报，不自己做主。安全模式（`--safe`）下不开放电脑操作。注意 `/撤销` 只能撤回项目文件的改动，撤不回在别的软件里做的操作。
-- 各系统要准备的：Windows 什么都不用装（用系统自带的 PowerShell）；macOS 要在「系统设置 → 隐私与安全性」里给运行傻妞的终端打开「辅助功能」和「屏幕录制」；Linux 要装 `xdotool` 和 `imagemagick`（`sudo apt install xdotool imagemagick`），目前只支持 X11。
+- **电脑操作会接管鼠标键盘**：开始前协调器会提醒你先别碰；同一时间只让一个员工操作电脑；员工被要求只碰和任务有关的窗口，遇到登录、付款、删除、给别人发消息这类操作会停下来写进汇报，不自己做主。安全模式（`--safe`）下不开放电脑操作。注意 `/撤销` 只能撤回项目文件的改动，撤不回在别的软件里做的操作。
+- 各系统要准备的：Windows 什么都不用装（用系统自带的 PowerShell）；macOS 要在「系统设置 → 隐私与安全性」里给运行智序工场的终端打开「辅助功能」和「屏幕录制」；Linux 要装 `xdotool` 和 `imagemagick`（`sudo apt install xdotool imagemagick`），目前只支持 X11。
 - 电脑操作在 Linux 上实测过（真实的 Claude 员工看截图、点按钮、输入中文、按回车）；Windows 和 macOS 按系统接口写好了，还没在真机上测过，遇到问题欢迎提 Issue。
 
 想自己加插件，或者关掉某个工具，写进配置的 `tools`：
@@ -214,7 +214,7 @@ look: glasses
 }
 ```
 
-`description` 是傻妞判断「这活要不要用它」时看的那一句。`"discover": false` 可以关掉自动发现你装过的插件。
+`description` 是协调器判断「这活要不要用它」时看的那一句。`"discover": false` 可以关掉自动发现你装过的插件。
 
 ## 皮肤
 
@@ -247,8 +247,8 @@ look: glasses
 - `/工具`：看看工具柜里有哪些插件、哪些组能用。
 - `/撤销`：撤回上一轮的全部改动（生成一个 revert 提交，历史不会丢）。任务板上也有「撤销上一轮」按钮。
 - `/stop`：叫停所有正在干的活，正在跑的进程会被结束。
-- `/reset`：让傻妞忘掉之前的对话。
-- **任务板**：每个任务都能展开，看到难度、用的模型、为什么派给他、换过谁、傻妞的交代、实时过程和最终汇报。项目会议的纪要也在这里。
+- `/reset`：让协调器忘掉之前的对话。
+- **任务板**：每个任务都能展开，看到难度、用的模型、为什么派给他、换过谁、协调器任务说明、实时过程和最终汇报。项目会议的纪要也在这里。
 
 办公室会跟着系统的深色/浅色模式切换成夜晚或白天；墙上的钟是真实时间，白板上的便利贴就是当前的任务。
 
@@ -264,7 +264,7 @@ look: glasses
 
 不管哪种模式，这些命令都不会自动执行：`sudo`、`git push`、`git reset --hard`、`git clean`、`rm -rf /`、`rm -rf ~`。审查和验收是只读的。
 
-兜底靠 Git：每一轮开工前把你没提交的改动先存一档，完工后再存一档；不是 Git 仓库的目录会自动 `git init`（并写一个默认 `.gitignore`）。自动存档会跳过 `node_modules`、`.venv`、`__pycache__`、`.env*` 和 `niuma.config.json`。不想自动提交就把 `git.autoCommit` 设成 `false`。
+兜底靠 Git：每一轮开工前把你没提交的改动先存一档，完工后再存一档；不是 Git 仓库的目录会自动 `git init`（并写一个默认 `.gitignore`）。自动存档会跳过 `node_modules`、`.venv`、`__pycache__`、`.env*` 和 `niuma.config.json`。不想自动提交就把 `git.autoCommit` 设为 `false`。
 
 网页默认只监听本机（`127.0.0.1`），拒绝其他网站发来的请求。想用手机看直播：`node bin/niuma.js --host 0.0.0.0`，终端会打印一个带访问口令的局域网地址。
 
@@ -274,7 +274,7 @@ look: glasses
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `brain` | `claude` | 哪个项目组给傻妞当大脑（规划、开会拍板前的判断、汇报）。不在岗时自动换最强的组 |
+| `brain` | `claude` | 哪个项目组当协调器的大脑（规划、开会拍板前的判断、汇报）。不在岗时自动换最强的组 |
 | `brainModel` | 空 | 大脑用的型号，默认用该组的「中」档 |
 | `autonomy` | `full` | `full` 全自动，`safe` 安全模式 |
 | `parallel` | `true` | 允许同时干活。`--serial` 临时关掉 |
@@ -283,9 +283,9 @@ look: glasses
 | `maxRetries` | `1` | 任务失败后换几次人 |
 | `meeting.enabled` / `meeting.save` / `meeting.maxAttendees` | `true` / `true` / `4` | 项目会议开关、是否把纪要存进 `docs/meetings/`、最多几人参会 |
 | `git.autoInit` / `git.autoCommit` | `true` / `true` | 自动建仓库、每轮自动存档 |
-| `dispatchDelayMs` | `1500` | 派活前的停顿（傻妞走过去送任务单的时间） |
+| `dispatchDelayMs` | `1500` | 派活前的停顿（协调器走过去送任务单的时间） |
 | `taskTimeoutMin` | `30` | 单个任务超时（分钟） |
-| `historyRounds` | `6` | 傻妞记住最近几轮对话 |
+| `historyRounds` | `6` | 协调器记住最近几轮对话 |
 | `logDir` | `~/.niuma/logs` | 每次调用的完整提示词和原始输出 |
 | `statsFile` | `~/.niuma/stats.json` | 员工战绩，派活时会参考 |
 | `tools` | 浏览器、电脑操作 + 自动发现 | 工具柜：加插件、关掉某个工具（`"desktop": { "enabled": false }`）、`"discover": false` 关掉自动发现。见上文「工具柜」 |
@@ -298,7 +298,7 @@ look: glasses
 
 **会花多少钱？** 每个需求至少有一次规划、一次验收和一次汇报；开会时每位参会员工发言一次，主持人拍板一次；每个任务一次员工调用。Claude 任务在任务板上显示花费，API 任务显示 token 数（配了 `price` 就显示花费）。杂活交给便宜的项目组、把 `brainModel` 设成便宜型号都能省钱。
 
-**两个人同时改会冲突吗？** 傻妞只让改不同文件的任务并行，并在交代里写明各自负责哪些文件。不放心就用 `--serial`。
+**两个人同时改会冲突吗？** 协调器只让改不同文件的任务并行，并在交代里写明各自负责哪些文件。不放心就用 `--serial`。
 
 **哪里看细节？** 任务板里展开任务；更完整的记录在 `~/.niuma/logs`。
 
@@ -310,11 +310,11 @@ look: glasses
 
 ```
 bin/niuma.js         命令行入口
-src/studio.js         启动整个工作室（命令行和桌面版共用）
+src/studio.js         启动整个办公室（命令行和桌面版共用）
 desktop/              桌面版（Electron）：窗口、菜单、托盘、打包配置
 src/coordinator.js    调度核心：规划、开会、派活、审查返工、验收迭代、换人、存档、招人
 src/team.js           项目组和员工的组装
-src/models.js         傻妞对各个模型的了解（能力、价位、擅长什么）
+src/models.js         协调器对各个模型的了解（能力、价位、擅长什么）
 src/tools.js          工具柜：内置工具、自动发现你装过的插件、谁能用什么
 src/mcp/client.js     给 API 员工用的插件（MCP）客户端
 src/mcp/desktop.js    电脑操作插件：截图、鼠标、键盘、打开软件（Windows / macOS / Linux）
@@ -322,7 +322,7 @@ src/skills.js         skill 文件的读取和生成
 src/workers/cli.js    Claude Code / Codex 命令行员工
 src/workers/openai.js 内置的 API 编程员工（OpenAI 兼容接口 + 文件和命令工具）
 src/git.js            自动存档和撤销
-src/prompts.js        傻妞的人设和各种提示词
+src/prompts.js        办公室协调器的人设和各种提示词
 src/server.js         本地网页服务（Server-Sent Events 推送实时状态）
 src/setup.js          「接入员工」：一键安装、登录、测试，写入 ~/.niuma/config.json 并重新点名
 src/skins.js          自制皮肤：读写 ~/.niuma/skins（格式和检查在 public/skin-format.js，前后端共用）

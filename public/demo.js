@@ -1,4 +1,4 @@
-/* Demo mode: plays scripted rounds so the studio can be seen without a local 傻妞 server.
+/* Demo mode: plays scripted rounds so the studio can be seen without a local 办公室协调器 server.
    It emits exactly the same events the real server sends. */
 ;(function () {
   'use strict'
@@ -81,7 +81,7 @@ src/
     const model = (id, diff) => GROUPS.find((g) => g.id === roster.employees.find((e) => e.id === id).group).models[diff] || ''
 
     emit({ type: 'snapshot', state: { mode: 'demo', workdir: '~/projects/pocket-ledger', busy: false, round: 0, iteration: 0, roster, agents, tasks: [], messages: [], meeting: null, lastCommit: null } })
-    msg('shaniu', '主人晚上好！牛马工作室开工啦～ Claude 组、Codex 组、DeepSeek 组、Qwen 组共 8 位牛马已就位。需求说得模糊也没关系，剩下的交给傻妞！')
+    msg('shaniu', '主人晚上好！智序工场已启动～ Claude 组、Codex 组、DeepSeek 组、Qwen 组共 8 位成员已就位。需求说得模糊也没关系，接下来由办公室协调器安排！')
 
     async function runTask(t, my) {
       Object.assign(t, { status: 'running', startedAt: now(), model: model(t.agent, t.difficulty) })
@@ -201,7 +201,7 @@ src/
       if (/^\/(工具|tools|插件)/.test(t)) {
         return msg(
           'shaniu',
-          '工具柜里现在有这些插件。派活时需要哪个，傻妞会自动给员工配好，第一次用会自动下载：\n- **浏览器**：打开网页、点按钮、填表、截图\n  能用的组：Claude 组、Codex 组、DeepSeek 组、Qwen 组\n- **电脑操作**：看屏幕、点鼠标、打字、按快捷键、打开软件\n  能用的组：Claude 组\n\n想加别的插件：装进 Claude Code（`claude mcp add …`）或 Codex，傻妞重启后会自动发现。（演示模式）',
+          '工具柜里现在有这些插件。派活时需要哪个，系统会自动给员工配好，第一次用会自动下载：\n- **浏览器**：打开网页、点按钮、填表、截图\n  能用的组：Claude 组、Codex 组、DeepSeek 组、Qwen 组\n- **电脑操作**：看屏幕、点鼠标、打字、按快捷键、打开软件\n  能用的组：Claude 组\n\n想加别的插件：装进 Claude Code（`claude mcp add …`）或 Codex，重启智序工场后会自动发现。（演示模式）',
         )
       }
       if (/^\/(撤销|undo)/.test(t)) {
@@ -222,15 +222,15 @@ src/
         emit({ type: 'roster', roster, agents })
         return msg('shaniu', `新同事到岗啦！**${who}**，坐在 Qwen 组。岗位说明存在 \`~/.niuma/skills/${id}.md\`，主人随时可以改。`)
       }
-      agent('shaniu', { status: 'thinking', text: '让傻妞想想怎么安排…' })
+      agent('shaniu', { status: 'thinking', text: '让办公室协调器想想怎么安排…' })
       await wait(2000)
       if (my !== epoch) return
       agent('shaniu', { status: 'idle', text: '' })
-      if (/^(你好|hi|hello|在吗|谢谢)/i.test(t) || t.length < 5) return msg('shaniu', '傻妞在呢！说一个开发需求试试，说得模糊也没关系～')
+      if (/^(你好|hi|hello|在吗|谢谢)/i.test(t) || t.length < 5) return msg('shaniu', '协调器在呢！说一个开发需求试试，说得模糊也没关系～')
 
       const ledger = /记账|账本/.test(t)
       const isNew = ledger || /网站|App|应用|系统|项目/i.test(t)
-      msg('shaniu', isNew ? '这是个新项目！傻妞先拉架构师、前端和后端开个短会，把框架、目录和数据库定下来再开工～' : '收到！前端写实现，测试同时补用例，最后审查员把关。')
+      msg('shaniu', isNew ? '这是个新项目！先拉架构师、前端和后端开个短会，把框架、目录和数据库定下来再开工～' : '收到！前端写实现，测试同时补用例，最后审查员把关。')
       round++
       emit({ type: 'round', round, iteration: 1 })
       if (isNew) await meeting(my)
@@ -243,7 +243,7 @@ src/
       if (my !== epoch) return
       if (ledger) {
         emit({ type: 'iteration', iteration: 2 })
-        msg('shaniu', '验收发现还没完全做好：删除记录后，统计图没有刷新。傻妞安排第 2 轮继续！')
+        msg('shaniu', '验收发现还没完全做好：删除记录后，统计图没有刷新。办公室协调器安排第 2 轮继续！')
         const fix = mk({ id: 'i2-f1', title: '删除后刷新统计', agent: 'debugger', difficulty: 'easy', iter: 2, why: '小 bug，排错专家顺手修', prompt: '删除记录后刷新统计图。', steps: STEPS.fix, report: '删除后触发 stats 重新计算，已加测试。' })
         tasks.push(fix)
         put(fix)

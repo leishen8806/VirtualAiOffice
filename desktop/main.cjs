@@ -15,10 +15,10 @@ const SKINS = [
   ['neko', '猫耳咖啡'],
   ['pixel', '像素复古'],
 ]
-const REPO = 'https://github.com/Leeeger1/niuma-studio'
+const REPO = 'https://github.com/leishen8806/VirtualAiOffice'
 
 // 设置和缓存放在固定的英文目录里（各系统的「应用数据」下的 niuma-studio）。
-app.setName('牛马工作室')
+app.setName('智序工场')
 app.setPath('userData', path.join(app.getPath('appData'), 'niuma-studio'))
 
 let win = null
@@ -329,7 +329,7 @@ if (!app.requestSingleInstanceLock()) {
     fixPath()
     settings = loadSettings()
     createWindow()
-    win.loadURL(loadingPage('傻妞正在叫醒牛马们…'))
+    win.loadURL(loadingPage('办公室协调器正在叫醒团队…'))
     let dir = settings.workdir && fs.existsSync(settings.workdir) ? settings.workdir : null
     if (!dir) {
       dir = await chooseFolder()

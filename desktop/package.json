@@ -1,12 +1,12 @@
 {
   "name": "niuma-studio-desktop",
-  "productName": "牛马工作室",
+  "productName": "智序工场",
   "version": "0.3.0",
-  "description": "牛马工作室桌面版：你只跟总管傻妞说话，她带着 Claude Code、Codex、DeepSeek 等 AI 员工把活干完。",
-  "author": "Leeeger1",
+  "description": "Virtual AI Office / 智序工场桌面版：你只跟办公室协调器沟通，由她带着 Claude Code、Codex、DeepSeek 等 AI 员工把活干完。",
+  "author": "智序工场",
   "license": "MIT",
-  "homepage": "https://github.com/Leeeger1/niuma-studio",
-  "repository": "github:Leeeger1/niuma-studio",
+  "homepage": "https://github.com/leishen8806/VirtualAiOffice",
+  "repository": "github:leishen8806/VirtualAiOffice",
   "private": true,
   "main": "main.cjs",
   "desktopName": "niuma-studio.desktop",
@@ -23,7 +23,7 @@
   },
   "build": {
     "appId": "io.github.leeeger1.niuma-studio",
-    "productName": "牛马工作室",
+    "productName": "智序工场",
     "artifactName": "niuma-studio-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "dist",
@@ -92,7 +92,7 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "牛马工作室",
+      "shortcutName": "智序工场",
       "installerLanguages": [
         "zh_CN"
       ],
