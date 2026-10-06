@@ -22,6 +22,8 @@ import {
 import { skillId, writeSkill } from './skills.js'
 import { Team } from './team.js'
 import { extractJson, firstLine, projectContext, sleep, truncate } from './util.js'
+import { ATTACHMENT_KIND, ATTACHMENT_STATUS } from './attachments/types.js'
+import { LIMITS } from './attachments/limits.js'
 
 const BAD = new Set(['failed', 'skipped', 'cancelled'])
 const DIFFS = new Set(['hard', 'medium', 'easy'])
@@ -191,12 +193,13 @@ function unsortable(tasks) {
 }
 
 export class Coordinator extends EventEmitter {
-  constructor(config, { mode = 'live', root } = {}) {
+  constructor(config, { mode = 'live', root, attachmentStore } = {}) {
     super()
     this.config = config
     this.mode = mode
     this.workdir = config.workdir
     this.root = root
+    this.attachmentStore = attachmentStore || null
     this.team = new Team(config, { root, workdir: this.workdir, logDir: config.logDir })
     this.agents = { shaniu: { status: 'idle', text: '', available: true } }
     this.messages = []
@@ -212,6 +215,10 @@ export class Coordinator extends EventEmitter {
     this.minutes = ''
     this.stats = this.loadStats()
     this.toolsIntroduced = new Set()
+    this._cleanupTimer = null
+    this._idempotencyCache = new Map() // clientMessageId -> { at, envelope }
+    this.IDEMPOTENCY_CACHE_MAX = 200
+    if (this.attachmentStore) this._startCleanupDaemon()
   }
 
   // ---- setup ---------------------------------------------------------------
@@ -345,25 +352,125 @@ export class Coordinator extends EventEmitter {
 
   // ---- inbox -------------------------------------------------------------------
 
-  post(text) {
-    text = String(text || '').trim()
-    if (!text) return
-    if (parseCommand(text, this.team)?.type === 'stop') {
-      this.addMessage('user', text)
+  /**
+   * Ingest a user request. Accepts either a plain string (legacy) or an
+   * envelope: { clientMessageId, text, attachmentIds }.
+   *
+   * Attachment ownership validation:
+   *   Every id in attachmentIds MUST either:
+   *     a) already have ownerClientMessageId === clientMessageId (claimed
+   *        during upload via the form field), OR
+   *     b) have ownerClientMessageId === null AND the claim succeeds
+   *        atomically in this call.
+   *
+   * Any id with ownerClientMessageId set to a DIFFERENT value is rejected
+   * (security: prevents client B from referencing client A's attachments
+   * by guessing ids).
+   *
+   * @param {string | { clientMessageId?:string, text?:string, attachmentIds?:string[] }} input
+   */
+  post(input) {
+    let envelope
+    if (typeof input === 'string') {
+      envelope = { clientMessageId: null, text: input, attachmentIds: [] }
+    } else if (input && typeof input === 'object') {
+      envelope = {
+        clientMessageId: input.clientMessageId ? String(input.clientMessageId).trim() || null : null,
+        text: String(input.text || '').trim(),
+        attachmentIds: Array.isArray(input.attachmentIds) ? input.attachmentIds.map((x) => String(x || '').trim()).filter(Boolean) : [],
+      }
+    } else {
+      return
+    }
+    const { clientMessageId, text, attachmentIds } = envelope
+
+    // ---- idempotency: dedupe duplicate clientMessageId within recent window ----
+    if (clientMessageId) {
+      if (this._idempotencyCache.has(clientMessageId)) {
+        // Exact duplicate submission - treat as no-op ack. Do not double-enqueue.
+        this.addMessage('system', `已收到重复请求，跳过：${truncate(text || `附件×${attachmentIds.length}`, 30)} (id=${clientMessageId.slice(0, 10)})`)
+        return
+      }
+      this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope })
+      // LRU evict oldest when over max to keep memory bounded.
+      if (this._idempotencyCache.size > this.IDEMPOTENCY_CACHE_MAX) {
+        const firstKey = this._idempotencyCache.keys().next().value
+        if (firstKey) this._idempotencyCache.delete(firstKey)
+      }
+    }
+
+    const bare = text || ''
+    if (!bare && !attachmentIds.length) return
+
+    if (parseCommand(bare, this.team)?.type === 'stop') {
+      this.addMessage('user', bare)
       this.stop()
       return
     }
-    this.queue.push(text)
-    if (this.busy) this.addMessage('system', `已记下，等手上这轮忙完就处理：${truncate(text, 40)}`)
+    const validationError = this.validateAttachmentIds(attachmentIds, clientMessageId)
+    if (validationError) {
+      this.addMessage('shaniu', `附件校验失败：${validationError}`)
+      return
+    }
+    // Mark validated ids as ATTACHED so the cleanup daemon won't reap them
+    if (this.attachmentStore) {
+      for (const id of attachmentIds) {
+        this.attachmentStore.claimOwner(id, clientMessageId)
+        const row = this.attachmentStore.get(id)
+        if (row && row.status !== ATTACHMENT_STATUS.ATTACHED) {
+          this.attachmentStore.update(id, { status: ATTACHMENT_STATUS.ATTACHED })
+        }
+      }
+    }
+    const msg = { clientMessageId, text, attachmentIds }
+    this.queue.push(msg)
+    if (this.busy) this.addMessage('system', `已记下，等手上这轮忙完就处理：${truncate(bare || `附件×${attachmentIds.length}`, 40)}`)
     else this.drain()
+  }
+
+  /**
+   * Validate attachmentIds before accepting the message into the queue.
+   * Returns null on success or a user-safe string error on failure.
+   */
+  validateAttachmentIds(attachmentIds, clientMessageId) {
+    if (!attachmentIds.length) return null
+    if (attachmentIds.length > LIMITS.maxAttachmentsPerMessage) {
+      return `每条消息最多 ${LIMITS.maxAttachmentsPerMessage} 个附件`
+    }
+    if (!this.attachmentStore) return '服务器未开启附件存储'
+    const seen = new Set()
+    let totalBytes = 0
+    for (const id of attachmentIds) {
+      if (seen.has(id)) return `重复的附件 id：${id}`
+      seen.add(id)
+      if (!/^[0-9a-f]{24}$/.test(id)) return `非法的附件 id 格式`
+      const row = this.attachmentStore.get(id)
+      if (!row) return `附件不存在：${id}`
+      if (row.status === ATTACHMENT_STATUS.CANCELLED) return `附件已取消：${row.sanitizedName}`
+      if (row.status === ATTACHMENT_STATUS.UPLOADING) return `附件仍在上传：${row.sanitizedName}`
+      const claimable = row.ownerClientMessageId == null
+      const owned = row.ownerClientMessageId != null && row.ownerClientMessageId === clientMessageId
+      const alreadyBound = row.status === ATTACHMENT_STATUS.ATTACHED
+      if (!claimable && !owned && !alreadyBound) {
+        return `附件 ${row.sanitizedName} 不属于本次消息`
+      }
+      totalBytes += row.size || 0
+    }
+    if (totalBytes > LIMITS.maxTotalBytes) {
+      return `附件总大小超过 ${Math.round(LIMITS.maxTotalBytes / 1024 / 1024)} MB 上限`
+    }
+    return null
   }
 
   async drain() {
     this.setBusy(true)
     while (this.queue.length) {
-      const text = this.queue.shift()
+      const item = this.queue.shift()
+      // queue items are now envelopes {clientMessageId, text, attachmentIds};
+      // legacy callers that bypassed post() may still push plain strings.
+      const env = typeof item === 'string' ? { clientMessageId: null, text: item, attachmentIds: [] } : item
       try {
-        await this.handle(text)
+        await this.handle(env)
       } catch (e) {
         this.setAgent('shaniu', { status: 'error', text: '出岔子了' })
         if (!this.stopFlag) this.addMessage('shaniu', `呜，出了点状况：${e.message}`)
@@ -391,9 +498,14 @@ export class Coordinator extends EventEmitter {
 
   // ---- one request -------------------------------------------------------------
 
-  async handle(text) {
+  /**
+   * @param {string | {clientMessageId?:string, text:string, attachmentIds:string[]}} env
+   */
+  async handle(env) {
+    const envelope = typeof env === 'string' ? { clientMessageId: null, text: env, attachmentIds: [] } : env
+    const text = envelope.text || ''
     this.stopFlag = false
-    this.addMessage('user', text)
+    this.addMessage('user', envelope.attachmentIds.length ? `${text}${text ? ' ' : ''}[附件 ${envelope.attachmentIds.length} 个]` : text)
     const cmd = parseCommand(text, this.team)
     if (cmd?.type === 'help') return this.addMessage('shaniu', HELP)
     if (cmd?.type === 'reset') {
@@ -415,7 +527,7 @@ export class Coordinator extends EventEmitter {
         direct: true,
       }
     } else {
-      plan = await this.makePlan(text)
+      plan = await this.makePlan(envelope)
     }
     if (this.stopFlag) return
 
@@ -433,7 +545,7 @@ export class Coordinator extends EventEmitter {
     this.tasks = []
     this.meeting = null
     this.minutes = ''
-    this.request = text
+    this.request = envelope
     this.emitEvent({ type: 'round', round: this.round, iteration: 1 })
     const base = await this.gitStart()
 
@@ -477,7 +589,11 @@ export class Coordinator extends EventEmitter {
     this.remember(text, plan.reply, this.tasks, summary)
   }
 
-  async makePlan(text) {
+  /**
+   * @param {string | {clientMessageId?:string, text:string, attachmentIds:string[]}} input
+   */
+  async makePlan(input) {
+    const envelope = typeof input === 'string' ? { clientMessageId: null, text: input, attachmentIds: [] } : input
     if (!this.brain()) {
       return {
         reply: '呜，一个在岗的项目组都没有，办公室协调器一个人可写不了代码。请先安装并登录 Claude Code（`npm i -g @anthropic-ai/claude-code`）或 Codex（`npm i -g @openai/codex`），或者在配置里接一个 API 项目组，然后重启我。',
@@ -487,7 +603,9 @@ export class Coordinator extends EventEmitter {
     this.setAgent('shaniu', { status: 'thinking', text: '让办公室协调器想想怎么安排…' })
     try {
       const context = await projectContext(this.workdir)
-      const prompt = plannerPrompt({ userText: text, team: this.team, stats: this.stats, context, history: this.history })
+      const assembled = this.assembleModelBoundary(envelope)
+      const userTextForModel = assembled.prompt
+      const prompt = plannerPrompt({ userText: userTextForModel, team: this.team, stats: this.stats, context, history: this.history })
       let raw = await this.think(prompt, `plan-r${this.round + 1}`)
       let obj = extractJson(raw)
       if ((!obj || typeof obj !== 'object') && !this.stopFlag) {
@@ -500,6 +618,102 @@ export class Coordinator extends EventEmitter {
     } finally {
       this.setAgent('shaniu', { status: 'idle', text: '' })
     }
+  }
+
+  /**
+   * Model boundary assembly – the ONLY place attachment content crosses
+   * into model prompts. Everything is strictly by kind:
+   *
+   *  DOCUMENT:  pages render as `[att#N p.M] <text>` where N is the 1-based
+   *             index in attachmentIds order, M is the 1-based page ordinal
+   *             from the extractor. Never render full blob bytes.
+   *  IMAGE:     base64 data URL on the `images[]` side-channel for any
+   *             vision-capable model; text side only gets the label
+   *             `[att#N image: <filename>]`.
+   *  AUDIO:     ONLY the extract.confirmedEdited field. If confirmedEdited
+   *             is blank, emit a placeholder saying the audio has no human-
+   *             confirmed transcript yet, and never leak the raw extract.
+   *             transcript field.
+   *
+   * @param {{clientMessageId?:string, text:string, attachmentIds:string[]}} envelope
+   * @returns {{ prompt:string, images:string[], attachmentsMeta:Array<object> }}
+   */
+  assembleModelBoundary(envelope) {
+    const attachmentIds = envelope.attachmentIds || []
+    const rows = attachmentIds.map((id) => this.attachmentStore?.get(id)).filter(Boolean)
+    const bare = String(envelope.text || '').trim()
+    const promptParts = [bare]
+    if (!bare && rows.length) {
+      // No task instruction provided. Ask what to do with it. Do not auto start coding or execution.
+      promptParts.push('用户只上传了附件，未提供任务指令。请问主人要让我用这些附件做什么？（不要自动开始编码、执行或生成计划，等待主人说明意图。）No task instruction provided. Ask what to do with these attachments; do not auto start coding or execution.')
+    }
+    const images = []
+    const attachmentsMeta = []
+    rows.forEach((row, n0) => {
+      const N = n0 + 1
+      const meta = {
+        index: N,
+        id: row.id,
+        kind: row.kind,
+        filename: row.sanitizedName,
+        mimeType: row.mimeType,
+        size: row.size,
+      }
+      attachmentsMeta.push(meta)
+      const ex = row.extract || {}
+      switch (row.kind) {
+        case ATTACHMENT_KIND.DOCUMENT: {
+          const pages = Array.isArray(ex.pages) ? ex.pages : []
+          const cap = Math.min(pages.length, 50)
+          const header = `\n\n[att#${N} document: ${row.sanitizedName}${ex.pageCount ? ` (${ex.pageCount} 页，展示前 ${cap} 页)` : ''}]`
+          promptParts.push(header)
+          for (let i = 0; i < cap; i++) {
+            const p = pages[i] || {}
+            const M = typeof p.n === 'number' ? p.n : i + 1
+            const txt = String(p.text || '').trim()
+            if (!txt) continue
+            promptParts.push(`[att#${N} p.${M}] ${txt}`)
+          }
+          if (!pages.length) promptParts.push(`（无法解析的文档内容：${row.error || '未知原因'}）`)
+          break
+        }
+        case ATTACHMENT_KIND.IMAGE: {
+          promptParts.push(`\n\n[att#${N} image: ${row.sanitizedName}]`)
+          if (ex.dataUrl) images.push(ex.dataUrl)
+          break
+        }
+        case ATTACHMENT_KIND.AUDIO: {
+          const dur = ex.durationSec ? ` (${Math.floor(ex.durationSec / 60)}分${ex.durationSec % 60}秒)` : ''
+          if (ex.confirmedEdited && String(ex.confirmedEdited).trim()) {
+            promptParts.push(`\n\n[att#${N} audio transcript${dur}: ${row.sanitizedName}]\n${String(ex.confirmedEdited).trim()}`)
+          } else {
+            promptParts.push(`\n\n[att#${N} audio${dur}: ${row.sanitizedName}] 该音频尚未产生人工确认过的文字稿，请主人先点击附件播放并确认文字稿后再发给员工；或自行听一遍口述内容。`)
+          }
+          break
+        }
+        default:
+          promptParts.push(`\n\n[att#${N} 无法识别的文件：${row.sanitizedName}]`)
+      }
+    })
+    return { prompt: promptParts.join('').trim(), images, attachmentsMeta }
+  }
+
+  // ---- cleanup daemon --------------------------------------------------------
+
+  _startCleanupDaemon() {
+    if (this._cleanupTimer) return
+    const runOnce = () => {
+      try {
+        if (!this.attachmentStore) return
+        const removed = this.attachmentStore.reapOrphans(5 * 60 * 1000)
+        if (removed.length) {
+          this.emitEvent({ type: 'attachments-cleaned', count: removed.length, ids: removed })
+        }
+      } catch {}
+    }
+    const INTERVAL = 5 * 60 * 1000
+    this._cleanupTimer = setInterval(runOnce, INTERVAL)
+    this._cleanupTimer.unref?.()
   }
 
   // ---- execution -------------------------------------------------------------
@@ -583,6 +797,11 @@ export class Coordinator extends EventEmitter {
     Object.assign(t, { status: 'running', startedAt: Date.now(), endedAt: null, error: '' })
     this.emitTask(t)
     this.setAgent(t.agent, { status: 'working', text: t.title, taskId: t.id })
+    const reqEnv =
+      typeof this.request === 'string'
+        ? { clientMessageId: null, text: this.request, attachmentIds: [] }
+        : this.request || { clientMessageId: null, text: '', attachmentIds: [] }
+    const { prompt: assembledUserText, images } = this.assembleModelBoundary(reqEnv)
     const prompt =
       t.kind === 'verify'
         ? t.prompt + toolGuide(tools)
@@ -591,7 +810,7 @@ export class Coordinator extends EventEmitter {
             employee: emp,
             groupName: g.name,
             tasks: this.tasks,
-            userText: this.request,
+            userText: assembledUserText,
             workdir: this.workdir,
             parallel: this.config.parallel,
             depResults: t.deps.map((d) => this.task(d)).filter(Boolean),
@@ -609,6 +828,7 @@ export class Coordinator extends EventEmitter {
         label: `r${this.round}-${t.id}`,
         onActivity: (a) => this.onActivity(t, a),
         tools,
+        images: images.length ? images : undefined,
       })
     } catch (e) {
       res = { ok: false, text: '', error: e.message }
@@ -851,6 +1071,11 @@ export class Coordinator extends EventEmitter {
     const emp = this.team.employee(who)
     // If this round built or tested web pages in a browser, the checker gets one too.
     const tools = this.tasks.some((x) => x.tools.includes('browser')) && this.team.canUse(who, ['browser']) ? ['browser'] : []
+    const reqEnv =
+      typeof this.request === 'string'
+        ? { clientMessageId: null, text: this.request, attachmentIds: [] }
+        : this.request || { clientMessageId: null, text: '', attachmentIds: [] }
+    const assembled = this.assembleModelBoundary(reqEnv)
     const t = makeTask({
       id: `v${this.iteration}`,
       tools,
@@ -863,7 +1088,7 @@ export class Coordinator extends EventEmitter {
       iter: this.iteration,
       deps: [],
       prompt: verifyPrompt({
-        userText: this.request,
+        userText: assembled.prompt,
         tasks: this.tasks,
         base,
         iteration: this.iteration,
