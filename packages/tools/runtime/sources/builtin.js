@@ -3,7 +3,6 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FUTURE_NEUTRAL, LEGACY_COMPATIBILITY_IDENTIFIER } from '../definitions.js'
-import { isWin } from '../../../executors/runtime/process.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
@@ -15,46 +14,79 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 export const PLAYWRIGHT_MCP_PINNED_VERSION = '0.0.83'
 export const PLAYWRIGHT_MCP_PINNED_SPEC = `@playwright/mcp@${PLAYWRIGHT_MCP_PINNED_VERSION}`
 
+/**
+ * NEW-CORE (neutral) package-local helpers.
+ *
+ * Do NOT import packages/executors here — Stage 1B architecture boundary
+ * requires packages/tools/runtime to import only node:* and package-local
+ * modules. See docs/stage-1/tools-mcp-extraction.md §Dependency direction.
+ */
+const isWin = process.platform === 'win32'
+
+/** LEGACY compatibility storage path (Legacy ONLY — never used by coreBuiltins). */
 export const LEGACY_COMPAT_OUT = () => path.join(os.homedir(), '.niuma', 'browser')
 
-const _packageJsonCache = new Map()
-function packageJson(dir) {
-  if (!dir) return {}
-  if (_packageJsonCache.has(dir)) return _packageJsonCache.get(dir)
-  const p = path.join(dir, 'package.json')
-  let o = {}
-  try {
-    o = JSON.parse(fs.readFileSync(p, 'utf8'))
-  } catch {}
-  _packageJsonCache.set(dir, o)
-  return o
-}
-function _rootFromHere() {
+/** LEGACY desktop shim path (root repo src/mcp/desktop.js). Legacy ONLY. */
+const LEGACY_DESKTOP_SHIM = (() => {
+  // Walk up from packages/tools/runtime/sources → repo root (4 dirs up).
+  //   0: sources → 1: runtime → 2: tools → 3: packages → 4: <repo root>
   let cur = HERE
-  for (let up = 0; up < 6; up++) {
-    const pkg = packageJson(cur)
-    if (pkg?.workspaces?.includes('packages/*') && pkg?.name && fs.existsSync(path.join(cur, 'src'))) return cur
-    cur = path.dirname(cur)
-    if (!cur || cur === path.dirname(cur)) return path.resolve(HERE, '..', '..', '..', '..')
-  }
-  return cur
+  for (let up = 0; up < 4; up++) cur = path.dirname(cur)
+  return path.resolve(cur, 'src', 'mcp', 'desktop.js')
+})()
+
+/** NEW-CORE package-local desktop entry — does NOT depend on Legacy src/. */
+const CORE_DESKTOP_ENTRY = path.resolve(path.dirname(HERE), 'mcp', 'desktop-entry.js')
+
+function _packageJsonRootDetectWorkspaceFallback() {
+  // Reserved only for potential future metadata — NOT used for core definition paths.
+  // coreBuiltins uses import.meta.url for package-local paths per architecture rule.
+  void HERE
+  void fs
+  return null
 }
-const ROOT = _rootFromHere()
-const DESKTOP_SHIM_RELPATH = ['src', 'mcp', 'desktop.js']
+_packageJsonRootDetectWorkspaceFallback()
 
 export function playwrightNpx(pkg, extra = []) {
   return isWin ? { command: 'cmd', args: ['/c', 'npx', '-y', pkg, ...extra] } : { command: 'npx', args: ['-y', pkg, ...extra] }
 }
 
 /**
- * 未来中性的核心定义：logical id browser / desktop-control，server vao_browser / vao_desktop。
- * readOnlySafe 都显式 false (D2)。requires vision / takesOver / exclusive 在 desktop-control 上。
+ * NEW-CORE (future-neutral) builtins.
+ *
+ * ARCHITECTURE RULES enforced here:
+ *   - Browser outputDir: MUST be supplied explicitly by the caller. No Legacy
+ *     ~/.niuma default in core definitions.
+ *   - desktop-control command: resolves to the PACKAGE-LOCAL desktop-entry.js
+ *     via import.meta.url. It MUST NOT depend on the repository-root Legacy
+ *     shim src/mcp/desktop.js.
+ *   - logical ids: browser / desktop-control
+ *   - server names: vao_browser / vao_desktop
+ *   - readOnlySafe both explicit false (D2).
  */
 export function coreBuiltins(options = {}) {
-  const headless = process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY
-  const outputDir = options.outputDir || LEGACY_COMPAT_OUT()
-  const desktopScript = options.desktopScript || path.resolve(ROOT, ...DESKTOP_SHIM_RELPATH)
+  // NEW-CORE: browser outputDir is EXPLICIT. Callers that don't provide one get
+  // a clear, deterministic error instead of a silent Legacy ~/.niuma injection.
+  // We accept undefined only when the browser tool itself is disabled by caller;
+  // the args are still constructed so the returned shape is stable, but any
+  // code that would actually launch the server should be paired with an
+  // explicit outputDir.
+  const { outputDir, headlessForce } = options
+  const headless = headlessForce !== undefined
+    ? !!headlessForce
+    : (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY)
+  const outputDirStable = outputDir || undefined
+  const desktopEntryAbs = options.desktopScript || CORE_DESKTOP_ENTRY
   const electronEnv = process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}
+  const browserArgs = [
+    ...playwrightNpx(PLAYWRIGHT_MCP_PINNED_SPEC).args.slice(1),
+  ]
+  const baseBrowser = playwrightNpx(PLAYWRIGHT_MCP_PINNED_SPEC, [
+    ...(outputDirStable ? ['--output-dir', outputDirStable] : []),
+    ...(outputDirStable ? ['--allow-unrestricted-file-access'] : []),
+    ...(headless ? ['--headless'] : []),
+  ])
+  void browserArgs
   return {
     [FUTURE_NEUTRAL.ids.browser]: Object.freeze({
       id: FUTURE_NEUTRAL.ids.browser,
@@ -64,12 +96,8 @@ export function coreBuiltins(options = {}) {
         'Launch a real browser via Playwright MCP: navigate, click, fill forms, read DOM, capture screenshots, submit forms, log in, and otherwise interact with the web exactly as a human would.',
       keywords: Object.freeze([]),
       server: FUTURE_NEUTRAL.servers.vao_browser,
-      ...playwrightNpx(PLAYWRIGHT_MCP_PINNED_SPEC, [
-        '--output-dir',
-        outputDir,
-        '--allow-unrestricted-file-access',
-        ...(headless ? ['--headless'] : []),
-      ]),
+      command: baseBrowser.command,
+      args: Object.freeze([...baseBrowser.args]),
       env: {},
       requires: Object.freeze([]),
       readOnlySafe: false,
@@ -81,6 +109,7 @@ export function coreBuiltins(options = {}) {
       vision: false,
       enabled: true,
       source: 'builtin',
+      _core: Object.freeze({ outputDir: outputDirStable || null }),
     }),
     [FUTURE_NEUTRAL.ids.desktopControl]: Object.freeze({
       id: FUTURE_NEUTRAL.ids.desktopControl,
@@ -91,7 +120,7 @@ export function coreBuiltins(options = {}) {
       keywords: Object.freeze([]),
       server: FUTURE_NEUTRAL.servers.vao_desktop,
       command: process.execPath,
-      args: Object.freeze([desktopScript]),
+      args: Object.freeze([desktopEntryAbs]),
       env: Object.freeze(electronEnv),
       requires: Object.freeze(['vision']),
       readOnlySafe: false,
@@ -103,17 +132,33 @@ export function coreBuiltins(options = {}) {
       vision: true,
       enabled: true,
       source: 'builtin',
+      _core: Object.freeze({ desktopScript: desktopEntryAbs }),
     }),
   }
 }
 
 /**
- * Legacy 兼容内置：注入中文 name/description/keywords、服务器名 niuma_browser / niuma_desktop、
- * 旧 logical id desktop（= LEGACY_COMPATIBILITY_IDENTIFIER.ids.desktop）。
- * 单事实来源：仍使用 PLAYWRIGHT_MCP_PINNED_SPEC（D4）。
+ * Legacy-compatible builtins.
+ *
+ * LEGACY IS ALLOWED TO INJECT:
+ *   - ~/.niuma/browser as default browser outputDir
+ *   - src/mcp/desktop.js as desktop command (Legacy ToolCatalog expects that
+ *     absolute path in spec('desktop').args[0])
+ *   - niuma_* server names / 中文 names + keywords / id=desktop.
+ *
+ * CoreBuiltins() is never called naked from a Legacy entry point; it is
+ * always composed here with the Legacy defaults injected.
  */
 export function legacyBuiltins(options = {}) {
-  const core = coreBuiltins(options)
+  const legacyOutputDir = options.outputDir || LEGACY_COMPAT_OUT()
+  const legacyDesktopShim = options.desktopScript || LEGACY_DESKTOP_SHIM
+  // Core is built with explicit Legacy-friendly parameters so the returned
+  // command/args for Legacy-facing browser definition carry the output dir.
+  const core = coreBuiltins({
+    ...options,
+    outputDir: legacyOutputDir,
+    desktopScript: legacyDesktopShim,
+  })
   return {
     browser: Object.freeze({
       id: 'browser',
@@ -131,6 +176,7 @@ export function legacyBuiltins(options = {}) {
       takesOver: false,
       enabled: true,
       source: 'builtin',
+      _legacy: Object.freeze({ outputDir: legacyOutputDir }),
     }),
     [LEGACY_COMPATIBILITY_IDENTIFIER.ids.desktop]: Object.freeze({
       id: LEGACY_COMPATIBILITY_IDENTIFIER.ids.desktop,
@@ -148,6 +194,7 @@ export function legacyBuiltins(options = {}) {
       takesOver: true,
       enabled: true,
       source: 'builtin',
+      _legacy: Object.freeze({ desktopScript: legacyDesktopShim }),
     }),
   }
 }

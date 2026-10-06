@@ -1,4 +1,4 @@
-import { fillEnv } from '../../executors/runtime/text.js'
+import { expandEnv } from './env.js'
 import { legacyBuiltins } from './sources/builtin.js'
 import { claudeServers, codexServers, stdio } from './sources/discovery.js'
 import { loadConfiguredTools } from './sources/config.js'
@@ -11,8 +11,13 @@ const ALL_TYPES = ['claude-cli', 'codex-cli', 'openai-api']
  *   - 内置：legacyBuiltins()（注入 niuma_browser / niuma_desktop + 中文 keywords + 旧 id desktop）
  *   - 发现：claudeServers / codexServers（逐字搬）
  *   - 配置：loadConfiguredTools
- *   - 环境展开：fillEnv（Legacy 的宽松版本，旧行为不变）
- * 本文件不重写实现，只组合。
+ *   - 环境展开：expandEnv（Stage 1B-A 是 lenient 版本，和 Legacy fillEnv 等价）
+ *
+ * ARCHITECTURE BOUNDARY (Stage 1B):
+ * packages/tools/runtime MUST NOT import packages/executors. Executor-owned
+ * helpers describeMcpCall / splitMcpCall are NOT exported from @vao/tools;
+ * the Legacy src/tools.js facade re-exports them from executors separately.
+ * No fillEnv import from executors/text.js — local env.js expandEnv used.
  */
 export class ToolCatalog {
   constructor(config = {}, { workdir = config.workdir || process.cwd(), home } = {}) {
@@ -120,14 +125,18 @@ export class ToolCatalog {
   spec(id) {
     const t = this.get(id)
     if (!t?.command) return null
-    return { command: t.command, args: t.args.map(String), env: Object.fromEntries(Object.entries(t.env).map(([k, v]) => [k, fillEnv(String(v))])) }
+    // Use LOCAL expandEnv from env.js (Stage 1B-A LENIENT — missing ${VAR} → '').
+    // Matches Legacy fillEnv semantics. NO executors/text.js import here.
+    return { command: t.command, args: t.args.map(String), env: Object.fromEntries(Object.entries(t.env).map(([k, v]) => [k, expandEnv(String(v))])) }
   }
 }
 
 export { legacyBuiltins as builtinTools, claudeServers, codexServers }
-export { describeMcpCall, splitMcpName } from '../../executors/runtime/format.js'
+// IMPORTANT: format helpers (describeMcpCall, splitMcpCall) are EXECUTOR-OWNED.
+// They are re-exported for Legacy compatibility from src/tools.js facade, not
+// from the shared @vao/tools runtime.
 export { parseKeys, winVk, WIN_VK, KEY_ALIASES, MODS, WIN_EXTENDED, createDesktopServer, startDesktopServer, desktopPlatform, desktopToolsList, desktopMcp, default } from './mcp/desktop-server.js'
-export { PLAYWRIGHT_MCP_PINNED_VERSION, PLAYWRIGHT_MCP_PINNED_SPEC, coreBuiltins } from './sources/builtin.js'
+export { PLAYWRIGHT_MCP_PINNED_VERSION, PLAYWRIGHT_MCP_PINNED_SPEC, coreBuiltins, LEGACY_COMPAT_OUT } from './sources/builtin.js'
 export { ToolRegistry } from './registry.js'
 export { ToolPolicy, authorizeToolDefinitionAuthorize } from './policy.js'
 export { ToolResolver, resolveGrantsSimple, capabilitySupportsTool, ALL_TYPES } from './resolver.js'

@@ -37,6 +37,8 @@ export type ToolDefinition = {
   readonly vision: boolean
   readonly enabled: boolean
   readonly source: string
+  readonly _core?: { readonly outputDir: string | null; readonly desktopScript?: string }
+  readonly _legacy?: { readonly outputDir?: string; readonly desktopScript?: string }
 }
 
 export type ResolvedToolSpec = {
@@ -165,17 +167,22 @@ export const WIN_EXTENDED: ReadonlySet<number>
 
 export const PLAYWRIGHT_MCP_PINNED_VERSION: string
 export const PLAYWRIGHT_MCP_PINNED_SPEC: string
+/**
+ * Legacy-compatible outputDir helper (Legacy path only — ~/.niuma/browser).
+ * Never used by new-core coreBuiltins defaults.
+ */
+export const LEGACY_COMPAT_OUT: () => string
 
 export function claudeServers(workdir?: string, home?: string): Record<string, unknown>
 export function codexServers(home?: string): Record<string, unknown>
 export const stdio: (def: unknown) => boolean
 
-export function coreBuiltins(options?: { readonly outputDir?: string; readonly desktopScript?: string }): CoreBuiltins
+export function coreBuiltins(options?: { readonly outputDir?: string; readonly desktopScript?: string; readonly headlessForce?: boolean }): CoreBuiltins
 export function legacyBuiltins(options?: { readonly outputDir?: string; readonly desktopScript?: string }): LegacyBuiltins
 export function builtinTools(options?: { readonly outputDir?: string; readonly desktopScript?: string }): LegacyBuiltins
 
 export function normalizeToolDefinition(def: Partial<ToolDefinition> & { readonly id?: string; readonly name?: string }): ToolDefinition | null
-export function capabilitySupportsTool(group: ToolGroupLike, def: ToolDefinition & { readonly types?: readonly string[]; readonly native?: readonly string[] }): boolean
+export function capabilitySupportsTool(group: ToolGroupLike, def: ToolDefinition & { readonly types?: readonly string[]; readonly native?: readonly string[]; readonly portable?: boolean; readonly vision?: boolean }): boolean
 
 export class ToolRegistry {
   constructor(options?: { readonly aliases?: Readonly<Record<string, string>> })
@@ -184,18 +191,27 @@ export class ToolRegistry {
   get(id: string): ToolDefinition | null
 }
 
+export type PolicyAuthorizeResult = { readonly ok: true }
 export class ToolPolicy {
   constructor(options?: unknown)
-  authorize(def: ToolDefinition, context?: { readonly autonomy?: 'safe' | string; readonly readOnly?: boolean }): boolean
+  authorize(def: ToolDefinition, context?: { readonly autonomy?: 'safe' | string; readonly access?: string }): PolicyAuthorizeResult
 }
 
-export function authorizeToolDefinitionAuthorize(def: ToolDefinition, context?: { readonly autonomy?: 'safe' | string; readonly readOnly?: boolean }): boolean
+export function authorizeToolDefinitionAuthorize(def: ToolDefinition, context?: { readonly autonomy?: 'safe' | string; readonly access?: string }): PolicyAuthorizeResult
 
-export function resolveGrantsSimple(grants: readonly ToolGrant[], catalog: { readonly get: (id: string) => ToolDefinition | null }): ToolResolution
+export function resolveGrantsSimple(
+  registry: { readonly get: (id: string) => (ToolDefinition | null) },
+  grants: readonly (string | ToolGrant)[],
+  context?: unknown,
+): ToolResolution
 
 export class ToolResolver {
-  constructor(options?: { readonly registry?: ToolRegistry })
-  resolve(grants: readonly ToolGrant[], context?: unknown): ToolResolution
+  constructor(
+    registry: { readonly get: (id: string) => (ToolDefinition | null) },
+    policy?: ToolPolicy | null,
+    options?: unknown,
+  )
+  resolve(grants: readonly (string | ToolGrant)[], context?: unknown): ToolResolution
 }
 
 export class ToolCatalog {
@@ -208,13 +224,19 @@ export class ToolCatalog {
   spec(id: string): { readonly command: string; readonly args: readonly string[]; readonly env: Readonly<Record<string, string>> } | null
 }
 
-export function describeMcpCall(server: string, tool: string, args?: Readonly<Record<string, unknown>>): string
-export function splitMcpName(composite: string): { readonly server: string; readonly tool: string }
+/**
+ * NOTE: describeMcpCall / splitMcpName are EXECUTOR-OWNED.
+ * They are NOT exported by the shared @vao/tools runtime.
+ * Legacy consumers should import them from:
+ *   src/tools.js
+ * or directly from:
+ *   packages/executors/runtime/format.js
+ */
 
 export function expandEnv(value: string, envOverride?: Readonly<Record<string, string | undefined>>): string
 export class MissingEnvError extends Error {
   readonly name: 'MissingEnvError'
-  readonly key: string
-  constructor(key: string)
+  readonly envName: string
+  constructor(envName: string)
 }
 export function readJson<T = unknown>(filePath: string): T | null

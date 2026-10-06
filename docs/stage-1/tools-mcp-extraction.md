@@ -33,14 +33,43 @@ packages/tools/
 
 ## Dependency direction
 
-**Strictly one-way:** `@vao/tools` MAY import only from `@vao/executors/runtime/*.js` contract helpers:
-- `packages/executors/runtime/text.js` → `fillEnv`
-- `packages/executors/runtime/format.js` → `describeMcpCall`, `splitMcpName`
-- `packages/executors/runtime/process.js` → `isWin`
+**`packages/tools/runtime/**` — no runtime imports of sibling packages.** The shared tools runtime only imports:
+- `node:*` built-ins (fs, path, os, url, events, child_process, etc.)
+- package-local relative modules under `packages/tools/runtime/`
 
-Executors MUST NOT import from `@vao/tools`. This is enforced by explicit architectural constraint and is tested via static directory-level import auditing in `scripts/verify-packaged-layout.mjs`.
+The shared runtime **NEVER** imports from:
+- `packages/executors/**` or `@vao/executors` (not even contract helpers — executors-owned format, env helpers and platform predicates are replaced with package-local equivalents)
+- `packages/domain/**` or `@vao/domain`
+- `src/**` (Legacy path)
 
-McPClient (owned by executors at `packages/executors/runtime/mcp-client.js`) is NOT duplicated and is NOT moved.
+**Executors — never import from `@vao/tools`.** The one-way rule is preserved. `McPClient` (executors-owned at `packages/executors/runtime/mcp-client.js`) is NOT duplicated and is NOT moved.
+
+### Legacy facade composition (src/tools.js)
+
+The **Legacy-facing facade `src/tools.js`** is a thin compatibility *compositor*. It does two separate, explicit re-export layers:
+1. All shared runtime symbols → `export * from '../packages/tools/runtime/index.js'`
+2. Executors-owned **format helpers ONLY**, re-exported separately for legacy callers → `export { describeMcpCall, splitMcpName } from '../packages/executors/runtime/format.js'`
+
+Format helpers `describeMcpCall` and `splitMcpName` are **executor-owned protocol helpers** (they describe the *message envelope* the executor sends, not tools-runtime concerns). They are intentionally **NOT** in the `@vao/tools` shared runtime export surface, and the architectural guard tests in both `packages/tools/spec/tools-golden.spec.ts` (`static dependency audit`) and `scripts/verify-packaged-layout.mjs` will fail if they are reintroduced. Consumers that need format helpers should import them from the Legacy facade (`src/tools.js`) or directly from `packages/executors/runtime/format.js`.
+
+**Local substitutes used inside @vao/tools:**
+| Executors-owned previously imported | @vao/tools local substitute |
+|---|---|
+| `isWin` from `executors/runtime/process.js` | `const isWin = process.platform === 'win32'` (inline in each site) |
+| `fillEnv` from `executors/runtime/text.js` | `expandEnv` from `packages/tools/runtime/env.js` (lenient Stage 1B-A: missing `${VAR}` → `''`) |
+| `describeMcpCall` / `splitMcpName` from `executors/runtime/format.js` | NOT re-exported from shared runtime → surfaced only via Legacy facade composition above |
+
+## coreBuiltins (neutral) vs legacyBuiltins (Legacy injection)
+
+`packages/tools/runtime/sources/builtin.js` exports *two* separate helpers with intentionally different invariants:
+
+| Dimension | `coreBuiltins({ outputDir?, desktopScript?, headlessForce? })` | `legacyBuiltins(options)` |
+|---|---|---|
+| Output path semantics | Neutral — **no silent default.** If the caller does not pass `outputDir`, the browser tool definition is emitted without `--output-dir`. Caller must be explicit. | Legacy compatibility — **injects** `options.outputDir ?? LEGACY_COMPAT_OUT()` which is `<os.homedir()>/.niuma/browser` if the caller did not override. |
+| Desktop script path semantics | Neutral package-local path — desktop-control args always resolve to `packages/tools/runtime/mcp/desktop-entry.js` (a minimal launcher that only calls `startDesktopServer()`). **Zero** dependency on `src/mcp/desktop.js`. | Legacy compatibility — **injects** `options.desktopScript ?? LEGACY_DESKTOP_SHIM` which is `<repo-root>/src/mcp/desktop.js` (the Legacy compatibility shim). |
+| Who should call it | New-core Coordinator, packaged Electron entry, Stage 1B-B security boundary | Legacy bin entry, `src/` compatibility shims, ToolCatalog when no explicit new-core options passed |
+| Observable signature | Browser tool does NOT contain the string `.niuma` anywhere; desktop-control args[0] lies inside `packages/tools/runtime/mcp/` | Browser tool args contain `~/.niuma/browser`; desktop-control args[0] is `src/mcp/desktop.js` |
+| Guard test | `tools-golden.spec.ts` — Fix 1 + Fix 2 assertions | `tools-golden.spec.ts` (Legacy assertions) + `verify-packaged-layout.mjs` (end-to-end packaged Legacy handshake spawn)|
 
 ## Concept separation applied
 
