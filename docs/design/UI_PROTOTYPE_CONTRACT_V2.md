@@ -2,16 +2,18 @@
 
 - 产品：**Virtual AI Office / 智序工场**
 - 状态：**契约冻结稿（仅文档）**；本文件规定“未来的可交互原型必须满足什么”，不实现任何界面
-- 上游：`VISUAL_IDENTITY_V2.md`、`CHARACTER_SYSTEM_V1.md`；领域语义：`state-machines.md`、`human-channels.md`、`domain-model.md`
+- 上游：`VISUAL_IDENTITY_V2.md`、`CHARACTER_SYSTEM_V1.md`
+- 规范性依据（领域语义）（**已提交在 main 的架构文档**）：`docs/architecture/domain-model.md`、`state-machines.md`、`event-contract.md`、`executor-contract.md`、`persistence.md`。
+- **FORWARD-LOOKING / PLANNED（在 Visual Identity V2 中为非规范，NON-NORMATIVE）**：品牌与命名规则（计划中的 `product-identity` 架构文档）、Human Channel / `HumanActionRequest` / 经 RoleBinding 解析负责成员的人类交接（计划中的 `human-channels` 架构文档）。这些文档**目前不在 main 中**，属于 planned / future architecture reference，**不是已存在的仓库来源**；本文只在视觉上为这些计划中的概念预留位置（Waiting Human、负责角色、被分配的人类成员、Human Action），**不冻结**其架构。
 
 ## 1. 原则
 
 1. **原型必须是可交互、由场景驱动的，不接受只有一张静态首页。** 它要能演示：项目切换、角色 / 成员选择、任务选择、状态变化、Helix 交互、Waiting Human、评审、证据、完成。
 2. **所有视觉变化来自一条场景事件。** 原型内置一个**确定性场景脚本**（§9）和一个可见的**事件日志**；不允许有无来源的装饰动画（与“办公室状态来自真实数据”的原则一致）。
 3. **原型不假装是真实运行时，并且清楚区分“模拟的夹具行为”与“已实现的运行时能力”**（§9.1）。 它使用虚构的示例数据，界面上有明确的“原型 / Prototype”标记；不连接任何后端、不调用任何模型。
-4. **状态词汇与 Stage 0 一致**：任务 `PENDING / READY / RUNNING / VERIFYING / WAITING_HUMAN / BLOCKED / DONE / FAILED / CANCELLED`；执行 `RUNNING / SUCCEEDED / FAILED / TIMED_OUT / CANCELLED`；审批与 `HumanActionRequest`（`OPEN / DELIVERED / RESPONDED / EXPIRED / CANCELLED`）。**“完成”只能经证据判定：接受 → `VERIFYING` → 证据通过 → `DONE`，不能直接 `DONE`。**
+4. **状态词汇与已提交的 Stage 0 领域模型一致**（`domain-model.md`、`state-machines.md`）：任务 `PENDING / READY / RUNNING / VERIFYING / WAITING_HUMAN / BLOCKED / DONE / FAILED / CANCELLED`；执行 `RUNNING / SUCCEEDED / FAILED / TIMED_OUT / CANCELLED`；审批使用已提交的 `Approval` 实体。计划中的 `HumanActionRequest`（`OPEN / DELIVERED / RESPONDED / EXPIRED / CANCELLED`）属于 **FORWARD-LOOKING / PLANNED，非规范**。**“完成”只能经证据判定：接受 → `VERIFYING` → 证据通过 → `DONE`，不能直接 `DONE`。**
 5. 默认主题 **智序 · Core**；“经典主题 / Classic Themes”可在设置里切换；默认界面与默认截图**不得**出现旧品牌与旧人设。
-6. 默认语言中文，可切换英文（所有可见文案都有中英文）。
+6. **默认原型界面语言：中文。** 官方品牌：智序工场 / Virtual AI Office；官方编排身份：Helix。品牌名、Helix 角色说明、核心角色 / 状态**可以**使用英文副标。**完整多语言与语言切换策略：TBD / 另行产品决定，不在 Visual Identity V2 的冻结范围内**（不要求每个界面字符串同时显示中英文）。
 
 ## 2. 页面清单（PAGE LIST）
 
@@ -21,10 +23,10 @@
 | P1 | **办公室（Office）** | 默认页：办公室画布 + 协调器面板 | ✔ 默认 |
 | P2 | **项目看板（Project Dashboard）** | 当前项目的任务列表 / 泳道（按状态）、里程碑、阻塞与等待项、证据汇总 | 组织轨 → 项目 |
 | P3 | **任务详情（Task Detail）** | 抽屉（桌面）/ 整页（移动）：描述、状态时间线、Execution 列表（含重试）、证据、评审、依赖、事件 | 点击任务卡 / 列表项 |
-| P4 | **成员与角色（Members & Roles）** | 角色目录、人类成员、AI 成员；RoleBinding 视图（成员 × 项目 × 角色）；通道状态 | 组织轨 → 角色 / 成员 |
-| P5 | **待办与审批（Waiting Human）** | 当前用户的 `HumanActionRequest` 与 Approval 收件箱 | 全局栏“Waiting Human” |
+| P4 | **成员与角色（Members & Roles）** | 角色目录、人类成员、AI 成员；RoleBinding 视图（成员 × 项目 × 角色，`domain-model.md` 已定义）；通道状态（FORWARD-LOOKING，模拟） | 组织轨 → 角色 / 成员 |
+| P5 | **待办与审批（Waiting Human）** | 当前用户的 Human Action（计划中的 `HumanActionRequest` 概念，FORWARD-LOOKING，模拟）与 `Approval` 收件箱 | 全局栏“Waiting Human” |
 | P6 | **Helix（全屏视图）** | 对话、编排状态、重要决定、最近活动（桌面上以右侧面板形式常驻，窄屏时为独立页） | 协调器面板“展开” |
-| P7 | **设置（Settings）** | 主题（智序 · Core / 经典主题）、语言、减少动效、密度、通知偏好 | 全局栏“设置” |
+| P7 | **设置（Settings）** | 主题（智序 · Core / 经典主题）、减少动效、密度、通知偏好（语言切换：TBD，不在本契约范围） | 全局栏“设置” |
 | P8 | **空状态与引导（Onboarding / Empty）** | 无 Workspace / 无项目 / 无成员时的引导；首次使用引导 | 首次进入 |
 | P9 | **场景控制器（Prototype Scenario Controller）** | 仅原型有：步进 / 重置 / 速度 / 跳转到步骤；不属于产品 | 右下浮层（可隐藏） |
 
@@ -41,7 +43,7 @@
 
 ### 3.2 协调器面板（D）
 
-面板区域在本文中沿用结构性名称“协调器面板（Coordinator Panel）”，但**面板里的可见名称是 Helix**（不出现“Helix”，不出现“傻妞”，不以模型命名）。包含五块，自上而下：
+面板区域在本文中沿用结构性名称“协调器面板（Coordinator Panel）”，但**面板里的可见名称统一为 Helix**。**不得出现**：“办公室协调器”、“Office Coordinator”、“傻妞”；也**不得**用模型名作为编排身份。包含五块，自上而下：
 
 1. **标题区**：Helix 形象（小）+ 名称 `Helix` + 副标题 `System Orchestrator`（中文界面：`系统编排中枢`）+ 当前状态：**Planning / Dispatching / Waiting Human / Reviewing / Completed**（另有 Idle / Blocked / Offline，见 `CHARACTER_SYSTEM_V1.md` §3.1）；
 2. **对话**：消息列表 + 输入框（`/` 聚焦）；消息类型：用户、Helix、系统；Helix 的回复**引用对象**（任务、角色、审批）并可点击跳转；
@@ -88,7 +90,7 @@
 | `READY` | 蓝灰“就绪” | 可被执行 |
 | `RUNNING` | 蓝色“进行中”+ 进度脉冲 | |
 | `VERIFYING` | 紫色“验证中” | 评审 / 测试进行中 |
-| `WAITING_HUMAN` | 琥珀色“等你” | 有未终结的 `HumanActionRequest` |
+| `WAITING_HUMAN` | 琥珀色“等你” | 任务处于 `WAITING_HUMAN`（已提交的规范）；负责角色 / 成员的呈现使用计划中的 Human Action 概念（FORWARD-LOOKING，模拟） |
 | `BLOCKED` | 红色“阻塞”+ 红色依赖节点 | |
 | `DONE` | 绿色“完成”+ 证据角标 | 只能经证据判定到达 |
 | `FAILED` | 红色实心 ✕“失败”+ 重试标签 | |
@@ -96,7 +98,7 @@
 
 ### 5.3 其它状态
 
-- **审批 / HumanActionRequest**：`OPEN`、`DELIVERED`、`RESPONDED`、`EXPIRED`、`CANCELLED`；
+- **审批**（已提交的 `Approval`）与 **HumanActionRequest**（计划中，FORWARD-LOOKING，非规范）：`OPEN`、`DELIVERED`、`RESPONDED`、`EXPIRED`、`CANCELLED`；
 - **运行时 / 系统**：加载中、已连接、离线、降级、错误（带重试）、无数据（空状态）；
 - **成员通道**（人类）：已验证、`unreachable`、未绑定（对应 `MemberChannel`）。
 
@@ -113,14 +115,14 @@
 | I-05 | **选择任务** | 点击任务卡或看板项：打开 P3 抽屉；画布高亮其依赖链 | **M** |
 | I-06 | **状态变化演示** | 通过场景控制器步进，座位 / 任务状态按 §9 脚本变化，事件日志同步追加 | **M** |
 | I-07 | **Helix 对话** | 在输入框发送消息，Helix 给出**脚本化**回复，并可点击回复里的对象跳转 | **M** |
-| I-08 | **Waiting Human 响应** | 点击琥珀色标记 / P5 条目：对 `HumanActionRequest` 做 **通过 / 拒绝 / 接受 / 退回返工 / 无法承接 / 评论** | **M** |
+| I-08 | **Waiting Human 响应** | 点击琥珀色标记 / P5 条目：对 Human Action 做 **通过 / 拒绝 / 接受 / 退回返工 / 无法承接 / 评论**。其中通过 / 拒绝 / 评论对应已提交的 `Approval`，接受 / 退回返工对应已提交状态机中的人类转换；**“无法承接”与整套 Human Action 路由是计划中的概念（FORWARD-LOOKING，非规范），仅作模拟** | **M** |
 | I-09 | **评审** | 查看评审线与结论；“需修改”触发返工并回到执行；“缺少结论”显示为失败评审而非通过 | **M** |
 | I-10 | **证据** | 展开证据托盘与 P3 证据页；点击芯片查看来源、提交短哈希、是否过期 | **M** |
 | I-11 | **完成** | 展示“接受 → VERIFYING → 证据通过 → DONE”完整路径；没有证据时不能完成 | **M** |
 | I-12 | 图层开关 | 依赖 / 评审 / 证据 / Human Action 单独开关 | |
 | I-13 | 画布缩放 / 平移 / 适应窗口 | 滚轮 / 触控缩放，拖动平移 | |
 | I-14 | 主题切换 | 智序 · Core ↔ 经典主题（至少切换到 1 套经典主题并返回）；深 / 浅色 | |
-| I-15 | 语言切换 | 中文 ↔ English | |
+| I-15 | 语言切换 | **TBD / 另行产品决定**；原型不要求实现语言切换（默认中文） | |
 | I-16 | 减少动效 | 开关；也跟随系统 `prefers-reduced-motion` | |
 | I-17 | 过滤与搜索 | 看板按状态 / 角色 / 成员过滤；全局搜索任务 ID | |
 | I-18 | 键盘导航 | `J/K` 移动选择、`Enter` 打开、`Esc` 关闭、`/` 聚焦 Helix、`G` 然后 `O/D/M/A` 跳转 到办公室 / 看板 / 成员 / 审批、`?` 显示快捷键 | |
@@ -147,7 +149,7 @@ flowchart LR
   Task -- 查看依赖 --> Task
   Coord -- 点击引用对象 --> Task
   Coord -- 点击引用对象 --> Inbox
-  Settings -- 主题 / 语言 --> Shell
+  Settings -- 主题 / 偏好 --> Shell
   Scenario[P9 场景控制器] -. 驱动 .-> Office
 ```
 
@@ -195,7 +197,7 @@ flowchart LR
 | S09 | 后端重试成功，前端解除阻塞 | 红色节点消失，依赖边变实线；前端 WORKING | I-06 |
 | S10 | 审查员评审：**需修改** → 返工 → 再评审**通过** | 审查员 REVIEWING，评审线接通；结论芯片“需修改”→ 返工 → “通过”；审查员的**缺少结论**分支可由“跳转到步骤”演示为失败评审 | I-09 |
 | S11 | QA 运行测试：第一次**失败**（证据 ✕），修复后**通过**（证据 ✓，绑定当前提交短哈希，旧证据显示“过期”） | QA WORKING；证据托盘依次出现 ✕、过期、✓ | I-10 |
-| S12 | 任务需要**人类验收**：对应任务验收的 `HumanActionRequest`，所需角色 = **Product Manager**，由 RoleBinding 解析出被分配的人类成员；该成员可选**接受**或**退回返工** | 座位 WAITING_HUMAN；`WAITING HUMAN` 卡片（Required role、Action、等待时间）；响应面板显示“接受 / 退回返工 / 无法承接 / 评论” | I-08 |
+| S12 | 任务需要**人类验收**：产生一条 Human Action（计划中的 `HumanActionRequest` 概念，模拟），所需角色 = **Product Manager**，由 RoleBinding 解析出被分配的人类成员；该成员可选**接受**或**退回返工** | 座位 WAITING_HUMAN；`WAITING HUMAN` 卡片（Required role、Action、等待时间）；响应面板显示“接受 / 退回返工 / 无法承接 / 评论” | I-08 |
 | S13 | 被分配的人类成员点击**接受** → 任务 `VERIFYING`；人类证据（绑定当前提交）+ 机器证据一起评估 | 任务卡变 VERIFYING（紫）；证据托盘出现“human ✓”；评估中 | I-11 |
 | S14 | 证据通过 → `DONE`；若证据缺失 / 过期则回到 WAITING_HUMAN（可跳转演示） | 绿色 DONE + 证据角标；座位 DONE 6 秒后回 IDLE；**没有证据就不能 DONE** | I-11 |
 | S15 | 文档专员完成文档；项目全部任务 DONE | Helix 给出总结（引用任务与证据）；看板里程碑完成 | 完成 |
@@ -211,7 +213,7 @@ flowchart LR
 | --- | --- | --- |
 | 任务 / 执行 / 证据 / 审批的状态机与实体 | **架构已定义（Stage 0 类型与状态机已合并）** | 已有领域代码与测试；尚未接入产品运行时与界面 |
 | Helix 对话与编排 | **Legacy 运行时有对应能力；新核心尚未实现** | 原型中为脚本化回复 |
-| `HumanActionRequest`、角色 → RoleBinding → 人类成员的路由 | **架构已定义；计划于后续阶段实现** | 原型中为模拟 |
+| Human Action（计划中的 `HumanActionRequest`）、角色 → RoleBinding → 人类成员的路由 | **FORWARD-LOOKING / PLANNED**：相应架构文档尚未提交到 main；在 Visual Identity V2 中**非规范** | 原型中为模拟 |
 | 审批授权的具体权限词汇 | **未冻结（架构阶段定义）** | 原型只显示“授权人类成员”；任何具体权限名都标注 ILLUSTRATIVE FIXTURE — NOT ARCHITECTURE CONTRACT |
 | 人类沟通渠道（含 Telegram） | **未实现（计划中）** | **原型不声称 Human Channels 已存在**，也不展示 Telegram 专有界面 |
 | 办公室画布、角色形象、Core 主题 | **本原型设计目标，尚未实现** | 实现前不得作为已有产品能力宣传 |
@@ -237,12 +239,12 @@ flowchart LR
 
 规则：循环动效**只在其状态存在期间运行**；页面不可见（标签页后台）时暂停；`prefers-reduced-motion` 或设置里“减少动效”开启时，所有动画使用静态等价；动画**不得**用于没有对应事件的装饰。
 
-## 11. 可访问性与国际化要求
+## 11. 可访问性与语言要求
 
 - 对比度与非颜色编码遵循 `VISUAL_IDENTITY_V2.md` §5.6；
 - 画布对象可由键盘遍历（`Tab` 进入画布后用方向键 / `J/K` 在座位与任务卡之间移动），并有屏幕阅读器标签；
 - 画布提供**等价的非图形视图**（P2 看板 + 成员列表），保证无法使用画布的用户可完成全部流程；
-- 所有可见文案有中文与英文；时间与数字按语言环境格式化；
+- 默认中文；品牌名、Helix 角色说明、核心角色 / 状态可附英文副标；**完整多语言与语言切换策略不在本次冻结范围内（TBD / 另行产品决定）**；
 - 触屏模式与大屏模式不削减功能（大屏展示模式为只读，除外）。
 
 ## 12. 验收标准（ACCEPTANCE CRITERIA）
@@ -276,7 +278,7 @@ flowchart LR
 14. **ROLE ≠ MODEL**：场景 S07 中角色形象不变、仅模型药丸变化；全站没有以模型命名的角色形象。
 15. 人类座位 = 圆形 HUMAN 徽章，Agent 座位 = 六边形 AI 徽章 + 中性模型药丸，在 48 px 下可区分。
 16. 状态永不只靠颜色；对比度满足 `VISUAL_IDENTITY_V2.md` §5.1；`prefers-reduced-motion` 生效。
-17. 全部可见文案有中英文；品牌名使用“智序工场 / Virtual AI Office”，编排身份使用 **Helix**（System Orchestrator / 系统编排中枢），不使用“办公室协调器”。
+17. **默认原型以中文为主；品牌名、Helix 角色说明、核心角色 / 状态可使用英文副标。完整多语言与语言切换策略不在本次 Visual Identity V2 冻结范围内。** 品牌名使用“智序工场 / Virtual AI Office”，编排身份使用 **Helix**（System Orchestrator / 系统编排中枢），不使用“办公室协调器”。
 
 ### 12.4 响应式与性能
 
@@ -288,7 +290,7 @@ flowchart LR
 
 21. 一个**可直接打开**的原型（无需构建服务器即可演示，或附一条命令），加一份 **≤ 90 秒的演示录屏**，演示 §9 的 S01–S15；
 22. 一份**覆盖矩阵**：§12.2 的每一项对应到原型里的具体位置与步骤；
-23. 一份**文案清单**（中 / 英），供品牌守卫检查（不含旧品牌词）。
+23. 一份**文案清单**（以中文为主，可附英文副标），供品牌守卫检查（不含旧品牌词）。
 
 ### 12.6 明确不接受的情形
 

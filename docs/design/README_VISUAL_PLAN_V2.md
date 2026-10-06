@@ -54,7 +54,7 @@ README 顶部到底部的顺序（现有文字章节保留，位置按下表调�
 - **ROLE ≠ MODEL**：任何图里都不得出现“模型 = 人物”；模型只以中性药丸出现；
 - **文字**：中文为主，英文为副；不使用虚构的数据冒充真实运行；
 - **格式**：PNG（sRGB，无损），文件 ≤ 600 KB（超过则优化 / 分层压缩）；同时提供 `@2x`（尺寸 ×2）与 `-light` 浅色版（预留文件名，见 §6）；
-- **alt 文本**：中英双语，描述内容；概念图须含“（概念图）/ concept”；
+- **alt 文本**：中文为主、英文为辅，描述内容；概念图须含“（概念图）/ concept”；
 - **文件名**：小写、短横线；**不得包含** `niuma`、`牛马`、`shaniu`、`傻妞`；
 - **来源与授权**：每张图在交付时附“来源 / 授权”记录（`docs/brand/ASSET_LEDGER.md`，由实现阶段创建）。
 
@@ -64,10 +64,10 @@ README 顶部到底部的顺序（现有文字章节保留，位置按下表调�
 | --- | --- |
 | 目的 | README 第一印象；建立“有秩序的数字化办公室”的品牌身份 |
 | 画幅 / 尺寸 | **16:9**，1600×900（`@2x` 3200×1800） |
-| 构图 | 等距 2.5D 办公室全景，Helix 在画面中心偏上；围绕它的 8 个角色座位呈环形 / 分区排列；座位间有细连线；右前方有一块 Human 区（含一个琥珀色 Human Action 标记）；背景为 `--canvas-floor` + 等距网格；左上留出字标空间 |
+| 构图 | 等距 2.5D 办公室全景，**Helix 位于画面中心偏上，其余 7 个官方角色围绕 Helix 呈环形 / 分区排列**（官方阵容共 **8 个角色，含 Helix**，画面中不得出现第 9 个官方角色）；座位间有细连线；右前方有一块 Human 区（含一个琥珀色 Human Action 标记；该区里的**通用座位**——例如 Workspace Owner——不属于官方 8 个角色）；背景为 `--canvas-floor` + 等距网格；左上留出字标空间 |
 | 可见文字 | 左上字标：`智序工场`（主）/ `Virtual AI Office`（副）；一行标语（中）：“人类与 AI，同在一间有秩序的办公室。”；不出现任何其它文字 |
 | 视觉状态 | 混合：Helix THINKING、2 个 WORKING、1 个 REVIEWING、1 个 WAITING_HUMAN、1 个 DONE、其余 IDLE（演示状态语言；**不得**出现 BLOCKED 以外的“故障感”元素喧宾夺主） |
-| 必需角色 | 全部 8 个官方角色（含 Helix），其中至少 1 个人类座位（圆形 HUMAN 徽章）与 2 个 AI 座位（六边形 + 模型药丸，模型名中性：`Claude`、`Codex`） |
+| 必需角色 | **全部 8 个官方角色，含 Helix**（即 Helix + 其余 7 个，总数恰为 8）；其中至少 1 个人类座位（圆形 HUMAN 徽章）与 2 个 AI 座位（六边形 + 模型药丸，模型名中性：`Claude`、`Codex`） |
 | README 位置 | 序 1：标题之后、第一段文字之前 |
 
 ### 4.2 `docs/brand/office-overview.png`
@@ -101,7 +101,7 @@ README 顶部到底部的顺序（现有文字章节保留，位置按下表调�
 | 目的 | 展示 8 个官方角色，建立“角色 ≠ 模型”的认知 |
 | 画幅 / 尺寸 | **3:1**，1800×600 |
 | 构图 | 一排 8 个角色（等比、等间距、同一地平线），每个角色下方是铭牌（中文角色名 + 英文）与角色色条；每个角色旁有各自的**标志性配饰**；最下方一行小字说明徽章含义 |
-| 可见文字 | 8 个角色的中英文名；说明行：“角色是职责，模型只是徽章 · Roles are responsibilities; models are badges.” |
+| 可见文字 | 8 个角色的名称（中文为主，英文为副标）；说明行：“角色是职责，模型只是徽章 · Roles are responsibilities; models are badges.” |
 | 视觉状态 | 全部 IDLE（统一，便于比较轮廓）；右下角用 3 个小示例展示同一角色（后端）分别带 `Codex`、`DeepSeek`、人类圆形徽章，形象不变 |
 | 必需角色 | **全部 8 个**：Helix、Product Manager、Architect、Frontend Engineer、Backend Engineer、QA Engineer、Reviewer、Documentation Specialist |
 | README 位置 | 序 4：角色 / 员工小节开头 |
@@ -116,7 +116,7 @@ README 顶部到底部的顺序（现有文字章节保留，位置按下表调�
 | 可见文字 | 分区标题“人类成员 Human Members”“AI Agent AI Agents”；卡片文字：“需要你的确认”；时间线 4 个节点的短标签；不出现任何虚构的聊天内容全文 |
 | 视觉状态 | 1 个 WAITING_HUMAN（琥珀）、1 个 DONE（绿）、其余 IDLE / WORKING |
 | 必需角色 | 产品经理（人类）、Helix、1 个 AI 工程师角色、审查员 |
-| README 位置 | 序 5：“亮点”之后（Human Channels 相关说明处） |
+| README 位置 | 序 5：“亮点”之后；**图中的 Human Action / 人类交接是计划中的产品方向（FORWARD-LOOKING），不得被描述为已实现能力** |
 
 ### 4.6 `docs/brand/dashboard.png`
 

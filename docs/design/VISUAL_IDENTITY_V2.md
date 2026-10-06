@@ -3,7 +3,8 @@
 - 产品：**Virtual AI Office / 智序工场**
 - 状态：**设计规范冻结稿（仅文档）**。本文件不修改任何运行时代码、不替换任何图片、不删除任何 Legacy 资产。
 - 配套文档：`CHARACTER_SYSTEM_V1.md`（角色系统）、`UI_PROTOTYPE_CONTRACT_V2.md`（原型契约）、`README_VISUAL_PLAN_V2.md`（README 与品牌资产）
-- 依据：`docs/architecture/product-identity.md`（品牌与命名）、`domain-model.md`、`state-machines.md`、`human-channels.md`
+- 规范性依据（**已提交在 main 的架构文档**）：`docs/architecture/domain-model.md`、`state-machines.md`、`event-contract.md`、`executor-contract.md`、`persistence.md`。
+- **FORWARD-LOOKING / PLANNED（在 Visual Identity V2 中为非规范，NON-NORMATIVE）**：品牌与命名规则（计划中的 `product-identity` 架构文档）、Human Channel / `HumanActionRequest` / 经 RoleBinding 解析负责成员的人类交接（计划中的 `human-channels` 架构文档）。这些文档**目前不在 main 中**，属于 planned / future architecture reference，**不是已存在的仓库来源**；本文只在视觉上为这些计划中的概念预留位置（Waiting Human、负责角色、被分配的人类成员、Human Action），**不冻结**其架构。
 
 ## 0. 身份更新：Helix（最新，覆盖此前表述）
 
@@ -16,7 +17,7 @@
 - 本设计阶段**不重命名**任何对兼容性敏感的内部 id；
 - “协调器面板（Coordinator Panel）”只是**界面区域的结构性名称**，面板内的可见名称是 Helix。
 
-> 范围提示：本次更新只覆盖 Visual Identity V2 的四份设计文档。仓库中其它已有内容（`docs/architecture/product-identity.md`、`human-channels.md`、README、界面文案、`test/brand-guard.test.js` 等）仍然使用“办公室协调器”，需要**单独的后续迁移任务**来对齐（见 §10 的 V6）。
+> 范围提示：本次更新只覆盖 Visual Identity V2 的四份设计文档。仓库中其它已有内容（README、界面文案、`test/brand-guard.test.js` 等）仍然使用“办公室协调器”，需要**单独的后续迁移任务**来对齐（见 §10 的 V6）。
 
 ## 1. 为什么需要 V2
 
@@ -208,7 +209,7 @@ V2 要为 Virtual AI Office 建立一套**原创**的视觉识别。Legacy 主�
 
 - 正文对比度 ≥ 4.5:1；非文字元素（状态环、图标、焦点环）≥ 3:1（已在 §5.1 核对）；
 - **状态不依赖颜色**：字形 + 线型 + 动效冗余；
-- 全部状态都有文字等价（工具提示与屏幕阅读器标签，中英文）；
+- 全部状态都有文字等价（工具提示与屏幕阅读器标签；默认中文，可附英文副标；多语言策略 TBD，见 V7）；
 - `prefers-reduced-motion` 下，循环动效替换为静态标记；
 - 键盘与屏幕阅读器可完成核心流程（见原型契约的验收标准）。
 
@@ -258,8 +259,9 @@ V2 要为 Virtual AI Office 建立一套**原创**的视觉识别。Legacy 主�
 | `CHARACTER_SYSTEM_V1.md` | 角色阵容、状态系统、徽章、工位的详细规范 |
 | `UI_PROTOTYPE_CONTRACT_V2.md` | 页面、状态、交互、响应式、动效与验收标准 |
 | `README_VISUAL_PLAN_V2.md` | README 视觉序列、旧图审计、7 张新品牌资产的精确规格 |
-| `product-identity.md` | 品牌与命名规则；本文件的视觉规则必须与之一致 |
-| `human-channels.md` | Human Action 的语义来源（`HumanActionRequest`、`WAITING_HUMAN`） |
+| `domain-model.md`、`state-machines.md`（已提交） | **规范来源**：任务 / 执行 / 审批 / RoleBinding 的实体与状态 |
+| `product-identity`（计划中的架构文档，**当前不在 main**） | 品牌与命名规则的**未来参考**；planned / future architecture reference，**非规范** |
+| `human-channels`（计划中的架构文档，**当前不在 main**） | Human Action / `HumanActionRequest` / 人类交接的**未来参考**；planned / future architecture reference，**FORWARD-LOOKING，非规范** |
 
 ## 10. 待决事项（需要人决定）
 
@@ -270,7 +272,8 @@ V2 要为 Virtual AI Office 建立一套**原创**的视觉识别。Legacy 主�
 | V3 | 画布渲染技术（SVG / Canvas / WebGL / CSS 等距）与图集格式 | 属于实现阶段，但影响角色资产的交付格式 |
 | V4 | Core 之外，是否提供高对比度主题 | 可访问性扩展；V2 的最低标准已满足 WCAG AA |
 | V5 | 大屏模式与触屏模式的硬件基线 | 影响点击目标与信息密度的具体数值 |
-| V6 | 把已合并的“办公室协调器”文案（界面、README、`product-identity.md`、`human-channels.md`、品牌守卫测试）迁移为 **Helix**，并同步更新守卫测试的禁用 / 必需词 | 当前仓库的可见文案与新身份不一致；需要单独的品牌迁移任务与验收 |
+| V6 | 把已合并的“办公室协调器”文案（界面、README、品牌守卫测试，以及这些计划中的架构文档合并之后的相应内容）迁移为 **Helix**，并同步更新守卫测试的禁用 / 必需词 | 当前仓库的可见文案与新身份不一致；需要单独的品牌迁移任务与验收 |
+| V7 | 完整多语言与语言切换策略 | **TBD / 另行产品决定**；Visual Identity V2 不冻结 |
 
 ## 11. 验收（设计冻结）
 

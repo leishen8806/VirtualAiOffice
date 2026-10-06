@@ -3,7 +3,8 @@
 - 产品：**Virtual AI Office / 智序工场**
 - 状态：**设计规范冻结稿（仅文档）**；不产出任何图片，不修改任何代码
 - 上游：`VISUAL_IDENTITY_V2.md`（调色板、徽章、避免项、ROLE ≠ MODEL）
-- 数据语义来源：`docs/architecture/state-machines.md`、`human-channels.md`（Task / Execution / `HumanActionRequest` 状态）
+- 规范性依据（**已提交在 main 的架构文档**）：`docs/architecture/domain-model.md`、`state-machines.md`、`event-contract.md`、`executor-contract.md`、`persistence.md`。
+- **FORWARD-LOOKING / PLANNED（在 Visual Identity V2 中为非规范，NON-NORMATIVE）**：品牌与命名规则（计划中的 `product-identity` 架构文档）、Human Channel / `HumanActionRequest` / 经 RoleBinding 解析负责成员的人类交接（计划中的 `human-channels` 架构文档）。这些文档**目前不在 main 中**，属于 planned / future architecture reference，**不是已存在的仓库来源**；本文只在视觉上为这些计划中的概念预留位置（Waiting Human、负责角色、被分配的人类成员、Human Action），**不冻结**其架构。
 
 ## 1. 核心规则
 
@@ -47,7 +48,9 @@
 | 状态环 | 角色脚下的椭圆环（等距透视）+ 铭牌上的状态字形（16 px） |
 | 任务卡 | 贴在工位屏幕旁：`TASK-ID`、标题、状态丝带 |
 
-## 3. 首批官方角色阵容（8 个）
+## 3. 首批官方角色阵容（共 8 个，含 Helix）
+
+**不变量：官方首批阵容**共 **8 个角色**，**Helix 已包含在这 8 个之内**（Helix + 其余 7 个）。通用座位（如 Workspace Owner）**不属于**官方 8 个角色，也不计入 8。
 
 每个角色都规定：轮廓、服装、配饰、角色图标、强调处理、桌面 / 工位处理。
 
@@ -81,7 +84,7 @@
 | Executions | 执行（尝试） |
 | Reviews | 评审 |
 | Evidence | 证据 |
-| Human Actions | 人类行动（`HumanActionRequest` 等） |
+| Human Actions | 人类行动（计划中的 `HumanActionRequest` 等；FORWARD-LOOKING，非规范） |
 
 端口的计数与高亮都来自真实数据；没有对象时端口为灰色空心。
 
@@ -210,7 +213,7 @@ Seat = Role 形象
 
 - **同一个角色多个成员**（例如两个后端 Agent）：生成多个座位，角色形象相同，通过 §5 的有限变体区分，并带编号；
 - **人类成员坐在角色座位上**：显示同样的角色形象，成员徽章为圆形 HUMAN，并显示成员显示名（示例：`Member A`）；头像（若有）只出现在组织轨与详情里，不替换画布上的角色形象；
-- **座位是空的**（角色没有任何成员）：显示灰色空工位 + “无人负责”标记（对应 `human-channels.md` 的“无人持有该角色 = 阻塞”）。
+- **座位是空的**（角色没有任何成员）：显示灰色空工位 + “无人负责”标记（对应计划中的人类交接设计：角色没有人类成员 = 阻塞；FORWARD-LOOKING，非规范）。
 
 ## 5. 同角色变体（有限）
 
@@ -239,7 +242,7 @@ Seat = Role 形象
 
 **必须区分两层：**
 
-- **领域状态**是系统持久化的事实：`Task.status`（`PENDING / READY / RUNNING / VERIFYING / WAITING_HUMAN / BLOCKED / DONE / FAILED / CANCELLED`）、`Execution.status`、`HumanActionRequest` 状态、成员通道状态等（见 Stage 0 状态机与架构文档）。
+- **领域状态**是系统持久化的事实（已提交的规范见 `domain-model.md`、`state-machines.md`；计划中的 `HumanActionRequest` 状态属于 FORWARD-LOOKING，非规范）：`Task.status`（`PENDING / READY / RUNNING / VERIFYING / WAITING_HUMAN / BLOCKED / DONE / FAILED / CANCELLED`）、`Execution.status`、`HumanActionRequest` 状态、成员通道状态等（见 Stage 0 状态机与架构文档）。
 - **视觉状态**（本文的 8 个座位状态）是界面**由领域状态与事件上下文推导出的呈现状态**。**它们不一定是新的持久化领域枚举，也不得被实现成新的领域状态。**
 - 特别地：`THINKING`、`WORKING`、`REVIEWING` 是**呈现状态**，由 Execution / Task / 事件上下文（例如最近的结构化活动类型）推导；`DONE` 的 6 秒保持与回到 IDLE 是**纯呈现行为**，不对应任何领域转换；`OFFLINE` 由执行器可用性或通道可达性推导。
 - 反过来，`WAITING_HUMAN`、`BLOCKED`、`DONE` 与对应领域状态直接相关，但座位上显示的仍是呈现状态；任务卡上显示的才是领域状态本身。
@@ -252,7 +255,7 @@ Seat = Role 形象
 | THINKING | 座位的 Execution 为 `RUNNING`，且最近的结构化活动是 `thinking` 或 `message`（`ExecutionActivity`） |
 | WORKING | Execution 为 `RUNNING`，最近的活动是 `file.write` / `command.run` / `test.run` / `tool.call` / `search` / `file.read` |
 | REVIEWING | 任务处于 `VERIFYING`，且该座位（Reviewer）有一个 `RUNNING` 的评审 Execution |
-| WAITING_HUMAN | 任务处于 `WAITING_HUMAN`，且存在 `OPEN` / `DELIVERED` 的 `HumanActionRequest`；高亮的是**被要求行动的角色**及由 RoleBinding 解析出的人类成员（见 §6.3），任务所属座位上也显示琥珀色环 |
+| WAITING_HUMAN | 任务处于 `WAITING_HUMAN`（已提交的规范：`state-machines.md`）；如果存在计划中的 `HumanActionRequest`（FORWARD-LOOKING），则据此显示被要求行动的角色及由 RoleBinding 解析出的人类成员（见 §6.3，非规范），任务所属座位上也显示琥珀色环 |
 | BLOCKED | 任务处于 `BLOCKED`（上游依赖失败）；或（未来）工具解析失败导致无法启动 |
 | DONE | 任务处于 `DONE`（只能由 `evaluateCompletion()` 的通过判定到达，证据已记录） |
 | OFFLINE | 执行器检测不可用（`check()` 为否），或人类成员的所有 `MemberChannel` 为 `unreachable` / 无已验证通道 |
@@ -260,6 +263,8 @@ Seat = Role 形象
 **不在 8 个座位状态里的任务状态**：`PENDING` / `READY`（任务卡显示为“排队”灰色丝带，座位保持 IDLE）、`FAILED`（任务卡红色实心 ✕ 丝带 + 重试标签；座位回到 IDLE 或进入 BLOCKED 取决于下游依赖）、`CANCELLED`（任务卡划线灰）。
 
 ### 6.3 WAITING_HUMAN 的一等视觉模型
+
+> **FORWARD-LOOKING / PLANNED — NON-NORMATIVE IN VISUAL IDENTITY V2。** 本节视觉化的“负责角色 → RoleBinding → 被分配的人类成员 → Human Action”链路，其完整架构（`HumanActionRequest`、路由规则、无法承接等）**尚未提交到 main**。`RoleBinding` 实体与 `WAITING_HUMAN` 任务状态已在 `domain-model.md` / `state-machines.md` 中存在；其余只是为计划中的产品方向**视觉预留**，不得被当作已冻结的架构。
 
 `WAITING_HUMAN` 是**一等产品视觉状态**。它必须呈现五件事：**琥珀色环**、**Human Action 图标**、**负责的角色**、**已等待时间**、**需要的动作**。示例（Human Action 卡片）：
 
@@ -284,7 +289,7 @@ Candidates:      Human Member(s) bound to this role
 
 ### 6.5 无障碍
 
-- 每个状态都有**文字等价**（中英文），写入工具提示与屏幕阅读器标签，例如：`后端工程师（AI · Codex）：工作中，任务 TASK-213`；
+- 每个状态都有**文字等价**（默认中文，可附英文副标；多语言策略 TBD），写入工具提示与屏幕阅读器标签，例如：`后端工程师（AI · Codex）：工作中，任务 TASK-213`；
 - 状态**永不只靠颜色**；
 - `prefers-reduced-motion`：所有循环动效替换为静态等价形态（表中最后一列）。
 
