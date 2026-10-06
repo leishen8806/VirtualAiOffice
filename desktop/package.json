@@ -51,6 +51,11 @@
         "filter": ["**/*.js", "**/*.d.ts"]
       },
       {
+        "from": "../packages/tools/runtime",
+        "to": "core/packages/tools/runtime",
+        "filter": ["**/*.js", "**/*.d.ts"]
+      },
+      {
         "from": "../public",
         "to": "core/public"
       },

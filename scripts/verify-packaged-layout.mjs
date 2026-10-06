@@ -75,32 +75,104 @@ async function stopChildTree(child) {
   if (process.platform === 'win32') {
     try {
       spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore', timeout: 10000 })
-    } catch {
-      // tolerate: taskkill itself can throw if the process already vanished
-    }
+    } catch {}
   } else {
     try { child.kill('SIGTERM') } catch {}
   }
   const remaining = Math.max(500, 5000 - (Date.now() - started))
   const closed = await waitForClose(child, remaining)
-  // ensure close event explicitly waited on bounded timeout (3-5s)
   return closed !== false
+}
+
+async function desktopMcpSelfCheck(scriptPath) {
+  const server = spawn(process.execPath, [scriptPath], {
+    env: { ...process.env, NIUMA_DESKTOP_PLATFORM: 'plan9' },
+    stdio: ['pipe', 'pipe', 'ignore'],
+  })
+  let closed = false
+  let buf = ''
+  const replies = []
+  const done = new Promise((resolve) => {
+    server.stdout.setEncoding('utf8')
+    server.stdout.on('data', (chunk) => {
+      buf += chunk
+      let i
+      while ((i = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, i).trim()
+        buf = buf.slice(i + 1)
+        if (!line) continue
+        try { replies.push(JSON.parse(line)) } catch {}
+      }
+    })
+    server.once('exit', () => {
+      closed = true
+      resolve()
+    })
+  })
+  try {
+    server.stdin.setEncoding('utf8')
+    server.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }) + '\n')
+    server.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' }) + '\n')
+    const deadline = Date.now() + 8000
+    while (replies.length < 2 && Date.now() < deadline) {
+      if (closed) break
+      await new Promise((r) => setTimeout(r, 30))
+    }
+    if (replies.length < 2) throw new Error('desktop MCP self-check timed out before initialize + tools/list replies')
+    if (replies[0]?.id !== 1) throw new Error(`desktop MCP initialize reply id mismatch: ${replies[0]?.id}`)
+    if (replies[0]?.result?.serverInfo?.name !== 'niuma-desktop') throw new Error(`desktop MCP serverInfo wrong: ${String(replies[0]?.result?.serverInfo?.name)}`)
+    const list = replies[1]?.result?.tools || []
+    if (list.length !== 9) throw new Error(`desktop MCP tools/list tool count wrong: ${list.length}`)
+    const expected = ['screenshot','click','move','drag','scroll','type','key','open','wait']
+    if (!expected.every((n, i) => list[i]?.name === n)) throw new Error(`desktop MCP tools/list names wrong: ${list.map((t)=>t.name).join(',')}`)
+  } finally {
+    try { server.stdin.end() } catch {}
+    await stopChildTree(server)
+    await done
+  }
 }
 
 let validationOk = false
 try {
   for (const entry of resources) copyResource(entry)
-  for (const required of ['src', 'bin', 'fake', 'packages/executors/runtime']) {
+  for (const required of ['src', 'bin', 'fake', 'packages/executors/runtime', 'packages/tools/runtime']) {
     if (!fs.existsSync(path.join(core, required))) throw new Error(`packaged core is missing ${required}`)
   }
   fs.writeFileSync(path.join(core, 'package.json'), JSON.stringify({ type: 'module' }))
 
   const runtime = path.join(core, 'packages', 'executors', 'runtime', 'index.js')
   await import(pathToFileURL(runtime).href)
+
+  const toolsRuntime = path.join(core, 'packages', 'tools', 'runtime', 'index.js')
+  const toolsExports = await import(pathToFileURL(toolsRuntime).href)
+  const requiredToolsSymbols = ['ToolCatalog','builtinTools','claudeServers','codexServers','parseKeys','winVk','createDesktopServer','startDesktopServer','describeMcpCall','splitMcpName','PLAYWRIGHT_MCP_PINNED_VERSION','ToolRegistry']
+  for (const sym of requiredToolsSymbols) if (!toolsExports[sym]) throw new Error(`packaged tools runtime missing export ${sym}`)
+
   const shims = ['base.js', 'cli.js', 'openai.js'].map((name) => fs.readFileSync(path.join(core, 'src', 'workers', name), 'utf8'))
   if (shims.some((text) => !text.includes('../../packages/executors/runtime/index.js'))) throw new Error('legacy shims do not resolve the packaged runtime')
   const implementations = fs.readdirSync(path.join(core, 'src', 'workers')).filter((name) => !['base.js', 'cli.js', 'openai.js'].includes(name) && name.endsWith('.js'))
   if (implementations.length) throw new Error(`duplicate legacy worker implementations: ${implementations.join(', ')}`)
+
+  const facadeSrc = fs.readFileSync(path.join(core, 'src', 'tools.js'), 'utf8')
+  if (!facadeSrc.includes('packages/tools/runtime/index.js')) throw new Error('src/tools.js compatibility facade does not route into packages/tools/runtime/index.js')
+  const mcpShim = path.join(core, 'src', 'mcp', 'desktop.js')
+  const mcpSrc = fs.readFileSync(mcpShim, 'utf8')
+  if (!mcpSrc.includes('packages/tools/runtime/mcp/desktop-server.js')) throw new Error('src/mcp/desktop.js shim does not route into packages/tools/runtime/mcp/desktop-server.js')
+
+  const desktopServerShared = path.join(core, 'packages', 'tools', 'runtime', 'mcp', 'desktop-server.js')
+  if (!fs.existsSync(desktopServerShared)) throw new Error('shared desktop-server.js implementation missing')
+  const sharedBody = fs.readFileSync(desktopServerShared, 'utf8')
+  if (!sharedBody.includes("serverInfo: { name: 'niuma-desktop'")) throw new Error('shared desktop MCP implementation body does not contain the protocol source of truth (serverInfo)')
+  const duplicateBodyPatterns = ['const TOOLS_RUNNERS = [', "serverInfo: { name: 'niuma-desktop'"]
+  for (const pat of duplicateBodyPatterns) {
+    if (mcpSrc.includes(pat)) throw new Error(`src/mcp/desktop.js must be a thin shim, but still contains implementation body pattern: ${pat}`)
+  }
+  const toolsFacadeBodyPatterns = ['class ToolCatalog {', 'claudeServers(', 'codexServers(']
+  for (const pat of toolsFacadeBodyPatterns) {
+    if (facadeSrc.includes(pat)) throw new Error(`src/tools.js must be a thin facade, but still contains implementation body pattern: ${pat}`)
+  }
+
+  await desktopMcpSelfCheck(mcpShim)
 
   const port = await freePort()
   const child = spawn(process.execPath, ['bin/niuma.js', '--fake', '--port', String(port)], { cwd: core, stdio: 'ignore' })
@@ -110,7 +182,7 @@ try {
     await stopChildTree(child)
   }
   validationOk = true
-  console.log('packaged layout ok: reconstructed core starts fake NiuMa and returns HTTP 200')
+  console.log('packaged layout ok: shared tools + executors present, single implementation for desktop MCP, desktop server boots (initialize + tools/list success), and reconstructed fake NiuMa returns HTTP 200')
 } finally {
   try {
     fs.rmSync(temp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })

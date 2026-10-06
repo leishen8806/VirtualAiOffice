@@ -1,0 +1,27 @@
+{
+  "name": "@vao/tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared tool definitions, discovery, policy and resolver. Runtime is direct-executable ESM; legacy NiuMa starts without a TypeScript build.",
+  "type": "module",
+  "main": "./runtime/index.js",
+  "types": "./runtime/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./runtime/index.d.ts",
+      "default": "./runtime/index.js"
+    },
+    "./runtime": {
+      "types": "./runtime/index.d.ts",
+      "default": "./runtime/index.js"
+    },
+    "./runtime/mcp/desktop-server": {
+      "types": "./runtime/mcp/desktop-server.d.ts",
+      "default": "./runtime/mcp/desktop-server.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
