@@ -81,7 +81,7 @@ async function start(workdir, { fake = false } = {}) {
 
 function loadingPage(text) {
   const img = fs.readFileSync(icon('icon.png')).toString('base64')
-  const html = `<!doctype html><meta charset="utf-8"><title>牛马工作室</title>
+  const html = `<!doctype html><meta charset="utf-8"><title>智序工场 · Virtual AI Office</title>
     <body style="margin:0;height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,#fff5f9,#ffe1ee);font-family:system-ui,'PingFang SC','Microsoft YaHei',sans-serif;color:#6a4a5e">
     <div style="text-align:center"><img src="data:image/png;base64,${img}" width="120" height="120" style="animation:b 1.2s ease-in-out infinite alternate">
     <p style="font-size:18px;margin-top:18px">${text}</p></div>
@@ -95,7 +95,7 @@ function createWindow() {
     height: 920,
     minWidth: 900,
     minHeight: 600,
-    title: '牛马工作室',
+    title: '智序工场',
     icon: icon('icon.png'),
     backgroundColor: '#fff5f9',
     show: false,
@@ -131,7 +131,7 @@ function createWindow() {
     e.preventDefault()
     win.hide()
     if (!settings.trayHintShown && Notification.isSupported()) {
-      new Notification({ title: '牛马工作室还在后台', body: '傻妞在托盘里继续盯着活，点托盘里的图标就能回来。' }).show()
+      new Notification({ title: '智序工场仍在后台', body: '办公室协调器仍在后台运行，点击托盘图标即可返回。' }).show()
       settings.trayHintShown = true
       saveSettings()
     }
@@ -139,7 +139,7 @@ function createWindow() {
 }
 
 function showPage() {
-  win.setTitle(`牛马工作室 · ${path.basename(studio.workdir)}${studio.fake ? '（彩排模式）' : ''}`)
+  win.setTitle(`智序工场 · ${path.basename(studio.workdir)}${studio.fake ? '（彩排模式）' : ''}`)
   win.loadURL(studio.local)
 }
 
@@ -153,7 +153,7 @@ function show() {
 async function chooseFolder() {
   const r = await dialog.showOpenDialog(win && win.isVisible() ? win : undefined, {
     title: '选一个项目文件夹',
-    message: '员工们会在这个文件夹里干活。空文件夹也行，傻妞会从零开始建项目。',
+    message: '员工们会在这个文件夹里干活。空文件夹也行，办公室协调器会从零开始组织项目。',
     buttonLabel: '就用这个',
     properties: ['openDirectory', 'createDirectory'],
   })
@@ -167,7 +167,7 @@ async function confirmStop(what) {
     buttons: [what, '先不了'],
     defaultId: 1,
     cancelId: 1,
-    message: '傻妞手上还有活在干',
+    message: '办公室协调器仍有任务在执行',
     detail: `${what}会叫停所有正在干活的员工。确定吗？`,
   })
   return r.response === 0
@@ -175,7 +175,7 @@ async function confirmStop(what) {
 
 async function openFolder(dir, { fake = studio?.fake } = {}) {
   if (!dir || !(await confirmStop('切换'))) return
-  win.loadURL(loadingPage('傻妞正在搬去新项目…'))
+  win.loadURL(loadingPage('办公室协调器正在切换项目…'))
   settings.workdir = dir
   addRecent(dir)
   try {
@@ -246,7 +246,7 @@ function buildMenu() {
   const recent = (settings.recent || []).filter((d) => d !== studio?.workdir && fs.existsSync(d)).slice(0, 6)
   const template = [
     ...(process.platform === 'darwin'
-      ? [{ label: app.name, submenu: [{ role: 'about', label: '关于牛马工作室' }, { type: 'separator' }, { role: 'hide', label: '隐藏' }, { label: '退出牛马工作室', accelerator: 'Cmd+Q', click: quit }] }]
+      ? [{ label: app.name, submenu: [{ role: 'about', label: '关于智序工场' }, { type: 'separator' }, { role: 'hide', label: '隐藏' }, { label: '退出智序工场', accelerator: 'Cmd+Q', click: quit }] }]
       : []),
     {
       label: '项目',
@@ -305,12 +305,12 @@ function buildTray() {
   if (process.platform === 'darwin') return
   if (!tray) {
     tray = new Tray(nativeImage.createFromPath(icon('tray.png')))
-    tray.setToolTip('牛马工作室')
+    tray.setToolTip('智序工场')
     tray.on('click', show)
   }
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: '打开牛马工作室', click: show },
+      { label: '打开智序工场', click: show },
       { label: '接入员工…', click: openSetup },
       { label: '切换项目文件夹…', click: async () => openFolder(await chooseFolder()) },
       { type: 'separator' },
@@ -334,7 +334,7 @@ if (!app.requestSingleInstanceLock()) {
     if (!dir) {
       dir = await chooseFolder()
       if (!dir) {
-        dir = path.join(app.getPath('documents'), '牛马工作室项目')
+        dir = path.join(app.getPath('documents'), '智序工场项目')
         fs.mkdirSync(dir, { recursive: true })
       }
     }
@@ -343,7 +343,7 @@ if (!app.requestSingleInstanceLock()) {
     try {
       await start(dir, { fake: !!process.env.NIUMA_FAKE })
     } catch (e) {
-      dialog.showErrorBox('牛马工作室没能启动', e.stack || e.message)
+      dialog.showErrorBox('智序工场启动失败', e.stack || e.message)
       app.quit()
       return
     }
