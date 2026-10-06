@@ -5,8 +5,10 @@ import path from 'node:path'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const indexHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8')
+const desktopMain = fs.readFileSync(path.join(ROOT, 'desktop', 'main.cjs'), 'utf8')
+const cliBin = fs.readFileSync(path.join(ROOT, 'bin', 'niuma.js'), 'utf8')
 
-test('public/index.html brand guard — does NOT contain visible legacy brand strings', () => {
+test('A. public/index.html brand guard — does NOT contain visible legacy brand strings', () => {
   const forbiddenVisible = [
     '牛马工作室',
     '总管 · 傻妞',
@@ -22,7 +24,7 @@ test('public/index.html brand guard — does NOT contain visible legacy brand st
   }
 })
 
-test('public/index.html brand guard — DOES contain official brand strings', () => {
+test('A. public/index.html brand guard — DOES contain official brand strings', () => {
   const required = [
     '智序工场',
     'Virtual AI Office',
@@ -36,9 +38,46 @@ test('public/index.html brand guard — DOES contain official brand strings', ()
   }
 })
 
-test('brand guard — legacy identifiers niuma/shaniu are allowed (compat tokens)', () => {
-  const compatTokens = ['niuma-token', 'niuma.skin', 'shaniu', 'X-Niuma-Token', 'window.Niuma']
-  for (const t of compatTokens) {
-    assert.ok(t, 'legacy compat identifiers are intentionally allowed and must never be globally banned')
+test('B. desktop/main.cjs brand guard — known visible legacy surfaces must NOT be present', () => {
+  const forbiddenVisibleUi = [
+    '<title>牛马工作室</title>',
+    `title: '牛马工作室'`,
+    "win.setTitle(`牛马工作室",
+    '牛马工作室还在后台',
+    '傻妞在托盘里继续盯着活',
+    '傻妞会从零开始建项目',
+    '傻妞手上还有活在干',
+    '傻妞正在搬去新项目',
+    '关于牛马工作室',
+    '退出牛马工作室',
+    `tray.setToolTip('牛马工作室')`,
+    '打开牛马工作室',
+    '牛马工作室项目',
+    '牛马工作室没能启动',
+  ]
+  for (const pattern of forbiddenVisibleUi) {
+    assert.ok(
+      !desktopMain.includes(pattern),
+      `desktop/main.cjs visible UI must NOT contain legacy pattern: ${JSON.stringify(pattern)}`
+    )
   }
+})
+
+test('B. desktop/main.cjs brand guard — MUST contain migrated visible strings', () => {
+  assert.ok(desktopMain.includes('智序工场'), 'desktop/main.cjs must include visible 智序工场')
+  assert.ok(desktopMain.includes('办公室协调器'), 'desktop/main.cjs must include visible 办公室协调器')
+})
+
+test('C. bin/niuma.js CLI help — does NOT mention 傻妞 in user-facing help text', () => {
+  assert.ok(
+    !cliBin.includes('傻妞的大脑'),
+    'bin/niuma.js help must NOT contain legacy 傻妞的大脑 copy'
+  )
+})
+
+test('C. bin/niuma.js CLI help — DOES mention 办公室协调器', () => {
+  assert.ok(
+    cliBin.includes('办公室协调器'),
+    'bin/niuma.js help must mention 办公室协调器 (V1 brand) in user-facing copy'
+  )
 })
