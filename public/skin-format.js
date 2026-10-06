@@ -5,8 +5,8 @@
 ;(function (root) {
   'use strict'
 
-  const BUILTIN = ['sakura', 'night', 'neon', 'neko', 'pixel']
-  const DARK_BASES = ['night', 'neon']
+  const BUILTIN = ['core', 'sakura', 'night', 'neon', 'neko', 'pixel']
+  const DARK_BASES = ['core', 'night', 'neon']
 
   // 界面颜色 → CSS 变量
   const COLOR_VARS = {

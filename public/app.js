@@ -23,12 +23,17 @@
   // 自制皮肤在一套内置皮肤（base）的基础上改颜色、图片和摆设：存在 ~/.niuma/skins（有服务器时），
   // 或者存在这个浏览器里（网页演示）。格式和检查见 skin-format.js。
   const F = window.NiumaSkinFormat
+  const V2_CORE_ID = 'core'
+  const CLASSIC_IDS = ['sakura', 'night', 'neon', 'neko', 'pixel']
+  const IS_CORE = (id) => id === V2_CORE_ID
+  const IS_CLASSIC = (id) => CLASSIC_IDS.includes(id)
   const BUILTIN = [
-    ['sakura', '樱花'],
-    ['night', '夜班'],
-    ['neon', '赛博霓虹'],
-    ['neko', '猫耳咖啡'],
-    ['pixel', '像素复古'],
+    ['core', '智序 · Core'],
+    ['sakura', '樱花 · Classic'],
+    ['night', '夜班 · Classic'],
+    ['neon', '赛博霓虹 · Classic'],
+    ['neko', '猫耳咖啡 · Classic'],
+    ['pixel', '像素复古 · Classic'],
   ]
   const LOCAL_SKINS = 'niuma.localSkins'
   const store = {
@@ -68,10 +73,11 @@
   }
   const prefersDark = () => window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches
   const wantedSkin = [new URLSearchParams(location.search).get('skin'), store.get('niuma.skin')].find(Boolean) || ''
-  let current = skinDef(wantedSkin) || skinDef(prefersDark() ? 'night' : 'sakura')
+  let current = skinDef(wantedSkin) || skinDef(V2_CORE_ID) || skinDef(prefersDark() ? 'night' : 'sakura')
   // 想要的是 ~/.niuma/skins 里的皮肤：等连上服务器读到了再换过去
   let pendingSkin = current.id === wantedSkin ? null : wantedSkin || null
   let setVars = []
+  let coreHandle = null
 
   function applyVars(def) {
     const root = document.documentElement
@@ -87,8 +93,130 @@
     }
   }
 
+  function destroyCoreShell() {
+    try { coreHandle?.destroy?.() } catch {}
+    coreHandle = null
+    const styleCore = document.getElementById('core-shell-css'); if (styleCore) styleCore.remove()
+    const styleTheme = document.getElementById('core-theme-style'); if (styleTheme) styleTheme.remove()
+    document.documentElement.removeAttribute('data-theme-core')
+    document.documentElement.removeAttribute('data-appearance')
+    document.body.classList.remove('v2-core-shell')
+  }
+
+  function restoreClassicLayoutScaffold() {
+    // If destroyed by Core bootstrap, restore the .app skeleton nodes (empty) used by legacy renderers.
+    if (document.querySelector('.app')) return
+    const app = document.createElement('div')
+    app.className = 'app'
+    app.innerHTML = `
+      <header class="top">
+        <div class="brand">
+          <span class="wordmark">智序工场</span>
+          <span class="wordmark-sub">Virtual AI Office · 办公室协调器</span>
+          <span class="tagline">人类与 AI，共同把事情做完</span>
+        </div>
+        <button type="button" id="open-setup" class="btn-setup" aria-label="接入员工或模型配置">接入员工</button>
+        <div class="skins" id="skins" role="group" aria-label="切换皮肤/主题"></div>
+        <div class="conn">
+          <span id="conn" class="pill pill-wait">连接中…</span>
+          <code id="workdir" class="workdir"></code>
+        </div>
+      </header>
+      <main class="layout">
+        <section class="stage-wrap" aria-label="智序工场 · 虚拟办公室">
+          <div class="stage">
+            <div class="scene" id="scene">
+              <canvas id="office" width="404" height="216" role="img" aria-label="智序工场：办公室协调器坐在中间，各项目组的员工坐在两边的工位上"></canvas>
+              <div class="overlay" id="overlay" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="team" id="team" aria-label="项目组和员工"></div>
+        </section>
+        <aside class="chat" aria-label="与办公室协调器对话">
+          <div class="panel-head">
+            <h2>和办公室协调器说</h2>
+            <button type="button" id="stop" class="btn-stop" hidden>全部停下</button>
+          </div>
+          <div id="banner" class="banner" hidden></div>
+          <div id="messages" class="messages" aria-live="polite"></div>
+          <div class="suggest" id="suggest"></div>
+          <form id="composer" class="composer">
+            <label for="input" class="sr-only">给办公室协调器的消息</label>
+            <textarea id="input" rows="2" placeholder="随便说，比如：帮我做一个记账小网站"></textarea>
+            <button type="submit" id="send" class="btn-send">发送</button>
+          </form>
+          <p class="hint">Enter 发送 · Shift+Enter 换行 · <code>@员工</code> 点名 · <code>/招人</code> <code>/工具</code> <code>/团队</code> <code>/撤销</code> <code>/stop</code></p>
+        </aside>
+        <section class="board" aria-label="任务板">
+          <div class="panel-head">
+            <h2>任务板</h2>
+            <span id="round" class="round"></span>
+            <button type="button" id="undo" class="btn-ghost" hidden>撤销上一轮</button>
+          </div>
+          <div id="meeting" class="meeting-card" hidden></div>
+          <ol id="tasks" class="tasks"></ol>
+          <p id="tasks-empty" class="empty">还没有任务。跟办公室协调器说说要做什么，说得模糊也没关系：她会开会、拆任务、派给合适的员工，做完自己验收。</p>
+        </section>
+      </main>
+    `
+    document.body.appendChild(app)
+    // Re-bind one-shot listeners that live outside renderSkins.
+    const composer = document.getElementById('composer')
+    composer?.addEventListener('submit', (e) => {
+      e.preventDefault()
+      const text = document.getElementById('input').value
+      document.getElementById('input').value = ''
+      send(text)
+    })
+    const input = document.getElementById('input')
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault()
+        composer?.requestSubmit()
+      }
+    })
+    document.getElementById('stop')?.addEventListener('click', () => transport && transport.stop().catch(() => {}))
+    document.getElementById('open-setup')?.addEventListener('click', () => window.NiumaSetup?.open({ request: transport?.request || null, fake: state.mode === 'fake' }))
+    document.getElementById('team')?.addEventListener('click', (e) => {
+      if (e.target.closest('.add-staff')) window.NiumaSetup?.open({ request: transport?.request || null, fake: state.mode === 'fake' })
+    })
+    document.getElementById('skins')?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-skin]')
+      if (b) setSkin(b.dataset.skin)
+      if (e.target.closest('[data-act="make-skin"]')) window.NiumaSkinEditor?.open()
+    })
+    document.getElementById('undo')?.addEventListener('click', () => send('/撤销'))
+    renderSkins()
+  }
+
   function makeOffice(def) {
     const root = document.documentElement
+    destroyCoreShell()
+    restoreClassicLayoutScaffold()
+    if (IS_CORE(def.id)) {
+      // Core V2 branch: VAOCoreShell.bootstrap() owns rendering.
+      root.removeAttribute('data-skin')
+      root.removeAttribute('data-skin-id')
+      for (const k of setVars) root.style.removeProperty(k)
+      setVars = []
+      const Shell = globalThis.VAOCoreShell
+      if (!Shell) return null
+      const snapshot = {
+        tasks: state.tasks,
+        seatStates: Object.fromEntries(Object.entries(state.agents).map(([k, v]) => {
+          const role = state.roster?.employees?.find((e) => e.id === k)?.group || k
+          const st = v.status === 'idle' ? 'IDLE' : v.status === 'thinking' ? 'THINKING' : v.status === 'working' ? 'WORKING' : v.status === 'meeting' ? 'REVIEWING' : v.status === 'error' ? 'BLOCKED' : 'IDLE'
+          return [role, st]
+        })),
+      }
+      coreHandle = Shell.bootstrap({
+        snapshot,
+        onThemeChange: (id) => setSkin(id),
+        onConversationSend: (t) => send(t),
+      })
+      return { destroy: () => destroyCoreShell(), setRoster: () => {}, setAgent: () => {}, setTasks: () => {}, meeting: () => {}, say: () => {}, dispatch: () => {}, activity: () => {}, portrait: () => '' }
+    }
+    // Legacy classic branch: anime.js (SVG) or office.js (canvas pixel).
     root.dataset.skin = def.base
     root.dataset.skinId = def.id
     applyVars(def)
@@ -128,9 +256,14 @@
     const box = $('#skins')
     if (!box) return
     const btn = (d, cls = '') => `<button type="button" data-skin="${esc(d.id)}"${cls} aria-pressed="${d.id === current.id}">${esc(d.name)}</button>`
+    const coreBuiltin = BUILTIN.find(([id]) => id === V2_CORE_ID)
+    const classicBuiltins = BUILTIN.filter(([id]) => id !== V2_CORE_ID)
     box.innerHTML =
       '<span class="skins-label">皮肤</span>' +
-      BUILTIN.map(([id, name]) => btn({ id, name })).join('') +
+      (coreBuiltin ? `<span class="skins-group">${btn({ id: coreBuiltin[0], name: coreBuiltin[1] }, ' core-builtin')}</span>` : '') +
+      '<span class="skins-group skins-group-classic" style="margin-left:2px;border-left:1px solid var(--edge);padding-left:8px;"><em class="skins-group-title" style="font-style:normal;font-size:10.5px;color:var(--muted);letter-spacing:.08em;margin-right:2px;">经典主题</em>' +
+      classicBuiltins.map(([id, name]) => btn({ id, name })).join('') +
+      '</span>' +
       customSkins.map((d) => btn(d, ` class="custom" title="自制皮肤${d.author ? ` · ${esc(d.author)}` : ''}"`)).join('') +
       `<button type="button" class="make-skin" data-act="make-skin">${current.builtin ? '＋ 做皮肤' : '✎ 改皮肤'}</button>`
   }
