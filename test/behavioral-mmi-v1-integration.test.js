@@ -1857,3 +1857,240 @@ test('[ATOMIC 10 GREEN: cross-scope rejected / conflict rebind unchanged after a
   assert.equal(rRetry.status, 200, `rebind retry green: ${rRetry.status} ${rRetry.text}`)
   assert.equal(attachmentStore.get(X).ownerClientMessageId, msgB, `X owned by B after retry. actual=${attachmentStore.get(X).ownerClientMessageId}`)
 })
+
+// ==========================================================================
+// TXCLOSE — transaction-closeout regressions for BUG 1, BUG 1B, BUG 2
+// ==========================================================================
+
+test('[TXCLOSE 1 successful continuation REMOVES the actual token key from _continuationTokens Map via the production sweep/daemon cycle (not merely sets consumed=true)]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(100, 'TX1-A')
+  const upA = await uploadBytes(bA, 'txclose1-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idSrc = 'txclose1-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA] }) })
+  assert.equal(rRet.status, 200)
+  const tok = rRet.json.continuationToken
+  assert.ok(tok, `continuation token issued: ${tok}`)
+  assert.ok(coord._continuationTokens.has(tok), `token present in Map BEFORE commit`)
+  const idNew = 'txclose1-new-' + Date.now()
+  const rAcc = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'accepted 1', continuationToken: tok }) })
+  assert.equal(rAcc.status, 200, `accepted 200: ${rAcc.status} ${rAcc.text}`)
+  // commit marked consumed=true + consumedAt timestamp. NOT yet deleted from Map (for exact-retry idempotency derivation within grace window).
+  const metaNow = coord._continuationTokens.get(tok)
+  assert.ok(metaNow, `token row EXISTS just after commit (not yet swept — grace for exact retry idempotency)`)
+  assert.equal(metaNow.consumed, true, `consumed flag is true just after commit (deterministic marking — not merely left untouched)`)
+  assert.ok(Number.isFinite(metaNow.consumedAt) && metaNow.consumedAt > 0, `consumedAt timestamp is set deterministically`)
+  // Force consumedAt to be OLD enough (exceed 60s grace) so the production sweep cycle will actually delete it — proves wiring:
+  metaNow.consumedAt = metaNow.consumedAt - 120_000 // 2 min older
+  // Run the SAME unified cleanup cycle the production daemon calls (NOT manual _sweepTokens — prove PRODUCTION wiring removes it).
+  const cycleRes = coord._runAttachmentCleanupOnce({ orphanStaleMs: 5 * 60 * 1000 })
+  assert.ok(cycleRes && typeof cycleRes === 'object', `production cycle returns diagnostics object`)
+  assert.equal(coord._continuationTokens.has(tok), false, `REAL token key DELETED from _continuationTokens Map AFTER production daemon cleanup cycle runs (not dangling consumed=true indefinitely without daemon sweep).`)
+})
+
+test('[TXCLOSE 2 exact continuation retry after simulated response loss → cached idempotent 200 returned, no second execution]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(100, 'TX2-A')
+  const upA = await uploadBytes(bA, 'txclose2-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idSrc = 'txclose2-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const idNew = 'txclose2-new-' + Date.now()
+  const bodyObj = { clientMessageId: idNew, text: 'summarize A', continuationToken: tok }
+  // Exactly-once execution detector: count how many times the worker group's
+  // makePlan/ask invocations or coord.handle runs.
+  let handleCalls = 0
+  const origHandle = coord.handle.bind(coord)
+  coord.handle = async (env) => { handleCalls += 1; return origHandle(env) }
+  const rFirst = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyObj) })
+  assert.equal(rFirst.status, 200, `first accepted: ${rFirst.status} ${rFirst.text}`)
+  assert.equal(rFirst.json.cached, undefined, `first run not cached`)
+  // BUG 1 + 1B synergy: commit marks consumed=true + sets consumedAt, but token
+  // REMAINS in _continuationTokens Map for the 60s retry window.  This allows
+  // exact retry (simulated response loss below) to pass through
+  // prepareContinuationToken (allowConsumedForRetry=true because idempotencyCache
+  // already has the id) so it can derive combined ids for idempotency compare.
+  const meta = coord._continuationTokens.get(tok)
+  assert.ok(meta, `token in Map after first success (grace window for retry)`)
+  assert.equal(meta.consumed, true, `meta.consumed === true (deterministic mark, not just left in place)`)
+  assert.ok(Number.isFinite(meta.consumedAt), `consumedAt set`)
+  // First request should have caused exactly one handle() call (the queued
+  // message going through drain).  Now assert NO additional handle calls on
+  // the idempotent cached retry:
+  const before = handleCalls
+  const rawBody = JSON.stringify(bodyObj)
+  const rRetry = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: rawBody })
+  assert.equal(rRetry.status, 200, `retry same exact body 200: ${rRetry.status} ${rRetry.text}`)
+  assert.equal(rRetry.json.cached, true, `retry returns cached:true`)
+  assert.equal(rRetry.json.idempotent, true, `retry returns idempotent:true`)
+  assert.equal(rRetry.json.accepted, true, `retry returns accepted:true`)
+  // Exactly-once: handle() must not have been called for the retry (it would
+  // have been queued + handle increment if it double executed).
+  const after = handleCalls
+  assert.equal(after, before, `exactly-once — retry caused ZERO additional coord.handle invocations. before=${before} after=${after}`)
+})
+
+test('[TXCLOSE 3 same id + DIFFERENT content after accepted continuation → still IDEMPOTENT_CONFLICT, no bypass]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(100, 'TX3-A')
+  const upA = await uploadBytes(bA, 'txclose3-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idSrc = 'txclose3-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const idNew = 'txclose3-new-' + Date.now()
+  const rFirst = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'v1 original', continuationToken: tok }) })
+  assert.equal(rFirst.status, 200)
+  const rDiff = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'v2 different content', continuationToken: tok }) })
+  assert.equal(rDiff.status, 409, `different content same id → 409 IDEMPOTENT_CONFLICT. got: ${rDiff.status} ${rDiff.text}`)
+  assert.equal(rDiff.json.code, 'IDEMPOTENT_CONFLICT', `explicit conflict code`)
+})
+
+test('[TXCLOSE 4 retained + fresh EXCEEDING maxAttachmentsPerMessage → REJECTED BEFORE mutation: token still valid, owners unchanged]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  // Retained set: 2 fresh uploads owned by srcId
+  const bR1 = buildPdfBytes(256, 'TX4-R1'); const bR2 = buildPdfBytes(256, 'TX4-R2')
+  const upR1 = await uploadBytes(bR1, 'tx4-r1.pdf', { declaredSize: bR1.length }); const upR2 = await uploadBytes(bR2, 'tx4-r2.pdf', { declaredSize: bR2.length })
+  const idR1 = upR1.json.id; const idR2 = upR2.json.id
+  for (const id of [idR1, idR2]) attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idSrc = 'txclose4-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idR1, idR2] }) })
+  assert.equal(rRet.status, 200)
+  const tok = rRet.json.continuationToken
+  assert.ok(coord._continuationTokens.has(tok), `tok exists before rejection`)
+  // Fresh uploads: 5 more. LIMITS.maxAttachmentsPerMessage === 5. Retained (2) + Fresh (5) = 7 > 5 → reject
+  const freshIds = []
+  for (let i = 0; i < 5; i++) {
+    const b = buildPdfBytes(128, 'TX4-F' + i)
+    const up = await uploadBytes(b, `tx4-f${i}.pdf`, { declaredSize: b.length })
+    attachmentStore.update(up.json.id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+    freshIds.push(up.json.id)
+  }
+  assert.equal(2 + 5 > LIMITS.maxAttachmentsPerMessage, true, `constructed a limit-breaking combined list`)
+  const idNew = 'txclose4-new-' + Date.now()
+  const rFail = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'hi', attachmentIds: [...freshIds], continuationToken: tok }) })
+  assert.notEqual(rFail.status, 200, `not 200 when limit broken: got ${rFail.status} ${rFail.text}`)
+  assert.ok(/附件|最多|max|limit/i.test(String(rFail.json?.error || rFail.text || '')), `error message references attachment count limit or attachment rule. got: ${JSON.stringify(rFail.json)}`)
+  // POST MUTATION ASSERTIONS — MUST NOT have mutated
+  assert.equal(coord._continuationTokens.has(tok), true, `after fail: token key STILL PRESENT in _continuationTokens Map (not deleted)`)
+  const meta = coord._continuationTokens.get(tok)
+  assert.equal(meta.consumed, false, `after fail: meta.consumed === false (not burned)`)
+  assert.equal(attachmentStore.get(idR1).ownerClientMessageId, idSrc, `after fail: R1 owner STILL idSrc (NOT transferred)`)
+  assert.equal(attachmentStore.get(idR2).ownerClientMessageId, idSrc, `after fail: R2 owner STILL idSrc (NOT transferred)`)
+  // Retained ids are still EXTRACTED and valid → safe retry with corrected subset now
+  const idRetry = 'txclose4-retry-' + Date.now()
+  const rOk = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idRetry, text: 'trimmed', attachmentIds: [freshIds[0], freshIds[1], freshIds[2]], continuationToken: tok }) })
+  assert.equal(rOk.status, 200, `retry with retained + 3 fresh = 5 total (== LIMIT 5) works. got: ${rOk.status} ${rOk.text}`)
+})
+
+test('[TXCLOSE 5 combined retained+fresh EXCEEDING maxTotalBytes → REJECTED BEFORE mutation, token preserved, owners preserved]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  // Construct 2 retained uploads (each ~26MB — within per-kind 20MB would fail. Use ~3MB each × 2 retained + 2 fresh × 3MB? That's 12MB... wait LIMITS.maxTotalBytes=50MB. Make retained (1) big = 30MB owned by src, then fresh (1) big = 25MB new-owned — combined = 55MB > 50MB total but individually under per-kind caps.)
+  // But per-kind document cap = 20MB. Use retained (A=18MB) retained (B=18MB) — NO wait, 2 retained + then upload fresh X (18MB). combined = 18+18+18 = 54 > 50MB total. Each is < 20MB per-kind.
+  const MB = 1024 * 1024
+  const makeBigPdf = (nMB, tag) => {
+    const size = Math.floor(nMB * MB)
+    const head = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34])
+    const body = Buffer.alloc(size - head.length - 6, 0x20)
+    const tail = Buffer.from('%%EOF\n')
+    return Buffer.concat([head, body, tail])
+  }
+  const bA = makeBigPdf(18, 'TX5-RA'); const bB = makeBigPdf(18, 'TX5-RB')
+  const upA = await uploadBytes(bA, 'tx5-ra.pdf', { declaredSize: bA.length }); const upB = await uploadBytes(bB, 'tx5-rb.pdf', { declaredSize: bB.length })
+  const idA = upA.json.id; const idB = upB.json.id
+  for (const id of [idA, idB]) attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 }, size: (id === idA ? bA.length : bB.length) })
+  const idSrc = 'txclose5-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA, idB] }) })
+  assert.equal(rRet.status, 200)
+  const tok = rRet.json.continuationToken
+  assert.ok(coord._continuationTokens.has(tok), `tok exists`)
+  const bX = makeBigPdf(18, 'TX5-FX')
+  const upX = await uploadBytes(bX, 'tx5-fx.pdf', { declaredSize: bX.length })
+  const idX = upX.json.id
+  attachmentStore.update(idX, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 }, size: bX.length })
+  // claim X owned by the upcoming new id (otherwise prepare ok via claimable, but store row size set)
+  const idNew = 'txclose5-new-' + Date.now()
+  attachmentStore.claimOwner(idX, idNew)
+  const combinedBytes = bA.length + bB.length + bX.length
+  assert.ok(combinedBytes > LIMITS.maxTotalBytes, `combined size (${combinedBytes}) exceeds LIMITS.maxTotalBytes (${LIMITS.maxTotalBytes})`)
+  const rFail = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'too big overall', attachmentIds: [idX], continuationToken: tok }) })
+  assert.notEqual(rFail.status, 200, `expected non-200 rejection when total bytes exceeded. got ${rFail.status} ${JSON.stringify(rFail.json)}`)
+  assert.ok(/大小|MB|上限|bytes|total/i.test(String(rFail.json?.error || rFail.text || '')), `error references bytes/MB limit. got: ${JSON.stringify(rFail.json)}`)
+  // NO MUTATION
+  assert.equal(coord._continuationTokens.has(tok), true, `token preserved after failed size-limit preflight`)
+  assert.equal(coord._continuationTokens.get(tok).consumed, false, `meta.consumed still false`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idSrc, `retained A owner === idSrc original`)
+  assert.equal(attachmentStore.get(idB).ownerClientMessageId, idSrc, `retained B owner === idSrc original`)
+  assert.equal(attachmentStore.get(idX).ownerClientMessageId, idNew, `fresh X owner still idNew (unchanged)`)
+  // Safe retry with subset: retained only = A + B (36MB < 50MB) works
+  const idRetry = 'txclose5-retry-' + Date.now()
+  const rOk = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idRetry, text: 'reduced set ok', continuationToken: tok }) })
+  assert.equal(rOk.status, 200, `subset A+B (under total bytes) retried on same token → 200. got: ${rOk.status} ${rOk.text}`)
+})
+
+test('[TXCLOSE 6 valid continuation request EXACTLY at maxAttachmentsPerMessage (= limit) succeeds]', async (t) => {
+  const { attachmentStore, uploadBytes, request } = await startHarness(t)
+  const N = LIMITS.maxAttachmentsPerMessage // 5
+  const limitRetained = Math.min(2, N)
+  const limitFresh = N - limitRetained
+  const retained = []
+  for (let i = 0; i < limitRetained; i++) {
+    const b = buildPdfBytes(80 + i, 'TX6R' + i)
+    const up = await uploadBytes(b, `tx6-r${i}.pdf`, { declaredSize: b.length })
+    attachmentStore.update(up.json.id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+    retained.push(up.json.id)
+  }
+  const idSrc = 'txclose6-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: retained }) })
+  const tok = rRet.json.continuationToken
+  const idNew = 'txclose6-new-' + Date.now()
+  const freshDeclared = []
+  for (let i = 0; i < limitFresh; i++) {
+    const b = buildPdfBytes(80 + 10 + i, 'TX6F' + i)
+    const up = await uploadBytes(b, `tx6-f${i}.pdf`, { declaredSize: b.length })
+    attachmentStore.update(up.json.id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+    assert.ok(attachmentStore.claimOwner(up.json.id, idNew), `fresh ${i} claimed`)
+    freshDeclared.push(up.json.id)
+  }
+  const rAcc = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: `count=${N} exactly at limit`, attachmentIds: freshDeclared, continuationToken: tok }) })
+  assert.equal(rAcc.status, 200, `exactly ${N}=${limitRetained}retained+${limitFresh}fresh ≤ LIMIT accepted. got: ${rAcc.status} ${rAcc.text}`)
+})
+
+test('[TXCLOSE 7 valid combined request EXACTLY at total-byte limit succeeds when equality is allowed]', async (t) => {
+  const { attachmentStore, uploadBytes, request } = await startHarness(t)
+  // Build 2 retained + 1 fresh such that combined bytes = LIMITS.maxTotalBytes exactly.
+  // Use one retained = floor(L/3), second retained = floor(L/3), fresh = L - 2*floor(L/3).
+  // Per-kind document cap 20MB: L/3 (≈16.6MB) OK for each.
+  const L = LIMITS.maxTotalBytes
+  const sizeA = Math.floor(L / 3)
+  const sizeB = Math.floor(L / 3)
+  const sizeC = L - sizeA - sizeB
+  const makePdfSized = (sz, tag) => {
+    const head = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34])
+    const tailSize = 6
+    const fillSize = Math.max(0, sz - head.length - tailSize)
+    const fill = Buffer.alloc(fillSize, 0x20)
+    const tail = Buffer.from('%%EOF\n')
+    return Buffer.concat([head, fill, tail])
+  }
+  const bA = makePdfSized(sizeA, 'TX7A'); const bB = makePdfSized(sizeB, 'TX7B'); const bC = makePdfSized(sizeC, 'TX7C')
+  const upA = await uploadBytes(bA, 'tx7-a.pdf', { declaredSize: bA.length }); const upB = await uploadBytes(bB, 'tx7-b.pdf', { declaredSize: bB.length }); const upC = await uploadBytes(bC, 'tx7-c.pdf', { declaredSize: bC.length })
+  const idA = upA.json.id; const idB = upB.json.id; const idC = upC.json.id
+  for (const [id, sz] of [[idA, bA.length], [idB, bB.length], [idC, bC.length]]) attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 }, size: sz })
+  const idSrc = 'txclose7-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA, idB] }) })
+  assert.equal(rRet.status, 200)
+  const tok = rRet.json.continuationToken
+  const idNew = 'txclose7-new-' + Date.now()
+  attachmentStore.claimOwner(idC, idNew)
+  // Sanity: limit semantics allow equality (if not we would see a regression). The server check uses `totalBytes > LIMIT` — equality passes.
+  const total = bA.length + bB.length + bC.length
+  assert.equal(total <= LIMITS.maxTotalBytes, true, `constructed ${total} ≤ LIMIT ${LIMITS.maxTotalBytes}`)
+  const rAcc = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idNew, text: 'exact bytes boundary', attachmentIds: [idC], continuationToken: tok }) })
+  assert.equal(rAcc.status, 200, `exactly-at-total-byte-boundary accepted. status=${rAcc.status} body=${rAcc.text}`)
+})

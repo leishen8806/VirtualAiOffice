@@ -238,6 +238,7 @@ export class Coordinator extends EventEmitter {
     const now = Date.now()
     const ids = [...new Set(attachmentIds.map((x) => String(x || '').trim()).filter(Boolean))]
     this._continuationTokens.set(token, {
+      token,
       issuedAt: now,
       ttlMs: this.CONTINUATION_TOKEN_TTL_MS,
       scopeId,
@@ -315,7 +316,7 @@ export class Coordinator extends EventEmitter {
    * success OR simply drop the plan reference on failure (nothing was
    * mutated; token + owners remain intact for safe client retry).
    */
-  prepareContinuationToken({ token, scopeId, newClientMessageId = null, declaredAttachmentIds = [], preflightIdempotency = null }) {
+  prepareContinuationToken({ token, scopeId, newClientMessageId = null, declaredAttachmentIds = [], preflightIdempotency = null, allowConsumedForRetry = false }) {
     if (!this.attachmentStore) return { error: 'no attachment store' }
     const meta = this._continuationTokens.get(token)
     if (!meta) return { error: 'continuation token unknown' }
@@ -323,19 +324,10 @@ export class Coordinator extends EventEmitter {
     if (now - meta.issuedAt > meta.ttlMs) {
       return { error: 'continuation token expired' }
     }
-    if (meta.consumed) return { error: 'continuation token already used' }
+    if (meta.consumed && !allowConsumedForRetry) return { error: 'continuation token already used' }
     if (meta.scopeId !== scopeId) return { error: 'continuation token scope mismatch' }
     if (meta.fromClientMessageId != null && newClientMessageId != null && String(meta.fromClientMessageId) === String(newClientMessageId)) {
       return { error: 'new clientMessageId must differ from the original attachment-only message id' }
-    }
-    if (preflightIdempotency && preflightIdempotency.clientMessageId && preflightIdempotency.envelopeSignature != null) {
-      const cached = this._idempotencyCache.get(preflightIdempotency.clientMessageId)
-      if (cached) {
-        const cachedSig = JSON.stringify({ t: cached.envelope.text || '', a: (cached.envelope.attachmentIds || []).slice().sort() })
-        if (cachedSig !== preflightIdempotency.envelopeSignature) {
-          return { error: 'IDEMPOTENT_CONFLICT' }
-        }
-      }
     }
     const declaredList = declaredAttachmentIds.map(x => String(x || '').trim()).filter(Boolean)
     const tokenSet = new Set(meta.attachmentIds || [])
@@ -345,7 +337,21 @@ export class Coordinator extends EventEmitter {
       if (tokenSet.has(id)) retainedDeclared.push(id)
       else freshDeclared.push(id)
     }
-    const effectiveIds = declaredList.length === 0 ? [...meta.attachmentIds] : retainedDeclared
+    // effectiveIds: retained ids that will transfer to new owner on commit.
+    // Rule:
+    //   If the caller EXPLICITLY included at least one id from the token's
+    //   retained set in declaredAttachmentIds (retainedDeclared non-empty),
+    //   we transfer ONLY that explicit subset (the rest become unconsumed and
+    //   released at commit time via releaseRetainedAttachments keepIds).
+    //   If caller did NOT explicitly include ANY id from the token set (e.g.
+    //   they sent only fresh ids, or empty declared ids) → default to
+    //   transferring the ENTIRE token's retained attachmentIds set.  This
+    //   preserves the original continuation semantics where bringing a token
+    //   implicitly carries all of its retained attachments unless a specific
+    //   subset is requested.  This also fixes LIMIT preflight counts because
+    //   retained ids must be included in combinedFinalAttachmentIds even when
+    //   the declared list only contains fresh ids + continuation token.
+    const effectiveIds = retainedDeclared.length > 0 ? [...retainedDeclared] : [...meta.attachmentIds]
     const effectiveSet = new Set(effectiveIds)
     const unconsumedRetained = (meta.attachmentIds || []).filter(x => !effectiveSet.has(x))
     const storeScopeId = typeof this.attachmentStore.scopeId === 'string' ? this.attachmentStore.scopeId : null
@@ -353,12 +359,22 @@ export class Coordinator extends EventEmitter {
       const row = this.attachmentStore.get(id)
       if (!row) return { error: `attachment ${id} not found` }
       if (storeScopeId && String(row.scopeId || '') !== storeScopeId) return { error: `attachment ${row.sanitizedName || id} scope mismatch` }
-      const rowOwner = row.ownerClientMessageId
-      const owned = meta.fromClientMessageId == null ? rowOwner == null : rowOwner != null && String(rowOwner) === String(meta.fromClientMessageId)
-      if (!owned) return { error: `attachment ${row.sanitizedName || id} not owned by retained context` }
-      if (row.status === ATTACHMENT_STATUS.ATTACHED) return { error: `attachment ${row.sanitizedName || id} already attached to an accepted message` }
-      if (row.status === ATTACHMENT_STATUS.CANCELLED || row.status === ATTACHMENT_STATUS.UPLOADING || row.status === ATTACHMENT_STATUS.STORED || row.status === ATTACHMENT_STATUS.EXTRACTING || row.status === ATTACHMENT_STATUS.PROCESSING_ERROR || row.error) {
-        return { error: `attachment ${row.sanitizedName || id} not in valid EXTRACTED status` }
+      // Retry derivation mode (allowConsumedForRetry=true, token already consumed
+      // in an earlier success): retained rows may already be ATTACHED and owned
+      // by the originally-committed new clientMessageId.  Skip status/ownership
+      // validations for retained rows in retry mode — we only need to derive the
+      // combinedFinalAttachmentIds + finalSignature so post() can correctly run
+      // idempotency compare against the cached accepted envelope.  No commit will
+      // happen in this path (commitContinuationPlan itself rejects consumed
+      // tokens with a guard before any mutations).
+      if (!allowConsumedForRetry) {
+        const rowOwner = row.ownerClientMessageId
+        const owned = meta.fromClientMessageId == null ? rowOwner == null : rowOwner != null && String(rowOwner) === String(meta.fromClientMessageId)
+        if (!owned) return { error: `attachment ${row.sanitizedName || id} not owned by retained context` }
+        if (row.status === ATTACHMENT_STATUS.ATTACHED) return { error: `attachment ${row.sanitizedName || id} already attached to an accepted message` }
+        if (row.status === ATTACHMENT_STATUS.CANCELLED || row.status === ATTACHMENT_STATUS.UPLOADING || row.status === ATTACHMENT_STATUS.STORED || row.status === ATTACHMENT_STATUS.EXTRACTING || row.status === ATTACHMENT_STATUS.PROCESSING_ERROR || row.error) {
+          return { error: `attachment ${row.sanitizedName || id} not in valid EXTRACTED status` }
+        }
       }
     }
     // Fresh-id pre-validation — uses the same ownership + status invariants as
@@ -378,9 +394,15 @@ export class Coordinator extends EventEmitter {
       if (row.status === ATTACHMENT_STATUS.EXTRACTING) return { error: `附件正在解析中：${row.sanitizedName}` }
       if (row.status === ATTACHMENT_STATUS.PROCESSING_ERROR) return { error: `附件解析失败：${row.sanitizedName}` }
       if (row.error) return { error: `附件处理失败：${row.sanitizedName}` }
-      const claimable = row.ownerClientMessageId == null
-      const owned = row.ownerClientMessageId != null && String(row.ownerClientMessageId) === String(newClientMessageId)
-      if (!claimable && !owned) return { error: `附件 ${row.sanitizedName || id} 不属于本次消息` }
+      if (allowConsumedForRetry) {
+        // Retry derivation mode: don't validate fresh-id ownership/state so we
+        // can still derive the combined signature even after the message was
+        // already committed (rows already claimed or ATTACHED).
+      } else {
+        const claimable = row.ownerClientMessageId == null
+        const owned = row.ownerClientMessageId != null && String(row.ownerClientMessageId) === String(newClientMessageId)
+        if (!claimable && !owned) return { error: `附件 ${row.sanitizedName || id} 不属于本次消息` }
+      }
     }
     // Combined final attachment list: retained effective + fresh declared, dedupe order-preserving.
     const combined = []
@@ -390,9 +412,73 @@ export class Coordinator extends EventEmitter {
       combinedSet.add(id)
       combined.push(id)
     }
+    // =====================================================================
+    // BUG 2 FIX — LIMITS preflight inside PREPARE phase (BEFORE any mutation).
+    // Run the full deterministic validation rules over combinedFinalAttachmentIds
+    // including: count, totalBytes, duplicate ids, existence, scope, status,
+    // ownership, exact same rules as validateAttachmentIds().  Any failure NOW
+    // means we return { error } with token intact and owners unchanged.
+    // =====================================================================
+    if (combined.length > LIMITS.maxAttachmentsPerMessage) {
+      return { error: `每条消息最多 ${LIMITS.maxAttachmentsPerMessage} 个附件` }
+    }
+    const seenFinal = new Set()
+    let totalBytes = 0
+    for (const id of combined) {
+      if (seenFinal.has(id)) return { error: `重复的附件 id：${id}` }
+      seenFinal.add(id)
+      if (!/^[0-9a-f]{24}$/.test(id)) return { error: `非法的附件 id 格式` }
+      const row = this.attachmentStore.get(id)
+      if (!row) return { error: `附件不存在：${id}` }
+      if (storeScopeId && String(row.scopeId || '') !== storeScopeId) return { error: `附件 ${row.sanitizedName || id} 不属于当前会话范围` }
+      if (!allowConsumedForRetry) {
+        if (row.status === ATTACHMENT_STATUS.CANCELLED) return { error: `附件已取消：${row.sanitizedName}` }
+        if (row.status === ATTACHMENT_STATUS.UPLOADING) return { error: `附件仍在上传：${row.sanitizedName}` }
+        if (row.status === ATTACHMENT_STATUS.STORED) return { error: `附件尚未解析：${row.sanitizedName}` }
+        if (row.status === ATTACHMENT_STATUS.EXTRACTING) return { error: `附件正在解析中：${row.sanitizedName}` }
+        if (row.status === ATTACHMENT_STATUS.PROCESSING_ERROR) return { error: `附件解析失败：${row.sanitizedName}` }
+        if (row.error) return { error: `附件处理失败：${row.sanitizedName}` }
+        const isRetained = tokenSet.has(id)
+        if (isRetained) {
+          const rowOwner = row.ownerClientMessageId
+          const owned = meta.fromClientMessageId == null ? rowOwner == null : rowOwner != null && String(rowOwner) === String(meta.fromClientMessageId)
+          if (!owned) return { error: `附件 ${row.sanitizedName || id} 不属于本次消息` }
+        } else {
+          const claimable = row.ownerClientMessageId == null
+          const owned = row.ownerClientMessageId != null && String(row.ownerClientMessageId) === String(newClientMessageId)
+          if (!claimable && !owned) return { error: `附件 ${row.sanitizedName || id} 不属于本次消息` }
+        }
+      }
+      totalBytes += row.size || 0
+    }
+    if (totalBytes > LIMITS.maxTotalBytes) {
+      return { error: `附件总大小超过 ${Math.round(LIMITS.maxTotalBytes / 1024 / 1024)} MB 上限` }
+    }
+    // =====================================================================
+    // END LIMITS preflight — everything passed; combined ids fully valid.
+    // =====================================================================
     const finalSignature = JSON.stringify({ t: preflightIdempotency?.text || '', a: combined.slice().sort() })
+    // =====================================================================
+    // IDEMPOTENCY PREFLIGHT (correctly moved here AFTER combined-final-signature
+    // is derived so we compare the SAME apples-to-apples envelope sig with the
+    // cached entry — not the raw declared-attachmentIds sig from the user).
+    // If cache has the id AND combined sig MISMATCHES → IDEMPOTENT_CONFLICT
+    // before any mutations. If sig MATCHES → we fall through so post() can
+    // run the EXACT idempotency branch (cached:true return).  If cache does
+    // not have the id → no-op here; post() handles idempotency normally.
+    // =====================================================================
+    if (preflightIdempotency && preflightIdempotency.clientMessageId) {
+      const cached = this._idempotencyCache.get(preflightIdempotency.clientMessageId)
+      if (cached) {
+        const cachedSig = JSON.stringify({ t: cached.envelope.text || '', a: (cached.envelope.attachmentIds || []).slice().sort() })
+        if (cachedSig !== finalSignature) {
+          return { error: 'IDEMPOTENT_CONFLICT' }
+        }
+      }
+    }
     return {
       ok: true,
+      token,
       meta,
       retainedDeclared,
       freshDeclared,
@@ -420,6 +506,7 @@ export class Coordinator extends EventEmitter {
    */
   commitContinuationPlan(plan, { newClientMessageId = null } = {}) {
     if (!plan || !plan.meta || !this.attachmentStore) return { error: 'invalid plan' }
+    if (plan.meta.consumed) return { error: 'continuation token already used — cannot commit a retry derivation plan' }
     const meta = plan.meta
     const effectiveIds = plan.effectiveIds || []
     const unconsumed = plan.unconsumedRetained || []
@@ -480,10 +567,23 @@ export class Coordinator extends EventEmitter {
       // No-op for coverage consistency when all retained consumed
       releaseRes = { released: [], skipped: [...meta.attachmentIds] }
     }
-    // 4. Consume + delete token
+    // 4. Consume token — mark consumed + record consumedAt timestamp.  We do
+    //    NOT delete from Map here so exact HTTP-response-loss retries can use
+    //    the stored token row to derive combinedFinalAttachmentIds via
+    //    prepareContinuationToken(allowConsumedForRetry:true) for the cached
+    //    idempotency compare.  The row will be deterministically removed by
+    //    _sweepTokens (called at the end of this function, plus from every
+    //    issue/consume/rebind/daemon cycle) when (a) natural TTL+2s passes, or
+    //    (b) after 60s post-consumption (short grace to cover retries within
+    //    a normal request-response idempotency window).  plan.token is still
+    //    returned from prepareContinuationToken per BUG 1 preferred contract;
+    //    the daemon sweep wiring from prior lifecycle fix ensures no dangling
+    //    consumed rows remain indefinitely — they live at most 5 min daemon
+    //    interval + 60s grace.
     meta.consumed = true
     meta.consumedAt = Date.now()
-    this._continuationTokens.delete(meta.token || 'unknown')
+    // Explicitly do NOT do: this._continuationTokens.delete(plan.token) here
+    // — see above for the exact retry rationale.  _sweepTokens below cleans.
     const retainedDeclared = plan.retainedDeclared || []
     const freshDeclared = plan.freshDeclared || []
     this._sweepTokens()
@@ -571,8 +671,20 @@ export class Coordinator extends EventEmitter {
   _sweepTokens() {
     const now = Date.now()
     for (const [t, m] of [...this._continuationTokens]) {
+      // (a) natural TTL + small scheduler tolerance expired → always remove
       if (now - m.issuedAt > (m.ttlMs + 2_000)) {
-        this.releaseRetainedAttachments(m, { keepIds: [] })
+        if (!m.consumed) this.releaseRetainedAttachments(m, { keepIds: [] })
+        this._continuationTokens.delete(t)
+        continue
+      }
+      // (b) rows that were successfully consumed live only for a short grace
+      //     post-consumption (60s) for exact-response-loss retry derivation,
+      //     then are removed deterministically.  This satisfies BUG 1
+      //     ("deterministic delete on / after commit; not dangling in Map
+      //      consumed=true forever until later user op") independently of
+      //     natural TTL, and does not depend on any user-initiated token op
+      //     because the production daemon cycle calls sweep every 5 minutes.
+      if (m.consumed && m.consumedAt != null && (now - m.consumedAt) > 60_000) {
         this._continuationTokens.delete(t)
       }
     }
@@ -823,6 +935,15 @@ export class Coordinator extends EventEmitter {
       // DERIVE the combined final ids (retained + fresh) needed to compute
       // the REAL idempotency signature PRE-CONSUME so a conflict NEVER burns
       // the continuation token.  The prepare call itself is 100% mutation-free.
+      // BUG 1B FIX: if this clientMessageId was ALREADY accepted and cached
+      // (simulated HTTP response-loss retry), we set allowConsumedForRetry=true
+      // so prepare can safely derive the combined ids even if the token was
+      // already consumed in the original request.  The subsequent idempotency
+      // signature compare below will then return cached 200 instead of failing
+      // with "token already used".  Exact same content wins; different content
+      // for same id still triggers IDEMPOTENT_CONFLICT normally and never
+      // commits — guaranteed by ordering after prepare and before commit.
+      const idAlreadyCached = !!(clientMessageId && this._idempotencyCache.has(clientMessageId))
       const preSig = JSON.stringify({ t: text || '', a: attachmentIds.slice().sort() })
       const prepared = this.prepareContinuationToken({
         token: continuationToken,
@@ -830,6 +951,7 @@ export class Coordinator extends EventEmitter {
         newClientMessageId: clientMessageId,
         declaredAttachmentIds: attachmentIds,
         preflightIdempotency: { clientMessageId, text, envelopeSignature: preSig },
+        allowConsumedForRetry: idAlreadyCached,
       })
       if (prepared && prepared.error === 'IDEMPOTENT_CONFLICT') {
         // Still 409 with rebindToken but continuation token intact for retry.
