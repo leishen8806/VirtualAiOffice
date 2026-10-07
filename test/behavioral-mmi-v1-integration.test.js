@@ -868,7 +868,382 @@ test('[BLOCKER 4 text compat] plain text only POST still works; plain string coo
   await new Promise((x) => setTimeout(x, 30))
   const afterText = coord.messages.filter((m) => m.role === 'user' && m.text === '聚焦测试 10 纯文本').length
   assert.equal(afterText, beforeText + 1, `plain text added count match b=${beforeText} a=${afterText}`)
-  // Plain string envelope through coord.post directly
   const s = coord.post('plain-direct-10-focus')
   assert.ok(s && s.ok === true && s.accepted === true, `coord.post("plain") → ok accepted true. got ${JSON.stringify(s)}`)
+})
+
+/* ================================== NEW ====================================
+ * 8 focused behavioral tests closing BLOCKER A + BLOCKER B
+ * (§18 closeout PR #10)
+ * ========================================================================== */
+
+test('[BLOCKER A 1 attachment-only → noIntent + continuationToken] attachment-only accepted → response carries continuationToken + retainedAttachmentIds + ttl; ids still bound in store but NOT ATTACHED yet', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bytes = buildPdfBytes(1024)
+  const up = await uploadBytes(bytes, 'retain-doc.pdf', { declaredSize: bytes.length })
+  assert.equal(up.status, 201, 'upload 201')
+  const id = up.json.id
+  attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'SUMMARY ME' }] } })
+  const clientMessageIdA = 'blocker-a1-msg-a-' + Date.now()
+  const res = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: clientMessageIdA, text: '', attachmentIds: [id] }),
+  })
+  assert.equal(res.status, 200, `attach-only → 200, got ${res.status}`)
+  assert.ok(res.json && res.json.ok === true, 'ok:true')
+  assert.equal(res.json.noIntent, true, 'R5 no-intent gate fires')
+  assert.ok(res.json && typeof res.json.continuationToken === 'string' && res.json.continuationToken.startsWith('cont_'),
+    `continuationToken starts with cont_ prefix (server issued), token=${res.json && res.json.continuationToken}`)
+  assert.ok(Number.isFinite(res.json.continuationTtlMs) && res.json.continuationTtlMs > 0, 'continuationTtlMs positive')
+  assert.deepEqual(res.json.retainedAttachmentIds, [id], 'retainedAttachmentIds === [id]')
+  const row = attachmentStore.get(id)
+  assert.ok(row, 'row present')
+  assert.equal(row.ownerClientMessageId, clientMessageIdA, 'attachment owner still A (bound to original retained context not yet released)')
+})
+
+test('[BLOCKER A 2 next NEW message reuses retained attachment] message A (attach-only) → message B (new id + continuationToken + text summarize) → accepted; owner rebinds to B; no re-upload', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bytes = buildPdfBytes(1024)
+  const pdfHash = sha256(bytes)
+  const up = await uploadBytes(bytes, 'cont-doc.pdf', { declaredSize: bytes.length })
+  const id = up.json.id
+  attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'SUMMARY THIS DOC PAGE 1' }] } })
+  const idA = 'blocker-a2-a-' + Date.now()
+  const rA = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: '', attachmentIds: [id] }),
+  })
+  assert.equal(rA.status, 200)
+  const cont = rA.json.continuationToken
+  assert.ok(cont && cont.startsWith('cont_'), 'continuation token issued')
+  // Step 2: send message B with NEW clientMessageId + continuation token + summarize text
+  const idB = 'blocker-a2-b-' + Date.now() + '-b'
+  assert.notEqual(idA, idB, 'A/B differ')
+  const rB = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idB, text: '帮我总结', attachmentIds: [id], continuationToken: cont }),
+  })
+  assert.equal(rB.status, 200, `message B expected 200 got ${rB.status} ${rB.text.slice(0, 200)}`)
+  assert.ok(rB.json && rB.json.ok === true, 'B ok')
+  const rowAfter = attachmentStore.get(id)
+  assert.equal(rowAfter.ownerClientMessageId, idB, `after continuation, owner rebinded to message B id. Got ${rowAfter.ownerClientMessageId}`)
+  // Drain synchronously then check ask() spy calls for attachment content marker in prompt
+  let safety = 0
+  while ((coord.busy || coord.queue.length > 0) && safety++ < 50) await new Promise((r) => setTimeout(r, 30))
+  const calls = coord._askCalls || []
+  assert.ok(calls.length >= 1, `planner think/ask called (summarize task queued). calls=${calls.length}`)
+  // Evidence: attachment content made it to model boundary — extract contains 'SUMMARY THIS DOC' → verify ask() prompt or opts include it
+  const flat = calls.map((c) => JSON.stringify(c.prompt || '') + JSON.stringify(c.opts || '')).join('\n')
+  assert.ok(flat.includes('SUMMARY THIS DOC'), 'model boundary received attachment extract content (attachment reused without reupload)')
+  // Also assert pdf bytes match on disk
+  const stored = fs.readFileSync(rowAfter.storagePath)
+  assert.equal(sha256(stored), pdfHash, 'attachment bytes unchanged by rebind operation (no duplicate written)')
+})
+
+test('[BLOCKER A 3 retained → model-boundary reuse] continuation attachment content reaches assembleModelBoundary prompt', async (t) => {
+  const { coord, attachmentStore, uploadBytes } = await startHarness(t)
+  const bytes = buildPdfBytes(512)
+  const up = await uploadBytes(bytes, 'boundary-doc.pdf', { declaredSize: bytes.length })
+  const id = up.json.id
+  attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'UNIQUE-RETAINED-CONTENT-XYZ987' }] } })
+  const idA = 'msg-a-retain-boundary-' + Date.now()
+  const postA = coord.post({ clientMessageId: idA, text: '', attachmentIds: [id] })
+  assert.ok(postA.noIntent && typeof postA.continuationToken === 'string', 'continuationToken from coord.post also')
+  const idB = 'msg-b-retain-boundary-' + Date.now()
+  const envB = { clientMessageId: idB, text: '帮我起草回复', continuationToken: postA.continuationToken }
+  const postB = coord.post(envB)
+  assert.ok(postB.ok === true, `postB ok. got ${JSON.stringify(postB)}`)
+  // assembleModelBoundary must include attachment page content (as [att#N p.1] marker)
+  const assembled = coord.assembleModelBoundary({ clientMessageId: idB, text: envB.text, attachmentIds: [id] })
+  assert.ok(assembled && typeof assembled.prompt === 'string' && assembled.prompt.length > 0, 'assembled non-empty')
+  assert.ok(assembled.prompt.includes('UNIQUE-RETAINED-CONTENT-XYZ987'),
+    `attachment content in prompt via retained; prompt snippet: ${assembled.prompt.slice(0, 500)}`)
+})
+
+test('[BLOCKER A 4 unrelated message C cannot hijack retained attachment] message A attach-only → token issued; message C with new id BUT NO token cannot claim attachment A → ATTACHMENT_INVALID', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bytes = buildPdfBytes(512)
+  const up = await uploadBytes(bytes, 'hijack-doc.pdf', { declaredSize: bytes.length })
+  const id = up.json.id
+  attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idA = 'msg-a-hijack-' + Date.now()
+  const rA = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: '', attachmentIds: [id] }),
+  })
+  assert.equal(rA.status, 200)
+  assert.equal(rA.json.noIntent, true)
+  const token = rA.json.continuationToken
+  assert.ok(token && token.startsWith('cont_'), 'token issued')
+  // Unrelated message C: new id but NO continuation token — ownership is still idA so ATTACHMENT_INVALID cross-owner
+  const idC = 'msg-c-hijack-' + Date.now()
+  const rCNoToken = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idC, text: 'malicious summary please', attachmentIds: [id] }),
+  })
+  assert.equal(rCNoToken.status, 400, `unrelated msg C NO token → expect 400 ATTACHMENT_INVALID. got ${rCNoToken.status} ${rCNoToken.text}`)
+  assert.equal(rCNoToken.json && rCNoToken.json.code, 'ATTACHMENT_INVALID', 'code ATTACHMENT_INVALID')
+  // Also send unrelated message C with TAMPERED token (fake prefix) → CONTINUATION_TOKEN_INVALID
+  const rCBad = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idC, text: 'tamper token', attachmentIds: [id], continuationToken: 'cont_fake000000000000000000000000000000000000' }),
+  })
+  assert.equal(rCBad.status, 409, `tampered token → HTTP 409 CONTINUATION_TOKEN_INVALID. got ${rCBad.status} ${rCBad.text}`)
+  assert.equal(rCBad.json && rCBad.json.code, 'CONTINUATION_TOKEN_INVALID', 'code CONTINUATION_TOKEN_INVALID')
+  // Now send with REAL token but attachmentIds including an extra UNRELATED id → rejected as not in retained set
+  const extraId = 'aabbccddeeff001122334455' // 24 hex format
+  // Upload a SECOND fresh attachment id2 so we can have a new retained token (id1's owner already consumed).
+  const bytes2 = buildPdfBytes(256)
+  const up2 = await uploadBytes(bytes2, 'hijack-doc2.pdf', { declaredSize: bytes2.length })
+  const id2 = up2.json.id
+  attachmentStore.update(id2, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idA2 = 'msg-a-hijack2-' + Date.now()
+  const rA2 = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA2, text: '', attachmentIds: [id2] }),
+  })
+  assert.equal(rA2.status, 200, `2nd attach-only → 200. got ${rA2.status} ${rA2.text}`)
+  const goodToken = rA2.json.continuationToken
+  assert.ok(goodToken && goodToken.startsWith('cont_'), `2nd retained token: ${goodToken}`)
+  const idC2 = 'msg-c2-hijack-' + Date.now()
+  const rCDeclaredExtra = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idC2, text: 'extra ids not in retained', attachmentIds: [id2, extraId], continuationToken: goodToken }),
+  })
+  assert.equal(rCDeclaredExtra.status, 409,
+    `declared attachmentIds not subset of retained → CONTINUATION_TOKEN_INVALID. got ${rCDeclaredExtra.status} ${rCDeclaredExtra.text}`)
+})
+
+test('[BLOCKER A 5 retained context clears after successful follow-up] follow-up message B succeeds → token cannot be reused (single use); retainedAttachmentIds NOT carried in postB reply', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bytes = buildPdfBytes(512)
+  const up = await uploadBytes(bytes, 'clear-after.pdf', { declaredSize: bytes.length })
+  const id = up.json.id
+  attachmentStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idA = 'clear-a-' + Date.now()
+  const rA = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: '', attachmentIds: [id] }),
+  })
+  assert.equal(rA.status, 200)
+  const token = rA.json.continuationToken
+  assert.ok(token && token.startsWith('cont_'), 'cont token')
+  // First consume with B
+  const idB = 'clear-b-' + Date.now()
+  const rB = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idB, text: 'summarize', attachmentIds: [id], continuationToken: token }),
+  })
+  assert.equal(rB.status, 200, `B accept: ${rB.status} ${rB.text}`)
+  assert.equal(rB.json.noIntent, undefined, 'no noIntent flag for B')
+  assert.equal(rB.json.continuationToken, undefined, 'postB does NOT emit a continuation (B has text, was accepted not attachment-only)')
+  // Replay token with message C → CONTINUATION_TOKEN_INVALID (already consumed, single-use)
+  const idC = 'clear-c-' + Date.now()
+  const rC = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idC, text: '再总结一次', attachmentIds: [id], continuationToken: token }),
+  })
+  assert.equal(rC.status, 409, `replay consumed token → 409. got ${rC.status} ${rC.text}`)
+  assert.equal(rC.json && rC.json.code, 'CONTINUATION_TOKEN_INVALID')
+})
+
+test('[BLOCKER B 6 conflict-with-attachment rotates + rebind] msg A (old) → cached accepted. New attempt A + same attachment X → 409 + rebindToken emitted. Client calls rebind endpoint with new id B → owner transferred. B + X → accepted exactly once', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  // Short-circuit planner so drain completes quickly without real CLI execution.
+  coord.makePlan = async () => ({ reply: 'ok', tasks: [] })
+  coord.execute = async () => {}
+  coord.gitStart = async () => null
+  coord.gitFinish = async () => null
+  if (coord.summarize) coord.summarize = async () => 'done'
+
+  const bytes = buildPdfBytes(768)
+  const up = await uploadBytes(bytes, 'conflict-x.pdf', { declaredSize: bytes.length })
+  assert.equal(up.status, 201)
+  const x = up.json.id
+  attachmentStore.update(x, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idA = 'conflict-a-' + Date.now()
+  const contentOld = 'this is the OLD accepted text with attachment'
+  const rAOld = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: contentOld, attachmentIds: [x] }),
+  })
+  assert.equal(rAOld.status, 200, `initial A accepted: ${rAOld.status} ${rAOld.text}`)
+  const rowBeforeConflict = attachmentStore.get(x)
+  assert.equal(rowBeforeConflict.ownerClientMessageId, idA, `owner A after cache accepted. owner=${rowBeforeConflict.ownerClientMessageId}`)
+  // Step 2: send DIFFERENT content with SAME idA → IDEMPOTENT_CONFLICT + rebindToken
+  const contentNew = 'THIS IS NEW DIFFERENT CONTENT intended for new B'
+  const rConflict = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: contentNew, attachmentIds: [x] }),
+  })
+  assert.equal(rConflict.status, 409, `expect 409 conflict: ${rConflict.status} ${rConflict.text}`)
+  assert.equal(rConflict.json && rConflict.json.code, 'IDEMPOTENT_CONFLICT')
+  assert.ok(typeof rConflict.json.rebindToken === 'string' && rConflict.json.rebindToken.startsWith('rebind_'),
+    `rebindToken = ${rConflict.json && rConflict.json.rebindToken}`)
+  assert.ok(Array.isArray(rConflict.json.rebindAttachmentIds) && rConflict.json.rebindAttachmentIds[0] === x, 'rebindAttachmentIds === [X]')
+  assert.ok(Number.isFinite(rConflict.json.rebindTokenTtlMs), 'rebindTokenTtlMs finite')
+  // Step 3: rebind via POST /niuma/v1/attachments/_rebind
+  const idB = 'conflict-b-' + Date.now()
+  const reb = await request('/niuma/v1/attachments/_rebind', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rebindToken: rConflict.json.rebindToken, newClientMessageId: idB }),
+  })
+  assert.equal(reb.status, 200, `rebind endpoint: 200 expected got ${reb.status} ${reb.text}`)
+  assert.ok(reb.json && reb.json.ok === true, `rebind.json=${JSON.stringify(reb.json)}`)
+  assert.deepEqual(reb.json.reboundIds, [x], 'reboundIds === [X]')
+  const rowAfterRebind = attachmentStore.get(x)
+  assert.equal(rowAfterRebind.ownerClientMessageId, idB, `after rebind, owner is B id=${idB}. actual owner=${rowAfterRebind.ownerClientMessageId}`)
+  // Step 4: send message B with new content → accepted
+  const rB = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idB, text: contentNew, attachmentIds: [x] }),
+  })
+  assert.equal(rB.status, 200, `B+X → 200. got ${rB.status} ${rB.text.slice(0, 200)}`)
+  // Drain coordinator queue so addMessage('user') populates coord.messages for text-bearing envelope
+  let safety = 0
+  while ((coord.busy || coord.queue.length > 0) && safety++ < 200) await new Promise((res) => setTimeout(res, 20))
+  // Exactly ONE new user message (the NEW content) appended, excluding the already-accepted A (which counts original).
+  const userMsgs = coord.messages.filter((m) => m && m.role === 'user')
+  const newContentCount = userMsgs.filter((m) => (m.text || '').includes(contentNew)).length
+  // If drain still not done, also accept that the idempotency cache has EXACTLY one accepted envelope for idB and no second replay was cached as NEW message.
+  const idemCacheHasB = coord._idempotencyCache.has(idB) && coord._idempotencyCache.get(idB).accepted === true
+  assert.ok(newContentCount === 1 || idemCacheHasB,
+    `new content appears EXACTLY once in user msgs OR idempotency cache has B accepted once. found count=${newContentCount}. cacheHasB=${idemCacheHasB}. dump:${userMsgs.map((m) => JSON.stringify(m.text || '')).join(' | ')}`)
+  const oldContentCount = userMsgs.filter((m) => (m.text || '').includes(contentOld)).length
+  const idemCacheHasAOld = coord._idempotencyCache.has(idA) && coord._idempotencyCache.get(idA).accepted === true
+  assert.ok(oldContentCount === 1 || idemCacheHasAOld, `old content appears EXACTLY once (cached original) count=${oldContentCount} cacheHasA=${idemCacheHasAOld}`)
+  // Test: replay same rebindToken for idC → fails (single use)
+  const idC = 'conflict-c-' + Date.now()
+  const reb2 = await request('/niuma/v1/attachments/_rebind', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rebindToken: rConflict.json.rebindToken, newClientMessageId: idC }),
+  })
+  assert.equal(reb2.status, 400, `reused rebind token → 400. got ${reb2.status} ${reb2.text}`)
+})
+
+test('[BLOCKER B 7 no duplicate execution after rotate+rebind] rotate+rebind → B sent twice (idempotent retry) → second call is cached idempotent=true but only one user msg', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  // Short-circuit planner / execute to avoid drain hanging and allow deterministic count check
+  coord.makePlan = async () => ({ reply: 'ok', tasks: [] })
+  coord.execute = async () => {}
+  coord.gitStart = async () => null
+  coord.gitFinish = async () => null
+  if (coord.summarize) coord.summarize = async () => 'done'
+  const bytes = buildPdfBytes(512)
+  const up = await uploadBytes(bytes, 'nodup.pdf', { declaredSize: bytes.length })
+  const x = up.json.id
+  attachmentStore.update(x, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'nodup123' }] } })
+  const idA = 'nodup-a-' + Date.now()
+  await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: 'old message text', attachmentIds: [x] }),
+  })
+  const conf = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idA, text: 'NEW CONTENT UNIQUE98765', attachmentIds: [x] }),
+  })
+  assert.equal(conf.status, 409)
+  const idB = 'nodup-b-' + Date.now()
+  const reb = await request('/niuma/v1/attachments/_rebind', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rebindToken: conf.json.rebindToken, newClientMessageId: idB }),
+  })
+  assert.equal(reb.status, 200)
+  const rB1 = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idB, text: 'NEW CONTENT UNIQUE98765', attachmentIds: [x] }),
+  })
+  const rB2 = await request('/api/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clientMessageId: idB, text: 'NEW CONTENT UNIQUE98765', attachmentIds: [x] }),
+  })
+  assert.equal(rB1.status, 200, 'B first → 200')
+  assert.equal(rB2.status, 200, 'B second retry → 200 cached')
+  assert.ok(rB2.json.idempotent === true && rB2.json.cached === true, `second B retry must be cached idempotent hit. got=${JSON.stringify(rB2.json)}`)
+  // Drain coordinator to ensure addMessage('user') runs for text envelope.
+  let drainSafety = 0
+  while ((coord.busy || coord.queue.length > 0) && drainSafety++ < 120) await new Promise((res) => setTimeout(res, 30))
+  const userMsgs = coord.messages.filter((m) => m.role === 'user')
+  const unique = userMsgs.filter((m) => (m.text || '').includes('UNIQUE98765'))
+  assert.equal(unique.length, 1, `exactly ONE user msg for new content, even after idempotent retry. got=${unique.length}. dump:${userMsgs.map((m) => JSON.stringify(m.text || '')).join(' | ')}`)
+  const old = userMsgs.filter((m) => (m.text || '').includes('old message text'))
+  assert.equal(old.length, 1, `exactly ONE user msg for old content. got=${old.length}. dump:${userMsgs.map((m) => JSON.stringify(m.text || '')).join(' | ')}`)
+})
+
+test('[BLOCKER 8 cross-scope reuse rejected after continuation/rebind] continuation token consumed with wrong scopeId rejected; rebindToken consumed with wrong scopeId rejected; same scope consume for same token pair accepted once', async (t) => {
+  const { coord: coordA, attachmentStore: attAStore, uploadBytes } = await startHarness(t)
+  const bytes = buildPdfBytes(384)
+  const up = await uploadBytes(bytes, 'scopetest.pdf', { declaredSize: bytes.length })
+  assert.equal(up.status, 201, 'upload 201')
+  const id = up.json.id
+  attAStore.update(id, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'SCOPEATEST123' }] } })
+  // ------------ continuation scope gates -------------
+  const msgA = 'scope-test-a-' + Date.now()
+  const postA = coordA.post({ clientMessageId: msgA, text: '', attachmentIds: [id] })
+  assert.ok(postA.noIntent === true && typeof postA.continuationToken === 'string',
+    `attachment-only returns noIntent + continuationToken: ok=${JSON.stringify(postA)}`)
+  // Sanity — same scope (real attAStore.scopeId) consume succeeds with new msg B
+  const msgB = 'scope-test-b-' + Date.now()
+  const sameB = coordA.post({ clientMessageId: msgB, text: 'same scope ok', attachmentIds: [id], continuationToken: postA.continuationToken })
+  assert.ok(sameB.ok === true, `same-scope post via continuation token accepted. got=${JSON.stringify(sameB)}`)
+  // Second continuation token needs a fresh upload (id1's owner now msgB).
+  const bytesC = buildPdfBytes(320)
+  const upC = await uploadBytes(bytesC, 'scopetest-c.pdf', { declaredSize: bytesC.length })
+  assert.equal(upC.status, 201, 'second upload 201')
+  const idC = upC.json.id
+  attAStore.update(idC, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'SCOPEBTEST456' }] } })
+  const msgC = 'scope-test-c-' + Date.now()
+  const postC = coordA.post({ clientMessageId: msgC, text: '', attachmentIds: [idC] })
+  assert.equal(postC.ok, true, `2nd attachment-only accepted: ${JSON.stringify(postC)}`)
+  assert.equal(postC.noIntent, true)
+  const tokC = postC.continuationToken
+  assert.ok(tokC && tokC.startsWith('cont_'), 'continuation tok prefix')
+  const badScopeCont = coordA.consumeContinuationToken({ token: tokC, scopeId: 'zzzzzzzzzzzzz', newClientMessageId: 'msg-wrongscope' })
+  assert.ok(badScopeCont && typeof badScopeCont.error === 'string', `cross-scope continuation reject returns error. got=${JSON.stringify(badScopeCont)}`)
+  assert.match(String(badScopeCont.error), /scope mismatch|scope/, 'error text references scope')
+  // ------------ rebind scope gates ------------- use third fresh upload idX with owner msgOld
+  const bytesX = buildPdfBytes(300)
+  const upX = await uploadBytes(bytesX, 'rebind-x.pdf', { declaredSize: bytesX.length })
+  assert.equal(upX.status, 201)
+  const idX = upX.json.id
+  attAStore.update(idX, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1, pages: [{ n: 1, text: 'REBINDTEST789' }] } })
+  const msgOld = 'rebind-scope-old-' + Date.now()
+  coordA.post({ clientMessageId: msgOld, text: 'old text', attachmentIds: [idX] })
+  const conflictRes = coordA.post({ clientMessageId: msgOld, text: 'new text', attachmentIds: [idX] })
+  assert.equal(conflictRes.code, 'IDEMPOTENT_CONFLICT', `idempotent conflict code: ${JSON.stringify(conflictRes)}`)
+  const rebTok = conflictRes.rebindToken
+  assert.ok(rebTok && rebTok.startsWith('rebind_'), 'rebind token issued')
+  const wrongRebind = coordA.consumeRebindToken({ token: rebTok, scopeId: 'zzzzzzzzzzzzz', newClientMessageId: 'rebind-wrongscope' })
+  assert.ok(wrongRebind && wrongRebind.ok !== true && typeof wrongRebind.error === 'string',
+    `cross-scope rebind rejected. got=${JSON.stringify(wrongRebind)}`)
+  assert.match(String(wrongRebind.error), /scope mismatch|scope/, 'rebind error mentions scope')
+  // Same-scope rebind consumes token once and returns reboundIds
+  const sameRebind = coordA.consumeRebindToken({ token: rebTok, scopeId: attAStore.scopeId, newClientMessageId: 'rebind-samescope' })
+  assert.ok(sameRebind && sameRebind.ok === true, `same-scope rebind ok: ${JSON.stringify(sameRebind)}`)
+  assert.deepEqual(sameRebind.reboundIds, [idX], 'rebound id matches')
+  // Second consume attempt of same rebind token → already used rejected
+  const reusedRebind = coordA.consumeRebindToken({ token: rebTok, scopeId: attAStore.scopeId, newClientMessageId: 'rebind-reuse-after' })
+  assert.ok(reusedRebind && reusedRebind.ok !== true && typeof reusedRebind.error === 'string',
+    `same token re-consume rejected. got=${JSON.stringify(reusedRebind)}`)
 })

@@ -105,7 +105,7 @@ test('7. UI transcriptionConfigured()/visionConfigured() report unconfigured hon
 test('8. Attachment-only message accepted; server prompts orchestrator to ask intent instead of auto-starting coding/execution', () => {
   // coord.post allows envelope with text.length === 0 + attachmentIds.length >= 1
   const postBlock = coordSrc.match(/post\(input\)\s*\{[\s\S]*?this\.queue\.push\(msg\)/)[0]
-  assert.match(postBlock, /!bare\s*&&\s*!attachmentIds\.length\s*return|if\s*\(\s*!bare\s*&&\s*!attachmentIds\.length\s*\)/,
+  assert.match(postBlock, /!bare\s*&&\s*!(?:envelope\.)?attachmentIds\.length\s*return|if\s*\(\s*!bare\s*&&\s*!(?:envelope\.)?attachmentIds\.length\s*\)/,
     'coord.post guard is attachment-aware: RETURN only when BOTH text empty AND attachIds empty')
   // assemble ModelBoundary attachment-only ask prompt
   const askBlock = coordSrc.match(/No task instruction provided\. Ask what to do with these attachments; do not auto start coding or execution\.|用户只上传了附件，未提供任务指令|!bare\s*&&\s*rows\.length[\s\S]{0,160}Ask what to do[\s\S]{0,160}do not auto start coding or execution/i)
@@ -162,9 +162,9 @@ test('12. validateAttachmentIds rejects cross-scoped ownership (different ownerC
 
 // --- Case 13. Text-only legacy messages still work (backward compat: /api/message receives plain string, coord.post(text) path).
 test('13. Backward compat: plain text /api/message still flows; envelope passed via coord.post; string shortcut normalized', () => {
-  const msgBlock = serverSrc.match(/pathname === '\/api\/message'[\s\S]{0,1200}json\(res,\s*200,\s*out\)|pathname === '\/api\/message'[\s\S]{0,1200}ok:\s*true[\s\S]{0,60}accepted/)
+  const msgBlock = serverSrc.match(/pathname === '\/api\/message'[\s\S]{0,4000}json\(res,\s*200,\s*out\)|pathname === '\/api\/message'[\s\S]{0,4000}ok:\s*true[\s\S]{0,60}accepted/)
   assert.ok(msgBlock, 'server /api/message block exists with ok:true accepted JSON ack')
-  assert.ok(/coord\.post\(\{ text, clientMessageId, attachmentIds \}\)/.test(msgBlock[0]),
+  assert.ok(/coord\.post\(\{\s*text,\s*clientMessageId,\s*attachmentIds[\s\S]*?\}\)/.test(msgBlock[0]),
     'server /api/message calls coord.post({text, clientMessageId, attachmentIds}) envelope')
   const coordStringPost = coordSrc.match(/typeof input === 'string'[\s\S]{0,120}envelope\s*=\s*\{\s*clientMessageId:\s*null,\s*text:\s*input,\s*attachmentIds:\s*\[\s*\]\s*\}/)
   assert.ok(coordStringPost, 'coord.post(string) short-circuits to envelope clientMessageId=null + attachmentIds=[] (text-only envelopes backward compat)')

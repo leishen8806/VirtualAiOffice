@@ -179,6 +179,28 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           return await handleAttachmentUpload(req, res, coord, attStore, { json, send, originOk })
         }
 
+        // POST /niuma/v1/attachments/_rebind — BLOCKER B idempotent conflict rebind endpoint
+        if (req.method === 'POST' && (rest === '/_rebind' || rest === '/rebind')) {
+          let rebBody = {}
+          try {
+            rebBody = JSON.parse((await readBody(req, 200_000)) || '{}')
+          } catch {
+            return json(res, 400, { ok: false, error: 'Bad JSON', code: 'REBIND_INVALID' })
+          }
+          const newClientMessageId = rebBody.newClientMessageId ? String(rebBody.newClientMessageId).trim() || null : null
+          const rebindToken = typeof rebBody.rebindToken === 'string' ? rebBody.rebindToken.trim() || null : null
+          if (!rebindToken || !newClientMessageId) {
+            return json(res, 400, { ok: false, error: 'rebindToken and newClientMessageId required', code: 'REBIND_INVALID' })
+          }
+          const result = coord.consumeRebindToken ? coord.consumeRebindToken({ token: rebindToken, scopeId: attStore.scopeId, newClientMessageId }) : { error: 'rebind not supported' }
+          if (result && result.ok === true) {
+            return json(res, 200, { ok: true, reboundIds: Array.isArray(result.reboundIds) ? result.reboundIds : [], reuploadRequired: false })
+          }
+          const msg = (result && result.error) || 'rebind failed'
+          const reuploadRequired = /re-upload required|已绑定已接收/.test(String(msg))
+          return json(res, reuploadRequired ? 409 : 400, { ok: false, error: msg, code: 'REBIND_FAILED', reuploadRequired: Boolean(reuploadRequired) })
+        }
+
         return send(res, 404, 'Not found')
       }
       // ------------------------- /niuma/v1/attachments end ---------------------
@@ -257,27 +279,56 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           const text = String(body.text || '').trim()
           const attachmentIds = Array.isArray(body.attachmentIds) ? body.attachmentIds.map((x) => String(x || '').trim()).filter(Boolean) : []
           const clientMessageId = body.clientMessageId ? String(body.clientMessageId).trim() || null : null
-          if (!text && !attachmentIds.length) {
+          const continuationToken = typeof body.continuationToken === 'string' ? body.continuationToken.trim() || null : null
+          const continuationDiscard = Boolean(body.continuationDiscard)
+          if (!text && !attachmentIds.length && !continuationToken) {
             return json(res, 400, { ok: false, error: 'Empty message', code: 'EMPTY_MESSAGE' })
           }
-          if (attachmentIds.length) {
+          if (attachmentIds.length && !continuationToken) {
             const invalid = coord.validateAttachmentIds?.(attachmentIds, clientMessageId)
             if (invalid) {
               return json(res, 400, { ok: false, error: invalid, code: 'ATTACHMENT_INVALID' })
             }
           }
-          const postResult = coord.post({ text, clientMessageId, attachmentIds })
+          const postResult = coord.post({ text, clientMessageId, attachmentIds, continuationToken, continuationDiscard })
           if (postResult && postResult.ok === false) {
-            const status = postResult.code === 'IDEMPOTENT_CONFLICT' ? 409 : 400
-            return json(res, status, postResult)
+            const status = (postResult.code === 'IDEMPOTENT_CONFLICT' || postResult.code === 'CONTINUATION_TOKEN_INVALID') ? 409 : 400
+            const out = { ok: false, error: postResult.error, code: postResult.code }
+            if (postResult.code === 'IDEMPOTENT_CONFLICT') {
+              if (postResult.rebindToken) out.rebindToken = postResult.rebindToken
+              if (postResult.rebindTokenTtlMs != null) out.rebindTokenTtlMs = postResult.rebindTokenTtlMs
+              if (Array.isArray(postResult.rebindAttachmentIds)) out.rebindAttachmentIds = postResult.rebindAttachmentIds
+            }
+            return json(res, status, out)
           }
           if (postResult && postResult.cached) {
-            return json(res, 200, { ok: true, idempotent: true, accepted: postResult.accepted })
+            return json(res, 200, { ok: true, cached: true, idempotent: true, accepted: postResult.accepted })
           }
           const out = { ok: true, accepted: true }
-          if (postResult && postResult.idempotent) out.idempotent = true
-          if (postResult && postResult.noIntent) out.noIntent = true
+          if (postResult && postResult.idempotent) { out.idempotent = true ; out.cached = true }
+          if (postResult && postResult.noIntent) {
+            out.noIntent = true
+            if (postResult.continuationToken) out.continuationToken = postResult.continuationToken
+            if (postResult.continuationTtlMs != null) out.continuationTtlMs = postResult.continuationTtlMs
+            if (Array.isArray(postResult.retainedAttachmentIds)) out.retainedAttachmentIds = postResult.retainedAttachmentIds
+          }
           return json(res, 200, out)
+        }
+        if (url.pathname === '/niuma/v1/attachments/_rebind' || url.pathname === '/api/attachments/rebind') {
+          if (req.method !== 'POST') return send(res, 405, 'Method not allowed')
+          const newClientMessageId = body.newClientMessageId ? String(body.newClientMessageId).trim() || null : null
+          const rebindToken = typeof body.rebindToken === 'string' ? body.rebindToken.trim() || null : null
+          if (!rebindToken || !newClientMessageId) {
+            return json(res, 400, { ok: false, error: 'rebindToken and newClientMessageId required', code: 'REBIND_INVALID' })
+          }
+          const scopeId = attStore && typeof attStore.scopeId === 'string' ? attStore.scopeId : null
+          const result = coord.consumeRebindToken ? coord.consumeRebindToken({ token: rebindToken, scopeId, newClientMessageId }) : { error: 'rebind not supported' }
+          if (result && result.ok === true) {
+            return json(res, 200, { ok: true, reboundIds: Array.isArray(result.reboundIds) ? result.reboundIds : [], reuploadRequired: false })
+          }
+          const msg = (result && result.error) || 'rebind failed'
+          const reuploadRequired = /re-upload required|已绑定已接收/.test(String(msg))
+          return json(res, reuploadRequired ? 409 : 400, { ok: false, error: msg, code: 'REBIND_FAILED', reuploadRequired: Boolean(reuploadRequired) })
         }
         if (url.pathname === '/api/stop') {
           coord.stop()

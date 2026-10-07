@@ -220,7 +220,149 @@ export class Coordinator extends EventEmitter {
     this._cleanupTimer = null
     this._idempotencyCache = new Map() // clientMessageId -> { at, envelope }
     this.IDEMPOTENCY_CACHE_MAX = 200
+    this.CONTINUATION_TOKEN_TTL_MS = 15 * 60 * 1000 // 15 minutes
+    this.REBIND_TOKEN_TTL_MS = 30 * 1000 // quick recovery window (30s)
+    /** @type {Map<string, any>} */
+    this._continuationTokens = new Map()
+    /** @type {Map<string, any>} */
+    this._rebindTokens = new Map()
     if (this.attachmentStore) this._startCleanupDaemon()
+  }
+
+  _newToken(prefix = 'tok') {
+    return `${prefix}_${crypto.randomBytes(18).toString('hex')}`
+  }
+
+  issueContinuationToken({ scopeId, fromClientMessageId = null, attachmentIds = [] }) {
+    const token = this._newToken('cont')
+    const now = Date.now()
+    const ids = [...new Set(attachmentIds.map((x) => String(x || '').trim()).filter(Boolean))]
+    this._continuationTokens.set(token, {
+      issuedAt: now,
+      ttlMs: this.CONTINUATION_TOKEN_TTL_MS,
+      scopeId,
+      fromClientMessageId,
+      attachmentIds: ids,
+      consumed: false,
+    })
+    this._sweepTokens()
+    return { token, ttlMs: this.CONTINUATION_TOKEN_TTL_MS, issuedAt: now, attachmentIds: ids }
+  }
+
+  consumeContinuationToken({ token, scopeId, newClientMessageId = null, declaredAttachmentIds = [] }) {
+    if (!this.attachmentStore) return { error: 'no attachment store' }
+    const meta = this._continuationTokens.get(token)
+    if (!meta) return { error: 'continuation token' }
+    const now = Date.now()
+    if (now - meta.issuedAt > meta.ttlMs) {
+      this._continuationTokens.delete(token)
+      return { error: 'continuation token' }
+    }
+    if (meta.consumed) return { error: 'continuation token already used' }
+    if (meta.scopeId !== scopeId) return { error: 'continuation token scope mismatch' }
+    if (meta.fromClientMessageId != null && newClientMessageId != null && meta.fromClientMessageId === newClientMessageId) {
+      return { error: 'new clientMessageId must differ from the original attachment-only message id' }
+    }
+    const declared = new Set(declaredAttachmentIds.map((x) => String(x || '').trim()).filter(Boolean))
+    for (const id of declared) {
+      if (!meta.attachmentIds.includes(id)) return { error: `attachment ${id} is not in retained set` }
+    }
+    const effectiveIds = declared.size > 0 ? [...declared] : [...meta.attachmentIds]
+    for (const id of effectiveIds) {
+      const row = this.attachmentStore.get(id)
+      if (!row) return { error: `attachment ${id} not found` }
+      const rowOwner = row.ownerClientMessageId
+      const ok = rowOwner == null || (meta.fromClientMessageId != null && rowOwner === meta.fromClientMessageId)
+      if (!ok) return { error: `attachment ${row.sanitizedName || id} not owned by retained context` }
+      if (row.status === ATTACHMENT_STATUS.ATTACHED) return { error: `attachment ${row.sanitizedName || id} already attached to an accepted message` }
+    }
+    for (const id of effectiveIds) {
+      const row = this.attachmentStore.get(id)
+      if (row) {
+        row.ownerClientMessageId = null
+        row.updatedAt = Date.now()
+      }
+      if (newClientMessageId) {
+        const ok = this.attachmentStore.claimOwner(id, newClientMessageId)
+        if (!ok) return { error: `attachment ${row && row.sanitizedName || id} ownership reassign failed during continuation` }
+      }
+    }
+    meta.consumed = true
+    meta.consumedAt = now
+    this._continuationTokens.delete(token)
+    this._sweepTokens()
+    return { ok: true, effectiveAttachmentIds: effectiveIds }
+  }
+
+  dropContinuationToken(token) {
+    if (token && this._continuationTokens.has(token)) this._continuationTokens.delete(token)
+  }
+
+  issueRebindToken({ scopeId, oldClientMessageId, attachmentIds = [] }) {
+    const token = this._newToken('rebind')
+    const now = Date.now()
+    const ids = [...new Set(attachmentIds.map((x) => String(x || '').trim()).filter(Boolean))]
+    this._rebindTokens.set(token, {
+      issuedAt: now,
+      ttlMs: this.REBIND_TOKEN_TTL_MS,
+      scopeId,
+      oldClientMessageId,
+      attachmentIds: ids,
+      used: false,
+    })
+    this._sweepTokens()
+    return { token, ttlMs: this.REBIND_TOKEN_TTL_MS, issuedAt: now, rebindAttachmentIds: ids }
+  }
+
+  consumeRebindToken({ token, scopeId, newClientMessageId }) {
+    if (!newClientMessageId) return { error: 'newClientMessageId required' }
+    if (!this.attachmentStore) return { error: 'no attachment store' }
+    const meta = this._rebindTokens.get(token)
+    if (!meta) return { error: 'rebind token unknown' }
+    const now = Date.now()
+    if (now - meta.issuedAt > meta.ttlMs) {
+      this._rebindTokens.delete(token)
+      return { error: 'rebind token expired' }
+    }
+    if (meta.used) return { error: 'rebind token already used' }
+    if (meta.scopeId !== scopeId) return { error: 'rebind token scope mismatch' }
+    if (String(newClientMessageId) === String(meta.oldClientMessageId)) return { error: 'rebind new id must differ from old' }
+    const rebound = []
+    for (const id of meta.attachmentIds) {
+      const row = this.attachmentStore.get(id)
+      if (!row) continue
+      const rowOwner = row.ownerClientMessageId
+      if (rowOwner != null && String(rowOwner) !== String(meta.oldClientMessageId)) {
+        return { error: `attachment ${row.sanitizedName || id} not owned by conflicting message id` }
+      }
+    }
+    // Commit — mark used after all validation passes, then mutate rows
+    meta.used = true
+    for (const id of meta.attachmentIds) {
+      const row = this.attachmentStore.get(id)
+      if (!row) continue
+      row.ownerClientMessageId = null
+      if (row.status === ATTACHMENT_STATUS.ATTACHED) {
+        row.status = row.extract && typeof row.extract === 'object' ? ATTACHMENT_STATUS.EXTRACTED : ATTACHMENT_STATUS.STORED
+      }
+      row.updatedAt = Date.now()
+      const claimed = this.attachmentStore.claimOwner(id, newClientMessageId)
+      if (!claimed) return { error: `attachment ${row.sanitizedName || id} rebind ownership transfer failed` }
+      rebound.push(id)
+    }
+    this._rebindTokens.delete(token)
+    this._sweepTokens()
+    return { ok: true, reboundIds: rebound }
+  }
+
+  _sweepTokens() {
+    const now = Date.now()
+    for (const [t, m] of [...this._continuationTokens]) {
+      if (now - m.issuedAt > (m.ttlMs + 60_000)) this._continuationTokens.delete(t)
+    }
+    for (const [t, m] of [...this._rebindTokens]) {
+      if (now - m.issuedAt > (m.ttlMs + 10_000)) this._rebindTokens.delete(t)
+    }
   }
 
   // ---- setup ---------------------------------------------------------------
@@ -400,10 +542,12 @@ export class Coordinator extends EventEmitter {
    * (security: prevents client B from referencing client A's attachments
    * by guessing ids).
    *
-   * @param {string | { clientMessageId?:string, text?:string, attachmentIds?:string[] }} input
+   * @param {string | { clientMessageId?:string, text?:string, attachmentIds?:string[], continuationToken?:string, continuationDiscard?:boolean }} input
    */
   post(input) {
     let envelope
+    let continuationToken = null
+    let continuationDiscard = false
     if (typeof input === 'string') {
       envelope = { clientMessageId: null, text: input, attachmentIds: [] }
     } else if (input && typeof input === 'object') {
@@ -412,12 +556,31 @@ export class Coordinator extends EventEmitter {
         text: String(input.text || '').trim(),
         attachmentIds: Array.isArray(input.attachmentIds) ? input.attachmentIds.map((x) => String(x || '').trim()).filter(Boolean) : [],
       }
+      continuationToken = typeof input.continuationToken === 'string' ? input.continuationToken.trim() || null : null
+      continuationDiscard = Boolean(input.continuationDiscard)
     } else {
       return { ok: false, error: 'bad input' }
     }
     const { clientMessageId, text, attachmentIds } = envelope
+    const storeScopeId = this.attachmentStore?.scopeId || null
 
-    const envelopeSignature = JSON.stringify({ t: text, a: attachmentIds.slice().sort() })
+    // ---- Pre-handle continuation token (BLOCKER A: retained-attachment continuation
+    if (continuationDiscard) this.dropContinuationToken(continuationToken)
+    if (continuationToken && !continuationDiscard && this.attachmentStore) {
+      const consume = this.consumeContinuationToken({
+        token: continuationToken,
+        scopeId: storeScopeId,
+        newClientMessageId: clientMessageId,
+        declaredAttachmentIds: attachmentIds,
+      })
+      if (consume && consume.error) return { ok: false, code: 'CONTINUATION_TOKEN_INVALID', error: consume.error }
+      // Effective attachmentIds = rebinded ones (explicit subset or full list)
+      if (consume && consume.ok && Array.isArray(consume.effectiveAttachmentIds)) {
+        envelope.attachmentIds = [...consume.effectiveAttachmentIds]
+      }
+    }
+
+    const envelopeSignature = JSON.stringify({ t: envelope.text || '', a: envelope.attachmentIds.slice().sort() })
 
     // ---- idempotency: dedupe duplicate clientMessageId within recent window ----
     if (clientMessageId) {
@@ -426,16 +589,28 @@ export class Coordinator extends EventEmitter {
         const cachedSig = JSON.stringify({ t: cached.envelope.text || '', a: (cached.envelope.attachmentIds || []).slice().sort() })
         if (cachedSig === envelopeSignature) {
           // EXACT identical retry → return original acceptance as no-op ack
-          this.addMessage('system', `已收到重复请求，跳过：${truncate(text || `附件×${attachmentIds.length}`, 30)} (id=${clientMessageId.slice(0, 10)})`)
+          this.addMessage('system', `已收到重复请求，跳过：${truncate(text || `附件×${envelope.attachmentIds.length}`, 30)} (id=${String(clientMessageId).slice(0, 10)})`)
           return { ok: true, cached: true, idempotent: true, accepted: cached.accepted || true }
         }
         // Same id BUT DIFFERENT content → explicit 409 conflict reject
-        return { ok: false, code: 'IDEMPOTENT_CONFLICT', error: '同一 clientMessageId 被用于不同的消息内容，请使用新的 id' }
+        const out = { ok: false, code: 'IDEMPOTENT_CONFLICT', error: '同一 clientMessageId 被用于不同的消息内容，请使用新的 id' }
+        if (this.attachmentStore && Array.isArray(cached.envelope.attachmentIds) && cached.envelope.attachmentIds.length) {
+          // BLOCKER B: Include rebind token so client can reassign attachments from old id → new
+          const rebind = this.issueRebindToken({
+            scopeId: storeScopeId,
+            oldClientMessageId: clientMessageId,
+            attachmentIds: cached.envelope.attachmentIds,
+          })
+          out.rebindToken = rebind.token
+          out.rebindTokenTtlMs = rebind.ttlMs
+          out.rebindAttachmentIds = rebind.rebindAttachmentIds
+        }
+        return out
       }
     }
 
     const bare = text || ''
-    if (!bare && !attachmentIds.length) {
+    if (!bare && !envelope.attachmentIds.length) {
       return { ok: false, code: 'EMPTY_MESSAGE', error: 'Empty message' }
     }
 
@@ -446,18 +621,20 @@ export class Coordinator extends EventEmitter {
       if (clientMessageId) this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted: true })
       return ret
     }
-    const validationError = this.validateAttachmentIds(attachmentIds, clientMessageId)
+    const validationError = this.validateAttachmentIds(envelope.attachmentIds, clientMessageId)
     if (validationError) {
-      // Do NOT cache a failed validation as accepted
       this.addMessage('shaniu', `附件校验失败：${validationError}`)
       return { ok: false, code: 'ATTACHMENT_INVALID', error: validationError }
     }
-    // Mark validated ids as ATTACHED so the cleanup daemon won't reap them
+    // Mark validated ids as ATTACHED so the cleanup daemon won't reap them, EXCEPT when this is an
+    // attachment-only (noIntent) send — retain them STORED so the continuation follow-up step can
+    // still rebind ownership. After a successful follow-up with text, status transitions to ATTACHED below.
     if (this.attachmentStore) {
-      for (const id of attachmentIds) {
+      const noIntentBranch = !bare && envelope.attachmentIds.length > 0
+      for (const id of envelope.attachmentIds) {
         this.attachmentStore.claimOwner(id, clientMessageId)
         const row = this.attachmentStore.get(id)
-        if (row && row.status !== ATTACHMENT_STATUS.ATTACHED) {
+        if (!noIntentBranch && row && row.status !== ATTACHMENT_STATUS.ATTACHED) {
           this.attachmentStore.update(id, { status: ATTACHMENT_STATUS.ATTACHED })
         }
       }
@@ -465,29 +642,41 @@ export class Coordinator extends EventEmitter {
 
     // ---- R5 program-level NO-INTENT gate for attachment-only messages ---------
     // Even if planner returns tasks inside a string: DO NOT ENTER DRAIN / makePlan
-    if (!bare && attachmentIds.length > 0) {
-      const attList = (attachmentIds || []).map((id) => {
+    if (!bare && envelope.attachmentIds.length > 0) {
+      const ids = envelope.attachmentIds
+      const attList = ids.map((id) => {
         const r = this.attachmentStore?.get(id)
         return r?.sanitizedName || id.slice(0, 8)
       }).join('，')
-      this.addMessage('user', attachmentIds.length ? `[附件 ${attachmentIds.length} 个]` : '')
+      this.addMessage('user', ids.length ? `[附件 ${ids.length} 个]` : '')
       this.addMessage('shaniu', `已收到附件：${attList}。可以告诉我：要整理、翻译、总结，还是把内容读出来再继续？（任务执行已暂停，等你说明意图。）`)
       const accepted = true
       if (clientMessageId) this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted })
-      return { ok: true, accepted, noIntent: true }
+      const ret = { ok: true, accepted, noIntent: true, retainedAttachmentIds: ids.slice() }
+      if (this.attachmentStore) {
+        const cont = this.issueContinuationToken({
+          scopeId: storeScopeId,
+          fromClientMessageId: clientMessageId,
+          attachmentIds: ids,
+        })
+        ret.continuationToken = cont.token
+        ret.continuationTtlMs = cont.ttlMs
+        ret.retainedAttachmentIds = cont.attachmentIds
+      }
+      return ret
     }
 
-    const msg = { clientMessageId, text, attachmentIds }
+    const msg = { clientMessageId, text, attachmentIds: envelope.attachmentIds }
     this.queue.push(msg)
     const accepted = true
     if (clientMessageId) {
-      this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted })
+      this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope: { ...envelope }, accepted })
       if (this._idempotencyCache.size > this.IDEMPOTENCY_CACHE_MAX) {
         const firstKey = this._idempotencyCache.keys().next().value
         if (firstKey) this._idempotencyCache.delete(firstKey)
       }
     }
-    if (this.busy) this.addMessage('system', `已记下，等手上这轮忙完就处理：${truncate(bare || `附件×${attachmentIds.length}`, 40)}`)
+    if (this.busy) this.addMessage('system', `已记下，等手上这轮忙完就处理：${truncate(bare || `附件×${envelope.attachmentIds.length}`, 40)}`)
     else this.drain()
     return { ok: true, accepted }
   }
