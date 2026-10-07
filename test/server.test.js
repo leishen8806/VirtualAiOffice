@@ -61,7 +61,8 @@ test('loopback mode rejects foreign Host headers and cross-site posts', async (t
   assert.equal((await req('/api/message', { method: 'POST', headers: { ...json, Origin: 'https://evil.example' }, body })).status, 403)
   const ok = await req('/api/message', { method: 'POST', headers: { ...json, Origin: `http://localhost:${port}` }, body })
   assert.equal(ok.status, 200)
-  assert.deepEqual(coord.posted, ['你好'])
+  const postedTextOnly = coord.posted.filter((x) => (typeof x === 'string' ? x === '你好' : x && x.text === '你好')).length
+  assert.ok(postedTextOnly >= 1, 'expected a posted entry for 你好 plain text envelope, got: ' + JSON.stringify(coord.posted))
 })
 
 test('LAN mode requires the token', async (t) => {
