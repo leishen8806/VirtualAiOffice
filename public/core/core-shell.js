@@ -135,6 +135,10 @@
     return badge || ''
   }
 
+  const HELIX_STATE = {
+    mode: 'compact',
+  }
+
   function injectShellCss() {
     const id = 'core-shell-css'
     if (document.getElementById(id)) return
@@ -142,10 +146,48 @@
     s.id = id
     s.textContent = `
     html[data-theme-core] body.v2-core-shell{margin:0;display:grid;grid-template-rows:var(--shell-bar-h) 1fr;grid-template-columns:var(--shell-rail-w) 1fr var(--shell-helix-w);grid-template-areas:"bar bar bar""rail canvas helix";min-height:100vh;}
+    html[data-theme-core] body.v2-core-shell.helix-is-collapsed #helix-panel .helix-head .zh,
+    html[data-theme-core] body.v2-core-shell.helix-is-collapsed #helix-panel .helix-head .en,
+    html[data-theme-core] body.v2-core-shell.helix-is-collapsed #helix-panel .helix-head .state-pill,
+    html[data-theme-core] body.v2-core-shell.helix-is-collapsed #helix-panel .helix-block:not(.helix-head){display:none !important;}
+    html[data-theme-core] body.v2-core-shell.helix-is-collapsed #helix-panel{padding:10px 8px !important;}
+    html[data-theme-core] body.v2-core-shell.helix-is-expanded #helix-panel .helix-composer-multimodal{display:grid !important;}
     html[data-theme-core] #global-bar{grid-area:bar;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:10;}
     html[data-theme-core] #organization-rail{grid-area:rail;border-right:1px solid var(--line);background:var(--panel-2);padding:12px 10px;overflow:auto;}
     html[data-theme-core] #office-canvas{grid-area:canvas;overflow:auto;min-height:0;background:var(--canvas-floor);}
     html[data-theme-core] #helix-panel{grid-area:helix;border-left:1px solid var(--line);background:var(--panel);padding:12px 12px 16px;overflow:auto;display:flex;flex-direction:column;gap:10px;}
+    html[data-theme-core] .helix-tri-toggle{display:inline-flex;gap:3px;align-items:center;padding:2px 3px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);}
+    html[data-theme-core] .helix-tri-toggle .tt-btn{width:22px;height:22px;border-radius:5px;border:0;cursor:pointer;background:transparent;color:var(--text-muted);display:grid;place-items:center;}
+    html[data-theme-core] .helix-tri-toggle .tt-btn:hover{color:var(--orchestrator);}
+    html[data-theme-core] .helix-tri-toggle .tt-btn.active{background:color-mix(in srgb, var(--orchestrator) 14%, transparent);color:var(--orchestrator);}
+    html[data-theme-core] .helix-composer-multimodal{display:none;grid-template-columns:repeat(5, 1fr) auto;gap:4px;margin-top:4px;padding:6px 7px;border:1px dashed var(--line);border-radius:8px;background:color-mix(in srgb, var(--panel-2) 60%, transparent);}
+    html[data-theme-core] .helix-composer-multimodal .mm-btn{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 6px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--text-muted);cursor:not-allowed;font-size:10px;font-weight:700;letter-spacing:.04em;}
+    html[data-theme-core] .helix-composer-multimodal .mm-hint{font-size:9.5px;color:var(--text-muted);align-self:center;justify-self:end;font-style:italic;}
+    html[data-theme-core] .inspector-backdrop{position:fixed;inset:0;background:rgba(8,12,24,.35);z-index:58;display:none;}
+    html[data-theme-core] .inspector-backdrop.open{display:block;}
+    html[data-theme-core] .inspector-pop{position:fixed;z-index:60;min-width:320px;max-width:420px;max-height:calc(100vh - 40px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 48px rgba(20,28,48,.28),0 2px 0 rgba(255,255,255,.4) inset;display:grid;gap:10px;padding:14px 14px 16px;animation:inspector-in 260ms var(--ease, ease-out) both;}
+    html[data-theme-core] .inspector-pop.drawer{position:fixed;left:0 !important;right:0 !important;top:auto !important;bottom:0;width:100%;max-width:100%;min-width:100%;border-radius:14px 14px 0 0;max-height:86vh;animation:drawer-in 280ms var(--ease, ease-out) both;}
+    html[data-theme-core] .inspector-head{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;}
+    html[data-theme-core] .inspector-title{font-size:13px;font-weight:800;color:var(--text);letter-spacing:.02em;}
+    html[data-theme-core] .inspector-sub{font-size:10.5px;color:var(--text-muted);margin-top:1px;}
+    html[data-theme-core] .inspector-close{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--text-muted);cursor:pointer;display:grid;place-items:center;}
+    html[data-theme-core] .inspector-close:hover{color:var(--text);border-color:var(--accent);}
+    html[data-theme-core] .inspector-section h5{margin:0 0 5px;font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:.16em;text-transform:uppercase;}
+    html[data-theme-core] .inspector-kv{display:grid;grid-template-columns:86px 1fr;gap:4px 10px;}
+    html[data-theme-core] .inspector-kv .k{font-size:10.5px;color:var(--text-muted);font-weight:600;align-self:start;padding-top:3px;}
+    html[data-theme-core] .inspector-kv .v{font-size:11.5px;color:var(--text);line-height:16px;}
+    html[data-theme-core] .inspector-list{list-style:none;margin:0;padding:0;display:grid;gap:5px;}
+    html[data-theme-core] .inspector-list li{padding:5px 7px;border-radius:7px;background:var(--panel-2);border:1px solid var(--line);font-size:11px;color:var(--text);line-height:15px;display:grid;grid-template-columns:56px 1fr;gap:6px;}
+    html[data-theme-core] .inspector-list li .t{font-size:10px;color:var(--text-muted);font-weight:700;}
+    html[data-theme-core] .inspector-evidence{padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:color-mix(in srgb, var(--panel-2) 70%, transparent);}
+    html[data-theme-core] .inspector-evidence .ev-row{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;padding:3px 0;border-bottom:1px dashed var(--line);font-size:10.5px;}
+    html[data-theme-core] .inspector-evidence .ev-row:last-child{border-bottom:0;}
+    html[data-theme-core] .inspector-evidence .tag{display:inline-block;padding:1px 6px;border-radius:999px;font-size:9.5px;font-weight:800;letter-spacing:.06em;}
+    html[data-theme-core] .inspector-evidence .tag.static{background:color-mix(in srgb, var(--offline) 14%, transparent);color:var(--offline);}
+    html[data-theme-core] .inspector-evidence .tag.ui{background:color-mix(in srgb, var(--reviewing) 14%, transparent);color:var(--reviewing);}
+    html[data-theme-core] .inspector-evidence .tag.behavior{background:color-mix(in srgb, var(--working) 14%, transparent);color:var(--working);}
+    html[data-theme-core] .inspector-evidence .tag.e2e{background:color-mix(in srgb, var(--done) 14%, transparent);color:var(--done);}
+    @keyframes drawer-in{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
     html[data-theme-core] .brand-block{display:grid;grid-template-columns:auto 1fr;gap:0 8px;align-items:center;}
     html[data-theme-core] .brand-block .wordmark{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.02em;}
     html[data-theme-core] .brand-block .wordmark-sub{font-size:10.5px;color:var(--text-muted);line-height:13px;}
@@ -231,7 +273,7 @@
     return wrap
   }
 
-  function renderGlobalBar({ runtime, currentThemeId, onThemeChange, onToggleHelix, mode }) {
+  function renderGlobalBar({ runtime, currentThemeId, onThemeChange, onToggleHelix, onHelixTriState, helixMode, mode }) {
     const bar = el('header', { id: 'global-bar' })
     const demoBanner = mode === 'demo'
       ? el('span', { style: { display:'inline-flex',alignItems:'center',gap:'5px',padding:'2px 8px',borderRadius:'999px',fontSize:'11px',fontWeight:'700',border:'1px solid var(--thinking)',background:'color-mix(in srgb, var(--thinking) 16%, transparent)',color:'var(--thinking)',letterSpacing:'.08em' } }, '● 演示数据 · DEMO')
@@ -250,6 +292,18 @@
     const waiting = runtime.waitingHuman?.length
       ? el('span', { class: 'pill-wait' }, `👋 等待人类 · ${runtime.waitingHuman.length}`)
       : null
+    const helixTri = el('div', { class: 'helix-tri-toggle', title: 'Helix 面板宽度：折叠 / 紧凑 / 展开', 'aria-label': 'Helix 面板宽度切换' }, `
+      <button type="button" class="tt-btn tri-collapse${helixMode === 'collapsed' ? ' active' : ''}" data-tri="collapsed" title="折叠 Helix (68px)" aria-label="折叠 Helix">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 3 L5 8 L9 13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="tt-btn tri-compact${helixMode === 'compact' ? ' active' : ''}" data-tri="compact" title="紧凑 Helix (280px)" aria-label="紧凑 Helix">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="4.5" y="3" width="7" height="10" rx="1.6"/></svg>
+      </button>
+      <button type="button" class="tt-btn tri-expand${helixMode === 'expanded' ? ' active' : ''}" data-tri="expanded" title="展开 Helix (392px)" aria-label="展开 Helix">
+        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 3 L11 8 L7 13" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    `)
+    helixTri.querySelectorAll('.tt-btn').forEach((b) => b.addEventListener('click', () => onHelixTriState?.(b.getAttribute('data-tri'))))
     const notifBtn = el('button', { class: 'icon-btn', title: '通知', 'aria-label': '通知' }, `
       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 2.5 a4.5 4.5 0 0 0 -4.5 4.5 v3 l-1 2 h11 l-1 -2 v-3 a4.5 4.5 0 0 0 -4.5 -4.5 z"/><path d="M7 13 a1 1 0 0 0 2 0" stroke-linecap="round"/></svg>
     `)
@@ -264,14 +318,17 @@
     const sep1 = el('div', { class: 'sep' })
     const sep2 = el('div', { class: 'sep' })
     const sep3 = el('div', { class: 'sep' })
+    const sep4 = el('div', { class: 'sep' })
     bar.appendChild(brand)
-    if (demoBanner) { bar.appendChild(sep3); bar.appendChild(demoBanner) }
+    if (demoBanner) { bar.appendChild(sep4); bar.appendChild(demoBanner) }
     bar.appendChild(sep1)
     bar.appendChild(wsChip)
     bar.appendChild(sep2)
     bar.appendChild(runtimePill)
     if (waiting) bar.appendChild(waiting)
     bar.appendChild(grow)
+    bar.appendChild(helixTri)
+    bar.appendChild(sep3)
     bar.appendChild(helixBtn)
     bar.appendChild(notifBtn)
     bar.appendChild(setBtn)
@@ -355,6 +412,219 @@
     return rail
   }
 
+  const DEMO_ROLE_INSPECT = Object.freeze({
+    product:   { member: '李产品',  kind: 'human', model: null,   tools: ['需求访谈', 'Figma 走查', '原型评审'],       state: 'WAITING_HUMAN', task: 'T-101 · 规格对比表签字',     since: Date.now() - 22 * 60000 },
+    architect: { member: 'Codex',    kind: 'ai',    model: 'demo-model-v1', tools: ['C4 建模', '接口契约', '技术选型'],     state: 'THINKING',      task: 'T-104 · A2 画布结构评审',    since: Date.now() - 6 * 60000 },
+    frontend:  { member: 'Claude',   kind: 'ai',    model: 'demo-model-v1', tools: ['组件库', 'Playwright', 'Core SVG'],   state: 'WORKING',       task: 'T-102 · 检查器弹窗交互',     since: Date.now() - 3 * 60000 },
+    backend:   { member: 'DeepSeek', kind: 'ai',    model: 'demo-model-v1', tools: ['NestJS', 'DTO 校验', 'Supabase'],     state: 'WORKING',       task: 'T-103 · 附件状态机',          since: Date.now() - 11 * 60000 },
+    qa:        { member: '王测试',   kind: 'human', model: null,   tools: ['6 设备矩阵', 'BEHAVIORAL_TEST', 'VIS'], state: 'REVIEWING',     task: 'T-105 · 视觉 10 场景回归',   since: Date.now() - 8 * 60000 },
+    reviewer:  { member: '张审查',   kind: 'human', model: null,   tools: ['Diff 统一视图', 'CODE_REVIEW', '风险'],  state: 'REVIEWING',     task: 'T-106 · A2 PR 代码审阅',     since: Date.now() - 16 * 60000 },
+    docs:      { member: 'Gemini',   kind: 'ai',    model: 'demo-model-v1', tools: ['i18n zh/en/km', 'MDX', 'Wiki'],       state: 'IDLE',          task: null,                            since: Date.now() - 41 * 60000 },
+    helix:     { member: 'Helix 系统编排中枢', kind: 'ai', model: 'orchestrator-v2', tools: ['调度', '状态机', '证据汇总'],      state: 'THINKING',      task: 'ROOT · 全局编排',              since: Date.now() - 1 * 60000 },
+  })
+
+  const DEMO_TASK_INSPECT = Object.freeze({
+    'T-101': { id: 'T-101', name: '规格 §5.1 颜色 token 对比表签字', owner: '李产品',  state: 'WAITING_HUMAN', deps: ['T-099'],  exec: '人类走查中',      evidence: 'STATIC_CHECK', review: '待审查', waiting: '李产品 签字确认', at: Date.now() - 22 * 60000 },
+    'T-102': { id: 'T-102', name: 'Role/Task Inspector 弹窗交互',       owner: 'Claude',   state: 'WORKING',       deps: ['T-100'],  exec: '前端实现中',     evidence: 'UI_CAPTURE',    review: '待审查', waiting: null,              at: Date.now() - 3 * 60000 },
+    'T-103': { id: 'T-103', name: '附件 BINDING_STATUS 三态机',          owner: 'DeepSeek', state: 'WORKING',       deps: [],          exec: '服务端单测 7/9', evidence: 'BEHAVIORAL_TEST', review: '待审查', waiting: null,        at: Date.now() - 11 * 60000 },
+    'T-104': { id: 'T-104', name: 'A2 画布布局结构评审',                 owner: 'Codex',    state: 'THINKING',      deps: ['T-102'],  exec: '阅读结构中',     evidence: 'STATIC_CHECK',   review: '待审查', waiting: null,          at: Date.now() - 6 * 60000 },
+    'T-105': { id: 'T-105', name: '视觉 10 场景 (A-J) 回归',             owner: '王测试',   state: 'REVIEWING',     deps: ['T-102'],  exec: '截图对比 4/10', evidence: 'END_TO_END_TEST', review: '审查中', waiting: null,       at: Date.now() - 8 * 60000 },
+    'T-106': { id: 'T-106', name: 'visual-v2/interactive-office-a2 审阅', owner: '张审查',   state: 'REVIEWING',     deps: ['T-102','T-105'], exec: 'Diff 阅读中', evidence: 'STATIC_CHECK',  review: '审查中', waiting: null,       at: Date.now() - 16 * 60000 },
+    'DEMO-104': { id: 'DEMO-104', name: '【DEMO】Helix 调度证据链样例',   owner: 'Helix',    state: 'REVIEWING',     deps: ['T-104','T-105','T-106'], exec: '多角色会议中', evidence: 'END_TO_END_TEST', review: '审查中', waiting: '等待产品最终签字', at: Date.now() - 2 * 60000 },
+  })
+
+  const DEMO_RECENT_ACTIVITY = Object.freeze([
+    { at: Date.now() - 3 * 60000,   text: 'Claude：Inspector 弹窗 CSS 调整完成' },
+    { at: Date.now() - 6 * 60000,   text: 'Codex：输出 A2 结构评审意见 v1' },
+    { at: Date.now() - 11 * 60000,  text: 'DeepSeek：附件 UNCLAIMED → ATTACHED 状态迁移' },
+    { at: Date.now() - 16 * 60000,  text: '张审查：开始 A2 PR 审阅' },
+    { at: Date.now() - 22 * 60000,  text: '李产品：收到签字提醒（未处理）' },
+    { at: Date.now() - 41 * 60000,  text: 'Gemini：文档站 zh 同步完成' },
+  ])
+
+  const DEMO_EVIDENCE_ROWS = Object.freeze([
+    { k: 'VIS-A',  label: '静态结构检查 · A1',      kind: 'STATIC_CHECK',    status: 'PASS' },
+    { k: 'VIS-H',  label: 'Inspector Role 截图',    kind: 'UI_CAPTURE',      status: 'PASS' },
+    { k: 'BEH-3',  label: '点击角色→检查器打开',    kind: 'BEHAVIORAL_TEST', status: 'RUNNING' },
+    { k: 'E2E-AJ', label: 'A→J 10 场景走查',        kind: 'END_TO_END_TEST', status: 'PENDING' },
+  ])
+
+  function tagClassForEvidenceKind(k) {
+    if (k === 'STATIC_CHECK') return 'static'
+    if (k === 'UI_CAPTURE') return 'ui'
+    if (k === 'BEHAVIORAL_TEST') return 'behavior'
+    if (k === 'END_TO_END_TEST') return 'e2e'
+    if (k === 'LIVE_PROVIDER_TEST') return 'e2e'
+    return 'static'
+  }
+
+  function renderInspectorBackdrop() {
+    let bd = document.querySelector('.inspector-backdrop')
+    if (!bd) {
+      bd = el('div', { class: 'inspector-backdrop', role: 'presentation' })
+      document.body.appendChild(bd)
+    }
+    return bd
+  }
+
+  function positionInspectorPop(pop, anchorRect) {
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const useDrawer = vw < 1024 || vh < 520
+    if (useDrawer) { pop.classList.add('drawer'); return }
+    pop.classList.remove('drawer')
+    const popRect = pop.getBoundingClientRect()
+    const margin = 12
+    const pad = 8
+    let top = (anchorRect?.top ?? 60) + (anchorRect?.height ?? 0) + pad
+    let left = (anchorRect?.left ?? 60) + (anchorRect?.width ?? 0) + pad
+    if (left + popRect.width + margin > vw) left = Math.max(margin, (anchorRect?.left ?? 60) - popRect.width - pad)
+    if (top + popRect.height + margin > vh) top = Math.max(margin, vh - popRect.height - margin)
+    left = Math.max(margin, Math.min(vw - popRect.width - margin, left))
+    top = Math.max(margin, Math.min(vh - popRect.height - margin, top))
+    pop.style.left = left + 'px'
+    pop.style.top = top + 'px'
+  }
+
+  function closeInspectorPop() {
+    const pop = document.querySelector('.inspector-pop')
+    const bd = document.querySelector('.inspector-backdrop.open')
+    if (pop) pop.remove()
+    if (bd) bd.classList.remove('open')
+  }
+
+  function renderRoleInspector(roleId, mode, anchorRect) {
+    if (!roleId) return
+    const role = Chars?.ROLES?.[roleId] || Chars?.role(roleId) || { zh: String(roleId), en: String(roleId) }
+    const info = DEMO_ROLE_INSPECT[roleId] || { member: '未分配', kind: 'unknown', model: null, tools: [], state: 'OFFLINE', task: null, since: null }
+    const useFixtures = mode === 'demo'
+    const honestMember = useFixtures ? info.member : (info.kind === 'ai' ? '（尚未配置）' : '（尚未邀请）')
+    const honestState = useFixtures ? info.state : 'OFFLINE'
+    const honestTask = useFixtures ? info.task : null
+    const honestTools = useFixtures ? info.tools : []
+    const honestModel = useFixtures ? info.model : null
+    const honestRecent = useFixtures ? DEMO_RECENT_ACTIVITY.slice(0, 4) : []
+    closeInspectorPop()
+    const bd = renderInspectorBackdrop()
+    bd.classList.add('open')
+    const badge = info.kind === 'human'
+      ? States?.BADGE?.human({ size: 22 })
+      : info.kind === 'ai' ? States?.BADGE?.ai({ size: 22 }) : '<span style="width:22px;height:22px;display:grid;place-items:center;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-muted);font-size:10px;font-weight:800;">?</span>'
+    const pop = el('div', { class: 'inspector-pop role-inspector', role: 'dialog', 'aria-label': `角色检查器 · ${role.zh || roleId}`, 'data-role': roleId })
+    pop.innerHTML = `
+      <div class="inspector-head">
+        <div style="width:34px;height:34px;border-radius:10px;background:color-mix(in srgb, ${info.kind === 'human' ? 'var(--done)' : 'var(--orchestrator)'} 16%, var(--panel-2));border:1px solid var(--line);display:grid;place-items:center;">${badge}</div>
+        <div style="min-width:0;">
+          <div class="inspector-title">${esc(role.zh || roleId)} · ${esc(role.en || roleId)}</div>
+          <div class="inspector-sub">${honestMember ? esc(honestMember) : '—'} ${info.kind === 'human' ? '· 人类' : info.kind === 'ai' ? '· AI Agent' : ''}</div>
+        </div>
+        <button type="button" class="inspector-close" aria-label="关闭检查器" title="关闭">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4 L12 12 M12 4 L4 12" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="inspector-section">
+        <div class="inspector-kv">
+          <div class="k">角色</div><div class="v">${esc(role.zh || roleId)} <span style="color:var(--text-muted);font-size:10px;">(${esc(role.en || roleId)})</span></div>
+          <div class="k">成员</div><div class="v">${honestMember ? esc(honestMember) : '<span style="color:var(--text-muted);">尚未分配</span>'}</div>
+          <div class="k">类型</div><div class="v">${info.kind === 'human' ? '人类 Human 👤' : info.kind === 'ai' ? 'AI Agent 🤖' : '未知'}</div>
+          ${honestModel ? `<div class="k">模型</div><div class="v"><span style="font-family:var(--mono,monospace);font-size:10.5px;">${esc(honestModel)}</span></div>` : ''}
+          <div class="k">当前状态</div><div class="v">${statePill(honestState)}</div>
+          <div class="k">当前任务</div><div class="v">${honestTask ? esc(honestTask) : '<span style="color:var(--text-muted);">— 空闲 —</span>'}</div>
+        </div>
+      </div>
+      ${honestTools.length ? `<div class="inspector-section">
+        <h5>能力 / 工具 · Capabilities</h5>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${honestTools.map((t) => `<span style="display:inline-block;padding:2px 7px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);font-size:10.5px;color:var(--text);">${esc(t)}</span>`).join('')}
+        </div>
+      </div>` : ''}
+      ${honestRecent.length ? `<div class="inspector-section">
+        <h5>最近活动 · Recent</h5>
+        <ul class="inspector-list">
+          ${honestRecent.map((x) => `<li><span class="t">${esc(ago(x.at))}</span><span>${esc(String(x.text || '').slice(0, 160))}</span></li>`).join('')}
+        </ul>
+      </div>` : ''}
+      <div class="inspector-section">
+        <h5>证据汇总 · Evidence</h5>
+        <div class="inspector-evidence">
+          ${DEMO_EVIDENCE_ROWS.map((row) => `<div class="ev-row">
+            <span class="tag ${tagClassForEvidenceKind(row.kind)}">${esc(row.k)}</span>
+            <span style="color:var(--text);">${esc(row.label)}</span>
+            <span style="font-weight:800;font-size:10.5px;color:${row.status === 'PASS' ? 'var(--done)' : row.status === 'RUNNING' ? 'var(--working)' : row.status === 'FAIL' ? 'var(--blocked)' : 'var(--text-muted)'};">${esc(row.status)}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    `
+    document.body.appendChild(pop)
+    pop.querySelector('.inspector-close').addEventListener('click', closeInspectorPop)
+    bd.addEventListener('click', closeInspectorPop)
+    pop.addEventListener('click', (e) => e.stopPropagation())
+    positionInspectorPop(pop, anchorRect)
+    window.addEventListener('resize', () => positionInspectorPop(pop, anchorRect), { once: false })
+    document.addEventListener('keydown', function onEsc(e) { if (e.key === 'Escape') { closeInspectorPop(); document.removeEventListener('keydown', onEsc) } }, { once: true })
+    return pop
+  }
+
+  function renderTaskInspector(taskId, mode, anchorRect) {
+    if (!taskId) return
+    const task = DEMO_TASK_INSPECT[taskId] || { id: taskId, name: '未知任务', owner: '—', state: 'OFFLINE', deps: [], exec: '—', evidence: 'NOT_VERIFIED', review: '—', waiting: null, at: Date.now() }
+    const useFixtures = mode === 'demo'
+    const honest = useFixtures ? task : { ...task, owner: '—', exec: '尚未开始', review: '—', waiting: null, deps: [], name: task.name || '未命名任务' }
+    closeInspectorPop()
+    const bd = renderInspectorBackdrop()
+    bd.classList.add('open')
+    const pop = el('div', { class: 'inspector-pop task-inspector', role: 'dialog', 'aria-label': `任务检查器 · ${task.id}`, 'data-task': taskId })
+    pop.innerHTML = `
+      <div class="inspector-head">
+        <div style="width:34px;height:34px;border-radius:10px;background:color-mix(in srgb, var(--working) 14%, var(--panel-2));border:1px solid var(--line);display:grid;place-items:center;color:var(--working);font-weight:900;font-size:12px;">T</div>
+        <div style="min-width:0;">
+          <div class="inspector-title">${esc(honest.id)} · ${esc(String(honest.name || '').slice(0, 60))}</div>
+          <div class="inspector-sub">Owner: ${esc(honest.owner)} · 最近更新: ${esc(ago(honest.at))}</div>
+        </div>
+        <button type="button" class="inspector-close" aria-label="关闭检查器" title="关闭">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4 L12 12 M12 4 L4 12" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="inspector-section">
+        <div class="inspector-kv">
+          <div class="k">任务名</div><div class="v" style="font-weight:700;">${esc(String(honest.name || '').slice(0, 120))}</div>
+          <div class="k">状态</div><div class="v">${statePill(honest.state)}</div>
+          <div class="k">负责人</div><div class="v">${esc(honest.owner)}</div>
+          <div class="k">依赖</div><div class="v">${honest.deps?.length ? honest.deps.map((d) => `<span style="display:inline-block;padding:1px 6px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);font-size:10px;font-family:var(--mono,monospace);color:var(--text);margin:1px 2px 1px 0;">${esc(d)}</span>`).join('') : '<span style="color:var(--text-muted);">无</span>'}</div>
+          <div class="k">执行</div><div class="v">${esc(honest.exec)}</div>
+          <div class="k">证据</div><div class="v"><span class="tag ${tagClassForEvidenceKind(honest.evidence)}" style="background:color-mix(in srgb, ${honest.evidence === 'END_TO_END_TEST' ? 'var(--done)' : honest.evidence === 'BEHAVIORAL_TEST' ? 'var(--working)' : honest.evidence === 'UI_CAPTURE' ? 'var(--reviewing)' : 'var(--offline)'} 14%, transparent);color:${honest.evidence === 'END_TO_END_TEST' ? 'var(--done)' : honest.evidence === 'BEHAVIORAL_TEST' ? 'var(--working)' : honest.evidence === 'UI_CAPTURE' ? 'var(--reviewing)' : 'var(--text-muted)'};">${esc(honest.evidence)}</span></div>
+          <div class="k">审查</div><div class="v">${esc(honest.review)}</div>
+          ${honest.waiting ? `<div class="k">等待人类</div><div class="v" style="color:var(--waiting-human);font-weight:700;">👋 ${esc(honest.waiting)}</div>` : ''}
+        </div>
+      </div>
+      <div class="inspector-section">
+        <h5>最近活动 · Recent</h5>
+        <ul class="inspector-list">
+          ${(useFixtures ? DEMO_RECENT_ACTIVITY.slice(0, 3) : []).map((x) => `<li><span class="t">${esc(ago(x.at))}</span><span>${esc(String(x.text || '').slice(0, 160))}</span></li>`).join('')}
+          ${(!useFixtures || !DEMO_RECENT_ACTIVITY.length) ? '<li style="color:var(--text-muted);background:transparent;border:1px dashed var(--line);grid-template-columns:1fr;">暂无活动记录</li>' : ''}
+        </ul>
+      </div>
+      <div class="inspector-section">
+        <h5>证据汇总 · Evidence</h5>
+        <div class="inspector-evidence">
+          ${DEMO_EVIDENCE_ROWS.map((row) => `<div class="ev-row">
+            <span class="tag ${tagClassForEvidenceKind(row.kind)}">${esc(row.k)}</span>
+            <span style="color:var(--text);">${esc(row.label)}</span>
+            <span style="font-weight:800;font-size:10.5px;color:${row.status === 'PASS' ? 'var(--done)' : row.status === 'RUNNING' ? 'var(--working)' : row.status === 'FAIL' ? 'var(--blocked)' : 'var(--text-muted)'};">${esc(row.status)}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    `
+    document.body.appendChild(pop)
+    pop.querySelector('.inspector-close').addEventListener('click', closeInspectorPop)
+    bd.addEventListener('click', closeInspectorPop)
+    pop.addEventListener('click', (e) => e.stopPropagation())
+    positionInspectorPop(pop, anchorRect)
+    window.addEventListener('resize', () => positionInspectorPop(pop, anchorRect), { once: false })
+    document.addEventListener('keydown', function onEsc(e) { if (e.key === 'Escape') { closeInspectorPop(); document.removeEventListener('keydown', onEsc) } }, { once: true })
+    return pop
+  }
+
   function renderHelixPanel({ helix, runtime }, composer = {}) {
     const pane = el('div', { id: 'helix-panel-inner' })
     const conv = (helix.conversation || []).slice().slice(-12)
@@ -428,6 +698,16 @@
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); cform.requestSubmit() }
     })
     cwrap.appendChild(cform)
+    const mmPlace = el('div', { class: 'helix-composer-multimodal', 'aria-label': 'Multimodal Composer 占位边界 — 通过 PR #10 接入' })
+    mmPlace.innerHTML = `
+      <button type="button" class="mm-btn" title="图片 · Vision (PR #10)" disabled>🖼 IMG</button>
+      <button type="button" class="mm-btn" title="文件 · DOC/XLSX/PDF (PR #10)" disabled>📄 DOC</button>
+      <button type="button" class="mm-btn" title="音频 · 语音转写 (PR #10)" disabled>🎙 AUDIO</button>
+      <button type="button" class="mm-btn" title="截图 · Screenshot (PR #10)" disabled>💻 SCREEN</button>
+      <button type="button" class="mm-btn" title="链接 · Link Summary (PR #10)" disabled>🔗 LINK</button>
+      <span class="mm-hint">Multimodal placeholder · via PR #10 边界</span>
+    `
+    cwrap.appendChild(mmPlace)
     pane.appendChild(cwrap)
 
     if (waiting.length > 0) {
@@ -485,6 +765,15 @@
     if (typeof globalThis.AnimeOffice?.prototype?.destroy === 'function') { /* no-op: handled by app.js flow */ }
   }
 
+  function applyHelixBodyClass(mode) {
+    if (typeof document === 'undefined' || !document.body || typeof document.body.classList !== 'object') return
+    document.body.classList.remove('helix-is-collapsed', 'helix-is-compact', 'helix-is-expanded')
+    if (mode === 'collapsed') document.body.classList.add('helix-is-collapsed')
+    else if (mode === 'expanded') document.body.classList.add('helix-is-expanded')
+    else document.body.classList.add('helix-is-compact')
+    HELIX_STATE.mode = mode
+  }
+
   function bootstrap(options = {}) {
     if (!Theme || !Chars || !States) throw new Error('VAOCoreShell.bootstrap: Core modules not loaded (load order: theme → states → characters → office → shell)')
     Theme.inject()
@@ -503,35 +792,71 @@
 
     document.body.classList.add('v2-core-shell')
     document.body.innerHTML = ''
+    applyHelixBodyClass('compact')
 
     let helixDrawerOpen = false
+    let helixMode = 'compact'
     let activeNav = options.initialNav || 'office'
     const overlay = el('div', { class: 'drawer-overlay' })
     const helixDrawer = el('aside', { class: 'helix-drawer', role: 'dialog', 'aria-label': 'Helix 系统编排中枢面板' })
+
+    function safeReplaceWith(oldNode, newNode) {
+      if (!oldNode) return
+      if (typeof oldNode.replaceWith === 'function') { oldNode.replaceWith(newNode); return }
+      const p = oldNode.parentNode
+      if (!p) return
+      const sib = p.children || []
+      const i = sib.indexOf(oldNode)
+      if (i >= 0) {
+        sib[i] = newNode
+        newNode.parentNode = p
+      }
+      p._html = sib.map(x => (x && (x.outerHTML || x.innerHTML || '')) || '').join('')
+    }
 
     function setHelixDrawer(open) {
       helixDrawerOpen = open
       if (open) { overlay.classList.add('open'); helixDrawer.classList.add('open') }
       else { overlay.classList.remove('open'); helixDrawer.classList.remove('open') }
     }
+    function setHelixTri(nextMode) {
+      if (!['collapsed', 'compact', 'expanded'].includes(nextMode)) nextMode = 'compact'
+      helixMode = nextMode
+      applyHelixBodyClass(nextMode)
+      const newBar = renderGlobalBar({
+        runtime,
+        currentThemeId: 'core',
+        onThemeChange: (id) => { options.onThemeChange?.(id) },
+        onToggleHelix: () => setHelixDrawer(!helixDrawerOpen),
+        onHelixTriState: setHelixTri,
+        helixMode,
+        mode,
+      })
+      safeReplaceWith(bar, newBar)
+      bar = newBar
+      handle.nodes.bar = newBar
+    }
     function setActiveNav(id) {
       activeNav = id
       const newRail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
-      rail.replaceWith(newRail)
+      safeReplaceWith(rail, newRail)
+      rail = newRail
       handle.nodes.rail = newRail
       options.onNavigate?.(id)
     }
     const navHandler = (id) => setActiveNav(id)
     overlay.addEventListener('click', () => setHelixDrawer(false))
 
-    const bar = renderGlobalBar({
+    let bar = renderGlobalBar({
       runtime,
       currentThemeId: 'core',
       onThemeChange: (id) => { options.onThemeChange?.(id) },
       onToggleHelix: () => setHelixDrawer(!helixDrawerOpen),
+      onHelixTriState: setHelixTri,
+      helixMode,
       mode,
     })
-    const rail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
+    let rail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
     const canvas = el('main', { id: 'office-canvas', role: 'main', 'aria-label': '办公室楼层 · Office Floor: Helix 指挥台居中，周围是 规划工作室 / 工程站 / 质检 / 文档 / 人类区' })
     const helixPanel = el('aside', { id: 'helix-panel', 'aria-label': 'Helix 系统编排中枢面板' })
     const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) })
@@ -553,14 +878,61 @@
     }))
 
     const officeHandle = Office.attach(canvas, { snapshot: options.snapshot || null, mode })
-    canvas.addEventListener('vao:seat-selected', (e) => options.onPickSeat?.(e.detail.role))
-    canvas.addEventListener('vao:task-selected', (e) => options.onPickTask?.(e.detail.taskId))
+    if (typeof canvas.addEventListener === 'function') {
+      canvas.addEventListener('vao:seat-selected', (e) => options.onPickSeat?.(e.detail.role))
+      canvas.addEventListener('vao:task-selected', (e) => options.onPickTask?.(e.detail.taskId))
+    }
+
+    function anchorRectFromEvent(e, selectorFallback) {
+      try {
+        const path = e.composedPath?.() || [e.target]
+        for (const n of path) {
+          if (n && n.nodeType === 1 && typeof n.getBoundingClientRect === 'function') {
+            const r = n.getBoundingClientRect()
+            if (r && (r.width || r.height)) return r
+          }
+        }
+      } catch (_) {}
+      return null
+    }
+
+    function openRoleInspectorHandler(e) {
+      const roleId = e.detail?.role || e.detail?.roleId
+      if (!roleId) return
+      const anchor = anchorRectFromEvent(e) || e.detail?.anchorRect || null
+      renderRoleInspector(roleId, mode, anchor)
+      options.onOpenRoleInspector?.(roleId)
+    }
+    function openTaskInspectorHandler(e) {
+      const taskId = e.detail?.taskId || e.detail?.task
+      if (!taskId) return
+      const anchor = anchorRectFromEvent(e) || e.detail?.anchorRect || null
+      renderTaskInspector(taskId, mode, anchor)
+      options.onOpenTaskInspector?.(taskId)
+    }
+    function openHelixPanelHandler() {
+      if (helixMode === 'collapsed') setHelixTri('compact')
+      else if (helixMode === 'compact') setHelixTri('expanded')
+      else if (typeof window !== 'undefined' && typeof window.innerWidth === 'number' && window.innerWidth < 1025) setHelixDrawer(true)
+      options.onOpenHelixPanel?.()
+    }
+
+    const documentListenersAttached = typeof document !== 'undefined' && typeof document.addEventListener === 'function'
+    if (documentListenersAttached) {
+      document.addEventListener('vao:open-role-inspector', openRoleInspectorHandler)
+      document.addEventListener('vao:open-task-inspector', openTaskInspectorHandler)
+      document.addEventListener('vao:open-helix-panel', openHelixPanelHandler)
+    }
 
     const handle = {
       mode,
+      helix: { get mode() { return helixMode }, setHelixMode: setHelixTri },
+      setHelixMode: setHelixTri,
+      inspectors: { close: closeInspectorPop, openRole: (roleId, anchorRect) => renderRoleInspector(roleId, mode, anchorRect), openTask: (taskId, anchorRect) => renderTaskInspector(taskId, mode, anchorRect) },
       nodes: { bar, rail, canvas, helixPanel, overlay, helixDrawer },
       office: officeHandle,
       update(next = {}) {
+        if (next.helixMode) setHelixTri(next.helixMode)
         if (next.runtime) Object.assign(runtime, next.runtime)
         if (next.helix) Object.assign(helix, next.helix)
         if (next.runtime || next.helix) {
@@ -569,29 +941,46 @@
         }
         if (next.snapshot) officeHandle.update(next.snapshot)
         if (next.runtime) {
-          const newRail = renderRail({ runtime, onPickSeat: options.onPickSeat })
-          rail.replaceWith(newRail)
+          const newRail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
+          safeReplaceWith(rail, newRail)
+          rail = newRail
           handle.nodes.rail = newRail
           const newBar = renderGlobalBar({
             runtime,
             currentThemeId: 'core',
             onThemeChange: (id) => { options.onThemeChange?.(id) },
             onToggleHelix: () => setHelixDrawer(!helixDrawerOpen),
+            onHelixTriState: setHelixTri,
+            helixMode,
             mode,
           })
-          bar.replaceWith(newBar)
+          safeReplaceWith(bar, newBar)
+          bar = newBar
           handle.nodes.bar = newBar
         }
       },
       destroy() {
         officeHandle.destroy()
-        document.body.classList.remove('v2-core-shell')
-        document.documentElement.removeAttribute('data-theme-core')
-        document.documentElement.removeAttribute('data-appearance')
-        const sid = document.getElementById('core-shell-css'); if (sid) sid.remove()
-        const tid = document.getElementById('core-theme-style'); if (tid) tid.remove()
-        ;[bar, rail, canvas, helixPanel, overlay, helixDrawer].forEach((n) => n.remove())
-        document.body.querySelectorAll('.mobile-nav').forEach((n) => n.remove())
+        if (documentListenersAttached) {
+          document.removeEventListener('vao:open-role-inspector', openRoleInspectorHandler)
+          document.removeEventListener('vao:open-task-inspector', openTaskInspectorHandler)
+          document.removeEventListener('vao:open-helix-panel', openHelixPanelHandler)
+        }
+        if (document?.body?.classList) {
+          document.body.classList.remove('v2-core-shell', 'helix-is-collapsed', 'helix-is-compact', 'helix-is-expanded')
+        }
+        if (document?.documentElement) {
+          document.documentElement.removeAttribute('data-theme-core')
+          document.documentElement.removeAttribute('data-appearance')
+        }
+        if (typeof document?.getElementById === 'function') {
+          const sid = document.getElementById('core-shell-css'); if (sid) sid.remove()
+          const tid = document.getElementById('core-theme-style'); if (tid) tid.remove()
+        }
+        ;[bar, rail, canvas, helixPanel, overlay, helixDrawer].forEach((n) => n && typeof n.remove === 'function' && n.remove())
+        if (typeof document?.body?.querySelectorAll === 'function') {
+          document.body.querySelectorAll('.mobile-nav, .inspector-backdrop, .inspector-pop').forEach((n) => n.remove())
+        }
       },
     }
     return handle
