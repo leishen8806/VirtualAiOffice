@@ -1467,7 +1467,12 @@ test('[LIFECYCLE 7 unrelated attachment C included alongside valid token → rej
   assert.ok(rBad.status >= 400 && rBad.status < 500, `C included is rejected 4xx. got=${rBad.status} ${rBad.text}`)
   assert.equal(rBad.json.ok, false)
   assert.match(String(rBad.json.code || ''), /ATTACHMENT_INVALID|CONTINUATION_TOKEN_INVALID/, `error code indicates attachment not authorized. code=${rBad.json && rBad.json.code}`)
-  // Also confirm token is NOT consumed (since validation failed at validateAttachmentIds, AFTER consume was called... wait current flow is: consumeContinuationToken is called BEFORE validateAttachmentIds. Let's check — actually consumeContinuationToken IS called before validate, and we only retained idA. So token gets consumed. That's acceptable per security (token is one-shot). Let's just verify: if token was consumed it's fine (this was an attempted rogue request). Current test: what matters is C NOT accepted.
+  // TWO-PHASE ATOMIC GUARANTEE: the continuation token MUST remain usable
+  // after a failed fresh-id validation — prepareContinuationToken ran its
+  // freshDeclared OWNERSHIP pre-validate and returned error WITHOUT calling
+  // commit.  Retrying with only the valid retained A therefore still accepts.
+  assert.ok(coord._continuationTokens.has(tok), `continuation token preserved after failed fresh-validation rogue attempt. present=${coord._continuationTokens.has(tok)}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgRet, `A owner unchanged after failed rogue request (retained A not mutated). actual=${attachmentStore.get(idA).ownerClientMessageId}`)
 })
 
 test('[LIFECYCLE 8 cross-scope retained token rejected, and retained attachments not released across scope]', async (t) => {
@@ -1559,4 +1564,296 @@ test('[LIFECYCLE 10 rebind conflict flow still green after lifecycle changes]', 
   })
   assert.equal(rRetry.status, 200, `B retry → accepted: ${rRetry.status} ${rRetry.text}`)
   assert.equal(attachmentStore.get(X).ownerClientMessageId, msgB, `X now owned by B: actual=${attachmentStore.get(X).ownerClientMessageId}`)
+})
+
+/* ============== ATOMIC LIFECYCLE CLOSEOUT TESTS (DEFECT 1 + DEFECT 2) ================== */
+
+test('[ATOMIC 1 production daemon cycle calls token sweep → retained attachments cleaned without manual _sweepTokens]', async (t) => {
+  const { coord, attachmentStore, uploadBytes } = await startHarness(t)
+  const bytes = buildPdfBytes(1024)
+  const up = await uploadBytes(bytes, 'atomic1-sweep.pdf', { declaredSize: bytes.length })
+  const idA = up.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsg = 'atomic1-src-' + Date.now()
+  attachmentStore.claimOwner(idA, idMsg)
+  coord.CONTINUATION_TOKEN_TTL_MS = 50
+  const issued = coord.issueContinuationToken({ scopeId: attachmentStore.scopeId, fromClientMessageId: idMsg, attachmentIds: [idA] })
+  coord.CONTINUATION_TOKEN_TTL_MS = 15 * 60 * 1000
+  const meta = coord._continuationTokens.get(issued.token)
+  assert.ok(meta, 'meta token present pre cycle')
+  // Force past TTL + small scheduler tolerance (2000ms grace) so daemon cycle catches it
+  meta.issuedAt = Date.now() - (50 + 5_000)
+  // Pre-conditions
+  assert.ok(coord._continuationTokens.has(issued.token), 'token present pre cleanup cycle')
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsg, `owner pre-cycle == source ${idMsg}`)
+  // Run EXACT production cycle method (not manual _sweepTokens)
+  const res = coord._runAttachmentCleanupOnce({ orphanStaleMs: 5 * 60 * 1000 })
+  assert.ok(res && typeof res === 'object', 'daemon cycle returns object')
+  assert.ok(res.sweptContinuationTokens >= 1, `daemon cycle swept at least 1 continuation token. actual=${res.sweptContinuationTokens}`)
+  assert.equal(coord._continuationTokens.has(issued.token), false, 'token removed AFTER production cleanup cycle (not manual _sweepTokens)')
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, null, `owner cleared AFTER production cleanup cycle. actual=${attachmentStore.get(idA).ownerClientMessageId}`)
+})
+
+test('[ATOMIC 2 expired continuation attachment becomes cleanup-eligible via daemon cycle, no manual sweep call, reapOrphans subsequently removes blob when stale]', async (t) => {
+  const { coord, attachmentStore, uploadBytes } = await startHarness(t)
+  const bytes = buildPdfBytes(2048)
+  const up = await uploadBytes(bytes, 'atomic2-expire.pdf', { declaredSize: bytes.length })
+  const idA = up.json.id
+  const storagePath = attachmentStore.get(idA).storagePath
+  assert.ok(storagePath && fs.existsSync(storagePath), `blob exists pre-cycle`)
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsg = 'atomic2-src-' + Date.now()
+  attachmentStore.claimOwner(idA, idMsg)
+  coord.CONTINUATION_TOKEN_TTL_MS = 10
+  const issued = coord.issueContinuationToken({ scopeId: attachmentStore.scopeId, fromClientMessageId: idMsg, attachmentIds: [idA] })
+  coord.CONTINUATION_TOKEN_TTL_MS = 15 * 60 * 1000
+  const meta = coord._continuationTokens.get(issued.token)
+  meta.issuedAt = Date.now() - (10 + 8_000)
+  const rowA = attachmentStore.get(idA)
+  rowA.ownerClientMessageId = idMsg
+  rowA.updatedAt = Date.now() - 15 * 60 * 1000
+  const rowOldBefore = { ...rowA }
+  // Production cycle call — step 1) sweep + 2) reapOrphans combined!
+  const cycleResult = coord._runAttachmentCleanupOnce({ orphanStaleMs: 10_000 })
+  assert.equal(coord._continuationTokens.has(issued.token), false, `expired token gone after one daemon cycle call`)
+  assert.equal(cycleResult.sweptContinuationTokens >= 1, true, `sweep count ok (${cycleResult.sweptContinuationTokens})`)
+  const rowAfter = attachmentStore.get(idA)
+  assert.equal(rowAfter && rowAfter.ownerClientMessageId, null, `sweep cleared owner: actual=${rowAfter && rowAfter.ownerClientMessageId}`)
+  // Second cycle with fresh ownership-cleared → rowA updatedAt already stale long enough + orphan → removedBlobs contains idA
+  rowA.updatedAt = Date.now() - 20 * 60 * 1000
+  const second = coord._runAttachmentCleanupOnce({ orphanStaleMs: 10_000 })
+  assert.ok(second.removedBlobs.includes(idA) || attachmentStore.get(idA) == null || fs.existsSync(storagePath) === false, `2nd cycle removes orphan index+blob: removed=${JSON.stringify(second.removedBlobs)} existsBlob=${fs.existsSync(storagePath)}`)
+})
+
+test('[ATOMIC 3 retained A + valid fresh B — accepted 200 with combined ids, both ATTACHED]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A3CONT'), bB = buildPdfBytes(128, 'B3CONT')
+  const upA = await uploadBytes(bA, 'atomic3-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic3-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  assert.ok(tok, 'token issued')
+  const idMsgBoth = 'atomic3-both-' + Date.now()
+  const upB = await uploadBytes(bB, 'atomic3-fresh-b.pdf', { declaredSize: bB.length, clientMessageId: idMsgBoth })
+  assert.equal(upB.status, 201, 'B upload')
+  const idB = upB.json.id
+  attachmentStore.update(idB, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const r = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgBoth, text: 'compare combined', attachmentIds: [idA, idB], continuationToken: tok }) })
+  assert.equal(r.status, 200, `combined accepted 200: ${r.status} ${r.text}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgBoth, `A transferred owner`)
+  assert.equal(attachmentStore.get(idB).ownerClientMessageId, idMsgBoth, `B owned new`)
+  assert.equal(attachmentStore.get(idA).status, ATTACHMENT_STATUS.ATTACHED, `A ATTACHED`)
+  assert.equal(attachmentStore.get(idB).status, ATTACHMENT_STATUS.ATTACHED, `B ATTACHED`)
+})
+
+test('[ATOMIC 4 retained A + unauthorized fresh C (stranger-owned) — request REJECTED]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A4CONT'), bC = buildPdfBytes(128, 'C4CONT')
+  const upA = await uploadBytes(bA, 'atomic4-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic4-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  assert.ok(tok, 'tok ok')
+  // C owned by a DIFFERENT idMsg (stranger)
+  const idMsgStranger = 'atomic4-stranger-' + Date.now()
+  const upC = await uploadBytes(bC, 'atomic4-stranger-c.pdf', { declaredSize: bC.length, clientMessageId: idMsgStranger })
+  assert.equal(upC.status, 201)
+  const idC = upC.json.id
+  attachmentStore.update(idC, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  coord.post({ clientMessageId: idMsgStranger, text: 'stranger text for own', attachmentIds: [idC] })
+  assert.equal(attachmentStore.get(idC).ownerClientMessageId, idMsgStranger, `C owned by stranger`)
+  // Try to attach stranger C alongside retained A under NEW msg id
+  const idMsgNew = 'atomic4-new-' + Date.now()
+  const rBad = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgNew, text: 'rogue combine', attachmentIds: [idA, idC], continuationToken: tok }) })
+  assert.ok(rBad.status >= 400 && rBad.status < 500, `rejected 4xx: ${rBad.status} ${rBad.text}`)
+})
+
+test('[ATOMIC 5 after case 4 (failed rogue), continuation token STILL valid/retained A still owned by original source msgid]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A5CONT'), bC = buildPdfBytes(128, 'C5CONT')
+  const upA = await uploadBytes(bA, 'atomic5-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic5-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const idMsgStranger = 'atomic5-stranger-' + Date.now()
+  const upC = await uploadBytes(bC, 'atomic5-stranger-c.pdf', { declaredSize: bC.length, clientMessageId: idMsgStranger })
+  const idC = upC.json.id
+  attachmentStore.update(idC, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  coord.post({ clientMessageId: idMsgStranger, text: 'stranger own', attachmentIds: [idC] })
+  const idMsgNew = 'atomic5-new-' + Date.now()
+  await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgNew, text: 'rogue', attachmentIds: [idA, idC], continuationToken: tok }) })
+  // PROVE token still alive + owner unchanged after fail
+  assert.ok(coord._continuationTokens.has(tok), `token STILL valid after failed rogue. present=${coord._continuationTokens.has(tok)}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgRet, `A owner unchanged after failed rogue (NOT transferred). actual=${attachmentStore.get(idA).ownerClientMessageId}`)
+  const meta = coord._continuationTokens.get(tok)
+  assert.equal(meta && meta.consumed, false, `meta.consumed === false not consumed`)
+})
+
+test('[ATOMIC 6 retry same token with only valid retained A after failure → accepted 200]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A6CONT'), bC = buildPdfBytes(128, 'C6CONT')
+  const upA = await uploadBytes(bA, 'atomic6-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic6-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const idMsgStranger = 'atomic6-stranger-' + Date.now()
+  const upC = await uploadBytes(bC, 'atomic6-stranger-c.pdf', { declaredSize: bC.length, clientMessageId: idMsgStranger })
+  const idC = upC.json.id
+  attachmentStore.update(idC, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  coord.post({ clientMessageId: idMsgStranger, text: 'own', attachmentIds: [idC] })
+  const idMsgNew = 'atomic6-new-' + Date.now()
+  await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgNew, text: 'try combine', attachmentIds: [idA, idC], continuationToken: tok }) })
+  // Now RETRY same token but ONLY retained A
+  const idMsgRetry = 'atomic6-retry-' + Date.now()
+  const rOK = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRetry, text: 'retry ok only retained', attachmentIds: [idA], continuationToken: tok }) })
+  assert.equal(rOK.status, 200, `retry same tok with A only → 200 accepted ${rOK.status} ${rOK.text}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgRetry, `A transferred to retry id ${idMsgRetry}`)
+  assert.equal(attachmentStore.get(idA).status, ATTACHMENT_STATUS.ATTACHED, `A ATTACHED`)
+})
+
+test('[ATOMIC 7 retry same failed token with retained A + new VALID fresh B → accepted 200 combined]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A7CONT'), bC = buildPdfBytes(128, 'C7CONT'), bB = buildPdfBytes(128, 'B7CONT')
+  const upA = await uploadBytes(bA, 'atomic7-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic7-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const idMsgStranger = 'atomic7-stranger-' + Date.now()
+  const upC = await uploadBytes(bC, 'atomic7-stranger-c.pdf', { declaredSize: bC.length, clientMessageId: idMsgStranger })
+  const idC = upC.json.id
+  attachmentStore.update(idC, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  coord.post({ clientMessageId: idMsgStranger, text: 'stranger own', attachmentIds: [idC] })
+  const idMsgBad = 'atomic7-bad-' + Date.now()
+  await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgBad, text: 'rogue', attachmentIds: [idA, idC], continuationToken: tok }) })
+  // Now RETRY: same token + retained A + NEW legit fresh B correctly owned by new retry id
+  const idMsgRetry = 'atomic7-retryboth-' + Date.now()
+  const upB = await uploadBytes(bB, 'atomic7-fresh-b.pdf', { declaredSize: bB.length, clientMessageId: idMsgRetry })
+  const idB = upB.json.id
+  attachmentStore.update(idB, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const rOK = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRetry, text: 'compare AB', attachmentIds: [idA, idB], continuationToken: tok }) })
+  assert.equal(rOK.status, 200, `retry A+B valid 200: ${rOK.status} ${rOK.text}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgRetry, `A owner retry new ok`)
+  assert.equal(attachmentStore.get(idB).ownerClientMessageId, idMsgRetry, `B owner fresh ok`)
+  assert.equal(attachmentStore.get(idA).status, ATTACHMENT_STATUS.ATTACHED)
+  assert.equal(attachmentStore.get(idB).status, ATTACHMENT_STATUS.ATTACHED)
+})
+
+test('[ATOMIC 8 idempotency CONFLICT discovered during continuation PREFLIGHT → does NOT consume continuation token or mutate retained A owner]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(128, 'A8CONT')
+  const upA = await uploadBytes(bA, 'atomic8-retained-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgRet = 'atomic8-ret-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgRet, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  assert.ok(tok)
+  // Pre-populate the SAME new id in idempotency cache with DIFFERENT content (creates a conflict)
+  const idConflict = 'atomic8-conflictnew-' + Date.now()
+  coord.post({ clientMessageId: idConflict, text: 'unrelated prior content', attachmentIds: [] })
+  // Now attempt: same id + retained token text different → preflight IDEMPOTENT_CONFLICT
+  const rConflict = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idConflict, text: 'different content with retained', attachmentIds: [idA], continuationToken: tok }) })
+  assert.equal(rConflict.status, 409, `409 IDEMPOTENT_CONFLICT: ${rConflict.status} ${rConflict.text}`)
+  assert.equal(rConflict.json.code, 'IDEMPOTENT_CONFLICT')
+  // ATOMIC GUARANTEE: token not consumed, retained owner not mutated
+  assert.ok(coord._continuationTokens.has(tok), `continuation token intact after preflight-conflict 409. present=${coord._continuationTokens.has(tok)}`)
+  const meta = coord._continuationTokens.get(tok)
+  assert.equal(meta && meta.consumed, false, `consumed === false`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgRet, `A retained owner unchanged after conflict: actual=${attachmentStore.get(idA).ownerClientMessageId}`)
+  // Normal retry after conflict: new id + same tok → accepted
+  const idOk = 'atomic8-ok-' + Date.now()
+  const rOk = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idOk, text: 'after conflict', attachmentIds: [idA], continuationToken: tok }) })
+  assert.equal(rOk.status, 200, `after conflict retry 200 ok: ${rOk.status} ${rOk.text}`)
+})
+
+test('[ATOMIC 9 GREEN: existing discard / subset-release / full continuation remain green]', async (t) => {
+  // Explicit discard
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(100, 'A9A'), bB = buildPdfBytes(100, 'A9B')
+  const upA = await uploadBytes(bA, 'atomic9-a.pdf', { declaredSize: bA.length })
+  const upB = await uploadBytes(bB, 'atomic9-b.pdf', { declaredSize: bB.length })
+  const idA = upA.json.id, idB = upB.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  attachmentStore.update(idB, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgDiscard = 'atomic9-discardsrc-' + Date.now()
+  const rDiscardSetup = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgDiscard, text: '', attachmentIds: [idA] }) })
+  const tokDiscard = rDiscardSetup.json.continuationToken
+  const tokD = tokDiscard
+  const rDiscard = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: 'atomic9-dodiscard-' + Date.now(), text: '', attachmentIds: [], continuationToken: tokD, continuationDiscard: true }) })
+  assert.equal(rDiscard.status, 200, `explicit discard 200: ${rDiscard.status} ${rDiscard.text}`)
+  assert.equal(rDiscard.json.continuationDiscardCompleted, true, `discard completed flag`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, null, `discard → owner cleared`)
+  // Subset release [A,B] declare only A → B released
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idMsgSubSrc = 'atomic9-subsrc-' + Date.now()
+  const rSubSetup = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgSubSrc, text: '', attachmentIds: [idA, idB] }) })
+  const tokSub = rSubSetup.json.continuationToken
+  const idMsgSubNew = 'atomic9-subnew-' + Date.now()
+  const rSub = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idMsgSubNew, text: 'summary subset', attachmentIds: [idA], continuationToken: tokSub }) })
+  assert.equal(rSub.status, 200, `subset 200 accepted ${rSub.status} ${rSub.text}`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idMsgSubNew, `A transferred`)
+  assert.equal(attachmentStore.get(idB).ownerClientMessageId, null, `B released subset owner cleared`)
+  // Full continuation all ids transfer using dedicated new uploads (fresh ids owned
+  // by the new declared source id — no conflict with earlier flow ids).
+  const bX = buildPdfBytes(100, 'A9X'), bY = buildPdfBytes(100, 'A9Y')
+  const upX = await uploadBytes(bX, 'atomic9-full-x.pdf', { declaredSize: bX.length })
+  const upY = await uploadBytes(bY, 'atomic9-full-y.pdf', { declaredSize: bY.length })
+  const idX = upX.json.id, idY = upY.json.id
+  attachmentStore.update(idX, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  attachmentStore.update(idY, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idFullSrc = 'atomic9-fullsrc-' + Date.now()
+  assert.ok(attachmentStore.claimOwner(idX, idFullSrc), `X claim source ok`)
+  assert.ok(attachmentStore.claimOwner(idY, idFullSrc), `Y claim source ok`)
+  const issuedFull = coord.issueContinuationToken({ scopeId: attachmentStore.scopeId, fromClientMessageId: idFullSrc, attachmentIds: [idX, idY] })
+  const idFull = 'atomic9-fullnew-' + Date.now()
+  const plan = coord.prepareContinuationToken({ token: issuedFull.token, scopeId: attachmentStore.scopeId, newClientMessageId: idFull, declaredAttachmentIds: [] })
+  assert.ok(plan && plan.ok, `full prepare ok. err=${plan && plan.error || 'none'}`)
+  const commit = coord.commitContinuationPlan(plan, { newClientMessageId: idFull })
+  assert.ok(commit && commit.ok, `full commit ok. err=${commit && commit.error || 'none'}`)
+  assert.equal(attachmentStore.get(idX).ownerClientMessageId, idFull, `full X transferred`)
+  assert.equal(attachmentStore.get(idY).ownerClientMessageId, idFull, `full Y transferred`)
+})
+
+test('[ATOMIC 10 GREEN: cross-scope rejected / conflict rebind unchanged after atomic]', async (t) => {
+  const { coord, attachmentStore, uploadBytes, request } = await startHarness(t)
+  const bA = buildPdfBytes(100, 'A10A')
+  const upA = await uploadBytes(bA, 'atomic10-a.pdf', { declaredSize: bA.length })
+  const idA = upA.json.id
+  attachmentStore.update(idA, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const idSrc = 'atomic10-src-' + Date.now()
+  const rRet = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: idSrc, text: '', attachmentIds: [idA] }) })
+  const tok = rRet.json.continuationToken
+  const cross = coord.consumeContinuationToken({ token: tok, scopeId: 'cross-scope-bad', newClientMessageId: 'atomic10-bad' })
+  assert.ok(cross && typeof cross.error === 'string', `cross-scope rejected`)
+  assert.equal(attachmentStore.get(idA).ownerClientMessageId, idSrc, `cross-scope owner preserved`)
+  // Rebind conflict flow with its own FRESH attachment owned by msgA (not idA).
+  const bX = buildPdfBytes(200, 'X10CONT')
+  const msgA = 'atomic10-A-' + Date.now()
+  const upX = await uploadBytes(bX, 'atomic10-rebind-x.pdf', { declaredSize: bX.length, clientMessageId: msgA })
+  assert.equal(upX.status, 201)
+  const X = upX.json.id
+  attachmentStore.update(X, { status: ATTACHMENT_STATUS.EXTRACTED, error: null, extract: { pageCount: 1 } })
+  const rA = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: msgA, text: 'old v1', attachmentIds: [X] }) })
+  assert.equal(rA.status, 200, `msgA accepted 200: ${rA.status} ${rA.text}`)
+  const rConfl = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: msgA, text: 'different v2', attachmentIds: [X] }) })
+  assert.equal(rConfl.status, 409, `409 conflict ${rConfl.status} ${rConfl.text}`)
+  assert.equal(rConfl.json.code, 'IDEMPOTENT_CONFLICT')
+  assert.ok(rConfl.json.rebindToken, `rebind token present: ${rConfl.json.rebindToken}`)
+  const msgB = 'atomic10-B-' + Date.now()
+  const rReb = await request('/niuma/v1/attachments/_rebind', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rebindToken: rConfl.json.rebindToken, newClientMessageId: msgB }) })
+  assert.equal(rReb.status, 200)
+  assert.ok(rReb.json.reboundIds.includes(X))
+  const rRetry = await request('/api/message', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientMessageId: msgB, text: 'v2 retry', attachmentIds: [X] }) })
+  assert.equal(rRetry.status, 200, `rebind retry green: ${rRetry.status} ${rRetry.text}`)
+  assert.equal(attachmentStore.get(X).ownerClientMessageId, msgB, `X owned by B after retry. actual=${attachmentStore.get(X).ownerClientMessageId}`)
 })
