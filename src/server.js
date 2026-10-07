@@ -128,8 +128,39 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
             status: row.status,
             pageCount: row.extract?.pageCount ?? null,
             durationSec: row.extract?.durationSec ?? null,
-            confirmedEdited: !!row.extract?.confirmedEdited,
+            originalTranscript: row.extract?.originalTranscript || '',
+            confirmedEdited: row.extract?.confirmedEdited || '',
             error: row.error || null,
+          })
+        }
+
+        // PATCH /niuma/v1/attachments/:id/transcript — persist server-confirmed edited transcript
+        if (req.method === 'PATCH' && /^\/([0-9a-f]{24})\/transcript$/.test(rest)) {
+          const id = rest.match(/^\/([0-9a-f]{24})\/transcript$/)[1]
+          const row = attStore.get(id)
+          if (!row) return json(res, 404, { ok: false, error: 'not found' })
+          if (!originOk(req) || !String(req.headers['content-type'] || '').startsWith('application/json')) {
+            return send(res, 403, 'Forbidden')
+          }
+          let patch = {}
+          try { patch = JSON.parse((await readBody(req, 1_000_000)) || '{}') } catch {
+            return send(res, 400, 'Bad JSON')
+          }
+          const confirmed = String(patch.confirmedEdited || '').trim()
+          const existing = row.extract || {}
+          attStore.update(id, {
+            extract: {
+              ...existing,
+              confirmedEdited: confirmed,
+              confirmedAt: Date.now(),
+            },
+          })
+          const refreshed = attStore.get(id)
+          return json(res, 200, {
+            ok: true,
+            id: refreshed.id,
+            originalTranscript: refreshed.extract?.originalTranscript || '',
+            confirmedEdited: refreshed.extract?.confirmedEdited || '',
           })
         }
 
@@ -155,6 +186,25 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
         return
       }
       if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, coord.snapshot())
+      if (req.method === 'GET' && url.pathname === '/api/config') {
+        const vcRaw = typeof coord.configVisionCapability === 'function' ? coord.configVisionCapability() : null
+        const tcRaw = typeof coord.configTranscription === 'function' ? coord.configTranscription() : null
+        const vc = vcRaw && typeof vcRaw === 'object' ? vcRaw : { visionCapableAdapterIds: [] }
+        const tc = tcRaw && typeof tcRaw === 'object' ? tcRaw : { provider: 'disabled', enabled: false }
+        return json(res, 200, {
+          ok: true,
+          vision: { visionCapableAdapterIds: Array.isArray(vc.visionCapableAdapterIds) ? vc.visionCapableAdapterIds.filter((x) => typeof x === 'string') : [] },
+          transcription: {
+            provider: typeof tc.provider === 'string' ? tc.provider : 'disabled',
+            enabled: Boolean(tc.enabled),
+          },
+          limits: {
+            maxAttachmentsPerMessage: LIMITS.maxAttachmentsPerMessage,
+            maxTotalBytes: LIMITS.maxTotalBytes,
+            perKind: LIMITS.perKind,
+          },
+        })
+      }
 
       // 「接入员工」会装软件、开终端、写配置：只给本机用，局域网里的手机不行。
       if (url.pathname.startsWith('/api/setup')) {
@@ -195,15 +245,29 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
         }
         if (url.pathname === '/api/message') {
           const text = String(body.text || '').trim()
-          const attachmentIds = Array.isArray(body.attachmentIds) ? body.attachmentIds : []
+          const attachmentIds = Array.isArray(body.attachmentIds) ? body.attachmentIds.map((x) => String(x || '').trim()).filter(Boolean) : []
           const clientMessageId = body.clientMessageId ? String(body.clientMessageId).trim() || null : null
-          if (!text && !attachmentIds.length) return send(res, 400, 'Empty message')
-          if (attachmentIds.length || clientMessageId) {
-            coord.post({ text, clientMessageId, attachmentIds })
-          } else {
-            coord.post(text)
+          if (!text && !attachmentIds.length) {
+            return json(res, 400, { ok: false, error: 'Empty message', code: 'EMPTY_MESSAGE' })
           }
-          return json(res, 200, { ok: true })
+          if (attachmentIds.length) {
+            const invalid = coord.validateAttachmentIds?.(attachmentIds, clientMessageId)
+            if (invalid) {
+              return json(res, 400, { ok: false, error: invalid, code: 'ATTACHMENT_INVALID' })
+            }
+          }
+          const postResult = coord.post({ text, clientMessageId, attachmentIds })
+          if (postResult && postResult.ok === false) {
+            const status = postResult.code === 'IDEMPOTENT_CONFLICT' ? 409 : 400
+            return json(res, status, postResult)
+          }
+          if (postResult && postResult.cached) {
+            return json(res, 200, { ok: true, idempotent: true, accepted: postResult.accepted })
+          }
+          const out = { ok: true, accepted: true }
+          if (postResult && postResult.idempotent) out.idempotent = true
+          if (postResult && postResult.noIntent) out.noIntent = true
+          return json(res, 200, out)
         }
         if (url.pathname === '/api/stop') {
           coord.stop()
@@ -293,6 +357,20 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
   const ct = String(req.headers['content-type'] || '')
   if (!ct.startsWith('multipart/form-data')) return send(res, 400, 'multipart/form-data required')
 
+  // Attach data listeners synchronously BEFORE any await (including the
+  // busboy dynamic import below) so any bytes that arrive on this
+  // request stream are captured instead of being silently dropped.
+  let drainedResolve, drainedReject
+  const drainedPromise = new Promise((resolve, reject) => {
+    drainedResolve = resolve
+    drainedReject = reject
+    const chunks = []
+    let total = 0
+    req.on('data', (c) => { chunks.push(c); total += c.length })
+    req.on('end', () => drainedResolve(Buffer.concat(chunks)))
+    req.on('error', reject)
+  })
+
   let busboyFactory
   try {
     busboyFactory = await loadBusboy()
@@ -300,9 +378,17 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
     return json(res, 500, { ok: false, error: `附件上传组件加载失败：${e.message}` })
   }
 
+  const drained = await drainedPromise
+  const Readable = (await import('node:stream')).Readable
+  const src = Readable.from(drained, { objectMode: false })
+  const fakeHeaders = {
+    'content-type': ct,
+    'content-length': req.headers['content-length'] || String(drained.length),
+  }
+
   let bb
   try {
-    bb = busboyFactory({ headers: req.headers, limits: { files: 1, fields: 4 } })
+    bb = busboyFactory({ headers: fakeHeaders, limits: { files: 1, fields: 4 } })
   } catch (e) {
     return json(res, 400, { ok: false, error: e.message })
   }
@@ -314,17 +400,18 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
   let kind = null
   let writeStream = null
   let finished = false
-  let firstChunkDone = false
-  let firstChunk = Buffer.alloc(0)
+  let firstBuf = Buffer.alloc(0)
+  let preflightDone = false
   let declaredFilename = ''
   let declaredMime = ''
   let declaredSize = null
+  let abortedCleanupDone = false
   let sendError = (code, msg) => {
     if (finished) return
     finished = true
     if (writeStream) { try { writeStream.destroy() } catch {} }
-    req.unpipe?.(bb)
-    try { req.destroy() } catch {}
+    try { src.unpipe?.(bb) } catch {}
+    try { src.destroy() } catch {}
     if (reserved) {
       try { fs.unlinkSync(reserved.tmpPath) } catch {}
       if (row && row.id) {
@@ -371,38 +458,53 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
 
     let cap = LIMITS.perKind[ATTACHMENT_KIND.UNKNOWN].maxBytes
 
+    function runPreflightAndOpenStream() {
+      if (preflightDone) return true
+      if (firstBuf.length < 16) return false
+      preflightDone = true
+      const headerSlice = firstBuf.slice(0, 4096)
+      let pf
+      try {
+        pf = assertPreflight({ perMessageCounts: countForSlot(attStore, clientMessageId), declaredSize, declaredMime, filename: declaredFilename, firstChunk: headerSlice })
+      } catch (e) {
+        sendError(400, e.message || 'preflight 失败')
+        return false
+      }
+      kind = pf.kind
+      const { mime } = classify(headerSlice, declaredMime, declaredFilename)
+      attStore.update(row.id, { kind, mimeType: mime })
+      cap = byteLimitForKind(kind)
+      if (declaredSize != null && declaredSize > cap) {
+        sendError(400, `该类型单文件最大 ${Math.round(cap / 1024 / 1024)} MB`)
+        return false
+      }
+      try {
+        fs.mkdirSync(path.dirname(reserved.tmpPath), { recursive: true })
+        writeStream = fs.createWriteStream(reserved.tmpPath)
+        writeStream.on('error', () => sendError(500, '写入失败'))
+      } catch (e) {
+        sendError(500, e.message)
+        return false
+      }
+      if (firstBuf.length && writeStream && !writeStream.destroyed) {
+        writeStream.write(firstBuf)
+        written = firstBuf.length
+      }
+      firstBuf = null
+      return true
+    }
+
     stream.on('data', (chunk) => {
       if (finished) return
-      if (!firstChunkDone) {
-        firstChunk = Buffer.concat([firstChunk, chunk]).slice(0, 4096)
-        if (firstChunk.length >= 16) {
-          firstChunkDone = true
-          try {
-            const pf = assertPreflight({ perMessageCounts: counts, declaredSize, declaredMime, filename: declaredFilename, firstChunk })
-            kind = pf.kind
-            const { mime } = classify(firstChunk, declaredMime, declaredFilename)
-            attStore.update(row.id, { kind, mimeType: mime })
-            cap = byteLimitForKind(kind)
-            if (declaredSize != null && declaredSize > cap) {
-              sendError(400, `该类型单文件最大 ${Math.round(cap / 1024 / 1024)} MB`)
-              return
-            }
-            try {
-              fs.mkdirSync(path.dirname(reserved.tmpPath), { recursive: true })
-              writeStream = fs.createWriteStream(reserved.tmpPath)
-              writeStream.on('error', () => sendError(500, '写入失败'))
-            } catch (e) {
-              sendError(500, e.message)
-              return
-            }
-          } catch (e) {
-            sendError(400, e.message)
-            return
+      if (!preflightDone) {
+        firstBuf = Buffer.concat([firstBuf, chunk])
+        if (firstBuf.length >= 16) {
+          if (!runPreflightAndOpenStream()) return
+          if (firstBuf && firstBuf.length) {
+            // If firstBuf > 4096 the full buffer was NOT yet written. Write now the remainder (runPreflight already wrote full firstBuf above actually, safe ok)
           }
-          if (firstChunk.length && writeStream && !writeStream.destroyed) writeStream.write(firstChunk)
-          written = firstChunk.length
-          return
         }
+        return
       }
       written += chunk.length
       if (written > cap) { sendError(413, `文件超过 ${Math.round(cap / 1024 / 1024)} MB 上限`); return }
@@ -414,21 +516,8 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
 
     stream.on('end', () => {
       if (finished) return
-      if (!firstChunkDone && firstChunk.length > 0) {
-        try {
-          const counts2 = countForSlot(attStore, clientMessageId)
-          const pf = assertPreflight({ perMessageCounts: counts2, declaredSize, declaredMime, filename: declaredFilename, firstChunk })
-          kind = pf.kind
-          const { mime } = classify(firstChunk, declaredMime, declaredFilename)
-          attStore.update(row.id, { kind, mimeType: mime })
-          cap = byteLimitForKind(kind)
-          fs.mkdirSync(path.dirname(reserved.tmpPath), { recursive: true })
-          writeStream = fs.createWriteStream(reserved.tmpPath)
-          writeStream.write(firstChunk)
-        } catch (e) {
-          sendError(400, e.message)
-          return
-        }
+      if (!preflightDone && firstBuf && firstBuf.length > 0) {
+        if (!runPreflightAndOpenStream()) return
       }
       if (!writeStream) { sendError(400, '空文件或文件过小'); return }
       if (written === 0) { sendError(400, '空文件'); return }
@@ -473,7 +562,7 @@ async function handleAttachmentUpload(req, res, coord, attStore, { json, send, o
     finished = true
   })
 
-  req.pipe(bb)
+  src.pipe(bb)
 }
 
 function countForSlot(attStore, clientMessageId) {

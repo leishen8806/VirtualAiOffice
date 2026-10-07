@@ -24,6 +24,8 @@ import { Team } from './team.js'
 import { extractJson, firstLine, projectContext, sleep, truncate } from './util.js'
 import { ATTACHMENT_KIND, ATTACHMENT_STATUS } from './attachments/types.js'
 import { LIMITS } from './attachments/limits.js'
+import { transcribeAudioBuffer } from './attachments/parse/audio.js'
+import crypto from 'node:crypto'
 
 const BAD = new Set(['failed', 'skipped', 'cancelled'])
 const DIFFS = new Set(['hard', 'medium', 'easy'])
@@ -281,6 +283,26 @@ export class Coordinator extends EventEmitter {
     }
   }
 
+  /** Safe /api/config exposure — never leak API keys, only boolean capability shapes. */
+  configVisionCapability() {
+    const visionCapableAdapterIds = []
+    for (const g of this.team.groups.values()) {
+      try {
+        if (typeof g.supportsVision === 'function' && g.supportsVision()) {
+          if (g.id) visionCapableAdapterIds.push(String(g.id))
+        }
+      } catch {}
+    }
+    return { visionCapableAdapterIds }
+  }
+
+  configTranscription() {
+    const raw = this.config?.transcription || {}
+    const provider = typeof raw.provider === 'string' ? raw.provider : 'disabled'
+    const enabled = provider && provider !== 'disabled' && provider !== ''
+    return { provider, enabled: Boolean(enabled) }
+  }
+
   // ---- events ----------------------------------------------------------------
 
   emitEvent(ev) {
@@ -344,10 +366,21 @@ export class Coordinator extends EventEmitter {
     return on[0] || null
   }
 
-  async think(prompt, label) {
+  async think(prompt, label, { images = [] } = {}) {
     const g = this.brain()
     if (!g) throw new Error('没有可用的项目组')
-    return g.ask(prompt, { model: this.config.brainModel || g.modelFor('medium'), label })
+    const opts = { model: this.config.brainModel || g.modelFor('medium'), label }
+    if (Array.isArray(images) && images.length > 0) {
+      if (typeof g.supportsVision !== 'function' || !g.supportsVision()) {
+        // Explicit unsupported result: do not silently discard / switch provider / claim understanding
+        throw Object.assign(new Error('当前选择的执行路由不支持视觉能力，已明确拒绝处理，图片未被理解。请在配置中启用视觉能力的项目组。'), {
+          code: 'VISION_UNSUPPORTED',
+          routeId: g.id,
+        })
+      }
+      opts.images = images
+    }
+    return g.ask(prompt, opts)
   }
 
   // ---- inbox -------------------------------------------------------------------
@@ -380,37 +413,44 @@ export class Coordinator extends EventEmitter {
         attachmentIds: Array.isArray(input.attachmentIds) ? input.attachmentIds.map((x) => String(x || '').trim()).filter(Boolean) : [],
       }
     } else {
-      return
+      return { ok: false, error: 'bad input' }
     }
     const { clientMessageId, text, attachmentIds } = envelope
 
+    const envelopeSignature = JSON.stringify({ t: text, a: attachmentIds.slice().sort() })
+
     // ---- idempotency: dedupe duplicate clientMessageId within recent window ----
     if (clientMessageId) {
-      if (this._idempotencyCache.has(clientMessageId)) {
-        // Exact duplicate submission - treat as no-op ack. Do not double-enqueue.
-        this.addMessage('system', `已收到重复请求，跳过：${truncate(text || `附件×${attachmentIds.length}`, 30)} (id=${clientMessageId.slice(0, 10)})`)
-        return
-      }
-      this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope })
-      // LRU evict oldest when over max to keep memory bounded.
-      if (this._idempotencyCache.size > this.IDEMPOTENCY_CACHE_MAX) {
-        const firstKey = this._idempotencyCache.keys().next().value
-        if (firstKey) this._idempotencyCache.delete(firstKey)
+      const cached = this._idempotencyCache.get(clientMessageId)
+      if (cached) {
+        const cachedSig = JSON.stringify({ t: cached.envelope.text || '', a: (cached.envelope.attachmentIds || []).slice().sort() })
+        if (cachedSig === envelopeSignature) {
+          // EXACT identical retry → return original acceptance as no-op ack
+          this.addMessage('system', `已收到重复请求，跳过：${truncate(text || `附件×${attachmentIds.length}`, 30)} (id=${clientMessageId.slice(0, 10)})`)
+          return { ok: true, cached: true, idempotent: true, accepted: cached.accepted || true }
+        }
+        // Same id BUT DIFFERENT content → explicit 409 conflict reject
+        return { ok: false, code: 'IDEMPOTENT_CONFLICT', error: '同一 clientMessageId 被用于不同的消息内容，请使用新的 id' }
       }
     }
 
     const bare = text || ''
-    if (!bare && !attachmentIds.length) return
+    if (!bare && !attachmentIds.length) {
+      return { ok: false, code: 'EMPTY_MESSAGE', error: 'Empty message' }
+    }
 
     if (parseCommand(bare, this.team)?.type === 'stop') {
       this.addMessage('user', bare)
       this.stop()
-      return
+      const ret = { ok: true, accepted: true }
+      if (clientMessageId) this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted: true })
+      return ret
     }
     const validationError = this.validateAttachmentIds(attachmentIds, clientMessageId)
     if (validationError) {
+      // Do NOT cache a failed validation as accepted
       this.addMessage('shaniu', `附件校验失败：${validationError}`)
-      return
+      return { ok: false, code: 'ATTACHMENT_INVALID', error: validationError }
     }
     // Mark validated ids as ATTACHED so the cleanup daemon won't reap them
     if (this.attachmentStore) {
@@ -422,10 +462,34 @@ export class Coordinator extends EventEmitter {
         }
       }
     }
+
+    // ---- R5 program-level NO-INTENT gate for attachment-only messages ---------
+    // Even if planner returns tasks inside a string: DO NOT ENTER DRAIN / makePlan
+    if (!bare && attachmentIds.length > 0) {
+      const attList = (attachmentIds || []).map((id) => {
+        const r = this.attachmentStore?.get(id)
+        return r?.sanitizedName || id.slice(0, 8)
+      }).join('，')
+      this.addMessage('user', attachmentIds.length ? `[附件 ${attachmentIds.length} 个]` : '')
+      this.addMessage('shaniu', `已收到附件：${attList}。可以告诉我：要整理、翻译、总结，还是把内容读出来再继续？（任务执行已暂停，等你说明意图。）`)
+      const accepted = true
+      if (clientMessageId) this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted })
+      return { ok: true, accepted, noIntent: true }
+    }
+
     const msg = { clientMessageId, text, attachmentIds }
     this.queue.push(msg)
+    const accepted = true
+    if (clientMessageId) {
+      this._idempotencyCache.set(clientMessageId, { at: Date.now(), envelope, accepted })
+      if (this._idempotencyCache.size > this.IDEMPOTENCY_CACHE_MAX) {
+        const firstKey = this._idempotencyCache.keys().next().value
+        if (firstKey) this._idempotencyCache.delete(firstKey)
+      }
+    }
     if (this.busy) this.addMessage('system', `已记下，等手上这轮忙完就处理：${truncate(bare || `附件×${attachmentIds.length}`, 40)}`)
     else this.drain()
+    return { ok: true, accepted }
   }
 
   /**
@@ -605,11 +669,35 @@ export class Coordinator extends EventEmitter {
       const context = await projectContext(this.workdir)
       const assembled = this.assembleModelBoundary(envelope)
       const userTextForModel = assembled.prompt
+      const visionImages = (assembled.images || []).slice().filter(Boolean)
       const prompt = plannerPrompt({ userText: userTextForModel, team: this.team, stats: this.stats, context, history: this.history })
-      let raw = await this.think(prompt, `plan-r${this.round + 1}`)
+      let raw
+      try {
+        raw = await this.think(prompt, `plan-r${this.round + 1}`, { images: visionImages })
+      } catch (e) {
+        if (e && e.code === 'VISION_UNSUPPORTED') {
+          return {
+            reply: String(e.message || '视觉能力不可用') + '（本次图片不会被送入任何模型，建议切换支持视觉的项目组或把图片中的内容以文字方式粘贴描述后重试。）',
+            tasks: [],
+          }
+        }
+        throw e
+      }
       let obj = extractJson(raw)
       if ((!obj || typeof obj !== 'object') && !this.stopFlag) {
-        raw = await this.think(`${prompt}\n\n（上一次你没有按格式输出。这次只输出那个 JSON 对象，别的什么都不要写。）`, `plan-r${this.round + 1}-retry`)
+        let retryRaw
+        try {
+          retryRaw = await this.think(`${prompt}\n\n（上一次你没有按格式输出。这次只输出那个 JSON 对象，别的什么都不要写。）`, `plan-r${this.round + 1}-retry`, { images: visionImages })
+        } catch (e) {
+          if (e && e.code === 'VISION_UNSUPPORTED') {
+            return {
+              reply: String(e.message || '视觉能力不可用') + '（本次图片不会被送入任何模型，建议切换支持视觉的项目组。）',
+              tasks: [],
+            }
+          }
+          throw e
+        }
+        raw = retryRaw
         obj = extractJson(raw)
       }
       if (!obj || typeof obj !== 'object') return { reply: truncate(raw.trim(), 2000) || '唔……办公室协调器暂时无法判断，主人能再说具体一点吗？', tasks: [] }
@@ -636,7 +724,7 @@ export class Coordinator extends EventEmitter {
    *             transcript field.
    *
    * @param {{clientMessageId?:string, text:string, attachmentIds:string[]}} envelope
-   * @returns {{ prompt:string, images:string[], attachmentsMeta:Array<object> }}
+   * @returns {{ prompt:string, images:Array<{mime:string, base64:string}>, attachmentsMeta:Array<object> }}
    */
   assembleModelBoundary(envelope) {
     const attachmentIds = envelope.attachmentIds || []
@@ -644,7 +732,6 @@ export class Coordinator extends EventEmitter {
     const bare = String(envelope.text || '').trim()
     const promptParts = [bare]
     if (!bare && rows.length) {
-      // No task instruction provided. Ask what to do with it. Do not auto start coding or execution.
       promptParts.push('用户只上传了附件，未提供任务指令。请问主人要让我用这些附件做什么？（不要自动开始编码、执行或生成计划，等待主人说明意图。）No task instruction provided. Ask what to do with these attachments; do not auto start coding or execution.')
     }
     const images = []
@@ -679,15 +766,37 @@ export class Coordinator extends EventEmitter {
         }
         case ATTACHMENT_KIND.IMAGE: {
           promptParts.push(`\n\n[att#${N} image: ${row.sanitizedName}]`)
-          if (ex.dataUrl) images.push(ex.dataUrl)
+          try {
+            if (row.storagePath && fs.existsSync(row.storagePath)) {
+              const buf = fs.readFileSync(row.storagePath)
+              if (buf && buf.length) {
+                const mime = row.mimeType || 'image/png'
+                const b64 = buf.toString('base64')
+                images.push({ mime, base64: b64, dataUrl: `data:${mime};base64,${b64}` })
+              }
+            } else if (ex.dataUrl) {
+              const comma = String(ex.dataUrl).indexOf(',')
+              const head = String(ex.dataUrl).slice(0, comma)
+              const mimeMatch = /^data:([^;]+);base64$/.exec(head || '')
+              const mime = mimeMatch ? mimeMatch[1] : (row.mimeType || 'image/png')
+              const b64 = comma >= 0 ? String(ex.dataUrl).slice(comma + 1) : String(ex.dataUrl)
+              images.push({ mime, base64: b64, dataUrl: ex.dataUrl })
+            }
+          } catch (e) {
+            promptParts.push(`（图片读取失败，未送入模型：${e.message || 'unknown'}）`)
+          }
           break
         }
         case ATTACHMENT_KIND.AUDIO: {
           const dur = ex.durationSec ? ` (${Math.floor(ex.durationSec / 60)}分${ex.durationSec % 60}秒)` : ''
-          if (ex.confirmedEdited && String(ex.confirmedEdited).trim()) {
-            promptParts.push(`\n\n[att#${N} audio transcript${dur}: ${row.sanitizedName}]\n${String(ex.confirmedEdited).trim()}`)
+          const originalTranscript = ex.originalTranscript || ex.transcript || ''
+          const confirmed = String(ex.confirmedEdited || '').trim()
+          if (confirmed) {
+            promptParts.push(`\n\n[att#${N} audio transcript${dur}: ${row.sanitizedName}]\n${confirmed}`)
+          } else if (originalTranscript) {
+            promptParts.push(`\n\n[att#${N} audio${dur}: ${row.sanitizedName}] 原始转写已产生，但尚未获得人工确认；当前仅展示占位符：请点击附件并明确确认转写内容后重试。`)
           } else {
-            promptParts.push(`\n\n[att#${N} audio${dur}: ${row.sanitizedName}] 该音频尚未产生人工确认过的文字稿，请主人先点击附件播放并确认文字稿后再发给员工；或自行听一遍口述内容。`)
+            promptParts.push(`\n\n[att#${N} audio${dur}: ${row.sanitizedName}] 该音频尚未产生人工确认过的文字稿，请主人先点击附件播放、确认转写文字后再发送；或自行听一遍口述内容。`)
           }
           break
         }

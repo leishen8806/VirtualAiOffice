@@ -866,11 +866,24 @@
     es.onmessage = (e) => handle(JSON.parse(e.data))
     es.onopen = () => setConn(state.mode === 'fake' ? 'fake' : 'live')
     es.onerror = () => setConn('off')
-    const post = async (url, body) => {
+    const post = async (url, body, { expectJson = false } = {}) => {
       const r = await fetch(url + q, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Niuma-Token': token }, body: JSON.stringify(body) })
-      if (!r.ok) throw new Error(`${r.status} ${await r.text()}`)
+      const text = await r.text()
+      const type = r.headers.get('content-type') || ''
+      let json = undefined
+      if (text && type.includes('application/json')) {
+        try { json = JSON.parse(text) } catch { /* non-json plain text error */ }
+      }
+      if (!r.ok) {
+        const err = new Error(`${r.status} ${text || ''}`)
+        err.status = r.status
+        err.body = json || text
+        if (json && typeof json.code === 'string') err.code = json.code
+        throw err
+      }
+      if (expectJson) return json
+      return json || { ok: true }
     }
-    // 「接入员工」面板用：GET 不带 body，POST 带 JSON，都返回 JSON。
     const request = async (method, url, body) => {
       const r = await fetch(url + q, {
         method,
@@ -880,9 +893,31 @@
       })
       const type = r.headers.get('content-type') || ''
       if (type.includes('application/json')) return r.json()
-      throw new Error(`${r.status} ${await r.text()}`)
+      const text = await r.text()
+      if (!r.ok) throw new Error(`${r.status} ${text}`)
+      return text
     }
-    return { send: (text) => post('/api/message', { text }), stop: () => post('/api/stop', {}), request }
+    // ----- SINGLE NORMALIZATION BOUNDARY -----
+    // Legacy callers still pass a plain string. Envelope-aware callers pass the
+    // full { clientMessageId, text, attachmentIds } triple. Normalize HERE ONLY.
+    const send = (arg) => {
+      let env
+      if (typeof arg === 'string') {
+        env = { text: arg }
+      } else if (arg && typeof arg === 'object') {
+        env = {
+          clientMessageId: arg.clientMessageId ? String(arg.clientMessageId) : undefined,
+          text: typeof arg.text === 'string' ? arg.text : '',
+        }
+        if (Array.isArray(arg.attachmentIds)) {
+          env.attachmentIds = arg.attachmentIds.map((x) => String(x || '')).filter(Boolean)
+        }
+      } else {
+        env = { text: '' }
+      }
+      return post('/api/message', env, { expectJson: true })
+    }
+    return { send, stop: () => post('/api/stop', {}), request }
   }
 
   async function detectServer(token) {
@@ -901,13 +936,36 @@
 
   // ---- composer --------------------------------------------------------------
 
-  async function send(text) {
-    text = text.trim()
-    if (!text || !transport) return
+  // Accepts either a legacy plain-text string OR the canonical envelope object.
+  // Returns the server result so the composer (which owns the draft + caret +
+  // attachments state) can decide whether to clear or retain.
+  async function send(arg) {
+    const isPlainString = typeof arg === 'string'
+    const textOnly = isPlainString ? String(arg).trim() : ''
+    if (isPlainString && !textOnly) return undefined
+    if (!transport) {
+      const msg = isPlainString ? textOnly : (arg?.text || '')
+      if (isPlainString || msg) handle({ type: 'message', message: { role: 'system', text: '未连接到服务，消息未发出。', ts: Date.now() } })
+      return undefined
+    }
     try {
-      await transport.send(text)
+      const res = await transport.send(arg)
+      if (!res) return { ok: true }
+      if (res.ok === false) {
+        // Return explicit failure to the composer so draft + attachments are kept.
+        // Also render a system message for legacy plain-text senders.
+        if (isPlainString) {
+          handle({ type: 'message', message: { role: 'system', text: `没发出去：${res.error || res.code || 'unknown'}`, ts: Date.now() } })
+        }
+      }
+      return res || { ok: true }
     } catch (e) {
-      handle({ type: 'message', message: { role: 'system', text: `没发出去：${e.message}`, ts: Date.now() } })
+      const body = e && e.body ? (typeof e.body === 'string' ? e.body : (e.body.error || e.body.code || '')) : ''
+      const outMsg = isPlainString ? `没发出去：${e.message || ''}${body ? ' — ' + body : ''}` : undefined
+      if (outMsg) handle({ type: 'message', message: { role: 'system', text: outMsg, ts: Date.now() } })
+      const fail = { ok: false, error: e.message || String(e), status: e.status || 0 }
+      if (e && e.code) fail.code = e.code
+      return fail
     }
   }
 

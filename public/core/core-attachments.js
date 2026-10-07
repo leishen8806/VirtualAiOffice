@@ -133,19 +133,19 @@
     head.appendChild(meta)
     const actions = el('div', { class: 'attach-actions' })
     if (att.uploadStatus === UPLOAD_STATUS.UPLOADING) {
-      const cancel = el('button', { class: 'attach-btn', title: '取消上传', 'aria-label': '取消上传', onClick: (e) => { e.stopPropagation(); ctx.onCancel?.(att) } }, '✕')
+      const cancel = el('button', { type: 'button', class: 'attach-btn', title: '取消上传', 'aria-label': '取消上传', onClick: (e) => { e.stopPropagation(); ctx.onCancel?.(att) } }, '✕')
       actions.appendChild(cancel)
     } else if (att.uploadStatus === UPLOAD_STATUS.UPLOAD_FAILED || att.processingStatus === PROCESSING_STATUS.EXTRACT_FAILED) {
-      const retry = el('button', { class: 'attach-btn', title: '重试', 'aria-label': '重试', onClick: (e) => { e.stopPropagation(); ctx.onRetry?.(att) } }, '↻')
-      const remove = el('button', { class: 'attach-btn', title: '移除', 'aria-label': '移除', onClick: (e) => { e.stopPropagation(); ctx.onRemove?.(att) } }, '✕')
+      const retry = el('button', { type: 'button', class: 'attach-btn', title: '重试', 'aria-label': '重试', onClick: (e) => { e.stopPropagation(); ctx.onRetry?.(att) } }, '↻')
+      const remove = el('button', { type: 'button', class: 'attach-btn', title: '移除', 'aria-label': '移除', onClick: (e) => { e.stopPropagation(); ctx.onRemove?.(att) } }, '✕')
       actions.appendChild(retry)
       actions.appendChild(remove)
     } else {
       if (att.kind === ATTACH_KIND.DOC || att.kind === ATTACH_KIND.IMAGE) {
-        const preview = el('button', { class: 'attach-btn', title: '预览', 'aria-label': '预览', onClick: (e) => { e.stopPropagation(); ctx.onPreview?.(att) } }, '👁')
+        const preview = el('button', { type: 'button', class: 'attach-btn', title: '预览', 'aria-label': '预览', onClick: (e) => { e.stopPropagation(); ctx.onPreview?.(att) } }, '👁')
         actions.appendChild(preview)
       }
-      const remove = el('button', { class: 'attach-btn', title: '移除', 'aria-label': '移除', onClick: (e) => { e.stopPropagation(); ctx.onRemove?.(att) } }, '✕')
+      const remove = el('button', { type: 'button', class: 'attach-btn', title: '移除', 'aria-label': '移除', onClick: (e) => { e.stopPropagation(); ctx.onRemove?.(att) } }, '✕')
       actions.appendChild(remove)
     }
     head.appendChild(actions)
@@ -334,6 +334,166 @@
     return ''
   }
 
+  let _serverConfig = null
+  let _serverConfigPromise = null
+  function getServerConfig() {
+    return _serverConfig || null
+  }
+  async function loadServerConfig({ force = false } = {}) {
+    if (!force && _serverConfig) return _serverConfig
+    if (!force && _serverConfigPromise) return _serverConfigPromise
+    _serverConfigPromise = (async () => {
+      try {
+        const r = await fetch('/api/config', { cache: 'no-store' })
+        if (r.ok) {
+          const data = await r.json()
+          _serverConfig = data && data.ok ? data : null
+        }
+      } catch {
+        _serverConfig = null
+      }
+      return _serverConfig
+    })()
+    try {
+      const out = await _serverConfigPromise
+      return out
+    } finally {
+      _serverConfigPromise = null
+    }
+  }
+
+  function tokenFromLocation() {
+    try {
+      const s = new URLSearchParams(location.search)
+      return s.get('token') || ''
+    } catch { return '' }
+  }
+
+  function attachmentAuthHeaders() {
+    const h = {}
+    const t = tokenFromLocation()
+    if (t) h['X-Niuma-Token'] = t
+    return h
+  }
+
+  async function uploadAttachment(att, { clientMessageId = null, onProgress } = {}) {
+    if (!att || !att.file) { throw new Error('missing file') }
+    att.uploadStatus = UPLOAD_STATUS.UPLOADING
+    att.uploadProgress = 0
+    const ac = new AbortController()
+    att.abortController = ac
+    const fd = new FormData()
+    fd.append('file', att.file, att.name || ('upload-' + Date.now()))
+    if (clientMessageId) fd.append('clientMessageId', String(clientMessageId))
+    if (typeof att.size === 'number') fd.append('declaredSize', String(att.size))
+
+    const xhr = (typeof XMLHttpRequest !== 'undefined') ? new XMLHttpRequest() : null
+    let finished = false
+    try {
+      if (xhr && typeof onProgress === 'function') {
+        const out = await new Promise((resolve, reject) => {
+          xhr.open('POST', '/niuma/v1/attachments', true)
+          const token = tokenFromLocation()
+          if (token) xhr.setRequestHeader('X-Niuma-Token', token)
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.max(0, Math.min(100, Math.round((e.loaded / e.total) * 100)))
+              att.uploadProgress = pct
+              onProgress(pct, att)
+            }
+          }
+          xhr.onload = () => {
+            if (finished) return
+            finished = true
+            try {
+              let data = {}
+              try { data = JSON.parse(xhr.responseText || '{}') } catch {}
+              if (xhr.status >= 200 && xhr.status < 300 && data && data.ok === true) resolve(data)
+              else reject(new Error((data && data.error) || `HTTP ${xhr.status}`))
+            } catch (e) { reject(e) }
+          }
+          xhr.onerror = () => { if (!finished) { finished = true; reject(new Error('network')) } }
+          xhr.onabort = () => { if (!finished) { finished = true; const err = new Error('cancel'); err.code = 'CANCELLED'; reject(err) } }
+          ac.signal.addEventListener?.('abort', () => { try { xhr.abort() } catch {} })
+          xhr.send(fd)
+        })
+        att.serverId = String(out.id || '')
+        att.uploadStatus = UPLOAD_STATUS.UPLOADED
+        att.uploadProgress = 100
+        att.error = null
+        return out
+      }
+      const r = await fetch('/niuma/v1/attachments', {
+        method: 'POST',
+        headers: attachmentAuthHeaders(),
+        body: fd,
+        signal: ac.signal,
+      })
+      let data = {}
+      try { data = await r.json() } catch {}
+      if (!(r.ok && data && data.ok === true)) throw new Error((data && data.error) || `HTTP ${r.status}`)
+      att.serverId = String(data.id || '')
+      att.uploadStatus = UPLOAD_STATUS.UPLOADED
+      att.uploadProgress = 100
+      att.error = null
+      return data
+    } catch (e) {
+      if (finished) throw e
+      finished = true
+      if (e && (e.code === 'CANCELLED' || e.name === 'AbortError')) {
+        att.uploadStatus = UPLOAD_STATUS.CANCELLED
+        att.error = null
+      } else {
+        att.uploadStatus = UPLOAD_STATUS.UPLOAD_FAILED
+        att.error = e && e.message ? e.message : '上传失败'
+      }
+      throw e
+    }
+  }
+
+  async function fetchAttachmentMeta(attOrId) {
+    const id = (attOrId && typeof attOrId === 'object') ? (attOrId.serverId || attOrId.id) : String(attOrId || '')
+    if (!/^[0-9a-f]{24}$/.test(id)) return null
+    const r = await fetch(`/niuma/v1/attachments/${id}/preview/meta`, {
+      headers: attachmentAuthHeaders(),
+      cache: 'no-store',
+    })
+    if (!r.ok) return null
+    return r.json()
+  }
+
+  async function confirmTranscriptServer(attOrId, confirmedText) {
+    const id = (attOrId && typeof attOrId === 'object') ? (attOrId.serverId || attOrId.id) : String(attOrId || '')
+    if (!/^[0-9a-f]{24}$/.test(id)) throw new Error('bad id')
+    const r = await fetch(`/niuma/v1/attachments/${id}/transcript`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...attachmentAuthHeaders(),
+      },
+      body: JSON.stringify({ confirmedEdited: String(confirmedText || '').trim() }),
+    })
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`
+      try { const d = await r.json(); if (d && d.error) msg = d.error } catch {}
+      throw new Error(msg)
+    }
+    return r.json()
+  }
+
+  // ---- Override: capability checks prefer server /api/config truth; fall back to legacy globals only if not present ----
+  function isTranscriptionConfigured() {
+    const sc = _serverConfig
+    if (sc && sc.transcription) return Boolean(sc.transcription.enabled)
+    return !!(globalThis.VAOTranscriptionConfig && globalThis.VAOTranscriptionConfig.provider && globalThis.VAOTranscriptionConfig.provider !== 'disabled')
+  }
+  function isVisionConfigured() {
+    const sc = _serverConfig
+    if (sc && sc.vision && Array.isArray(sc.vision.visionCapableAdapterIds)) return sc.vision.visionCapableAdapterIds.length > 0
+    const ids = (globalThis.VAOVisionConfig && globalThis.VAOVisionConfig.visionCapableAdapterIds) || []
+    return Array.isArray(ids) && ids.length > 0
+  }
+
   const api = Object.freeze({
     UPLOAD_STATUS,
     PROCESSING_STATUS,
@@ -352,6 +512,11 @@
     guessMimeFromExt,
     kindFromFile,
     formatSize,
+    uploadAttachment,
+    fetchAttachmentMeta,
+    confirmTranscriptServer,
+    loadServerConfig,
+    getServerConfig,
   })
 
   globalThis.VAOCoreAttachments = api

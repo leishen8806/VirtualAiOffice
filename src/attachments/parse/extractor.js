@@ -38,7 +38,7 @@ export async function runExtract(store, id, opts = {}) {
   store.update(id, { status: ATTACHMENT_STATUS.EXTRACTING })
   opts.onUpdate?.(store.get(id))
   try {
-    const extract = await dispatchExtract(row)
+    const extract = await dispatchExtract(row, opts)
     store.update(id, { extract, status: ATTACHMENT_STATUS.EXTRACTED })
   } catch (e) {
     store.update(id, {
@@ -80,9 +80,10 @@ function truncatePages(pages) {
   return { pages: out, pageCount: out.length }
 }
 
-async function dispatchExtract(row) {
+async function dispatchExtract(row, opts = {}) {
   const ext = extOf(row.sanitizedName)
   const blobPath = row.storagePath
+  const parserCfg = { transcription: opts.transcription || opts.config?.transcription || null }
   switch (row.kind) {
     case ATTACHMENT_KIND.DOCUMENT: {
       if (row.mimeType === 'application/pdf' || ext === '.pdf') {
@@ -110,7 +111,7 @@ async function dispatchExtract(row) {
     }
     case ATTACHMENT_KIND.AUDIO: {
       const buf = readBlob(blobPath, 60 * 1024 * 1024)
-      const out = await extractAudio(buf, { mime: row.mimeType, ext })
+      const out = await extractAudio(buf, { mime: row.mimeType, ext, config: parserCfg })
       if (out.durationSec && out.durationSec > 10 * 60) {
         throw new Error(`音频超过 10 分钟上限（${Math.round(out.durationSec)} 秒）`)
       }

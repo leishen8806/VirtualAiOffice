@@ -227,14 +227,29 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     return true
   }
 
-  function buildOutgoingPayload(draft) {
+  function buildOutgoingPayload(draft, extra = {}) {
     const text = String(draft.text || '').trim()
     const ids = (draft.attachments || [])
       .filter((a) => a.serverId && (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED))
       .map((a) => a.serverId)
     const payload = { text }
     if (ids.length) payload.attachmentIds = ids
+    if (extra && extra.clientMessageId) payload.clientMessageId = String(extra.clientMessageId)
     return payload
+  }
+
+  function attachmentIsReady(a) {
+    if (!a) return false
+    if (a.uploadStatus !== Attachments.UPLOAD_STATUS.UPLOADED) return false
+    const ps = a.processingStatus
+    if (ps === Attachments.PROCESSING_STATUS.EXTRACTING) return false
+    if (ps === Attachments.PROCESSING_STATUS.EXTRACT_FAILED) return false
+    return true
+  }
+
+  function genUUID() {
+    if (typeof globalThis.crypto?.randomUUID === 'function') return globalThis.crypto.randomUUID()
+    return 'msg-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
   }
 
   function renderComposer(options = {}) {
@@ -243,6 +258,9 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     const scopeKey = options.scopeKey || draftKey(ctx)
     const draft = getDraft(ctx)
     const cid = 'hc-v2-' + (++COMPOSER_ID_COUNTER.v)
+
+    let sendingInFlight = false
+    let pendingClientMessageId = null
 
     const form = el('form', {
       class: 'helix-composer-v2',
@@ -265,8 +283,41 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
       return form
     }
 
+    // Load server config for honest capability rendering + uploads ASAP
+    Attachments.loadServerConfig?.().catch(() => {})
+
     const tray = Attachments.renderTray(draft.attachments, attachCtxFromDraft(draft, form))
     form.appendChild(tray)
+
+    async function ensureAttachmentsUploaded() {
+      if (!draft.attachments || !draft.attachments.length) return true
+      const clientMsgId = pendingClientMessageId || (pendingClientMessageId = genUUID())
+      for (const a of draft.attachments) {
+        if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED) continue
+        if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADING) {
+          await new Promise((r) => {
+            const tick = setInterval(() => {
+              if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED || a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOAD_FAILED || a.uploadStatus === Attachments.UPLOAD_STATUS.CANCELLED) {
+                clearInterval(tick); r()
+              }
+            }, 60)
+          })
+        } else {
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.CANCELLED) continue
+          try {
+            await Attachments.uploadAttachment(a, {
+              clientMessageId: clientMsgId,
+              onProgress: () => rerenderTray(form, draft),
+            })
+          } catch (e) {
+            // error already set on att
+          } finally {
+            rerenderTray(form, draft)
+          }
+        }
+      }
+      return draft.attachments.every(attachmentIsReady)
+    }
 
     const taWrap = el('div', { class: 'composer-ta-wrap' })
     const ta = el('textarea', {
@@ -391,13 +442,23 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     toolbar.appendChild(tright)
     form.appendChild(toolbar)
 
-    form.addEventListener('submit', (e) => {
+    function setSendErrorBanner(form, msg) {
+      let node = form.querySelector('.send-error-banner')
+      if (!msg) { node && node.remove(); return }
+      if (!node) {
+        node = el('div', { class: 'send-error-banner', role: 'alert', style: 'padding:4px 8px;margin:0 6px 4px;border:1px solid #dc3545;border-radius:6px;background:#fff5f5;color:#b02a37;font-size:11.5px;' })
+        form.insertBefore(node, tray)
+      }
+      node.textContent = msg
+    }
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault()
+      if (sendingInFlight) return
       if (recorderHandle) { onStopRec(); return }
       draft.text = ta.value
       if (isComposerEmpty(draft)) return
 
-      // ---- M8 scope-guard: cross-context draft ask the owner confirm before send.
       const currentDraftKey = form.dataset.draftKey
       if (currentDraftKey && scopeKey && currentDraftKey !== scopeKey) {
         const ok = (typeof window !== 'undefined' && typeof window.confirm === 'function')
@@ -406,23 +467,81 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
         if (!ok) return
       }
 
-      const ready = (draft.attachments || []).every((a) =>
-        a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED ||
-        a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOAD_FAILED ||
-        a.uploadStatus === Attachments.UPLOAD_STATUS.CANCELLED ||
-        a.uploadStatus === Attachments.UPLOAD_STATUS.IDLE
-      )
-      const payload = buildOutgoingPayload(draft)
-      if (onSend) {
-        if (payload.text && payload.attachmentIds) onSend(payload)
-        else if (payload.text) onSend(payload.text)
-        else onSend(payload)
+      sendingInFlight = true
+      sendBtn.disabled = true
+      setSendErrorBanner(form, '')
+
+      const clientMessageId = pendingClientMessageId || (pendingClientMessageId = genUUID())
+      try {
+        await ensureAttachmentsUploaded()
+      } catch {
+        // individual attachment errors are already stored on each card; fall through to readiness check.
       }
-      draft.text = ''
-      draft.attachments = []
-      ta.value = ''
-      autoGrowTa(ta)
-      rerenderTray(form, draft)
+      const allReady = draft.attachments.length === 0 || draft.attachments.every(attachmentIsReady)
+      if (!allReady) {
+        const unready = draft.attachments.filter((a) => !attachmentIsReady(a)).map((a) => {
+          const s = a.processingStatus
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADING) return `${a.sanitizedName || a.name}（上传中）`
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOAD_FAILED) return `${a.sanitizedName || a.name}（上传失败，请点重试或移除）`
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.CANCELLED) return `${a.sanitizedName || a.name}（已取消，请移除后再发送）`
+          if (s === Attachments.PROCESSING_STATUS.EXTRACTING) return `${a.sanitizedName || a.name}（解析中，请稍候）`
+          if (s === Attachments.PROCESSING_STATUS.EXTRACT_FAILED) return `${a.sanitizedName || a.name}（解析失败，请移除后再发送）`
+          if (a.uploadStatus !== Attachments.UPLOAD_STATUS.UPLOADED) return `${a.sanitizedName || a.name}（尚未上传）`
+          return a.sanitizedName || a.name
+        })
+        setSendErrorBanner(form, '以下附件尚未就绪，请重试或移除后再发送：' + unready.join('；'))
+        sendingInFlight = false
+        sendBtn.disabled = false
+        return
+      }
+
+      const saved = {
+        value: ta.value,
+        start: typeof ta.selectionStart === 'number' ? ta.selectionStart : ta.value.length,
+        end: typeof ta.selectionEnd === 'number' ? ta.selectionEnd : ta.value.length,
+        attachments: draft.attachments.slice(),
+        text: draft.text,
+      }
+      const payload = buildOutgoingPayload(draft, { clientMessageId })
+      try {
+        const res = await (onSend && onSend(payload))
+        if (res && typeof res === 'object' && res.ok === false) {
+          const code = res.code || ''
+          const msg = res.error || '发送失败，请稍后再试。'
+          if (code === 'IDEMPOTENT_CONFLICT') {
+            throw new Error('当前消息 id 被用于不同内容，已自动生成新 id，请再次点击发送。（server: IDEMPOTENT_CONFLICT）')
+          }
+          throw new Error(msg)
+        }
+        // success: commit draft cleared, new UUID next send.
+        pendingClientMessageId = null
+        draft.text = ''
+        draft.attachments = []
+        ta.value = ''
+        autoGrowTa(ta)
+        rerenderTray(form, draft)
+        try { ta.focus() } catch {}
+        try { ta.setSelectionRange(0, 0) } catch {}
+        setSendErrorBanner(form, '')
+      } catch (e) {
+        // restore the draft to its pre-send snapshot so the user can retry the same clientMessageId.
+        draft.attachments = saved.attachments
+        draft.text = saved.text
+        ta.value = saved.value
+        autoGrowTa(ta)
+        rerenderTray(form, draft)
+        try { ta.focus() } catch {}
+        try {
+          const max = ta.value.length
+          const s = Math.min(saved.start, max)
+          const en = Math.min(saved.end, max)
+          ta.setSelectionRange(s, en)
+        } catch {}
+        setSendErrorBanner(form, '发送失败：' + (e && e.message ? e.message : '未知错误。') + ' 内容已保留，可重试或修改后再发。')
+      } finally {
+        sendingInFlight = false
+        sendBtn.disabled = false
+      }
     })
 
     form.addEventListener('dragover', (e) => {

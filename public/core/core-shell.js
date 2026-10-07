@@ -440,11 +440,11 @@
         composerEl = Composer.renderComposer({
           context: composerContext,
           onSend: (t) => {
-            if (t && typeof t === 'object' && !(t instanceof String)) {
-              composer.onSend?.(t.text ?? '', t)
-            } else {
-              composer.onSend?.(t)
-            }
+            // Forward ONE normalized envelope (string or object). Transport.send()
+            // is the SINGLE boundary responsible for converting legacy plain-string
+            // senders into the canonical { clientMessageId?, text, attachmentIds? }
+            // shape. Do NOT drop the 2nd arg or strip attachmentIds here.
+            return composer.onSend?.(t)
           },
         })
       } else {
@@ -565,10 +565,20 @@
     const rail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
     const canvas = el('main', { id: 'office-canvas', role: 'main', 'aria-label': '办公室楼层 · Office Floor: Helix 指挥台居中，周围是 规划工作室 / 工程站 / 质检 / 文档 / 人类区' })
     const helixPanel = el('aside', { id: 'helix-panel', 'aria-label': 'Helix 系统编排中枢面板' })
-    const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full) })
+    const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => {
+      // Preserve the envelope across the shell → application bridge.
+      // Only normalize legacy string callers; object envelopes pass verbatim.
+      if (t && typeof t === 'object') return options.onConversationSend?.(t)
+      if (full && typeof full === 'object') return options.onConversationSend?.(full)
+      return options.onConversationSend?.(String(t ?? ''))
+    } })
     helixPanel.appendChild(innerHelixPanel)
     helixDrawer.innerHTML = ''
-    helixDrawer.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full) }))
+    helixDrawer.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => {
+      if (t && typeof t === 'object') return options.onConversationSend?.(t)
+      if (full && typeof full === 'object') return options.onConversationSend?.(full)
+      return options.onConversationSend?.(String(t ?? ''))
+    } }))
 
     document.body.appendChild(bar)
     document.body.appendChild(rail)

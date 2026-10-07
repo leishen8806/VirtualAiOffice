@@ -65,9 +65,21 @@ export class AttachmentStore {
   _persistSync() {
     const tmp = this.indexPath + TMP_SUFFIX
     const payload = JSON.stringify([...this._index.values()])
+    let fd
     try {
       fs.writeFileSync(tmp, payload)
-      fs.fsyncSync(fs.openSync(tmp, 'r'))
+      try {
+        fd = fs.openSync(tmp, 'r')
+        try { fs.fsyncSync(fd) } finally { try { fs.closeSync(fd) } catch {} }
+      } catch (fsyncErr) {
+        // Windows / some temporary FS backends (e.g. certain RAM disks or
+        // remote junctions) return EPERM on fsync(). The write itself
+        // already completed; accept without fsync when the underlying
+        // volume does not support it.
+        if (fsyncErr && fsyncErr.code !== 'EPERM' && fsyncErr.code !== 'EACCES' && fsyncErr.code !== 'ENOTSUP') {
+          throw fsyncErr
+        }
+      }
       fs.renameSync(tmp, this.indexPath)
     } catch (e) {
       try { fs.unlinkSync(tmp) } catch {}
