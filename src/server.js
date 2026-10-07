@@ -304,6 +304,12 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           if (postResult && postResult.cached) {
             return json(res, 200, { ok: true, cached: true, idempotent: true, accepted: postResult.accepted })
           }
+          if (postResult && postResult.continuationDiscardCompleted) {
+            const out = { ok: true, continuationDiscardCompleted: true }
+            if (Array.isArray(postResult.released)) out.released = postResult.released
+            if (Array.isArray(postResult.skipped)) out.skipped = postResult.skipped
+            return json(res, 200, out)
+          }
           const out = { ok: true, accepted: true }
           if (postResult && postResult.idempotent) { out.idempotent = true ; out.cached = true }
           if (postResult && postResult.noIntent) {

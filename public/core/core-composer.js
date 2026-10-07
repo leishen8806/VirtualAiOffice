@@ -383,7 +383,7 @@ html[data-theme-core] .retained-chip .rc-x:hover{color:var(--blocked);background
     }
     const callDiscardServerSide = async () => {
       const tok = draft && draft.retained && draft.retained.continuationToken
-      if (!tok || !onSend) return
+      if (!tok || !onSend) return { ok: false, error: 'no onSend channel' }
       try {
         const ids = (draft.retained.attachments || []).map((a) => a.serverId).filter(Boolean)
         const payload = {
@@ -393,13 +393,28 @@ html[data-theme-core] .retained-chip .rc-x:hover{color:var(--blocked);background
           continuationToken: tok,
           continuationDiscard: true,
         }
-        await onSend(payload)
-      } catch {}
+        const res = await onSend(payload)
+        if (res && res.ok === true) return { ok: true }
+        if (res && res.error) return { ok: false, error: res.error }
+        return { ok: false, error: '服务器未确认移除。' }
+      } catch (e) {
+        return { ok: false, error: (e && (e.message || e)) || '网络错误' }
+      }
     }
-    const discardRetainedAll = () => {
+    const discardRetainedAll = async () => {
       if (!draft || !draft.retained) return
-      if (draft.retained.continuationToken) callDiscardServerSide().catch(() => {})
-      clearRetainedClientOnly()
+      let ok = true
+      let err = ''
+      if (draft.retained.continuationToken) {
+        const res = await callDiscardServerSide()
+        ok = res.ok === true
+        err = res.error || ''
+      }
+      if (ok) {
+        clearRetainedClientOnly()
+      } else {
+        setSendErrorBanner(form, '附件上下文清理失败，上下文保留未移除。原因：' + (err || '未知错误'))
+      }
       rerenderRetained(form, draft, latestTrayRenderOpts)
       rerenderTray(form, draft)
     }
@@ -407,8 +422,8 @@ html[data-theme-core] .retained-chip .rc-x:hover{color:var(--blocked);background
       if (!draft || !draft.retained || !Array.isArray(draft.retained.attachments)) return
       draft.retained.attachments.splice(index, 1)
       if (!draft.retained.attachments.length) {
-        if (draft.retained.continuationToken) callDiscardServerSide().catch(() => {})
-        clearRetainedClientOnly()
+        discardRetainedAll()
+        return
       }
       rerenderRetained(form, draft, latestTrayRenderOpts)
       rerenderTray(form, draft)
@@ -420,6 +435,16 @@ html[data-theme-core] .retained-chip .rc-x:hover{color:var(--blocked);background
         if (!r || !r.issuedAt || !r.ttlMs) return
         const remain = (r.issuedAt + r.ttlMs) - Date.now()
         if (remain <= 0) {
+          const tok = r.continuationToken
+          const ids = (r.attachments || []).map(a => a.serverId).filter(Boolean)
+          // Best-effort server-side discard; if unreachable client clears anyway.
+          if (tok && onSend) {
+            Promise.resolve().then(async () => {
+              try {
+                await onSend({ clientMessageId: genUUID(), text: '', attachmentIds: ids, continuationToken: tok, continuationDiscard: true })
+              } catch {}
+            }).catch(() => {})
+          }
           clearRetainedClientOnly()
           setSendErrorBanner(form, '附件上下文已过期，请重新上传。')
           rerenderRetained(form, draft, latestTrayRenderOpts)

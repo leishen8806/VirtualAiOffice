@@ -249,12 +249,47 @@ export class Coordinator extends EventEmitter {
     return { token, ttlMs: this.CONTINUATION_TOKEN_TTL_MS, issuedAt: now, attachmentIds: ids }
   }
 
+  /**
+   * Central lifecycle: release every attachment id listed in the continuation
+   * token's `attachmentIds` set that is NOT in `keepIds`. Only rows whose
+   * current owner matches the token's source `fromClientMessageId` are
+   * affected: we clear the ownerClientMessageId so reapOrphans becomes
+   * eligible (orphan + 5-minute stale). ATTACHED rows are never touched
+   * because they were bound to a different accepted message legitimately.
+   *
+   * Returns { released: string[], skipped: string[] } for diagnostics.
+   */
+  releaseRetainedAttachments(meta, { keepIds = [] } = {}) {
+    const released = []
+    const skipped = []
+    if (!meta || !this.attachmentStore) return { released, skipped }
+    const keep = new Set((keepIds || []).map(x => String(x || '').trim()).filter(Boolean))
+    const srcOwner = meta.fromClientMessageId != null ? String(meta.fromClientMessageId) : null
+    const scopeOk = (row) => !row.scopeId || !meta.scopeId || row.scopeId === meta.scopeId
+    for (const rawId of meta.attachmentIds || []) {
+      const id = String(rawId || '').trim()
+      if (!id) continue
+      if (keep.has(id)) { skipped.push(id); continue }
+      const row = this.attachmentStore.get(id)
+      if (!row) { skipped.push(id); continue }
+      if (!scopeOk(row)) { skipped.push(id); continue }
+      const currentOwner = row.ownerClientMessageId != null ? String(row.ownerClientMessageId) : null
+      const ownedBySource = srcOwner == null ? (currentOwner == null) : (currentOwner === srcOwner)
+      if (!ownedBySource) { skipped.push(id); continue }
+      if (row.status === ATTACHMENT_STATUS.ATTACHED) { skipped.push(id); continue }
+      this.attachmentStore.update(id, { ownerClientMessageId: null })
+      released.push(id)
+    }
+    return { released, skipped }
+  }
+
   consumeContinuationToken({ token, scopeId, newClientMessageId = null, declaredAttachmentIds = [] }) {
     if (!this.attachmentStore) return { error: 'no attachment store' }
     const meta = this._continuationTokens.get(token)
     if (!meta) return { error: 'continuation token' }
     const now = Date.now()
     if (now - meta.issuedAt > meta.ttlMs) {
+      this.releaseRetainedAttachments(meta, { keepIds: [] })
       this._continuationTokens.delete(token)
       return { error: 'continuation token' }
     }
@@ -263,11 +298,20 @@ export class Coordinator extends EventEmitter {
     if (meta.fromClientMessageId != null && newClientMessageId != null && meta.fromClientMessageId === newClientMessageId) {
       return { error: 'new clientMessageId must differ from the original attachment-only message id' }
     }
-    const declared = new Set(declaredAttachmentIds.map((x) => String(x || '').trim()).filter(Boolean))
-    for (const id of declared) {
-      if (!meta.attachmentIds.includes(id)) return { error: `attachment ${id} is not in retained set` }
+    const declaredList = declaredAttachmentIds.map(x => String(x || '').trim()).filter(Boolean)
+    const tokenSet = new Set(meta.attachmentIds || [])
+    const retainedDeclared = []
+    const freshDeclared = []
+    for (const id of declaredList) {
+      if (tokenSet.has(id)) retainedDeclared.push(id)
+      else freshDeclared.push(id)
     }
-    const effectiveIds = declared.size > 0 ? [...declared] : [...meta.attachmentIds]
+    let effectiveIds
+    if (declaredList.length === 0) {
+      effectiveIds = [...meta.attachmentIds]
+    } else {
+      effectiveIds = retainedDeclared
+    }
     for (const id of effectiveIds) {
       const row = this.attachmentStore.get(id)
       if (!row) return { error: `attachment ${id} not found` }
@@ -279,23 +323,27 @@ export class Coordinator extends EventEmitter {
     for (const id of effectiveIds) {
       const row = this.attachmentStore.get(id)
       if (row) {
-        row.ownerClientMessageId = null
-        row.updatedAt = Date.now()
+        this.attachmentStore.update(id, { ownerClientMessageId: null })
       }
       if (newClientMessageId) {
         const ok = this.attachmentStore.claimOwner(id, newClientMessageId)
         if (!ok) return { error: `attachment ${row && row.sanitizedName || id} ownership reassign failed during continuation` }
       }
     }
+    const releaseRes = this.releaseRetainedAttachments(meta, { keepIds: effectiveIds })
     meta.consumed = true
     meta.consumedAt = now
     this._continuationTokens.delete(token)
     this._sweepTokens()
-    return { ok: true, effectiveAttachmentIds: effectiveIds }
+    return { ok: true, effectiveAttachmentIds: effectiveIds, retainedDeclared, freshDeclared, releasedUnconsumed: releaseRes.released }
   }
 
   dropContinuationToken(token) {
-    if (token && this._continuationTokens.has(token)) this._continuationTokens.delete(token)
+    if (!token || !this._continuationTokens.has(token)) return { ok: false }
+    const meta = this._continuationTokens.get(token)
+    const releaseRes = this.releaseRetainedAttachments(meta, { keepIds: [] })
+    this._continuationTokens.delete(token)
+    return { ok: true, released: releaseRes.released, skipped: releaseRes.skipped }
   }
 
   issueRebindToken({ scopeId, oldClientMessageId, attachmentIds = [] }) {
@@ -358,7 +406,10 @@ export class Coordinator extends EventEmitter {
   _sweepTokens() {
     const now = Date.now()
     for (const [t, m] of [...this._continuationTokens]) {
-      if (now - m.issuedAt > (m.ttlMs + 60_000)) this._continuationTokens.delete(t)
+      if (now - m.issuedAt > (m.ttlMs + 60_000)) {
+        this.releaseRetainedAttachments(m, { keepIds: [] })
+        this._continuationTokens.delete(t)
+      }
     }
     for (const [t, m] of [...this._rebindTokens]) {
       if (now - m.issuedAt > (m.ttlMs + 10_000)) this._rebindTokens.delete(t)
@@ -564,8 +615,17 @@ export class Coordinator extends EventEmitter {
     const { clientMessageId, text, attachmentIds } = envelope
     const storeScopeId = this.attachmentStore?.scopeId || null
 
-    // ---- Pre-handle continuation token (BLOCKER A: retained-attachment continuation
-    if (continuationDiscard) this.dropContinuationToken(continuationToken)
+    // ---- Pre-handle continuation token retained-attachment lifecycle ----
+    if (continuationDiscard) {
+      const discardRes = this.dropContinuationToken(continuationToken)
+      return {
+        ok: discardRes && discardRes.ok !== false,
+        continuationDiscardCompleted: true,
+        released: discardRes && Array.isArray(discardRes.released) ? discardRes.released : [],
+        skipped: discardRes && Array.isArray(discardRes.skipped) ? discardRes.skipped : [],
+        accepted: true,
+      }
+    }
     if (continuationToken && !continuationDiscard && this.attachmentStore) {
       const consume = this.consumeContinuationToken({
         token: continuationToken,
@@ -574,9 +634,14 @@ export class Coordinator extends EventEmitter {
         declaredAttachmentIds: attachmentIds,
       })
       if (consume && consume.error) return { ok: false, code: 'CONTINUATION_TOKEN_INVALID', error: consume.error }
-      // Effective attachmentIds = rebinded ones (explicit subset or full list)
-      if (consume && consume.ok && Array.isArray(consume.effectiveAttachmentIds)) {
-        envelope.attachmentIds = [...consume.effectiveAttachmentIds]
+      if (consume && consume.ok) {
+        const freshIds = Array.isArray(consume.freshDeclared) ? consume.freshDeclared : []
+        const retainedIds = Array.isArray(consume.effectiveAttachmentIds) ? consume.effectiveAttachmentIds : []
+        const combined = [...retainedIds, ...freshIds]
+        // dedupe preserving order
+        const seen = new Set()
+        envelope.attachmentIds = []
+        for (const id of combined) if (id && !seen.has(id)) { seen.add(id); envelope.attachmentIds.push(id) }
       }
     }
 
