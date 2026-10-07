@@ -14,7 +14,16 @@
     EXTRACTING: 'EXTRACTING',
     EXTRACTED: 'EXTRACTED',
     EXTRACT_FAILED: 'EXTRACT_FAILED',
+    PROCESSING_ERROR: 'PROCESSING_ERROR',
     UNSUPPORTED: 'UNSUPPORTED',
+  })
+
+  const CONFIRM_STATUS = Object.freeze({
+    NONE: 'NONE',
+    PENDING: 'PENDING',
+    CONFIRMED: 'CONFIRMED',
+    FAILED: 'FAILED',
+    DISABLED: 'DISABLED',
   })
 
   const ATTACH_KIND = Object.freeze({
@@ -91,10 +100,16 @@
       previewText: '',
       originalTranscript: '',
       confirmedEditedTranscript: '',
+      confirmStatus: CONFIRM_STATUS.NONE,
+      confirmError: '',
       dimensions: null,
       durationSec: null,
+      pageCount: null,
       transcriptionConfigured: false,
       abortController: null,
+      _metaPollTimer: null,
+      _metaPollStartedAt: 0,
+      _metaPollAttempts: 0,
     }
   }
 
@@ -115,8 +130,17 @@
     else if (u === UPLOAD_STATUS.UPLOAD_FAILED) { label = '上传失败'; cls = 'status-blocked' }
     else if (u === UPLOAD_STATUS.CANCELLED) { label = '已取消'; cls = 'status-offline' }
     else if (p === PROCESSING_STATUS.EXTRACTING) { label = '解析中'; cls = 'status-reviewing' }
-    else if (p === PROCESSING_STATUS.EXTRACTED) { label = '已就绪'; cls = 'status-done' }
-    else if (p === PROCESSING_STATUS.EXTRACT_FAILED) { label = '解析失败'; cls = 'status-blocked' }
+    else if (p === PROCESSING_STATUS.EXTRACTED) {
+      if (att.kind === ATTACH_KIND.AUDIO && isTranscriptionConfigured()) {
+        if (att.confirmStatus === CONFIRM_STATUS.CONFIRMED) { label = '已就绪'; cls = 'status-done' }
+        else if (att.confirmStatus === CONFIRM_STATUS.FAILED) { label = '确认失败'; cls = 'status-blocked' }
+        else if (att.confirmStatus === CONFIRM_STATUS.PENDING) { label = '确认中'; cls = 'status-thinking' }
+        else { label = '转写完成，待确认'; cls = 'status-reviewing' }
+      } else {
+        label = '已就绪'; cls = 'status-done'
+      }
+    }
+    else if (p === PROCESSING_STATUS.EXTRACT_FAILED || p === PROCESSING_STATUS.PROCESSING_ERROR) { label = '解析失败'; cls = 'status-blocked' }
     else if (p === PROCESSING_STATUS.UNSUPPORTED) { label = '不支持'; cls = 'status-offline' }
     else if (u === UPLOAD_STATUS.UPLOADED && p === PROCESSING_STATUS.IDLE) { label = '已上传'; cls = 'status-thinking' }
     return `<span class="attach-status-badge ${cls}">${label || '待处理'}</span>`
@@ -186,15 +210,82 @@
       const trBox = el('div', { class: 'attach-transcript' })
       if (!att.transcriptionConfigured) {
         trBox.appendChild(el('div', { class: 'transcript-honest' }, '尚未配置语音转写'))
-      } else if (att.processingStatus === PROCESSING_STATUS.EXTRACTING) {
-        trBox.appendChild(el('div', { class: 'transcript-working' }, '正在转写…'))
-      } else if (att.originalTranscript || att.confirmedEditedTranscript) {
-        const label = el('div', { class: 'transcript-label' }, '转写内容（可编辑，发送时使用已确认内容）')
-        const ta = el('textarea', { class: 'transcript-ta', rows: 2, placeholder: '确认后的转写内容…' })
-        ta.value = att.confirmedEditedTranscript || att.originalTranscript || ''
-        ta.addEventListener('input', () => { att.confirmedEditedTranscript = ta.value })
-        trBox.appendChild(label)
-        trBox.appendChild(ta)
+        att.confirmStatus = CONFIRM_STATUS.DISABLED
+      } else if (att.processingStatus === PROCESSING_STATUS.EXTRACTING || att.processingStatus === PROCESSING_STATUS.IDLE) {
+        trBox.appendChild(el('div', { class: 'transcript-working' }, att.processingStatus === PROCESSING_STATUS.IDLE ? '等待解析…' : '正在转写…'))
+      } else if (att.processingStatus === PROCESSING_STATUS.EXTRACTED || att.processingStatus === PROCESSING_STATUS.EXTRACT_FAILED || att.processingStatus === PROCESSING_STATUS.PROCESSING_ERROR) {
+        if (att.processingStatus === PROCESSING_STATUS.EXTRACT_FAILED || att.processingStatus === PROCESSING_STATUS.PROCESSING_ERROR) {
+          const fail = el('div', { class: 'transcript-honest transcript-honest-bad' })
+          fail.style.color = 'var(--blocked)'
+          fail.style.background = 'color-mix(in srgb, var(--blocked) 8%, var(--panel-2))'
+          fail.style.borderColor = 'color-mix(in srgb, var(--blocked) 40%, var(--line))'
+          fail.textContent = '转写失败：' + (att.error || '未知原因')
+          trBox.appendChild(fail)
+        } else {
+          const hasServerConfirmed = att.confirmStatus === CONFIRM_STATUS.CONFIRMED
+          const hasConfirmFailed = att.confirmStatus === CONFIRM_STATUS.FAILED
+          let statusText = ''
+          if (hasServerConfirmed) statusText = '已确认'
+          else if (hasConfirmFailed) statusText = '确认失败'
+          else statusText = '转写完成，待确认'
+          const statusChip = el('div', {
+            class: 'transcript-chip' + (hasServerConfirmed ? ' chip-done' : (hasConfirmFailed ? ' chip-fail' : ''))
+          })
+          statusChip.style.marginBottom = '2px'
+          statusChip.style.display = 'inline-block'
+          statusChip.style.padding = '1px 7px'
+          statusChip.style.fontSize = '10px'
+          statusChip.style.fontWeight = '700'
+          statusChip.style.borderRadius = '999px'
+          statusChip.style.border = '1px solid var(--line)'
+          statusChip.textContent = statusText
+          if (hasServerConfirmed) {
+            statusChip.style.color = 'var(--done)'
+            statusChip.style.borderColor = 'color-mix(in srgb, var(--done) 45%, var(--line))'
+            statusChip.style.background = 'color-mix(in srgb, var(--done) 10%, transparent)'
+          } else if (hasConfirmFailed) {
+            statusChip.style.color = 'var(--blocked)'
+            statusChip.style.borderColor = 'color-mix(in srgb, var(--blocked) 45%, var(--line))'
+            statusChip.style.background = 'color-mix(in srgb, var(--blocked) 10%, transparent)'
+          } else {
+            statusChip.style.color = 'var(--reviewing)'
+            statusChip.style.borderColor = 'color-mix(in srgb, var(--reviewing) 45%, var(--line))'
+            statusChip.style.background = 'color-mix(in srgb, var(--reviewing) 10%, transparent)'
+          }
+          trBox.appendChild(statusChip)
+          const label = el('div', { class: 'transcript-label' }, '转写内容（可编辑。点击「确认文字稿」后内容才会被使用）')
+          const ta = el('textarea', { class: 'transcript-ta', rows: 2, placeholder: '确认后的转写内容…' })
+          ta.value = att.confirmedEditedTranscript || att.originalTranscript || ''
+          ta.addEventListener('input', () => {
+            att.confirmedEditedTranscript = ta.value
+            if (att.confirmStatus === CONFIRM_STATUS.CONFIRMED || att.confirmStatus === CONFIRM_STATUS.FAILED) {
+              att.confirmStatus = CONFIRM_STATUS.PENDING
+            }
+            ctx.onChangeConfirmStateChange?.(att)
+          })
+          trBox.appendChild(label)
+          trBox.appendChild(ta)
+          const confirmBar = el('div', { class: 'transcript-confirm-bar', style: 'display:flex;justify-content:flex-end;gap:5px;margin-top:3px;' })
+          const confirmBtn = el('button', {
+            type: 'button',
+            class: 'attach-btn',
+            title: '确认文字稿后才能作为附件内容使用',
+            'aria-label': '确认文字稿',
+            style: 'width:auto;padding:0 9px;',
+            onClick: (e) => {
+              e.stopPropagation()
+              ctx.onConfirmTranscript?.(att, ta.value)
+            }
+          }, '确认文字稿')
+          if (att.confirmStatus === CONFIRM_STATUS.CONFIRMED) confirmBtn.style.opacity = '0.5'
+          confirmBar.appendChild(confirmBtn)
+          trBox.appendChild(confirmBar)
+          if (att.confirmError) {
+            const err = el('div', { class: 'attach-error' })
+            err.textContent = String(att.confirmError)
+            trBox.appendChild(err)
+          }
+        }
       }
       card.appendChild(trBox)
     }
@@ -481,6 +572,124 @@
     return r.json()
   }
 
+  const META_POLL_TOTAL_TIMEOUT_MS = 30_000
+  const META_POLL_INTERVAL_START_MS = 500
+  const META_POLL_INTERVAL_MAX_MS = 2000
+
+  function attachmentIsReady(a) {
+    if (!a) return false
+    if (a.uploadStatus !== UPLOAD_STATUS.UPLOADED) return false
+    const ps = a.processingStatus
+    if (ps !== PROCESSING_STATUS.EXTRACTED) return false
+    if (a.error) return false
+    if (a.kind === ATTACH_KIND.AUDIO) {
+      if (!a.transcriptionConfigured) return true
+      const cs = a.confirmStatus
+      if (cs === CONFIRM_STATUS.CONFIRMED) return true
+      if (cs === CONFIRM_STATUS.DISABLED) return true
+      return false
+    }
+    return true
+  }
+
+  function _mapServerStatusToProcessing(srvStatus, serverError) {
+    if (srvStatus === 'uploading') return PROCESSING_STATUS.IDLE
+    if (srvStatus === 'stored') return PROCESSING_STATUS.EXTRACTING
+    if (srvStatus === 'extracting') return PROCESSING_STATUS.EXTRACTING
+    if (srvStatus === 'extracted') return PROCESSING_STATUS.EXTRACTED
+    if (srvStatus === 'processing_error') return PROCESSING_STATUS.PROCESSING_ERROR
+    if (srvStatus === 'cancelled') return PROCESSING_STATUS.UNSUPPORTED
+    if (srvStatus === 'attached') return PROCESSING_STATUS.EXTRACTED
+    if (serverError) return PROCESSING_STATUS.PROCESSING_ERROR
+    return PROCESSING_STATUS.IDLE
+  }
+
+  function applyMetaToAttachment(att, meta) {
+    if (!att || !meta) return
+    if (meta.status != null) att.processingStatus = _mapServerStatusToProcessing(meta.status, meta.error)
+    if (typeof meta.error === 'string') att.error = meta.error
+    if (typeof meta.size === 'number') att.size = meta.size
+    if (typeof meta.durationSec === 'number' && meta.durationSec > 0) att.durationSec = meta.durationSec
+    if (typeof meta.pageCount === 'number' && meta.pageCount > 0) att.pageCount = meta.pageCount
+    if (meta.originalTranscript && !att.originalTranscript) att.originalTranscript = String(meta.originalTranscript)
+    if (typeof meta.confirmedEdited === 'string') {
+      const serverConfirmed = String(meta.confirmedEdited || '').trim()
+      if (serverConfirmed) {
+        att.confirmedEditedTranscript = serverConfirmed
+        if (!att.confirmStatus || att.confirmStatus === CONFIRM_STATUS.NONE || att.confirmStatus === CONFIRM_STATUS.PENDING) {
+          att.confirmStatus = CONFIRM_STATUS.CONFIRMED
+        }
+      }
+    }
+  }
+
+  function startMetaPolling(att, { onUpdate } = {}) {
+    if (!att) return
+    stopMetaPolling(att)
+    if (!att.serverId || !/^[0-9a-f]{24}$/.test(att.serverId)) return
+    if (att.processingStatus === PROCESSING_STATUS.EXTRACTED && att.kind !== ATTACH_KIND.AUDIO) return
+    att._metaPollStartedAt = Date.now()
+    att._metaPollAttempts = 0
+    const tick = async () => {
+      if (!att || !att.serverId) return
+      if (Date.now() - att._metaPollStartedAt > META_POLL_TOTAL_TIMEOUT_MS) {
+        if (att.processingStatus !== PROCESSING_STATUS.EXTRACTED) {
+          att.processingStatus = PROCESSING_STATUS.EXTRACT_FAILED
+          att.error = att.error || '附件处理超时'
+        }
+        onUpdate?.(att)
+        return
+      }
+      let meta
+      try { meta = await fetchAttachmentMeta(att) }
+      catch { meta = null }
+      if (meta) applyMetaToAttachment(att, meta)
+      onUpdate?.(att)
+      const nowEx = att.processingStatus === PROCESSING_STATUS.EXTRACTED
+      const nowTerminal = (nowEx && att.kind !== ATTACH_KIND.AUDIO)
+        || (nowEx && att.kind === ATTACH_KIND.AUDIO && (!att.transcriptionConfigured || att.confirmStatus === CONFIRM_STATUS.CONFIRMED))
+        || att.processingStatus === PROCESSING_STATUS.PROCESSING_ERROR
+        || att.processingStatus === PROCESSING_STATUS.EXTRACT_FAILED
+        || att.processingStatus === PROCESSING_STATUS.UNSUPPORTED
+      if (nowTerminal) {
+        stopMetaPolling(att)
+        return
+      }
+      const n = att._metaPollAttempts = (att._metaPollAttempts || 0) + 1
+      const delay = Math.min(META_POLL_INTERVAL_START_MS * Math.pow(1.6, n - 1), META_POLL_INTERVAL_MAX_MS)
+      att._metaPollTimer = setTimeout(tick, delay)
+    }
+    tick()
+  }
+
+  function stopMetaPolling(att) {
+    if (!att) return
+    if (att._metaPollTimer) {
+      try { clearTimeout(att._metaPollTimer) } catch {}
+      att._metaPollTimer = null
+    }
+  }
+
+  async function persistConfirmTranscript(att, confirmedText) {
+    if (!att) throw new Error('missing attachment')
+    if (!att.serverId) throw new Error('attachment not uploaded')
+    att.confirmStatus = CONFIRM_STATUS.PENDING
+    att.confirmError = ''
+    try {
+      const out = await confirmTranscriptServer(att, confirmedText)
+      if (out && typeof out.confirmedEdited === 'string') {
+        att.confirmedEditedTranscript = String(out.confirmedEdited)
+      }
+      att.confirmStatus = CONFIRM_STATUS.CONFIRMED
+      att.confirmError = ''
+      return out
+    } catch (e) {
+      att.confirmStatus = CONFIRM_STATUS.FAILED
+      att.confirmError = e && e.message ? e.message : '确认失败'
+      throw e
+    }
+  }
+
   // ---- Override: capability checks prefer server /api/config truth; fall back to legacy globals only if not present ----
   function isTranscriptionConfigured() {
     const sc = _serverConfig
@@ -497,6 +706,7 @@
   const api = Object.freeze({
     UPLOAD_STATUS,
     PROCESSING_STATUS,
+    CONFIRM_STATUS,
     ATTACH_KIND,
     createAttachmentFromFile,
     createAttachmentFromRecording,
@@ -515,6 +725,11 @@
     uploadAttachment,
     fetchAttachmentMeta,
     confirmTranscriptServer,
+    persistConfirmTranscript,
+    startMetaPolling,
+    stopMetaPolling,
+    applyMetaToAttachment,
+    attachmentIsReady,
     loadServerConfig,
     getServerConfig,
   })

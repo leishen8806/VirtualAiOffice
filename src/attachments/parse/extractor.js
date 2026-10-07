@@ -39,10 +39,10 @@ export async function runExtract(store, id, opts = {}) {
   opts.onUpdate?.(store.get(id))
   try {
     const extract = await dispatchExtract(row, opts)
-    store.update(id, { extract, status: ATTACHMENT_STATUS.EXTRACTED })
+    store.update(id, { extract, status: ATTACHMENT_STATUS.EXTRACTED, error: null })
   } catch (e) {
     store.update(id, {
-      status: ATTACHMENT_STATUS.EXTRACTED,
+      status: ATTACHMENT_STATUS.PROCESSING_ERROR,
       extract: { error: String(e.message || e) },
       error: String(e.message || e),
     })

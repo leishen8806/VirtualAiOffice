@@ -118,9 +118,13 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           const id = rest.match(/^\/([0-9a-f]{24})\/preview\/meta$/)[1]
           const row = attStore.get(id)
           if (!row) return json(res, 404, { ok: false, error: 'not found' })
+          if (String(row.scopeId || '') !== String(attStore.scopeId || '')) {
+            return send(res, 403, 'Forbidden scope')
+          }
           return json(res, 200, {
             ok: true,
             id: row.id,
+            scopeId: row.scopeId || null,
             filename: row.sanitizedName,
             kind: row.kind,
             mimeType: row.mimeType,
@@ -130,6 +134,7 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
             durationSec: row.extract?.durationSec ?? null,
             originalTranscript: row.extract?.originalTranscript || '',
             confirmedEdited: row.extract?.confirmedEdited || '',
+            confirmedAt: row.extract?.confirmedAt || null,
             error: row.error || null,
           })
         }
@@ -139,6 +144,9 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           const id = rest.match(/^\/([0-9a-f]{24})\/transcript$/)[1]
           const row = attStore.get(id)
           if (!row) return json(res, 404, { ok: false, error: 'not found' })
+          if (String(row.scopeId || '') !== String(attStore.scopeId || '')) {
+            return send(res, 403, 'Forbidden scope')
+          }
           if (!originOk(req) || !String(req.headers['content-type'] || '').startsWith('application/json')) {
             return send(res, 403, 'Forbidden')
           }
@@ -159,8 +167,10 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
           return json(res, 200, {
             ok: true,
             id: refreshed.id,
+            scopeId: refreshed?.scopeId || null,
             originalTranscript: refreshed.extract?.originalTranscript || '',
             confirmedEdited: refreshed.extract?.confirmedEdited || '',
+            confirmedAt: refreshed.extract?.confirmedAt || null,
           })
         }
 

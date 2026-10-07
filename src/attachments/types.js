@@ -24,6 +24,7 @@ export const ATTACHMENT_STATUS = Object.freeze({
   STORED: 'stored',
   EXTRACTING: 'extracting',
   EXTRACTED: 'extracted',
+  PROCESSING_ERROR: 'processing_error',
   CANCELLED: 'cancelled',
   ATTACHED: 'attached',
 })
@@ -58,6 +59,7 @@ export const ATTACHMENT_KIND = Object.freeze({
  * @property {number} [durationSec]
  *
  * @typedef { {id:string,
+ *             scopeId:string,
  *             ownerClientMessageId:string|null,
  *             filename:string,
  *             sanitizedName:string,
@@ -75,6 +77,7 @@ export const ATTACHMENT_KIND = Object.freeze({
 
 export const createEmpty = () => ({
   id: '',
+  scopeId: '',
   ownerClientMessageId: null,
   filename: '',
   sanitizedName: '',

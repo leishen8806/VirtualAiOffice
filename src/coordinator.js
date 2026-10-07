@@ -502,6 +502,7 @@ export class Coordinator extends EventEmitter {
       return `每条消息最多 ${LIMITS.maxAttachmentsPerMessage} 个附件`
     }
     if (!this.attachmentStore) return '服务器未开启附件存储'
+    const storeScopeId = typeof this.attachmentStore.scopeId === 'string' ? this.attachmentStore.scopeId : null
     const seen = new Set()
     let totalBytes = 0
     for (const id of attachmentIds) {
@@ -510,12 +511,18 @@ export class Coordinator extends EventEmitter {
       if (!/^[0-9a-f]{24}$/.test(id)) return `非法的附件 id 格式`
       const row = this.attachmentStore.get(id)
       if (!row) return `附件不存在：${id}`
+      if (storeScopeId && String(row.scopeId || '') !== storeScopeId) {
+        return `附件 ${row.sanitizedName || id} 不属于当前会话范围`
+      }
       if (row.status === ATTACHMENT_STATUS.CANCELLED) return `附件已取消：${row.sanitizedName}`
       if (row.status === ATTACHMENT_STATUS.UPLOADING) return `附件仍在上传：${row.sanitizedName}`
+      if (row.status === ATTACHMENT_STATUS.STORED) return `附件尚未解析：${row.sanitizedName}`
+      if (row.status === ATTACHMENT_STATUS.EXTRACTING) return `附件正在解析中：${row.sanitizedName}`
+      if (row.status === ATTACHMENT_STATUS.PROCESSING_ERROR) return `附件解析失败：${row.sanitizedName}${row.error ? '（' + String(row.error).slice(0, 60) + '）' : ''}`
+      if (row.error) return `附件处理失败：${row.sanitizedName}${String(row.error).slice(0, 60)}`
       const claimable = row.ownerClientMessageId == null
       const owned = row.ownerClientMessageId != null && row.ownerClientMessageId === clientMessageId
-      const alreadyBound = row.status === ATTACHMENT_STATUS.ATTACHED
-      if (!claimable && !owned && !alreadyBound) {
+      if (!claimable && !owned) {
         return `附件 ${row.sanitizedName} 不属于本次消息`
       }
       totalBytes += row.size || 0

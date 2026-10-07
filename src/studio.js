@@ -9,7 +9,7 @@ import { loadConfig } from './config.js'
 import { Coordinator } from './coordinator.js'
 import { createServer, isLoopback } from './server.js'
 import { createSetup, ensurePath } from './setup.js'
-import { AttachmentStore } from './attachments/store.js'
+import { AttachmentStore, deriveScopeId } from './attachments/store.js'
 import { expandHome } from './util.js'
 
 function listen(server, port, host, tries = 10) {
@@ -47,9 +47,10 @@ export async function startStudio({ root, workdir, configFile, overrides = {}, f
     config = { ...r.config, workdir, sources: config.sources }
     closeFake = r.close
   }
-  const attachmentsDir = path.resolve(expandHome('~/.niuma/attachments'))
-  fs.mkdirSync(attachmentsDir, { recursive: true })
-  const attachmentStore = new AttachmentStore(attachmentsDir)
+  const attachmentsRoot = path.resolve(expandHome('~/.niuma/attachments'))
+  fs.mkdirSync(attachmentsRoot, { recursive: true })
+  const scopeId = deriveScopeId(String(workdir || 'default'))
+  const attachmentStore = new AttachmentStore({ rootDir: attachmentsRoot, scopeId })
   const coord = new Coordinator(config, { mode: fake ? 'fake' : 'live', root, attachmentStore })
   const token = isLoopback(config.host) ? '' : crypto.randomBytes(12).toString('hex')
   // 「接入员工」面板：改完配置后按同样的来源重新读一遍，让傻妞重新点名。

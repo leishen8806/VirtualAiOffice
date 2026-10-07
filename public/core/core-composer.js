@@ -146,17 +146,22 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     return {
       onCancel: (att) => {
         if (att.abortController) { try { att.abortController.abort() } catch {} }
+        Attachments.stopMetaPolling?.(att)
         att.uploadStatus = Attachments.UPLOAD_STATUS.CANCELLED
         rerenderTray(formEl, draft)
       },
       onRetry: (att) => {
+        Attachments.stopMetaPolling?.(att)
         att.error = null
+        att.confirmError = ''
+        att.confirmStatus = Attachments.CONFIRM_STATUS?.NONE || 'NONE'
         att.uploadStatus = Attachments.UPLOAD_STATUS.IDLE
         att.uploadProgress = 0
         att.processingStatus = Attachments.PROCESSING_STATUS.IDLE
         rerenderTray(formEl, draft)
       },
       onRemove: (att) => {
+        Attachments.stopMetaPolling?.(att)
         if (att.objectUrl) { try { URL.revokeObjectURL(att.objectUrl) } catch {} }
         const i = draft.attachments.findIndex((x) => x.id === att.id)
         if (i >= 0) draft.attachments.splice(i, 1)
@@ -175,6 +180,15 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
         box.textContent = String(msg)
         const tray = formEl.querySelector('.attachment-tray')
         if (tray && !box.parentElement) tray.insertBefore(box, tray.firstChild)
+      },
+      onConfirmTranscript: async (att, textValue) => {
+        try {
+          await Attachments.persistConfirmTranscript?.(att, textValue)
+        } catch {}
+        rerenderTray(formEl, draft)
+      },
+      onChangeConfirmStateChange: () => {
+        rerenderTray(formEl, draft)
       },
     }
   }
@@ -239,11 +253,12 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
   }
 
   function attachmentIsReady(a) {
+    if (typeof Attachments.attachmentIsReady === 'function') return Attachments.attachmentIsReady(a)
     if (!a) return false
     if (a.uploadStatus !== Attachments.UPLOAD_STATUS.UPLOADED) return false
     const ps = a.processingStatus
-    if (ps === Attachments.PROCESSING_STATUS.EXTRACTING) return false
-    if (ps === Attachments.PROCESSING_STATUS.EXTRACT_FAILED) return false
+    if (ps !== Attachments.PROCESSING_STATUS.EXTRACTED) return false
+    if (a.error) return false
     return true
   }
 
@@ -293,7 +308,19 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
       if (!draft.attachments || !draft.attachments.length) return true
       const clientMsgId = pendingClientMessageId || (pendingClientMessageId = genUUID())
       for (const a of draft.attachments) {
-        if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED) continue
+        if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED) {
+          if (a.serverId && !a._metaPollStartedAt) {
+            a.transcriptionConfigured = Attachments.isTranscriptionConfigured()
+            try {
+              const initMeta = await Attachments.fetchAttachmentMeta(a)
+              if (initMeta) Attachments.applyMetaToAttachment?.(a, initMeta)
+            } catch {}
+            if (!attachmentIsReady(a)) {
+              Attachments.startMetaPolling?.(a, { onUpdate: () => rerenderTray(form, draft) })
+            }
+          }
+          continue
+        }
         if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADING) {
           await new Promise((r) => {
             const tick = setInterval(() => {
@@ -302,6 +329,16 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
               }
             }, 60)
           })
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED && a.serverId) {
+            a.transcriptionConfigured = Attachments.isTranscriptionConfigured()
+            try {
+              const initMeta = await Attachments.fetchAttachmentMeta(a)
+              if (initMeta) Attachments.applyMetaToAttachment?.(a, initMeta)
+            } catch {}
+            if (!attachmentIsReady(a)) {
+              Attachments.startMetaPolling?.(a, { onUpdate: () => rerenderTray(form, draft) })
+            }
+          }
         } else {
           if (a.uploadStatus === Attachments.UPLOAD_STATUS.CANCELLED) continue
           try {
@@ -313,6 +350,16 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
             // error already set on att
           } finally {
             rerenderTray(form, draft)
+          }
+          if (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED && a.serverId) {
+            a.transcriptionConfigured = Attachments.isTranscriptionConfigured()
+            try {
+              const initMeta = await Attachments.fetchAttachmentMeta(a)
+              if (initMeta) Attachments.applyMetaToAttachment?.(a, initMeta)
+            } catch {}
+            if (!attachmentIsReady(a)) {
+              Attachments.startMetaPolling?.(a, { onUpdate: () => rerenderTray(form, draft) })
+            }
           }
         }
       }
@@ -509,12 +556,16 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
           const code = res.code || ''
           const msg = res.error || '发送失败，请稍后再试。'
           if (code === 'IDEMPOTENT_CONFLICT') {
-            throw new Error('当前消息 id 被用于不同内容，已自动生成新 id，请再次点击发送。（server: IDEMPOTENT_CONFLICT）')
+            const newId = genUUID()
+            pendingClientMessageId = newId
+            setSendErrorBanner(form, '当前消息标识与已有请求冲突，已生成新的消息标识。\n内容已保留，请再次发送。')
+            throw new Error('IDEMPOTENT_CONFLICT_ROTATED')
           }
           throw new Error(msg)
         }
         // success: commit draft cleared, new UUID next send.
         pendingClientMessageId = null
+        for (const a of draft.attachments || []) { try { Attachments.stopMetaPolling?.(a) } catch {} }
         draft.text = ''
         draft.attachments = []
         ta.value = ''
@@ -524,20 +575,36 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
         try { ta.setSelectionRange(0, 0) } catch {}
         setSendErrorBanner(form, '')
       } catch (e) {
-        // restore the draft to its pre-send snapshot so the user can retry the same clientMessageId.
-        draft.attachments = saved.attachments
-        draft.text = saved.text
-        ta.value = saved.value
-        autoGrowTa(ta)
-        rerenderTray(form, draft)
-        try { ta.focus() } catch {}
-        try {
-          const max = ta.value.length
-          const s = Math.min(saved.start, max)
-          const en = Math.min(saved.end, max)
-          ta.setSelectionRange(s, en)
-        } catch {}
-        setSendErrorBanner(form, '发送失败：' + (e && e.message ? e.message : '未知错误。') + ' 内容已保留，可重试或修改后再发。')
+        if (e && e.message === 'IDEMPOTENT_CONFLICT_ROTATED') {
+          // Banner already set; fall through with state preserved.
+          draft.attachments = saved.attachments
+          draft.text = saved.text
+          ta.value = saved.value
+          autoGrowTa(ta)
+          rerenderTray(form, draft)
+          try { ta.focus() } catch {}
+          try {
+            const max = ta.value.length
+            const s = Math.min(saved.start, max)
+            const en = Math.min(saved.end, max)
+            ta.setSelectionRange(s, en)
+          } catch {}
+        } else {
+          // restore the draft to its pre-send snapshot so the user can retry the same clientMessageId.
+          draft.attachments = saved.attachments
+          draft.text = saved.text
+          ta.value = saved.value
+          autoGrowTa(ta)
+          rerenderTray(form, draft)
+          try { ta.focus() } catch {}
+          try {
+            const max = ta.value.length
+            const s = Math.min(saved.start, max)
+            const en = Math.min(saved.end, max)
+            ta.setSelectionRange(s, en)
+          } catch {}
+          setSendErrorBanner(form, '发送失败：' + (e && e.message ? e.message : '未知错误。') + ' 内容已保留，可重试或修改后再发。')
+        }
       } finally {
         sendingInFlight = false
         sendBtn.disabled = false

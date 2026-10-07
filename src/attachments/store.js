@@ -24,10 +24,34 @@ import { ATTACHMENT_STATUS, createEmpty } from './types.js'
 const INDEX_FILENAME = 'index.json'
 const BLOBS_DIR = 'blobs'
 const TMP_SUFFIX = '.tmp'
+const SCOPE_ID_RE = /^[0-9a-f]{12}$/
+
+export function deriveScopeId(seed) {
+  const s = String(seed == null ? '' : seed).trim() || 'default'
+  return crypto.createHash('sha1').update(s, 'utf8').digest('hex').slice(0, 12)
+}
 
 export class AttachmentStore {
-  constructor(attachmentsDir) {
-    this.dir = path.resolve(attachmentsDir)
+  constructor(rootDirOrLegacy, maybeScope) {
+    const legacy = typeof rootDirOrLegacy === 'string' && maybeScope == null
+    const opts = rootDirOrLegacy && typeof rootDirOrLegacy === 'object' ? rootDirOrLegacy : null
+    let rootDir
+    let scopeId
+    if (legacy) {
+      rootDir = rootDirOrLegacy
+      scopeId = null
+    } else if (typeof maybeScope === 'string') {
+      rootDir = rootDirOrLegacy
+      scopeId = maybeScope
+    } else if (opts) {
+      rootDir = opts.rootDir
+      scopeId = opts.scopeId
+    }
+    if (!scopeId) scopeId = deriveScopeId(rootDir || '.')
+    if (!SCOPE_ID_RE.test(scopeId)) throw new Error(`AttachmentStore scopeId must be 12 hex chars, got: ${scopeId}`)
+    this.scopeId = scopeId
+    this.rootDir = path.resolve(rootDir || '.')
+    this.dir = path.join(this.rootDir, scopeId)
     this.blobsDir = path.join(this.dir, BLOBS_DIR)
     this.indexPath = path.join(this.dir, INDEX_FILENAME)
     /** @type {Map<string, import('./types.js').Attachment>} */
@@ -46,7 +70,13 @@ export class AttachmentStore {
       const raw = fs.readFileSync(this.indexPath, 'utf8')
       const arr = JSON.parse(raw)
       if (!Array.isArray(arr)) return
-      for (const row of arr) if (row && row.id) this._index.set(row.id, row)
+      for (const row of arr) {
+        if (row && row.id) {
+          if (row.scopeId && row.scopeId !== this.scopeId) continue
+          if (!row.scopeId) row.scopeId = this.scopeId
+          this._index.set(row.id, row)
+        }
+      }
     } catch {}
   }
 
@@ -117,8 +147,9 @@ export class AttachmentStore {
    * @returns {import('./types.js').Attachment}
    */
   create(patch) {
-    const row = { ...createEmpty(), ...patch, createdAt: Date.now(), updatedAt: Date.now() }
+    const row = { ...createEmpty(), ...patch, scopeId: this.scopeId, createdAt: Date.now(), updatedAt: Date.now() }
     if (!row.id) throw new Error('id required')
+    row.scopeId = this.scopeId
     this._index.set(row.id, row)
     this._schedulePersist()
     return row
@@ -150,21 +181,33 @@ export class AttachmentStore {
   update(id, patch) {
     const row = this._index.get(id)
     if (!row) return null
+    if (row.scopeId && row.scopeId !== this.scopeId) return null
     Object.assign(row, patch, { updatedAt: Date.now() })
     this._schedulePersist()
     return row
   }
 
   get(id) {
-    return this._index.get(id) || null
+    const row = this._index.get(id) || null
+    if (!row) return null
+    if (row.scopeId && row.scopeId !== this.scopeId) return null
+    return row
   }
 
   all() {
-    return [...this._index.values()]
+    const out = []
+    for (const row of this._index.values()) {
+      if (row.scopeId && row.scopeId !== this.scopeId) continue
+      out.push(row)
+    }
+    return out
   }
 
   has(id) {
-    return this._index.has(id)
+    const row = this._index.get(id)
+    if (!row) return false
+    if (row.scopeId && row.scopeId !== this.scopeId) return false
+    return true
   }
 
   /**
@@ -173,6 +216,7 @@ export class AttachmentStore {
    */
   remove(id) {
     const row = this._index.get(id)
+    if (row && row.scopeId && row.scopeId !== this.scopeId) return false
     const paths = [this._blobPath(id), this._blobPath(id) + TMP_SUFFIX]
     for (const p of paths) try { fs.unlinkSync(p) } catch {}
     this._index.delete(id)
@@ -191,6 +235,7 @@ export class AttachmentStore {
     const cutoff = Date.now() - olderThanMs
     const removed = []
     for (const [id, row] of this._index) {
+      if (row.scopeId && row.scopeId !== this.scopeId) continue
       const stale = row.updatedAt < cutoff
       const orphan = row.ownerClientMessageId == null
       const bound = row.status === ATTACHMENT_STATUS.ATTACHED
@@ -209,6 +254,7 @@ export class AttachmentStore {
   claimOwner(id, clientMessageId) {
     const row = this._index.get(id)
     if (!row) return false
+    if (row.scopeId && row.scopeId !== this.scopeId) return false
     if (row.ownerClientMessageId == null) {
       row.ownerClientMessageId = clientMessageId
       row.updatedAt = Date.now()
