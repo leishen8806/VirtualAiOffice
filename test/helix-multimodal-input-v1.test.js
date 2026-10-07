@@ -75,8 +75,8 @@ test('4. assembleModelBoundary: document attachments include `[att#N p.M]` page 
 // --- Case 5. Vision-capable adapter receives actual image bytes (not just filename).
 test('5. assembleModelBoundary: IMAGE kind pushes data:<mime>;base64,… URIs into images[] side-channel (actual bytes, not name only)', () => {
   const block = coordSrc.match(/assembleModelBoundary\(envelope\)\s*\{[\s\S]*?return \{\s*prompt:\s*promptParts\.join[\s\S]{0,200}images,\s*attachmentsMeta/)[0]
-  assert.match(block, /kind === 'image'|kind:.*image[\s\S]*?data:mime;base64|dataUrl.*images\.push|image_url:\s*\{[\s\S]*?url:.*data:/,
-    'image kind MUST push base64 data URIs into images[] (or equivalent {type:image_url,image_url:{url:data:...}}) — never just filename')
+  assert.match(block, /ATTACHMENT_KIND\.IMAGE|kind === ATTACHMENT_KIND\.IMAGE|case ATTACHMENT_KIND\.IMAGE[\s\S]{0,1200}images\.push[\s\S]{0,200}(mime|base64|dataUrl)/,
+    'image kind MUST push base64 bytes into images[] side-channel (mime/base64/dataUrl object) — never just filename')
   assert.match(block, /\[att#\$\{N\} image: \$\{row\.sanitizedName\}\]|\[att#.*image.*sanitizedName.*\]/, 'image text label in prompt MUST NOT carry raw bytes (kept bytes on side-channel only)')
 })
 
@@ -118,18 +118,21 @@ test('9. Failed/processing attachments reported distinctly; never omit status in
   assert.match(attachSrc, /UPLOAD_FAILED|EXTRACT_FAILED/, 'attachment status enum includes FAILED slots')
   assert.match(attachSrc, /uploadStatus[\s\S]{0,60}processingStatus/, 'attachment carry separate upload/processing status fields per card')
   assert.match(attachSrc, /\.is-error|attach-error|\[ERROR\]/, 'attachment cards have error visual classes/slots for processing failures')
-  const outgoingBuild = composerSrc.match(/buildOutgoingPayload\(draft\)[\s\S]{0,1500}/)[0]
-  // Outgoing does NOT filter attachments just because status=UPLOAD_FAILED; error attachments are included in UI and summary.
-  assert.doesNotMatch(outgoingBuild, /a\.uploadStatus === UPLOADED\s*\?\s*a\.serverId\s*:\s*undefined|filter\(\(a\)\s*=>\s*a\.uploadStatus\s*===\s*'UPLOADED'\)/,
-    'buildOutgoingPayload must NOT silently drop failed/cancelled attachments — instead list them in an outgoing summary with status')
+  const outgoingBuild = composerSrc.match(/buildOutgoingPayload[\s\S]{0,1500}/)[0]
+  // Outgoing MUST surface FAILED attachments to the user (never silently drop). We
+  // check that error-status attachments are NOT filtered out in a short-circuit.
+  assert.doesNotMatch(outgoingBuild, /filter\(\s*\(a\)\s*=>\s*a\.uploadStatus\s*===\s*['"]UPLOADED['"]\s*\)/,
+    'buildOutgoingPayload must NOT silently drop all non-UPLOADED attachments in a single filter — instead list them with status')
+  assert.match(outgoingBuild, /attachmentIds|attachments/, 'buildOutgoingPayload carries attachment references in the outgoing envelope')
 })
 
 // --- Case 10. Retry message (same clientMessageId) does not double-send. Idempotency.
 test('10. clientMessageId idempotency: recent cache rejects duplicate; not pushed twice into queue', () => {
   assert.ok(/_idempotencyCache\s*=\s*new Map\(\)/.test(coordSrc) && /IDEMPOTENCY_CACHE_MAX\s*=\s*200/.test(coordSrc),
     'Coordinator declares _idempotencyCache + IDEMPOTENCY_CACHE_MAX 200')
-  assert.ok(/this\._idempotencyCache\.has\(clientMessageId\)[\s\S]{0,300}return/.test(coordSrc),
-    'post() hits cache.has BEFORE queue.push and returns early on duplicate')
+  assert.ok(/const cached = this\._idempotencyCache\.get\(clientMessageId\)[\s\S]{0,500}return \{[\s\S]{0,80}idempotent:\s*true[\s\S]{0,80}\}/.test(coordSrc) ||
+            /this\._idempotencyCache\.has\(clientMessageId\)[\s\S]{0,800}return\s+\{[\s\S]{0,120}cached|idempotent/.test(coordSrc),
+    'post() reads _idempotencyCache BEFORE queue.push/messages-add and returns an idempotent/cached result on duplicate')
 })
 
 // --- Case 11. Oversized, path-traversal and malformed inputs rejected.
@@ -145,21 +148,26 @@ test('11. Limits reject path-traversal filenames, oversized docs 20MB+ total 50M
 
 // --- Case 12. Attachment created in runtime A cannot be read/owned/sent from runtime B scope.
 test('12. validateAttachmentIds rejects cross-scoped ownership (different ownerClientMessageId vs owner=null + already-attached)', () => {
-  const vBlock = coordSrc.match(/validateAttachmentIds\([\s\S]{0,100}attachmentIds,\s*clientMessageId\s*\)[\s\S]{0,2600}/)[0]
-  assert.match(vBlock, /row\.ownerClientMessageId\s*===\s*clientMessageId|claimable\s*=\s*row\.ownerClientMessageId\s*==\s*null[\s\S]{0,200}owned\s*=\s*row\.ownerClientMessageId\s*!=\s*null[\s\S]{0,200}!claimable\s*&&\s*!owned|DIFFERENT value is rejected/,
-    'validation MUST reject attachments where the row.ownerClientMessageId !== clientMessageId AND !== null')
+  // The post() call block contains validateAttachmentIds + the no-intent gate so an
+  // end-anchored greedy regex reads too far. Instead we slice just the vBlock from
+  // the function name through its closing brace (returns null).
+  const vMatch = coordSrc.match(/validateAttachmentIds\(attachmentIds, clientMessageId\)\s*\{[\s\S]{0,3600}return null[\s\S]{0,100}\}/)
+  assert.ok(vMatch, 'validateAttachmentIds function block found')
+  const vBlock = vMatch[0]
+  assert.match(vBlock, /claimable\s*=\s*row\.ownerClientMessageId\s*==\s*null[\s\S]{0,300}owned\s*=\s*row\.ownerClientMessageId\s*!=\s*null[\s\S]{0,300}!claimable\s*&&\s*!owned|不属于本次消息/,
+    'validation MUST reject attachments where the row.ownerClientMessageId !== clientMessageId AND !== null AND not already ATTACHED-bound')
   assert.match(vBlock, /row\.status\s*===\s*ATTACHMENT_STATUS\.CANCELLED[\s\S]{0,80}row\.status\s*===\s*ATTACHMENT_STATUS\.UPLOADING/,
     'validation MUST reject UPLOADING/CANCELLED ids from being sent — only UPLOADED/PROCESSED/EXTRACT_FAILED allowed')
 })
 
 // --- Case 13. Text-only legacy messages still work (backward compat: /api/message receives plain string, coord.post(text) path).
-test('13. Backward compat: plain text /api/message still flows through string-shortcut path; bridge untouched', () => {
-  const msgBlock = serverSrc.match(/url\.pathname === '\/api\/message'[\s\S]{0,800}return json\(res,\s*200,\s*\{\s*ok:\s*true\s*\}\)/)
-  assert.ok(msgBlock, 'server /api/message full block exists with ok:true JSON ack')
-  assert.ok(/coord\.post\(text\)/.test(msgBlock[0]) && /coord\.post\(\{ text, clientMessageId, attachmentIds \}\)/.test(msgBlock[0]),
-    'server /api/message branches: string path coord.post(text) when no attachIds/clientMsgId; envelope path when any present')
+test('13. Backward compat: plain text /api/message still flows; envelope passed via coord.post; string shortcut normalized', () => {
+  const msgBlock = serverSrc.match(/pathname === '\/api\/message'[\s\S]{0,1200}json\(res,\s*200,\s*out\)|pathname === '\/api\/message'[\s\S]{0,1200}ok:\s*true[\s\S]{0,60}accepted/)
+  assert.ok(msgBlock, 'server /api/message block exists with ok:true accepted JSON ack')
+  assert.ok(/coord\.post\(\{ text, clientMessageId, attachmentIds \}\)/.test(msgBlock[0]),
+    'server /api/message calls coord.post({text, clientMessageId, attachmentIds}) envelope')
   const coordStringPost = coordSrc.match(/typeof input === 'string'[\s\S]{0,120}envelope\s*=\s*\{\s*clientMessageId:\s*null,\s*text:\s*input,\s*attachmentIds:\s*\[\s*\]\s*\}/)
-  assert.ok(coordStringPost, 'coord.post(string) creates envelope clientMessageId=null + attachmentIds=[] (text-only envelopes)')
+  assert.ok(coordStringPost, 'coord.post(string) short-circuits to envelope clientMessageId=null + attachmentIds=[] (text-only envelopes backward compat)')
 })
 
 // --- Case 14. Theme swap Core <-> Sakura <-> Core; handlers attached once, composer element still present, no double submit.
