@@ -6,6 +6,7 @@
   const EXPANDED_STACK = []
   const COMPOSER_ID_COUNTER = { v: 0 }
   const HANDLERS_SYM = Symbol('vaoComposerHandlers')
+  const ESC_LISTENER_SYM = Symbol('vaoComposerEscListener')
 
   function draftKey({ runtimeId, workspacePath, projectPath } = {}) {
     const rid = String(runtimeId || 'default')
@@ -252,9 +253,9 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     })
     form.dataset.draftKey = draftKey(ctx)
 
-    if (!document[HANDLERS_SYM + '_esclistener']) {
+    if (!document[ESC_LISTENER_SYM]) {
       document.addEventListener('keydown', escapeGlobalHandler, true)
-      document[HANDLERS_SYM + '_esclistener'] = true
+      document[ESC_LISTENER_SYM] = true
     }
 
     // ---- duplicate handler guard: only attach top-level (doc-level) listeners once.
