@@ -18,7 +18,12 @@
   function getDraft(ctx) {
     const k = draftKey(ctx)
     if (!DRAFTS.has(k)) {
-      DRAFTS.set(k, { text: '', attachments: [], timestamp: Date.now() })
+      DRAFTS.set(k, {
+        text: '',
+        attachments: [],
+        timestamp: Date.now(),
+        retained: null,
+      })
     }
     return DRAFTS.get(k)
   }
@@ -112,7 +117,18 @@ html[data-theme-core] .helix-composer-v2.expanded{position:fixed;z-index:9999;wi
 @media (max-width:640px){
 html[data-theme-core] .helix-composer-v2.expanded{position:fixed;inset:0;left:0;top:0;transform:none;width:100%;height:100%;max-height:100vh;border-radius:0;padding:16px 12px 14px;}
 html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;max-height:60vh;}
-}`
+html[data-theme-core] .retained-wrap{margin:0 2px 6px;border-radius:8px;border:1px dashed color-mix(in srgb, var(--orchestrator) 45%, var(--line));background:color-mix(in srgb, var(--orchestrator) 7%, transparent);padding:6px 8px;}
+html[data-theme-core] .retained-head{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--orchestrator);letter-spacing:.02em;}
+html[data-theme-core] .retained-head .retained-count{padding:1px 6px;border-radius:999px;background:color-mix(in srgb, var(--orchestrator) 18%, transparent);}
+html[data-theme-core] .retained-head .spacer{flex:1 1 auto;}
+html[data-theme-core] .retained-head .retained-clear-all{font-size:10px;font-weight:700;color:var(--text-muted);cursor:pointer;border:1px solid var(--line);background:var(--panel);padding:2px 6px;border-radius:6px;}
+html[data-theme-core] .retained-head .retained-clear-all:hover{color:var(--blocked);border-color:color-mix(in srgb, var(--blocked) 40%, var(--line));}
+html[data-theme-core] .retained-list{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px;}
+html[data-theme-core] .retained-chip{display:inline-flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--line);padding:2px 2px 2px 7px;border-radius:999px;font-size:11px;color:var(--text);line-height:1.5;}
+html[data-theme-core] .retained-chip .rc-name{max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+html[data-theme-core] .retained-chip .rc-size{color:var(--text-muted);font-variant-numeric:tabular-nums;}
+html[data-theme-core] .retained-chip .rc-x{width:18px;height:18px;border-radius:50%;border:0;background:transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:11px;line-height:1;}
+html[data-theme-core] .retained-chip .rc-x:hover{color:var(--blocked);background:color-mix(in srgb, var(--blocked) 15%, transparent);}`
     document.head.appendChild(s)
   }
 
@@ -243,12 +259,19 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
 
   function buildOutgoingPayload(draft, extra = {}) {
     const text = String(draft.text || '').trim()
-    const ids = (draft.attachments || [])
+    const freshIds = (draft.attachments || [])
       .filter((a) => a.serverId && (a.uploadStatus === Attachments.UPLOAD_STATUS.UPLOADED))
       .map((a) => a.serverId)
+    const retainedIds = (draft && draft.retained && draft.retained.continuationToken && Array.isArray(draft.retained.attachments))
+      ? draft.retained.attachments.map((a) => a.serverId).filter(Boolean)
+      : []
+    const ids = [...retainedIds, ...freshIds]
     const payload = { text }
     if (ids.length) payload.attachmentIds = ids
     if (extra && extra.clientMessageId) payload.clientMessageId = String(extra.clientMessageId)
+    if (draft && draft.retained && draft.retained.continuationToken && retainedIds.length) {
+      payload.continuationToken = draft.retained.continuationToken
+    }
     return payload
   }
 
@@ -267,6 +290,78 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
     return 'msg-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
   }
 
+  function fmtBytes(n) {
+    const v = Number(n || 0)
+    if (v < 1024) return v + 'B'
+    if (v < 1024 * 1024) return (v / 1024).toFixed(1) + 'KB'
+    return (v / 1024 / 1024).toFixed(2) + 'MB'
+  }
+
+  function renderRetained(draft, formEl, opts) {
+    const wrap = el('div', { class: 'retained-wrap', 'data-retained-wrap': '1' })
+    if (!draft || !draft.retained || !Array.isArray(draft.retained.attachments) || !draft.retained.attachments.length) {
+      wrap.hidden = true
+      return wrap
+    }
+    const count = draft.retained.attachments.length
+    const head = el('div', { class: 'retained-head' })
+    head.appendChild(el('span', {}, '已保留附件上下文'))
+    const countPill = el('span', { class: 'retained-count' }, `${count} 个`)
+    head.appendChild(countPill)
+    const ttlMs = Number(draft.retained.ttlMs || 0)
+    const issuedAt = Number(draft.retained.issuedAt || 0)
+    if (ttlMs > 0 && issuedAt > 0) {
+      const remainMs = Math.max(0, (issuedAt + ttlMs) - Date.now())
+      const remainSec = Math.round(remainMs / 1000)
+      const mins = Math.floor(remainSec / 60)
+      const secs = remainSec % 60
+      const tt = mins > 0 ? `${mins}分${String(secs).padStart(2, '0')}秒` : `${secs}秒`
+      const pill = el('span', { style: 'font-size:10px;color:var(--text-muted);font-weight:700;', 'data-retained-ttl': tt }, '剩余 ' + tt)
+      head.appendChild(pill)
+    }
+    const spacer = el('div', { class: 'spacer' })
+    head.appendChild(spacer)
+    const clearAll = el('button', { type: 'button', class: 'retained-clear-all', title: '移除所有保留的附件上下文', onClick: () => {
+      if (typeof opts.onDiscardRetainedAll === 'function') opts.onDiscardRetainedAll()
+    } }, '清除保留')
+    head.appendChild(clearAll)
+    wrap.appendChild(head)
+    const list = el('div', { class: 'retained-list' })
+    draft.retained.attachments.forEach((att, index) => {
+      const chip = el('div', { class: 'retained-chip', 'data-retained-index': String(index) })
+      const glyph = (att.kind === 'IMAGE') ? '🖼️' : (att.kind === 'AUDIO') ? '🎙️' : '📄'
+      chip.appendChild(el('span', { style: 'font-size:11px;', 'aria-hidden': 'true' }, glyph))
+      const name = el('span', { class: 'rc-name', title: String(att.sanitizedName || att.name || '') }, String(att.sanitizedName || att.name || 'attachment'))
+      chip.appendChild(name)
+      if (typeof att.size === 'number') {
+        chip.appendChild(el('span', { class: 'rc-size' }, fmtBytes(att.size)))
+      }
+      const xb = el('button', { type: 'button', class: 'rc-x', title: '不再保留此附件', onClick: () => {
+        if (typeof opts.onDiscardRetainedIndex === 'function') opts.onDiscardRetainedIndex(index)
+      } }, '×')
+      chip.appendChild(xb)
+      list.appendChild(chip)
+    })
+    wrap.appendChild(list)
+    return wrap
+  }
+
+  function rerenderRetained(formEl, draft, opts) {
+    if (!formEl) return
+    const old = formEl.querySelector('[data-retained-wrap]')
+    const fresh = renderRetained(draft, formEl, opts)
+    // Insert retained BEFORE the attachment tray OR before textarea first row if no tray yet
+    const tray = formEl.querySelector('.attachment-tray')
+    const taWrap = formEl.querySelector('.composer-ta-wrap')
+    if (old && old.parentElement) old.replaceWith(fresh)
+    else {
+      // Try insert: target before textarea (taWrap)
+      if (taWrap && taWrap.parentElement) taWrap.parentElement.insertBefore(fresh, taWrap)
+      else if (tray && tray.parentElement) tray.parentElement.insertBefore(fresh, tray)
+      else formEl.insertBefore(fresh, formEl.firstChild)
+    }
+  }
+
   function renderComposer(options = {}) {
     const ctx = options.context || {}
     const onSend = options.onSend || null
@@ -276,6 +371,78 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
 
     let sendingInFlight = false
     let pendingClientMessageId = null
+    let retainedExpireTimer = null
+    let latestTrayRenderOpts = null
+
+    const stopRetainedExpireTimer = () => {
+      if (retainedExpireTimer) { clearInterval(retainedExpireTimer); retainedExpireTimer = null }
+    }
+    const clearRetainedClientOnly = () => {
+      stopRetainedExpireTimer()
+      draft.retained = null
+    }
+    const callDiscardServerSide = async () => {
+      const tok = draft && draft.retained && draft.retained.continuationToken
+      if (!tok || !onSend) return
+      try {
+        const ids = (draft.retained.attachments || []).map((a) => a.serverId).filter(Boolean)
+        const payload = {
+          clientMessageId: genUUID(),
+          text: '',
+          attachmentIds: ids,
+          continuationToken: tok,
+          continuationDiscard: true,
+        }
+        await onSend(payload)
+      } catch {}
+    }
+    const discardRetainedAll = () => {
+      if (!draft || !draft.retained) return
+      if (draft.retained.continuationToken) callDiscardServerSide().catch(() => {})
+      clearRetainedClientOnly()
+      rerenderRetained(form, draft, latestTrayRenderOpts)
+      rerenderTray(form, draft)
+    }
+    const discardRetainedIndex = (index) => {
+      if (!draft || !draft.retained || !Array.isArray(draft.retained.attachments)) return
+      draft.retained.attachments.splice(index, 1)
+      if (!draft.retained.attachments.length) {
+        if (draft.retained.continuationToken) callDiscardServerSide().catch(() => {})
+        clearRetainedClientOnly()
+      }
+      rerenderRetained(form, draft, latestTrayRenderOpts)
+      rerenderTray(form, draft)
+    }
+    const startRetainedExpireTimer = () => {
+      stopRetainedExpireTimer()
+      const tick = () => {
+        const r = draft && draft.retained
+        if (!r || !r.issuedAt || !r.ttlMs) return
+        const remain = (r.issuedAt + r.ttlMs) - Date.now()
+        if (remain <= 0) {
+          clearRetainedClientOnly()
+          setSendErrorBanner(form, '附件上下文已过期，请重新上传。')
+          rerenderRetained(form, draft, latestTrayRenderOpts)
+          rerenderTray(form, draft)
+          return
+        }
+        // Update visible TTL if node present
+        const ttlNode = form.querySelector('[data-retained-ttl]')
+        if (ttlNode) {
+          const remainSec = Math.round(remain / 1000)
+          const mins = Math.floor(remainSec / 60)
+          const secs = remainSec % 60
+          ttlNode.textContent = '剩余 ' + (mins > 0 ? `${mins}分${String(secs).padStart(2, '0')}秒` : `${secs}秒`)
+        }
+      }
+      tick()
+      retainedExpireTimer = setInterval(tick, 1000)
+    }
+
+    latestTrayRenderOpts = {
+      onDiscardRetainedAll: discardRetainedAll,
+      onDiscardRetainedIndex: discardRetainedIndex,
+    }
 
     const form = el('form', {
       class: 'helix-composer-v2',
@@ -303,6 +470,9 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
 
     const tray = Attachments.renderTray(draft.attachments, attachCtxFromDraft(draft, form))
     form.appendChild(tray)
+    const initialRetained = renderRetained(draft, form, latestTrayRenderOpts)
+    form.insertBefore(initialRetained, tray)
+    if (draft.retained && draft.retained.ttlMs && draft.retained.issuedAt) startRetainedExpireTimer()
 
     async function ensureAttachmentsUploaded() {
       if (!draft.attachments || !draft.attachments.length) return true
@@ -548,39 +718,151 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
         end: typeof ta.selectionEnd === 'number' ? ta.selectionEnd : ta.value.length,
         attachments: draft.attachments.slice(),
         text: draft.text,
+        retainedBefore: draft.retained ? { ...draft.retained, attachments: draft.retained.attachments ? draft.retained.attachments.slice() : null } : null,
       }
       const payload = buildOutgoingPayload(draft, { clientMessageId })
+      // Save the set of attachment ids sent this envelope (for rebind & noIntent branch).
+      // Combine retained + fresh from payload.
+      const sentAttachmentIds = Array.isArray(payload.attachmentIds) ? payload.attachmentIds.slice() : []
       try {
         const res = await (onSend && onSend(payload))
         if (res && typeof res === 'object' && res.ok === false) {
           const code = res.code || ''
           const msg = res.error || '发送失败，请稍后再试。'
           if (code === 'IDEMPOTENT_CONFLICT') {
+            const hasRebind = typeof res.rebindToken === 'string' && Array.isArray(res.rebindAttachmentIds) && res.rebindAttachmentIds.length > 0
             const newId = genUUID()
+            let needReuploadFor = []
+            let rebindSucceeded = false
+            let bannerMsg = '当前消息标识与已有请求冲突，已生成新的消息标识。\n内容已保留，请再次发送。'
+            if (hasRebind) {
+              const rebindPayload = {
+                rebindToken: res.rebindToken,
+                newClientMessageId: newId,
+              }
+              let rebindRes = { ok: false, reuploadRequired: true, error: 'no rebind callback' }
+              if (typeof options.onRebindAttachments === 'function') {
+                try {
+                  rebindRes = await options.onRebindAttachments(rebindPayload)
+                } catch (e) {
+                  rebindRes = { ok: false, error: e && e.message ? e.message : String(e), reuploadRequired: true }
+                }
+              }
+              if (rebindRes && rebindRes.ok === true) {
+                rebindSucceeded = true
+                bannerMsg = '消息标识冲突已修复，附件已重新绑定。\n内容已保留，请再次发送。'
+              } else {
+                // Need reupload: clear server ids for the rebind affected ids.
+                const affected = new Set(res.rebindAttachmentIds || [])
+                needReuploadFor = []
+                // Clear serverId on draft attachments if id matched.
+                for (const a of draft.attachments) {
+                  if (a.serverId && affected.has(a.serverId)) {
+                    needReuploadFor.push(a.sanitizedName || a.name || '附件')
+                    a.serverId = null
+                    a.uploadStatus = Attachments.UPLOAD_STATUS.IDLE
+                    a.uploadProgress = 0
+                  }
+                }
+                bannerMsg = (rebindRes && rebindRes.reuploadRequired)
+                  ? ('部分附件需要重新上传后再发送：' + needReuploadFor.join('、') + '。内容已保留，请修复后重试。')
+                  : ('消息标识冲突，附件重绑定失败：' + (rebindRes && rebindRes.error ? rebindRes.error : '未知错误') + '。内容已保留，请重试或手动移除并重新上传受影响的附件。')
+              }
+            }
             pendingClientMessageId = newId
-            setSendErrorBanner(form, '当前消息标识与已有请求冲突，已生成新的消息标识。\n内容已保留，请再次发送。')
+            setSendErrorBanner(form, bannerMsg)
             throw new Error('IDEMPOTENT_CONFLICT_ROTATED')
           }
           throw new Error(msg)
         }
-        // success: commit draft cleared, new UUID next send.
-        pendingClientMessageId = null
-        for (const a of draft.attachments || []) { try { Attachments.stopMetaPolling?.(a) } catch {} }
-        draft.text = ''
-        draft.attachments = []
-        ta.value = ''
-        autoGrowTa(ta)
-        rerenderTray(form, draft)
-        try { ta.focus() } catch {}
-        try { ta.setSelectionRange(0, 0) } catch {}
-        setSendErrorBanner(form, '')
+        // success or noIntent success path
+        if (res && typeof res === 'object' && res.noIntent === true) {
+          // no intent: store retained context, do NOT clear attachment ids yet.
+          pendingClientMessageId = null
+          setSendErrorBanner(form, '')
+          for (const a of draft.attachments || []) { try { Attachments.stopMetaPolling?.(a) } catch {} }
+          const contTok = typeof res.continuationToken === 'string' ? res.continuationToken : ''
+          const ttl = typeof res.continuationTtlMs === 'number' ? res.continuationTtlMs : 0
+          const retainedIds = Array.isArray(res.retainedAttachmentIds) ? res.retainedAttachmentIds : sentAttachmentIds
+          const retainedSet = new Set(retainedIds)
+          const retainedCards = []
+          // Move from draft.attachments → retainedCards: if their serverId is within retained set
+          const leftover = []
+          for (const a of draft.attachments || []) {
+            if (a.serverId && retainedSet.has(a.serverId)) {
+              retainedCards.push({
+                serverId: a.serverId,
+                name: a.name || '',
+                sanitizedName: a.sanitizedName || a.name || '',
+                kind: a.kind,
+                size: a.size,
+                processingStatus: a.processingStatus,
+                uploadStatus: a.uploadStatus,
+                error: a.error || null,
+                extract: a.extract || null,
+                objectUrl: null, // Don't keep blob URLs, no re-upload needed
+                localFile: null, // Don't keep File blobs
+                thumb: (a.thumb && typeof a.thumb === 'string') ? a.thumb : null,
+              })
+            } else {
+              leftover.push(a)
+            }
+          }
+          // Also any retainedCards from previous retained attachments that were in draft
+          if (saved.retainedBefore && Array.isArray(saved.retainedBefore.attachments)) {
+            for (const a of saved.retainedBefore.attachments) {
+              if (a && a.serverId && retainedSet.has(a.serverId)) {
+                if (!retainedCards.some((x) => x.serverId === a.serverId)) retainedCards.push({ ...a })
+              }
+            }
+          }
+          // Clear draft text
+          draft.text = ''
+          ta.value = ''
+          // Keep only non-retained leftovers in draft.attachments (typically empty).
+          draft.attachments = leftover
+          if (contTok && retainedCards.length > 0) {
+            draft.retained = {
+              continuationToken: contTok,
+              ttlMs: ttl,
+              issuedAt: Date.now(),
+              attachments: retainedCards,
+            }
+          } else {
+            draft.retained = null
+            stopRetainedExpireTimer()
+          }
+          autoGrowTa(ta)
+          rerenderRetained(form, draft, latestTrayRenderOpts)
+          rerenderTray(form, draft)
+          if (draft.retained && draft.retained.ttlMs) startRetainedExpireTimer()
+          try { ta.focus() } catch {}
+          try { ta.setSelectionRange(0, 0) } catch {}
+        } else {
+          // Normal success: commit clear, new UUID next send, clear retained context.
+          pendingClientMessageId = null
+          stopRetainedExpireTimer()
+          for (const a of draft.attachments || []) { try { Attachments.stopMetaPolling?.(a) } catch {} }
+          draft.retained = null
+          draft.text = ''
+          draft.attachments = []
+          ta.value = ''
+          autoGrowTa(ta)
+          rerenderRetained(form, draft, latestTrayRenderOpts)
+          rerenderTray(form, draft)
+          try { ta.focus() } catch {}
+          try { ta.setSelectionRange(0, 0) } catch {}
+          setSendErrorBanner(form, '')
+        }
       } catch (e) {
         if (e && e.message === 'IDEMPOTENT_CONFLICT_ROTATED') {
           // Banner already set; fall through with state preserved.
           draft.attachments = saved.attachments
           draft.text = saved.text
+          if (saved.retainedBefore !== undefined) draft.retained = saved.retainedBefore
           ta.value = saved.value
           autoGrowTa(ta)
+          rerenderRetained(form, draft, latestTrayRenderOpts)
           rerenderTray(form, draft)
           try { ta.focus() } catch {}
           try {
@@ -593,8 +875,10 @@ html[data-theme-core] .helix-composer-v2.expanded .composer-ta{min-height:220px;
           // restore the draft to its pre-send snapshot so the user can retry the same clientMessageId.
           draft.attachments = saved.attachments
           draft.text = saved.text
+          if (saved.retainedBefore !== undefined) draft.retained = saved.retainedBefore
           ta.value = saved.value
           autoGrowTa(ta)
+          rerenderRetained(form, draft, latestTrayRenderOpts)
           rerenderTray(form, draft)
           try { ta.focus() } catch {}
           try {

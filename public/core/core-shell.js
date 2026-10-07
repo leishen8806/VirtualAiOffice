@@ -446,6 +446,9 @@
             // shape. Do NOT drop the 2nd arg or strip attachmentIds here.
             return composer.onSend?.(t)
           },
+          onRebindAttachments: typeof composer.onRebindAttachments === 'function'
+            ? (payload) => composer.onRebindAttachments(payload)
+            : null,
         })
       } else {
         composerEl = el('form', { class: 'helix-composer', onsubmit: (e) => { e.preventDefault(); const ta = composerEl.querySelector('textarea'); if (ta.value.trim()) composer.onSend?.(ta.value.trim()); ta.value = '' } })
@@ -571,14 +574,14 @@
       if (t && typeof t === 'object') return options.onConversationSend?.(t)
       if (full && typeof full === 'object') return options.onConversationSend?.(full)
       return options.onConversationSend?.(String(t ?? ''))
-    } })
+    }, onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) })
     helixPanel.appendChild(innerHelixPanel)
     helixDrawer.innerHTML = ''
     helixDrawer.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => {
       if (t && typeof t === 'object') return options.onConversationSend?.(t)
       if (full && typeof full === 'object') return options.onConversationSend?.(full)
       return options.onConversationSend?.(String(t ?? ''))
-    } }))
+    }, onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }))
 
     document.body.appendChild(bar)
     document.body.appendChild(rail)
@@ -608,9 +611,9 @@
           const oldPanel = helixPanel.firstElementChild
           const oldDrawer = helixDrawer.firstElementChild
           helixPanel.innerHTML = ''
-          helixPanel.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full) }, oldPanel))
+          helixPanel.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full), onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }, oldPanel))
           if (oldDrawer) {
-            const newDrawer = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full) }, oldDrawer)
+            const newDrawer = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full), onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }, oldDrawer)
             helixDrawer.innerHTML = ''
             helixDrawer.appendChild(newDrawer)
           }

@@ -315,6 +315,20 @@
         snapshot: derived.snapshot,
         onThemeChange: (id) => setSkin(id),
         onConversationSend: (t) => send(t),
+        onRebindAttachments: async (payload) => {
+          if (!transport || typeof transport.request !== 'function') {
+            return { ok: false, error: 'transport unavailable', reuploadRequired: true }
+          }
+          try {
+            const r = await transport.request('POST', '/niuma/v1/attachments/_rebind', payload || {})
+            if (r && typeof r === 'object' && (r.ok === true || Array.isArray(r.rebound))) {
+              return { ok: true, rebound: Array.isArray(r.rebound) ? r.rebound : [] }
+            }
+            return { ok: false, error: (r && (r.error || r.message)) || 'rebind failed', reuploadRequired: !!(r && r.reuploadRequired) }
+          } catch (e) {
+            return { ok: false, error: e && e.message ? e.message : String(e), reuploadRequired: true }
+          }
+        },
       })
       return {
         destroy: () => destroyCoreShell(),
@@ -912,6 +926,12 @@
         if (Array.isArray(arg.attachmentIds)) {
           env.attachmentIds = arg.attachmentIds.map((x) => String(x || '')).filter(Boolean)
         }
+        if (typeof arg.continuationToken === 'string' && arg.continuationToken.length) {
+          env.continuationToken = arg.continuationToken
+        }
+        if (arg.continuationDiscard === true || arg.continuationDiscard === false) {
+          env.continuationDiscard = !!arg.continuationDiscard
+        }
       } else {
         env = { text: '' }
       }
@@ -960,11 +980,19 @@
       }
       return res || { ok: true }
     } catch (e) {
-      const body = e && e.body ? (typeof e.body === 'string' ? e.body : (e.body.error || e.body.code || '')) : ''
-      const outMsg = isPlainString ? `没发出去：${e.message || ''}${body ? ' — ' + body : ''}` : undefined
+      const body = e && e.body ? (typeof e.body === 'string' ? e.body : e.body) : undefined
+      const bodyText = typeof body === 'string' ? body : ''
+      const outMsg = isPlainString ? `没发出去：${e.message || ''}${bodyText ? ' — ' + bodyText : ''}` : undefined
       if (outMsg) handle({ type: 'message', message: { role: 'system', text: outMsg, ts: Date.now() } })
       const fail = { ok: false, error: e.message || String(e), status: e.status || 0 }
       if (e && e.code) fail.code = e.code
+      if (body && typeof body === 'object') {
+        if (typeof body.code === 'string' && !fail.code) fail.code = body.code
+        if (typeof body.rebindToken === 'string') fail.rebindToken = body.rebindToken
+        if (typeof body.rebindTokenTtlMs === 'number') fail.rebindTokenTtlMs = body.rebindTokenTtlMs
+        if (Array.isArray(body.rebindAttachmentIds)) fail.rebindAttachmentIds = body.rebindAttachmentIds
+        if (typeof body.error === 'string' && !fail.error) fail.error = body.error
+      }
       return fail
     }
   }
