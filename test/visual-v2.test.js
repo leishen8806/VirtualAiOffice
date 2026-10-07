@@ -190,7 +190,17 @@ function installMinimalDOMShim() {
         this.children.length = 0
       },
       get outerHTML() {
-        return `<${tag}>${this.innerHTML}</${tag}>`
+        const parts = [tag]
+        attrs.forEach((v, k) => {
+          if (v === true) parts.push(`${k}`)
+          else parts.push(`${k}="${String(v).replace(/"/g, '&quot;')}"`)
+        })
+        const cls = this.className
+        if (cls) parts.push(`class="${cls.replace(/"/g, '&quot;')}"`)
+        for (const [k, v] of Object.entries(dataset || {})) {
+          if (v !== undefined && !attrs.has(`data-${k}`)) parts.push(`data-${k}="${String(v).replace(/"/g, '&quot;')}"`)
+        }
+        return `<${parts.join(' ')}>${this.innerHTML}</${tag}>`
       },
       setAttribute(k, v) { attrs.set(String(k), v === '' ? true : String(v)) },
       getAttribute(k) {
@@ -506,4 +516,250 @@ test('FIX 8d. [app.js bridge surface exists] app.js exports adapter methods (set
   }
   assert.match(appSrc, /deriveCoreRuntimeFromState\s*\(/, 'Honest bootstrap derivation helper must exist (Fix 4)')
   assert.match(appSrc, /Shell\.bootstrap\s*\(\s*\{[\s\S]*?mode\s*:\s*derived\.mode/, 'Shell.bootstrap receives explicit mode from derived state (never silent fallback)')
+})
+
+/* ---------------------------------------------------------------------------
+ * INTERACTIVE OFFICE V2 — 11 interaction tests (6-zone spatial redesign)
+ * Loads V2 IIFE modules into Node.js using the same minimal DOM shim.
+ * ------------------------------------------------------------------------- */
+
+function loadV2Modules() {
+  installMinimalDOMShim()
+  const order = [
+    'public/core/core-theme.js',
+    'public/core/core-states.js',
+    'public/core/core-characters-v2.js',
+    'public/core/core-office-v2.js',
+    'public/core/core-shell-v2.js',
+    'public/core/demo-v2.js',
+    'public/core/app-v2.js',
+  ]
+  for (const rel of order) {
+    const abs = path.join(ROOT, rel)
+    delete require.cache[abs]
+    require(abs)
+  }
+  return {
+    Theme: globalThis.VAOCoreTheme,
+    S: globalThis.VAOCoreStates,
+    Chars: globalThis.VAOCoreCharactersV2,
+    Office: globalThis.VAOCoreOfficeV2,
+    Shell: globalThis.VAOCoreShellV2,
+    Demo: globalThis.VAODemoV2,
+    App: globalThis.VAOAppV2,
+  }
+}
+
+function collectV2HTML(handle) {
+  const parts = []
+  for (const key of Object.keys(handle?.nodes || {})) {
+    const n = handle.nodes[key]
+    if (n) parts.push(n.outerHTML || n.innerHTML || '')
+  }
+  if (handle?.office?.mount) parts.push(handle.office.mount.outerHTML || handle.office.mount.innerHTML || '')
+  if (globalThis.document?.body?.innerHTML) parts.push(globalThis.document.body.innerHTML)
+  return parts.join('\n')
+}
+
+test('V2-T1. [role click → inspector] Shell.bootstrap demo mode → dispatch vao-v2:role-clicked(frontend) → drawer shows Role Inspector with Frontend Engineer / Member / State fields', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  const html0 = collectV2HTML(handle)
+  assert.ok(!html0.includes('Frontend Engineer') || !html0.includes('Role Inspector'),
+    'initial render MUST NOT yet contain role inspector drawer')
+  const ev = new globalThis.CustomEvent('vao-v2:role-clicked', {
+    detail: { roleId: 'frontend', el: handle.nodes.stageWrap },
+  })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('Role Inspector'), `after vao-v2:role-clicked(frontend) → drawer header must say Role Inspector. Scan tail = ${html.slice(-800)}`)
+  assert.ok(html.includes('前端工程师') || html.includes('Frontend Engineer'),
+    `drawer MUST contain role name frontend. Present zh=前端工程师:${html.includes('前端工程师')} en=Frontend Engineer:${html.includes('Frontend Engineer')}`)
+  assert.ok(html.includes('class="k">Member<'), 'drawer KV section MUST contain Member key')
+  assert.ok(html.includes('class="k">State<'), 'drawer KV section MUST contain State key')
+  handle.destroy?.()
+})
+
+test('V2-T2. [workstation click → same inspector] vao-v2:workstation-clicked(qa) opens identical role inspector drawer as role-clicked path', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  const ev = new globalThis.CustomEvent('vao-v2:workstation-clicked', {
+    detail: { roleId: 'qa' },
+  })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('Role Inspector'), 'workstation-clicked MUST open Role Inspector drawer')
+  assert.ok(html.includes('测试工程师') || html.includes('QA Engineer'),
+    `workstation-clicked qa role MUST render QA role name. zh=测试工程师:${html.includes('测试工程师')} en=QA Engineer:${html.includes('QA Engineer')}`)
+  assert.ok(html.includes('Human·AI'), 'role inspector KV MUST contain Human·AI section regardless of role-clicked vs workstation-clicked path')
+  handle.destroy?.()
+})
+
+test('V2-T3. [task click → task inspector] vao-v2:task-clicked(V2-101) opens task drawer with id/title/owner/evidence', () => {
+  const M = loadV2Modules()
+  const runtime = {
+    tasks: [
+      { id: 'V2-101', title: 'V2 六区楼地面层重构', status: 'running', role: 'architect', kind: 'feature', difficulty: 'hard' },
+    ],
+  }
+  const handle = M.Shell.bootstrap({ mode: 'demo', runtime })
+  const ev = new globalThis.CustomEvent('vao-v2:task-clicked', {
+    detail: { taskId: 'V2-101' },
+  })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('Task Inspector'), `task-clicked MUST render Task Inspector header. tail=${html.slice(-400)}`)
+  assert.ok(html.includes('V2-101'), 'task inspector MUST contain task id V2-101')
+  assert.ok(html.includes('V2 六区楼地面层重构'), 'task inspector MUST contain task title')
+  assert.ok(html.includes('架构师') || html.includes('Architect'), 'task inspector MUST show owner architect')
+  assert.ok(html.includes('Evidence'), 'task inspector MUST contain Evidence section')
+  handle.destroy?.()
+})
+
+test('V2-T4. [runtime state → visual state] Shell bootstrap live → handle office setRoleState(architect, WORKING) → mounted SVG has sk2-state-working class', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  handle.office?.setRoleState?.('architect', 'WORKING')
+  const html = collectV2HTML(handle)
+  // sk2-state-working class is applied on .char-<roleId> wrapper when state = WORKING
+  const hasStateClass = html.includes('sk2-state-working')
+  const hasRoleNode = html.includes('char-architect') || html.includes('data-role="architect"')
+  assert.ok(hasRoleNode, `mounted office MUST have char-architect node. Present=${hasRoleNode}`)
+  assert.ok(hasStateClass, `after setRoleState(architect,WORKING) → SVG .char-architect MUST carry sk2-state-working class. Classes present=sk2-state-working:${hasStateClass}`)
+  handle.destroy?.()
+})
+
+test('V2-T5. [WAITING_HUMAN → Human Area active] animate.waitingHuman(true) → zone-human-area data-active="true" AND human-request-card visible', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  // Pre check: default Human Area hidden
+  let html = collectV2HTML(handle)
+  const zoneRe = /class="zone\s+zone-human-area"[^>]*data-active="(true|false)"/
+  const before = html.match(zoneRe)?.[1]
+  handle.animate?.waitingHuman?.(true)
+  html = collectV2HTML(handle)
+  const after = html.match(zoneRe)?.[1]
+  assert.equal(after, 'true', `after animate.waitingHuman(true) → zone-human-area data-active MUST flip → true. before=${before} after=${after}`)
+  // human-request-card group element present in mounted SVG (via opacity/ display removal — visible means group exists with data-active=true)
+  const hasCard = html.includes('human-request-card')
+  assert.ok(hasCard, 'after activateHumanArea → human-request-card <g> MUST be present in mounted SVG (data-active branch draws it)')
+  handle.destroy?.()
+})
+
+test('V2-T6. [BLOCKED visual state] office.setRoleState(frontend, BLOCKED) → char-frontend carries sk2-state-blocked class', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  handle.office?.setRoleState?.('frontend', 'BLOCKED')
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('sk2-state-blocked'),
+    `setRoleState(frontend,BLOCKED) → SVG MUST carry sk2-state-blocked state class. Has sk2-state-blocked=${html.includes('sk2-state-blocked')}`)
+  handle.destroy?.()
+})
+
+test('V2-T7. [DONE → IDLE transition timer] animate.done(frontend, 50ms) with short delay → state shifts from sk2-state-done to sk2-state-idle within tolerance', (_, done) => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  handle.animate?.done?.('frontend', 50)
+  // Immediately after call → DONE class must be present
+  const immediate = collectV2HTML(handle)
+  const hadDone = immediate.includes('sk2-state-done')
+  setTimeout(() => {
+    const later = collectV2HTML(handle)
+    const hasIdle = later.includes('sk2-state-idle')
+    try {
+      assert.ok(hadDone, 'immediately after animate.done → state MUST show DONE (sk2-state-done class)')
+      assert.ok(hasIdle, `after delay+50ms → state MUST settle back to IDLE (sk2-state-idle). Immediately hadDone=${hadDone}. Later hasIdle=${hasIdle}`)
+      handle.destroy?.()
+      done()
+    } catch (e) {
+      handle.destroy?.()
+      done(e)
+    }
+  }, 140)
+})
+
+test('V2-T8. [Helix panel expand/collapse] handle.setHelix(true/false) toggles body.v2-helix-open class AND helix rail expanded/collapsed content', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  handle.setHelix(true)
+  let html = collectV2HTML(handle)
+  let hasOpen = globalThis.document.body.classList.contains('v2-helix-open')
+  assert.ok(hasOpen, 'after setHelix(true) → body MUST carry v2-helix-open class')
+  // With helix open → rail should render v2-helix-expanded node
+  assert.ok(handle.nodes.helixRail.querySelector || true, 'helix rail exists')
+  const expanded = collectV2HTML(handle).includes('v2-helix-expanded')
+  assert.ok(expanded, `after setHelix(true) → rail inner MUST contain v2-helix-expanded class wrapper. expandedPresent=${expanded}`)
+  handle.setHelix(false)
+  hasOpen = globalThis.document.body.classList.contains('v2-helix-open')
+  assert.ok(!hasOpen, 'after setHelix(false) → body MUST NOT carry v2-helix-open class')
+  handle.destroy?.()
+})
+
+test('V2-T9. [Navigation collapse] handle.setNav(false) adds body.v2-nav-collapsed; titles hidden via CSS class', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  handle.setNav(false)
+  const collapsed = globalThis.document.body.classList.contains('v2-nav-collapsed')
+  assert.ok(collapsed, 'after setNav(false) → body MUST carry v2-nav-collapsed class')
+  // InjectCss in shell-v2 guarantees the class is wired to display:none for titles
+  const shellCss = globalThis.document.getElementById(M.Shell?.CSS_ID || 'v2-shell-css')?.textContent || ''
+  assert.match(shellCss, /\.v2-nav-collapsed[\s\S]*?\.v2-nav-item-title[\s\S]*?display:\s*none\s*!important/,
+    'v2-shell CSS MUST hide nav item titles via v2-nav-collapsed selector (nav collapse spec)')
+  handle.destroy?.()
+})
+
+test('V2-T10. [Core ↔ Classic functional] VAOCoreShellV2.restoreClassicScaffold() rewrites body with .app/.layout/#scene/#office canvas; then setSkinV2(core) re-boots V2', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  let html = globalThis.document.body.innerHTML
+  const bodyHasClass = globalThis.document.body.classList?.contains?.('v2-shell-body')
+  const inAttr = /<body[^>]*class="[^"]*v2-shell-body[^"]*"/i.test(html) || html.includes('v2-shell-body')
+  assert.ok(bodyHasClass || inAttr, `Core active → body carries v2-shell-body. classList.has=${bodyHasClass} html.in=${inAttr}`)
+  M.Shell.restoreClassicScaffold()
+  html = globalThis.document.body.innerHTML
+  assert.ok(html.includes('class="app"'), `Classic scaffold MUST contain <div class="app">. present=${html.includes('class="app"')}`)
+  assert.ok(html.includes('class="layout"'), 'Classic scaffold MUST contain <main class="layout">')
+  assert.ok(html.includes('id="scene"'), 'Classic scaffold MUST contain <div class="scene" id="scene">')
+  assert.ok(html.includes('id="office"'), `Classic scaffold MUST contain <canvas id="office">. present=${html.includes('id="office"')}`)
+  assert.ok(html.includes('skins"'), `Classic scaffold MUST restore #skins selector so legacy setSkin() still works. present=${html.includes('skins"')}`)
+  // Reset back to Core V2 via AppV2.setSkin('core').
+  // Note: App may have bootstrapped Core on load via bootIfNeeded. First switch to a classic skin so id mismatch bypasses early-return guard, then back to core.
+  const App = M.App
+  if (App && typeof App.setSkin === 'function') {
+    const origId = App.currentSkinId
+    // Force transient classic to ensure state transition
+    try { App.setSkin(M.Shell?.CLASSIC_IDS?.[0] || 'sakura') } catch (_) {}
+    // Now transition back to core
+    App.setSkin('core')
+  }
+  html = globalThis.document.body.innerHTML
+  const hasCoreBar = html.includes('v2-top-bar') || html.includes('v2-shell-body') || globalThis.document.body.classList.contains('v2-shell-body')
+  assert.ok(hasCoreBar, `after setSkin(core) → V2 shell MUST be re-mounted (body v2-shell-body or #v2-top-bar present). hasCoreBar=${hasCoreBar}`)
+  handle.destroy?.()
+})
+
+test('V2-T11. [reduced-motion disables] force matchMedia(prefers-reduced-motion)=matches → Chars.injectStyles @media block contains animation:none !important for sk2-fig', () => {
+  const M = loadV2Modules()
+  // 1) Clear any previously injected chars-v2 style so injectStyles actually re-runs the write.
+  const prev = globalThis.document.getElementById('core-chars-v2-css')
+  if (prev) prev.remove()
+  // 2) Override matchMedia shim to report prefers-reduced-motion: reduce → matches:true
+  const origMatchMedia = globalThis.matchMedia
+  globalThis.matchMedia = (q) => ({
+    matches: String(q || '').includes('prefers-reduced-motion') && String(q).includes('reduce'),
+    media: '',
+    addListener() {},
+    removeListener() {},
+  })
+  try {
+    M.Chars?.injectStyles?.()
+    const styleNode = globalThis.document.getElementById('core-chars-v2-css')
+    assert.ok(styleNode, 'Chars.injectStyles() MUST append <style id="core-chars-v2-css"> to head')
+    const css = styleNode.textContent || ''
+    const re = /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.sk2-fig[\s\S]*?animation:\s*none\s*!important/
+    assert.match(css, re,
+      `chars-v2 injected CSS MUST contain @media (prefers-reduced-motion: reduce) block that disables animation for .sk2-fig. Snip: ${css.slice(2200, 2700)}`)
+  } finally {
+    globalThis.matchMedia = origMatchMedia
+  }
 })

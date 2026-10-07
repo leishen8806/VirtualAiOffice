@@ -1,70 +1,21 @@
 <meta charset="utf-8">
-<title>智序工场 · Virtual AI Office</title>
-<meta name="description" content="智序工场（Virtual AI Office）：你只跟 Helix 沟通，由他召开项目会议、按难度和技能把任务派给各个项目组的员工，并自动进行验收、返工与成果存档。">
+<title>智序工场 · Virtual AI Office · V2</title>
+<meta name="description" content="智序工场（Virtual AI Office）V2 · Interactive Office：Helix 指挥台居中调度，8 位角色在 6 个 2.5D 空间协同工作。">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="icon.png">
 <link rel="stylesheet" href="style.css">
 
-<div class="app">
-  <header class="top">
-    <div class="brand">
-      <span class="wordmark">智序工场</span>
-      <span class="wordmark-sub">Virtual AI Office · Helix</span>
-      <span class="tagline">人类与 AI，共同把事情做完</span>
-    </div>
-    <button type="button" id="open-setup" class="btn-setup" aria-label="接入员工或模型配置">接入员工</button>
-    <div class="skins" id="skins" role="group" aria-label="切换皮肤/主题"></div>
-    <div class="conn">
-      <span id="conn" class="pill pill-wait">连接中…</span>
-      <code id="workdir" class="workdir"></code>
-    </div>
-  </header>
-
-  <main class="layout">
-    <section class="stage-wrap" aria-label="智序工场 · 虚拟办公室">
-      <div class="stage">
-        <div class="scene" id="scene">
-          <canvas id="office" width="404" height="216" role="img" aria-label="智序工场：Helix 位于中央，各项目组的员工坐在两边的工位上"></canvas>
-          <div class="overlay" id="overlay" aria-hidden="true"></div>
-        </div>
-      </div>
-      <div class="team" id="team" aria-label="项目组和员工"></div>
-    </section>
-
-    <aside class="chat" aria-label="与 Helix 对话">
-      <div class="panel-head">
-        <h2>和 Helix 说</h2>
-        <button type="button" id="stop" class="btn-stop" hidden>全部停下</button>
-      </div>
-      <div id="banner" class="banner" hidden></div>
-      <div id="messages" class="messages" aria-live="polite"></div>
-      <div class="suggest" id="suggest"></div>
-      <form id="composer" class="composer">
-        <label for="input" class="sr-only">给 Helix 的消息</label>
-        <textarea id="input" rows="2" placeholder="跟 Helix 说说要做什么，说得模糊也没关系：他会开会、拆任务、派给合适的员工，做完自己验收"></textarea>
-        <button type="submit" id="send" class="btn-send">发送</button>
-      </form>
-      <p class="hint">Enter 发送 · Shift+Enter 换行 · <code>@员工</code> 点名 · <code>/招人</code> <code>/工具</code> <code>/团队</code> <code>/撤销</code> <code>/stop</code></p>
-    </aside>
-
-    <section class="board" aria-label="任务板">
-      <div class="panel-head">
-        <h2>任务板</h2>
-        <span id="round" class="round"></span>
-        <button type="button" id="undo" class="btn-ghost" hidden>撤销上一轮</button>
-      </div>
-      <div id="meeting" class="meeting-card" hidden></div>
-      <ol id="tasks" class="tasks"></ol>
-      <p id="tasks-empty" class="empty">还没有任务。跟 Helix 说说要做什么，说得模糊也没关系：他会开会、拆任务、派给合适的员工，做完自己验收。</p>
-    </section>
-  </main>
-</div>
+<div id="app-mount" class="app-mount"></div>
 
 <script src="skin-format.js"></script>
 <script src="core/core-theme.js"></script>
 <script src="core/core-states.js"></script>
-<script src="core/core-characters.js"></script>
-<script src="core/core-office.js"></script>
-<script src="core/core-shell.js"></script>
+<script src="core/core-characters-v2.js"></script>
+<script src="core/core-office-v2.js"></script>
+<script src="core/core-shell-v2.js"></script>
+<script src="core/demo-v2.js"></script>
+<script src="core/app-v2.js"></script>
+
 <script src="office.js"></script>
 <script src="chibi.js"></script>
 <script src="anime.js"></script>
