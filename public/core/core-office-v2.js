@@ -727,8 +727,8 @@
 
     mount.innerHTML = `
       ${floorBackdropSVG()}
-      <div class="office-scene-wrap" style="position:absolute;inset:0;display:grid;place-items:stretch;overflow:hidden;">
-        <svg class="scene-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="presentation" style="position:relative;width:100%;height:100%;">
+      <div class="office-scene-wrap" style="position:absolute;inset:0;width:100%;height:100%;overflow:auto;display:flex;align-items:flex-start;justify-content:flex-start;">
+        <svg class="scene-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="presentation" style="min-width:100%;min-height:100%;width:auto;height:100%;display:block;flex-shrink:0;">
           ${planningZone()}
           ${engineeringZone()}
           ${qualityZone()}
@@ -754,17 +754,16 @@
         </svg>
       </div>
       <style>
-        .v2-canvas-spatial{background:var(--canvas-floor);min-height:100%;position:relative;contain:layout paint;}
-        .v2-canvas-spatial .scene-svg{aspect-ratio:16/9;max-height:calc(100vh - 120px);}
-        @media (max-width: 1280px){
-          .v2-canvas-spatial .scene-svg{max-height:calc(100vh - 110px);}
-        }
+        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial{background:var(--canvas-floor);height:100%;min-height:640px;width:100%;position:relative;display:block;overflow:hidden;}
+        html[data-theme-core] .v2-canvas-spatial > .office-scene-wrap{position:absolute;inset:0;width:100%;height:100%;display:block;}
+        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{position:absolute;inset:0;width:100%;height:100%;display:block;min-width:0;}
         @media (max-width: 1024px){
-          .v2-canvas-spatial{overflow:auto;}
-          .v2-canvas-spatial .scene-svg{min-width:1024px;width:1024px;max-height:none;height:auto;aspect-ratio:16/9;}
+          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial{height:auto;min-height:auto;overflow:auto;}
+          html[data-theme-core] .v2-canvas-spatial > .office-scene-wrap{position:relative;inset:auto;height:auto;width:auto;}
+          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{position:relative;inset:auto;min-width:1024px;width:1024px;height:576px;}
         }
         @media (max-width: 640px){
-          .v2-canvas-spatial .scene-svg{min-width:760px;width:760px;}
+          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{min-width:760px;width:760px;height:427.5px;}
         }
       </style>
     `

@@ -135,6 +135,20 @@
     return s ? svg(s.glyph, size, cls) : ''
   }
 
+  function glyphGlyphG(glyph, size = 16, fill = 'currentColor') {
+    if (!glyph) return ''
+    const g = GLYPHS[glyph] || ''
+    return `<g transform="scale(${size / 16})" fill="${fill}">${g}</g>`
+  }
+
+  function stateGlyphG(stateOrGlyph, size = 16, fill = null) {
+    if (!stateOrGlyph) return ''
+    const targetFill = fill || 'currentColor'
+    if (GLYPHS[stateOrGlyph]) return glyphGlyphG(stateOrGlyph, size, targetFill)
+    const s = typeof stateOrGlyph === 'string' ? STATES[stateOrGlyph] : stateOrGlyph
+    return s ? glyphGlyphG(s.glyph, size, targetFill) : ''
+  }
+
   function ringCss(state, { size = 44 } = {}) {
     const s = typeof state === 'string' ? STATES[state] : state
     if (!s) return ''
@@ -171,6 +185,54 @@
       if (!text) return ''
       const t = String(text).slice(0, 20)
       return `<span class="pill model-badge" style="display:inline-flex;align-items:center;background:var(--panel-2);color:var(--text-muted);border:1px solid var(--line);font-family:var(--sans);font-weight:500;padding:2px 8px;border-radius:999px;line-height:16px;font-size:11px;">${t}</span>`
+    },
+  })
+
+  // Pure SVG-G badge primitives (for use inside SVG canvas context where <span> breaks g transform)
+  const BADGE_SVG = Object.freeze({
+    human: (opts = {}) => {
+      const size = opts.size || 16
+      const label = opts.label || 'HUMAN'
+      const r = size / 2
+      const fs = Math.max(5, Math.round(size * 0.4))
+      return `<g class="badge-svg badge-svg-human" aria-label="人类成员">
+        <circle cx="${r}" cy="${r}" r="${r - 0.7}" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="${r}" y="${r + Math.round(fs / 3.2)}" font-size="${fs}" font-family="var(--sans),system-ui" font-weight="600" fill="var(--text-muted)" text-anchor="middle" letter-spacing="0.04em">${label.length > 4 ? label.slice(0, 4) : label}</text>
+      </g>`
+    },
+    ai: (opts = {}) => {
+      const size = opts.size || 16
+      const label = opts.label || 'AI'
+      const fs = Math.max(5, Math.round(size * 0.42))
+      const flat = size * 0.18
+      const mid = size / 2
+      const points = `${flat} 0, ${size - flat} 0, ${size} ${mid}, ${size - flat} ${size}, ${flat} ${size}, 0 ${mid}`
+      return `<g class="badge-svg badge-svg-ai" aria-label="AI 成员">
+        <polygon points="${points}" fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="${mid}" y="${mid + Math.round(fs / 3.2)}" font-size="${fs}" font-family="var(--sans),system-ui" font-weight="600" fill="var(--text-muted)" text-anchor="middle" letter-spacing="0.04em">${label.length > 3 ? label.slice(0, 3) : label}</text>
+      </g>`
+    },
+    system: (opts = {}) => {
+      const size = opts.size || 16
+      const rr = size * 0.28
+      const glyphSize = size * 0.6
+      return `<g class="badge-svg badge-svg-system" aria-label="系统编排">
+        <rect x="0.8" y="0.8" width="${size - 1.6}" height="${size - 1.6}" rx="${rr}" ry="${rr}" fill="rgba(143,130,255,0.12)" stroke="var(--orchestrator)" stroke-width="1.6" stroke-dasharray="3 2"/>
+        <g transform="translate(${(size - glyphSize) / 2} ${(size - glyphSize) / 2})" fill="var(--orchestrator)">${GLYPHS.roleIconHelix || ''}</g>
+      </g>`
+    },
+    model: (text, opts = {}) => {
+      if (!text) return ''
+      const t = String(text).slice(0, 20)
+      const padX = 8
+      const fontSize = 11
+      const lineH = 16
+      const approxW = Math.max(24, t.length * fontSize * 0.62 + padX * 2)
+      const rr = 999
+      return `<g class="pill-svg model-badge-svg">
+        <rect x="0" y="0" width="${approxW}" height="${lineH}" rx="${rr}" ry="${rr}" fill="var(--panel-2)" stroke="var(--line)" stroke-width="1"/>
+        <text x="${approxW / 2}" y="${Math.round(lineH / 2 + fontSize / 3)}" font-size="${fontSize}" font-family="var(--sans),system-ui" font-weight="500" fill="var(--text-muted)" text-anchor="middle">${t}</text>
+      </g>`
     },
   })
 
@@ -224,7 +286,7 @@
     },
   }
 
-  const api = { STATES, HELIX_STATE_MAP, GLYPHS, RING_STYLES, svg, stateGlyphSvg, ringCss, helixToSeatState, BADGE, EVIDENCE, HumanActionMarker, DependencyEdge }
+  const api = { STATES, HELIX_STATE_MAP, GLYPHS, RING_STYLES, svg, glyphGlyphG, stateGlyphSvg, stateGlyphG, ringCss, helixToSeatState, BADGE, BADGE_SVG, EVIDENCE, HumanActionMarker, DependencyEdge }
   globalThis.VAOCoreStates = api
   if (typeof module !== 'undefined' && module.exports) module.exports = api
 })()

@@ -289,10 +289,10 @@
     if (!S) return ''
     const key = S.STATES?.[state]?.key || state.toLowerCase().replace(/_/g, '-')
     const color = `var(--${key})`
-    const gly = S.stateGlyphSvg(state, 11) || ''
+    const gly = S.stateGlyphG(state, 11, color) || ''
     return `<g class="sk2-state-pill" transform="translate(1 -4)">
       <rect x="0" y="0" width="34" height="13" rx="6.5" fill="var(--panel)" stroke="var(--line)" stroke-width="0.7"/>
-      <g transform="translate(4 1)" fill="${color}" color="${color}">${gly}</g>
+      <g transform="translate(4 1)" fill="${color}">${gly}</g>
       <text x="17" y="9.6" font-size="7.2" fill="${color}" font-weight="700" style="font-family:var(--sans),system-ui;" text-anchor="middle">${S.STATES?.[state]?.zh || state}</text>
     </g>`
   }
@@ -420,7 +420,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
   function renderSVG(roleId, opts = {}) {
     injectStyles()
     const r = role(roleId)
-    if (!r) return `<g class="sk2-unknown"><rect x="0" y="0" width="48" height="72" rx="6" fill="var(--panel-2)" stroke="var(--line)"/><text x="24" y="40" text-anchor="middle" font-size="10" fill="var(--text-muted)">?</text></g>`
+    if (!r) return `<g class="sk2-unknown char-v2 char-v2-unknown" data-role="unknown"><rect x="0" y="0" width="48" height="72" rx="6" fill="var(--panel-2)" stroke="var(--line)"/><text x="24" y="40" text-anchor="middle" font-size="10" fill="var(--text-muted)">?</text></g>`
     const scale = opts.scale || (roleId === 'helix' ? 1.85 : 1.45)
     const angle = opts.angle || 0
     const state = opts.state || 'IDLE'
@@ -432,12 +432,11 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     const showIndicator = st !== 'OFFLINE'
     const memberBadge = (() => {
       if (!S) return ''
-      if (roleId === 'helix') return S.BADGE.system({ size: 14 })
-      if (opts.kind === 'human') return S.BADGE.human({ size: 14 })
-      return S.BADGE.ai({ size: 14 })
+      if (roleId === 'helix') return S.BADGE_SVG.system({ size: 14 })
+      if (opts.kind === 'human') return S.BADGE_SVG.human({ size: 14 })
+      return S.BADGE_SVG.ai({ size: 14 })
     })()
-    const modelBadge = opts.model && S ? S.BADGE.model(String(opts.model).slice(0, 12)) : ''
-    const w = Math.round(48 * scale), h = Math.round(72 * scale)
+    const modelBadge = opts.model && S ? S.BADGE_SVG.model(String(opts.model).slice(0, 12)) : ''
     const wsScale = Math.min(1.12, Math.max(1.02, scale * 0.82))
     const ws = workstationMini(r, state)
     const deskState = st === 'OFFLINE'
@@ -472,20 +471,24 @@ html[data-doc-hidden="true"] .sk2-arm-r {
            <circle r="6" fill="none" stroke="var(--offline)" stroke-width="1.1" stroke-dasharray="2 1.5"/>
          </g>`
       : ''
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="char-v2 char-v2-${roleId} ${stateCls} ${roleStateCls}" viewBox="0 0 48 82" width="${w}" height="${Math.round(h + 10 * scale)}" role="img" aria-label="${r.zh} · ${r.en} · ${state}" focusable="false" data-role="${roleId}" data-state="${state}">
-      ${SVG_DEFS}
-      <g transform="rotate(${angle} 24 50)">
-        ${skeleton(r, state)}
+    const figureW = Math.round(48 * scale)
+    const figureH = Math.round(82 * scale)
+    const ariaLbl = `${r.zh} · ${r.en} · ${state}`
+    return `<g class="char-v2 char-v2-${roleId} ${stateCls} ${roleStateCls}" data-role="${roleId}" data-state="${state}" aria-label="${ariaLbl.replace(/"/g,'&quot;')}" role="img" tabindex="0">
+      <g transform="scale(${scale})">
+        <g transform="rotate(${angle} 24 50)">
+          ${skeleton(r, state)}
+        </g>
+        ${deskState}
+        ${glow}
+        <g transform="translate(3 47.2) scale(${wsScale})">${ws}</g>
+        ${showIndicator ? stateIndicator(state) : ''}
+        ${blockedMarker}${doneCheck}${waitHand}${offlineX}
+        <g class="sk2-meta" transform="translate(0 74)" style="display:none;">
+          ${memberBadge}${modelBadge}
+        </g>
       </g>
-      ${deskState}
-      ${glow}
-      <g transform="translate(3 47.2) scale(${wsScale})">${ws}</g>
-      ${showIndicator ? stateIndicator(state) : ''}
-      ${blockedMarker}${doneCheck}${waitHand}${offlineX}
-      <g class="sk2-meta" transform="translate(0 74)" style="display:none;">
-        ${memberBadge}${modelBadge}
-      </g>
-    </svg>`
+    </g>`
   }
 
   function renderStateClasses(roleId, state) {
