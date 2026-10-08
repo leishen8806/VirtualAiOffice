@@ -27,6 +27,32 @@
   const CV2 = globalThis.VAOCoreCharactersV2
   const S = globalThis.VAOCoreStates
 
+  const RESPONSIVE_MODES = Object.freeze({
+    DESKTOP_LARGE: 'DESKTOP_LARGE',
+    DESKTOP_COMPACT: 'DESKTOP_COMPACT',
+    TABLET: 'TABLET',
+    MOBILE: 'MOBILE',
+  })
+
+  function resolveResponsiveMode(width, height) {
+    const w = typeof width === 'number' ? width : 0
+    if (w >= 1440) return RESPONSIVE_MODES.DESKTOP_LARGE
+    if (w >= 1025 && w <= 1439) return RESPONSIVE_MODES.DESKTOP_COMPACT
+    if (w >= 641 && w <= 1024) return RESPONSIVE_MODES.TABLET
+    return RESPONSIVE_MODES.MOBILE
+  }
+
+  const OFFICE_SLICES = Object.freeze({
+    planning: '120 0 400 620',
+    engineering: '110 280 400 620',
+    quality: '1120 47 400 620',
+    knowledge: '220 280 400 620',
+    helix: '610 280 400 620',
+    human: '1110 280 400 620',
+  })
+
+  const DEFAULT_SLICE = 'planning'
+
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) }
   function modeOf(opts = {}) {
     const raw = String(opts.mode || 'live').toLowerCase()
@@ -737,6 +763,21 @@
     </g>`
   }
 
+  function sliceSwitcherHTML(snapshot, humanActive, mount) {
+    const slice = mount && typeof mount === 'object' && mount.dataset ? (mount.dataset.officeSlice || DEFAULT_SLICE) : DEFAULT_SLICE
+    return `<div class="v2-slice-switcher" style="display:flex; gap:6px; padding:8px; overflow-x:auto; position:absolute; top:48px; left:0; right:0; z-index:20; background:color-mix(in srgb,var(--panel) 88%,transparent); border-bottom:1px solid var(--line); min-height:52px; align-items:center; touch-action:pan-x;">
+    ${Object.entries(OFFICE_SLICES).map(([key]) => {
+      const isHuman = key === 'human'
+      if (isHuman && !humanActive) return ''
+      const active = slice === key || (!slice && key === DEFAULT_SLICE)
+      const cls = `v2-slice-chip ${active ? 'is-active' : ''}`
+      const chipStyle = 'display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; height:44px; min-width:44px; border-radius:10px; border:1px solid ' + (active ? 'var(--role-helix)' : 'var(--line)') + '; background:' + (active ? 'color-mix(in srgb,var(--role-helix) 18%,transparent)' : 'var(--panel-2)') + '; color:' + (active ? 'var(--text)' : 'var(--text-muted)') + '; font-weight:' + (active ? '700' : '500') + '; font-size:11.5px; white-space:nowrap; cursor:pointer; font-family:var(--sans);'
+      const labels = { planning:'规划', engineering:'工程', quality:'质量', knowledge:'知识', helix:'Helix', human:'人类协作' }
+      return `<button type="button" data-slice="${key}" class="${cls}" style="${chipStyle}" aria-pressed="${active}">${labels[key] || key}</button>`
+    }).join('')}
+  </div>`
+  }
+
   /** Mount 6-zone 2.5D office onto `mount`. */
   function attach(mount, opts = {}) {
     if (!mount) throw new Error('VAOCoreOfficeV2.attach: mount required')
@@ -744,6 +785,15 @@
     const mode = modeOf(opts)
     const useFixtures = mode === 'demo'
     const snapshot = opts.snapshot || null
+
+    if (typeof window !== 'undefined' && window && typeof window.innerWidth === 'number') {
+      const rm = resolveResponsiveMode(window.innerWidth, window.innerHeight || 0)
+      mount.dataset.officeMode = rm
+      if (rm === 'TABLET' && window.innerHeight > window.innerWidth) mount.dataset.officeMode = 'TABLET_PORTRAIT'
+    }
+    if (!mount.dataset?.officeSlice) mount.dataset.officeSlice = DEFAULT_SLICE
+    const croppedMode = mount.dataset.officeMode === 'MOBILE' || mount.dataset.officeMode === 'TABLET_PORTRAIT'
+    const initialViewBox = croppedMode ? (OFFICE_SLICES[mount.dataset.officeSlice] || OFFICE_SLICES[DEFAULT_SLICE]) : '0 0 1600 900'
 
     const seatStates = Object.assign({}, snapshot?.seatStates || (useFixtures ? DEMO_SEAT_STATE : {}))
     const seatKinds = Object.assign({}, snapshot?.seatKinds || (useFixtures ? DEMO_SEAT_KIND : {}))
@@ -783,8 +833,8 @@
 
     mount.innerHTML = `
       ${floorBackdropSVG()}
-      <div class="office-scene-wrap" style="position:absolute;inset:0;width:100%;height:100%;overflow:auto;display:flex;align-items:flex-start;justify-content:flex-start;">
-        <svg class="scene-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="presentation" style="min-width:100%;min-height:100%;width:auto;height:100%;display:block;flex-shrink:0;">
+      <div class="office-scene-wrap" style="position:absolute;inset:0;width:100%;height:100%;display:block;">
+        <svg class="scene-svg" viewBox="${initialViewBox}" preserveAspectRatio="xMidYMid meet" role="presentation" style="position:absolute;inset:0;width:100%;height:100%;min-width:0;min-height:0;display:block;">
           ${planningZone()}
           ${engineeringZone()}
           ${qualityZone()}
@@ -808,19 +858,19 @@
             ${overlayHTML}
           </g>
         </svg>
+        ${(mount.dataset?.officeMode === 'MOBILE' || mount.dataset?.officeMode === 'TABLET_PORTRAIT') ? sliceSwitcherHTML(snapshot, humanActive, mount) : ''}
       </div>
       <style>
-        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial{background:var(--canvas-floor);height:100%;min-height:640px;width:100%;position:relative;display:block;overflow:hidden;}
-        html[data-theme-core] .v2-canvas-spatial > .office-scene-wrap{position:absolute;inset:0;width:100%;height:100%;display:block;}
-        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{position:absolute;inset:0;width:100%;height:100%;display:block;min-width:0;}
-        @media (max-width: 1024px){
-          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial{height:auto;min-height:auto;overflow:auto;}
-          html[data-theme-core] .v2-canvas-spatial > .office-scene-wrap{position:relative;inset:auto;height:auto;width:auto;}
-          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{position:relative;inset:auto;min-width:1024px;width:1024px;height:576px;}
+        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial {
+          background:var(--canvas-floor); width:100%; position:relative; display:block; overflow:hidden;
+          height:100%;
         }
-        @media (max-width: 640px){
-          html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg{min-width:760px;width:760px;height:427.5px;}
+        html[data-theme-core] .v2-canvas-spatial > .office-scene-wrap { position:absolute; inset:0; width:100%; height:100%; overflow:hidden; display:block; }
+        html[data-theme-core] body.v2-shell-body .v2-stage-wrap.v2-canvas-spatial .office-scene-wrap > .scene-svg {
+          position:absolute; inset:0; width:100%; height:100%; display:block; min-width:0; min-height:0;
         }
+        html[data-theme-core] body.v2-shell-body.v2-responsive-mobile .v2-stage-wrap.v2-canvas-spatial { overflow:hidden; }
+        html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-stage-wrap.v2-canvas-spatial { overflow:hidden; }
       </style>
     `
 
@@ -855,6 +905,24 @@
     })
     safeForEach(safeQueryAll(mount, '.task-capsule'), (tc) => {
       if (tc && typeof tc.addEventListener === 'function') tc.addEventListener('click', (e) => { try { e.stopPropagation && e.stopPropagation() } catch (_) {} fire('vao-v2:task-clicked', { taskId: tc.dataset?.task, el: tc }) })
+    })
+    safeForEach(safeQueryAll(mount, '.v2-slice-chip'), (btn) => {
+      if (btn && typeof btn.addEventListener === 'function') btn.addEventListener('click', (e) => {
+        try { e.stopPropagation && e.stopPropagation() } catch (_) {}
+        const slice = btn.dataset?.slice
+        if (!slice) return
+        mount.dataset.officeSlice = slice
+        fire('vao-v2:office-slice-changed', { slice })
+        const svgEl = safeQuery(mount, '.scene-svg')
+        if (svgEl && svgEl.setAttribute) svgEl.setAttribute('viewBox', OFFICE_SLICES[slice] || '0 0 1600 900')
+        safeForEach(safeQueryAll(mount, '.v2-slice-chip'), (c) => {
+          const on = (c && c.dataset?.slice === slice)
+          if (!c || typeof c.setAttribute !== 'function') return
+          c.setAttribute('aria-pressed', on ? 'true' : 'false')
+          c.style.borderColor = on ? 'var(--role-helix)' : 'var(--line)'
+          c.style.background = on ? 'color-mix(in srgb,var(--role-helix) 18%,transparent)' : 'var(--panel-2)'
+        })
+      })
     })
 
     return {
@@ -966,14 +1034,26 @@
     }
   }
 
+  const _internals = Object.freeze({
+    RESPONSIVE_MODES,
+    resolveResponsiveMode,
+    OFFICE_SLICES,
+    DEFAULT_SLICE,
+  })
+
   const api = Object.freeze({
     attach,
+    RESPONSIVE_MODES,
+    resolveResponsiveMode,
+    OFFICE_SLICES,
+    DEFAULT_SLICE,
     ZONE_POSITIONS,
     DEMO_SEAT_STATE,
     DEMO_SEAT_KIND,
     DEMO_SEAT_MEMBER,
     DEMO_SEAT_MODEL,
     DEMO_TASKS,
+    _internals,
   })
   globalThis.VAOCoreOfficeV2 = api
   if (typeof module !== 'undefined' && module.exports) module.exports = api

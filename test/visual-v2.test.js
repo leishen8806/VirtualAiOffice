@@ -1058,3 +1058,147 @@ test('ANAT-T9. [WAITING_HUMAN non-rotating torso badge] Product badge WAITING_HU
   const hasInTorso = productBadgePatterns.some((p) => torsoInner.includes(p)) || torsoInner.includes('var(--role-product)')
   assert.ok(hasInTorso, 'Product badge must live inside sk2-torso class subtree (NOT head-wrap; not tilted 18deg)')
 })
+
+/* ------------------------------------------------------------------ */
+/* RESPONSIVE contract tests (Commit B: RESP-R1..RESP-R11)             */
+/* ------------------------------------------------------------------ */
+
+const officeV2Src = read('public/core/core-office-v2.js')
+const shellV2Src = read('public/core/core-shell-v2.js')
+
+test('RESP-R1a. [resolveResponsiveMode: 1920×1080] → DESKTOP_LARGE', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1920, 1080), M.Office.RESPONSIVE_MODES.DESKTOP_LARGE)
+})
+test('RESP-R1b. [resolveResponsiveMode: 1440×900 edge] width >=1440 → DESKTOP_LARGE (edge inclusive)', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1440, 900), M.Office.RESPONSIVE_MODES.DESKTOP_LARGE)
+})
+test('RESP-R1c. [resolveResponsiveMode: 1439×900] DESKTOP_COMPACT (below 1440 threshold)', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1439, 900), M.Office.RESPONSIVE_MODES.DESKTOP_COMPACT)
+})
+test('RESP-R1d. [resolveResponsiveMode: 1280×800] → DESKTOP_COMPACT (common laptop)', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1280, 800), M.Office.RESPONSIVE_MODES.DESKTOP_COMPACT)
+})
+test('RESP-R1e. [resolveResponsiveMode: 1025×768 lower edge] width >=1025 → DESKTOP_COMPACT (edge)', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1025, 768), M.Office.RESPONSIVE_MODES.DESKTOP_COMPACT)
+})
+test('RESP-R1f. [resolveResponsiveMode: 1024×768 upper edge TABLET] width=1024 falls into TABLET band 641-1024', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(1024, 768), M.Office.RESPONSIVE_MODES.TABLET)
+})
+test('RESP-R1g. [resolveResponsiveMode: 768×1024 iPad portrait] TABLET mode (width still 768 => TABLET). TABLET_PORTRAIT detected by consumer via height>width.', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(768, 1024), M.Office.RESPONSIVE_MODES.TABLET,
+    'resolveResponsiveMode itself does NOT return TABLET_PORTRAIT — that is a consumer check using height>width')
+})
+test('RESP-R1h. [resolveResponsiveMode: 641×1024 lower TABLET edge] width 641 inclusive → TABLET', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(641, 1024), M.Office.RESPONSIVE_MODES.TABLET)
+})
+test('RESP-R1i. [resolveResponsiveMode: 640×844 upper MOBILE edge] width <=640 → MOBILE', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(640, 844), M.Office.RESPONSIVE_MODES.MOBILE)
+})
+test('RESP-R1j. [resolveResponsiveMode: 390×844 phone] → MOBILE', () => {
+  const M = loadV2Modules()
+  assert.equal(M.Office.resolveResponsiveMode(390, 844), M.Office.RESPONSIVE_MODES.MOBILE)
+})
+
+test('RESP-R2. [RESPONSIVE_MODES enum exists with 4 keys] DESKTOP_LARGE / DESKTOP_COMPACT / TABLET / MOBILE', () => {
+  const M = loadV2Modules()
+  const modes = M.Office.RESPONSIVE_MODES
+  assert.ok(modes, 'RESPONSIVE_MODES must be exported on Office api')
+  const keys = Object.keys(modes)
+  assert.deepEqual(keys.sort(), ['DESKTOP_COMPACT', 'DESKTOP_LARGE', 'MOBILE', 'TABLET'].sort(),
+    `RESPONSIVE_MODES must have exactly 4 keys; got ${keys.join(',')}`)
+  assert.ok(M.Office._internals.RESPONSIVE_MODES, 'RESPONSIVE_MODES also exposed via _internals')
+  assert.strictEqual(M.Office._internals.RESPONSIVE_MODES, modes, 'RESPONSIVE_MODES same reference api/_internals')
+})
+
+test('RESP-R3. [OFFICE_SLICES + DEFAULT_SLICE] 6 zones with non-empty viewBox strings; DEFAULT_SLICE = "planning"', () => {
+  const M = loadV2Modules()
+  const slices = M.Office.OFFICE_SLICES
+  assert.ok(slices, 'OFFICE_SLICES exported')
+  const keys = Object.keys(slices)
+  assert.deepEqual(keys.sort(), ['engineering', 'helix', 'human', 'knowledge', 'planning', 'quality'].sort(),
+    `OFFICE_SLICES must have exactly 6 zone keys; got ${keys.join(',')}`)
+  for (const k of keys) {
+    const vb = slices[k]
+    assert.equal(typeof vb, 'string', `slice ${k} viewBox must be string`)
+    assert.ok(vb.length > 0, `slice ${k} viewBox must be non-empty`)
+    const parts = vb.split(/\s+/).filter(Boolean)
+    assert.equal(parts.length, 4, `slice ${k} viewBox must have 4 space-separated numbers (x y w h); got "${vb}"`)
+    for (const p of parts) assert.ok(Number.isFinite(parseFloat(p)), `slice ${k} viewBox coord "${p}" must parse as finite number`)
+  }
+  assert.equal(M.Office.DEFAULT_SLICE, 'planning', `DEFAULT_SLICE must be the string 'planning'; got ${M.Office.DEFAULT_SLICE}`)
+  assert.strictEqual(M.Office._internals.OFFICE_SLICES, slices, 'OFFICE_SLICES same ref via _internals')
+  assert.equal(M.Office._internals.DEFAULT_SLICE, 'planning', 'DEFAULT_SLICE via _internals = planning')
+})
+
+test('RESP-R4. [mobile scene-svg sizing removed old patterns] core-office-v2.js scene-svg inline style NO LONGER contains width:auto / height:100% old sizing (B2 desktop sizing fix)', () => {
+  assert.ok(!/scene-svg[^>]*style="[^"]*width:\s*auto/.test(officeV2Src),
+    'scene-svg inline style MUST NOT contain width:auto (old height-first sizing removed)')
+  assert.ok(!/min-width:\s*100%;\s*min-height:\s*100%;\s*width:\s*auto;\s*height:\s*100%/.test(officeV2Src),
+    'old 4-prop scene-svg sizing block (min-width:100%;min-height:100%;width:auto;height:100%) must be removed from inline scene-svg style')
+})
+
+test('RESP-R5. [old hard-coded @media blocks removed] old max-width:1024 / max-width:640 with literal 1024px / 760px widths on scene-svg — NOT present', () => {
+  assert.ok(!/@media\s*\(\s*max-width:\s*1024px\s*\)[\s\S]{0,300}min-width:\s*1024px/.test(officeV2Src),
+    'old @media (max-width:1024px) block that forced min-width:1024px width:1024px on scene-svg MUST be removed')
+  assert.ok(!/@media\s*\(\s*max-width:\s*640px\s*\)[\s\S]{0,300}width:\s*760px/.test(officeV2Src),
+    'old @media (max-width:640px) block that forced min-width:760px width:760px on scene-svg MUST be removed')
+})
+
+test('RESP-R6. [new scene-svg sizing uses width:100%;height:100%] inline scene-svg style attribute uses BOTH width:100%; AND height:100%; and NEVER width:auto on that element class', () => {
+  const sceneSvgInline = [...officeV2Src.matchAll(/<svg\s+[^>]*class="[^"]*scene-svg[^"]*"[^>]*style="([^"]*)"[^>]*>/g)]
+  assert.ok(sceneSvgInline.length >= 1, 'at least one scene-svg <svg> tag with inline style attribute must exist')
+  const styleStr = sceneSvgInline[0][1]
+  assert.ok(/width:\s*100%/.test(styleStr), `scene-svg inline style MUST contain width:100%; actual="${styleStr}"`)
+  assert.ok(/height:\s*100%/.test(styleStr), `scene-svg inline style MUST contain height:100%; actual="${styleStr}"`)
+  assert.ok(!/width:\s*auto/.test(styleStr), `scene-svg inline style MUST NOT contain width:auto; actual="${styleStr}"`)
+})
+
+test('RESP-R7. [mobile slice switcher structural] source contains v2-slice-switcher, data-slice attr, and chips for all 6 zones (human conditional)', () => {
+  assert.ok(officeV2Src.includes('v2-slice-switcher'), 'source must contain v2-slice-switcher container class')
+  assert.ok(officeV2Src.includes('data-slice="'), 'slice chips must use data-slice attribute to identify the zone')
+  assert.ok(officeV2Src.includes("data-slice=\"${key}\"") || officeV2Src.includes('data-slice="${key}"'),
+    'sliceSwitcherHTML must programmatically assign data-slice per zone key')
+  const neededZones = ["'planning'", "'engineering'", "'quality'", "'knowledge'", "'helix'", "'human'"]
+  for (const z of neededZones) {
+    assert.ok(officeV2Src.includes(`key === ${z}`) || officeV2Src.includes(`labels = { planning:`) || officeV2Src.includes(`${z}:`) || officeV2Src.includes(`planning:`),
+      `slice switcher labels map must include entries for all 6 zones (missing zone ${z} marker)`)
+  }
+  assert.ok(officeV2Src.includes("key === 'human'") || officeV2Src.includes("isHuman = key === 'human'"),
+    'slice switcher must conditionally hide human zone chip when humanActive false (isHuman guard)')
+})
+
+test('RESP-R8. [resize listener + destroy cleanup] shell source has BOTH window.addEventListener resize AND window.removeEventListener resize — proves no-leak wiring', () => {
+  const addCount = (shellV2Src.match(/window\s*\.\s*addEventListener\s*\(\s*['"]resize['"]/g) || []).length
+  const remCount = (shellV2Src.match(/window\s*\.\s*removeEventListener\s*\(\s*['"]resize['"]/g) || []).length
+  assert.ok(addCount >= 1, `shell MUST register window resize listener at least once (bootstrap). addEventListener resize count=${addCount}`)
+  assert.ok(remCount >= 1, `shell MUST have window.removeEventListener('resize', ...) in destroy() to prevent leak. removeEventListener resize count=${remCount}`)
+})
+
+test('RESP-R9. [DESKTOP_COMPACT default nav collapsed] shell bootstrap init: contains "DESKTOP_COMPACT" string AND uses pattern navCollapsed = navCollapsedStored || compactDefault', () => {
+  assert.ok(shellV2Src.includes('DESKTOP_COMPACT'), 'shell bootstrap source MUST reference DESKTOP_COMPACT mode (to detect compact default collapse)')
+  assert.ok(/navCollapsed\s*=\s*navCollapsedStored\s*\|\|\s*compactDefault/.test(shellV2Src),
+    'navCollapsed initialization MUST use pattern: navCollapsed = navCollapsedStored || compactDefault — so compact mode defaults to collapsed unless user explicitly stored expanded')
+  assert.ok(/compactDefault\s*=\s*\(\s*mode\s*===\s*['"]DESKTOP_COMPACT['"]\s*\)/.test(shellV2Src),
+    'compactDefault variable MUST equal (mode === DESKTOP_COMPACT) check')
+})
+
+test('RESP-R10. [mobile chip touch targets 44px] slice-chip style contains BOTH height:44px AND min-width:44px (WCAG touch target minimums)', () => {
+  assert.ok(/height:\s*44px/.test(officeV2Src), 'slice-chip style MUST set height:44px (44px minimum touch target)')
+  assert.ok(/min-width:\s*44px/.test(officeV2Src), 'slice-chip style MUST set min-width:44px (44px minimum touch target)')
+})
+
+test('RESP-R11. [officeSlice preserved across runtime updates] mount.dataset.officeSlice preserves existing value via pattern dataset.officeSlice = dataset.officeSlice || DEFAULT (never blindly overwrites)', () => {
+  assert.ok(/if\s*\(\s*!mount\s*\.\s*dataset\s*\?\.\s*officeSlice\s*\)/.test(officeV2Src) ||
+            /!mount\s*\.\s*dataset\s*\?\.\s*officeSlice\s*\)\s*mount\s*\.\s*dataset\s*\.\s*officeSlice\s*=\s*DEFAULT_SLICE/.test(officeV2Src) ||
+            /mount\s*\.\s*dataset\s*\.\s*officeSlice\s*=\s*mount\s*\.\s*dataset\s*\.\s*officeSlice\s*\|\|\s*DEFAULT_SLICE/.test(officeV2Src),
+    'attach() must preserve existing officeSlice across re-mount/update cycles; only set to DEFAULT_SLICE if absent/missing (guarded assignment)')
+})

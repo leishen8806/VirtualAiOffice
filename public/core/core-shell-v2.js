@@ -928,7 +928,12 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     document.body.innerHTML = ''
 
     const navCollapsedStored = !!storeGet(STORAGE_KEYS.navCollapsed, false)
-    let navCollapsed = navCollapsedStored
+    const width = (typeof window !== 'undefined' && window && typeof window.innerWidth === 'number') ? window.innerWidth : 1920
+    const mode = typeof globalThis.VAOCoreOfficeV2?.resolveResponsiveMode === 'function'
+      ? globalThis.VAOCoreOfficeV2.resolveResponsiveMode(width, window ? (window.innerHeight || 0) : 0)
+      : (width <= 1024 ? 'TABLET' : (width < 1440 ? 'DESKTOP_COMPACT' : 'DESKTOP_LARGE'))
+    const compactDefault = (mode === 'DESKTOP_COMPACT')
+    let navCollapsed = navCollapsedStored || compactDefault
     let helixOpen = false
     let activeNav = options.initialNav || 'office'
     let demoMode = initialMode === 'demo'
@@ -1130,13 +1135,42 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       })
     }
 
+    let lastMode = mode
+    function _rsz() {
+      if (typeof window === 'undefined' || !window || typeof window.innerWidth !== 'number') return
+      const w = window.innerWidth
+      const h = window.innerHeight || 0
+      const nm = typeof globalThis.VAOCoreOfficeV2?.resolveResponsiveMode === 'function'
+        ? globalThis.VAOCoreOfficeV2.resolveResponsiveMode(w, h)
+        : (w <= 640 ? 'MOBILE' : (w <= 1024 ? 'TABLET' : (w < 1440 ? 'DESKTOP_COMPACT' : 'DESKTOP_LARGE')))
+      const portrait = (nm === 'TABLET' && h > w)
+      const resolved = portrait ? 'TABLET_PORTRAIT' : nm
+      const cls = document?.body?.classList
+      if (cls && typeof cls.toggle === 'function') {
+        cls.toggle('v2-responsive-mobile', resolved === 'MOBILE')
+        cls.toggle('v2-responsive-tablet', (nm === 'TABLET'))
+        cls.toggle('v2-responsive-tablet-portrait', resolved === 'TABLET_PORTRAIT')
+      }
+      if (nm !== lastMode || (portrait && lastMode === 'TABLET' && resolved === 'TABLET_PORTRAIT') || (!portrait && lastMode && resolved === 'TABLET' && lastMode !== 'TABLET_PORTRAIT')) {
+        lastMode = nm
+        if (typeof officeHandle?.update === 'function') officeHandle.update(buildSnapshot())
+        options.onResponsiveModeChange?.(resolved)
+      }
+    }
+
     // Initial mount of stage
     stageWrap = el('main', { id: 'v2-office-stage', class: 'v2-stage-wrap', role: 'main', 'aria-label': 'Interactive Office V2 · 6-zone 2.5D Floor' })
     officeHandle = Office
       ? Office.attach(stageWrap, { snapshot: buildSnapshot(), mode: demoMode ? 'demo' : 'live' })
       : null
 
+    _rsz()
+
     rerender()
+
+    if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
+      window.addEventListener('resize', _rsz)
+    }
 
     const handle = {
       get mode() { return demoMode ? 'demo' : initialMode },
@@ -1179,6 +1213,9 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         }
       },
       destroy() {
+        if (typeof window !== 'undefined' && window && typeof window.removeEventListener === 'function') {
+          window.removeEventListener('resize', _rsz)
+        }
         destroyV2Shell()
         if (typeof globalThis.VAOCoreOfficeV2?.destroy === 'function') {/*noop*/}
         if (officeHandle) officeHandle.destroy?.()
