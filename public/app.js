@@ -19,7 +19,58 @@
   let transport = null
 
   function statusToV2(s) {
-    return { idle: 'IDLE', thinking: 'THINKING', working: 'WORKING', meeting: 'REVIEWING', walking: 'WORKING', done: 'DONE', error: 'BLOCKED', offline: 'OFFLINE' }[s] || 'IDLE'
+    return { idle: 'IDLE', thinking: 'THINKING', working: 'WORKING', meeting: 'REVIEWING', reviewing: 'REVIEWING', review: 'REVIEWING', walking: 'WORKING', done: 'DONE', error: 'BLOCKED', blocked: 'BLOCKED', offline: 'OFFLINE' }[s] || 'IDLE'
+  }
+  const OFFICIAL_ROLE_SET = Object.freeze({ helix: 1, product: 1, architect: 1, frontend: 1, backend: 1, qa: 1, reviewer: 1, docs: 1, human: 1 })
+  const ROLE_ALIASES = Object.freeze({
+    qa: 'qa', tester: 'qa', 'quality-assurance': 'qa', test: 'qa',
+    docs: 'docs', documentation: 'docs', writer: 'docs', 'technical-writer': 'docs',
+    product: 'product', pm: 'product', 'product-manager': 'product',
+    architect: 'architect', 'architecture': 'architect',
+    frontend: 'frontend', front: 'frontend', 'front-end': 'frontend',
+    backend: 'backend', back: 'backend', 'back-end': 'backend', infra: 'backend',
+    reviewer: 'reviewer', review: 'reviewer',
+  })
+  function normalizeRoleId(raw) {
+    if (!raw) return null
+    const s = String(raw).trim().toLowerCase().replace(/[\s_]+/g, '-')
+    if (!s) return null
+    if (OFFICIAL_ROLE_SET[s]) return s
+    if (ROLE_ALIASES[s]) return ROLE_ALIASES[s]
+    return null
+  }
+  function resolveVisualRoleForEmployee(employee) {
+    if (!employee) return null
+    let r = normalizeRoleId(employee.visualRole)
+    if (r) return r
+    r = normalizeRoleId(employee.role)
+    if (r) return r
+    if (employee.skill && typeof employee.skill === 'object') r = normalizeRoleId(employee.skill.id)
+    if (r) return r
+    r = normalizeRoleId(employee.skill)
+    if (r) return r
+    r = normalizeRoleId(employee.id)
+    if (r) return r
+    if (typeof employee.alias === 'string' || Array.isArray(employee.aliases)) {
+      const list = Array.isArray(employee.aliases) ? employee.aliases : (employee.alias ? [employee.alias] : [])
+      for (const x of list) {
+        r = normalizeRoleId(x)
+        if (r) return r
+      }
+    }
+    return null
+  }
+  function resolveVisualRoleForTask(t) {
+    if (!t) return null
+    let r = normalizeRoleId(t.role)
+    if (r) return r
+    const empId = t.agent || t.agentId || t.empId || t.whoId
+    const employee = emp(empId)
+    r = resolveVisualRoleForEmployee(employee)
+    if (r) return r
+    const kindToRole = { review: 'reviewer' }
+    if (kindToRole[t.kind]) return kindToRole[t.kind]
+    return null
   }
   function deriveCoreRuntimeFromState() {
     const Shell = globalThis.VAOCoreShell
@@ -36,9 +87,10 @@
     const seatMembers = { helix: 'Helix' }
     const seatModels = {}
     for (const e of employees) {
-      const role = e.group || 'architect'
-      // Honor existing runtime semantics: employees are AI unless explicitly .human=true or role is product/qa/reviewer.
-      const humanFlag = e.human || e.kind === 'human' || e.isHuman || ['product', 'qa', 'reviewer', 'docs'].includes(role) && (e.human === true)
+      const role = resolveVisualRoleForEmployee(e)
+      if (!role) continue
+      // Honor existing runtime semantics: employees are AI unless explicitly .human=true or role is product/qa/reviewer + human flag.
+      const humanFlag = e.human || e.kind === 'human' || e.isHuman
       const aiFlag = !humanFlag
       const member = { id: e.id, name: e.name || e.id, role, model: e.model || '', online: e.available !== false && statusToV2(state.agents[e.id]?.status || 'idle') !== 'OFFLINE' }
       if (aiFlag) members.ai.push(member)
@@ -52,8 +104,8 @@
     const waitingHuman = []
     if (state.tasks?.length) for (const t of state.tasks) {
       if (t.kind === 'human' || t.status === 'waiting' || t.waiting === true) {
-        const role = t.role || t.whoId || ''
-        const member = t.member || (role && seatMembers[role])
+        const role = resolveVisualRoleForTask(t) || (typeof t.role === 'string' ? normalizeRoleId(t.role) : null) || 'human'
+        const member = t.member || (t.who || t.whoId || (role && seatMembers[role]))
         waitingHuman.push({ id: `wait-${t.id || String(Math.random()).slice(2, 8)}`, role, member, title: t.title || '等待人工确认', sinceMs: t.sinceMs || Date.now(), required: !!t.required })
       }
     }
@@ -97,15 +149,18 @@
     }
     const v2Tasks = []
     if (state.tasks?.length) for (const t of state.tasks) {
+      const role = resolveVisualRoleForTask(t) || ''
+      const whoId = t.agent || t.agentId || t.empId || t.whoId
+      const who = t.who || (whoId ? emp(whoId)?.name : '')
       const v2 = {
         id: t.id,
         title: t.title || t.text || '',
         status: ({ running: 'running', pending: 'pending', done: 'done', failed: 'failed', skipped: 'offline', cancelled: 'offline' }[t.status] || 'pending'),
         difficulty: DIFF[t.difficulty] || t.difficulty || '中',
         kind: KIND[t.kind] || t.kind || '开发',
-        role: t.role || t.agentId || emp(t.agentId)?.group || '',
-        who: t.who || (t.agentId ? emp(t.agentId)?.name : ''),
-        whoId: t.agentId || t.empId,
+        role,
+        who,
+        whoId,
         evidence: [],
         deps: t.deps || [],
       }
@@ -836,23 +891,20 @@
         state.agents[id] = { ...(state.agents[id] || {}), ...rest }
         office.setAgent(id, state.agents[id])
         if (coreHandle) {
-          const employee = emp(id)
-          let roleId = employee?.group
-          if (!roleId) {
+          let employee = emp(id)
+          if (!employee) {
             for (const e of (state.roster.employees || [])) {
-              if (e.id === id || e.name === id) { roleId = e.group; break }
+              if (e.id === id || e.name === id) { employee = e; break }
             }
           }
-          if (roleId) {
-            const OFFICIAL = ['helix','product','architect','frontend','backend','qa','reviewer','docs','human']
-            if (OFFICIAL.includes(roleId)) {
-              const v2 = statusToV2(state.agents[id]?.status || 'idle')
-              try {
-                if (v2 === 'BLOCKED') coreHandle.animate.blocked?.(roleId)
-                else if (v2 === 'DONE') coreHandle.animate.done?.(roleId, 1800)
-                else if (v2 === 'REVIEWING') coreHandle.animate.review?.()
-              } catch (_) {}
-            }
+          const roleId = resolveVisualRoleForEmployee(employee)
+          if (roleId && OFFICIAL_ROLE_SET[roleId]) {
+            const v2 = statusToV2(state.agents[id]?.status || 'idle')
+            try {
+              if (v2 === 'BLOCKED') coreHandle.animate.blocked?.(roleId)
+              else if (v2 === 'DONE') coreHandle.animate.done?.(roleId, 1800)
+              else if (v2 === 'REVIEWING') coreHandle.animate.review?.()
+            } catch (_) {}
           }
         }
         renderTeam()
@@ -927,18 +979,15 @@
         break
       case 'dispatch': {
         office.dispatch(ev.to)
-        const employee = emp(ev.to)
-        let roleId = employee?.group
-        if (!roleId) {
+        let employee = emp(ev.to)
+        if (!employee) {
           for (const e of (state.roster.employees || [])) {
-            if (e.id === ev.to || e.name === ev.to) { roleId = e.group; break }
+            if (e.id === ev.to || e.name === ev.to) { employee = e; break }
           }
         }
-        if (roleId && coreHandle) {
-          const OFFICIAL = ['helix','product','architect','frontend','backend','qa','reviewer','docs','human']
-          if (OFFICIAL.includes(roleId)) {
-            try { coreHandle.animate.dispatch?.(roleId) } catch (_) {}
-          }
+        const roleId = resolveVisualRoleForEmployee(employee) || normalizeRoleId(ev.to)
+        if (roleId && OFFICIAL_ROLE_SET[roleId] && coreHandle) {
+          try { coreHandle.animate.dispatch?.(roleId) } catch (_) {}
         }
         refreshCoreHandle()
         break
@@ -1061,6 +1110,11 @@
       setSkin: (id) => setSkin(id),
       get currentSkinId() { return current.id },
       get handle() { return globalThis.__coreHandleV2 || coreHandle || null },
+      OFFICIAL_ROLE_SET,
+      ROLE_ALIASES,
+      resolveVisualRoleForEmployee,
+      resolveVisualRoleForTask,
+      normalizeRoleId,
       _detectRunMode: () => {
         try {
           const qm = new URL(String(location.href)).searchParams.get('mode')
@@ -1070,6 +1124,7 @@
       },
       _dispatchSse: handle,
       _getState: () => state,
+      _getSnapshot: () => deriveCoreRuntimeFromState(),
       _getSeatState: (roleId) => {
         const derived = deriveCoreRuntimeFromState()
         return derived.snapshot?.seatStates?.[roleId] || null

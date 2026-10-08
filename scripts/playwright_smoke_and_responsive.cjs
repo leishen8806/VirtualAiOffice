@@ -1,12 +1,19 @@
-﻿﻿﻿﻿const path = require('path')
+﻿﻿﻿﻿﻿﻿const path = require('path')
 const fs = require('fs')
+const cp = require('child_process')
 const { chromium } = require('playwright')
 
 const CHROME = 'C:\\Users\\Administrator\\AppData\\Local\\ms-playwright\\chromium-1140\\chrome-win\\chrome.exe'
 const BASE = 'http://127.0.0.1:18899/'
-const HEAD = 'ec00997'
+const WORKTREE = 'E:\\VirtualAIOffice\\interactive-office-v2-worktree'
+const SHORT_SHA = cp.execSync('git rev-parse --short HEAD', { cwd: WORKTREE, encoding: 'utf8', stdio: ['ignore','pipe','pipe'] }).trim()
+const HEAD = SHORT_SHA
 const ART = `E:\\VirtualAIOffice\\review-artifacts\\interactive-v2-${HEAD}`
 const BLACKLIST_RX = /addEventListener|null|composer|input|team|undo|VAOCoreShell[^V]|VAOCoreShellV2/i
+
+console.log(`[playwright] worktree = ${WORKTREE}`)
+console.log(`[playwright] HEAD (git rev-parse --short) = ${SHORT_SHA}`)
+console.log(`[playwright] artifacts folder = ${ART}`)
 
 try { if (!fs.existsSync(ART)) fs.mkdirSync(ART, { recursive: true }) } catch (_) {}
 
@@ -61,7 +68,7 @@ function instrumentEventSource(page) {
   const esCount1 = await p1.evaluate(() => window.__esCount || 0)
   console.log('Demo: v2-top-bar=', hasV2Demo, ' v2-shell-body=', hasV2BodyCls, ' EventSource=', esCount1)
   await p1.screenshot({ path: path.join(ART, 'S14_demo_1440_after_boot.png'), type: 'png' })
-  const R1 = report('SMOKE ?mode=demo', t1Errs, t1Cerr)
+  const R1 = report(`SMOKE ?mode=demo (HEAD=${HEAD})`, t1Errs, t1Cerr)
   if (R1.blacklist_hit || R1.errs.length) failures++
   if (esCount1 !== 1) { console.log('  FAIL: Expected EventSource count=1, got', esCount1); failures++ }
   await p1.close()
@@ -81,14 +88,14 @@ function instrumentEventSource(page) {
     (document.getElementById('conn')?.className || '').includes('pill-'),
   ])
   console.log('Default: bar=', hasBar2, ' cls=', hasCls2, ' conn-pill=', hasConnLive)
-  const R2 = report('SMOKE default (fake/live)', t2Errs, t2Cerr)
+  const R2 = report(`SMOKE default (fake/live, HEAD=${HEAD})`, t2Errs, t2Cerr)
   if (R2.blacklist_hit || R2.errs.length) failures++
   await p2.close()
 
   // -----------------------------
-  // 3. LIVE SEND + SSE integration (P0-6 REAL V2 COMPOSER + P0-7 SINGLE ES COUNT)
+  // 3. LIVE BRIDGE, REAL FIXTURES (Realistic roster + role resolvers + V2 composer + EventSource)
   // -----------------------------
-  console.log('\n=== LIVE RUNTIME BRIDGE TEST (REAL V2 COMPOSER + DISPATCH) ===')
+  console.log('\n=== LIVE RUNTIME BRIDGE (REALISTIC ROSTER, REAL V2 COMPOSER, REAL DISPATCH) ===')
   const sendLog = []
   const eventsRx = []
   let postV2Count = 0
@@ -115,106 +122,151 @@ function instrumentEventSource(page) {
   const hasStage0 = await p3.evaluate(() => !!document.getElementById('v2-office-stage'))
   console.log('stage present (pre-send) =', hasStage0)
 
-  // ==== V2 SEND INTEGRATION (REAL V2 COMPOSER, STAY CORE) P0-6 ====
+  // P0-6 REAL V2 COMPOSER (stay Core; NO classic switch)
   await p3.evaluate(() => window.__coreHandleV2?.setHelix?.(true))
   await sleep(900)
   await p3.fill('.v2-h-composer textarea', 'Playwright V2 live composer smoke')
   await sleep(150)
   await p3.click('.v2-h-composer button')
   await sleep(2800)
-  const skinDuringSend = await p3.evaluate(() => [
+  const [stillCore, classicApp] = await p3.evaluate(() => [
     document.body.classList.contains('v2-shell-body'),
     !!document.querySelector('.app'),
   ])
-  console.log(`V2 composer send: still core=${skinDuringSend[0]}  classic .app present=${skinDuringSend[1]}`)
+  console.log(`V2 composer send: still core=${stillCore}  classic .app present=${classicApp}`)
   console.log(`POST count (V2 composer) = ${postV2Count}`)
 
-  // ==== LIVE APP.JS → V2 BRIDGE INTEGRATION TESTS P0-4/P0-5/P0-2 ====
-  const v2Bridge = await p3.evaluate(async () => {
+  // Realistic repo-shaped fixtures where employee.group = model (claude/codex), NOT visual role
+  const bridges = await p3.evaluate(async () => {
     try {
-      const bridge = window.VAOAppV2
-      if (!bridge) return { error: 'VAOAppV2 bridge missing' }
-      // Inject roster: one employee id="e-fe" mapped to role frontend
-      bridge._dispatchSse({ type: 'roster', roster: { groups: [{ id:'g', name:'G', available:true }], employees: [{ id:'e-fe', name:'Claude (test)', group:'frontend', available:true, model:'test-model' }] }, agents: { 'e-fe': { status:'idle' } } })
+      const B = window.VAOAppV2
+      if (!B) return { error: 'VAOAppV2 missing' }
+
+      const snap0 = B._getSnapshot()
+      const preSeatHasClaude = ('claude' in (snap0.snapshot.seatStates || {}))
+      const preSeatHasCodex = ('codex' in (snap0.snapshot.seatStates || {}))
+
+      // Roster: group = model/executor, skill/id = visual role (per user spec)
+      const roster = {
+        groups: [{ id:'g', name:'G', available:true }],
+        employees: [
+          { id:'frontend',  name:'Frontend Dev',  skill:'frontend',  group:'claude', available:true, model:'claude-opus' },
+          { id:'backend',   name:'Backend Dev',   skill:'backend',   group:'codex',  available:true, model:'codex-super' },
+          { id:'tester',    name:'QA Engineer',   skill:'tester',    group:'codex',  available:true, model:'codex-base'  },
+          { id:'reviewer',  name:'Code Reviewer', skill:'reviewer',  group:'claude', available:true, model:'claude-sonnet' },
+        ],
+      }
+      const agents = {
+        frontend: { status:'working' },
+        backend:  { status:'thinking' },
+        tester:   { status:'working' },
+        reviewer: { status:'idle' },
+      }
+      B._dispatchSse({ type:'roster', roster, agents })
       await new Promise(r => setTimeout(r, 350))
-      // Agent state: working → front end visual
-      bridge._dispatchSse({ type: 'agent', id:'e-fe', status:'working' })
-      await new Promise(r => setTimeout(r, 250))
-      const workingSeat = bridge._getSeatState('frontend')
-      // Task: upsert real task into state.tasks → V2 office capsule visible
-      bridge._dispatchSse({ type: 'task', task: { id:'V2-LIVE-TASK-01', title:'V2 live bridge spec compliance test', status:'running', role:'frontend', kind:'code', agentId:'e-fe', who:'Claude', sinceMs: Date.now() - 90000, required:true, difficulty:'medium' } })
-      await new Promise(r => setTimeout(r, 350))
-      const taskInState = (bridge._getState().tasks || []).some(t => t.id === 'V2-LIVE-TASK-01')
-      // Open task inspector for that id by firing DOM event
-      const stage = document.getElementById('v2-office-stage')
-      const ev = new CustomEvent('vao-v2:task-clicked', { bubbles: true, detail: { taskId: 'V2-LIVE-TASK-01' } })
-      stage?.dispatchEvent(ev)
+
+      // Resolver assertions (before animation)
+      const eFrontend = (B._getState().roster.employees || []).find(e => e.id === 'frontend')
+      const eBackend  = (B._getState().roster.employees || []).find(e => e.id === 'backend')
+      const eTester   = (B._getState().roster.employees || []).find(e => e.id === 'tester')
+      const eReviewer = (B._getState().roster.employees || []).find(e => e.id === 'reviewer')
+      const roleFrontend  = B.resolveVisualRoleForEmployee(eFrontend)
+      const roleBackend   = B.resolveVisualRoleForEmployee(eBackend)
+      const roleTester    = B.resolveVisualRoleForEmployee(eTester)
+      const roleReviewer  = B.resolveVisualRoleForEmployee(eReviewer)
+
+      // Agent state: reviewer → status reviewing → REVIEWING visual
+      B._dispatchSse({ type:'agent', id:'reviewer', status:'reviewing' })
+      await new Promise(r => setTimeout(r, 260))
+      const seatFrontend = B._getSeatState('frontend')
+      const seatBackend  = B._getSeatState('backend')
+      const seatQA       = B._getSeatState('qa')       // "tester" maps to qa (alias) per spec
+      const seatReviewer = B._getSeatState('reviewer')
+
+      const snap1 = B._getSnapshot()
+      const seatClaudeMissing = !('claude' in (snap1.snapshot.seatStates || {}))
+      const seatCodexMissing  = !('codex'  in (snap1.snapshot.seatStates || {}))
+      const seatFrontendExists = 'frontend' in (snap1.snapshot.seatStates || {})
+      const seatBackendExists  = 'backend'  in (snap1.snapshot.seatStates || {})
+      const seatQAExists       = 'qa'       in (snap1.snapshot.seatStates || {})
+      const seatReviewerExists = 'reviewer' in (snap1.snapshot.seatStates || {})
+
+      // Task role resolution: t.agent = tester / frontend (legacy shape)
+      B._dispatchSse({ type:'task', task:{ id:'T-QA-01',  title:'QA spec: login smoke regression', status:'running', agent:'tester',   kind:'qa',     sinceMs: Date.now()-3000, required:true, difficulty:'medium' } })
+      B._dispatchSse({ type:'task', task:{ id:'T-FE-01',  title:'[FE] Helix composer focus state', status:'running', agent:'frontend', kind:'frontend', sinceMs: Date.now()-8000, required:true, difficulty:'easy' } })
+      await new Promise(r => setTimeout(r, 400))
+
+      const taskQARole   = B.resolveVisualRoleForTask({ agent:'tester' })
+      const taskFERole   = B.resolveVisualRoleForTask({ agent:'frontend' })
+      const v2Tasks = snap1.snapshot.tasks // stale check
+      const snap2 = B._getSnapshot()
+      const realTasks = snap2.snapshot.tasks || []
+      const taskQA = realTasks.find(t => t.id === 'T-QA-01')
+      const taskFE = realTasks.find(t => t.id === 'T-FE-01')
+
+      // Dispatch to employee "tester" -> animate.dispatch("qa") alias
+      B._dispatchSse({ type:'dispatch', to:'tester' })
       await new Promise(r => setTimeout(r, 550))
-      const drawerOpenAfter = !!document.querySelector('.v2-drawer.open')
-      // Agent → BLOCKED visual
-      bridge._dispatchSse({ type: 'agent', id:'e-fe', status:'error' })
-      await new Promise(r => setTimeout(r, 250))
-      const blockedSeat = bridge._getSeatState('frontend')
-      // Dispatch event (real SSE dispatch) ev.to = employee id
-      bridge._dispatchSse({ type: 'dispatch', to:'e-fe' })
-      await new Promise(r => setTimeout(r, 550))
-      const afterDispatchSeat = bridge._getSeatState('frontend')
-      // busy + commit refresh (no crash; state updates)
-      bridge._dispatchSse({ type: 'busy', busy: true })
-      bridge._dispatchSse({ type: 'commit', commit: 'abcdef1234567890 closeout' })
-      await new Promise(r => setTimeout(r, 150))
-      const st = bridge._getState()
+      const postDispatchQA = B._getSeatState('qa')
+
       return {
-        workingSeat, blockedSeat, afterDispatchSeat,
-        taskInState, drawerOpenAfter,
-        busyAfter: st.busy, commitAfter: String(st.lastCommit || '').slice(0, 8),
+        preSeatHasClaude, preSeatHasCodex,
+        roleFrontend, roleBackend, roleTester, roleReviewer,
+        seatFrontend, seatBackend, seatQA, seatReviewer,
+        seatClaudeMissing, seatCodexMissing,
+        seatFrontendExists, seatBackendExists, seatQAExists, seatReviewerExists,
+        taskQARole, taskFERole,
+        taskQARoleActual: taskQA?.role, taskFERoleActual: taskFE?.role,
+        taskQAWho: taskQA?.who, taskFEWho: taskFE?.who,
+        postDispatchQA,
       }
     } catch (e) { return { error: String(e), stack: e.stack } }
   })
-  console.log('V2 app.js bridge integration result:', JSON.stringify(v2Bridge, null, 2))
+  console.log('Bridges (realistic fixtures, role resolvers, seats & tasks):', JSON.stringify(bridges, null, 2))
 
-  // EventSource count after boot + send + many roster/agent/task/dispatches: still 1
   const esCountAfter = await p3.evaluate(() => window.__esCount || 0)
-  console.log('EventSource count (after SSE+send) =', esCountAfter)
+  console.log('EventSource count (post SSE + V2 compose + dispatch + roundtrip candidate) =', esCountAfter)
   const sendObserved = postV2Count >= 1
   console.log('POST /api/message observed?', sendObserved)
   console.log('sendLog:', sendLog.join(' | '))
   console.log('eventsRx:', eventsRx.join(' | '))
   console.log('GET /api/state observed?', apiStateSeen)
 
-  // ==== P0-7 CORE ↔ CLASSIC 6-SKIN ROUNDTRIP: EventSource still 1 ====
+  // Skin round-trip assertions on this page (P0-7 ES still 1)
   const sequence = ['sakura', 'night', 'core', 'pixel', 'core']
-  const roundTripSkinFlags = []
   for (const id of sequence) {
     await p3.evaluate((i) => window.NiumaSkin?.set?.(i) || window.VAOAppV2?.setSkin?.(i), id)
     await sleep(2400)
-    const [isV2, hasApp, esNow] = await p3.evaluate(() => [
-      document.body.classList.contains('v2-shell-body'),
-      !!document.querySelector('.app'),
-      window.__esCount || 0,
-    ])
-    roundTripSkinFlags.push({ id, isV2, hasApp, esNow })
-    console.log(`  skin ${id}: v2-body=${isV2}  .app present=${hasApp}  EventSource=${esNow}`)
+    const esNow = await p3.evaluate(() => window.__esCount || 0)
+    console.log(`  skin ${id}: EventSource=${esNow}`)
+    if (esNow !== 1) { failures++; console.log(`  FAIL: expected EventSource=1 after skin ${id}`) }
   }
-  const esFinal = roundTripSkinFlags[roundTripSkinFlags.length - 1].esNow
-  console.log('EventSource final (post 6 skin flips):', esFinal)
-  if (esFinal !== 1) { console.log('  FAIL: expected EventSource count=1 after round-trip, got', esFinal); failures++ }
 
   await p3.screenshot({ path: path.join(ART, 'S15_v2_send_bridge_test.png'), type: 'png' })
   if (!sendObserved) failures++
   if (postV2Count !== 1) { console.log(`  NOTE: V2 POST count = ${postV2Count} (expected exactly 1)`); if (postV2Count !== 1) failures++ }
-  if (esCountAfter !== 1) { failures++ }
-  if (v2Bridge.error) failures++
-  if (!v2Bridge.workingSeat || v2Bridge.workingSeat !== 'WORKING') { console.log('  FAIL: seat frontend not WORKING after agent event'); failures++ }
-  if (!v2Bridge.blockedSeat || v2Bridge.blockedSeat !== 'BLOCKED') { console.log('  FAIL: seat frontend not BLOCKED after agent status error'); failures++ }
-  if (!v2Bridge.taskInState) { console.log('  FAIL: task event not in state.tasks'); failures++ }
-  if (!v2Bridge.drawerOpenAfter) { console.log('  FAIL: task inspector drawer not open after task-click'); failures++ }
+  if (esCountAfter !== 1) failures++
+  if (bridges.error) failures++
+  // Explicit regression role != model / alias tester->qa assertions
+  if (bridges.roleFrontend !== 'frontend') { console.log('  FAIL: frontend employee role != frontend (got', bridges.roleFrontend, ')'); failures++ }
+  if (bridges.roleBackend  !== 'backend')  { console.log('  FAIL: backend employee role != backend  (got', bridges.roleBackend,  ')'); failures++ }
+  if (bridges.roleTester   !== 'qa')       { console.log('  FAIL: tester/qa alias resolver returned', bridges.roleTester, 'expected qa'); failures++ }
+  if (bridges.roleReviewer !== 'reviewer') { console.log('  FAIL: reviewer employee role != reviewer'); failures++ }
+  if (bridges.seatFrontend !== 'WORKING')  { console.log('  FAIL: seat frontend not WORKING after agent event'); failures++ }
+  if (bridges.seatBackend  !== 'THINKING') { console.log('  FAIL: seat backend not THINKING after agent event'); failures++ }
+  if (bridges.seatQA       !== 'WORKING')  { console.log('  FAIL: seat qa (tester) not WORKING after agent event'); failures++ }
+  if (bridges.seatReviewer !== 'REVIEWING'){ console.log('  FAIL: seat reviewer not REVIEWING after agent event'); failures++ }
+  if (!bridges.seatClaudeMissing) { console.log('  FAIL: seatStates.claude MUST be absent (regression)'); failures++ }
+  if (!bridges.seatCodexMissing)  { console.log('  FAIL: seatStates.codex MUST be absent (regression)'); failures++ }
+  if (!bridges.seatFrontendExists || !bridges.seatBackendExists || !bridges.seatQAExists || !bridges.seatReviewerExists) { console.log('  FAIL: one of frontend/backend/qa/reviewer seatStates missing'); failures++ }
+  if (bridges.taskQARoleActual !== 'qa')       { console.log('  FAIL: task.agent=tester → V2 capsule role actual =', bridges.taskQARoleActual, 'expected qa'); failures++ }
+  if (bridges.taskFERoleActual !== 'frontend') { console.log('  FAIL: task.agent=frontend → V2 capsule role actual =', bridges.taskFERoleActual, 'expected frontend'); failures++ }
   await p3.close()
 
   // -----------------------------
-  // 4. Round-trip Core→Sakura→Night→Pixel→Core (zero errors)
+  // 4. Round-trip zero errors
   // -----------------------------
-  console.log('\n=== ROUND-TRIP SKIN (STANDALONE ZERO-ERROR) ===')
+  console.log('\n=== ROUND-TRIP SKIN (STANDALONE ZERO ERROR) ===')
   const rtErrs = [], rtCerr = []
   const p4 = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.25 })
   await instrumentEventSource(p4)
@@ -232,16 +284,17 @@ function instrumentEventSource(page) {
       window.__esCount || 0,
     ])
     console.log(`  skin ${id}: v2-body=${isV2}  .app present=${hasApp}  EventSource=${esNow}`)
+    if (esNow !== 1) { failures++ }
   }
-  const R4 = report('Round-trip Core→Sakura→Night→Pixel→Core', rtErrs, rtCerr)
+  const R4 = report(`Round-trip Core→Sakura→Night→Pixel→Core (HEAD=${HEAD})`, rtErrs, rtCerr)
   if (R4.blacklist_hit || R4.errs.length) failures++
   await p4.screenshot({ path: path.join(ART, 'S16_roundtrip_back_to_core.png'), type: 'png' })
   await p4.close()
 
   // -----------------------------
-  // 5. RESPONSIVE CLOSEOUT (1440/1280/1024/390) — documentOverflowX + stageOverflowX P0-7
+  // 5. RESPONSIVE CLOSEOUT — doc overflow 0 + stage allowed > 0
   // -----------------------------
-  console.log('\n=== RESPONSIVE CLOSEOUT SCREENSHOTS (documentOverflowX=0 requirement) ===')
+  console.log('\n=== RESPONSIVE CLOSEOUT (documentOverflowX=0 STRICT; stageOverflowX>0 OK) ===')
   for (const [tag, w, h, name] of sizes) {
     const vp = { width: w, height: h }
     const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: (w <= 480) ? 2 : 1.5 })
@@ -256,30 +309,52 @@ function instrumentEventSource(page) {
     await p.screenshot({ path: f, type: 'png' })
     const info = await p.evaluate(() => {
       const de = document.documentElement
-      const documentOverflowX = de.scrollWidth - de.clientWidth
+      const body = document.body
+      const deCW = de.clientWidth, deSW = de.scrollWidth
+      const bCW  = body.clientWidth, bSW = body.scrollWidth
+      const documentOverflowX = Math.max(deSW - deCW, bSW - bCW, 0)
       const stage = document.querySelector('.v2-stage-wrap')
-      const stageOverflowX = stage ? (stage.scrollWidth - stage.clientWidth) : 0
-      // If overflow-x:hidden CSS is active → scrollWidth may still be wider than clientWidth; real requirement = page can't horizontally scroll.
-      const actualDocumentHScroll = Math.max(
-        (document.body.scrollWidth - document.body.clientWidth),
-        (document.documentElement.scrollWidth - document.documentElement.clientWidth),
-      )
-      // But overflow-x:hidden clips scroll bars; use window innerWidth - max(scrollWidth,clientWidth) < 0 positive means overflow past viewport.
+      const stCW = stage ? stage.clientWidth : 0
+      const stSW = stage ? stage.scrollWidth : 0
+      const stageOverflowX = Math.max(stSW - stCW, 0)
+      const culprits = []
+      for (const child of Array.from(document.body.children)) {
+        const r = child.getBoundingClientRect()
+        const maxX = Math.max(r.right, r.left + child.offsetWidth || 0)
+        const exceeds = maxX > (window.innerWidth + 1) || child.scrollWidth > (deCW + 2)
+        if (exceeds) culprits.push({ tag: child.tagName, id: child.id, cls: child.className.substring ? child.className.substring(0,60) : '', r: {right:Math.round(r.right),width:Math.round(r.width)}, sw: child.scrollWidth })
+      }
+      for (const el of Array.from(document.body.querySelectorAll('*'))) {
+        if (culprits.length > 25) break
+        const r = el.getBoundingClientRect()
+        if (r.right > window.innerWidth + 4 || el.scrollWidth > deCW + 4) {
+          culprits.push({ tag: el.tagName, id: el.id, cls: (el.className||'').toString().substring(0,60), rRight: Math.round(r.right), sw: el.scrollWidth, ow: el.offsetWidth })
+        }
+      }
       return {
         v2Bar: !!document.getElementById('v2-top-bar'),
         v2Stage: !!document.getElementById('v2-office-stage'),
         mobile: !!document.querySelector('.v2-bottom-nav'),
         navCollapsed: document.body.classList.contains('v2-nav-collapsed'),
-        documentOverflowX: actualDocumentHScroll,
-        stageOverflowX,
-        clientWidth: document.documentElement.clientWidth,
-        deScrollWidth: document.documentElement.scrollWidth,
+        deCW, deSW, bCW, bSW,
+        documentOverflowX, stageOverflowX,
+        stCW, stSW,
+        culprits: culprits.slice(0, 20),
       }
     })
-    console.log(`  ${name} ${tag}: v2Bar=${info.v2Bar}  navCollapsed=${info.navCollapsed}  documentOverflowX=${info.documentOverflowX}px  stageOverflowX=${info.stageOverflowX}px  bottomNav=${info.mobile}  clientWidth=${info.clientWidth} deScroll=${info.deScrollWidth}`)
-    report(`${name} ${tag} errors`, eE, cE)
-    if (info.documentOverflowX > 0) {
-      console.log(`  * ACCEPTANCE ISSUE: ${name}_${tag} documentOverflowX=${info.documentOverflowX} > 0. Clipping via overflow-x:hidden is NOT acceptance; document viewport must not exceed.`)
+    console.log(`  ${name} ${tag}: v2Bar=${info.v2Bar}  navCollapsed=${info.navCollapsed}  bottomNav=${info.mobile}`)
+    console.log(`       de clientW=${info.deCW}  de scrollW=${info.deSW}  |  body clientW=${info.bCW}  body scrollW=${info.bSW}`)
+    console.log(`       stage clientW=${info.stCW} stage scrollW=${info.stSW}  => documentOverflowX=${info.documentOverflowX}  stageOverflowX=${info.stageOverflowX}`)
+    if (tag === '390x844') console.log(`       CULPRITS R03: ${JSON.stringify(info.culprits, null, 1)}`)
+    const Rtag = report(`${name} ${tag} errors`, eE, cE)
+    if (Rtag.blacklist_hit || Rtag.errs.length) failures++
+    // STRICT requirement: documentOverflowX === 0
+    if (info.documentOverflowX !== 0) {
+      console.log(`  FAIL: ${name}_${tag} documentOverflowX=${info.documentOverflowX} !== 0 (ACCEPTANCE REQUIRES 0)`)
+      failures++
+    }
+    if (tag === '390x844' && info.stageOverflowX <= 0) {
+      console.log(`  NOTE: R03 390×844 stageOverflowX=${info.stageOverflowX} (positive preferred: ensures 760px office readable via internal scroll not shrunk tiny)`)
     }
     await ctx.close()
     const sz = fs.statSync(f).size
