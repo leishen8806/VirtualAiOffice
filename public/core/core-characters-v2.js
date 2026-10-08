@@ -29,6 +29,60 @@
     'IDLE', 'THINKING', 'WORKING', 'REVIEWING', 'WAITING_HUMAN', 'BLOCKED', 'DONE', 'OFFLINE',
   ])
 
+  const ANATOMY = Object.freeze({
+    FRAME_W: 48, FRAME_H: 82,
+    HEAD_CENTER: Object.freeze({ x: 24, y: 25 }),
+    HEAD_RADIUS: 8.5,
+    HEAD_TOP: 16.5,
+    CHIN: 33.5,
+    EYE_LEFT: Object.freeze({ x: 21, y: 26.8 }),
+    EYE_RIGHT: Object.freeze({ x: 27, y: 26.8 }),
+    EYE_Y: 26.8,
+    EAR_LEFT: Object.freeze({ x: 15.5, y: 26.5 }),
+    EAR_RIGHT: Object.freeze({ x: 32.5, y: 26.5 }),
+    NECK_CENTER: Object.freeze({ x: 24, y: 36.5 }),
+    SHOULDER_LEFT: Object.freeze({ x: 12, y: 40 }),
+    SHOULDER_RIGHT: Object.freeze({ x: 36, y: 40 }),
+    CHEST_CENTER: Object.freeze({ x: 24, y: 48 }),
+    DESK_TOP_Y: 57,
+    STATE_MARKER: Object.freeze({ x: 40, y: 10 }),
+  })
+
+  const HAND_ANCHORS = Object.freeze({
+    IDLE: Object.freeze({
+      left: Object.freeze({ x: 16.4, y: 57.6 }),
+      right: Object.freeze({ x: 31.6, y: 57.6 }),
+    }),
+    THINKING: Object.freeze({
+      left: Object.freeze({ x: 9, y: 44 }),
+      right: Object.freeze({ x: 36, y: 27.5 }),
+    }),
+    WORKING: Object.freeze({
+      left: Object.freeze({ x: 14, y: 62 }),
+      right: Object.freeze({ x: 34, y: 62 }),
+    }),
+    REVIEWING: Object.freeze({
+      left: Object.freeze({ x: 15, y: 54 }),
+      right: Object.freeze({ x: 41, y: 50 }),
+    }),
+    WAITING_HUMAN: Object.freeze({
+      left: Object.freeze({ x: 8.5, y: 52 }),
+      right: Object.freeze({ x: 41, y: 54.5 }),
+    }),
+    BLOCKED: Object.freeze({
+      left: Object.freeze({ x: 16, y: 61 }),
+      right: Object.freeze({ x: 32, y: 61 }),
+    }),
+    DONE: Object.freeze({
+      left: Object.freeze({ x: 14, y: 55 }),
+      right: Object.freeze({ x: 45, y: 33 }),
+    }),
+    OFFLINE: Object.freeze({
+      left: Object.freeze({ x: 13, y: 58 }),
+      right: Object.freeze({ x: 35, y: 58 }),
+    }),
+  })
+
   const ROLES = Object.freeze([
     {
       id: 'helix', zh: 'Helix', en: 'Helix',
@@ -120,52 +174,123 @@
     </filter>
   </defs>`
 
-  const ACCESSORY_V2 = {
-    'helix-earring': `
-      <g transform="translate(36 18)" opacity="0.95">
-        <circle r="2.4" fill="none" stroke="var(--orchestrator)" stroke-width="1"/>
-        <path d="M0 -3 q2 -5 5 0 t5 0" stroke="var(--orchestrator)" stroke-width="1" fill="none"/>
-      </g>
-      <path d="M14 3 q-2 -8 10 -8 q14 0 10 8" stroke="#151a26" stroke-width="1.8" fill="none"/>
-      <rect x="11" y="2" width="3.6" height="5" rx="1.2" fill="#1a2030"/>
-      <rect x="29" y="2" width="3.6" height="5" rx="1.2" fill="#1a2030"/>`,
-    'clipboard-badge': `
-      <rect x="32" y="6" width="12" height="18" rx="1.6" fill="#1a1f2b" stroke="#0c0f16" stroke-width="0.6"/>
-      <path d="M35 8 v5 l2 -1.5 l2 1.5 V8" fill="var(--role-product)"/>
-      <path d="M34.5 16 h7 M34.5 19 h5" stroke="#ffffff" stroke-width="0.7" opacity="0.9"/>`,
-    'round-glasses-v2': `
-      <circle cx="17" cy="20" r="3.4" fill="none" stroke="#2a303e" stroke-width="1.3"/>
-      <circle cx="31" cy="20" r="3.4" fill="none" stroke="#2a303e" stroke-width="1.3"/>
-      <path d="M20.4 20 h1.2 M13 17 l-3 -2 M35 17 l3 -2" stroke="#2a303e" stroke-width="1" stroke-linecap="round"/>`,
-    'neck-phones': `
-      <path d="M9 38 q0 -14 15 -14 q15 0 15 14" fill="none" stroke="#1a2030" stroke-width="1.8" stroke-linecap="round"/>
-      <rect x="6.5" y="36" width="5.5" height="7.5" rx="1.8" fill="#1a2030"/>
-      <rect x="36" y="36" width="5.5" height="7.5" rx="1.8" fill="#1a2030"/>`,
-    'db-lanyard': `
-      <path d="M14 14 L34 14 L31 20 L17 20 Z" fill="none" stroke="#1a2030" stroke-width="1" stroke-linejoin="round"/>
-      <ellipse cx="24" cy="30" rx="4.6" ry="1.9" fill="none" stroke="var(--role-backend)" stroke-width="1.2"/>
-      <path d="M19.4 30 v5 q0 2 4.6 2 t4.6 -2 v-5" fill="none" stroke="var(--role-backend)" stroke-width="1.2"/>
-      <ellipse cx="24" cy="37" rx="4.6" ry="1.9" fill="none" stroke="var(--role-backend)" stroke-width="1.2"/>`,
-    'checker-mag': `
-      <circle cx="14" cy="24" r="4.2" fill="none" stroke="#1a2030" stroke-width="1.4"/>
-      <path d="M17 27 l5 5" stroke="#1a2030" stroke-width="1.6" stroke-linecap="round"/>
-      <rect x="24" y="18" width="10" height="16" rx="1" fill="none" stroke="#1a2030" stroke-width="0.95"/>
-      <path d="M27 22 l1 1.2 l2.4 -2.5" stroke="var(--role-qa)" stroke-width="1.1" fill="none"/>
-      <path d="M26.5 26 h7 M26.5 29 h6" stroke="#1a2030" stroke-width="0.8" stroke-linecap="round"/>`,
-    'stamp-rim': `
-      <path d="M16 20 a3.8 3.8 0 0 0 7.6 0" fill="none" stroke="#2a303e" stroke-width="1.3"/>
-      <path d="M12 20 h4 M32 20 h4" stroke="#2a303e" stroke-width="1" stroke-linecap="round"/>
-      <g transform="translate(28 26)">
-        <rect width="11" height="9" rx="1" fill="none" stroke="var(--role-reviewer)" stroke-width="1.1"/>
-        <path d="M2 4 h2.4 l1.2 1.2 l3.6 -3.6" stroke="var(--role-reviewer)" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
-      </g>`,
-    'book-ribbon-v2': `
-      <rect x="9" y="6" width="7.6" height="18.5" fill="none" stroke="#1a2030" stroke-width="1"/>
-      <rect x="18.6" y="6" width="7.6" height="18.5" fill="none" stroke="#1a2030" stroke-width="1"/>
-      <path d="M11.8 5 v0 l0 2.2 l1.6 -1.2 l1.6 1.2 V5" stroke="var(--role-docs)" fill="none" stroke-width="1" stroke-linejoin="round"/>
-      <path d="M21.8 5 v0 l0 2.2 l1.6 -1.2 l1.6 1.2 V5" stroke="var(--role-docs)" fill="none" stroke-width="1" stroke-linejoin="round"/>
-      <path d="M11 12 h14 M11 15 h14 M11 18 h12" stroke="#1a2030" stroke-width="0.75"/>`,
-  }
+  const ACCESSORY_V2 = Object.freeze({
+    'helix-earring': Object.freeze({
+      head: `
+        <path d="M15.5 17.5 q2 -3.5 8.5 -3.5 q10 0 8.5 3.5" stroke="#151a26" stroke-width="1.6" fill="none"/>
+        <rect x="13.7" y="24" width="3.6" height="5" rx="1.2" fill="#1a2030"/>
+        <rect x="30.7" y="24" width="3.6" height="5" rx="1.2" fill="#1a2030"/>
+        <g transform="translate(32.5 31.5)" opacity="0.95">
+          <circle r="2.2" fill="none" stroke="var(--orchestrator)" stroke-width="0.9"/>
+          <path d="M0 -2.8 q1.8 -4.6 4.6 0 t4.6 0" stroke="var(--orchestrator)" stroke-width="0.9" fill="none"/>
+        </g>`,
+      face: '',
+      neck: '',
+      torso: '',
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+    'clipboard-badge': Object.freeze({
+      head: '',
+      face: '',
+      neck: '',
+      torso: `
+        <g class="clipboard-badge" data-role="product">
+          <rect x="26.5" y="43" width="7.5" height="11" rx="1.2" fill="#1a1f2b" stroke="#0c0f16" stroke-width="0.5"/>
+          <path d="M28.5 45 v3.2 l1.2 -1 l1.2 1 V45" fill="var(--role-product)"/>
+          <path d="M28 51 h4.5 M28 53 h3.2" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
+        </g>`,
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+    'round-glasses-v2': Object.freeze({
+      head: '',
+      face: `
+        <circle cx="21" cy="26.8" r="2.8" fill="none" stroke="#2a303e" stroke-width="1.1"/>
+        <circle cx="27" cy="26.8" r="2.8" fill="none" stroke="#2a303e" stroke-width="1.1"/>
+        <path d="M23.8 26.8 h0.4 M18 25 l-2.5 -1.5 M30 25 l2.5 -1.5" stroke="#2a303e" stroke-width="0.9" stroke-linecap="round"/>`,
+      neck: '',
+      torso: '',
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+    'neck-phones': Object.freeze({
+      head: '',
+      face: '',
+      neck: `
+        <path d="M9 41 q0 -5 15 -5 q15 0 15 5" fill="none" stroke="#1a2030" stroke-width="1.8" stroke-linecap="round"/>
+        <rect x="7.2" y="39" width="5.5" height="7" rx="1.8" fill="#1a2030"/>
+        <rect x="35.3" y="39" width="5.5" height="7" rx="1.8" fill="#1a2030"/>`,
+      torso: '',
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+    'db-lanyard': Object.freeze({
+      head: '',
+      face: '',
+      neck: '',
+      torso: `
+        <path d="M19 37 L29 37 L26.2 48 L21.8 48 Z" fill="none" stroke="#1a2030" stroke-width="0.9" stroke-linejoin="round"/>
+        <ellipse cx="24" cy="50" rx="4.2" ry="1.7" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
+        <path d="M19.8 50 v4.5 q0 1.8 4.2 1.8 t4.2 -1.8 v-4.5" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
+        <ellipse cx="24" cy="56.3" rx="4.2" ry="1.7" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>`,
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+    'checker-mag': Object.freeze({
+      head: '',
+      face: '',
+      neck: '',
+      torso: `
+        <g class="checker-torso">
+          <rect x="14" y="44" width="12" height="16" rx="1" fill="none" stroke="#1a2030" stroke-width="0.9"/>
+          <path d="M17 48 l1 1.1 l2.2 -2.3" stroke="var(--role-qa)" stroke-width="1" fill="none"/>
+          <path d="M16.5 52 h7 M16.5 55 h6" stroke="#1a2030" stroke-width="0.75" stroke-linecap="round"/>
+        </g>`,
+      handLeft: '',
+      handRight: `
+        <g class="magnifier-hand">
+          <circle r="4" fill="none" stroke="#1a2030" stroke-width="1.3"/>
+          <path d="M2.8 2.8 l4.8 4.8" stroke="#1a2030" stroke-width="1.5" stroke-linecap="round"/>
+        </g>`,
+      desk: '',
+    }),
+    'stamp-rim': Object.freeze({
+      head: '',
+      face: `
+        <circle cx="21" cy="26.8" r="2.8" fill="none" stroke="#2a303e" stroke-width="1.1"/>
+        <circle cx="27" cy="26.8" r="2.8" fill="none" stroke="#2a303e" stroke-width="1.1"/>
+        <path d="M23.8 26.8 h0.4 M18 25 l-2.5 -1.5 M30 25 l2.5 -1.5" stroke="#2a303e" stroke-width="0.9" stroke-linecap="round"/>`,
+      neck: '',
+      torso: '',
+      handLeft: '',
+      handRight: `
+        <g class="stamp-hand">
+          <rect x="-5.5" y="-4.5" width="11" height="9" rx="1" fill="none" stroke="var(--role-reviewer)" stroke-width="1"/>
+          <path d="M-3.5 -0.5 h2.2 l1.1 1.1 l3.3 -3.3" stroke="var(--role-reviewer)" stroke-width="1.1" fill="none" stroke-linejoin="round"/>
+        </g>`,
+      desk: '',
+    }),
+    'book-ribbon-v2': Object.freeze({
+      head: '',
+      face: '',
+      neck: '',
+      torso: `
+        <g class="book-torso">
+          <rect x="9" y="44" width="8.2" height="16" fill="none" stroke="#1a2030" stroke-width="0.95"/>
+          <path d="M10.8 43 v0 l0 2 l1.4 -1.1 l1.4 1.1 V43" stroke="var(--role-docs)" fill="none" stroke-width="0.9" stroke-linejoin="round"/>
+          <path d="M10.3 50 h5.6 M10.3 53 h5.6 M10.3 56 h4.8" stroke="#1a2030" stroke-width="0.7"/>
+        </g>`,
+      handLeft: '',
+      handRight: '',
+      desk: '',
+    }),
+  })
 
   const HAIR_V2 = {
     helm: `<path d="M11 15 a13 13 0 0 1 26 0 v-2 q-13 -8 -26 0 z" fill="var(--hair)" stroke="rgba(0,0,0,0.28)" stroke-width="0.6"/>
@@ -184,6 +309,8 @@
     const st = state || 'IDLE'
     const cls = `sk2-fig sk2-state-${(r?.id || 'role')}-${st.toLowerCase().replace(/_/g, '-')}`
     const roleId = r?.id || 'role'
+    const handA = HAND_ANCHORS[st] || HAND_ANCHORS.IDLE
+    const owner = ACCESSORY_V2[r?.accessory] || { head: '', face: '', neck: '', torso: '', handLeft: '', handRight: '', desk: '' }
     let torsoStyle = ''
     let headStyle = ''
     let armsGroup = ''
@@ -267,6 +394,8 @@
       <g class="sk2-torso" style="${torsoStyle}">
         <path d="M12 40 l-2 24 h28 l-2 -24 q-2 4 -12 4 t-12 -4 z" fill="var(--blazer)" stroke="rgba(0,0,0,0.28)" stroke-width="0.7"/>
         <rect x="21" y="37" width="6" height="7.5" rx="1.6" fill="var(--shirt)" stroke="rgba(0,0,0,0.18)" stroke-width="0.55" class="sk2-shirt"/>
+        <g class="sk2-neck-accessory">${owner.neck || ''}</g>
+        <g class="sk2-torso-accessory">${owner.torso || ''}</g>
       </g>
       <g class="sk2-head-wrap" style="${headStyle}">
         <circle cx="24" cy="25" r="8.5" fill="url(#sk2-skin)" stroke="rgba(0,0,0,0.22)" stroke-width="0.7" class="sk2-head"/>
@@ -277,9 +406,12 @@
           <circle cx="27" cy="26.8" r="${st === 'OFFLINE' ? 0.3 : 1.05}" class="sk2-eye sk2-eye-r"/>
         </g>
         <path d="${st === 'DONE' ? 'M21.5 30.2 q2.5 2.6 5 0' : st === 'BLOCKED' ? 'M22 30.8 q2 -2 4 0' : 'M22 30 q2 1.4 4 0'}" stroke="#6a4a36" fill="none" stroke-width="${st === 'BLOCKED' ? 1 : 0.8}" stroke-linecap="round" class="sk2-mouth"/>
-        <g class="sk2-accessory">${ACCESSORY_V2[r?.accessory] || ''}</g>
+        <g class="sk2-head-accessory">${owner.head || ''}</g>
+        <g class="sk2-face-accessory">${owner.face || ''}</g>
       </g>
       <g class="sk2-arms">${armsGroup}</g>
+      <g transform="translate(${handA.left.x} ${handA.left.y})" class="sk2-hand-accessory sk2-hand-left-accessory">${owner.handLeft || ''}</g>
+      <g transform="translate(${handA.right.x} ${handA.right.y})" class="sk2-hand-accessory sk2-hand-right-accessory">${owner.handRight || ''}</g>
       ${extraMarkers}
     </g>`
   }
@@ -512,11 +644,13 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     ROLES,
     ROLE_COUNT: ROLES.length,
     STATES: STATES_V2,
+    ANATOMY,
+    HAND_ANCHORS,
     role,
     renderSVG,
     renderStateClasses,
     injectStyles,
-    _internals: { ACCESSORY_V2, HAIR_V2, skeleton, workstationMini, SVG_DEFS },
+    _internals: { ACCESSORY_V2, HAIR_V2, ANATOMY, HAND_ANCHORS, skeleton, workstationMini, SVG_DEFS },
   })
   globalThis.VAOCoreCharactersV2 = api
   if (typeof module !== 'undefined' && module.exports) module.exports = api

@@ -876,3 +876,185 @@ test('C5-DEMO-STILL-FIXTURES. [DEMO Role Inspector may retain labeled fixtures] 
   assert.ok(ok, `DEMO mode role inspector MUST keep its labeled demo fixtures (visual contract)`)
   handle.destroy?.()
 })
+
+/* ------------------------------------------------------------------ */
+/* ANATOMY contract tests (Commit A)                                   */
+/* ------------------------------------------------------------------ */
+
+test('ANAT-T1. [ANATOMY constant] VAOCoreCharactersV2.ANATOMY exists with FRAME_W=48, FRAME_H=82, anchors at HEAD_CENTER(24,25), HEAD_RADIUS=8.5, EYE_LEFT(21,26.8), STATE_MARKER(40,10), CHEST_CENTER.y=48, DESK_TOP_Y=57', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  assert.ok(CV2.ANATOMY, 'CV2.ANATOMY top-level constant must be exposed')
+  assert.equal(CV2.ANATOMY.FRAME_W, 48, 'FRAME_W=48')
+  assert.equal(CV2.ANATOMY.FRAME_H, 82, 'FRAME_H=82')
+  assert.equal(CV2.ANATOMY.HEAD_CENTER.x, 24, 'HEAD_CENTER.x=24')
+  assert.equal(CV2.ANATOMY.HEAD_CENTER.y, 25, 'HEAD_CENTER.y=25')
+  assert.equal(CV2.ANATOMY.HEAD_RADIUS, 8.5, 'HEAD_RADIUS=8.5')
+  assert.equal(CV2.ANATOMY.EYE_LEFT.x, 21, 'EYE_LEFT.x=21')
+  assert.equal(CV2.ANATOMY.EYE_LEFT.y, 26.8, 'EYE_LEFT.y=26.8')
+  assert.equal(CV2.ANATOMY.EYE_RIGHT.x, 27, 'EYE_RIGHT.x=27')
+  assert.equal(CV2.ANATOMY.EYE_RIGHT.y, 26.8, 'EYE_RIGHT.y=26.8')
+  assert.equal(CV2.ANATOMY.STATE_MARKER.x, 40, 'STATE_MARKER.x=40')
+  assert.equal(CV2.ANATOMY.STATE_MARKER.y, 10, 'STATE_MARKER.y=10')
+  assert.equal(CV2.ANATOMY.CHEST_CENTER.y, 48, 'CHEST_CENTER.y=48')
+  assert.equal(CV2.ANATOMY.DESK_TOP_Y, 57, 'DESK_TOP_Y=57')
+  assert.ok(CV2._internals.ANATOMY, 'ANATOMY also exposed via _internals')
+  assert.equal(CV2._internals.ANATOMY, CV2.ANATOMY, 'ANATOMY same reference via api and _internals')
+})
+
+test('ANAT-T2. [HAND_ANCHORS constant] HAND_ANCHORS exists with all 8 states; each has left/right {x,y} finite numbers', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  assert.ok(CV2.HAND_ANCHORS, 'CV2.HAND_ANCHORS top-level exposed')
+  const states = ['IDLE', 'THINKING', 'WORKING', 'REVIEWING', 'WAITING_HUMAN', 'BLOCKED', 'DONE', 'OFFLINE']
+  for (const s of states) {
+    assert.ok(CV2.HAND_ANCHORS[s], `HAND_ANCHORS[${s}] must exist`)
+    assert.ok(CV2.HAND_ANCHORS[s].left, `${s} has .left`)
+    assert.ok(CV2.HAND_ANCHORS[s].right, `${s} has .right`)
+    assert.ok(Number.isFinite(CV2.HAND_ANCHORS[s].left.x), `${s}.left.x is finite`)
+    assert.ok(Number.isFinite(CV2.HAND_ANCHORS[s].left.y), `${s}.left.y is finite`)
+    assert.ok(Number.isFinite(CV2.HAND_ANCHORS[s].right.x), `${s}.right.x is finite`)
+    assert.ok(Number.isFinite(CV2.HAND_ANCHORS[s].right.y), `${s}.right.y is finite`)
+  }
+})
+
+/* Helpers: balanced substring extraction for outer <g class="NAME"> groups. */
+function substringByClassName(svg, className) {
+  const re = new RegExp('<g\\b[^>]*class="[^"]*\\b' + className.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&') + '\\b')
+  const m = svg.match(re)
+  if (!m) return ''
+  return svg.slice(m.index, findBalancedCloseSibling(svg, m.index))
+}
+function findBalancedCloseSibling(s, openIdx) {
+  if (openIdx < 0 || openIdx >= s.length) return s.length
+  const depthStart = s.lastIndexOf('<g', openIdx + 50) >= 0 ? 1 : 0
+  let depth = depthStart
+  const gOpen = s.indexOf('<g', openIdx)
+  if (gOpen >= 0 && gOpen - openIdx < 200) { depth = Math.max(1, depth) }
+  let i = openIdx
+  const len = s.length
+  while (i < len) {
+    const open = s.indexOf('<g', i)
+    const close = s.indexOf('</g>', i)
+    if (open < 0 && close < 0) return len
+    if (close < 0 || (open >= 0 && open < close)) {
+      depth++
+      i = open + 2
+    } else {
+      depth--
+      if (depth <= 0) return close + 4
+      i = close + 4
+    }
+  }
+  return len
+}
+
+test('ANAT-T3. [Architect glasses in head-wrap] Architect glasses circles at cx=21/cx=27 cy=26.8 live inside sk2-head-wrap DOM group containing sk2-face-accessory', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('architect', { state: 'IDLE' })
+  assert.ok(svg.includes('sk2-head-wrap'), 'svg must contain sk2-head-wrap group')
+  assert.ok(svg.includes('sk2-face-accessory'), 'svg must contain sk2-face-accessory group (inside head-wrap)')
+  const headInner = substringByClassName(svg, 'sk2-head-wrap')
+  assert.ok(headInner.includes('<circle cx="21" cy="26.8"'), 'EYE_LEFT circle cx=21 cy=26.8 inside sk2-head-wrap')
+  assert.ok(headInner.includes('<circle cx="27" cy="26.8"'), 'EYE_RIGHT circle cx=27 cy=26.8 inside sk2-head-wrap')
+  assert.ok(headInner.includes('sk2-face-accessory'), 'sk2-face-accessory class marker present inside head-wrap')
+})
+
+test('ANAT-T4. [Product badge NOT in head-wrap] Product clipboard-badge lives in sk2-torso-accessory / outside head-wrap group', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('product', { state: 'IDLE' })
+  const headInner = substringByClassName(svg, 'sk2-head-wrap')
+  const torsoInner = substringByClassName(svg, 'sk2-torso')
+  const forbiddenInHead = ['clipboard-badge', 'data-role="product"', 'sk2-torso-accessory']
+  for (const p of forbiddenInHead) {
+    assert.ok(!headInner.includes(p), `Product marker "${p}" must NOT appear inside sk2-head-wrap`)
+  }
+  assert.ok(torsoInner.includes('sk2-torso-accessory'), 'sk2-torso-accessory must appear inside sk2-torso')
+  const hasBadgeInTorso = torsoInner.includes('clipboard-badge') || torsoInner.includes('data-role="product"') || torsoInner.includes('var(--role-product)')
+  assert.ok(hasBadgeInTorso, 'Product badge/identifier must appear inside sk2-torso class subtree, not head-wrap')
+})
+
+test('ANAT-T5. [Backend lanyard y>=36] Backend db-lanyard torso V-strap paths start at Y>=36 (never above CHIN)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('backend', { state: 'IDLE' })
+  const torsoAccInner = substringByClassName(svg, 'sk2-torso-accessory')
+  assert.ok(torsoAccInner.includes('var(--role-backend)') || torsoAccInner.includes('M19 37'),
+    'Backend torso-accessory must contain lanyard V-strap + DB badge')
+  const lanyardPaths = [...torsoAccInner.matchAll(/<path[^>]*d="M([0-9.]+)\s+([0-9.]+)/g)]
+  assert.ok(lanyardPaths.length >= 1, 'Backend sk2-torso-accessory must have at least one path')
+  for (const m of lanyardPaths) {
+    const y = parseFloat(m[2])
+    assert.ok(Number.isFinite(y) && y >= 36, `Backend lanyard accessory path M Y must be >= 36 (below CHIN=33.5); got Y=${y}`)
+  }
+})
+
+test('ANAT-T6. [QA checklist below eyes] QA checklist rectangle y>=40 (safely below eye bbox y 24-30)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('qa', { state: 'IDLE' })
+  const torsoAccInner = substringByClassName(svg, 'sk2-torso-accessory')
+  assert.ok(torsoAccInner.includes('var(--role-qa)') || torsoAccInner.includes('checker-torso'),
+    'QA torso-accessory group must contain checklist')
+  const checklistRects = [...torsoAccInner.matchAll(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"/g)]
+  assert.ok(checklistRects.length >= 1, 'QA torso-accessory must contain checklist rectangle(s)')
+  for (const m of checklistRects) {
+    const y = parseFloat(m[2])
+    const h = parseFloat(m[4])
+    const bottom = y + h
+    assert.ok(Number.isFinite(y) && y >= 40, `QA checklist rect top Y must be >= 40 (below eye bbox ~24-30); got Y=${y}`)
+    assert.ok(bottom <= 65, `QA checklist bottom Y should stay within torso area; got bottom=${bottom}`)
+  }
+})
+
+test('ANAT-T7. [Docs book >= y40] Docs book rectangle(s) in torso/hand-left have top y >= 40 (never over forehead)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('docs', { state: 'IDLE' })
+  const torsoAccInner = substringByClassName(svg, 'sk2-torso-accessory')
+  const handRInner = substringByClassName(svg, 'sk2-hand-right-accessory')
+  const handLInner = substringByClassName(svg, 'sk2-hand-left-accessory')
+  const scan = torsoAccInner + handRInner + handLInner
+  const bookRects = [...scan.matchAll(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"/g)]
+  assert.ok(bookRects.length >= 1 || scan.includes('book-torso') || scan.includes('var(--role-docs)'),
+    'Docs book must appear in accessory groups (torso/hand-left/right)')
+  for (const m of bookRects) {
+    const y = parseFloat(m[2])
+    assert.ok(Number.isFinite(y) && y >= 40, `Docs book rect top Y must be >= 40 (never forehead/hair area); got Y=${y}`)
+  }
+})
+
+test('ANAT-T8. [Head rotation ownership] Architect THINKING: sk2-head-wrap has rotate(-4deg) style AND glasses circles are inside head-wrap substring', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('architect', { state: 'THINKING' })
+  const hwMatch = svg.match(/<g[^>]*class="[^"]*sk2-head-wrap[^"]*"[^>]*style="([^"]*)"[^>]*>/)
+  assert.ok(hwMatch, 'sk2-head-wrap group must exist with style attribute')
+  const headStyle = hwMatch[1]
+  assert.ok(headStyle.includes('rotate(-4deg)'), `sk2-head-wrap style for THINKING MUST contain rotate(-4deg); got style=${headStyle}`)
+  assert.ok(headStyle.includes('transform-origin:24px 25px') || headStyle.includes('transform-origin:24 25'),
+    `THINKING head-wrap style must include transform-origin 24 25 (HEAD_CENTER); got=${headStyle}`)
+  const headInner = substringByClassName(svg, 'sk2-head-wrap')
+  assert.ok(headInner.includes('<circle cx="21" cy="26.8"'), 'Architect left glass EYE_LEFT circle inside head-wrap (rotates with head)')
+  assert.ok(headInner.includes('<circle cx="27" cy="26.8"'), 'Architect right glass EYE_RIGHT circle inside head-wrap (rotates with head)')
+})
+
+test('ANAT-T9. [WAITING_HUMAN non-rotating torso badge] Product badge WAITING_HUMAN: head rotates 18deg but torso badge stays outside 18deg-rotate group', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('product', { state: 'WAITING_HUMAN' })
+  const hwMatch = svg.match(/<g[^>]*class="[^"]*sk2-head-wrap[^"]*"[^>]*style="([^"]*)"[^>]*>/)
+  assert.ok(hwMatch, 'sk2-head-wrap must exist')
+  const headStyle = hwMatch[1]
+  assert.ok(headStyle.includes('rotate(18deg)'), `WAITING_HUMAN head-wrap style MUST contain rotate(18deg); got=${headStyle}`)
+  const headInner = substringByClassName(svg, 'sk2-head-wrap')
+  const torsoInner = substringByClassName(svg, 'sk2-torso')
+  const productBadgePatterns = ['clipboard-badge', 'data-role="product"', 'sk2-torso-accessory']
+  for (const p of productBadgePatterns) {
+    assert.ok(!headInner.includes(p), `Product badge marker "${p}" must NOT be inside the rotate(18deg) head-wrap`)
+  }
+  const hasInTorso = productBadgePatterns.some((p) => torsoInner.includes(p)) || torsoInner.includes('var(--role-product)')
+  assert.ok(hasInTorso, 'Product badge must live inside sk2-torso class subtree (NOT head-wrap; not tilted 18deg)')
+})
