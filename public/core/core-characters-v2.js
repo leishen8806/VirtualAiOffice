@@ -289,11 +289,11 @@
     if (!S) return ''
     const key = S.STATES?.[state]?.key || state.toLowerCase().replace(/_/g, '-')
     const color = `var(--${key})`
-    const gly = S.stateGlyphG(state, 11, color) || ''
-    return `<g class="sk2-state-pill" transform="translate(1 -4)">
-      <rect x="0" y="0" width="34" height="13" rx="6.5" fill="var(--panel)" stroke="var(--line)" stroke-width="0.7"/>
-      <g transform="translate(4 1)" fill="${color}">${gly}</g>
-      <text x="17" y="9.6" font-size="7.2" fill="${color}" font-weight="700" style="font-family:var(--sans),system-ui;" text-anchor="middle">${S.STATES?.[state]?.zh || state}</text>
+    const gly = S.stateGlyphG(state, 9.6, color) || ''
+    return `<g class="sk2-state-pill" transform="translate(1 -4)" opacity="0.88">
+      <rect x="0" y="0" width="30" height="11" rx="5.5" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.6" opacity="0.92"/>
+      <g transform="translate(3.5 0.7)" fill="${color}">${gly}</g>
+      <text x="15" y="8.2" font-size="6.6" fill="${color}" font-weight="700" style="font-family:var(--sans),system-ui;" text-anchor="middle" opacity="0.92">${S.STATES?.[state]?.zh || state}</text>
     </g>`
   }
 
