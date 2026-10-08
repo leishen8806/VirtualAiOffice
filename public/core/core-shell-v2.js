@@ -666,7 +666,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     return s
   }
 
-  function roleInspectorHTML({ roleId, runtime, snapshot }) {
+  function roleInspectorHTML({ roleId, runtime, snapshot, demo }) {
     const r = Chars?.role(roleId)
     if (!r) return `<div style="color:var(--text-muted);">未知角色 ${esc(roleId)}</div>`
     const state = snapshot?.seatStates?.[roleId] || runtime?.seatStates?.[roleId] || 'IDLE'
@@ -679,18 +679,59 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     const model = snapshot?.seatModels?.[roleId] || runtime?.seatModels?.[roleId] || ''
     const tasks = ((runtime?.tasks || []).filter(t => t.role === roleId) || [])
     const currentTask = tasks.find(t => t.status === 'running' || t.status === 'pending') || tasks[0] || null
-    const blockedReason = state === 'BLOCKED' ? '【演示数据】缺少上游依赖或配置未就绪（视觉状态）' : '—'
-    const waitingInfo = state === 'WAITING_HUMAN' ? `【演示】已等待 ${Math.floor(Math.random()*18+2)} 分钟：需要人类确认规格` : '—'
-    const evidence = (currentTask?.evidence || [
-      { kind: 'build', state: 'pass', sha: 'a31f' },
-      { kind: 'test', state: currentTask?.status === 'running' ? 'missing' : 'pass' },
-    ]).map(e => S?.EVIDENCE?.chip(e.kind, e.state, { sha: e.sha }) || '').join('')
+    let blockedReason
+    if (state === 'BLOCKED') {
+      blockedReason = currentTask?.blockedReason || currentTask?.error || currentTask?.reason
+      if (!blockedReason && demo) blockedReason = '【演示数据】缺少上游依赖或配置未就绪（视觉状态）'
+      blockedReason = blockedReason || '—'
+    } else {
+      blockedReason = '—'
+    }
+    let waitingInfo
+    if (state === 'WAITING_HUMAN') {
+      const humanRec = (runtime?.waitingHuman || []).find(x => x?.role === roleId || x?.roleId === roleId)
+      const sinceMs = currentTask?.sinceMs || currentTask?.waitingSinceMs || humanRec?.sinceMs
+      if (sinceMs) {
+        const wait = Math.max(0, Date.now() - sinceMs)
+        const mins = Math.floor(wait / 60000)
+        const text = humanRec?.reason || humanRec?.text || currentTask?.waitingReason || '需要人类确认规格'
+        waitingInfo = mins > 0 ? `已等待 ${mins} 分钟：${text}` : `等待中：${text}`
+      } else if (demo) {
+        waitingInfo = `【演示】已等待 ${Math.floor(Math.random()*18+2)} 分钟：需要人类确认规格`
+      } else {
+        waitingInfo = '—'
+      }
+    } else {
+      waitingInfo = '—'
+    }
+    let evidenceEntries = currentTask?.evidence
+    if (!evidenceEntries || !Array.isArray(evidenceEntries) || evidenceEntries.length === 0) {
+      evidenceEntries = demo ? [
+        { kind: 'build', state: 'pass', sha: 'a31f' },
+        { kind: 'test', state: currentTask?.status === 'running' ? 'missing' : 'pass' },
+      ] : []
+    }
+    const evidence = evidenceEntries.length
+      ? evidenceEntries.map(e => S?.EVIDENCE?.chip(e.kind, e.state, { sha: e.sha }) || '').join('')
+      : `<span style="color:var(--text-muted);">暂无证据</span>`
     const humanAiLabel = kind === 'system' ? '系统编排' : kind === 'human' ? '人类 Human' : 'AI Agent'
-    const recent = [
-      { at: Date.now() - 20 * 60000, text: `${r.zh} 从 IDLE → THINKING` },
-      { at: Date.now() - 8 * 60000,  text: `${r.zh} 加载工具：browser / mcp-desktop` },
-      { at: Date.now() - 2 * 60000,  text: `${r.zh} 当前状态 → ${state}` },
-    ]
+    let recent = currentTask?.activity
+    if (!recent || !Array.isArray(recent) || recent.length === 0) {
+      recent = runtime?.recent?.[roleId] || snapshot?.recent?.[roleId]
+    }
+    if (!recent || !Array.isArray(recent) || recent.length === 0) {
+      recent = demo ? [
+        { at: Date.now() - 20 * 60000, text: `${r.zh} 从 IDLE → THINKING` },
+        { at: Date.now() - 8 * 60000,  text: `${r.zh} 加载工具：browser / mcp-desktop` },
+        { at: Date.now() - 2 * 60000,  text: `${r.zh} 当前状态 → ${state}` },
+      ] : []
+    }
+    const recentHTML = recent.length
+      ? recent.map(e => `<div class="e"><span class="t">${esc(ago(e.at))}</span><span>${esc(e.text || String(e))}</span></div>`).join('')
+      : `<div class="e" style="color:var(--text-muted);">暂无最近事件</div>`
+    const tools = Array.isArray(currentTask?.tools) && currentTask.tools.length
+      ? currentTask.tools.map(t => `<span class="v2-pill" style="padding:1px 6px;">${esc(t)}</span>`).join(' ')
+      : (demo ? `<span class="v2-pill" style="padding:1px 6px;">browser</span> <span class="v2-pill" style="padding:1px 6px;">filesystem</span> <span class="v2-pill" style="padding:1px 6px;">mcp-desktop</span>` : '—')
 
     return [
       inspectorSection('角色 / Role', `
@@ -710,7 +751,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       inspectorSection('模型 / 工具 / 证据', `
         <div class="v2-kv">
           <div class="k">Model</div><div class="v">${model ? S?.BADGE?.model(model) : '—'}</div>
-          <div class="k">Tools</div><div class="v"><span class="v2-pill" style="padding:1px 6px;">browser</span> <span class="v2-pill" style="padding:1px 6px;">filesystem</span> <span class="v2-pill" style="padding:1px 6px;">mcp-desktop</span></div>
+          <div class="k">Tools</div><div class="v">${tools}</div>
           <div class="k">Evidence</div><div class="v2-evidence v"><div style="display:flex;flex-wrap:wrap;gap:4px;">${evidence}</div></div>
         </div>`),
       inspectorSection('阻塞 / 等待', `
@@ -720,7 +761,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         </div>`),
       inspectorSection('最近活动 / Recent', `
         <div class="v2-timeline">
-          ${recent.map(e => `<div class="e"><span class="t">${esc(ago(e.at))}</span><span>${esc(e.text)}</span></div>`).join('')}
+          ${recentHTML}
         </div>`),
     ]
   }
@@ -1017,14 +1058,6 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
           openTaskInspector(e.detail.taskId)
         })
       }
-      if (typeof window.addEventListener === 'function') {
-        window.addEventListener('vao-v2:task-clicked', (e) => {
-          if (e && e.detail && e.detail.taskId) {
-            options.onPickTask?.(e.detail.taskId)
-            openTaskInspector(e.detail.taskId)
-          }
-        })
-      }
     }
 
     function openRoleInspector(roleId) {
@@ -1033,7 +1066,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       openDrawer(document.body, {
         title: `${r?.zh || ''} · Role Inspector`,
         leading: lead,
-        children: roleInspectorHTML({ roleId, runtime, snapshot: buildSnapshot() }),
+        children: roleInspectorHTML({ roleId, runtime, snapshot: buildSnapshot(), demo: demoMode }),
       })
     }
     function openTaskInspector(taskId) {

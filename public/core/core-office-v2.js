@@ -684,7 +684,7 @@
           <text x="0" y="46">COLLAB · DISPATCH PATH</text>
         </g>
       </g>
-      <g class="dispatch-arrows" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 32%,transparent)" stroke-width="1.2" stroke-dasharray="5.5 3.5" opacity="0.12" class="reduced-motion-hidden">
+      <g class="dispatch-arrows reduced-motion-hidden" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 32%,transparent)" stroke-width="1.2" stroke-dasharray="5.5 3.5" opacity="0.12">
         <path d="M800 486 C 720 430 520 300 300 270"/>
         <path d="M800 486 C 720 540 520 560 300 560"/>
         <path d="M800 486 C 880 430 1080 420 1320 460"/>

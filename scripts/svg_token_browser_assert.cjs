@@ -41,7 +41,8 @@ async function main() {
       const name = `--role-${r}`
       tokens.role[name] = cs.getPropertyValue(name).trim()
     }
-    for (const badName of ['--role---role-product', '--role---role-frontend', '--role---role-docs', '--role---role-helix']) {
+    for (const r of roleIds) {
+      const badName = `--role---role-${r}`
       tokens.bad[badName] = cs.getPropertyValue(badName).trim()
     }
     tokens.font['--sansZh'] = cs.getPropertyValue('--sansZh').trim()
@@ -78,8 +79,10 @@ async function main() {
     console.log(`  ${k} = "${v}" ${ok ? '✅' : '❌ EMPTY ❗'}`)
     if (!ok) anyFail++
   }
-  console.log('\n------------ BAD DOUBLE-PREFIX TOKENS ------------')
-  for (const [k, v] of Object.entries(results.tokens.bad)) {
+  console.log('\n------------ BAD DOUBLE-PREFIX TOKENS (expect ALL empty) ------------')
+  const badKeys = Object.keys(results.tokens.bad).sort()
+  for (const k of badKeys) {
+    const v = results.tokens.bad[k]
     const ok = v === ''
     console.log(`  ${k} = "${v}" ${ok ? '✅ empty (correct)' : '❌ LEAKED VALUE (BUG) ❗'}`)
     if (!ok) anyFail++

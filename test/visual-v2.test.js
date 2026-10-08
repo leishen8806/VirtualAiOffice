@@ -122,16 +122,19 @@ test('EXTRA. [8 role accent CSS variables] core-theme.js defines 8 --role-helix 
 })
 
 test('TOKENS-RC-1. [role token emission] Core theme roleCss() emits keys AS-IS without duplicating the --role- prefix; role keys in generated CSS are plain --role-* not --role---role-*', () => {
+  const roleIds = ['helix', 'product', 'architect', 'frontend', 'backend', 'qa', 'reviewer', 'docs']
   const M = loadV2Modules()
   M.Theme.inject()
   const el = globalThis.document.getElementById('core-theme-style')
   assert.ok(el, 'core-theme-style <style> must be injected by VAOCoreTheme.inject()')
   const css = el.textContent
-  assert.ok(css.includes('--role-product:#F0B37E'), `role CSS must define --role-product:#F0B37E; present? ${css.includes('--role-product')}`)
-  assert.ok(css.includes('--role-frontend:#F2788F'), `role CSS must define --role-frontend:#F2788F; present? ${css.includes('--role-frontend')}`)
+  assert.ok(css.includes('--role-product:#F0B37E'), 'role CSS must define --role-product:#F0B37E')
+  assert.ok(css.includes('--role-frontend:#F2788F'), 'role CSS must define --role-frontend:#F2788F')
   assert.ok(css.includes('--role-helix:var(--orchestrator)'), 'role CSS must define --role-helix bound to orchestrator')
-  assert.ok(!css.includes('--role---role-product'), 'role CSS MUST NOT contain bad double-prefix --role---role-product')
-  assert.ok(!css.includes('--role---role-frontend'), 'role CSS MUST NOT contain bad double-prefix --role---role-frontend')
+  for (const id of roleIds) {
+    assert.ok(css.includes(`--role-${id}:`), `generated CSS MUST contain --role-${id}:`)
+    assert.ok(!css.includes(`--role---role-${id}`), `generated CSS MUST NOT contain double-prefix --role---role-${id}`)
+  }
 })
 
 test('TOKENS-RC-2. [font token emission] Core theme fontCss() emits font variables --sansZh / --sans / --mono for var() usage in SVG / shell', () => {
@@ -152,6 +155,17 @@ test('TOKENS-RC-3. [no geometry changes] core-office-v2.js frozen 1600×900 view
   assert.match(officeSrcV2, /helix:\s*\{\s*cx:\s*810[^}]*cy:\s*598/, 'ZONE_POSITIONS.helix (810,598) CENTER unchanged')
 })
 
+test('TOKENS-RC-4. [dispatch-arrows single class] SVG dispatch group has ONE class attribute containing both dispatch-arrows AND reduced-motion-hidden', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const matches = officeSrcV2.match(/<g[^>]*class="dispatch-arrows[^"]*"[^>]*>/g) || []
+  assert.ok(matches.length >= 1, 'dispatch-arrows group must exist')
+  for (const match of matches) {
+    const classCount = (match.match(/class="/g) || []).length
+    assert.equal(classCount, 1, `dispatch-arrows group must have exactly 1 class attribute; got ${classCount}. raw=${match}`)
+    assert.ok(match.includes('dispatch-arrows'), 'class attr must contain dispatch-arrows')
+    assert.ok(match.includes('reduced-motion-hidden'), 'class attr must contain reduced-motion-hidden (for reduced motion access guard)')
+  }
+})
 /* ---------------------------------------------------------------------------
  * FIX 8 + FIX 9: Behavioral + Demo truthfulness tests with minimal DOM shim.
  * Loads Core IIFE modules into Node.js using a tiny document/window shim.
@@ -793,4 +807,72 @@ test('V2-T11. [reduced-motion disables] force matchMedia(prefers-reduced-motion)
   } finally {
     globalThis.matchMedia = origMatchMedia
   }
+})
+
+/* ---- FINAL CORRECTNESS CLOSEOUT — Task Exact-Once + Inspector LIVE contract ---- */
+
+test('C1-TASK-ONCE. [task exact-once initial] Shell bootstrap mode=demo → one bubbling task event on stageWrap → onPickTask called exactly 1; Task Inspector present in body', () => {
+  const M = loadV2Modules()
+  let pickCount = 0
+  const handle = M.Shell.bootstrap({ mode: 'demo', onPickTask: () => { pickCount++ } })
+  const ev = new globalThis.CustomEvent('vao-v2:task-clicked', { bubbles: true, detail: { taskId: 'T-DEMO-1' } })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  assert.equal(pickCount, 1, `one stageWrap task event must trigger onPickTask exactly once (got ${pickCount})`)
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('Task Inspector'), `after task-click event, Task Inspector drawer must appear in DOM; last 800=${html.slice(-800)}`)
+  handle.destroy?.()
+})
+
+test('C2-TASK-3REMOUNT. [task exact-once after 3 destroy/remount] Core bootstrap/destroy 3 cycles → 4th mount → task event still triggers onPickTask once', () => {
+  const M = loadV2Modules()
+  let pickCount = 0
+  let handle = null
+  for (let i = 0; i < 3; i++) {
+    handle = M.Shell.bootstrap({ mode: 'live', onPickTask: () => {} })
+    handle.destroy?.()
+  }
+  handle = M.Shell.bootstrap({ mode: 'demo', onPickTask: () => { pickCount++ } })
+  const ev = new globalThis.CustomEvent('vao-v2:task-clicked', { bubbles: true, detail: { taskId: 'T-REMOUNT-4' } })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  assert.equal(pickCount, 1, `3 remounts → single task click = 1 callback actual=${pickCount}`)
+  handle.destroy?.()
+})
+
+test('C3-NO-GLOBAL-LISTENER. [no window task listener] Core shell must register window vao-v2:task-clicked listener ONLY 0 times. Structural regex: no window.addEventListener(task-clicked) in shell', () => {
+  // Product spec: window task listener forbidden; removed in closeout fix 1.
+  // Structural check on the actual shell source is stronger than Node shim (which
+  // has a partial window shim).
+  const shellV2Src = read('public/core/core-shell-v2.js')
+  const re = /window\s*\.\s*addEventListener\s*\(\s*['\"]vao-v2:task-clicked['\"]/g
+  const matches = shellV2Src.match(re) || []
+  assert.equal(matches.length, 0,
+    `core-shell-v2.js MUST NOT contain window.addEventListener('vao-v2:task-clicked' ...) — window-level listener forbidden. Matches=${matches.length}`)
+})
+
+test('C4-LIVE-NO-FAKES. [LIVE Role Inspector no fabrication] bootstrap mode=live empty runtime → open Role Inspector frontend → no 【演示】/ no a31f / no synthetic recent / no Math.random waiting', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  const ev = new globalThis.CustomEvent('vao-v2:role-clicked', { detail: { roleId: 'frontend', el: handle.nodes.stageWrap } })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  const demoMarkerCount = (html.match(/【演示】|【演示数据】/g) || []).length
+  const fakeShaCount = (html.match(/a31f/g) || []).length
+  const syntheticRecent = html.includes('从 IDLE → THINKING') || html.includes('加载工具：browser / mcp-desktop')
+  const randomWaiting = /已等待 \d+ 分钟：需要人类确认规格/.test(html) && !html.includes('【演示】')
+  assert.equal(demoMarkerCount, 0, `LIVE inspector must contain 0 【演示】 markers; actual=${demoMarkerCount}`)
+  assert.equal(fakeShaCount, 0, `LIVE inspector must contain 0 fake a31f SHA; actual=${fakeShaCount}`)
+  assert.ok(!syntheticRecent, `LIVE inspector MUST NOT fabricate synthetic recent events`)
+  assert.ok(html.includes('暂无证据') || html.includes('暂无最近事件') || html.includes('暂无活动任务'), `LIVE inspector with no runtime data MUST show empty-state strings`)
+  handle.destroy?.()
+})
+
+test('C5-DEMO-STILL-FIXTURES. [DEMO Role Inspector may retain labeled fixtures] bootstrap mode=demo → role inspector qa → labeled 【演示】 fixture present OR demo task evidence shown', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  const ev = new globalThis.CustomEvent('vao-v2:role-clicked', { detail: { roleId: 'qa', el: handle.nodes.stageWrap } })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  const ok = html.includes('【演示】') || html.includes('【演示数据】') || html.includes('a31f')
+  assert.ok(ok, `DEMO mode role inspector MUST keep its labeled demo fixtures (visual contract)`)
+  handle.destroy?.()
 })

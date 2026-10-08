@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿const path = require('path')
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿const path = require('path')
 const fs = require('fs')
 const cp = require('child_process')
 const { chromium } = require('playwright')
@@ -726,9 +726,10 @@ function instrumentEventSource(page) {
   async function pV_clickTaskOrEval(page, id) {
     const c1 = page.locator(`[data-task-id="${id}"], .task-capsule[data-id="${id}"]`).first()
     if ((await c1.count()) > 0) { try { await c1.click({ timeout: 6000, force: false }); return } catch (e) {} }
-    // Fallback: any task capsule click via event (user requirement: task inspector visible. IF locator miss, use VAOAppV2 live task id instead:)
+    // Fallback: synthetic event dispatched FROM stageWrap with bubbles:true.
+    // User rule: NEVER dispatch vao-v2:task-clicked product event on window.
+    // StageWrap is the single canonical boundary.
     await page.evaluate((tid) => {
-      // 1. find first existing live task id
       const all = Array.from(document.querySelectorAll('[data-task-id], .task-capsule'))
       const first = all[0]
       let useId = tid
@@ -738,7 +739,8 @@ function instrumentEventSource(page) {
         if (!t) throw new Error(`[TEST D FAIL] no task capsule visible and no runtime tasks; openTaskInspector impossible`)
         useId = t.id
       } else if (first.dataset.taskId) useId = first.dataset.taskId
-      window.dispatchEvent(new CustomEvent('vao-v2:task-clicked', { detail: { taskId: useId } }))
+      const boundary = window.__coreHandleV2?.nodes?.stageWrap || document.querySelector('.v2-stage-wrap') || document.body
+      boundary.dispatchEvent(new CustomEvent('vao-v2:task-clicked', { bubbles: true, detail: { taskId: useId } }))
     }, id)
   }
 })().catch(e => { console.error('FATAL:', e.message, e.stack); process.exit(99) })
