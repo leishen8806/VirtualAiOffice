@@ -183,22 +183,104 @@
   function skeleton(r, state) {
     const st = state || 'IDLE'
     const cls = `sk2-fig sk2-state-${(r?.id || 'role')}-${st.toLowerCase().replace(/_/g, '-')}`
+    const roleId = r?.id || 'role'
+    let torsoStyle = ''
+    let headStyle = ''
+    let armsGroup = ''
+    let extraMarkers = ''
+    if (st === 'IDLE') {
+      torsoStyle = 'transform:translateY(0.6px) scale(1);'
+      armsGroup = `
+        <path d="M10 43 q-2 7 2 13 q1.6 2.2 4.4 1.6" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M38 43 q2 7 -2 13 q-1.6 2.2 -4.4 1.6" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
+    } else if (st === 'THINKING') {
+      headStyle = 'transform:translateY(-1.2px) rotate(-4deg);transform-origin:24px 25px;'
+      torsoStyle = 'transform:translateY(-0.5px) scale(1.01);'
+      armsGroup = `
+        <path d="M11 42 q-2 4 0 10 q-1 -4 -4 -8" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M37 41 q1.5 -2 2.4 -10 q-1 -1.6 -3.5 -0.8" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>
+        <circle cx="36" cy="27.5" r="1.8" fill="url(#sk2-skin)" stroke="rgba(0,0,0,0.18)" stroke-width="0.45" class="sk2-hand sk2-hand-r"/>`
+    } else if (st === 'WORKING') {
+      torsoStyle = 'transform:translateY(-0.6px) scale(1.015);'
+      armsGroup = `
+        <path d="M11 44 q-1 6 3 12 q1 0 3 -2" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M37 44 q1 6 -3 12 q-1 0 -3 -2" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>
+        <rect x="10" y="56.5" width="28" height="4.5" rx="1.4" fill="rgba(15,21,34,0.92)" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" class="sk2-kbd"/>
+        <g font-family="var(--mono)" font-size="3.6" fill="rgba(255,255,255,0.75)" opacity="0.85" class="sk2-kbd-keys">
+          <text x="12" y="60">Q W E</text>
+          <text x="12" y="63.8">A S D F</text>
+        </g>`
+    } else if (st === 'REVIEWING') {
+      headStyle = 'transform:translateX(2.4px) rotate(8deg);transform-origin:24px 25px;'
+      torsoStyle = 'transform:translateX(1.2px);'
+      armsGroup = `
+        <path d="M12 44 q0 6 3 10" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M40 40 q3 -2 6 0 q2 4 -1 10" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>
+        <g transform="translate(40 46)" class="sk2-clipboard">
+          <rect x="0" y="0" width="16" height="18" rx="1.8" fill="rgba(255,255,255,0.82)" stroke="rgba(0,0,0,0.22)" stroke-width="0.5"/>
+          <rect x="2" y="2.6" width="12" height="1.6" rx="0.8" fill="var(--reviewing)" opacity="0.6"/>
+          <rect x="2" y="6" width="10" height="1.2" rx="0.6" fill="rgba(0,0,0,0.28)" opacity="0.6"/>
+          <rect x="2" y="8.6" width="12" height="1.2" rx="0.6" fill="rgba(0,0,0,0.24)" opacity="0.5"/>
+          <path d="M3.2 13.4 L5.6 15.8 L12.8 8.6" stroke="var(--done)" stroke-width="1.1" fill="none" stroke-linecap="round" opacity="0.9"/>
+        </g>`
+    } else if (st === 'WAITING_HUMAN') {
+      headStyle = 'transform:rotate(18deg);transform-origin:24px 25px;'
+      torsoStyle = 'transform:translateX(1.6px) rotate(3deg);transform-origin:24px 52px;'
+      armsGroup = `
+        <path d="M12 44 q2 6 0 11 q-3 0 -3.5 -3" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M36 43 q-2 5 0 12 q2 2 4 -0.5" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>
+        <g transform="translate(41 30)" class="sk2-waiting-gesture">
+          <path d="M-4 4 V-4 Q-4 -6 -2.4 -6 Q-0.8 -6 -0.8 -4 V-1 M-0.8 -6 Q1 -6 1 -4 V0 M1 -6 Q2.6 -6 2.6 -5 V2 M2.6 -3 Q4.2 -3 4.2 -1.6 V7 Q4.2 8.8 1.5 9.6 L-2.5 10 Q-4 9.6 -4 8.6 Z" fill="none" stroke="var(--waiting-human)" stroke-width="1.15" stroke-linejoin="round"/>
+        </g>`
+    } else if (st === 'BLOCKED') {
+      torsoStyle = 'transform:translateX(-0.8px);'
+      armsGroup = `
+        <path d="M12 44 q-3 7 2 14 q5 -1 9 -7" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M36 44 q3 7 -2 14 q-5 -1 -9 -7" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
+      extraMarkers = `<g class="sk2-blocked-pose" transform="translate(24 52)" opacity="0.82">
+        <circle r="5.4" fill="color-mix(in srgb,var(--blocked) 14%,var(--panel))" stroke="var(--blocked)" stroke-width="0.85"/>
+        <path d="M-3.2 -2.2 L3.2 2.2 M3.2 -2.2 L-3.2 2.2" stroke="var(--blocked)" stroke-width="1.3" stroke-linecap="round"/>
+      </g>`
+    } else if (st === 'DONE') {
+      torsoStyle = 'transform:translateY(-0.6px) scale(1.012);'
+      armsGroup = `
+        <path d="M11 45 q0 6 3 10" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M37 43 q1.5 -8 8 -10 q2.2 0 2.5 3 q0 3 -3 4" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
+      extraMarkers = `<g class="sk2-done-gesture" transform="translate(48 28)" opacity="0.95">
+        <circle r="6" fill="color-mix(in srgb,var(--done) 20%,var(--panel))" stroke="var(--done)" stroke-width="0.9"/>
+        <path d="M-3.2 0.6 L-1 2.8 L3.4 -2" stroke="var(--done)" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
+      </g>`
+    } else if (st === 'OFFLINE') {
+      torsoStyle = 'filter:grayscale(0.6) opacity(0.58);'
+      headStyle = 'transform:translateY(2.4px) rotate(-6deg);transform-origin:24px 25px;opacity:0.65;'
+      armsGroup = `
+        <path d="M10 46 q-1 8 3 12" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M38 46 q1 8 -3 12" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
+    } else {
+      armsGroup = `
+        <path d="M11 42 q-2 5 0 10 q1 3 4 3" fill="none" stroke="var(--blazer)" stroke-width="4.5" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
+        <path d="M37 42 q2 5 0 10 q-1 3 -4 3" fill="none" stroke="var(--blazer)" stroke-width="4.5" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
+    }
     return `
     <g class="${cls}" style="--role-accent:${r?.accent || 'var(--accent)'};--hair:${r?.hairColor || '#2a2a2a'};--blazer:${r?.clothing?.blazer || '#3a3e4a'};--shirt:${r?.clothing?.shirt || '#cfd3dc'};">
-      <ellipse cx="24" cy="68" rx="13" ry="2.6" fill="rgba(0,0,0,0.22)" class="sk2-shadow"/>
-      <path d="M12 40 l-2 22 h28 l-2 -22 q-2 4 -12 4 t-12 -4 z" fill="var(--blazer)" stroke="rgba(0,0,0,0.28)" stroke-width="0.7" class="sk2-torso"/>
-      <rect x="21" y="37" width="6" height="7" rx="1.5" fill="var(--shirt)" stroke="rgba(0,0,0,0.18)" stroke-width="0.55" class="sk2-shirt"/>
-      <circle cx="24" cy="25" r="8" fill="url(#sk2-skin)" stroke="rgba(0,0,0,0.22)" stroke-width="0.7" class="sk2-head"/>
-      <circle cx="24" cy="25" r="8" fill="url(#sk2-shadow)" opacity="0.6"/>
-      <g class="sk2-hair">${HAIR_V2[r?.hair] || HAIR_V2['crew-cut']}</g>
-      <circle cx="21" cy="26.6" r="0.95" fill="#1d2230" class="sk2-eye sk2-eye-l"/>
-      <circle cx="27" cy="26.6" r="0.95" fill="#1d2230" class="sk2-eye sk2-eye-r"/>
-      <path d="M22 29.8 q2 1.2 4 0" stroke="#6a4a36" fill="none" stroke-width="0.75" stroke-linecap="round" class="sk2-mouth"/>
-      <g class="sk2-accessory">${ACCESSORY_V2[r?.accessory] || ''}</g>
-      <g class="sk2-arms">
-        <path d="M11 42 q-2 5 0 10 q1 3 4 3" fill="none" stroke="var(--blazer)" stroke-width="4.5" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
-        <path d="M37 42 q2 5 0 10 q-1 3 -4 3" fill="none" stroke="var(--blazer)" stroke-width="4.5" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>
+      <ellipse cx="24" cy="70" rx="14" ry="2.8" fill="rgba(0,0,0,0.24)" class="sk2-shadow"/>
+      <g class="sk2-torso" style="${torsoStyle}">
+        <path d="M12 40 l-2 24 h28 l-2 -24 q-2 4 -12 4 t-12 -4 z" fill="var(--blazer)" stroke="rgba(0,0,0,0.28)" stroke-width="0.7"/>
+        <rect x="21" y="37" width="6" height="7.5" rx="1.6" fill="var(--shirt)" stroke="rgba(0,0,0,0.18)" stroke-width="0.55" class="sk2-shirt"/>
       </g>
+      <g class="sk2-head-wrap" style="${headStyle}">
+        <circle cx="24" cy="25" r="8.5" fill="url(#sk2-skin)" stroke="rgba(0,0,0,0.22)" stroke-width="0.7" class="sk2-head"/>
+        <circle cx="24" cy="25" r="8.5" fill="url(#sk2-shadow)" opacity="0.55"/>
+        <g class="sk2-hair">${HAIR_V2[r?.hair] || HAIR_V2['crew-cut']}</g>
+        <g fill="#1d2230" class="sk2-eyes">
+          <circle cx="21" cy="26.8" r="${st === 'OFFLINE' ? 0.3 : 1.05}" class="sk2-eye sk2-eye-l"/>
+          <circle cx="27" cy="26.8" r="${st === 'OFFLINE' ? 0.3 : 1.05}" class="sk2-eye sk2-eye-r"/>
+        </g>
+        <path d="${st === 'DONE' ? 'M21.5 30.2 q2.5 2.6 5 0' : st === 'BLOCKED' ? 'M22 30.8 q2 -2 4 0' : 'M22 30 q2 1.4 4 0'}" stroke="#6a4a36" fill="none" stroke-width="${st === 'BLOCKED' ? 1 : 0.8}" stroke-linecap="round" class="sk2-mouth"/>
+        <g class="sk2-accessory">${ACCESSORY_V2[r?.accessory] || ''}</g>
+      </g>
+      <g class="sk2-arms">${armsGroup}</g>
+      ${extraMarkers}
     </g>`
   }
 
@@ -339,7 +421,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     injectStyles()
     const r = role(roleId)
     if (!r) return `<g class="sk2-unknown"><rect x="0" y="0" width="48" height="72" rx="6" fill="var(--panel-2)" stroke="var(--line)"/><text x="24" y="40" text-anchor="middle" font-size="10" fill="var(--text-muted)">?</text></g>`
-    const scale = opts.scale || (roleId === 'helix' ? 1.18 : 1)
+    const scale = opts.scale || (roleId === 'helix' ? 1.85 : 1.45)
     const angle = opts.angle || 0
     const state = opts.state || 'IDLE'
     const stateCls = 'sk2-state-' + (state.toLowerCase().replace(/_/g, '-'))
@@ -356,6 +438,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     })()
     const modelBadge = opts.model && S ? S.BADGE.model(String(opts.model).slice(0, 12)) : ''
     const w = Math.round(48 * scale), h = Math.round(72 * scale)
+    const wsScale = Math.min(1.12, Math.max(1.02, scale * 0.82))
     const ws = workstationMini(r, state)
     const deskState = st === 'OFFLINE'
       ? `<rect x="3" y="58" width="42" height="14" rx="4" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.8" opacity="0.55"/>`
@@ -396,7 +479,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
       </g>
       ${deskState}
       ${glow}
-      <g transform="translate(3 47.2)">${ws}</g>
+      <g transform="translate(3 47.2) scale(${wsScale})">${ws}</g>
       ${showIndicator ? stateIndicator(state) : ''}
       ${blockedMarker}${doneCheck}${waitHand}${offlineX}
       <g class="sk2-meta" transform="translate(0 74)" style="display:none;">

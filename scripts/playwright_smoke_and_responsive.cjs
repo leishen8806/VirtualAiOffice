@@ -1,10 +1,10 @@
-﻿﻿﻿﻿﻿﻿const path = require('path')
+﻿﻿﻿﻿﻿﻿﻿﻿const path = require('path')
 const fs = require('fs')
 const cp = require('child_process')
 const { chromium } = require('playwright')
 
 const CHROME = 'C:\\Users\\Administrator\\AppData\\Local\\ms-playwright\\chromium-1140\\chrome-win\\chrome.exe'
-const BASE = 'http://127.0.0.1:18899/'
+const BASE = 'http://127.0.0.1:18900/'
 const WORKTREE = 'E:\\VirtualAIOffice\\interactive-office-v2-worktree'
 const SHORT_SHA = cp.execSync('git rev-parse --short HEAD', { cwd: WORKTREE, encoding: 'utf8', stdio: ['ignore','pipe','pipe'] }).trim()
 const HEAD = SHORT_SHA
@@ -360,6 +360,179 @@ function instrumentEventSource(page) {
     const sz = fs.statSync(f).size
     console.log(`  ➜ saved ${name}_${tag}.png (${(sz/1024).toFixed(1)} KB)`)
   }
+
+  // -----------------------------
+  // 6. VISUAL POLISH SCREENSHOT CAPTURE (A→I)
+  // -----------------------------
+  console.log('\n=== VISUAL POLISH SCREENSHOTS (A→I) ===')
+  const visualCtx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5 })
+  const pV = await visualCtx.newPage()
+  await instrumentEventSource(pV)
+  const vE = [], vC = []
+  pV.on('pageerror', e => vE.push(e.message))
+  pV.on('console', m => { if (m.type() === 'error') vC.push(m.text()) })
+  await pV.goto(BASE + '?mode=demo', { waitUntil: 'load' })
+  await sleep(7000)
+
+  // A. 1440×900 honest live office — Helix collapsed
+  const helixOpenA = await pV.evaluate(() => document.body.classList.contains('v2-helix-open'))
+  console.log('  [A] helix-open class present (should be false)?', helixOpenA)
+  await pV.screenshot({ path: path.join(ART, 'A_honest_1440_helix_collapsed.png'), type: 'png' })
+  console.log('  ➜ saved A_honest_1440_helix_collapsed.png')
+
+  // B. full demo working office
+  await sleep(2500)
+  await pV.screenshot({ path: path.join(ART, 'B_full_demo_working_office.png'), type: 'png' })
+  console.log('  ➜ saved B_full_demo_working_office.png')
+
+  // C. Frontend WORKING close visual
+  await pV.evaluate(async () => {
+    const B = window.VAOAppV2
+    if (B && B._dispatchSse) {
+      B._dispatchSse({ type:'agent', id:'frontend', status:'working' })
+    }
+    try { if (window.__coreHandleV2?.seatMap) window.__coreHandleV2.seatMap.forEach(s => s.role==='frontend' && (s._forceState='WORKING')) } catch (_) {}
+  })
+  await sleep(900)
+  const feBox = await pV.evaluate(() => {
+    const el = document.querySelector('[data-char="frontend"], .char-frontend, figure[data-role="frontend"]')
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: Math.max(0, r.x - 80), y: Math.max(0, r.y - 60), width: r.width + 160, height: r.height + 120 }
+  })
+  if (feBox) {
+    await pV.screenshot({ path: path.join(ART, 'C_frontend_WORKING_close.png'), type: 'png', clip: feBox })
+    console.log('  ➜ saved C_frontend_WORKING_close.png')
+  } else {
+    await pV.screenshot({ path: path.join(ART, 'C_frontend_WORKING_close_FALLBACK.png'), type: 'png' })
+    console.log('  ⚠ frontend element not found; saved fallback screenshot')
+  }
+
+  // D. Backend THINKING close visual
+  await pV.evaluate(async () => {
+    const B = window.VAOAppV2
+    if (B && B._dispatchSse) {
+      B._dispatchSse({ type:'agent', id:'backend', status:'thinking' })
+    }
+    try { if (window.__coreHandleV2?.seatMap) window.__coreHandleV2.seatMap.forEach(s => s.role==='backend' && (s._forceState='THINKING')) } catch (_) {}
+  })
+  await sleep(900)
+  const beBox = await pV.evaluate(() => {
+    const el = document.querySelector('[data-char="backend"], .char-backend, figure[data-role="backend"]')
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { x: Math.max(0, r.x - 80), y: Math.max(0, r.y - 60), width: r.width + 160, height: r.height + 120 }
+  })
+  if (beBox) {
+    await pV.screenshot({ path: path.join(ART, 'D_backend_THINKING_close.png'), type: 'png', clip: beBox })
+    console.log('  ➜ saved D_backend_THINKING_close.png')
+  } else {
+    await pV.screenshot({ path: path.join(ART, 'D_backend_THINKING_close_FALLBACK.png'), type: 'png' })
+    console.log('  ⚠ backend element not found; saved fallback')
+  }
+
+  // E. QA + Reviewer REVIEWING pair
+  await pV.evaluate(async () => {
+    const B = window.VAOAppV2
+    if (B && B._dispatchSse) {
+      B._dispatchSse({ type:'agent', id:'qa', status:'reviewing' })
+      B._dispatchSse({ type:'agent', id:'reviewer', status:'reviewing' })
+    }
+    try {
+      if (window.__coreHandleV2?.seatMap) window.__coreHandleV2.seatMap.forEach(s => {
+        if (s.role==='qa' || s.role==='reviewer') s._forceState='REVIEWING'
+      })
+    } catch (_) {}
+  })
+  await sleep(900)
+  const pairBox = await pV.evaluate(() => {
+    const qa = document.querySelector('[data-char="qa"], .char-qa, figure[data-role="qa"]')
+    const rv = document.querySelector('[data-char="reviewer"], .char-reviewer, figure[data-role="reviewer"]')
+    if (!qa || !rv) return null
+    const r1 = qa.getBoundingClientRect(), r2 = rv.getBoundingClientRect()
+    return {
+      x: Math.max(0, Math.min(r1.x, r2.x) - 70),
+      y: Math.max(0, Math.min(r1.y, r2.y) - 70),
+      width: Math.max(r1.right, r2.right) - Math.min(r1.x, r2.x) + 140,
+      height: Math.max(r1.bottom, r2.bottom) - Math.min(r1.y, r2.y) + 140,
+    }
+  })
+  if (pairBox) {
+    await pV.screenshot({ path: path.join(ART, 'E_qa_reviewer_REVIEWING.png'), type: 'png', clip: pairBox })
+    console.log('  ➜ saved E_qa_reviewer_REVIEWING.png')
+  } else {
+    await pV.screenshot({ path: path.join(ART, 'E_qa_reviewer_REVIEWING_FALLBACK.png'), type: 'png' })
+    console.log('  ⚠ qa/reviewer element not found; saved fallback')
+  }
+
+  // F. WAITING_HUMAN activated
+  await pV.evaluate(async () => {
+    try {
+      if (window.__coreHandleV2?.officeHandle?.activateHumanArea) {
+        window.__coreHandleV2.officeHandle.activateHumanArea(true)
+      }
+    } catch (_) {}
+    const B = window.VAOAppV2
+    if (B && B._dispatchSse) {
+      B._dispatchSse({ type:'agent', id:'product', status:'waiting_human' })
+    }
+    try { if (window.__coreHandleV2?.seatMap) window.__coreHandleV2.seatMap.forEach(s => s.role==='product' && (s._forceState='WAITING_HUMAN')) } catch (_) {}
+  })
+  await sleep(1300)
+  await pV.screenshot({ path: path.join(ART, 'F_WAITING_HUMAN_activated.png'), type: 'png' })
+  console.log('  ➜ saved F_WAITING_HUMAN_activated.png')
+
+  // G. Helix dispatch path visible
+  await pV.evaluate(async () => {
+    try {
+      const h = window.__coreHandleV2
+      if (h?.animate?.dispatch) {
+        for (const role of ['product','frontend','backend','qa','docs']) {
+          h.animate.dispatch(role, `VISUAL-${role.toUpperCase()}`)
+        }
+      }
+    } catch (_) {}
+  })
+  await sleep(500)
+  await pV.screenshot({ path: path.join(ART, 'G_helix_dispatch_path.png'), type: 'png' })
+  console.log('  ➜ saved G_helix_dispatch_path.png')
+
+  // H. Helix expanded panel
+  await pV.evaluate(() => {
+    try { window.__coreHandleV2?.setHelix?.(true) } catch (_) {}
+    try { window.VAOAppV2?.setHelix?.(true) } catch (_) {}
+  })
+  await sleep(1400)
+  await pV.screenshot({ path: path.join(ART, 'H_helix_expanded_panel.png'), type: 'png' })
+  console.log('  ➜ saved H_helix_expanded_panel.png')
+
+  // Collapse helix to restore state before mobile capture
+  await pV.evaluate(() => { try { window.__coreHandleV2?.setHelix?.(false) } catch (_) {} })
+  await sleep(600)
+  await visualCtx.close()
+
+  // I. 390 mobile role-slice / internal-scroll view
+  const mobCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
+  const pM = await mobCtx.newPage()
+  const mE = [], mC = []
+  pM.on('pageerror', e => mE.push(e.message))
+  pM.on('console', m => { if (m.type() === 'error') mC.push(m.text()) })
+  await pM.goto(BASE + '?mode=demo', { waitUntil: 'load' })
+  await sleep(5500)
+  await pM.screenshot({ path: path.join(ART, 'I_390_mobile_role_slice.png'), type: 'png' })
+  console.log('  ➜ saved I_390_mobile_role_slice.png')
+  // Also scroll stage to the right to show the internal scroll behaviour
+  await pM.evaluate(() => {
+    const s = document.querySelector('.v2-stage-wrap')
+    if (s) s.scrollLeft = s.scrollWidth * 0.5
+  })
+  await sleep(400)
+  await pM.screenshot({ path: path.join(ART, 'I_390_mobile_scrolled_stage.png'), type: 'png' })
+  console.log('  ➜ saved I_390_mobile_scrolled_stage.png')
+  await mobCtx.close()
+
+  const RV = report(`VISUAL POLISH A→I capture (HEAD=${HEAD})`, vE.concat(mE), vC.concat(mC))
+  if (RV.blacklist_hit || RV.errs.length) failures++
 
   await browser.close()
   console.log('\n=== TOTAL FAILURES =', failures, '===')

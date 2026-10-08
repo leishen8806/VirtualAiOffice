@@ -58,96 +58,179 @@
 
   // Workstation positions (roleId -> [cx, cy] in SVG 1600x900 coords, and orient angle deg for figure)
   const ZONE_POSITIONS = Object.freeze({
-    product:   { cx: 220,  cy: 230,  angle: 15,  zone: 'planning' },
-    architect: { cx: 380,  cy: 300,  angle: 10,  zone: 'planning' },
-    frontend:  { cx: 210,  cy: 500,  angle: 18,  zone: 'engineering' },
-    backend:   { cx: 370,  cy: 560,  angle: 14,  zone: 'engineering' },
-    qa:        { cx: 1240, cy: 430,  angle: -14, zone: 'quality' },
-    reviewer:  { cx: 1390, cy: 500,  angle: -18, zone: 'quality' },
-    docs:      { cx: 380,  cy: 740,  angle: 8,   zone: 'knowledge' },
-    helix:     { cx: 800,  cy: 700,  angle: 0,   zone: 'helix-hub' },
-    human:     { cx: 1300, cy: 760,  angle: 0,   zone: 'human-area' },
+    product:   { cx: 230,  cy: 248,  angle: 15,  zone: 'planning' },
+    architect: { cx: 410,  cy: 322,  angle: 10,  zone: 'planning' },
+    frontend:  { cx: 220,  cy: 524,  angle: 18,  zone: 'engineering' },
+    backend:   { cx: 400,  cy: 592,  angle: 14,  zone: 'engineering' },
+    qa:        { cx: 1250, cy: 454,  angle: -14, zone: 'quality' },
+    reviewer:  { cx: 1410, cy: 528,  angle: -18, zone: 'quality' },
+    docs:      { cx: 420,  cy: 772,  angle: 8,   zone: 'knowledge' },
+    helix:     { cx: 810,  cy: 712,  angle: 0,   zone: 'helix-hub' },
+    human:     { cx: 1310, cy: 792,  angle: 0,   zone: 'human-area' },
   })
 
-  function zoneLabel(id, zh, en, x, y) {
-    return `<g class="zone-label" data-zone="${id}" transform="translate(${x} ${y})">
-      <rect x="0" y="0" width="180" height="30" rx="8" fill="rgba(255,255,255,0.42)" stroke="rgba(0,0,0,0.08)"/>
-      <text x="12" y="19" font-size="11" font-weight="800" letter-spacing="2" fill="var(--text)" opacity="0.78" style="font-family:var(--sans),system-ui;">${id}</text>
-      <text x="62" y="19" font-size="10" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">${zh} · ${en}</text>
+  function zoneLabel(id, zh, en, x, y, anchor) {
+    const anc = anchor || 'start'
+    return `<g class="zone-label" data-zone="${id}" transform="translate(${x} ${y})" opacity="0.4" style="pointer-events:none;">
+      <text x="0" y="0" font-size="7.6" font-weight="700" letter-spacing="2.8" fill="var(--text)" text-anchor="${anc}" style="font-family:var(--sans),system-ui;">${id}</text>
+      <text x="0" y="9.8" font-size="6.2" fill="var(--text-muted)" text-anchor="${anc}" style="font-family:var(--sans),system-ui;">${zh} · ${en}</text>
     </g>`
   }
 
   function planningZone() {
     return `<g class="zone zone-planning" data-zone="planning">
-      <path d="M80 100 L520 100 L560 420 L80 360 Z" fill="color-mix(in srgb,var(--panel) 88%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="1.2"/>
-      ${zoneLabel('PLANNING', '规划工作室', 'Planning Studio', 100, 112)}
-      <g class="whiteboard-roadmap" transform="translate(130 140)">
-        <rect x="0" y="0" width="280" height="100" rx="6" fill="#ffffff" stroke="rgba(0,0,0,0.14)" stroke-width="1"/>
-        <g stroke="var(--role-product)" stroke-width="0.8" fill="none" opacity="0.85">
-          <rect x="16" y="16" width="64" height="22" rx="3"/>
-          <rect x="90" y="16" width="80" height="22" rx="3"/>
-          <rect x="180" y="16" width="80" height="22" rx="3"/>
-          <path d="M18 32 h60 M92 32 h76 M182 32 h76"/>
-        </g>
-        <g fill="var(--role-product)" opacity="0.72">
-          <rect x="16" y="56" width="48" height="10" rx="2"/>
-          <rect x="72" y="56" width="60" height="10" rx="2" fill="var(--role-frontend)" opacity="0.65"/>
-          <rect x="140" y="56" width="54" height="10" rx="2" fill="var(--role-architect)" opacity="0.65"/>
-          <rect x="202" y="56" width="72" height="10" rx="2" fill="var(--role-qa)" opacity="0.6"/>
+      <path d="M100 120 Q320 80 540 120 L580 410 Q360 440 100 380 Z" fill="color-mix(in srgb,var(--role-product) 6%,transparent)" stroke="none"/>
+      <path d="M100 120 Q320 80 540 120 L580 410 Q360 440 100 380 Z" fill="none" stroke="color-mix(in srgb,var(--role-product) 22%,transparent)" stroke-width="0.9" stroke-dasharray="3 6" opacity="0.55"/>
+      <ellipse cx="310" cy="270" rx="190" ry="130" fill="color-mix(in srgb,var(--role-product) 5%,transparent)" opacity="0.6"/>
+      ${zoneLabel('PLANNING', '规划工作室', 'Planning Studio', 118, 134)}
+      <g class="wall-panel-back" transform="translate(120 150)">
+        <rect x="0" y="0" width="380" height="18" rx="3" fill="color-mix(in srgb,var(--panel-2) 92%,transparent)" stroke="rgba(0,0,0,0.06)" stroke-width="0.7"/>
+        <g fill="color-mix(in srgb,var(--role-product) 28%,transparent)" opacity="0.5">
+          <rect x="22" y="5" width="26" height="8" rx="2"/>
+          <rect x="60" y="5" width="40" height="8" rx="2" fill="color-mix(in srgb,var(--role-architect) 30%,transparent)"/>
+          <rect x="112" y="5" width="50" height="8" rx="2" fill="color-mix(in srgb,var(--role-frontend) 28%,transparent)"/>
+          <rect x="176" y="5" width="32" height="8" rx="2" fill="color-mix(in srgb,var(--role-backend) 28%,transparent)"/>
         </g>
       </g>
-      <g class="architecture-wall" transform="translate(420 160)">
-        <rect x="0" y="0" width="110" height="180" rx="5" fill="color-mix(in srgb,var(--role-architect) 10%,transparent)" stroke="color-mix(in srgb,var(--role-architect) 45%,transparent)" stroke-width="1"/>
-        <g stroke="var(--role-architect)" stroke-width="0.7" fill="none" opacity="0.85">
-          <rect x="12" y="16" width="32" height="30"/>
-          <rect x="52" y="16" width="46" height="30"/>
-          <rect x="12" y="56" width="86" height="28"/>
-          <circle cx="55" cy="110" r="16"/>
-          <path d="M12 140 L30 140 L40 160 L70 160 L80 140 L98 140"/>
+      <g class="whiteboard-roadmap" transform="translate(140 180)">
+        <rect x="0" y="0" width="260" height="88" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>
+        <g stroke="var(--role-product)" stroke-width="0.7" fill="none" opacity="0.78">
+          <rect x="14" y="14" width="56" height="20" rx="2.5"/>
+          <rect x="80" y="14" width="70" height="20" rx="2.5"/>
+          <rect x="160" y="14" width="82" height="20" rx="2.5"/>
         </g>
+        <g opacity="0.72">
+          <rect x="14" y="48" width="44" height="10" rx="2" fill="var(--role-product)" opacity="0.55"/>
+          <rect x="66" y="48" width="56" height="10" rx="2" fill="var(--role-frontend)" opacity="0.5"/>
+          <rect x="130" y="48" width="50" height="10" rx="2" fill="var(--role-architect)" opacity="0.5"/>
+          <rect x="188" y="48" width="60" height="10" rx="2" fill="var(--role-qa)" opacity="0.48"/>
+        </g>
+        <g font-family="var(--sans),system-ui" font-size="6" fill="var(--text-muted)" opacity="0.62">
+          <text x="14" y="78">Now</text><text x="80" y="78">Next 2w</text><text x="160" y="78">This Q</text>
+        </g>
+      </g>
+      <g class="sticky-cluster" transform="translate(420 188)" opacity="0.92">
+        <g transform="rotate(-6)">
+          <rect x="0" y="0" width="32" height="32" rx="1.5" fill="#FFE58A" stroke="rgba(0,0,0,0.08)"/>
+          <text x="4" y="12" font-size="5.2" fill="#6B5A10" opacity="0.85" style="font-family:var(--sans),system-ui;">访谈</text>
+          <text x="4" y="22" font-size="4.8" fill="#6B5A10" opacity="0.6" style="font-family:var(--sans),system-ui;">记录</text>
+        </g>
+        <g transform="translate(30 6) rotate(4)">
+          <rect x="0" y="0" width="30" height="30" rx="1.5" fill="#FFB4A2" stroke="rgba(0,0,0,0.08)"/>
+          <text x="4" y="12" font-size="5" fill="#7A2A1E" opacity="0.85" style="font-family:var(--sans),system-ui;">PRD</text>
+          <text x="4" y="22" font-size="4.6" fill="#7A2A1E" opacity="0.6" style="font-family:var(--sans),system-ui;">v3.2</text>
+        </g>
+        <g transform="translate(60 -2) rotate(-2)">
+          <rect x="0" y="0" width="30" height="30" rx="1.5" fill="#B5E48C" stroke="rgba(0,0,0,0.08)"/>
+          <text x="4" y="12" font-size="5" fill="#2C5A1C" opacity="0.85" style="font-family:var(--sans),system-ui;">验收</text>
+          <text x="4" y="22" font-size="4.6" fill="#2C5A1C" opacity="0.6" style="font-family:var(--sans),system-ui;">标准</text>
+        </g>
+      </g>
+      <g class="architecture-wall" transform="translate(440 240)">
+        <rect x="0" y="0" width="96" height="150" rx="4" fill="color-mix(in srgb,var(--role-architect) 8%,transparent)" stroke="color-mix(in srgb,var(--role-architect) 35%,transparent)" stroke-width="0.9" opacity="0.92"/>
+        <g stroke="var(--role-architect)" stroke-width="0.65" fill="none" opacity="0.82">
+          <rect x="10" y="14" width="28" height="26"/>
+          <rect x="46" y="14" width="40" height="26"/>
+          <rect x="10" y="50" width="76" height="24"/>
+          <circle cx="48" cy="96" r="14"/>
+          <path d="M10 124 L26 124 L34 140 L62 140 L70 124 L86 124"/>
+        </g>
+        <g font-family="var(--sans),system-ui" font-size="5" fill="var(--text-muted)" opacity="0.55">
+          <text x="10" y="12">System Topology</text>
+        </g>
+      </g>
+      <g class="glass-divider" opacity="0.4">
+        <line x1="580" y1="120" x2="600" y2="420" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+        <rect x="580" y="118" width="2" height="304" fill="rgba(255,255,255,0.22)"/>
       </g>
     </g>`
   }
 
   function engineeringZone() {
     return `<g class="zone zone-engineering" data-zone="engineering">
-      <path d="M80 400 L520 460 L540 680 L80 680 Z" fill="color-mix(in srgb,var(--panel) 85%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="1.2"/>
-      ${zoneLabel('ENGINEERING', '工程站', 'Engineering Pod', 100, 420)}
-      <g class="fe-dual-monitor" transform="translate(140 430)">
-        <rect x="0" y="24" width="130" height="14" rx="4" fill="#0f1522" stroke="rgba(0,0,0,0.22)" stroke-width="0.8"/>
-        <rect x="4" y="0" width="58" height="44" rx="3" fill="#111827" stroke="rgba(0,0,0,0.25)" stroke-width="0.9"/>
-        <rect x="8" y="4" width="50" height="36" rx="2" fill="color-mix(in srgb,var(--role-frontend) 16%,#ffffff20)"/>
+      <path d="M100 410 Q320 380 540 430 L560 680 Q320 700 100 680 Z" fill="color-mix(in srgb,var(--role-frontend) 4%,transparent)" stroke="none"/>
+      <path d="M100 410 Q320 380 540 430 L560 680 Q320 700 100 680 Z" fill="none" stroke="color-mix(in srgb,var(--role-frontend) 20%,transparent)" stroke-width="0.8" stroke-dasharray="3 6" opacity="0.5"/>
+      <ellipse cx="330" cy="550" rx="200" ry="125" fill="color-mix(in srgb,var(--role-backend) 4%,transparent)" opacity="0.65"/>
+      ${zoneLabel('ENGINEERING', '工程站', 'Engineering Pod', 118, 428)}
+      <g class="wall-panel-back" transform="translate(120 420)">
+        <rect x="0" y="0" width="400" height="16" rx="3" fill="color-mix(in srgb,var(--panel-2) 92%,transparent)" stroke="rgba(0,0,0,0.06)" stroke-width="0.7"/>
+        <g fill="color-mix(in srgb,var(--role-frontend) 30%,transparent)" opacity="0.5">
+          <rect x="20" y="4.5" width="28" height="7" rx="1.8"/>
+          <rect x="56" y="4.5" width="32" height="7" rx="1.8" fill="color-mix(in srgb,var(--role-backend) 32%,transparent)"/>
+          <rect x="96" y="4.5" width="44" height="7" rx="1.8" fill="color-mix(in srgb,var(--role-architect) 30%,transparent)"/>
+        </g>
+      </g>
+      <g class="fe-monitor-bank" transform="translate(118 450)">
+        <rect x="0" y="0" width="150" height="88" rx="4" fill="rgba(0,0,0,0.02)" stroke="none"/>
+        <rect x="2" y="30" width="68" height="54" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.25)" stroke-width="0.9"/>
+        <rect x="5" y="33" width="62" height="48" rx="1.8" fill="color-mix(in srgb,var(--role-frontend) 22%,#ffffff1c)"/>
         <g fill="#ffffff" opacity="0.88">
-          <rect x="12" y="8" width="16" height="4" rx="1.5"/>
-          <rect x="12" y="14" width="42" height="2.2" rx="1" opacity="0.6"/>
-          <rect x="12" y="18" width="36" height="2.2" rx="1" opacity="0.5"/>
-          <circle cx="54" cy="11" r="2.5" fill="var(--role-frontend)" opacity="0.85"/>
+          <rect x="10" y="39" width="46" height="3" rx="1.4"/>
+          <rect x="10" y="45" width="36" height="2.4" rx="1" opacity="0.65"/>
+          <rect x="10" y="50" width="50" height="2.4" rx="1" opacity="0.5"/>
+          <rect x="10" y="55" width="28" height="2.4" rx="1" opacity="0.45"/>
         </g>
-        <rect x="68" y="0" width="58" height="44" rx="3" fill="#111827" stroke="rgba(0,0,0,0.25)" stroke-width="0.9"/>
-        <rect x="72" y="4" width="50" height="36" rx="2" fill="color-mix(in srgb,var(--role-frontend) 12%,#ffffff18)"/>
-        <g stroke="var(--role-frontend)" stroke-width="0.9" fill="none" opacity="0.8">
-          <path d="M76 10 L92 10 L95 22 L82 28 L75 22 Z"/>
-          <circle cx="112" cy="18" r="3"/>
+        <rect x="20" y="39" width="16" height="22" rx="1.4" fill="color-mix(in srgb,var(--role-frontend) 45%,#ffffff30)" opacity="0.7"/>
+        <rect x="78" y="20" width="70" height="64" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.25)" stroke-width="0.9"/>
+        <rect x="81" y="23" width="64" height="58" rx="1.8" fill="color-mix(in srgb,var(--role-frontend) 18%,#ffffff18)"/>
+        <g stroke="var(--role-frontend)" stroke-width="0.85" fill="none" opacity="0.86">
+          <path d="M86 33 L100 33 L104 44 L92 52 L85 44 Z"/>
+          <circle cx="128" cy="42" r="3.4"/>
+          <path d="M86 58 h32 M86 65 h22 M86 72 h28" stroke="#ffffff" opacity="0.7"/>
+        </g>
+        <g transform="translate(110 3)" opacity="0.78">
+          <rect x="0" y="0" width="36" height="14" rx="2" fill="rgba(255,255,255,0.65)" stroke="rgba(0,0,0,0.1)"/>
+          <g stroke="var(--role-frontend)" stroke-width="0.6" fill="none" opacity="0.8">
+            <rect x="3" y="3" width="8" height="8"/>
+            <rect x="14" y="3" width="7" height="8"/>
+            <rect x="24" y="3" width="9" height="8"/>
+          </g>
         </g>
       </g>
-      <g class="be-terminal-monitor" transform="translate(290 490)">
-        <rect x="0" y="0" width="140" height="72" rx="4" fill="#0b1020" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
-        <rect x="4" y="4" width="132" height="64" rx="2" fill="#0a0e1c"/>
-        <g font-family="ui-monospace, Menlo, monospace" font-size="6.5" fill="var(--done)" opacity="0.9">
-          <text x="10" y="16">$ build --target=dist</text>
-          <text x="10" y="26" fill="var(--working)">[1/4] compile services…</text>
-          <text x="10" y="36" fill="var(--working)">[2/4] wire MCP routes…</text>
-          <text x="10" y="46" fill="var(--done)">✓ api-core linked</text>
-          <text x="10" y="56" fill="var(--reviewing)">[3/4] review pending…</text>
+      <g class="be-terminal-suite" transform="translate(290 520)">
+        <rect x="0" y="0" width="160" height="92" rx="4" fill="rgba(0,0,0,0.02)" stroke="none"/>
+        <rect x="2" y="2" width="120" height="84" rx="3" fill="#0b1020" stroke="rgba(0,0,0,0.26)" stroke-width="1"/>
+        <rect x="5" y="5" width="114" height="78" rx="2" fill="#0a0e1c"/>
+        <g font-family="ui-monospace, Menlo, monospace" font-size="6.2" fill="var(--done)" opacity="0.9">
+          <text x="10" y="18">$ ci build --target=prod</text>
+          <text x="10" y="28" fill="var(--working)">[1/6] compile services…</text>
+          <text x="10" y="38" fill="var(--working)">[2/6] wire MCP routes…</text>
+          <text x="10" y="48" fill="var(--done)">✓ api-core linked</text>
+          <text x="10" y="58" fill="var(--done)">✓ workers scheduled</text>
+          <text x="10" y="68" fill="var(--reviewing)">[3/6] review gates…</text>
+          <text x="10" y="78" fill="var(--text-muted)" opacity="0.72">_</text>
+        </g>
+        <g transform="translate(126 12)">
+          <rect x="0" y="0" width="30" height="26" rx="2.4" fill="#0f1522" stroke="rgba(0,0,0,0.22)" stroke-width="0.8"/>
+          <g stroke="var(--role-backend)" stroke-width="0.7" fill="none" opacity="0.88">
+            <circle cx="8" cy="10" r="3.4"/>
+            <circle cx="22" cy="10" r="3.4"/>
+            <circle cx="15" cy="20" r="3.4"/>
+            <path d="M11 10 L19 10 M10.6 12.4 L13 17.2 M19.4 12.4 L17 17.2"/>
+          </g>
+        </g>
+        <g transform="translate(126 48)" opacity="0.92">
+          <rect x="0" y="0" width="30" height="38" rx="2.2" fill="rgba(255,255,255,0.55)" stroke="rgba(0,0,0,0.12)" stroke-width="0.7"/>
+          <line x1="0" y1="12" x2="30" y2="12" stroke="rgba(0,0,0,0.14)" stroke-width="0.5"/>
+          <line x1="0" y1="25" x2="30" y2="25" stroke="rgba(0,0,0,0.14)" stroke-width="0.5"/>
+          <circle cx="3.5" cy="6" r="0.9" fill="var(--working)" opacity="0.7"/>
+          <rect x="7" y="5" width="18" height="2" rx="0.8" fill="var(--role-backend)" opacity="0.7"/>
+          <circle cx="3.5" cy="18.5" r="0.9" fill="var(--done)" opacity="0.65"/>
+          <rect x="7" y="17.4" width="20" height="2" rx="0.8" fill="var(--done)" opacity="0.65"/>
+          <circle cx="3.5" cy="31.5" r="0.9" fill="var(--reviewing)" opacity="0.6"/>
+          <rect x="7" y="30.4" width="14" height="2" rx="0.8" fill="var(--reviewing)" opacity="0.6"/>
         </g>
       </g>
-      <g class="be-topology-screen" transform="translate(450 540)">
-        <rect x="0" y="0" width="72" height="64" rx="4" fill="#0f1522" stroke="rgba(0,0,0,0.2)" stroke-width="0.9"/>
-        <g stroke="var(--role-backend)" stroke-width="0.7" fill="none" opacity="0.8">
-          <circle cx="20" cy="22" r="6"/>
-          <circle cx="52" cy="22" r="6"/>
-          <circle cx="36" cy="46" r="6"/>
-          <path d="M24 22 L48 22 M24 25 L32 42 M48 25 L40 42"/>
+      <g class="be-topology-board" transform="translate(468 596)">
+        <rect x="0" y="0" width="80" height="70" rx="4" fill="color-mix(in srgb,var(--role-backend) 7%,transparent)" stroke="color-mix(in srgb,var(--role-backend) 30%,transparent)" stroke-width="0.8" opacity="0.92"/>
+        <g stroke="var(--role-backend)" stroke-width="0.75" fill="none" opacity="0.88">
+          <circle cx="22" cy="22" r="7"/>
+          <circle cx="58" cy="22" r="7"/>
+          <circle cx="40" cy="50" r="7"/>
+          <path d="M27 22 L51 22 M26.8 26.6 L34.6 44.2 M53.2 26.6 L45.4 44.2"/>
+        </g>
+        <g font-family="var(--sans),system-ui" font-size="4.6" fill="var(--text-muted)" opacity="0.62">
+          <text x="16" y="10">Service Mesh</text>
         </g>
       </g>
     </g>`
@@ -155,195 +238,339 @@
 
   function qualityZone() {
     return `<g class="zone zone-quality" data-zone="quality">
-      <path d="M1080 360 L1520 420 L1520 680 L1080 680 Z" fill="color-mix(in srgb,var(--panel) 85%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="1.2"/>
-      ${zoneLabel('QUALITY', '质检工作室', 'Quality Studio', 1100, 380)}
-      <g class="test-matrix-screen" transform="translate(1100 410)">
-        <rect x="0" y="0" width="150" height="72" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.12)" stroke-width="0.9"/>
+      <path d="M1060 400 Q1280 370 1500 420 L1500 680 Q1280 700 1060 680 Z" fill="color-mix(in srgb,var(--role-qa) 5%,transparent)" stroke="none"/>
+      <path d="M1060 400 Q1280 370 1500 420 L1500 680 Q1280 700 1060 680 Z" fill="none" stroke="color-mix(in srgb,var(--role-qa) 22%,transparent)" stroke-width="0.9" stroke-dasharray="3 6" opacity="0.52"/>
+      <ellipse cx="1280" cy="540" rx="200" ry="130" fill="color-mix(in srgb,var(--role-reviewer) 4%,transparent)" opacity="0.65"/>
+      ${zoneLabel('QUALITY', '质检工作室', 'Quality Studio', 1482, 418, 'end')}
+      <g class="wall-panel-back" transform="translate(1080 410)">
+        <rect x="0" y="0" width="400" height="16" rx="3" fill="color-mix(in srgb,var(--panel-2) 92%,transparent)" stroke="rgba(0,0,0,0.06)" stroke-width="0.7"/>
+        <g fill="color-mix(in srgb,var(--role-qa) 30%,transparent)" opacity="0.52">
+          <rect x="22" y="4.5" width="32" height="7" rx="1.8"/>
+          <rect x="62" y="4.5" width="38" height="7" rx="1.8" fill="color-mix(in srgb,var(--role-reviewer) 30%,transparent)"/>
+          <rect x="108" y="4.5" width="50" height="7" rx="1.8" fill="color-mix(in srgb,var(--done) 26%,transparent)"/>
+        </g>
+      </g>
+      <g class="test-matrix-console" transform="translate(1088 440)">
+        <rect x="0" y="0" width="170" height="100" rx="4" fill="rgba(0,0,0,0.02)" stroke="none"/>
+        <rect x="2" y="2" width="166" height="96" rx="3.5" fill="#ffffff" stroke="rgba(0,0,0,0.11)" stroke-width="0.85"/>
         <g>
-          <rect x="8" y="8" width="28" height="20" rx="2" fill="color-mix(in srgb,var(--done) 20%,transparent)" stroke="var(--done)" stroke-width="0.7"/>
-          <path d="M15 19 L20 24 L32 14" stroke="var(--done)" stroke-width="1.5" fill="none"/>
-          <rect x="42" y="8" width="28" height="20" rx="2" fill="color-mix(in srgb,var(--working) 22%,transparent)" stroke="var(--working)" stroke-width="0.7"/>
-          <circle cx="56" cy="18" r="3.5" fill="none" stroke="var(--working)" stroke-width="1.4" stroke-dasharray="3 2"/>
-          <rect x="76" y="8" width="28" height="20" rx="2" fill="color-mix(in srgb,var(--blocked) 20%,transparent)" stroke="var(--blocked)" stroke-width="0.7"/>
-          <path d="M82 14 L98 26 M98 14 L82 26" stroke="var(--blocked)" stroke-width="1.3"/>
-          <rect x="110" y="8" width="30" height="20" rx="2" fill="color-mix(in srgb,var(--role-qa) 20%,transparent)" stroke="var(--role-qa)" stroke-width="0.7"/>
-          <g fill="var(--role-qa)" opacity="0.8">
-            <rect x="114" y="14" width="8" height="2" rx="1"/>
-            <rect x="114" y="18" width="18" height="2" rx="1"/>
+          <g transform="translate(10 12)">
+            <rect x="0" y="0" width="30" height="22" rx="2.2" fill="color-mix(in srgb,var(--done) 20%,transparent)" stroke="var(--done)" stroke-width="0.7"/>
+            <path d="M7 11 L12 16 L25 5" stroke="var(--done)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
           </g>
-          <g font-family="var(--mono)" font-size="6.5" fill="var(--text-muted)">
-            <text x="12" y="46">suite/core.spec</text>
-            <text x="12" y="56" fill="var(--done)">✓ 142 passed</text>
-            <text x="80" y="56" fill="var(--blocked)">✗ 2 failed</text>
-            <text x="12" y="66" fill="var(--reviewing)">⟳ 8 pending</text>
+          <g transform="translate(46 12)">
+            <rect x="0" y="0" width="30" height="22" rx="2.2" fill="color-mix(in srgb,var(--working) 22%,transparent)" stroke="var(--working)" stroke-width="0.7"/>
+            <circle cx="15" cy="11" r="4" fill="none" stroke="var(--working)" stroke-width="1.5" stroke-dasharray="3.2 2"/>
+          </g>
+          <g transform="translate(82 12)">
+            <rect x="0" y="0" width="30" height="22" rx="2.2" fill="color-mix(in srgb,var(--blocked) 20%,transparent)" stroke="var(--blocked)" stroke-width="0.7"/>
+            <path d="M7 6 L23 22 M23 6 L7 22" stroke="var(--blocked)" stroke-width="1.4" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(118 12)">
+            <rect x="0" y="0" width="38" height="22" rx="2.2" fill="color-mix(in srgb,var(--role-qa) 20%,transparent)" stroke="var(--role-qa)" stroke-width="0.7"/>
+            <g fill="var(--role-qa)" opacity="0.82">
+              <rect x="5" y="8" width="8" height="2.4" rx="1"/>
+              <rect x="5" y="12.5" width="26" height="2.4" rx="1"/>
+            </g>
+          </g>
+          <g font-family="ui-monospace, Menlo, monospace" font-size="6.3" fill="var(--text-muted)" transform="translate(10 52)">
+            <text x="0" y="0">suite/core.spec.ts</text>
+            <text x="0" y="12" fill="var(--done)">✓ 142 passed</text>
+            <text x="88" y="12" fill="var(--blocked)">✗ 2 failed</text>
+            <text x="0" y="24" fill="var(--reviewing)">⟳ 8 pending · 3.4s</text>
           </g>
         </g>
       </g>
-      <g class="diff-screen" transform="translate(1310 470)">
-        <rect x="0" y="0" width="180" height="90" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.12)" stroke-width="0.9"/>
-        <line x1="90" y1="0" x2="90" y2="90" stroke="rgba(0,0,0,0.15)" stroke-width="0.8"/>
-        <g font-family="ui-monospace, Menlo, monospace" font-size="6.2">
-          <text x="8" y="16" fill="var(--text-muted)">a/core-shell.js</text>
-          <text x="98" y="16" fill="var(--text-muted)">b/core-shell.js</text>
-          <rect x="4" y="22" width="82" height="10" rx="1.5" fill="color-mix(in srgb,var(--blocked) 12%,transparent)"/>
-          <text x="8" y="30" fill="var(--blocked)">-  rail-w: 192px</text>
-          <rect x="94" y="22" width="82" height="10" rx="1.5" fill="color-mix(in srgb,var(--done) 14%,transparent)"/>
-          <text x="98" y="30" fill="var(--done)">+  rail-w: 168px</text>
-          <rect x="4" y="36" width="82" height="10" rx="1.5" fill="color-mix(in srgb,var(--blocked) 12%,transparent)"/>
-          <text x="8" y="44" fill="var(--blocked)">-  helix: 312px</text>
-          <rect x="94" y="36" width="82" height="10" rx="1.5" fill="color-mix(in srgb,var(--done) 14%,transparent)"/>
-          <text x="98" y="44" fill="var(--done)">+  helix: 360-420px</text>
-          <text x="8" y="60" fill="var(--text-muted)">  nav: Office/Tasks</text>
-          <text x="98" y="60" fill="var(--text-muted)">  nav: Office/Tasks</text>
-          <text x="8" y="70" fill="var(--text-muted)">  theme-switcher ok</text>
-          <text x="98" y="70" fill="var(--text-muted)">  theme-switcher ok</text>
-          <text x="8" y="82" fill="var(--reviewing)">@@ 2 files, +12 -8</text>
+      <g class="device-test-screen" transform="translate(1098 560)">
+        <rect x="0" y="0" width="54" height="96" rx="7" fill="#1a1f2c" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+        <rect x="3.5" y="8" width="47" height="80" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.15)" stroke-width="0.7"/>
+        <g transform="translate(7 12)" opacity="0.9">
+          <rect x="0" y="0" width="40" height="8" rx="1.6" fill="color-mix(in srgb,var(--role-qa) 25%,transparent)"/>
+          <rect x="0" y="14" width="40" height="6" rx="1.2" fill="rgba(0,0,0,0.08)"/>
+          <rect x="0" y="24" width="40" height="6" rx="1.2" fill="rgba(0,0,0,0.06)" opacity="0.8"/>
+          <rect x="0" y="34" width="26" height="10" rx="2.4" fill="color-mix(in srgb,var(--done) 30%,transparent)" stroke="var(--done)" stroke-width="0.6"/>
+          <path d="M4 39.5 L7 42.5 L17 33.5" stroke="var(--done)" stroke-width="1.1" fill="none"/>
+          <rect x="0" y="50" width="40" height="10" rx="2.4" fill="color-mix(in srgb,var(--working) 25%,transparent)" stroke="var(--working)" stroke-width="0.6"/>
+          <circle cx="12" cy="55" r="2.6" fill="none" stroke="var(--working)" stroke-width="1" stroke-dasharray="2 1.6"/>
         </g>
+        <text x="27" y="5.5" font-size="4" text-anchor="middle" fill="#ffffff" opacity="0.6" style="font-family:var(--sans),system-ui;">QA DEVICE</text>
+      </g>
+      <g class="review-diff-station" transform="translate(1290 490)">
+        <rect x="0" y="0" width="200" height="110" rx="4" fill="rgba(0,0,0,0.02)" stroke="none"/>
+        <rect x="2" y="2" width="196" height="106" rx="3.5" fill="#ffffff" stroke="rgba(0,0,0,0.11)" stroke-width="0.85"/>
+        <line x1="100" y1="2" x2="100" y2="108" stroke="rgba(0,0,0,0.16)" stroke-width="0.8"/>
+        <g font-family="ui-monospace, Menlo, monospace" font-size="6">
+          <text x="10" y="16" fill="var(--text-muted)" opacity="0.72">a/core-shell-v2.js</text>
+          <text x="108" y="16" fill="var(--text-muted)" opacity="0.72">b/core-shell-v2.js</text>
+          <rect x="6" y="24" width="88" height="11" rx="1.6" fill="color-mix(in srgb,var(--blocked) 14%,transparent)"/>
+          <text x="10" y="32.5" fill="var(--blocked)">- rail-w: 192px</text>
+          <rect x="104" y="24" width="88" height="11" rx="1.6" fill="color-mix(in srgb,var(--done) 16%,transparent)"/>
+          <text x="108" y="32.5" fill="var(--done)">+ rail-w: 168px</text>
+          <rect x="6" y="40" width="88" height="11" rx="1.6" fill="color-mix(in srgb,var(--blocked) 14%,transparent)"/>
+          <text x="10" y="48.5" fill="var(--blocked)">- helix: 312px</text>
+          <rect x="104" y="40" width="88" height="11" rx="1.6" fill="color-mix(in srgb,var(--done) 16%,transparent)"/>
+          <text x="108" y="48.5" fill="var(--done)">+ helix: 360-420px</text>
+          <text x="10" y="66" fill="var(--text-muted)" opacity="0.72">  nav: Office / Tasks</text>
+          <text x="108" y="66" fill="var(--text-muted)" opacity="0.72">  nav: Office / Tasks</text>
+          <text x="10" y="78" fill="var(--text-muted)" opacity="0.72">  theme-switch ok</text>
+          <text x="108" y="78" fill="var(--text-muted)" opacity="0.72">  theme-switch ok</text>
+          <text x="10" y="94" fill="var(--reviewing)" opacity="0.82">@@ 2 files, +12 -8</text>
+        </g>
+      </g>
+      <g class="evidence-viewer" transform="translate(1298 616)" opacity="0.95">
+        <rect x="0" y="0" width="90" height="54" rx="3.5" fill="rgba(255,255,255,0.72)" stroke="rgba(0,0,0,0.1)" stroke-width="0.75"/>
+        <rect x="0" y="0" width="90" height="12" rx="3.5" fill="color-mix(in srgb,var(--role-reviewer) 26%,transparent)"/>
+        <text x="6" y="8.5" font-size="5.6" fill="#1f2430" font-weight="700" style="font-family:var(--sans),system-ui;">Evidence</text>
+        <g transform="translate(6 18)" font-family="var(--sans),system-ui" font-size="4.8" fill="var(--text-muted)" opacity="0.78">
+          <rect x="0" y="0" width="78" height="6" rx="1.5" fill="color-mix(in srgb,var(--done) 20%,transparent)"/>
+          <text x="2" y="4.6" fill="var(--done)">✓ Screenshot A-01</text>
+          <rect x="0" y="10" width="78" height="6" rx="1.5" fill="color-mix(in srgb,var(--done) 20%,transparent)"/>
+          <text x="2" y="14.6" fill="var(--done)">✓ Playwright 02</text>
+          <rect x="0" y="20" width="78" height="6" rx="1.5" fill="color-mix(in srgb,var(--reviewing) 20%,transparent)"/>
+          <text x="2" y="24.6" fill="var(--reviewing)">⟳ Log trace…</text>
+        </g>
+      </g>
+      <g class="glass-divider" opacity="0.4">
+        <line x1="1060" y1="400" x2="1048" y2="684" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>
+        <rect x="1048" y="398" width="2" height="288" fill="rgba(255,255,255,0.22)"/>
       </g>
     </g>`
   }
 
   function helixHubZone() {
     return `<g class="zone zone-helix-hub" data-zone="helix-hub">
-      <path d="M540 600 L1080 600 L1080 860 L540 860 Z" fill="color-mix(in srgb,var(--orchestrator) 8%,color-mix(in srgb,var(--panel) 88%,transparent))" stroke="color-mix(in srgb,var(--orchestrator) 42%,rgba(0,0,0,0.08))" stroke-width="1.4"/>
-      ${zoneLabel('HELIX HUB', '指挥中枢', 'Command Hub', 740, 612)}
-      <g class="helix-desk-semicircle" transform="translate(800 720)">
-        <path d="M-180 60 Q0 -150 180 60 L170 90 Q0 -100 -170 90 Z" fill="url(#helixDeskTop)" stroke="color-mix(in srgb,var(--orchestrator) 55%,var(--line))" stroke-width="1.6"/>
-        <defs>
-          <linearGradient id="helixDeskTop" x1="0" y1="-1" x2="0" y2="1">
-            <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 28%,var(--panel))"/>
-            <stop offset="100%" stop-color="color-mix(in srgb,var(--orchestrator) 14%,var(--panel-2))"/>
-          </linearGradient>
-          <radialGradient id="helixHubGlow" cx="50%" cy="0%" r="70%">
-            <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 28%,transparent)"/>
-            <stop offset="100%" stop-color="transparent"/>
-          </radialGradient>
-        </defs>
-        <path d="M-170 62 Q0 -130 170 62" fill="url(#helixHubGlow)" opacity="0.88"/>
+      <defs>
+        <radialGradient id="helixCommandBacklightV2" cx="50%" cy="18%" r="72%">
+          <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 34%,transparent)"/>
+          <stop offset="58%" stop-color="color-mix(in srgb,var(--orchestrator) 14%,transparent)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </radialGradient>
+        <linearGradient id="helixDeskTopV2" x1="0" y1="-1" x2="0" y2="1">
+          <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 30%,var(--panel))"/>
+          <stop offset="100%" stop-color="color-mix(in srgb,var(--orchestrator) 16%,var(--panel-2))"/>
+        </linearGradient>
+      </defs>
+      <path d="M500 560 L1120 560 L1160 880 L460 880 Z" fill="url(#helixCommandBacklightV2)" opacity="0.92"/>
+      <ellipse cx="820" cy="720" rx="300" ry="190" fill="color-mix(in srgb,var(--orchestrator) 6%,transparent)" opacity="0.8"/>
+      ${zoneLabel('HELIX HUB', '指挥中枢', 'Command Hub', 820, 582, 'middle')}
+      <g class="helix-desk-semicircle" transform="translate(810 740)">
+        <path d="M-220 88 Q0 -190 220 88 L208 118 Q0 -134 -208 118 Z" fill="url(#helixDeskTopV2)" stroke="color-mix(in srgb,var(--orchestrator) 58%,var(--line))" stroke-width="1.9"/>
+        <path d="M-208 78 Q0 -162 208 78" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 40%,transparent)" stroke-width="0.9" opacity="0.72"/>
         <g>
-          <rect x="-160" y="14" width="68" height="42" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
-          <rect x="-156" y="18" width="60" height="34" rx="2" fill="color-mix(in srgb,var(--working) 22%,#ffffff1e)"/>
-          <text x="-150" y="32" font-family="var(--mono)" font-size="6.2" fill="var(--working)" font-weight="700">TASK Q</text>
-          <g fill="#ffffff" opacity="0.8">
-            <rect x="-154" y="38" width="54" height="2.4" rx="1"/>
-            <rect x="-154" y="44" width="42" height="2.4" rx="1" opacity="0.65"/>
+          <rect x="-202" y="14" width="80" height="52" rx="3.6" fill="#0f1522" stroke="rgba(0,0,0,0.23)" stroke-width="0.9"/>
+          <rect x="-198.5" y="17.5" width="73" height="45" rx="2.2" fill="color-mix(in srgb,var(--working) 26%,#ffffff24)"/>
+          <text x="-190" y="34" font-family="var(--mono)" font-size="7.2" fill="var(--working)" font-weight="700">TASK Q</text>
+          <g fill="#ffffff" opacity="0.82">
+            <rect x="-194" y="44" width="64" height="3" rx="1.3"/>
+            <rect x="-194" y="51" width="52" height="3" rx="1.3" opacity="0.65"/>
+            <rect x="-194" y="58" width="44" height="3" rx="1.3" opacity="0.5"/>
           </g>
-          <circle cx="-102" cy="28" r="2" fill="var(--working)"/>
-          <circle cx="-102" cy="40" r="2" fill="var(--done)" opacity="0.85"/>
+          <circle cx="-132" cy="26.5" r="2.6" fill="var(--working)"/>
+          <circle cx="-132" cy="39" r="2.6" fill="var(--done)" opacity="0.88"/>
+          <circle cx="-132" cy="53.5" r="2.6" fill="var(--reviewing)" opacity="0.8"/>
         </g>
         <g>
-          <rect x="-82" y="2" width="72" height="54" rx="4" fill="#0f1522" stroke="color-mix(in srgb,var(--orchestrator) 60%,#0f1522)" stroke-width="1"/>
-          <rect x="-78" y="6" width="64" height="46" rx="2.5" fill="color-mix(in srgb,var(--orchestrator) 28%,#ffffff24)"/>
-          <g stroke="var(--orchestrator)" stroke-width="0.9" fill="none" opacity="0.9">
-            <circle cx="-46" cy="22" r="6"/>
-            <path d="M-46 16 L-46 28 M-52 22 L-40 22" opacity="0.7"/>
-            <path d="M-72 38 L-60 38 L-56 44 L-48 34 L-42 44 L-36 38 L-22 38"/>
+          <rect x="-112" y="-8" width="86" height="74" rx="4.8" fill="#0f1522" stroke="color-mix(in srgb,var(--orchestrator) 62%,#0f1522)" stroke-width="1.1"/>
+          <rect x="-107.5" y="-3.5" width="77" height="65" rx="3.2" fill="color-mix(in srgb,var(--orchestrator) 32%,#ffffff2a)"/>
+          <g stroke="var(--orchestrator)" stroke-width="1" fill="none" opacity="0.92">
+            <circle cx="-69" cy="19" r="7.8"/>
+            <path d="M-69 11.2 L-69 26.8 M-76.8 19 L-61.2 19" opacity="0.75"/>
+            <path d="M-100 48 L-84 48 L-78 56 L-69 44 L-60 56 L-54 48 L-38 48"/>
           </g>
-          <g fill="#ffffff" opacity="0.82">
-            <rect x="-74" y="46" width="56" height="2.4" rx="1.2"/>
-            <rect x="-74" y="50" width="42" height="2.4" rx="1.2" opacity="0.6"/>
+          <g fill="#ffffff" opacity="0.84">
+            <rect x="-102" y="60" width="66" height="3.2" rx="1.4"/>
+            <rect x="-102" y="66" width="52" height="3.2" rx="1.4" opacity="0.6"/>
           </g>
         </g>
         <g>
-          <rect x="2" y="14" width="68" height="42" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
-          <rect x="6" y="18" width="60" height="34" rx="2" fill="color-mix(in srgb,var(--reviewing) 22%,#ffffff1e)"/>
-          <text x="10" y="32" font-family="var(--mono)" font-size="6.2" fill="var(--reviewing)" font-weight="700">REVIEWS</text>
-          <g fill="#ffffff" opacity="0.82">
-            <rect x="10" y="38" width="50" height="2.4" rx="1"/>
-            <rect x="10" y="44" width="38" height="2.4" rx="1" opacity="0.65"/>
+          <rect x="-14" y="6" width="80" height="60" rx="4.2" fill="#0f1522" stroke="rgba(0,0,0,0.24)" stroke-width="0.95"/>
+          <rect x="-10.5" y="9.5" width="73" height="53" rx="2.8" fill="color-mix(in srgb,var(--orchestrator) 26%,#ffffff22)"/>
+          <text x="-2" y="26" font-family="var(--mono)" font-size="7.2" fill="var(--orchestrator)" font-weight="700">RUNTIME</text>
+          <g font-family="ui-monospace, Menlo, monospace" font-size="6.2" fill="#ffffff" opacity="0.85">
+            <text x="-2" y="40">nodes: 8</text>
+            <text x="-2" y="49">mem: 62%</text>
+            <text x="-2" y="58" fill="var(--done)">heartbeat ok</text>
           </g>
-          <circle cx="62" cy="28" r="2" fill="var(--reviewing)"/>
+          <circle cx="58" cy="20" r="2.8" fill="var(--done)"/>
         </g>
         <g>
-          <rect x="80" y="14" width="78" height="42" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
-          <rect x="84" y="18" width="70" height="34" rx="2" fill="color-mix(in srgb,var(--waiting-human) 22%,#ffffff20)"/>
-          <text x="88" y="32" font-family="var(--mono)" font-size="6.2" fill="var(--waiting-human)" font-weight="700">WAIT HUMAN</text>
+          <rect x="82" y="14" width="80" height="52" rx="3.6" fill="#0f1522" stroke="rgba(0,0,0,0.23)" stroke-width="0.9"/>
+          <rect x="85.5" y="17.5" width="73" height="45" rx="2.2" fill="color-mix(in srgb,var(--reviewing) 26%,#ffffff22)"/>
+          <text x="92" y="34" font-family="var(--mono)" font-size="7.2" fill="var(--reviewing)" font-weight="700">REVIEWS</text>
           <g fill="#ffffff" opacity="0.82">
-            <rect x="88" y="38" width="48" height="2.4" rx="1"/>
-            <rect x="88" y="44" width="34" height="2.4" rx="1" opacity="0.65"/>
+            <rect x="92" y="44" width="62" height="3" rx="1.3"/>
+            <rect x="92" y="51" width="48" height="3" rx="1.3" opacity="0.65"/>
+            <rect x="92" y="58" width="40" height="3" rx="1.3" opacity="0.5"/>
           </g>
-          <g transform="translate(138 28)">
-            <path d="M-4 8 V-4 Q-4 -6 -2 -6 Q0 -6 0 -4 V-1 M0 -6 Q2 -6 2 -4 V-1 M2 -6 Q4 -6 4 -4 V1 M4 -2 Q5 -3 5 -2 L5 7 Q5 9 2 10 L-2 10 Q-3 9 -4 8 Z" fill="none" stroke="var(--waiting-human)" stroke-width="1"/>
+          <circle cx="152" cy="26.5" r="2.6" fill="var(--reviewing)"/>
+          <circle cx="152" cy="42.5" r="2.6" fill="var(--working)" opacity="0.82"/>
+        </g>
+        <g>
+          <rect x="176" y="18" width="88" height="48" rx="3.6" fill="#0f1522" stroke="rgba(0,0,0,0.23)" stroke-width="0.9"/>
+          <rect x="179.5" y="21.5" width="81" height="41" rx="2.2" fill="color-mix(in srgb,var(--waiting-human) 26%,#ffffff24)"/>
+          <text x="186" y="38" font-family="var(--mono)" font-size="7.2" fill="var(--waiting-human)" font-weight="700">WAIT HUMAN</text>
+          <g fill="#ffffff" opacity="0.82">
+            <rect x="186" y="48" width="58" height="3" rx="1.3"/>
+            <rect x="186" y="55" width="44" height="3" rx="1.3" opacity="0.65"/>
+          </g>
+          <g transform="translate(244 30)" fill="none" stroke="var(--waiting-human)" stroke-width="1.05">
+            <path d="M-5 10 V-5 Q-5 -7 -3 -7 Q-1 -7 -1 -5 V-1 M-1 -7 Q1 -7 1 -5 V-1 M1 -7 Q3 -7 3 -5 V2 M3 -3 Q4.2 -3.5 4.2 -2.2 V8 Q4.2 10 1.5 10.8 L-3 11 Q-4.5 10.5 -5 10 Z"/>
           </g>
         </g>
       </g>
-      <g class="hub-connection-paths" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 28%,transparent)" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.85">
-        <path d="M800 680 Q600 540 300 340"/>
-        <path d="M800 680 Q620 600 300 560"/>
-        <path d="M800 680 Q960 600 1320 480"/>
-        <path d="M800 680 Q680 780 400 780"/>
-        <path d="M800 680 Q1020 780 1300 780"/>
+      <g class="hub-connection-paths" fill="none" stroke-width="1.5" opacity="0.76">
+        <path d="M810 700 Q640 520 310 320" stroke="color-mix(in srgb,var(--role-product) 50%,transparent)" stroke-dasharray="2.8 4.2"/>
+        <path d="M810 700 Q620 610 310 560" stroke="color-mix(in srgb,var(--role-frontend) 50%,transparent)" stroke-dasharray="2.8 4.2"/>
+        <path d="M810 700 Q980 600 1320 490" stroke="color-mix(in srgb,var(--role-qa) 50%,transparent)" stroke-dasharray="2.8 4.2"/>
+        <path d="M810 700 Q680 800 400 790" stroke="color-mix(in srgb,var(--role-docs) 52%,transparent)" stroke-dasharray="2.8 4.2"/>
+        <path d="M810 700 Q1020 800 1310 800" stroke="color-mix(in srgb,var(--waiting-human) 52%,transparent)" stroke-dasharray="2.8 4.2"/>
       </g>
     </g>`
   }
 
   function knowledgeZone() {
     return `<g class="zone zone-knowledge" data-zone="knowledge">
-      <path d="M80 700 L520 700 L520 870 L80 870 Z" fill="color-mix(in srgb,var(--panel) 85%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="1.2"/>
-      ${zoneLabel('KNOWLEDGE', '文档角', 'Knowledge Corner', 100, 712)}
-      <g class="wiki-screen" transform="translate(120 740)">
-        <rect x="0" y="0" width="100" height="70" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>
-        <rect x="6" y="6" width="88" height="6" rx="2" fill="color-mix(in srgb,var(--role-docs) 22%,transparent)"/>
-        <g fill="rgba(0,0,0,0.55)" opacity="0.7">
-          <rect x="8" y="20" width="80" height="3" rx="1.2"/>
-          <rect x="8" y="27" width="70" height="3" rx="1.2" opacity="0.85"/>
-          <rect x="8" y="34" width="84" height="3" rx="1.2" opacity="0.75"/>
-          <rect x="8" y="41" width="64" height="3" rx="1.2" opacity="0.65"/>
-          <rect x="8" y="48" width="78" height="3" rx="1.2" opacity="0.7"/>
-          <rect x="8" y="58" width="30" height="4" rx="2" fill="var(--role-docs)" opacity="0.65"/>
+      <path d="M100 700 Q320 680 540 700 L540 880 Q320 896 100 880 Z" fill="color-mix(in srgb,var(--role-docs) 6%,transparent)" stroke="none"/>
+      <path d="M100 700 Q320 680 540 700 L540 880 Q320 896 100 880 Z" fill="none" stroke="color-mix(in srgb,var(--role-docs) 22%,transparent)" stroke-width="0.9" stroke-dasharray="3 6" opacity="0.5"/>
+      <ellipse cx="320" cy="790" rx="200" ry="90" fill="color-mix(in srgb,var(--role-docs) 4%,transparent)" opacity="0.6"/>
+      ${zoneLabel('KNOWLEDGE', '文档角', 'Knowledge Corner', 118, 714)}
+      <g class="knowledge-shelves" transform="translate(120 730)">
+        <rect x="0" y="0" width="120" height="128" rx="3.5" fill="color-mix(in srgb,var(--panel-2) 90%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="0.7"/>
+        <g stroke="rgba(0,0,0,0.1)" stroke-width="0.5">
+          <line x1="0" y1="32" x2="120" y2="32"/>
+          <line x1="0" y1="64" x2="120" y2="64"/>
+          <line x1="0" y1="96" x2="120" y2="96"/>
+        </g>
+        <g transform="translate(6 6)">
+          <rect x="0" y="0" width="8" height="22" fill="var(--role-product)" opacity="0.65"/>
+          <rect x="9" y="0" width="6.5" height="22" fill="var(--role-architect)" opacity="0.7"/>
+          <rect x="17" y="0" width="9" height="22" fill="var(--role-frontend)" opacity="0.65"/>
+          <rect x="28" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.72"/>
+          <rect x="37" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.62"/>
+          <rect x="47" y="0" width="8" height="22" fill="var(--role-reviewer)" opacity="0.7"/>
+          <rect x="57" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.78"/>
+          <rect x="69" y="0" width="7" height="22" fill="var(--role-product)" opacity="0.55"/>
+          <rect x="78" y="0" width="9" height="22" fill="var(--role-architect)" opacity="0.6"/>
+          <rect x="89" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.58"/>
+          <rect x="99" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.6"/>
+        </g>
+        <g transform="translate(6 38)">
+          <rect x="0" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.55"/>
+          <rect x="12" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.6"/>
+          <rect x="22" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.68"/>
+          <rect x="33" y="0" width="6.5" height="22" fill="var(--role-product)" opacity="0.6"/>
+          <rect x="42" y="0" width="10" height="22" fill="var(--role-architect)" opacity="0.58"/>
+          <rect x="54" y="0" width="8" height="22" fill="var(--role-frontend)" opacity="0.62"/>
+          <rect x="64" y="0" width="7" height="22" fill="var(--role-reviewer)" opacity="0.6"/>
+          <rect x="73" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.72"/>
+          <rect x="84" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.55"/>
+          <rect x="94" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.6"/>
+        </g>
+        <g transform="translate(6 70)">
+          <rect x="0" y="0" width="7.5" height="22" fill="var(--role-architect)" opacity="0.55"/>
+          <rect x="9" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.62"/>
+          <rect x="21" y="0" width="7" height="22" fill="var(--role-frontend)" opacity="0.58"/>
+          <rect x="30" y="0" width="9" height="22" fill="var(--role-product)" opacity="0.64"/>
+          <rect x="41" y="0" width="8" height="22" fill="var(--role-backend)" opacity="0.6"/>
+          <rect x="51" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.62"/>
+          <rect x="61" y="0" width="10" height="22" fill="var(--role-reviewer)" opacity="0.58"/>
+          <rect x="73" y="0" width="7.5" height="22" fill="var(--role-docs)" opacity="0.7"/>
+          <rect x="83" y="0" width="8.5" height="22" fill="var(--role-architect)" opacity="0.56"/>
+          <rect x="94" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.6"/>
+        </g>
+        <g transform="translate(6 102)" opacity="0.9">
+          <rect x="0" y="0" width="108" height="18" rx="2.5" fill="color-mix(in srgb,var(--role-docs) 18%,transparent)" stroke="color-mix(in srgb,var(--role-docs) 34%,transparent)" stroke-width="0.6"/>
+          <text x="54" y="13" font-size="5.4" text-anchor="middle" fill="var(--role-docs)" opacity="0.82" font-weight="700" style="font-family:var(--sans),system-ui;">KNOWLEDGE VAULT</text>
         </g>
       </g>
-      <g class="book-stack" transform="translate(260 770)">
-        <rect x="0" y="0" width="80" height="10" rx="1.6" fill="var(--role-product)" opacity="0.65"/>
-        <rect x="4" y="10" width="72" height="10" rx="1.6" fill="var(--role-architect)" opacity="0.7"/>
-        <rect x="2" y="20" width="76" height="10" rx="1.6" fill="var(--role-frontend)" opacity="0.65"/>
-        <rect x="6" y="30" width="70" height="10" rx="1.6" fill="var(--role-backend)" opacity="0.7"/>
-        <rect x="0" y="40" width="82" height="10" rx="1.6" fill="var(--role-qa)" opacity="0.62"/>
-        <rect x="4" y="50" width="74" height="10" rx="1.6" fill="var(--role-reviewer)" opacity="0.68"/>
+      <g class="wiki-dual-panels" transform="translate(272 740)">
+        <rect x="0" y="0" width="116" height="112" rx="4" fill="rgba(255,255,255,0.72)" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+        <rect x="0" y="0" width="56" height="112" rx="4" fill="rgba(255,255,255,0.9)"/>
+        <line x1="58" y1="0" x2="58" y2="112" stroke="rgba(0,0,0,0.12)" stroke-width="0.7"/>
+        <g transform="translate(8 12)" font-family="var(--sans),system-ui" font-size="5.6" fill="var(--text)">
+          <rect x="0" y="0" width="40" height="6" rx="2" fill="color-mix(in srgb,var(--role-docs) 26%,transparent)"/>
+          <text x="0" y="16" opacity="0.78">Onboarding</text>
+          <text x="0" y="26" opacity="0.6">API Guide</text>
+          <text x="0" y="36" opacity="0.6">SOP 048</text>
+          <text x="0" y="46" opacity="0.6">Handbook</text>
+          <rect x="0" y="56" width="40" height="6" rx="2" fill="rgba(0,0,0,0.06)" opacity="0.7"/>
+          <text x="0" y="76" opacity="0.58">Minutes …</text>
+          <text x="0" y="86" opacity="0.5">Retro notes</text>
+        </g>
+        <g transform="translate(66 12)">
+          <rect x="0" y="0" width="42" height="6" rx="2" fill="color-mix(in srgb,var(--role-docs) 22%,transparent)"/>
+          <g fill="rgba(0,0,0,0.58)" opacity="0.72">
+            <rect x="0" y="14" width="44" height="2.8" rx="1.2"/>
+            <rect x="0" y="20" width="38" height="2.8" rx="1.2" opacity="0.86"/>
+            <rect x="0" y="26" width="42" height="2.8" rx="1.2" opacity="0.76"/>
+            <rect x="0" y="32" width="32" height="2.8" rx="1.2" opacity="0.66"/>
+            <rect x="0" y="38" width="40" height="2.8" rx="1.2" opacity="0.7"/>
+            <rect x="0" y="52" width="44" height="2.8" rx="1.2"/>
+            <rect x="0" y="58" width="36" height="2.8" rx="1.2" opacity="0.8"/>
+            <rect x="0" y="64" width="26" height="2.8" rx="1.2" opacity="0.7"/>
+            <rect x="0" y="78" width="16" height="6" rx="2.5" fill="var(--role-docs)" opacity="0.58"/>
+          </g>
+        </g>
       </g>
-      <g class="doc-panel" transform="translate(380 740)">
-        <rect x="0" y="0" width="100" height="70" rx="4" fill="rgba(255,255,255,0.6)" stroke="rgba(0,0,0,0.08)" stroke-width="0.8"/>
-        <g stroke="var(--role-docs)" stroke-width="0.7" fill="none" opacity="0.85">
-          <rect x="12" y="14" width="30" height="18"/>
-          <rect x="48" y="14" width="38" height="18"/>
-          <path d="M14 20 h26 M14 24 h22 M50 20 h30 M50 24 h24"/>
-          <circle cx="38" cy="48" r="6"/>
-          <path d="M16 58 L50 58 L56 64 L80 64 L86 58"/>
+      <g class="doc-reading-screen" transform="translate(410 740)" opacity="0.94">
+        <rect x="0" y="0" width="116" height="112" rx="4" fill="rgba(255,255,255,0.58)" stroke="rgba(0,0,0,0.08)" stroke-width="0.75"/>
+        <g stroke="var(--role-docs)" stroke-width="0.75" fill="none" opacity="0.86">
+          <rect x="14" y="16" width="36" height="22"/>
+          <rect x="58" y="16" width="46" height="22"/>
+          <path d="M18 24 h28 M18 29 h20 M62 24 h36 M62 29 h30"/>
+          <circle cx="44" cy="60" r="8"/>
+          <path d="M18 82 L56 82 L66 96 L90 96 L100 82"/>
+        </g>
+        <g font-family="var(--sans),system-ui" font-size="5" fill="var(--text-muted)" opacity="0.6" transform="translate(14 10)">
+          <text x="0" y="0">Architecture · WIKI</text>
         </g>
       </g>
     </g>`
   }
 
   function humanAreaZone(active) {
-    const op = active ? '1' : '0.28'
-    const glow = active ? 'color-mix(in srgb,var(--waiting-human) 24%,color-mix(in srgb,var(--panel) 80%,transparent))' : 'color-mix(in srgb,var(--panel) 55%,transparent)'
+    const op = active ? '1' : '0.12'
+    const dimStroke = active ? 'color-mix(in srgb,var(--waiting-human) 56%,rgba(0,0,0,0.1))' : 'rgba(0,0,0,0.04)'
+    const baseFill = active
+      ? 'color-mix(in srgb,var(--waiting-human) 20%,color-mix(in srgb,var(--panel) 78%,transparent))'
+      : 'color-mix(in srgb,var(--panel) 20%,transparent)'
     const vis = active ? '' : 'display:none;'
     return `<g class="zone zone-human-area" data-zone="human-area" data-active="${active ? 'true' : 'false'}" opacity="${op}" style="${active ? '' : 'transition:opacity var(--dur-slow) var(--ease);'}">
-      <path d="M1080 700 L1520 700 L1520 870 L1080 870 Z" fill="${glow}" stroke="${active ? 'color-mix(in srgb,var(--waiting-human) 55%,rgba(0,0,0,0.1))' : 'rgba(0,0,0,0.06)'}" stroke-width="${active ? '1.6' : '1'}" stroke-dasharray="${active ? '' : '4 4'}"/>
-      ${zoneLabel('HUMAN AREA', '人类区', 'Human Action Zone', 1100, 712)}
-      <g class="human-request-card" transform="translate(1150 750)" style="${vis}">
-        <rect x="0" y="0" width="280" height="86" rx="8" fill="color-mix(in srgb,var(--waiting-human) 16%,var(--panel))" stroke="var(--waiting-human)" stroke-width="1.6"/>
-        <g transform="translate(14 14)">
-          <path d="M0 4 V-6 Q0 -8 2 -8 Q4 -8 4 -6 V-3 M4 -8 Q6 -8 6 -6 V0 M6 -4 Q7 -5 7 -4 L7 9 Q7 11 4 12 L0 12 Q-1 11 -1 9 Z" fill="none" stroke="var(--waiting-human)" stroke-width="1.4"/>
-          <text x="18" y="2" font-size="12" font-weight="700" fill="var(--text)" style="font-family:var(--sans),system-ui;">需要人类行动（必需）</text>
-          <text x="18" y="18" font-size="10" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">产品经理 · 李产品 · 已等待 14 分</text>
-          <rect x="0" y="28" width="252" height="28" rx="4" fill="var(--panel)" stroke="var(--line)"/>
-          <text x="8" y="46" font-size="10" fill="var(--text)" style="font-family:var(--sans),system-ui;">【DEMO】确认设计规格 §5.1 颜色 token 规格对比表</text>
-          <rect x="0" y="62" width="70" height="12" rx="3" fill="var(--waiting-human)" style="cursor:pointer;">
-            <text x="35" y="71" font-size="9" font-weight="700" text-anchor="middle" fill="#fff" style="font-family:var(--sans),system-ui;">立即处理 →</text>
+      <defs>
+        <radialGradient id="humanAmberGlowV2" cx="50%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="color-mix(in srgb,var(--waiting-human) 46%,transparent)"/>
+          <stop offset="55%" stop-color="color-mix(in srgb,var(--waiting-human) 14%,transparent)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="1300" cy="790" rx="220" ry="100" fill="${active ? 'url(#humanAmberGlowV2)' : 'transparent'}" opacity="${active ? 0.9 : 0}"/>
+      <path d="M1080 700 Q1280 686 1500 700 L1500 880 Q1280 896 1080 880 Z" fill="${baseFill}" stroke="${dimStroke}" stroke-width="${active ? '1.4' : '0.7'}" stroke-dasharray="${active ? '' : '4 4'}" opacity="${active ? 1 : 0.6}"/>
+      ${active ? zoneLabel('HUMAN AREA', '人类区', 'Human Action Zone', 1480, 714, 'end') : ''}
+      <g class="human-request-card" transform="translate(1160 752)" style="${vis}">
+        <rect x="0" y="0" width="288" height="92" rx="8.5" fill="color-mix(in srgb,var(--waiting-human) 18%,var(--panel))" stroke="var(--waiting-human)" stroke-width="1.7"/>
+        <g transform="translate(16 16)">
+          <g fill="none" stroke="var(--waiting-human)" stroke-width="1.45">
+            <path d="M-1 6 V-4 Q-1 -6 1 -6 Q3 -6 3 -4 V-1 M3 -6 Q5 -6 5 -4 V0 M5 -4 Q6.4 -4.6 6.4 -3.2 V10 Q6.4 11.8 3.6 12.6 L-0.6 13 Q-2 12.6 -2.6 11.6 Z"/>
+          </g>
+          <text x="22" y="3" font-size="12.2" font-weight="700" fill="var(--text)" style="font-family:var(--sans),system-ui;">需要人类行动（必需）</text>
+          <text x="22" y="20" font-size="10" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">产品经理 · 李产品 · 已等待 14 分</text>
+          <rect x="0" y="32" width="256" height="30" rx="4.5" fill="var(--panel)" stroke="var(--line)"/>
+          <text x="10" y="51" font-size="10" fill="var(--text)" style="font-family:var(--sans),system-ui;">【DEMO】确认设计规格 §5.1 颜色 token 规格对比表</text>
+          <rect x="0" y="68" width="78" height="14" rx="4" fill="var(--waiting-human)" style="cursor:pointer;">
+            <text x="39" y="78.5" font-size="9.2" font-weight="700" text-anchor="middle" fill="#fff" style="font-family:var(--sans),system-ui;">立即处理 →</text>
           </rect>
-          <rect x="78" y="62" width="56" height="12" rx="3" fill="var(--panel-2)" stroke="var(--line)" style="cursor:pointer;">
-            <text x="106" y="71" font-size="9" fill="var(--text-muted)" text-anchor="middle" style="font-family:var(--sans),system-ui;">稍后</text>
+          <rect x="86" y="68" width="60" height="14" rx="4" fill="var(--panel-2)" stroke="var(--line)" style="cursor:pointer;">
+            <text x="116" y="78.5" font-size="9.2" fill="var(--text-muted)" text-anchor="middle" style="font-family:var(--sans),system-ui;">稍后</text>
           </rect>
         </g>
       </g>
-      <g class="human-seat-indicator" transform="translate(1450 770)" style="${vis}">
-        <circle cx="0" cy="0" r="22" fill="none" stroke="var(--waiting-human)" stroke-width="2" stroke-dasharray="4 3" class="reduced-motion-hidden" opacity="0.78"/>
-        <circle cx="0" cy="0" r="14" fill="color-mix(in srgb,var(--waiting-human) 18%,transparent)"/>
-        <text x="0" y="4" font-size="10" text-anchor="middle" fill="var(--waiting-human)" font-weight="800" style="font-family:var(--sans),system-ui;">HUMAN</text>
+      <g class="human-seat-indicator" transform="translate(1460 786)" style="${vis}">
+        <circle cx="0" cy="0" r="24" fill="none" stroke="var(--waiting-human)" stroke-width="2.2" stroke-dasharray="4.2 3" class="reduced-motion-hidden" opacity="0.82"/>
+        <circle cx="0" cy="0" r="15" fill="color-mix(in srgb,var(--waiting-human) 20%,transparent)"/>
+        <text x="0" y="4.5" font-size="10.5" text-anchor="middle" fill="var(--waiting-human)" font-weight="800" style="font-family:var(--sans),system-ui;">HUMAN</text>
       </g>
-      <g class="helix-human-pulse-line" ${active ? '' : 'style="display:none;"'} fill="none" stroke="var(--waiting-human)" stroke-width="1.8" stroke-dasharray="6 4" opacity="0.85">
-        <path d="M800 700 Q1080 730 1300 760" class="reduced-motion-hidden"/>
+      <g class="helix-human-pulse-line" ${active ? '' : 'style="display:none;"'} fill="none" stroke="var(--waiting-human)" stroke-width="2" stroke-dasharray="6.5 4.5" opacity="0.88">
+        <path d="M810 720 Q1080 748 1300 790" class="reduced-motion-hidden"/>
       </g>
     </g>`
   }
@@ -352,19 +579,61 @@
     return `<svg class="office-floor-v2" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="2.5D 办公楼层平面图：6 区域连续空间" style="position:relative;width:100%;height:100%;display:block;">
       <defs>
         <pattern id="iso-grid-v2" width="56" height="32" patternUnits="userSpaceOnUse" patternTransform="skewX(-18)">
-          <path d="M 56 0 L 0 0 0 32" fill="none" stroke="color-mix(in srgb, var(--canvas-grid) 60%, transparent)" stroke-width="0.7" opacity="0.6"/>
+          <path d="M 56 0 L 0 0 0 32" fill="none" stroke="color-mix(in srgb, var(--canvas-grid) 58%, transparent)" stroke-width="0.65" opacity="0.52"/>
         </pattern>
         <linearGradient id="floor-vignette-v2" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="var(--canvas-floor)"/>
           <stop offset="100%" stop-color="color-mix(in srgb, var(--canvas-floor) 92%, var(--panel-2))"/>
         </linearGradient>
+        <linearGradient id="walkway-center-h" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="transparent"/>
+          <stop offset="18%" stop-color="color-mix(in srgb,var(--panel-2) 50%,transparent)"/>
+          <stop offset="50%" stop-color="color-mix(in srgb,var(--orchestrator) 10%,color-mix(in srgb,var(--panel-2) 70%,transparent))"/>
+          <stop offset="82%" stop-color="color-mix(in srgb,var(--panel-2) 50%,transparent)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+        <linearGradient id="walkway-center-v" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="transparent"/>
+          <stop offset="22%" stop-color="color-mix(in srgb,var(--panel-2) 48%,transparent)"/>
+          <stop offset="55%" stop-color="color-mix(in srgb,var(--orchestrator) 8%,color-mix(in srgb,var(--panel-2) 68%,transparent))"/>
+          <stop offset="85%" stop-color="color-mix(in srgb,var(--panel-2) 48%,transparent)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </linearGradient>
+        <radialGradient id="collab-rug" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="color-mix(in srgb,var(--orchestrator) 14%,transparent)"/>
+          <stop offset="70%" stop-color="color-mix(in srgb,var(--panel-2) 55%,transparent)"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </radialGradient>
       </defs>
       <rect x="0" y="0" width="1600" height="900" fill="url(#floor-vignette-v2)"/>
       <rect x="0" y="0" width="1600" height="900" fill="url(#iso-grid-v2)"/>
-      <g class="walkways" fill="none" stroke="color-mix(in srgb, var(--line) 70%, transparent)" stroke-width="1.4" opacity="0.45">
-        <path d="M60 480 L1540 480"/>
-        <path d="M520 80 L520 860"/>
-        <path d="M1080 320 L1080 860"/>
+      <rect x="40" y="462" width="1520" height="48" rx="20" fill="url(#walkway-center-h)" opacity="0.88"/>
+      <rect x="776" y="40" width="48" height="820" rx="22" fill="url(#walkway-center-v)" opacity="0.82"/>
+      <g class="walkway-skinny" fill="none" stroke="color-mix(in srgb, var(--line) 68%, transparent)" stroke-width="1.1" opacity="0.38">
+        <path d="M60 486 L1540 486"/>
+        <path d="M800 80 L800 860"/>
+        <path d="M540 110 L540 860" opacity="0.7"/>
+        <path d="M1060 360 L1060 860" opacity="0.7"/>
+      </g>
+      <g transform="translate(800 486)" opacity="0.96">
+        <ellipse cx="0" cy="0" rx="160" ry="96" fill="url(#collab-rug)"/>
+        <ellipse cx="0" cy="0" rx="110" ry="62" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 28%,transparent)" stroke-width="0.9" stroke-dasharray="2.5 5" opacity="0.62"/>
+        <g transform="translate(0 -6)" opacity="0.78">
+          <circle cx="-34" cy="0" r="5" fill="color-mix(in srgb,var(--working) 60%,transparent)"/>
+          <circle cx="0" cy="-14" r="5" fill="color-mix(in srgb,var(--reviewing) 60%,transparent)"/>
+          <circle cx="34" cy="0" r="5" fill="color-mix(in srgb,var(--done) 60%,transparent)"/>
+          <circle cx="0" cy="14" r="5" fill="color-mix(in srgb,var(--orchestrator) 55%,transparent)"/>
+        </g>
+        <g font-family="var(--sans),system-ui" font-size="7" fill="var(--text-muted)" opacity="0.44" text-anchor="middle">
+          <text x="0" y="46">COLLAB · DISPATCH PATH</text>
+        </g>
+      </g>
+      <g class="dispatch-arrows" fill="none" stroke="color-mix(in srgb,var(--orchestrator) 32%,transparent)" stroke-width="1.3" stroke-dasharray="5.5 3.5" opacity="0.7" class="reduced-motion-hidden">
+        <path d="M800 486 C 720 430 520 300 300 270"/>
+        <path d="M800 486 C 720 540 520 560 300 560"/>
+        <path d="M800 486 C 880 430 1080 420 1320 460"/>
+        <path d="M800 486 C 720 540 600 700 400 780"/>
+        <path d="M800 486 C 880 540 1000 700 1300 790"/>
       </g>
     </svg>`
   }
@@ -386,19 +655,29 @@
 
   function buildDeskSVG(roleId, cx, cy) {
     return `<g class="desk desk-${roleId}" data-role="${roleId}" style="cursor:pointer;">
-      <ellipse cx="${cx}" cy="${cy + 60}" rx="42" ry="8" fill="rgba(0,0,0,0.18)" opacity="0.7"/>
-      <rect x="${cx - 52}" y="${cy + 14}" width="104" height="44" rx="8" fill="color-mix(in srgb,var(--panel) 94%,transparent)" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
-      <rect x="${cx - 50}" y="${cy + 12}" width="100" height="8" rx="4" fill="color-mix(in srgb,var(--panel-2) 90%,transparent)" stroke="rgba(0,0,0,0.08)" stroke-width="0.8"/>
+      <ellipse cx="${cx + 4}" cy="${cy + 68}" rx="48" ry="9.5" fill="rgba(0,0,0,0.2)" opacity="0.55"/>
+      <path d="M${cx - 58} ${cy + 22} L${cx + 58} ${cy + 22} L${cx + 62} ${cy + 60} L${cx - 54} ${cy + 60} Z" fill="color-mix(in srgb,var(--panel-2) 72%,transparent)" stroke="rgba(0,0,0,0.14)" stroke-width="0.8"/>
+      <path d="M${cx - 58} ${cy + 22} L${cx - 54} ${cy + 60} L${cx - 48} ${cy + 62} L${cx - 52} ${cy + 24} Z" fill="color-mix(in srgb,var(--panel) 55%,var(--panel-2))" stroke="rgba(0,0,0,0.1)" stroke-width="0.6" opacity="0.82"/>
+      <path d="M${cx + 58} ${cy + 22} L${cx + 62} ${cy + 60} L${cx + 68} ${cy + 62} L${cx + 64} ${cy + 24} Z" fill="color-mix(in srgb,var(--panel) 40%,var(--panel-2))" stroke="rgba(0,0,0,0.1)" stroke-width="0.6" opacity="0.82"/>
+      <rect x="${cx - 56}" y="${cy + 16}" width="112" height="10" rx="4.5" fill="color-mix(in srgb,var(--panel) 96%,transparent)" stroke="rgba(0,0,0,0.1)" stroke-width="0.7"/>
+      <rect x="${cx - 54}" y="${cy + 14}" width="108" height="4.5" rx="2.2" fill="color-mix(in srgb,var(--panel-2) 88%,transparent)" stroke="rgba(0,0,0,0.06)" stroke-width="0.5" opacity="0.9"/>
+      <rect x="${cx - 42}" y="${cy + 54}" width="8" height="18" rx="2.2" fill="color-mix(in srgb,var(--panel-2) 80%,rgba(40,44,56,0.9))" stroke="rgba(0,0,0,0.2)" stroke-width="0.6" opacity="0.92"/>
+      <g transform="translate(${cx - 36} ${cy + 58})" opacity="0.78">
+        <circle cx="2" cy="3" r="1.1" fill="var(--working)" opacity="0.85"/>
+        <rect x="5.5" y="2" width="10" height="2" rx="0.9" fill="var(--done)" opacity="0.75"/>
+      </g>
     </g>`
   }
 
   function buildChairSVG(roleId, cx, cy, angle) {
-    const tilt = (angle || 0) * 0.08
-    return `<g class="chair chair-${roleId}" transform="translate(${cx} ${cy + 66}) rotate(${tilt || 0})">
-      <rect x="-14" y="-18" width="28" height="22" rx="5" fill="rgba(40,44,56,0.85)" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/>
-      <rect x="-18" y="-6" width="36" height="6" rx="3" fill="rgba(58,62,78,0.9)" stroke="rgba(0,0,0,0.22)" stroke-width="0.7"/>
-      <rect x="-2" y="0" width="4" height="14" rx="1.6" fill="rgba(36,40,52,0.92)"/>
-      <path d="M-10 14 L10 14 L12 16 L-12 16 Z" fill="rgba(32,36,48,0.9)" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/>
+    const tilt = (angle || 0) * 0.11
+    return `<g class="chair chair-${roleId}" transform="translate(${cx} ${cy + 72}) rotate(${tilt || 0})">
+      <ellipse cx="0" cy="16" rx="17" ry="3.2" fill="rgba(0,0,0,0.22)" opacity="0.48"/>
+      <path d="M-14 -8 L14 -8 L16 14 L-16 14 Z" fill="rgba(46,50,64,0.88)" stroke="rgba(0,0,0,0.28)" stroke-width="0.8"/>
+      <rect x="-19" y="6" width="38" height="7.5" rx="3.4" fill="rgba(62,66,82,0.9)" stroke="rgba(0,0,0,0.25)" stroke-width="0.75"/>
+      <rect x="-2.6" y="14" width="5.2" height="15" rx="2" fill="rgba(38,42,56,0.95)"/>
+      <path d="M-12 28 L12 28 L14 31 L-14 31 Z" fill="rgba(30,34,46,0.93)" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
+      <rect x="-15" y="-12" width="30" height="4" rx="2" fill="rgba(30,34,46,0.85)" stroke="rgba(0,0,0,0.25)" stroke-width="0.6" opacity="0.85"/>
     </g>`
   }
 
@@ -443,7 +722,7 @@
 
     const overlayHTML = `
       ${taskCapsules.join('')}
-      ${tasks.filter(t => t.role === 'docs').slice(0,1).map((t, i) => taskCapsuleSVG(t, 300, 704 + i * 40)).join('')}
+      ${tasks.filter(t => t.role === 'docs').slice(0,1).map((t, i) => taskCapsuleSVG(t, 340, 732 + i * 40)).join('')}
     `
 
     mount.innerHTML = `
@@ -465,9 +744,9 @@
           <g class="characters-layer" style="pointer-events:auto;">
             ${Object.entries(figureMounts).filter(([rid]) => rid !== 'helix').map(([rid, svgStr]) => {
               const p = ZONE_POSITIONS[rid]
-              return `<g class="char-anchor char-${rid}" data-role="${rid}" transform="translate(${p.cx - 24} ${p.cy - 10})" style="cursor:pointer;">${svgStr}</g>`
+              return `<g class="char-anchor char-${rid}" data-role="${rid}" transform="translate(${p.cx - 35} ${p.cy - 42})" style="cursor:pointer;">${svgStr}</g>`
             }).join('')}
-            ${(figureMounts.helix ? `<g class="char-anchor char-helix" data-role="helix" transform="translate(${ZONE_POSITIONS.helix.cx - 30} ${ZONE_POSITIONS.helix.cy - 90})" style="cursor:pointer;">${figureMounts.helix}</g>` : '')}
+            ${(figureMounts.helix ? `<g class="char-anchor char-helix" data-role="helix" transform="translate(${ZONE_POSITIONS.helix.cx - 45} ${ZONE_POSITIONS.helix.cy - 128})" style="cursor:pointer;">${figureMounts.helix}</g>` : '')}
           </g>
           <g class="capsules-layer" style="pointer-events:auto;">
             ${overlayHTML}
@@ -568,7 +847,7 @@
         const val = on ? 'true' : 'false'
         if (zone) {
           try { zone.setAttribute('data-active', val) } catch (_) { zone.dataset && (zone.dataset.active = val) }
-          try { zone.setAttribute('opacity', on ? '1' : '0.28') } catch (_) {}
+          try { zone.setAttribute('opacity', on ? '1' : '0.12') } catch (_) {}
           safeForEach(safeQueryAll(zone, '.human-request-card, .human-seat-indicator, .helix-human-pulse-line'), (n) => {
             try { n.style.display = on ? '' : 'none' } catch (_) {}
           })
@@ -576,21 +855,18 @@
         }
         try {
           const html = mount.innerHTML || ''
-          // Replace entire G zone tag attributes and style of children
           let replaced = html
           const zoneRe = /(<g\s+[^>]*class="zone\s+zone-human-area"[^>]*>)/i
           replaced = replaced.replace(zoneRe, (m, openTag) => {
             let t = openTag.replace(/data-active="[^"]*"/i, '')
             t = t.replace(/opacity="[^"]*"/i, '')
-            t = t.slice(0, -1) + ` data-active="${val}" opacity="${on ? '1' : '0.28'}">`
+            t = t.slice(0, -1) + ` data-active="${val}" opacity="${on ? '1' : '0.12'}">`
             return t
           })
           if (on) {
             replaced = replaced.replace(/style="display\s*:\s*none[^"]*"/gi, (m) => {
-              // Only flip nodes inside human area scope — hard to regex; rely on the marker being there
               return m.includes('human-') || m.includes('helix-human-') ? 'style=""' : m
             })
-            // Just remove display:none when on=true on marker classes
             replaced = replaced.replace(/(<g\s+[^>]*class="[^"]*(?:human-request-card|human-seat-indicator|helix-human-pulse-line)[^"]*"[^>]*\s)style="display\s*:\s*none[^"]*"/gi, '$1style=""')
           }
           if (replaced !== html) mount.innerHTML = replaced

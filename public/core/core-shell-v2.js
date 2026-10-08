@@ -885,9 +885,8 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     document.body.innerHTML = ''
 
     const navCollapsedStored = !!storeGet(STORAGE_KEYS.navCollapsed, false)
-    const helixOpenStored = !!storeGet(STORAGE_KEYS.helixExpanded, false)
     let navCollapsed = navCollapsedStored
-    let helixOpen = helixOpenStored
+    let helixOpen = false
     let activeNav = options.initialNav || 'office'
     let demoMode = initialMode === 'demo'
 
