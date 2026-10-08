@@ -92,8 +92,12 @@
     },
   }
 
-  function roleCss(block) {
-    return Object.entries(TOKENS.roleColor).map(([k, v]) => `--role-${k}:${v};`).join('')
+  function roleCss() {
+    return Object.entries(TOKENS.roleColor).map(([k, v]) => `${k}:${v};`).join('')
+  }
+
+  function fontCss() {
+    return Object.entries(TOKENS.font).map(([k, v]) => `--${k}:${v};`).join('')
   }
 
   function motionCss(block) {
@@ -112,6 +116,7 @@
   font-family: ${TOKENS.font.sansZh}, ${TOKENS.font.sans};
   --core-theme-id: ${THEME_ID};
   ${roleCss()}
+  ${fontCss()}
   ${motionCss()}
 }
 html[data-theme-core] { color-scheme: dark; ${surfaceCss('dark')} }

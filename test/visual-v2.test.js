@@ -121,6 +121,37 @@ test('EXTRA. [8 role accent CSS variables] core-theme.js defines 8 --role-helix 
   for (const t of expected) assert.ok(themeSrc.includes(`'${t}':`), `theme tokens must define ${t}`)
 })
 
+test('TOKENS-RC-1. [role token emission] Core theme roleCss() emits keys AS-IS without duplicating the --role- prefix; role keys in generated CSS are plain --role-* not --role---role-*', () => {
+  const M = loadV2Modules()
+  M.Theme.inject()
+  const el = globalThis.document.getElementById('core-theme-style')
+  assert.ok(el, 'core-theme-style <style> must be injected by VAOCoreTheme.inject()')
+  const css = el.textContent
+  assert.ok(css.includes('--role-product:#F0B37E'), `role CSS must define --role-product:#F0B37E; present? ${css.includes('--role-product')}`)
+  assert.ok(css.includes('--role-frontend:#F2788F'), `role CSS must define --role-frontend:#F2788F; present? ${css.includes('--role-frontend')}`)
+  assert.ok(css.includes('--role-helix:var(--orchestrator)'), 'role CSS must define --role-helix bound to orchestrator')
+  assert.ok(!css.includes('--role---role-product'), 'role CSS MUST NOT contain bad double-prefix --role---role-product')
+  assert.ok(!css.includes('--role---role-frontend'), 'role CSS MUST NOT contain bad double-prefix --role---role-frontend')
+})
+
+test('TOKENS-RC-2. [font token emission] Core theme fontCss() emits font variables --sansZh / --sans / --mono for var() usage in SVG / shell', () => {
+  const M = loadV2Modules()
+  M.Theme.inject()
+  const el = globalThis.document.getElementById('core-theme-style')
+  const css = el.textContent
+  assert.ok(css.includes('--sansZh:'), 'font CSS must define --sansZh: for use with var(--sansZh)')
+  assert.ok(css.includes('--sans:'), 'font CSS must define --sans:')
+  assert.ok(css.includes('--mono:'), 'font CSS must define --mono:')
+  assert.match(css, /--sansZh:\s*"PingFang SC"/, '--sansZh must resolve to the actual token value from TOKENS.font.sansZh')
+})
+
+test('TOKENS-RC-3. [no geometry changes] core-office-v2.js frozen 1600×900 viewBox + ZONE_POSITIONS untouched by SVG color fix', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  assert.match(officeSrcV2, /viewBox="0 0 1600 900"/, 'viewBox MUST remain 1600×900 frozen')
+  assert.match(officeSrcV2, /product:\s*\{\s*cx:\s*230[^}]*cy:\s*268/, 'ZONE_POSITIONS.product (230,268) unchanged by color fix')
+  assert.match(officeSrcV2, /helix:\s*\{\s*cx:\s*810[^}]*cy:\s*598/, 'ZONE_POSITIONS.helix (810,598) CENTER unchanged')
+})
+
 /* ---------------------------------------------------------------------------
  * FIX 8 + FIX 9: Behavioral + Demo truthfulness tests with minimal DOM shim.
  * Loads Core IIFE modules into Node.js using a tiny document/window shim.
