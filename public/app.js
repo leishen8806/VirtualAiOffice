@@ -806,7 +806,18 @@
         renderBusy()
         renderSuggest()
         renderBanner()
-        // 一个员工都没到岗：直接把「接入员工」面板打开，点一下就能接。
+        if (coreHandle) {
+          try {
+            const derived = deriveCoreRuntimeFromState()
+            const hasHuman = (derived.runtime?.waitingHuman || []).length > 0
+            coreHandle.animate.waitingHuman?.(!!hasHuman)
+            if (state.meeting?.status === 'open') coreHandle.animate.meeting?.()
+            const tasks = state.tasks || []
+            const reviewPresent = tasks.some((t) => t.kind === 'review' || t.status === 'reviewing')
+            if (reviewPresent) coreHandle.animate.review?.()
+          } catch (_) {}
+        }
+        refreshCoreHandle()
         if (state.mode === 'live' && !setupPrompted && !state.roster?.groups?.some((g) => g.available)) {
           setupPrompted = true
           setTimeout(openSetup, 600)
@@ -818,13 +829,35 @@
         office.setRoster(state.roster)
         for (const [id, a] of Object.entries(state.agents)) office.setAgent(id, a)
         renderTeam()
+        refreshCoreHandle()
         break
       case 'agent': {
         const { type, id, ...rest } = ev
         state.agents[id] = { ...(state.agents[id] || {}), ...rest }
         office.setAgent(id, state.agents[id])
+        if (coreHandle) {
+          const employee = emp(id)
+          let roleId = employee?.group
+          if (!roleId) {
+            for (const e of (state.roster.employees || [])) {
+              if (e.id === id || e.name === id) { roleId = e.group; break }
+            }
+          }
+          if (roleId) {
+            const OFFICIAL = ['helix','product','architect','frontend','backend','qa','reviewer','docs','human']
+            if (OFFICIAL.includes(roleId)) {
+              const v2 = statusToV2(state.agents[id]?.status || 'idle')
+              try {
+                if (v2 === 'BLOCKED') coreHandle.animate.blocked?.(roleId)
+                else if (v2 === 'DONE') coreHandle.animate.done?.(roleId, 1800)
+                else if (v2 === 'REVIEWING') coreHandle.animate.review?.()
+              } catch (_) {}
+            }
+          }
+        }
         renderTeam()
         if (id === 'shaniu') renderTyping()
+        refreshCoreHandle()
         break
       }
       case 'activity': {
@@ -833,9 +866,13 @@
           t.activity = [...(t.activity || []), { kind: ev.kind, text: ev.text, ts: ev.ts }].slice(-200)
           renderTasks()
         }
-        if (state.agents[ev.id]) state.agents[ev.id].text = ev.text
+        if (state.agents[ev.id]) {
+          state.agents[ev.id].text = ev.text
+          office.setAgent(ev.id, state.agents[ev.id])
+        }
         office.activity(ev.id, ev.text)
         renderTeam()
+        refreshCoreHandle()
         break
       }
       case 'message':
@@ -843,6 +880,7 @@
         renderMessage(ev.message)
         if (ev.message.role === 'shaniu') office.say('shaniu', ev.message.text.replace(/[`*#]/g, '').split('\n')[0].slice(0, 60), { ttl: 6000 })
         if (ev.message.role === 'speech') office.say(ev.message.id, ev.message.text.replace(/[`*#]/g, '').split('\n')[0].slice(0, 50), { ttl: 9000 })
+        refreshCoreHandle()
         break
       case 'round':
         state.round = ev.round
@@ -852,32 +890,68 @@
         openTasks.clear()
         renderMeeting()
         renderTasks()
+        renderBanner()
+        office.meeting(null)
+        office.setTasks([])
+        refreshCoreHandle()
         break
       case 'iteration':
         state.iteration = ev.iteration
         renderTasks()
+        refreshCoreHandle()
         break
       case 'task':
         upsertTask(ev.task)
         renderTasks()
         renderTeam()
+        office.setTasks(state.tasks)
+        if (coreHandle) {
+          const kind = ev.task.kind
+          const status = ev.task.status
+          const isReviewTask = kind === 'review' || status === 'reviewing'
+          const humanActive = kind === 'human' || ev.task.waiting === true || status === 'waiting'
+          if (isReviewTask) { try { coreHandle.animate.review?.() } catch (_) {} }
+          if (humanActive) { try { coreHandle.animate.waitingHuman?.(true) } catch (_) {} }
+        }
+        refreshCoreHandle()
         break
       case 'meeting':
         state.meeting = ev.meeting
         office.meeting(ev.meeting)
+        if (coreHandle && ev.meeting?.status === 'open') {
+          try { coreHandle.animate.meeting?.() } catch (_) {}
+        }
         renderMeeting()
         renderTasks()
+        refreshCoreHandle()
         break
-      case 'dispatch':
+      case 'dispatch': {
         office.dispatch(ev.to)
+        const employee = emp(ev.to)
+        let roleId = employee?.group
+        if (!roleId) {
+          for (const e of (state.roster.employees || [])) {
+            if (e.id === ev.to || e.name === ev.to) { roleId = e.group; break }
+          }
+        }
+        if (roleId && coreHandle) {
+          const OFFICIAL = ['helix','product','architect','frontend','backend','qa','reviewer','docs','human']
+          if (OFFICIAL.includes(roleId)) {
+            try { coreHandle.animate.dispatch?.(roleId) } catch (_) {}
+          }
+        }
+        refreshCoreHandle()
         break
+      }
       case 'commit':
         state.lastCommit = ev.commit
         renderBusy()
+        refreshCoreHandle()
         break
       case 'busy':
         state.busy = ev.busy
         renderBusy()
+        refreshCoreHandle()
         break
       case 'setup':
         window.NiumaSetup?.event(ev)
@@ -993,6 +1067,12 @@
           if (/^(demo|fake|live)$/i.test(qm || '')) return (qm || '').toLowerCase()
         } catch {}
         return 'live'
+      },
+      _dispatchSse: handle,
+      _getState: () => state,
+      _getSeatState: (roleId) => {
+        const derived = deriveCoreRuntimeFromState()
+        return derived.snapshot?.seatStates?.[roleId] || null
       },
     })
     globalThis.VAOAppV2 = api
