@@ -608,14 +608,14 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     const ariaLbl = `${r.zh} · ${r.en} · ${state}`
     return `<g class="char-v2 char-v2-${roleId} ${stateCls} ${roleStateCls}" data-role="${roleId}" data-state="${state}" aria-label="${ariaLbl.replace(/"/g,'&quot;')}" role="img" tabindex="0">
       <g transform="scale(${scale})">
+        <g transform="translate(3 47.2) scale(${wsScale})">${ws}</g>
+        ${deskState}
+        ${glow}
         <g transform="rotate(${angle} 24 50)">
           ${skeleton(r, state)}
         </g>
-        ${deskState}
-        ${glow}
-        <g transform="translate(3 47.2) scale(${wsScale})">${ws}</g>
         ${showIndicator ? stateIndicator(state) : ''}
-        ${blockedMarker}${doneCheck}${waitHand}${offlineX}
+        ${waitHand}
         <g class="sk2-meta" transform="translate(0 74)" style="display:none;">
           ${memberBadge}${modelBadge}
         </g>

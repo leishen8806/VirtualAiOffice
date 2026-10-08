@@ -725,7 +725,7 @@
     const stateKey = ({ done: 'DONE', running: 'WORKING', pending: 'IDLE', failed: 'BLOCKED', skipped: 'OFFLINE' })[task.status] || 'IDLE'
     const color = St ? `var(--${St[stateKey].key})` : 'var(--accent)'
     return `<g class="task-capsule task-${task.id}" data-task="${task.id}" data-role="${task.role || ''}" transform="translate(${x} ${y})" style="cursor:pointer;">
-      <rect x="0" y="0" width="128" height="28" rx="7" fill="color-mix(in srgb,var(--panel-2) 82%,transparent)" stroke="var(--line)" stroke-width="0.85" opacity="0.92"/>
+      <rect x="0" y="0" width="128" height="28" rx="7" fill="color-mix(in srgb,var(--panel-2) 72%,transparent)" stroke="var(--line)" stroke-width="0.85" opacity="0.88"/>
       <rect x="0" y="0" width="3.4" height="28" rx="1.6" fill="${color}" opacity="0.92"/>
       <text x="10" y="12.5" font-family="var(--mono)" font-size="7.2" fill="var(--text-muted)" font-weight="700" opacity="0.86">${esc(task.id)}</text>
       <text x="10" y="22" font-size="7.6" fill="var(--text)" style="font-family:var(--sans),system-ui;font-weight:600;" opacity="0.94">${esc(String(task.title).slice(0, 19))}</text>
@@ -813,8 +813,9 @@
       const kind = seatKinds[roleId] || (roleId === 'helix' ? 'system' : (['product','qa','reviewer'].includes(roleId) ? 'human' : 'ai'))
       const memberName = seatMembers[roleId]
       const model = seatModels[roleId]
+      const scale = roleId === 'helix' ? 2.2 : 1.75
       figureMounts[roleId] = CV2
-        ? CV2.renderSVG(roleId, { state, kind, memberName, model, angle: pos.angle })
+        ? CV2.renderSVG(roleId, { state, kind, memberName, model, angle: pos.angle, scale })
         : `<text x="${pos.cx}" y="${pos.cy}" font-size="10" fill="var(--text-muted)">${roleId}</text>`
     }
 
@@ -823,7 +824,7 @@
       const list = roleTasks[rid] || []
       const pos = ZONE_POSITIONS[rid]
       if (!pos || !list.length) return
-      taskCapsules.push(taskCapsuleSVG(list[0], pos.cx - 64, pos.cy - (rid === 'qa' || rid === 'reviewer' ? 108 : 138)))
+      taskCapsules.push(taskCapsuleSVG(list[0], pos.cx - 64, pos.cy - (rid === 'qa' || rid === 'reviewer' ? 148 : 178)))
     })
 
     const overlayHTML = `
@@ -831,23 +832,31 @@
       ${tasks.filter(t => t.role === 'docs').slice(0,1).map((t, i) => taskCapsuleSVG(t, 356, 704 + i * 36)).join('')}
     `
 
+    const desktopPAR = croppedMode ? 'xMidYMid meet' : 'xMidYMin meet'
     mount.innerHTML = `
       ${floorBackdropSVG()}
       <div class="office-scene-wrap" style="position:absolute;inset:0;width:100%;height:100%;display:block;">
-        <svg class="scene-svg" viewBox="${initialViewBox}" preserveAspectRatio="xMidYMid meet" role="presentation" style="position:absolute;inset:0;width:100%;height:100%;min-width:0;min-height:0;display:block;">
+        <svg class="scene-svg" viewBox="${initialViewBox}" preserveAspectRatio="${desktopPAR}" role="presentation" style="position:absolute;inset:0;width:100%;height:100%;min-width:0;min-height:0;display:block;">
+          <!-- Z-ORDER (earlier = painted first = bottom layer):
+               01 floorBackdrop (outside this SVG, pre-rendered backdrop)
+               02 zoneRugsLayer / rugs (inside zone SVGs)
+               03 wallBoards / environments / whiteboards (zone layers)
+               04 chairLayer / characters-layer CHAIRS (per seat, NO desks at office level)
+               05 workstation / screens (inside each character SVG paint L1)
+               06 CHARACTER bodies (inside character SVG paint L3 skeleton)
+               07 desk foregrounds (inside character SVG deskState)
+               08 capsules-layer (task capsules UI above everything) -->
           ${planningZone()}
           ${engineeringZone()}
           ${qualityZone()}
           ${knowledgeZone()}
           ${helixHubZone()}
           ${humanAreaZone(humanActive)}
-          <g class="furniture-layer">
+          <g class="characters-layer" style="pointer-events:auto;">
             ${['product','architect','frontend','backend','qa','reviewer','docs'].map((rid) => {
               const p = ZONE_POSITIONS[rid]
-              return buildDeskSVG(rid, p.cx, p.cy) + buildChairSVG(rid, p.cx, p.cy, p.angle)
+              return buildChairSVG(rid, p.cx, p.cy, p.angle)
             }).join('')}
-          </g>
-          <g class="characters-layer" style="pointer-events:auto;">
             ${Object.entries(figureMounts).filter(([rid]) => rid !== 'helix').map(([rid, svgStr]) => {
               const p = ZONE_POSITIONS[rid]
               return `<g class="char-anchor char-${rid}" data-role="${rid}" transform="translate(${p.cx - 35} ${p.cy - 42})" style="cursor:pointer;">${svgStr}</g>`
@@ -900,8 +909,11 @@
     safeForEach(safeQueryAll(mount, '.char-anchor'), (g) => {
       if (g && typeof g.addEventListener === 'function') g.addEventListener('click', (e) => { try { e.stopPropagation && e.stopPropagation() } catch (_) {} fire('vao-v2:role-clicked', { roleId: g.dataset?.role, el: g }) })
     })
-    safeForEach(safeQueryAll(mount, '.desk'), (d) => {
-      if (d && typeof d.addEventListener === 'function') d.addEventListener('click', (e) => { try { e.stopPropagation && e.stopPropagation() } catch (_) {} fire('vao-v2:workstation-clicked', { roleId: d.dataset?.role, el: d }) })
+    safeForEach(safeQueryAll(mount, '.char-anchor'), (g) => {
+      const roleId = g?.dataset?.role
+      if (!roleId) return
+      const d = (typeof g.querySelector === 'function') ? g.querySelector('.sk2-desk, .ws-mini') : null
+      if (d && typeof d.addEventListener === 'function') d.addEventListener('click', (e) => { try { e.stopPropagation && e.stopPropagation() } catch (_) {} fire('vao-v2:workstation-clicked', { roleId, el: d }) })
     })
     safeForEach(safeQueryAll(mount, '.task-capsule'), (tc) => {
       if (tc && typeof tc.addEventListener === 'function') tc.addEventListener('click', (e) => { try { e.stopPropagation && e.stopPropagation() } catch (_) {} fire('vao-v2:task-clicked', { taskId: tc.dataset?.task, el: tc }) })
@@ -933,7 +945,8 @@
         if (!CV2) return
         const p = ZONE_POSITIONS[roleId] || {}
         const kind = seatKinds[roleId] || (roleId === 'helix' ? 'system' : (['product','qa','reviewer'].includes(roleId) ? 'human' : 'ai'))
-        const newSVG = CV2.renderSVG(roleId, { state: stateId, kind, memberName: seatMembers[roleId], model: seatModels[roleId], angle: p.angle || 0 })
+        const scale = roleId === 'helix' ? 2.2 : 1.75
+        const newSVG = CV2.renderSVG(roleId, { state: stateId, kind, memberName: seatMembers[roleId], model: seatModels[roleId], angle: p.angle || 0, scale })
         seatStates[roleId] = stateId
         const wrapperClassKey = 'state-' + ((S?.STATES?.[stateId]?.key) || stateId.toLowerCase().replace(/_/g, '-'))
         const el = safeQuery(mount, `.char-${roleId}`)

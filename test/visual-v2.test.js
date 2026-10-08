@@ -1202,3 +1202,167 @@ test('RESP-R11. [officeSlice preserved across runtime updates] mount.dataset.off
             /mount\s*\.\s*dataset\s*\.\s*officeSlice\s*=\s*mount\s*\.\s*dataset\s*\.\s*officeSlice\s*\|\|\s*DEFAULT_SLICE/.test(officeV2Src),
     'attach() must preserve existing officeSlice across re-mount/update cycles; only set to DEFAULT_SLICE if absent/missing (guarded assignment)')
 })
+
+/* ------------------------------------------------------------------ */
+/* COMPOSITING PASS tests (Character-First Compositing Pass)           */
+/* COMP-A through COMP-F                                               */
+/* ------------------------------------------------------------------ */
+
+const charV2Src = read('public/core/core-characters-v2.js')
+
+test('COMP-A. [Single desk per seat — NO double] Character contains desk internally; Office does NOT call buildDeskSVG per role in figureMounts loop area', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('frontend', { state: 'WORKING' })
+  const hasDeskClass = svg.includes('sk2-desk') || svg.includes('ws-mini') || svg.includes('desk')
+  assert.ok(hasDeskClass, 'Character renderSVG output MUST contain desk/workstation class (character owns desk internally) — no office-level desk needed')
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const figureMountsArea = (() => {
+    const start = officeSrcV2.indexOf('figureMounts = {}')
+    const end = officeSrcV2.indexOf('taskCapsules = []')
+    if (start < 0 || end < 0 || end <= start) return officeSrcV2
+    return officeSrcV2.slice(start, end)
+  })()
+  const sceneSvgArea = (() => {
+    const s = officeSrcV2.indexOf(`<svg class="scene-svg"`)
+    const e = officeSrcV2.indexOf(`</svg>`, s)
+    if (s < 0 || e < 0) return officeSrcV2
+    return officeSrcV2.slice(s, e)
+  })()
+  const charactersLayerArea = (() => {
+    const clsRe = /<g\s+[^>]*class="[^"]*\bcharacters-layer\b[^"]*"[^>]*>/
+    const m = sceneSvgArea.match(clsRe)
+    if (!m) return ''
+    const openIdx = m.index
+    const closeIdx = findBalancedCloseSibling(sceneSvgArea, openIdx)
+    return sceneSvgArea.slice(openIdx, closeIdx)
+  })()
+  const scanArea = figureMountsArea + '\n' + charactersLayerArea
+  const badCall = scanArea.match(/buildDeskSVG\s*\(/)
+  assert.ok(!badCall, `Office characters-layer / figureMounts loop area MUST NOT contain buildDeskSVG( call (NO double desks). Match found: ${badCall?.[0]}`)
+})
+
+test('COMP-B. [Character internal paint order: workstation before skeleton] workstation element appears BEFORE skeleton head-wrap group in renderSVG output', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('architect', { state: 'THINKING' })
+  const wsRe = /<g\s+[^>]*class="[^"]*\bws-mini\b[^"]*"[^>]*>/
+  const wsMatch = svg.match(wsRe)
+  assert.ok(wsMatch, 'renderSVG output MUST contain workstation mini group with class ws-mini')
+  const workstationIndex = wsMatch.index
+  const hwRe = /<g\s+[^>]*class="[^"]*\bsk2-head-wrap\b[^"]*"[^>]*>/
+  const hwMatch = svg.match(hwRe)
+  assert.ok(hwMatch, 'renderSVG output MUST contain skeleton head-wrap group with class sk2-head-wrap')
+  const headWrapIndex = hwMatch.index
+  assert.ok(workstationIndex < headWrapIndex,
+    `workstation (ws-mini at index ${workstationIndex}) MUST be painted BEFORE skeleton head-wrap (at ${headWrapIndex}) so workstation under character (not covering face)`)
+})
+
+test('COMP-C. [Single state marker canonical] For DONE/BLOCKED/OFFLINE states: stateIndicator pill present; duplicate prominent face-area mark (doneCheck/blockedMarker/offlineX big badge) NOT rendered simultaneously', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const ROLES = ['helix','product','architect','frontend','backend','qa','reviewer','docs']
+  const STATES = ['IDLE','THINKING','WORKING','DONE','BLOCKED']
+  for (const roleId of ROLES) {
+    for (const state of STATES) {
+      const svg = CV2.renderSVG(roleId, { state })
+      const hasPill = svg.includes('sk2-state-pill') || svg.includes('state-pill')
+      assert.ok(hasPill, `${roleId}/${state} MUST render canonical stateIndicator pill (sk2-state-pill class)`)
+    }
+  }
+  const doneSvg = CV2.renderSVG('frontend', { state: 'DONE' })
+  const blockedSvg = CV2.renderSVG('backend', { state: 'BLOCKED' })
+  const offlineSvg = CV2.renderSVG('qa', { state: 'OFFLINE' })
+  const bigDoneBadge = doneSvg.match(/class="sk2-done-mark"/)
+  const bigBlockedBadge = blockedSvg.match(/class="sk2-blocked-mark"/)
+  const bigOfflineBadge = offlineSvg.match(/class="sk2-offline-mark"/)
+  assert.ok(!bigDoneBadge, 'DONE state MUST NOT render duplicate big prominent sk2-done-mark badge near face (stateIndicator pill is canonical)')
+  assert.ok(!bigBlockedBadge, 'BLOCKED state MUST NOT render duplicate big prominent sk2-blocked-mark badge near face (stateIndicator pill is canonical)')
+  assert.ok(!bigOfflineBadge, 'OFFLINE state MUST NOT render duplicate big prominent sk2-offline-mark badge near face (stateIndicator pill is canonical for ON-states; OFFLINE showIndicator=false → no pill so no dup)')
+  const waitSvg = CV2.renderSVG('product', { state: 'WAITING_HUMAN' })
+  assert.ok(waitSvg.includes('sk2-wait-mark') || waitSvg.includes('waiting-gesture'),
+    'WAITING_HUMAN state SHOULD keep the animated/brief wait hand gesture extraMarker (non-persistent hand gesture, not a duplicate badge)')
+})
+
+test('COMP-D. [Task capsule / head overlap zero — structural regex] task capsule translateY vertical offset places capsules clear of head center zone (no overlap planned)', () => {
+  const M = loadV2Modules()
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const taskCapsulePositions = [...officeSrcV2.matchAll(/taskCapsuleSVG\s*\(\s*[^,]+,\s*[^,]+,\s*pos\.cy\s*-\s*\(\s*([^)]+?)\s*\)/g)]
+  assert.ok(taskCapsulePositions.length >= 1, 'Source MUST contain taskCapsuleSVG position calls using pos.cy - (OFFSET) pattern')
+  for (const m of taskCapsulePositions) {
+    const offsetExpr = m[1].trim()
+    const numMatch = offsetExpr.match(/(\d+)/)
+    assert.ok(numMatch, `taskCapsuleSVG offset expr must contain numeric offset; got expr="${offsetExpr}"`)
+    const offsetPx = parseInt(numMatch[1], 10)
+    const headCenterFromPosCy = 40
+    const headTop = headCenterFromPosCy + 12
+    const headZoneStart = headTop
+    assert.ok(offsetPx >= 95,
+      `task capsule pos.cy subtraction offset MUST be large enough to clear head top zone. Head center≈pos.cy-40, head top≈pos.cy-52. Offset=${offsetPx}px must be ≥95 so capsule top ≤ pos.cy-95+28=pos.cy-67 ABOVE head top.`)
+  }
+  const altOffsets = [...officeSrcV2.matchAll(/taskCapsuleSVG\s*\(\s*t,\s*(\d+),\s*(\d+)(?:\s*\+\s*i\s*\*\s*\d+)?\s*\)/g)]
+  if (altOffsets.length > 0) {
+    for (const m of altOffsets) {
+      const baseY = parseInt(m[2], 10)
+      const docsPos = ZONE_POSITIONS_DOCS?.cy ?? 810
+      const headCenter = docsPos - 40
+      const headTop = headCenter - 12
+      const headBottom = headCenter + 12
+      const capsuleBottom = baseY + 28
+      const noOverlap = capsuleBottom <= (headTop - 5) || baseY >= (headBottom + 5)
+      assert.ok(noOverlap, `docs task capsule Y=${baseY} must not overlap head center≈${headCenter} (top=${headTop} bottom=${headBottom})`)
+    }
+  }
+})
+const ZONE_POSITIONS_DOCS = { cy: 810 }
+
+test('COMP-E. [Architect glasses align to EYE anchors — keep existing T3] renderSVG(architect) glasses circles inside sk2-head-wrap at cx=21/cx=27 cy=26.8', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('architect', { state: 'THINKING' })
+  assert.ok(svg.includes('sk2-head-wrap'), 'svg must contain sk2-head-wrap group')
+  assert.ok(svg.includes('sk2-face-accessory'), 'svg must contain sk2-face-accessory group (inside head-wrap)')
+  const headInner = substringByClassName(svg, 'sk2-head-wrap')
+  assert.ok(headInner.includes('<circle cx="21" cy="26.8"'), 'EYE_LEFT glass circle cx=21 cy=26.8 inside sk2-head-wrap (ANAT anchors)')
+  assert.ok(headInner.includes('<circle cx="27" cy="26.8"'), 'EYE_RIGHT glass circle cx=27 cy=26.8 inside sk2-head-wrap (ANAT anchors)')
+  assert.ok(headInner.includes('sk2-face-accessory'), 'sk2-face-accessory class marker present inside head-wrap')
+})
+
+test('COMP-F. [Frontend headphones below chin] neck accessory Y coordinates of headphones band/cups inside sk2-neck-accessory group MUST be >= CHIN=33.5', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const ANAT = CV2.ANATOMY
+  const CHIN_Y = ANAT.CHIN
+  assert.equal(CHIN_Y, 33.5, 'ANATOMY.CHIN must equal 33.5 frozen value (re-read anchor)')
+  const svg = CV2.renderSVG('frontend', { state: 'IDLE' })
+  const neckAcc = substringByClassName(svg, 'sk2-neck-accessory')
+  assert.ok(neckAcc.length > 10, 'Frontend renderSVG MUST contain sk2-neck-accessory group for neck-phones accessory')
+  const pathMs = [...neckAcc.matchAll(/<path[^>]*d="([^"]*)"[^>]*>/g)]
+  const rects = [...neckAcc.matchAll(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"[^>]*>/g)]
+  const numericYs = []
+  for (const pm of pathMs) {
+    const dStr = pm[1]
+    const absPairs = [...dStr.matchAll(/([MLHVCSTAQZ])\s+([-0-9.,\s]+)/g)]
+    for (const ap of absPairs) {
+      const cmd = ap[1]
+      const rest = ap[2].trim()
+      if (cmd === 'M' || cmd === 'L' || cmd === 'C' || cmd === 'S' || cmd === 'Q' || cmd === 'T' || cmd === 'A') {
+        const nums = rest.split(/[\s,]+/).map(n => parseFloat(n)).filter(n => Number.isFinite(n))
+        for (let i = 1; i < nums.length; i += 2) numericYs.push(nums[i])
+      } else if (cmd === 'V') {
+        const nums = rest.split(/[\s,]+/).map(n => parseFloat(n)).filter(n => Number.isFinite(n))
+        for (const n of nums) numericYs.push(n)
+      }
+    }
+  }
+  for (const rm of rects) {
+    const y = parseFloat(rm[2])
+    const h = parseFloat(rm[4])
+    numericYs.push(y, y + h)
+  }
+  assert.ok(numericYs.length >= 2, `sk2-neck-accessory must extract at least 2 Y coordinates from paths/rects defining headphones. Extracted count=${numericYs.length}`)
+  for (const y of numericYs) {
+    assert.ok(Number.isFinite(y) && y >= CHIN_Y,
+      `Frontend headphones neck accessory Y=${y.toFixed(2)} MUST be >= CHIN=${CHIN_Y} (band/cups below chin, never on face/eyes)`)
+  }
+})
