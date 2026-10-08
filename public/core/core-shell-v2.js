@@ -195,7 +195,10 @@
     const c = document.createElement('style')
     c.id = CSS_ID
     c.textContent = `
+html[data-theme-core]{overflow-x:hidden;}
 html[data-theme-core] body.v2-shell-body{margin:0;padding:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--sansZh),var(--sans);-webkit-font-smoothing:antialiased;display:grid;grid-template-rows:48px 1fr;grid-template-columns:var(--v2-nav-w,168px) 1fr var(--v2-helix-w,64px);grid-template-areas:"top top top" "nav stage helix";gap:0;overflow:hidden;}
+html[data-theme-core] body.v2-shell-body .v2-stage-wrap > svg{display:block;max-width:100%;height:auto;}
+html[data-theme-core] body.v2-shell-body #v2-office-stage > *{max-width:100%;box-sizing:border-box;}
 html[data-theme-core] .v2-top-bar{grid-area:top;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:50;}
 html[data-theme-core] .v2-nav-rail{grid-area:nav;border-right:1px solid var(--line);background:var(--panel-2);padding:8px 6px;overflow:hidden;display:flex;flex-direction:column;gap:6px;transition:width var(--dur-base) var(--ease);width:var(--v2-nav-w,168px);}
 html[data-theme-core] body.v2-shell-body.v2-nav-collapsed{--v2-nav-w:56px;}

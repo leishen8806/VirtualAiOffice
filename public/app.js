@@ -194,11 +194,16 @@
   function destroyCoreShell() {
     try { coreHandle?.destroy?.() } catch {}
     coreHandle = null
-    const styleCore = document.getElementById('core-shell-css'); if (styleCore) styleCore.remove()
-    const styleTheme = document.getElementById('core-theme-style'); if (styleTheme) styleTheme.remove()
+    globalThis.__coreHandleV2 = null
+    // Remove V1 (Core old) + V2 (Interactive Office V2) style nodes so classic CSS tokens are clean.
+    const styleIds = ['core-shell-css', 'v2-shell-css', 'core-chars-v2-css', 'core-theme-style']
+    for (const id of styleIds) {
+      const n = document.getElementById(id)
+      if (n) n.remove()
+    }
     document.documentElement.removeAttribute('data-theme-core')
     document.documentElement.removeAttribute('data-appearance')
-    document.body.classList.remove('v2-core-shell')
+    document.body.classList.remove('v2-core-shell', 'v2-shell-body', 'v2-nav-collapsed', 'v2-nav-open', 'v2-helix-open')
   }
 
   function restoreClassicLayoutScaffold() {
@@ -300,12 +305,14 @@
     destroyCoreShell()
     restoreClassicLayoutScaffold()
     if (IS_CORE(def.id)) {
-      // Core V2 branch: VAOCoreShell.bootstrap() owns rendering.
+      // Core V2 branch: VAOCoreShellV2 (Interactive Office V2 · 6-zone 2.5D) owns rendering.
+      // VAOCoreShellV2.bootstrap({mode,runtime,helix,snapshot,...}) shares the deriveCoreRuntimeFromState()
+      // payload shape with old VAOCoreShell so no duplication of runtime state.
       root.removeAttribute('data-skin')
       root.removeAttribute('data-skin-id')
       for (const k of setVars) root.style.removeProperty(k)
       setVars = []
-      const Shell = globalThis.VAOCoreShell
+      const Shell = globalThis.VAOCoreShellV2
       if (!Shell) return null
       const derived = deriveCoreRuntimeFromState()
       coreHandle = Shell.bootstrap({
@@ -313,9 +320,16 @@
         runtime: derived.runtime,
         helix: derived.helix,
         snapshot: derived.snapshot,
+        initialNav: 'office',
         onThemeChange: (id) => setSkin(id),
         onConversationSend: (t) => send(t),
+        onNavigate: (id) => {},
+        onPickRole: (rid) => {},
+        onPickTask: (tid) => {},
+        onDemoToggle: (on) => { try { localStorage.setItem('niuma.demo.v2', on ? '1' : '0') } catch (_) {} },
+        onDemoStateVisual: (sid) => coreHandle?.applyDemoStateVisual?.(sid),
       })
+      globalThis.__coreHandleV2 = coreHandle
       return {
         destroy: () => destroyCoreShell(),
         setRoster() { refreshCoreHandle() },
@@ -551,12 +565,15 @@
   function setConn(kind) {
     const map = { live: ['pill-live', '已连接'], fake: ['pill-fake', '彩排模式'], demo: ['pill-demo', '演示'], off: ['pill-off', '连接断开，重连中…'], wait: ['pill-wait', '连接中…'] }
     const [cls, label] = map[kind] || map.wait
-    $('#conn').className = `pill ${cls}`
-    $('#conn').textContent = label
+    const conn = $('#conn')
+    if (conn) { conn.className = `pill ${cls}`; conn.textContent = label }
+    const workdir = $('#workdir')
+    if (workdir && state.workdir != null) { workdir.textContent = state.workdir; workdir.title = state.workdir }
   }
 
   function renderTeam() {
     const box = $('#team')
+    if (!box) return
     box.innerHTML = ''
     for (const g of state.roster.groups) {
       const card = document.createElement('div')
@@ -610,6 +627,7 @@
 
   function renderMessage(m) {
     const box = $('#messages')
+    if (!box) return
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80
     const el = document.createElement('div')
     el.className = `msg msg-${m.role}`
@@ -624,13 +642,16 @@
   }
 
   function renderMessages() {
-    $('#messages').innerHTML = ''
+    const box = $('#messages')
+    if (!box) return
+    box.innerHTML = ''
     state.messages.forEach(renderMessage)
     renderTyping()
   }
 
   function renderTyping() {
     const box = $('#messages')
+    if (!box) return
     let el = $('#typing')
     const thinking = state.agents.shaniu?.status === 'thinking'
     if (thinking && !el) {
@@ -645,6 +666,7 @@
 
   function renderMeeting() {
     const box = $('#meeting')
+    if (!box) return
     const m = state.meeting
     if (!m) {
       box.hidden = true
@@ -662,11 +684,14 @@
 
   function renderTasks() {
     const list = $('#tasks')
+    if (!list) { office?.setTasks?.(state.tasks); return }
     list.innerHTML = ''
-    $('#tasks-empty').hidden = state.tasks.length > 0 || !!state.meeting
+    const empty = $('#tasks-empty')
+    if (empty) empty.hidden = state.tasks.length > 0 || !!state.meeting
     const work = state.tasks.filter((t) => t.kind !== 'verify')
     const done = work.filter((t) => t.status === 'done').length
-    $('#round').textContent = state.round ? `第 ${state.round} 个需求${state.iteration > 1 ? ` · 第 ${state.iteration} 轮` : ''} · ${done}/${work.length} 完成` : ''
+    const round = $('#round')
+    if (round) round.textContent = state.round ? `第 ${state.round} 个需求${state.iteration > 1 ? ` · 第 ${state.iteration} 轮` : ''} · ${done}/${work.length} 完成` : ''
     let iter = 1
     for (const t of state.tasks) {
       if ((t.iter || 1) !== iter) {
@@ -719,12 +744,13 @@
   }
 
   function renderBusy() {
-    $('#stop').hidden = !state.busy
-    $('#undo').hidden = !state.lastCommit || state.busy
+    const s = $('#stop'); if (s) s.hidden = !state.busy
+    const u = $('#undo'); if (u) u.hidden = !state.lastCommit || state.busy
   }
 
   function renderSuggest() {
     const box = $('#suggest')
+    if (!box) return
     box.innerHTML = ''
     for (const s of SUGGEST[state.mode === 'live' ? 'live' : 'demo']) {
       const b = document.createElement('button')
@@ -732,8 +758,8 @@
       b.className = 'chip'
       b.textContent = s
       b.addEventListener('click', () => {
-        $('#input').value = s
-        $('#input').focus()
+        const inp = $('#input')
+        if (inp) { inp.value = s; inp.focus() }
       })
       box.appendChild(b)
     }
@@ -741,6 +767,7 @@
 
   function renderBanner() {
     const el = $('#banner')
+    if (!el) return
     if (state.mode === 'demo') {
       el.innerHTML =
         '这是演示：员工都是演员，不会真的改代码。项目开源在 <a href="https://github.com/leishen8806/VirtualAiOffice" target="_blank" rel="noopener">GitHub</a>，下载后运行 <code>node bin/niuma.js 你的项目目录</code>，他们就会真的开工。'
@@ -767,8 +794,8 @@
       case 'snapshot':
         Object.assign(state, ev.state)
         setConn(state.mode === 'live' ? 'live' : state.mode)
-        $('#workdir').textContent = state.workdir || ''
-        $('#workdir').title = state.workdir || ''
+        const workdirNode = $('#workdir')
+        if (workdirNode) { workdirNode.textContent = state.workdir || ''; workdirNode.title = state.workdir || '' }
         office.setRoster(state.roster)
         for (const [id, a] of Object.entries(state.agents)) office.setAgent(id, a)
         if (state.meeting?.status === 'open') office.meeting(state.meeting)
@@ -911,23 +938,23 @@
     }
   }
 
-  $('#composer').addEventListener('submit', (e) => {
+  $('#composer')?.addEventListener('submit', (e) => {
     e.preventDefault()
     const text = $('#input').value
     $('#input').value = ''
     send(text)
   })
-  $('#input').addEventListener('keydown', (e) => {
+  $('#input')?.addEventListener('keydown', (e) => {
     // Enter sends; Shift+Enter or an IME composition (Chinese input) keeps typing.
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
       e.preventDefault()
-      $('#composer').requestSubmit()
+      $('#composer')?.requestSubmit?.()
     }
   })
-  $('#stop').addEventListener('click', () => transport && transport.stop().catch(() => {}))
+  $('#stop')?.addEventListener('click', () => transport && transport.stop().catch(() => {}))
   const openSetup = () => window.NiumaSetup?.open({ request: transport?.request || null, fake: state.mode === 'fake' })
   $('#open-setup')?.addEventListener('click', openSetup)
-  $('#team').addEventListener('click', (e) => {
+  $('#team')?.addEventListener('click', (e) => {
     if (e.target.closest('.add-staff')) openSetup()
   })
   $('#skins')?.addEventListener('click', (e) => {
@@ -943,7 +970,34 @@
     lastSkinCheck = Date.now()
     loadSkins()
   })
-  $('#undo').addEventListener('click', () => send('/撤销'))
+  $('#undo')?.addEventListener('click', () => send('/撤销'))
+
+  // ---- V2 compat bridge (test / Playwright helpers, NO runtime ownership) --------
+  // VAOAppV2 is left as a PURE stateless wrapper around the SINGLE runtime owner: this module.
+  // No DOMContentLoaded boot, no transport, no duplicate state store. Allowed per BLOCKER 1 §APP-V2 option B.
+  ;(function () {
+    const V2_CORE_ID = 'core'
+    const ShellV2 = globalThis.VAOCoreShellV2
+    const CLASSIC_IDS = ShellV2 ? ShellV2.CLASSIC_IDS : CLASSIC_IDS
+    const api = Object.freeze({
+      V2_CORE_ID,
+      CLASSIC_IDS,
+      IS_CORE: (id) => id === V2_CORE_ID,
+      IS_CLASSIC: (id) => CLASSIC_IDS.includes(String(id)),
+      setSkin: (id) => setSkin(id),
+      get currentSkinId() { return current.id },
+      get handle() { return globalThis.__coreHandleV2 || coreHandle || null },
+      _detectRunMode: () => {
+        try {
+          const qm = new URL(String(location.href)).searchParams.get('mode')
+          if (/^(demo|fake|live)$/i.test(qm || '')) return (qm || '').toLowerCase()
+        } catch {}
+        return 'live'
+      },
+    })
+    globalThis.VAOAppV2 = api
+    globalThis.setSkinV2 = api.setSkin
+  })()
 
   // ---- boot ------------------------------------------------------------------
 
