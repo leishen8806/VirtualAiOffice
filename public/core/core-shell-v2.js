@@ -203,8 +203,6 @@ html[data-theme-core] body.v2-shell-body .v2-stage-wrap > svg{display:block;min-
 html[data-theme-core] body.v2-shell-body #v2-office-stage > *{box-sizing:border-box;}
 @media (max-width: 1024px) {
   html[data-theme-core] body.v2-shell-body{grid-template-columns:0 1fr 0;}
-  html[data-theme-core] body.v2-shell-body .v2-nav-rail{display:none;}
-  html[data-theme-core] body.v2-shell-body .v2-helix-rail{display:none;}
   html[data-theme-core] body.v2-shell-body .v2-stage-wrap > svg{min-width:720px;}
 }
 html[data-theme-core] .v2-top-bar{grid-area:top;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:50;max-width:100vw;overflow-x:hidden;}
@@ -223,14 +221,18 @@ html[data-theme-core] body.v2-shell-body.v2-helix-open{--v2-helix-w:min(420px,38
 @media (max-width: 1280px){ html[data-theme-core] body.v2-shell-body{--v2-nav-w:56px;} html[data-theme-core] body.v2-shell-body:not(.v2-nav-collapsed){--v2-nav-w:168px;} }
 @media (max-width: 1024px){
   html[data-theme-core] body.v2-shell-body{grid-template-columns:0 1fr 0;grid-template-areas:"top top top" "stage stage stage";}
-  html[data-theme-core] .v2-nav-rail{display:none !important;}
-  html[data-theme-core] .v2-helix-rail{display:none !important;}
+  html[data-theme-core] .v2-nav-rail{display:flex;position:fixed;top:48px;left:0;bottom:0;z-index:90;width:min(86vw,320px);height:auto;transform:translateX(-100%);transition:transform var(--dur-base) var(--ease);box-shadow:4px 0 22px rgba(0,0,0,.35);border-right:1px solid var(--line);background:var(--panel-2);}
+  html[data-theme-core] body.v2-shell-body.v2-nav-open .v2-nav-rail{transform:translateX(0);}
+  html[data-theme-core] .v2-helix-rail{display:flex;position:fixed;top:48px;right:0;bottom:0;z-index:90;width:min(420px,94vw);height:auto;transform:translateX(100%);transition:transform var(--dur-base) var(--ease);box-shadow:-4px 0 22px rgba(0,0,0,.35);border-left:1px solid var(--line);background:var(--panel);}
+  html[data-theme-core] body.v2-shell-body.v2-helix-open .v2-helix-rail{transform:translateX(0);}
   html[data-theme-core] .v2-drawer-backdrop{display:none;position:fixed;inset:48px 0 0;background:rgba(10,16,32,.4);z-index:70;}
   html[data-theme-core] body.v2-shell-body.v2-nav-open .v2-drawer-backdrop,
   html[data-theme-core] body.v2-shell-body.v2-helix-open .v2-drawer-backdrop{display:block;}
 }
 @media (max-width: 640px){
   html[data-theme-core] body.v2-shell-body{grid-template-rows:56px 1fr 56px;padding-bottom:0;}
+  html[data-theme-core] .v2-nav-rail{top:56px;bottom:56px;width:min(86vw,320px);}
+  html[data-theme-core] .v2-helix-rail{top:56px;bottom:56px;width:min(420px,94vw);}
   html[data-theme-core] .v2-bottom-nav{display:grid !important;}
 }
 html[data-theme-core] .v2-brand{display:grid;grid-template-columns:32px 1fr;gap:0 8px;align-items:center;min-width:0;}
@@ -899,10 +901,18 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     })
 
     function setNav(on) {
-      navCollapsed = !on
+      const small = (typeof window !== 'undefined' && window.innerWidth != null && window.innerWidth <= 1024)
+      navCollapsed = small ? navCollapsed : !on
       storeSet(STORAGE_KEYS.navCollapsed, navCollapsed)
-      document.body.classList.toggle('v2-nav-collapsed', navCollapsed)
-      document.body.classList.toggle('v2-nav-open', !!(on && (typeof window !== 'undefined' && window.innerWidth != null && window.innerWidth <= 1024)))
+      if (small) {
+        // Mobile / tablet (≤1024): off-canvas drawer toggled by v2-nav-open class
+        document.body.classList.remove('v2-nav-collapsed')
+        document.body.classList.toggle('v2-nav-open', !!on)
+      } else {
+        // Desktop: collapse/expand width via v2-nav-collapsed CSS var
+        document.body.classList.remove('v2-nav-open')
+        document.body.classList.toggle('v2-nav-collapsed', !on)
+      }
     }
     function setHelix(on) {
       helixOpen = !!on
@@ -910,7 +920,14 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       document.body.classList.toggle('v2-helix-open', helixOpen)
       rerenderHelix()
     }
-    function toggleNav() { setNav(document.body.classList.contains('v2-nav-collapsed')) }
+    function toggleNav() {
+      const small = (typeof window !== 'undefined' && window.innerWidth != null && window.innerWidth <= 1024)
+      if (small) {
+        setNav(!document.body.classList.contains('v2-nav-open'))
+      } else {
+        setNav(document.body.classList.contains('v2-nav-collapsed'))
+      }
+    }
     function toggleHelix() { setHelix(!helixOpen) }
     function setActiveNav(id) {
       activeNav = id
@@ -998,6 +1015,14 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         stageWrap.addEventListener('vao-v2:task-clicked', (e) => {
           options.onPickTask?.(e.detail.taskId)
           openTaskInspector(e.detail.taskId)
+        })
+      }
+      if (typeof window.addEventListener === 'function') {
+        window.addEventListener('vao-v2:task-clicked', (e) => {
+          if (e && e.detail && e.detail.taskId) {
+            options.onPickTask?.(e.detail.taskId)
+            openTaskInspector(e.detail.taskId)
+          }
         })
       }
     }
