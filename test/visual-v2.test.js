@@ -1366,3 +1366,136 @@ test('COMP-F. [Frontend headphones below chin] neck accessory Y coordinates of h
       `Frontend headphones neck accessory Y=${y.toFixed(2)} MUST be >= CHIN=${CHIN_Y} (band/cups below chin, never on face/eyes)`)
   }
 })
+
+test('VISUAL-1. [DONE state: ONE canonical signal] DONE product render contains stateIndicator pill class, NO sk2-done-mark big badge, NO secondary prominent DONE ring/circle', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('product', { state: 'DONE' })
+  const hasPill = svg.includes('sk2-state-pill') || svg.includes('state-pill')
+  assert.ok(hasPill, 'DONE state MUST render canonical stateIndicator pill (sk2-state-pill class)')
+  const hasBigDoneMark = svg.match(/class="[^"]*sk2-done-mark[^"]*"/)
+  assert.ok(!hasBigDoneMark, 'DONE state MUST NOT render duplicate big prominent sk2-done-mark badge near face/chest')
+  const secondaryDoneRing = svg.match(/<circle[^>]*r="\s*[6-9]\d*\.?\d*"[^>]*stroke="[^"]*--done[^"]*"[^>]*fill="none"[^>]*\/>|<circle[^>]*fill="none"[^>]*stroke="[^"]*--done[^"]*"[^>]*r="\s*[6-9]\d*\.?\d*"[^>]*\/>/)
+  assert.ok(!secondaryDoneRing || secondaryDoneRing.index === -1 || secondaryDoneRing.index > svg.indexOf('sk2-state-pill') + 2000,
+    'DONE state MUST NOT also render a secondary prominent DONE circle/ring that competes with canonical pill')
+})
+
+test('VISUAL-2. [BLOCKED state one signal] BLOCKED backend render contains state pill, does NOT contain sk2-blocked-mark second ring badge', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('backend', { state: 'BLOCKED' })
+  const hasPill = svg.includes('sk2-state-pill') || svg.includes('state-pill')
+  assert.ok(hasPill, 'BLOCKED state MUST render canonical stateIndicator pill (sk2-state-pill class)')
+  const hasBigBlockedMark = svg.match(/class="[^"]*sk2-blocked-mark[^"]*"/)
+  assert.ok(!hasBigBlockedMark, 'BLOCKED state MUST NOT render duplicate big prominent sk2-blocked-mark ring/badge near face/chest')
+})
+
+test('VISUAL-3. [state pill moved off head] state pill translate center distanced from HEAD_CENTER (24,25) by >= HEAD_RADIUS+4 = 12.5px min separation (no overlap)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const ANAT = CV2.ANATOMY
+  const HEAD_CX = 24
+  const HEAD_CY = 25
+  const HEAD_R = ANAT.HEAD_RADIUS
+  assert.equal(HEAD_R, 8.5, 'ANATOMY.HEAD_RADIUS frozen = 8.5')
+  const MIN_SEP = HEAD_R + 4
+  const svg = CV2.renderSVG('product', { state: 'WORKING' })
+  const pillGroup = svg.match(/<g[^>]*class="[^"]*sk2-state-pill[^"]*"[^>]*>/)
+  assert.ok(pillGroup, 'Rendered SVG MUST contain sk2-state-pill group for canonical stateIndicator')
+  const gTag = pillGroup[0]
+  const translateMatch = gTag.match(/transform="[^"]*translate\(\s*([-0-9.]+)\s+([-0-9.]+)\s*\)[^"]*"/)
+  assert.ok(translateMatch, `sk2-state-pill group MUST carry translate(x y) transform. Got gTag="${gTag}"`)
+  const pillGx = parseFloat(translateMatch[1])
+  const pillGy = parseFloat(translateMatch[2])
+  assert.ok(Number.isFinite(pillGx) && Number.isFinite(pillGy), `pill translate coords must be finite. Got gx=${pillGx} gy=${pillGy}`)
+  const innerRect = gTag.match(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"/) || svg.substring(pillGroup.index, pillGroup.index + 400).match(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"/)
+  let pillCx, pillCy
+  if (innerRect) {
+    const rx = parseFloat(innerRect[1])
+    const ry = parseFloat(innerRect[2])
+    const rw = parseFloat(innerRect[3])
+    const rh = parseFloat(innerRect[4])
+    pillCx = pillGx + rx + rw / 2
+    pillCy = pillGy + ry + rh / 2
+  } else {
+    pillCx = pillGx + 15
+    pillCy = pillGy + 5.5
+  }
+  const dx = pillCx - HEAD_CX
+  const dy = pillCy - HEAD_CY
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  assert.ok(dist >= MIN_SEP,
+    `state pill center (${pillCx.toFixed(2)}, ${pillCy.toFixed(2)}) distance from HEAD_CENTER(${HEAD_CX},${HEAD_CY}) = ${dist.toFixed(2)}px MUST be >= ${MIN_SEP}px (HEAD_RADIUS(8.5)+4). Pill translate=(${pillGx.toFixed(2)}, ${pillGy.toFixed(2)})`)
+})
+
+test('VISUAL-4. [Accessory ownership preserved glasses inside face] architect glasses inside sk2-face-accessory subgroup (ANAT-T3 duplicate reinforcement)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('architect', { state: 'IDLE' })
+  const faceAcc = substringByClassName(svg, 'sk2-face-accessory')
+  assert.ok(faceAcc.length > 10, 'architect renderSVG MUST contain sk2-face-accessory subgroup for glasses accessory (ownership inside face)')
+  const hasGlassL = faceAcc.includes('cx="21"')
+  const hasGlassR = faceAcc.includes('cx="27"')
+  assert.ok(hasGlassL, 'sk2-face-accessory subgroup MUST contain left glass lens cx=21 (ANAT EYE_LEFT anchor)')
+  assert.ok(hasGlassR, 'sk2-face-accessory subgroup MUST contain right glass lens cx=27 (ANAT EYE_RIGHT anchor)')
+})
+
+test('VISUAL-5. [Frontend neck phones below chin y>=33.5] neck accessory Y coordinates of headphones band/cups MUST be >= CHIN=33.5 (COMP-F duplicate reinforcement)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const ANAT = CV2.ANATOMY
+  const CHIN_Y = ANAT.CHIN
+  assert.equal(CHIN_Y, 33.5, 'ANATOMY.CHIN frozen = 33.5')
+  const svg = CV2.renderSVG('frontend', { state: 'IDLE' })
+  const neckAcc = substringByClassName(svg, 'sk2-neck-accessory')
+  assert.ok(neckAcc.length > 10, 'Frontend renderSVG MUST contain sk2-neck-accessory group for neck-phones accessory')
+  const pathMs = [...neckAcc.matchAll(/<path[^>]*d="([^"]*)"[^>]*>/g)]
+  const rects = [...neckAcc.matchAll(/<rect[^>]*x="([0-9.]+)"[^>]*y="([0-9.]+)"[^>]*width="([0-9.]+)"[^>]*height="([0-9.]+)"[^>]*>/g)]
+  const numericYs = []
+  for (const pm of pathMs) {
+    const dStr = pm[1]
+    const absPairs = [...dStr.matchAll(/([MLHVCSTAQZ])\s+([-0-9.,\s]+)/g)]
+    for (const ap of absPairs) {
+      const cmd = ap[1]
+      const rest = ap[2].trim()
+      if (cmd === 'M' || cmd === 'L' || cmd === 'C' || cmd === 'S' || cmd === 'Q' || cmd === 'T' || cmd === 'A') {
+        const nums = rest.split(/[\s,]+/).map(n => parseFloat(n)).filter(n => Number.isFinite(n))
+        for (let i = 1; i < nums.length; i += 2) numericYs.push(nums[i])
+      } else if (cmd === 'V') {
+        const nums = rest.split(/[\s,]+/).map(n => parseFloat(n)).filter(n => Number.isFinite(n))
+        for (const n of nums) numericYs.push(n)
+      }
+    }
+  }
+  for (const rm of rects) {
+    const y = parseFloat(rm[2])
+    const h = parseFloat(rm[4])
+    numericYs.push(y, y + h)
+  }
+  assert.ok(numericYs.length >= 2, `sk2-neck-accessory must extract at least 2 Y coordinates. Got count=${numericYs.length}`)
+  for (const y of numericYs) {
+    assert.ok(Number.isFinite(y) && y >= CHIN_Y,
+      `Frontend neck-phones accessory Y=${y.toFixed(2)} MUST be >= CHIN=${CHIN_Y} (below chin, never on face)`)
+  }
+})
+
+test('VISUAL-6. [workstationMini weight reduced — structural scale(0.8)] frontend WORKING render ws-mini class group carries transform containing scale(0.8) regex /scale\\(0\\.8\\d*\\)/', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('frontend', { state: 'WORKING' })
+  const wsMiniIdx = svg.search(/class="[^"]*ws-mini[^"]*"/)
+  assert.ok(wsMiniIdx >= 0, 'frontend WORKING renderSVG MUST contain a workstationMini <g> with ws-mini class marker')
+  const regionStart = Math.max(0, wsMiniIdx - 120)
+  const regionEnd = Math.min(svg.length, wsMiniIdx + 160)
+  const region = svg.substring(regionStart, regionEnd)
+  const scaleMatch = region.match(/scale\(0\.8\d*\)/)
+  assert.ok(scaleMatch, `ws-mini class marker group region MUST contain scale(0.8x) transform for -15-25% visual weight reduction. ws-mini region at ${wsMiniIdx}: ...${region.substring(Math.max(0, region.length-100))}...`)
+})
+
+test('VISUAL-7. [OFFLINE state one canonical] OFFLINE output: if showIndicator true → pill only, NO offlineMark ring class; OFFLINE showIndicator=false → neither ring badge', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svgOff = CV2.renderSVG('qa', { state: 'OFFLINE' })
+  const hasOfflineRingClass = svgOff.match(/class="[^"]*sk2-offline-mark[^"]*"/) || svgOff.match(/class="[^"]*offlineMark[^"]*"/)
+  assert.ok(!hasOfflineRingClass, 'OFFLINE state MUST NOT render duplicate big prominent offlineMark ring/badge anywhere (showIndicator=false → no persistent signal; showIndicator=true → canonical pill only)')
+})

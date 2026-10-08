@@ -121,18 +121,18 @@
       </g>
       <g class="whiteboard-roadmap" transform="translate(150 156)">
         <rect x="0" y="0" width="280" height="92" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.1)" stroke-width="0.7" opacity="0.96"/>
-        <g stroke="var(--role-product)" stroke-width="0.65" fill="none" opacity="0.72">
+        <g stroke="var(--role-product)" stroke-width="0.65" fill="none" opacity="0.32">
           <rect x="16" y="16" width="56" height="20" rx="2.4"/>
           <rect x="84" y="16" width="70" height="20" rx="2.4"/>
           <rect x="168" y="16" width="88" height="20" rx="2.4"/>
         </g>
-        <g opacity="0.68">
+        <g opacity="0.30">
           <rect x="16" y="50" width="44" height="10" rx="2" fill="var(--role-product)" opacity="0.5"/>
           <rect x="68" y="50" width="56" height="10" rx="2" fill="var(--role-frontend)" opacity="0.46"/>
           <rect x="134" y="50" width="50" height="10" rx="2" fill="var(--role-architect)" opacity="0.46"/>
           <rect x="194" y="50" width="60" height="10" rx="2" fill="var(--role-qa)" opacity="0.44"/>
         </g>
-        <g font-family="var(--sans),system-ui" font-size="5.8" fill="var(--text-muted)" opacity="0.58">
+        <g font-family="var(--sans),system-ui" font-size="5.8" fill="var(--text-muted)" opacity="0.30">
           <text x="16" y="80">Now</text><text x="84" y="80">Next 2w</text><text x="168" y="80">This Q</text>
         </g>
       </g>
@@ -155,14 +155,14 @@
       </g>
       <g class="architecture-wall" transform="translate(460 220)">
         <rect x="0" y="0" width="96" height="150" rx="4" fill="color-mix(in srgb,var(--role-architect) 6%,transparent)" stroke="color-mix(in srgb,var(--role-architect) 32%,transparent)" stroke-width="0.8" opacity="0.9"/>
-        <g stroke="var(--role-architect)" stroke-width="0.6" fill="none" opacity="0.8">
+        <g stroke="var(--role-architect)" stroke-width="0.6" fill="none" opacity="0.34">
           <rect x="10" y="14" width="28" height="26"/>
           <rect x="46" y="14" width="40" height="26"/>
           <rect x="10" y="50" width="76" height="24"/>
           <circle cx="48" cy="96" r="14"/>
           <path d="M10 124 L26 124 L34 140 L62 140 L70 124 L86 124"/>
         </g>
-        <g font-family="var(--sans),system-ui" font-size="4.8" fill="var(--text-muted)" opacity="0.54">
+        <g font-family="var(--sans),system-ui" font-size="4.8" fill="var(--text-muted)" opacity="0.30">
           <text x="10" y="12">System Topology</text>
         </g>
       </g>
@@ -251,13 +251,13 @@
       </g>
       <g class="be-topology-board" transform="translate(470 640)">
         <rect x="0" y="0" width="82" height="42" rx="3.5" fill="color-mix(in srgb,var(--role-backend) 6%,transparent)" stroke="color-mix(in srgb,var(--role-backend) 28%,transparent)" stroke-width="0.75" opacity="0.9"/>
-        <g stroke="var(--role-backend)" stroke-width="0.7" fill="none" opacity="0.86">
+        <g stroke="var(--role-backend)" stroke-width="0.7" fill="none" opacity="0.34">
           <circle cx="22" cy="13" r="6.4"/>
           <circle cx="58" cy="13" r="6.4"/>
           <circle cx="40" cy="30" r="6.4"/>
           <path d="M27 13 L51 13 M26.8 18.6 L34.6 24.4 M53.2 18.6 L45.4 24.4"/>
         </g>
-        <g font-family="var(--sans),system-ui" font-size="4.4" fill="var(--text-muted)" opacity="0.6">
+        <g font-family="var(--sans),system-ui" font-size="4.4" fill="var(--text-muted)" opacity="0.30">
           <text x="16" y="6">Service Mesh</text>
         </g>
       </g>
@@ -315,8 +315,8 @@
       </g>
       <g class="device-test-screen" transform="translate(1216 244)">
         <rect x="0" y="0" width="54" height="96" rx="7" fill="#1a1f2c" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
-        <rect x="3.5" y="8" width="47" height="80" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.14)" stroke-width="0.65"/>
-        <g transform="translate(7 12)" opacity="0.88">
+        <rect x="3.5" y="8" width="47" height="80" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.14)" stroke-width="0.65" opacity="0.75"/>
+        <g transform="translate(7 12)" opacity="0.72">
           <rect x="0" y="0" width="40" height="8" rx="1.5" fill="color-mix(in srgb,var(--role-qa) 25%,transparent)"/>
           <rect x="0" y="14" width="40" height="6" rx="1.1" fill="rgba(0,0,0,0.07)"/>
           <rect x="0" y="24" width="40" height="6" rx="1.1" fill="rgba(0,0,0,0.06)" opacity="0.8"/>
@@ -473,43 +473,43 @@
           <line x1="0" y1="96" x2="120" y2="96"/>
         </g>
         <g transform="translate(6 6)">
-          <rect x="0" y="0" width="8" height="22" fill="var(--role-product)" opacity="0.65"/>
-          <rect x="9" y="0" width="6.5" height="22" fill="var(--role-architect)" opacity="0.7"/>
-          <rect x="17" y="0" width="9" height="22" fill="var(--role-frontend)" opacity="0.65"/>
-          <rect x="28" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.72"/>
-          <rect x="37" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.62"/>
-          <rect x="47" y="0" width="8" height="22" fill="var(--role-reviewer)" opacity="0.7"/>
-          <rect x="57" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.78"/>
-          <rect x="69" y="0" width="7" height="22" fill="var(--role-product)" opacity="0.55"/>
-          <rect x="78" y="0" width="9" height="22" fill="var(--role-architect)" opacity="0.6"/>
-          <rect x="89" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.58"/>
-          <rect x="99" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.6"/>
+          <rect x="0" y="0" width="8" height="22" fill="var(--role-product)" opacity="0.28"/>
+          <rect x="9" y="0" width="6.5" height="22" fill="var(--role-architect)" opacity="0.30"/>
+          <rect x="17" y="0" width="9" height="22" fill="var(--role-frontend)" opacity="0.28"/>
+          <rect x="28" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.30"/>
+          <rect x="37" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.28"/>
+          <rect x="47" y="0" width="8" height="22" fill="var(--role-reviewer)" opacity="0.30"/>
+          <rect x="57" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.32"/>
+          <rect x="69" y="0" width="7" height="22" fill="var(--role-product)" opacity="0.26"/>
+          <rect x="78" y="0" width="9" height="22" fill="var(--role-architect)" opacity="0.28"/>
+          <rect x="89" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.26"/>
+          <rect x="99" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.28"/>
         </g>
         <g transform="translate(6 38)">
-          <rect x="0" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.55"/>
-          <rect x="12" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.6"/>
-          <rect x="22" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.68"/>
-          <rect x="33" y="0" width="6.5" height="22" fill="var(--role-product)" opacity="0.6"/>
-          <rect x="42" y="0" width="10" height="22" fill="var(--role-architect)" opacity="0.58"/>
-          <rect x="54" y="0" width="8" height="22" fill="var(--role-frontend)" opacity="0.62"/>
-          <rect x="64" y="0" width="7" height="22" fill="var(--role-reviewer)" opacity="0.6"/>
-          <rect x="73" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.72"/>
-          <rect x="84" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.55"/>
-          <rect x="94" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.6"/>
+          <rect x="0" y="0" width="10" height="22" fill="var(--role-backend)" opacity="0.26"/>
+          <rect x="12" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.28"/>
+          <rect x="22" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.30"/>
+          <rect x="33" y="0" width="6.5" height="22" fill="var(--role-product)" opacity="0.28"/>
+          <rect x="42" y="0" width="10" height="22" fill="var(--role-architect)" opacity="0.28"/>
+          <rect x="54" y="0" width="8" height="22" fill="var(--role-frontend)" opacity="0.28"/>
+          <rect x="64" y="0" width="7" height="22" fill="var(--role-reviewer)" opacity="0.28"/>
+          <rect x="73" y="0" width="9" height="22" fill="var(--role-docs)" opacity="0.30"/>
+          <rect x="84" y="0" width="7.5" height="22" fill="var(--role-backend)" opacity="0.26"/>
+          <rect x="94" y="0" width="8.5" height="22" fill="var(--role-qa)" opacity="0.28"/>
         </g>
         <g transform="translate(6 70)">
-          <rect x="0" y="0" width="7.5" height="22" fill="var(--role-architect)" opacity="0.55"/>
-          <rect x="9" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.62"/>
-          <rect x="21" y="0" width="7" height="22" fill="var(--role-frontend)" opacity="0.58"/>
-          <rect x="30" y="0" width="9" height="22" fill="var(--role-product)" opacity="0.64"/>
-          <rect x="41" y="0" width="8" height="22" fill="var(--role-backend)" opacity="0.6"/>
-          <rect x="51" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.62"/>
-          <rect x="61" y="0" width="10" height="22" fill="var(--role-reviewer)" opacity="0.58"/>
-          <rect x="73" y="0" width="7.5" height="22" fill="var(--role-docs)" opacity="0.7"/>
-          <rect x="83" y="0" width="8.5" height="22" fill="var(--role-architect)" opacity="0.56"/>
-          <rect x="94" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.6"/>
+          <rect x="0" y="0" width="7.5" height="22" fill="var(--role-architect)" opacity="0.26"/>
+          <rect x="9" y="0" width="10" height="22" fill="var(--role-docs)" opacity="0.28"/>
+          <rect x="21" y="0" width="7" height="22" fill="var(--role-frontend)" opacity="0.26"/>
+          <rect x="30" y="0" width="9" height="22" fill="var(--role-product)" opacity="0.28"/>
+          <rect x="41" y="0" width="8" height="22" fill="var(--role-backend)" opacity="0.28"/>
+          <rect x="51" y="0" width="7.5" height="22" fill="var(--role-qa)" opacity="0.28"/>
+          <rect x="61" y="0" width="10" height="22" fill="var(--role-reviewer)" opacity="0.26"/>
+          <rect x="73" y="0" width="7.5" height="22" fill="var(--role-docs)" opacity="0.30"/>
+          <rect x="83" y="0" width="8.5" height="22" fill="var(--role-architect)" opacity="0.26"/>
+          <rect x="94" y="0" width="7.5" height="22" fill="var(--role-frontend)" opacity="0.28"/>
         </g>
-        <g transform="translate(6 102)" opacity="0.9">
+        <g transform="translate(6 102)" opacity="0.34">
           <rect x="0" y="0" width="108" height="18" rx="2.5" fill="color-mix(in srgb,var(--role-docs) 18%,transparent)" stroke="color-mix(in srgb,var(--role-docs) 34%,transparent)" stroke-width="0.6"/>
           <text x="54" y="13" font-size="5.4" text-anchor="middle" fill="var(--role-docs)" opacity="0.82" font-weight="700" style="font-family:var(--sans),system-ui;">KNOWLEDGE VAULT</text>
         </g>
@@ -520,17 +520,17 @@
         <line x1="58" y1="0" x2="58" y2="112" stroke="rgba(0,0,0,0.12)" stroke-width="0.7"/>
         <g transform="translate(8 12)" font-family="var(--sans),system-ui" font-size="5.6" fill="var(--text)">
           <rect x="0" y="0" width="40" height="6" rx="2" fill="color-mix(in srgb,var(--role-docs) 26%,transparent)"/>
-          <text x="0" y="16" opacity="0.78">Onboarding</text>
-          <text x="0" y="26" opacity="0.6">API Guide</text>
-          <text x="0" y="36" opacity="0.6">SOP 048</text>
-          <text x="0" y="46" opacity="0.6">Handbook</text>
-          <rect x="0" y="56" width="40" height="6" rx="2" fill="rgba(0,0,0,0.06)" opacity="0.7"/>
-          <text x="0" y="76" opacity="0.58">Minutes …</text>
-          <text x="0" y="86" opacity="0.5">Retro notes</text>
+          <text x="0" y="16" opacity="0.32">Onboarding</text>
+          <text x="0" y="26" opacity="0.30">API Guide</text>
+          <text x="0" y="36" opacity="0.30">SOP 048</text>
+          <text x="0" y="46" opacity="0.30">Handbook</text>
+          <rect x="0" y="56" width="40" height="6" rx="2" fill="rgba(0,0,0,0.06)" opacity="0.30"/>
+          <text x="0" y="76" opacity="0.28">Minutes …</text>
+          <text x="0" y="86" opacity="0.26">Retro notes</text>
         </g>
         <g transform="translate(66 12)">
           <rect x="0" y="0" width="42" height="6" rx="2" fill="color-mix(in srgb,var(--role-docs) 22%,transparent)"/>
-          <g fill="rgba(0,0,0,0.58)" opacity="0.72">
+          <g fill="rgba(0,0,0,0.58)" opacity="0.32">
             <rect x="0" y="14" width="44" height="2.8" rx="1.2"/>
             <rect x="0" y="20" width="38" height="2.8" rx="1.2" opacity="0.86"/>
             <rect x="0" y="26" width="42" height="2.8" rx="1.2" opacity="0.76"/>
@@ -539,20 +539,20 @@
             <rect x="0" y="52" width="44" height="2.8" rx="1.2"/>
             <rect x="0" y="58" width="36" height="2.8" rx="1.2" opacity="0.8"/>
             <rect x="0" y="64" width="26" height="2.8" rx="1.2" opacity="0.7"/>
-            <rect x="0" y="78" width="16" height="6" rx="2.5" fill="var(--role-docs)" opacity="0.58"/>
+            <rect x="0" y="78" width="16" height="6" rx="2.5" fill="var(--role-docs)" opacity="0.28"/>
           </g>
         </g>
       </g>
       <g class="doc-reading-screen" transform="translate(410 778)" opacity="0.94">
         <rect x="0" y="0" width="116" height="112" rx="4" fill="rgba(255,255,255,0.58)" stroke="rgba(0,0,0,0.08)" stroke-width="0.75"/>
-        <g stroke="var(--role-docs)" stroke-width="0.75" fill="none" opacity="0.86">
+        <g stroke="var(--role-docs)" stroke-width="0.75" fill="none" opacity="0.34">
           <rect x="14" y="16" width="36" height="22"/>
           <rect x="58" y="16" width="46" height="22"/>
           <path d="M18 24 h28 M18 29 h20 M62 24 h36 M62 29 h30"/>
           <circle cx="44" cy="60" r="8"/>
           <path d="M18 82 L56 82 L66 96 L90 96 L100 82"/>
         </g>
-        <g font-family="var(--sans),system-ui" font-size="5" fill="var(--text-muted)" opacity="0.6" transform="translate(14 10)">
+        <g font-family="var(--sans),system-ui" font-size="5" fill="var(--text-muted)" opacity="0.30" transform="translate(14 10)">
           <text x="0" y="0">Architecture · WIKI</text>
         </g>
       </g>
@@ -663,37 +663,37 @@
         <rect x="0" y="0" width="360" height="116" rx="6" fill="url(#meeting-board-frame)" stroke="rgba(0,0,0,0.12)" stroke-width="0.8"/>
         <rect x="4" y="4" width="352" height="108" rx="4" fill="url(#meeting-board-glass)"/>
         <g transform="translate(16 14)">
-          <g transform="translate(0 0)" opacity="0.56">
+          <g transform="translate(0 0)" opacity="0.30">
             <rect x="0" y="0" width="72" height="5" rx="2.2" fill="var(--orchestrator)" opacity="0.32"/>
             <text x="0" y="18" font-size="6.8" font-weight="700" fill="var(--text)" style="font-family:var(--sans),system-ui;letter-spacing:1.2;">TEAM CADENCE</text>
           </g>
-          <g transform="translate(0 28)" fill="none" stroke="var(--text-muted)" stroke-width="0.55" opacity="0.48">
+          <g transform="translate(0 28)" fill="none" stroke="var(--text-muted)" stroke-width="0.55" opacity="0.28">
             <line x1="0" y1="0" x2="328" y2="0"/>
             <line x1="66" y1="0" x2="66" y2="68"/>
             <line x1="0" y1="18" x2="328" y2="18"/>
             <line x1="0" y1="36" x2="328" y2="36"/>
             <line x1="0" y1="54" x2="328" y2="54"/>
           </g>
-          <g transform="translate(8 32)" font-family="var(--sans),system-ui" font-size="5.8" fill="var(--text-muted)" opacity="0.52">
-            <text x="0" y="0" fill="var(--role-product)" opacity="0.72">Mon</text>
-            <text x="74" y="0" opacity="0.62">Standup</text>
-            <text x="172" y="0" opacity="0.62">Grooming</text>
-            <text x="258" y="0" fill="var(--role-reviewer)" opacity="0.72">Review</text>
-            <text x="0" y="18" fill="var(--role-frontend)" opacity="0.72">Wed</text>
-            <text x="74" y="18" opacity="0.62">Design Sync</text>
-            <text x="172" y="18" fill="var(--orchestrator)" opacity="0.68">Helix Sync</text>
-            <text x="258" y="18" opacity="0.62">Demo Prep</text>
-            <text x="0" y="36" fill="var(--role-backend)" opacity="0.72">Fri</text>
-            <text x="74" y="36" opacity="0.62">CI Gates</text>
-            <text x="172" y="36" fill="var(--role-qa)" opacity="0.72">QA Signoff</text>
-            <text x="258" y="36" fill="var(--done)" opacity="0.72">Ship ✦</text>
+          <g transform="translate(8 32)" font-family="var(--sans),system-ui" font-size="5.8" fill="var(--text-muted)" opacity="0.30">
+            <text x="0" y="0" fill="var(--role-product)" opacity="0.32">Mon</text>
+            <text x="74" y="0" opacity="0.30">Standup</text>
+            <text x="172" y="0" opacity="0.30">Grooming</text>
+            <text x="258" y="0" fill="var(--role-reviewer)" opacity="0.32">Review</text>
+            <text x="0" y="18" fill="var(--role-frontend)" opacity="0.32">Wed</text>
+            <text x="74" y="18" opacity="0.30">Design Sync</text>
+            <text x="172" y="18" fill="var(--orchestrator)" opacity="0.30">Helix Sync</text>
+            <text x="258" y="18" opacity="0.30">Demo Prep</text>
+            <text x="0" y="36" fill="var(--role-backend)" opacity="0.32">Fri</text>
+            <text x="74" y="36" opacity="0.30">CI Gates</text>
+            <text x="172" y="36" fill="var(--role-qa)" opacity="0.32">QA Signoff</text>
+            <text x="258" y="36" fill="var(--done)" opacity="0.32">Ship ✦</text>
           </g>
-          <g transform="translate(250 -2)" opacity="0.68">
+          <g transform="translate(250 -2)" opacity="0.30">
             <circle cx="0" cy="0" r="4.8" fill="var(--working)" opacity="0.22"/>
             <circle cx="0" cy="0" r="2.6" fill="var(--working)"/>
           </g>
         </g>
-        <g transform="translate(180 104)" font-family="var(--sans),system-ui" font-size="5.4" fill="var(--text-muted)" opacity="0.38" text-anchor="middle">
+        <g transform="translate(180 104)" font-family="var(--sans),system-ui" font-size="5.4" fill="var(--text-muted)" opacity="0.22" text-anchor="middle">
           <text x="0" y="0">Open Collaboration Space · 共享协作板</text>
         </g>
       </g>
@@ -813,7 +813,7 @@
       const kind = seatKinds[roleId] || (roleId === 'helix' ? 'system' : (['product','qa','reviewer'].includes(roleId) ? 'human' : 'ai'))
       const memberName = seatMembers[roleId]
       const model = seatModels[roleId]
-      const scale = roleId === 'helix' ? 2.2 : 1.75
+      const scale = roleId === 'helix' ? 2.42 : 1.97
       figureMounts[roleId] = CV2
         ? CV2.renderSVG(roleId, { state, kind, memberName, model, angle: pos.angle, scale })
         : `<text x="${pos.cx}" y="${pos.cy}" font-size="10" fill="var(--text-muted)">${roleId}</text>`
@@ -945,7 +945,7 @@
         if (!CV2) return
         const p = ZONE_POSITIONS[roleId] || {}
         const kind = seatKinds[roleId] || (roleId === 'helix' ? 'system' : (['product','qa','reviewer'].includes(roleId) ? 'human' : 'ai'))
-        const scale = roleId === 'helix' ? 2.2 : 1.75
+        const scale = roleId === 'helix' ? 2.42 : 1.97
         const newSVG = CV2.renderSVG(roleId, { state: stateId, kind, memberName: seatMembers[roleId], model: seatModels[roleId], angle: p.angle || 0, scale })
         seatStates[roleId] = stateId
         const wrapperClassKey = 'state-' + ((S?.STATES?.[stateId]?.key) || stateId.toLowerCase().replace(/_/g, '-'))

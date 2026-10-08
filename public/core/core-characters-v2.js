@@ -197,9 +197,9 @@
       neck: '',
       torso: `
         <g class="clipboard-badge" data-role="product">
-          <rect x="26.5" y="43" width="7.5" height="11" rx="1.2" fill="#1a1f2b" stroke="#0c0f16" stroke-width="0.5"/>
-          <path d="M28.5 45 v3.2 l1.2 -1 l1.2 1 V45" fill="var(--role-product)"/>
-          <path d="M28 51 h4.5 M28 53 h3.2" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
+          <rect x="27.2" y="44" width="5.6" height="8.5" rx="1.2" fill="#1a1f2b" stroke="#0c0f16" stroke-width="0.5"/>
+          <path d="M28.7 45.6 v2.5 l0.9 -0.8 l0.9 0.8 V45.6" fill="var(--role-product)"/>
+          <path d="M28.3 51.2 h3.4 M28.3 52.8 h2.4" stroke="#ffffff" stroke-width="0.6" opacity="0.9"/>
         </g>`,
       handLeft: '',
       handRight: '',
@@ -234,10 +234,10 @@
       face: '',
       neck: '',
       torso: `
-        <path d="M19 37 L29 37 L26.2 48 L21.8 48 Z" fill="none" stroke="#1a2030" stroke-width="0.9" stroke-linejoin="round"/>
-        <ellipse cx="24" cy="50" rx="4.2" ry="1.7" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
-        <path d="M19.8 50 v4.5 q0 1.8 4.2 1.8 t4.2 -1.8 v-4.5" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
-        <ellipse cx="24" cy="56.3" rx="4.2" ry="1.7" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>`,
+        <path d="M19 37 L29 37 L26.1 47 L21.9 47 Z" fill="none" stroke="#1a2030" stroke-width="0.9" stroke-linejoin="round"/>
+        <ellipse cx="24" cy="48.5" rx="3.1" ry="1.25" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
+        <path d="M20.9 48.5 v4 q0 1.3 3.1 1.3 t3.1 -1.3 v-4" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>
+        <ellipse cx="24" cy="54" rx="3.1" ry="1.25" fill="none" stroke="var(--role-backend)" stroke-width="1.1"/>`,
       handLeft: '',
       handRight: '',
       desk: '',
@@ -364,19 +364,13 @@
       armsGroup = `
         <path d="M12 44 q-3 7 2 14 q5 -1 9 -7" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
         <path d="M36 44 q3 7 -2 14 q-5 -1 -9 -7" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
-      extraMarkers = `<g class="sk2-blocked-pose" transform="translate(24 52)" opacity="0.82">
-        <circle r="5.4" fill="color-mix(in srgb,var(--blocked) 14%,var(--panel))" stroke="var(--blocked)" stroke-width="0.85"/>
-        <path d="M-3.2 -2.2 L3.2 2.2 M3.2 -2.2 L-3.2 2.2" stroke="var(--blocked)" stroke-width="1.3" stroke-linecap="round"/>
-      </g>`
+      extraMarkers = ''
     } else if (st === 'DONE') {
       torsoStyle = 'transform:translateY(-0.6px) scale(1.012);'
       armsGroup = `
         <path d="M11 45 q0 6 3 10" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-l"/>
         <path d="M37 43 q1.5 -8 8 -10 q2.2 0 2.5 3 q0 3 -3 4" fill="none" stroke="var(--blazer)" stroke-width="4.8" stroke-linecap="round" class="sk2-arm sk2-arm-r"/>`
-      extraMarkers = `<g class="sk2-done-gesture" transform="translate(48 28)" opacity="0.95">
-        <circle r="6" fill="color-mix(in srgb,var(--done) 20%,var(--panel))" stroke="var(--done)" stroke-width="0.9"/>
-        <path d="M-3.2 0.6 L-1 2.8 L3.4 -2" stroke="var(--done)" stroke-width="1.6" fill="none" stroke-linejoin="round"/>
-      </g>`
+      extraMarkers = ''
     } else if (st === 'OFFLINE') {
       torsoStyle = 'filter:grayscale(0.6) opacity(0.58);'
       headStyle = 'transform:translateY(2.4px) rotate(-6deg);transform-origin:24px 25px;opacity:0.65;'
@@ -422,7 +416,7 @@
     const key = S.STATES?.[state]?.key || state.toLowerCase().replace(/_/g, '-')
     const color = `var(--${key})`
     const gly = S.stateGlyphG(state, 9.6, color) || ''
-    return `<g class="sk2-state-pill" transform="translate(1 -4)" opacity="0.88">
+    return `<g class="sk2-state-pill" transform="translate(-12 62)" opacity="0.88">
       <rect x="0" y="0" width="30" height="11" rx="5.5" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.6" opacity="0.92"/>
       <g transform="translate(3.5 0.7)" fill="${color}">${gly}</g>
       <text x="15" y="8.2" font-size="6.6" fill="${color}" font-weight="700" style="font-family:var(--sans),system-ui;" text-anchor="middle" opacity="0.92">${S.STATES?.[state]?.zh || state}</text>
@@ -441,8 +435,8 @@
       <rect x="1.2" y="1.2" width="${w-2.4}" height="${h-2.4}" rx="1" fill="color-mix(in srgb, ${accent} ${active ? 22 : 10}%, #ffffff18)"/>
       ${content || ''}
     </g>`
-    if (ws === 'dual-monitor') return `<g class="ws-mini ws-dual">${monitor(0, 18, 12, '<rect x="3" y="3.5" width="5" height="1.5" rx="0.6" fill="#fff" opacity="0.85"/><rect x="3" y="6.5" width="12" height="1" rx="0.5" fill="#fff" opacity="0.55"/><rect x="3" y="8.5" width="10" height="1" rx="0.5" fill="#fff" opacity="0.45"/>')}${monitor(20, 18, 12, `<g stroke="${accent}" stroke-width="0.7" fill="none" opacity="0.85"><path d="M25 4 L29 4 L30 7 L26.5 9.5 L24 7 Z"/><circle cx="34" cy="6.5" r="1.6"/></g>`)}</g>`
-    if (ws === 'server-rack') return `<g class="ws-mini ws-server" opacity="${op}">
+    if (ws === 'dual-monitor') return `<g class="ws-mini ws-dual" transform="translate(4.2 3.6) scale(0.80)">${monitor(0, 18, 12, '<rect x="3" y="3.5" width="5" height="1.5" rx="0.6" fill="#fff" opacity="0.85"/><rect x="3" y="6.5" width="12" height="1" rx="0.5" fill="#fff" opacity="0.55"/><rect x="3" y="8.5" width="10" height="1" rx="0.5" fill="#fff" opacity="0.45"/>')}${monitor(20, 18, 12, `<g stroke="${accent}" stroke-width="0.7" fill="none" opacity="0.85"><path d="M25 4 L29 4 L30 7 L26.5 9.5 L24 7 Z"/><circle cx="34" cy="6.5" r="1.6"/></g>`)}</g>`
+    if (ws === 'server-rack') return `<g class="ws-mini ws-server" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="0" width="42" height="16" rx="2" fill="rgba(255,255,255,0.55)" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>
       <line x1="0" y1="5" x2="42" y2="5" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
       <line x1="0" y1="10.5" x2="42" y2="10.5" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
@@ -450,20 +444,20 @@
       <circle cx="4" cy="7.8" r="0.9" fill="var(--working)" opacity="0.65"/><rect x="9" y="7.2" width="12" height="1.6" rx="0.7" fill="var(--working)" opacity="0.6"/>
       <circle cx="4" cy="13" r="0.9" fill="var(--done)" opacity="0.55"/><rect x="9" y="12.4" width="14" height="1.6" rx="0.7" fill="var(--done)" opacity="0.5"/>
     </g>`
-    if (ws === 'blueprint-desk') return `<g class="ws-mini ws-blueprint" opacity="${op}">
+    if (ws === 'blueprint-desk') return `<g class="ws-mini ws-blueprint" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="4" width="42" height="12" rx="2" fill="rgba(255,255,255,0.6)" stroke="rgba(0,0,0,0.08)" stroke-width="0.6"/>
       <g stroke="${accent}" stroke-width="0.65" fill="none" opacity="0.85">
         <rect x="4" y="7" width="10" height="6"/><rect x="16" y="6" width="14" height="8"/><circle cx="37" cy="10" r="2.4"/>
       </g>
     </g>`
-    if (ws === 'whiteboard') return `<g class="ws-mini ws-whiteboard" opacity="${op}">
+    if (ws === 'whiteboard') return `<g class="ws-mini ws-whiteboard" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="0" width="42" height="18" rx="2" fill="#ffffff" stroke="rgba(0,0,0,0.12)" stroke-width="0.6"/>
       <g stroke="${accent}" stroke-width="0.65" fill="none" opacity="0.85">
         <rect x="4" y="3" width="10" height="5" rx="1"/><rect x="16" y="3" width="12" height="5" rx="1"/><rect x="30" y="3" width="8" height="5" rx="1"/>
       </g>
       <g opacity="0.7"><rect x="4" y="11" width="10" height="2.2" rx="0.8" fill="var(--role-product)"/><rect x="16" y="11" width="12" height="2.2" rx="0.8" fill="var(--role-frontend)" opacity="0.75"/></g>
     </g>`
-    if (ws === 'test-bench') return `<g class="ws-mini ws-test" opacity="${op}">
+    if (ws === 'test-bench') return `<g class="ws-mini ws-test" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="2" width="42" height="14" rx="2" fill="rgba(255,255,255,0.7)" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>
       <rect x="3" y="6" width="7" height="6" rx="1" fill="color-mix(in srgb,var(--done) 22%,transparent)" stroke="var(--done)" stroke-width="0.55"/>
       <path d="M5 9 L6.5 10.5 L9 8" stroke="var(--done)" stroke-width="1.2" fill="none"/>
@@ -471,14 +465,14 @@
       <path d="M13.5 8 L17.5 12 M17.5 8 L13.5 12" stroke="var(--blocked)" stroke-width="1"/>
       <rect x="21" y="6" width="18" height="6" rx="1" fill="rgba(0,0,0,0.04)" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
     </g>`
-    if (ws === 'review-seat') return `<g class="ws-mini ws-review" opacity="${op}">
+    if (ws === 'review-seat') return `<g class="ws-mini ws-review" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="2" width="20" height="14" rx="2" fill="rgba(255,255,255,0.7)" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>
       <rect x="22" y="2" width="20" height="14" rx="2" fill="rgba(255,255,255,0.7)" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>
       <line x1="42" y1="2" x2="42" y2="16" stroke="rgba(0,0,0,0.15)" stroke-width="0.6"/>
       <path d="M3 7 l1.5 1.6 l-3 -3" stroke="var(--done)" stroke-width="1" fill="none" transform="translate(0 1)"/>
       <path d="M25 7 L29 11 L29 7 L25 11" stroke="var(--blocked)" stroke-width="1"/>
     </g>`
-    if (ws === 'bookshelf') return `<g class="ws-mini ws-books" opacity="${op}">
+    if (ws === 'bookshelf') return `<g class="ws-mini ws-books" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <rect x="0" y="2" width="42" height="7" rx="1.5" fill="rgba(0,0,0,0.04)" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
       <rect x="2" y="4" width="4" height="4" fill="var(--role-product)" opacity="0.7"/>
       <rect x="7" y="4" width="3" height="4" fill="var(--role-architect)" opacity="0.72"/>
@@ -488,13 +482,13 @@
       <rect x="26" y="4" width="4.5" height="4" fill="var(--role-reviewer)" opacity="0.72"/>
       <rect x="31.5" y="4" width="5" height="4" fill="var(--role-docs)" opacity="0.78"/>
     </g>`
-    if (ws === 'command-hub') return `<g class="ws-mini ws-helix" opacity="${op}">
+    if (ws === 'command-hub') return `<g class="ws-mini ws-helix" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
       <path d="M-2 14 Q24 -4 50 14" fill="color-mix(in srgb,var(--orchestrator) 22%,var(--panel))" stroke="color-mix(in srgb,var(--orchestrator) 55%,var(--line))" stroke-width="0.9"/>
       ${monitor(5, 9, 8, `<circle cx="9.5" cy="4.2" r="1.5" fill="none" stroke="var(--orchestrator)" stroke-width="0.7"/>`)}
       ${monitor(17, 12, 9, `<path d="M20 4 L22 4 L23 7 L25 4 L27 7 L28 4" stroke="var(--orchestrator)" stroke-width="0.7" fill="none"/>`)}
       ${monitor(32, 10, 8, `<rect x="35" y="4.5" width="4" height="1.2" rx="0.5" fill="#fff" opacity="0.75"/>`)}
     </g>`
-    return `<g class="ws-mini ws-default"><rect x="0" y="5" width="42" height="11" rx="2" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.6"/></g>`
+    return `<g class="ws-mini ws-default" transform="translate(4.2 3.6) scale(0.80)"><rect x="0" y="5" width="42" height="11" rx="2" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.6"/></g>`
   }
 
   const CSS_INJECTED_KEY = 'core-chars-v2-css'
@@ -553,7 +547,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     injectStyles()
     const r = role(roleId)
     if (!r) return `<g class="sk2-unknown char-v2 char-v2-unknown" data-role="unknown"><rect x="0" y="0" width="48" height="72" rx="6" fill="var(--panel-2)" stroke="var(--line)"/><text x="24" y="40" text-anchor="middle" font-size="10" fill="var(--text-muted)">?</text></g>`
-    const scale = opts.scale || (roleId === 'helix' ? 1.85 : 1.45)
+    const scale = opts.scale || (roleId === 'helix' ? 2.42 : 1.97)
     const angle = opts.angle || 0
     const state = opts.state || 'IDLE'
     const stateCls = 'sk2-state-' + (state.toLowerCase().replace(/_/g, '-'))
@@ -572,37 +566,15 @@ html[data-doc-hidden="true"] .sk2-arm-r {
     const wsScale = Math.min(1.12, Math.max(1.02, scale * 0.82))
     const ws = workstationMini(r, state)
     const deskState = st === 'OFFLINE'
-      ? `<rect x="3" y="58" width="42" height="14" rx="4" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.8" opacity="0.55"/>`
+      ? `<rect x="3" y="59" width="42" height="15" rx="4" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.8" opacity="0.55"/>`
       : `<g class="sk2-desk">
-           <rect x="3" y="58" width="42" height="14" rx="4" fill="color-mix(in srgb,var(--panel) 95%,transparent)" stroke="var(--line)" stroke-width="0.8"/>
+           <rect x="3" y="59" width="42" height="15" rx="4" fill="color-mix(in srgb, var(--panel-2) 65%, rgba(30,34,48,1))" stroke="var(--line)" stroke-width="0.8"/>
            <rect x="4" y="57" width="40" height="4" rx="2" fill="color-mix(in srgb,var(--panel-2) 85%,transparent)" stroke="rgba(0,0,0,0.06)" stroke-width="0.6"/>
          </g>`
     const glow = (st === 'WORKING' || st === 'THINKING' || st === 'REVIEWING')
       ? `<rect x="2" y="56" width="44" height="16" rx="5" fill="none" stroke="color-mix(in srgb,${ringColor} 55%,transparent)" stroke-width="0.7" opacity="0.6" class="reduced-motion-hidden"/>`
       : ''
-    const blockedMarker = st === 'BLOCKED'
-      ? `<g class="sk2-blocked-mark" transform="translate(36 18)">
-           <circle r="7" fill="color-mix(in srgb,var(--blocked) 16%,var(--panel))" stroke="var(--blocked)" stroke-width="1"/>
-           <path d="M-3.5 -3.5 L3.5 3.5 M3.5 -3.5 L-3.5 3.5" stroke="var(--blocked)" stroke-width="1.6" stroke-linecap="round"/>
-         </g>`
-      : ''
-    const doneCheck = st === 'DONE'
-      ? `<g class="sk2-done-mark" transform="translate(36 18)">
-           <circle r="7" fill="color-mix(in srgb,var(--done) 18%,var(--panel))" stroke="var(--done)" stroke-width="1"/>
-           <path d="M-3.5 0.5 L-1 3 L4 -2.5" stroke="var(--done)" stroke-width="1.7" fill="none" stroke-linejoin="round"/>
-         </g>`
-      : ''
-    const waitHand = st === 'WAITING_HUMAN'
-      ? `<g class="sk2-wait-mark" transform="translate(36 18)">
-           <circle r="7" fill="color-mix(in srgb,var(--waiting-human) 18%,var(--panel))" stroke="var(--waiting-human)" stroke-width="1"/>
-           <path d="M-4 3 V-3 Q-4 -4 -2.5 -4 Q-1 -4 -1 -3 V0 M-1 -4 Q1 -4 1 -3 V0 M1 -4 Q2.5 -4 2.5 -3 V1 M2.5 -2 Q3.6 -2.5 3.6 -1.5 V3 Q3.6 4.5 1.5 5 L-2.5 5.5 Q-4 5.3 -4 4 Z" fill="none" stroke="var(--waiting-human)" stroke-width="1.3" stroke-linejoin="round"/>
-         </g>`
-      : ''
-    const offlineX = st === 'OFFLINE'
-      ? `<g class="sk2-offline-mark" transform="translate(36 18)">
-           <circle r="6" fill="none" stroke="var(--offline)" stroke-width="1.1" stroke-dasharray="2 1.5"/>
-         </g>`
-      : ''
+
     const figureW = Math.round(48 * scale)
     const figureH = Math.round(82 * scale)
     const ariaLbl = `${r.zh} · ${r.en} · ${state}`
@@ -615,7 +587,6 @@ html[data-doc-hidden="true"] .sk2-arm-r {
           ${skeleton(r, state)}
         </g>
         ${showIndicator ? stateIndicator(state) : ''}
-        ${waitHand}
         <g class="sk2-meta" transform="translate(0 74)" style="display:none;">
           ${memberBadge}${modelBadge}
         </g>
