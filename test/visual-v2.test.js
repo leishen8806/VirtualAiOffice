@@ -1602,6 +1602,198 @@ test('HOTFIX-BE-NO-OVERLAP. [Backend workstation ∩ head = 0] Backend WORKING: 
   void totalOverlap
 })
 
+/* ================================================================== */
+/* POST-MERGE AUDIT HOTFIX regression tests (fix/post-merge-audit-v2) */
+/* ================================================================== */
+
+/* ---- FIX 1 — LIVE Task Inspector honesty [P0] -------------------- */
+test('POSTM-FIX1. [LIVE Task Inspector honesty] live task {id,title,status:running} with NO evidence/timestamps/activity → no fabricated evidence/timeline/times/SHA', () => {
+  const M = loadV2Modules()
+  const runtime = { tasks: [{ id: 'T-LIVE-1', title: '实时运行中的任务', status: 'running', role: 'backend' }] }
+  const handle = M.Shell.bootstrap({ mode: 'live', runtime })
+  const ev = new globalThis.CustomEvent('vao-v2:task-clicked', { detail: { taskId: 'T-LIVE-1' } })
+  handle.nodes.stageWrap.dispatchEvent(ev)
+  const html = collectV2HTML(handle)
+  // Honest empty states, not fabricated values.
+  assert.ok(html.includes('暂无证据'), `LIVE empty-evidence task MUST show 暂无证据. tail=${html.slice(-400)}`)
+  if (html.includes('暂无最近事件') || !/创建任务|派给|状态 →/.test(html)) {
+    assert.ok(html.includes('暂无最近事件'), 'LIVE no-activity task MUST show 暂无最近事件')
+  }
+  // Created / Updated must be honest em dash (no manufactured timestamps).
+  const findVal = (k) => {
+    const i = html.indexOf(`"k">${k}<`)
+    if (i < 0) return null
+    const seg = html.slice(i, i + 200)
+    const m = seg.match(/<div class="v"[^>]*>\s*([^<]*?)\s*</)
+    return m ? m[1] : null
+  }
+  const created = findVal('Created')
+  const updated = findVal('Updated')
+  assert.equal(created, '—', `LIVE Created MUST be '—' (no fabricated timestamp). Got="${created}"`)
+  assert.equal(updated, '—', `LIVE Updated MUST be '—' (no fabricated timestamp). Got="${updated}"`)
+  // Broad forbidden assertions (not just one exact string).
+  // A fabricated SHA is a hex block that CONTAINS at least one hex letter (a-f); pure-decimal
+  // numeric IDs/timestamps (all digits 0-9) are NOT SHAs and are intentionally excluded.
+  const shaLike = (html.match(/(?<![#\w])[0-9a-f]{7,40}\b/gi) || []).filter((v) => /[a-f]/i.test(v))
+  assert.ok(shaLike.length === 0, `LIVE inspector MUST NOT contain a fabricated SHA-like value; matches=${JSON.stringify(shaLike.slice(0, 10))}`)
+  assert.ok(!html.includes('a31f') && !html.includes('abcd'), 'no fake fallback SHA (a31f/abcd) in live inspector')
+  assert.ok(!html.includes('【演示】') && !html.includes('【演示数据】'), 'no demo markers in live inspector')
+  assert.ok(!html.includes('创建任务'), 'LIVE inspector MUST NOT fabricate a "创建任务" timeline entry')
+  handle.destroy?.()
+})
+
+/* ---- FIX 2 — Helix live state honesty [P1] ----------------------- */
+test('POSTM-FIX2a. [app.js Helix state derived, not hardcoded] deriveCoreRuntimeFromState no longer seeds seatStates.helix=THINKING nor defaults live to THINKING', () => {
+  const appSrc = read('public/app.js')
+  assert.ok(!/seatStates\s*=\s*\{\s*helix\s*:\s*statusToV2\(\s*['"]thinking['"]\s*\)/.test(appSrc),
+    'deriveCoreRuntimeFromState MUST NOT seed seatStates.helix = thinking')
+  assert.ok(/function\s+deriveHelixState\s*\(\)/.test(appSrc), 'deriveCoreRuntimeFromState MUST define deriveHelixState()')
+  assert.ok(/state\s*:\s*deriveHelixState\(\)/.test(appSrc), 'helix.state MUST be derived via deriveHelixState()')
+  assert.ok(/if\s*\(\s*state\.busy\s*\)\s*return\s*['"]WORKING['"]/.test(appSrc), 'busy → WORKING (not THINKING)')
+  assert.ok(/return\s*['"]IDLE['"]/.test(appSrc), 'idle/not-busy → IDLE')
+  assert.ok(!/seatStates\.helix\s*\|\|\s*\(runtimeStatus\s*===\s*['"]live['"]\s*\?\s*['"]THINKING['"]/.test(appSrc),
+    'MUST NOT default live helix.state to THINKING')
+})
+
+test('POSTM-FIX2b. [LIVE Helix idle honesty] idle/live runtime renders Helix IDLE, never THINKING (no fabricated orchestration)', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  handle.setHelix?.(true) // expand the Helix rail so its state badge is rendered
+  const railHTML = handle.nodes.helixRail ? (handle.nodes.helixRail.outerHTML || '') : ''
+  assert.ok(railHTML.includes('空闲'), 'LIVE idle Helix rail MUST show 空闲 (IDLE)')
+  assert.ok(!railHTML.includes('思考') && !railHTML.includes('THINKING'),
+    `LIVE idle Helix MUST NOT display THINKING/思考. rail=${railHTML.slice(0, 300)}`)
+  handle.destroy?.()
+})
+
+/* ---- FIX 3 — Waiting-human honesty ------------------------------ */
+test('POSTM-FIX3a. [waiting-human honest sinceMs / deterministic id] sinceMs no longer defaults to Date.now(); id no longer falls back to Math.random()', () => {
+  const appSrc = read('public/app.js')
+  assert.ok(!/sinceMs\s*:\s*t\.sinceMs\s*\|\|\s*Date\.now\(\)/.test(appSrc),
+    'waitingHuman MUST NOT fall back to Date.now() when sinceMs absent')
+  assert.ok(!/v2\.sinceMs\s*=\s*t\.sinceMs\s*\|\|\s*Date\.now\(\)/.test(appSrc),
+    'v2 task sinceMs MUST NOT fall back to Date.now()')
+  assert.ok(!/wait-\$\{t\.id\s*\|\|\s*String\(Math\.random\(\)\)/.test(appSrc),
+    'waiting-human id MUST NOT use Math.random() fallback')
+  assert.ok(/sinceMs\s*:\s*typeof\s*t\.sinceMs\s*===\s*['"]number['"]\s*\?\s*t\.sinceMs\s*:\s*null/.test(appSrc),
+    'waitingHuman sinceMs MUST stay absent (null) when runtime did not supply it')
+})
+
+test('POSTM-FIX3b. [waiting-human unknown duration honesty] live waiting item with sinceMs=null renders NO fabricated duration (no "刚刚", no "已等待 X 分")', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live', helix: { state: 'WAITING_HUMAN', waiting: [{ id: 'wait-T-W', role: 'product', member: '产品', title: '等待人工确认', sinceMs: null, required: true }] } })
+  handle.setHelix?.(true) // expand helix rail to render waiting list
+  const html = collectV2HTML(handle)
+  const mTmp = html.match(/已等待 \d+ 分/)
+  const hasMyTitle = html.includes('等待人工确认')
+  const hasDemoTitle = html.includes('确认颜色规格')
+  assert.ok(!/- 已等待 \d+ 分/.test(html) && !/已等待 \d+ 分/.test(html),
+    `MUST NOT fabricate a wait duration when sinceMs absent. debug match=${mTmp ? mTmp[0] : 'none'} myTitle=${hasMyTitle} demoTitle=${hasDemoTitle}`)
+  assert.ok(!html.includes('刚刚'), 'MUST NOT label an unknown wait as "刚刚"')
+  handle.destroy?.()
+})
+
+/* ---- FIX 4 — Tablet portrait WEST / HELIX / EAST contract [P1] --- */
+test('POSTM-FIX4a. [TABLET_PORTRAIT_GROUPS contract] table portrait exposes exactly 3 spatial groups WEST/HELIX/EAST (not 6 zone slices)', () => {
+  const M = loadV2Modules()
+  const groups = M.Office?.TABLET_PORTRAIT_GROUPS
+  assert.ok(groups, 'VAOCoreOfficeV2 MUST expose TABLET_PORTRAIT_GROUPS')
+  const keys = Object.keys(groups)
+  assert.deepEqual(keys, ['WEST', 'HELIX', 'EAST'], `exactly WEST/HELIX/EAST group keys; got ${keys.join(',')}`)
+  for (const k of keys) {
+    assert.ok(groups[k].label, `group ${k} MUST carry a label`)
+    assert.ok(/^\d+(\.\d+)? \d+(\.\d+)? \d+ \d+$/.test(groups[k].viewBox), `group ${k} MUST carry a 4-number viewBox; got ${groups[k].viewBox}`)
+  }
+  // default target for tablet portrait is WEST (a valid group, not a human slice)
+  assert.equal(M.Office.defaultTarget('TABLET_PORTRAIT', false), 'WEST')
+})
+
+test('POSTM-FIX4b. [tablet portrait switcher renders 3 groups] 768×1024 bootstrap → slice switcher shows WEST/HELIX/EAST chips, NOT the 6 mobile zone slices', () => {
+  const M = loadV2Modules()
+  globalThis.innerWidth = 768; globalThis.innerHeight = 1024
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  const om = handle.office?.mount
+  const officeHTML = om ? (om.outerHTML || om.innerHTML || '') : ''
+  assert.ok((om && om.dataset.officeMode) === 'TABLET_PORTRAIT', `office mode MUST be TABLET_PORTRAIT. got=${om && om.dataset.officeMode}`)
+  assert.ok(officeHTML.includes('规划 · 工程') && officeHTML.includes('Helix 中枢') && officeHTML.includes('质量 · 知识'),
+    'tablet switcher MUST render the 3 WEST/HELIX/EAST group chips')
+  assert.ok(!officeHTML.includes('data-slice="planning"'), 'tablet portrait MUST NOT render the 6-zone mobile slice for planning')
+  assert.ok(!officeHTML.includes('data-slice="engineering"'), 'tablet portrait MUST NOT render the 6-zone mobile slice for engineering')
+  handle.destroy?.()
+  delete globalThis.innerWidth; delete globalThis.innerHeight
+})
+
+/* ---- FIX 5 — Human slice fallback [P1] --------------------------- */
+test('POSTM-FIX5. [Human slice fallback] active human slice falls back to mode default when human becomes unavailable (exactly one valid active target)', () => {
+  const M = loadV2Modules()
+  globalThis.innerWidth = 390; globalThis.innerHeight = 844 // MOBILE
+  const mount = globalThis.document.createElement('main')
+  const humanTask = { id: 'T-H', title: '等待人工', status: 'waiting', role: 'product', kind: 'human', sinceMs: Date.now(), required: true }
+  const handle = M.Office.attach(mount, { mode: 'live', snapshot: { tasks: [humanTask] } })
+  assert.equal(mount.dataset.officeMode, 'MOBILE', '390px must resolve to MOBILE office mode')
+  mount.dataset.officeSlice = 'human' // user selected Human while it is active
+  // Human becomes unavailable on next snapshot update.
+  handle.update({ tasks: [] })
+  assert.notEqual(mount.dataset.officeSlice, 'human', 'human slice MUST fall back when human becomes unavailable')
+  assert.equal(mount.dataset.officeSlice, 'planning', `mobile fallback default MUST be planning; got=${mount.dataset.officeSlice}`)
+  handle.destroy?.()
+  delete globalThis.innerWidth; delete globalThis.innerHeight
+})
+
+/* ---- FIX 6 — Resize rebuild bounded / debounced [P1] ------------- */
+test('POSTM-FIX6. [resize rebuild bounded + debounced] same-mode resize events do NOT rebuild; crossing a breakpoint triggers one structural rebuild', () => {
+  const M = loadV2Modules()
+  const origAdd = globalThis.addEventListener, origRemove = globalThis.removeEventListener
+  const origST = globalThis.setTimeout, origCT = globalThis.clearTimeout
+  const rszListeners = new Set()
+  let timerSeq = 0
+  Object.defineProperty(globalThis, 'addEventListener', { configurable: true, value: (type, fn) => { const k = String(type).toLowerCase(); if (k === 'resize') rszListeners.add(fn) } })
+  Object.defineProperty(globalThis, 'removeEventListener', { configurable: true, value: (type, fn) => { const k = String(type).toLowerCase(); if (k === 'resize') rszListeners.delete(fn) } })
+  // Synchronous fake timers so the debounce coalesces deterministically in the harness.
+  globalThis.setTimeout = (fn) => { fn(); return ++timerSeq }
+  globalThis.clearTimeout = () => {}
+  globalThis.innerWidth = 1024; globalThis.innerHeight = 600 // TABLET landscape
+  const handle = M.Shell.bootstrap({ mode: 'live' })
+  const fire = () => { for (const fn of Array.from(rszListeners)) { try { fn() } catch (_) {} } }
+  const before = handle.rebuildCount
+  for (let i = 0; i < 20; i++) { globalThis.innerWidth = 900 + (i % 20); fire() } // all same mode (TABLET landscape)
+  const deltaSame = handle.rebuildCount - before
+  assert.ok(deltaSame <= 1, `20 same-mode resize events MUST NOT cause repeated rebuilds; delta=${deltaSame}`)
+  const beforeCross = handle.rebuildCount
+  globalThis.innerWidth = 390; globalThis.innerHeight = 844; fire() // cross to MOBILE
+  const deltaCross = handle.rebuildCount - beforeCross
+  assert.ok(deltaCross >= 1, `crossing a responsive breakpoint MUST cause a structural rebuild; delta=${deltaCross}`)
+  handle.destroy?.()
+  globalThis.setTimeout = origST; globalThis.clearTimeout = origCT
+  Object.defineProperty(globalThis, 'addEventListener', { configurable: true, value: origAdd })
+  Object.defineProperty(globalThis, 'removeEventListener', { configurable: true, value: origRemove })
+  delete globalThis.innerWidth; delete globalThis.innerHeight
+})
+
+/* ---- FIX 7 — Top bar responsive 390 / 768 portrait [P1] ---------- */
+test('POSTM-FIX7a. [mobile top-bar responsive CSS] core-shell CSS hides non-essential metadata and enforces >=44px touch targets at 390px', () => {
+  const shellSrc = read('public/core/core-shell-v2.js')
+  // no brand/control collision & no clipping: hide brand-sub + workspace/status/waiting pills on mobile
+  assert.ok(/@media\s*\(\s*max-width\s*:\s*640px\s*\)/.test(shellSrc), 'mobile media query MUST exist for top bar')
+  assert.ok(/v2-brand-sub\{display:none\s*!important;?\}/.test(shellSrc), 'brand-sub MUST hide on mobile to stop brand/control overlap')
+  assert.ok(/v2-top-bar\s*\.v2-pill\{display:none\s*!important;?\}/.test(shellSrc), 'workspace/status/waiting pills MUST hide on mobile')
+  // touch targets >= 44px for exposed header interactive controls
+  // (rule: `.v2-top-bar .v2-icon-btn, .v2-top-bar button { width:44px;height:44px;min-width:44px;min-height:44px }`)
+  assert.ok(/v2-icon-btn[\s\S]{0,300}(?:width|min-width):\s*44px;?/.test(shellSrc) &&
+            /v2-top-bar\s*button\{width:44px;height:44px;min-width:44px;min-height:44px/.test(shellSrc),
+    'header icon controls MUST reach 44x44 touch target on mobile')
+})
+
+test('POSTM-FIX7b. [768px portrait top-bar CSS] no clipping / no brand-control collision rules exist for v2-responsive-tablet-portrait', () => {
+  const shellSrc = read('public/core/core-shell-v2.js')
+  assert.ok(/v2-responsive-tablet-portrait\s*\.v2-top-bar/.test(shellSrc),
+    'tablet-portrait top-bar rule MUST exist (no clipping / no collision)')
+  assert.ok(/v2-responsive-tablet-portrait\s*\.v2-top-right/.test(shellSrc),
+    'tablet-portrait top-right rule MUST exist (usable hierarchy preserved)')
+  assert.ok(/v2-responsive-tablet-portrait\s*\.v2-top-bar\s*\.v2-brand/.test(shellSrc),
+    'tablet-portrait brand sizing rule MUST exist')
+})
+
 test('HOTFIX-QA-DEVICE-RIGHT. [QA Device env moved RIGHT/scale] core-office-v2.js quality zone device-test-screen: translateX delta ≥ 20 (1248 vs old 1216) OR scale factor < 0.9 applied', () => {
   const officeSrcV2 = read('public/core/core-office-v2.js')
   const qualityZoneStart = officeSrcV2.indexOf("function qualityZone()")

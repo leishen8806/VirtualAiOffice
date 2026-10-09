@@ -53,6 +53,44 @@
 
   const DEFAULT_SLICE = 'planning'
 
+  // FIX 4 — Tablet portrait navigation contract: WEST / HELIX / EAST spatial groups
+  // (not a stretched single mobile zone slice). Human area stays conditional.
+  const TABLET_PORTRAIT_GROUPS = Object.freeze({
+    WEST: { label: '规划 · 工程', viewBox: '90 0 460 900', keys: ['planning', 'engineering'] },
+    HELIX: { label: 'Helix 中枢', viewBox: '575 240 470 660', keys: ['helix'] },
+    EAST: { label: '质量 · 知识', viewBox: '1050 0 470 900', keys: ['quality', 'knowledge'] },
+  })
+  const TABLET_PORTRAIT_DEFAULT = 'WEST'
+
+  const MOBILE_SLICE_LABELS = Object.freeze({ planning: '规划', engineering: '工程', quality: '质量', knowledge: '知识', helix: 'Helix', human: '人类协作' })
+
+  // Navigation target sources per visual mode so there is ALWAYS exactly one valid active target.
+  function navTargetKey(mode) {
+    if (mode === 'TABLET_PORTRAIT') return 'group'
+    return 'slice'
+  }
+  function targetViewBox(mode, key) {
+    if (mode === 'TABLET_PORTRAIT' && TABLET_PORTRAIT_GROUPS[key]) return TABLET_PORTRAIT_GROUPS[key].viewBox
+    return OFFICE_SLICES[key] || OFFICE_SLICES[DEFAULT_SLICE]
+  }
+  // A slice is valid when it exists in the current mode's target set and (for human) is live.
+  function isValidTarget(mode, key, humanActive) {
+    if (!key) return false
+    if (mode === 'TABLET_PORTRAIT') return !!TABLET_PORTRAIT_GROUPS[key]
+    if (key === 'human') return !!humanActive
+    return !!OFFICE_SLICES[key]
+  }
+  function defaultTarget(mode, humanActive) {
+    if (mode === 'TABLET_PORTRAIT') return TABLET_PORTRAIT_DEFAULT
+    // Mobile: fall back to the plan default; Human is never a default start target.
+    return DEFAULT_SLICE
+  }
+  // Normalize the current active target so an invalid/human-when-absent selection falls back.
+  function normalizeActiveTarget(mode, current, humanActive) {
+    if (isValidTarget(mode, current, humanActive)) return current
+    return defaultTarget(mode, humanActive)
+  }
+
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) }
   function modeOf(opts = {}) {
     const raw = String(opts.mode || 'live').toLowerCase()
@@ -563,13 +601,31 @@
     </g>`
   }
 
-  function humanAreaZone(active) {
+  function humanAreaZone(active, wt, memberName) {
     const op = active ? '1' : '0.12'
     const dimStroke = active ? 'color-mix(in srgb,var(--waiting-human) 56%,rgba(0,0,0,0.1))' : 'rgba(0,0,0,0.04)'
     const baseFill = active
       ? 'color-mix(in srgb,var(--waiting-human) 18%,color-mix(in srgb,var(--panel) 78%,transparent))'
       : 'color-mix(in srgb,var(--panel) 18%,transparent)'
     const vis = active ? '' : 'display:none;'
+    // Human-area honesty: derive every field from the actual waiting task; NEVER fabricate
+    // a member name, duration, or timeline when runtime did not supply it.
+    const ROLE_ZH = { product: '产品经理', qa: '测试', reviewer: '审查', docs: '文档', architect: '架构', frontend: '前端', backend: '后端' }
+    const roleZh = (wt && ROLE_ZH[wt.role]) || (wt && wt.role) || ''
+    let cardLine = '暂无待办 · 等待人类'
+    let title = '需要人类确认'
+    let duration = ''
+    if (wt) {
+      const member = (wt.who || memberName || roleZh).trim()
+      if (typeof wt.sinceMs === 'number') {
+        const mins = Math.max(0, Math.round((Date.now() - wt.sinceMs) / 60000))
+        duration = mins > 0 ? `· 已等待 ${mins} 分` : ''
+      } else {
+        duration = '' // honest: unknown duration, do NOT fabricate "just now"
+      }
+      cardLine = `${roleZh}${member ? ' · ' + member : ''}${duration}`.trim()
+      title = wt.title || '需要人类确认'
+    }
     return `<g class="zone zone-human-area" data-zone="human-area" data-active="${active ? 'true' : 'false'}" opacity="${op}" style="${active ? '' : 'transition:opacity var(--dur-slow) var(--ease);'}">
       <defs>
         <radialGradient id="humanAmberGlowV2" cx="50%" cy="40%" r="70%">
@@ -588,9 +644,9 @@
             <path d="M-1 6 V-4 Q-1 -6 1 -6 Q3 -6 3 -4 V-1 M3 -6 Q5 -6 5 -4 V0 M5 -4 Q6.4 -4.6 6.4 -3.2 V10 Q6.4 11.8 3.6 12.6 L-0.6 13 Q-2 12.6 -2.6 11.6 Z"/>
           </g>
           <text x="22" y="3" font-size="12.2" font-weight="700" fill="var(--text)" style="font-family:var(--sans),system-ui;">需要人类行动（必需）</text>
-          <text x="22" y="20" font-size="10" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">产品经理 · 李产品 · 已等待 14 分</text>
+          <text x="22" y="20" font-size="10" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">${esc(cardLine)}</text>
           <rect x="0" y="32" width="256" height="30" rx="4.5" fill="var(--panel)" stroke="var(--line)"/>
-          <text x="10" y="51" font-size="10" fill="var(--text)" style="font-family:var(--sans),system-ui;">【DEMO】确认设计规格 §5.1 颜色 token 规格对比表</text>
+          <text x="10" y="51" font-size="10" fill="var(--text)" style="font-family:var(--sans),system-ui;">${esc(title)}</text>
           <rect x="0" y="68" width="78" height="14" rx="4" fill="var(--waiting-human)" style="cursor:pointer;">
             <text x="39" y="78.5" font-size="9.2" font-weight="700" text-anchor="middle" fill="#fff" style="font-family:var(--sans),system-ui;">立即处理 →</text>
           </rect>
@@ -764,16 +820,20 @@
   }
 
   function sliceSwitcherHTML(snapshot, humanActive, mount) {
-    const slice = mount && typeof mount === 'object' && mount.dataset ? (mount.dataset.officeSlice || DEFAULT_SLICE) : DEFAULT_SLICE
+    const officeMode = mount && typeof mount === 'object' && mount.dataset ? (mount.dataset.officeMode || 'MOBILE') : 'MOBILE'
+    const tabletPortrait = officeMode === 'TABLET_PORTRAIT'
+    const current = mount && typeof mount === 'object' && mount.dataset ? (mount.dataset.officeSlice || '') : ''
+    const activeTarget = normalizeActiveTarget(officeMode, current, humanActive)
+    const targets = tabletPortrait
+      ? Object.entries(TABLET_PORTRAIT_GROUPS).map(([key, g]) => ({ key, label: g.label }))
+      : Object.keys(OFFICE_SLICES).map((key) => ({ key, label: MOBILE_SLICE_LABELS[key] || key }))
+    const chipStyle = (active) => 'display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; height:44px; min-width:44px; border-radius:10px; border:1px solid ' + (active ? 'var(--role-helix)' : 'var(--line)') + '; background:' + (active ? 'color-mix(in srgb,var(--role-helix) 18%,transparent)' : 'var(--panel-2)') + '; color:' + (active ? 'var(--text)' : 'var(--text-muted)') + '; font-weight:' + (active ? '700' : '500') + '; font-size:11.5px; white-space:nowrap; cursor:pointer; font-family:var(--sans);'
     return `<div class="v2-slice-switcher" style="display:flex; gap:6px; padding:8px; overflow-x:auto; position:absolute; top:48px; left:0; right:0; z-index:20; background:color-mix(in srgb,var(--panel) 88%,transparent); border-bottom:1px solid var(--line); min-height:52px; align-items:center; touch-action:pan-x;">
-    ${Object.entries(OFFICE_SLICES).map(([key]) => {
-      const isHuman = key === 'human'
-      if (isHuman && !humanActive) return ''
-      const active = slice === key || (!slice && key === DEFAULT_SLICE)
+    ${targets.map(({ key, label }) => {
+      if (key === 'human' && !humanActive) return ''
+      const active = key === activeTarget
       const cls = `v2-slice-chip ${active ? 'is-active' : ''}`
-      const chipStyle = 'display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; height:44px; min-width:44px; border-radius:10px; border:1px solid ' + (active ? 'var(--role-helix)' : 'var(--line)') + '; background:' + (active ? 'color-mix(in srgb,var(--role-helix) 18%,transparent)' : 'var(--panel-2)') + '; color:' + (active ? 'var(--text)' : 'var(--text-muted)') + '; font-weight:' + (active ? '700' : '500') + '; font-size:11.5px; white-space:nowrap; cursor:pointer; font-family:var(--sans);'
-      const labels = { planning:'规划', engineering:'工程', quality:'质量', knowledge:'知识', helix:'Helix', human:'人类协作' }
-      return `<button type="button" data-slice="${key}" class="${cls}" style="${chipStyle}" aria-pressed="${active}">${labels[key] || key}</button>`
+      return `<button type="button" data-slice="${key}" class="${cls}" style="${chipStyle(active)}" aria-pressed="${active}">${label}</button>`
     }).join('')}
   </div>`
   }
@@ -791,9 +851,8 @@
       mount.dataset.officeMode = rm
       if (rm === 'TABLET' && window.innerHeight > window.innerWidth) mount.dataset.officeMode = 'TABLET_PORTRAIT'
     }
-    if (!mount.dataset?.officeSlice) mount.dataset.officeSlice = DEFAULT_SLICE
-    const croppedMode = mount.dataset.officeMode === 'MOBILE' || mount.dataset.officeMode === 'TABLET_PORTRAIT'
-    const initialViewBox = croppedMode ? (OFFICE_SLICES[mount.dataset.officeSlice] || OFFICE_SLICES[DEFAULT_SLICE]) : '0 0 1600 900'
+    const officeMode = mount.dataset?.officeMode || 'MOBILE'
+    const croppedMode = officeMode === 'MOBILE' || officeMode === 'TABLET_PORTRAIT'
 
     const seatStates = Object.assign({}, snapshot?.seatStates || (useFixtures ? DEMO_SEAT_STATE : {}))
     const seatKinds = Object.assign({}, snapshot?.seatKinds || (useFixtures ? DEMO_SEAT_KIND : {}))
@@ -802,6 +861,11 @@
     const tasks = snapshot?.tasks?.length ? snapshot.tasks.slice() : (useFixtures ? JSON.parse(JSON.stringify(DEMO_TASKS)) : [])
     const waitingHuman = tasks.filter((t) => t.kind === 'human' || t.sinceMs || t.status === 'waiting')
     const humanActive = waitingHuman.length > 0
+    // FIX 5 — normalize the active target so a now-unavailable Human slice falls back to the
+    // mode's default valid target. There is always exactly one valid active navigation target.
+    if (!mount.dataset?.officeSlice) mount.dataset.officeSlice = defaultTarget(officeMode, humanActive)
+    else mount.dataset.officeSlice = normalizeActiveTarget(officeMode, mount.dataset.officeSlice, humanActive)
+    const initialViewBox = croppedMode ? targetViewBox(officeMode, mount.dataset.officeSlice) : '0 0 1600 900'
 
     const roleTasks = {}
     for (const t of tasks) { if (t.role) (roleTasks[t.role] ||= []).push(t) }
@@ -851,7 +915,7 @@
           ${qualityZone()}
           ${knowledgeZone()}
           ${helixHubZone()}
-          ${humanAreaZone(humanActive)}
+          ${humanAreaZone(humanActive, waitingHuman[0] || null, waitingHuman[0] ? seatMembers[waitingHuman[0].role] : '')}
           <g class="characters-layer" style="pointer-events:auto;">
             ${['product','architect','frontend','backend','qa','reviewer','docs'].map((rid) => {
               const p = ZONE_POSITIONS[rid]
@@ -926,7 +990,8 @@
         mount.dataset.officeSlice = slice
         fire('vao-v2:office-slice-changed', { slice })
         const svgEl = safeQuery(mount, '.scene-svg')
-        if (svgEl && svgEl.setAttribute) svgEl.setAttribute('viewBox', OFFICE_SLICES[slice] || '0 0 1600 900')
+        const officeMode = mount.dataset?.officeMode || 'MOBILE'
+        if (svgEl && svgEl.setAttribute) svgEl.setAttribute('viewBox', targetViewBox(officeMode, slice))
         safeForEach(safeQueryAll(mount, '.v2-slice-chip'), (c) => {
           const on = (c && c.dataset?.slice === slice)
           if (!c || typeof c.setAttribute !== 'function') return
@@ -1052,6 +1117,14 @@
     resolveResponsiveMode,
     OFFICE_SLICES,
     DEFAULT_SLICE,
+    TABLET_PORTRAIT_GROUPS,
+    TABLET_PORTRAIT_DEFAULT,
+    MOBILE_SLICE_LABELS,
+    navTargetKey,
+    targetViewBox,
+    isValidTarget,
+    defaultTarget,
+    normalizeActiveTarget,
   })
 
   const api = Object.freeze({
@@ -1060,6 +1133,14 @@
     resolveResponsiveMode,
     OFFICE_SLICES,
     DEFAULT_SLICE,
+    TABLET_PORTRAIT_GROUPS,
+    TABLET_PORTRAIT_DEFAULT,
+    MOBILE_SLICE_LABELS,
+    navTargetKey,
+    targetViewBox,
+    isValidTarget,
+    defaultTarget,
+    normalizeActiveTarget,
     ZONE_POSITIONS,
     DEMO_SEAT_STATE,
     DEMO_SEAT_KIND,

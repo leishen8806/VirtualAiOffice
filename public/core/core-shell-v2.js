@@ -234,7 +234,22 @@ html[data-theme-core] body.v2-shell-body.v2-helix-open{--v2-helix-w:min(420px,38
   html[data-theme-core] .v2-nav-rail{top:56px;bottom:56px;width:min(86vw,320px);}
   html[data-theme-core] .v2-helix-rail{top:56px;bottom:56px;width:min(420px,94vw);}
   html[data-theme-core] .v2-bottom-nav{display:grid !important;}
+  /* FIX 7 — mobile top bar: no brand/control collision, no horizontal clipping. */
+  html[data-theme-core] .v2-top-bar{gap:8px;padding:0 8px;}
+  html[data-theme-core] .v2-brand-sub{display:none !important;}
+  html[data-theme-core] .v2-top-bar .v2-pill{display:none !important;} /* workspace/status/waiting metadata folds away on small screens */
+  html[data-theme-core] .v2-top-right{max-width:52vw;gap:4px;}
+  html[data-theme-core] .v2-top-right .v2-theme-select{max-width:88px;}
+  /* FIX 7 — exposed header interactive controls must meet >=44px touch targets. */
+  html[data-theme-core] body.v2-shell-body.v2-responsive-mobile .v2-top-bar .v2-icon-btn,
+  html[data-theme-core] body.v2-shell-body.v2-responsive-mobile .v2-top-bar button{width:44px;height:44px;min-width:44px;min-height:44px;}
 }
+/* FIX 7 — 768px portrait top bar: no clipping, no brand/control collision, usable hierarchy. */
+html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-top-bar{gap:10px;padding:0 12px;flex-wrap:nowrap;}
+html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-top-bar .v2-pill{white-space:nowrap;}
+html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-top-bar .v2-brand{flex:0 0 auto;}
+html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-top-right{flex-wrap:nowrap;max-width:52vw;margin-left:auto;}
+html[data-theme-core] body.v2-shell-body.v2-responsive-tablet-portrait .v2-top-bar .v2-icon-btn{width:32px;height:32px;}
 html[data-theme-core] .v2-brand{display:grid;grid-template-columns:32px 1fr;gap:0 8px;align-items:center;min-width:0;}
 html[data-theme-core] .v2-brand-logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,color-mix(in srgb,var(--orchestrator) 55%,var(--accent)),var(--orchestrator));display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px;}
 html[data-theme-core] .v2-brand-wordmark{font-size:14px;font-weight:700;line-height:18px;}
@@ -697,7 +712,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         const text = humanRec?.reason || humanRec?.text || currentTask?.waitingReason || '需要人类确认规格'
         waitingInfo = mins > 0 ? `已等待 ${mins} 分钟：${text}` : `等待中：${text}`
       } else if (demo) {
-        waitingInfo = `【演示】已等待 ${Math.floor(Math.random()*18+2)} 分钟：需要人类确认规格`
+        waitingInfo = `【演示】已等待 15 分钟：需要人类确认规格`
       } else {
         waitingInfo = '—'
       }
@@ -766,22 +781,36 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     ]
   }
 
-  function taskInspectorHTML({ taskId, runtime }) {
+  function taskInspectorHTML({ taskId, runtime, demo }) {
     const t = (runtime?.tasks || []).find(x => x.id === taskId) || { id: taskId, title: `任务 ${taskId}`, status: 'pending', role: 'frontend' }
     const owner = (t.role ? Chars?.role(t.role) : null) || { zh: t.who || '未分配', en: 'Unassigned' }
     const stateKey = ({ done: 'DONE', running: 'WORKING', pending: 'IDLE', failed: 'BLOCKED', skipped: 'OFFLINE', waiting: 'WAITING_HUMAN' })[t.status] || 'IDLE'
     const deps = t.deps || []
-    const evidence = (t.evidence || [
-      { kind: 'build', state: stateKey === 'BLOCKED' ? 'fail' : 'pass', sha: (t.id || '').slice(-4) || 'abcd' },
-      { kind: 'test', state: stateKey === 'DONE' ? 'pass' : stateKey === 'WORKING' ? 'missing' : 'pass' },
-    ]).map(e => S?.EVIDENCE?.chip(e.kind, e.state, { sha: e.sha }) || '').join('')
-    const recent = [
-      { at: Date.now() - 30 * 60000, text: `创建任务 ${t.id}` },
-      { at: Date.now() - 12 * 60000, text: `派给 ${owner.zh}` },
-      { at: Date.now() - 2  * 60000, text: `状态 → ${stateKey}` },
-    ]
-    const createdAt = t.createdAt || (Date.now() - 32 * 60000)
-    const updatedAt = t.updatedAt || (Date.now() - 3 * 60000)
+    // Honesty contract: DEMO mode may fabricate labeled fixtures, LIVE mode MUST
+    // render only data actually supplied by the runtime. Never invent evidence,
+    // timeline, timestamps, or SHA from a task id in live mode.
+    const evidenceChips = demo
+      ? (t.evidence || [
+          { kind: 'build', state: stateKey === 'BLOCKED' ? 'fail' : 'pass', sha: (t.id || '').slice(-4) || 'abcd' },
+          { kind: 'test', state: stateKey === 'DONE' ? 'pass' : stateKey === 'WORKING' ? 'missing' : 'pass' },
+        ])
+      : (t.evidence || [])
+    const evidence = evidenceChips.length
+      ? evidenceChips.map(e => S?.EVIDENCE?.chip(e.kind, e.state, { sha: e.sha }) || '').join('')
+      : '<span class="v2-empty-hint">暂无证据</span>'
+    const recent = demo
+      ? [
+          { at: Date.now() - 30 * 60000, text: `创建任务 ${t.id}` },
+          { at: Date.now() - 12 * 60000, text: `派给 ${owner.zh}` },
+          { at: Date.now() - 2  * 60000, text: `状态 → ${stateKey}` },
+        ]
+      : (Array.isArray(t.activity) || Array.isArray(t.history))
+          ? (t.activity || t.history).map((a, i) => ({ at: a.at, text: a.text || a.action || a.message || '' }))
+          : []
+    const createdAt = demo ? (t.createdAt || (Date.now() - 32 * 60000)) : (typeof t.createdAt === 'number' ? t.createdAt : null)
+    const updatedAt = demo ? (t.updatedAt || (Date.now() - 3 * 60000)) : (typeof t.updatedAt === 'number' ? t.updatedAt : null)
+    const createdAtLabel = createdAt ? new Date(createdAt).toLocaleString() : '—'
+    const updatedAtLabel = updatedAt ? new Date(updatedAt).toLocaleString() : '—'
     return [
       inspectorSection('任务 / Task', `
         <div class="v2-kv">
@@ -801,12 +830,12 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       inspectorSection('等待 / 时间戳', `
         <div class="v2-kv">
           <div class="k">Waiting</div><div class="v" style="${t.kind === 'human' || t.status === 'waiting' ? 'color:var(--waiting-human);font-weight:600;' : ''}">${t.kind === 'human' || t.status === 'waiting' ? '等待人类确认' : '—'}</div>
-          <div class="k">Created</div><div class="v" style="font-family:var(--mono);">${new Date(createdAt).toLocaleString()}</div>
-          <div class="k">Updated</div><div class="v" style="font-family:var(--mono);">${new Date(updatedAt).toLocaleString()}</div>
+          <div class="k">Created</div><div class="v" style="font-family:var(--mono);">${createdAtLabel}</div>
+          <div class="k">Updated</div><div class="v" style="font-family:var(--mono);">${updatedAtLabel}</div>
         </div>`),
       inspectorSection('最近事件 / Recent', `
         <div class="v2-timeline">
-          ${recent.map(e => `<div class="e"><span class="t">${esc(ago(e.at))}</span><span>${esc(e.text)}</span></div>`).join('')}
+          ${recent.length ? recent.map(e => `<div class="e"><span class="t">${esc(ago(e.at))}</span><span>${esc(e.text)}</span></div>`).join('') : '<span class="v2-empty-hint">暂无最近事件</span>'}
         </div>`),
     ]
   }
@@ -1078,7 +1107,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       openDrawer(document.body, {
         title: `Task Inspector · ${esc(taskId)}`,
         leading: `<div style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 18%,var(--panel-2));color:var(--accent);font-weight:800;font-family:var(--mono);font-size:11px;">T</div>`,
-        children: taskInspectorHTML({ taskId, runtime }),
+        children: taskInspectorHTML({ taskId, runtime, demo: demoMode }),
       })
     }
 
@@ -1136,6 +1165,9 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     }
 
     let lastMode = mode
+    let lastResolved = null
+    let rszTimer = null
+    let rebuildCount = 0
     function _rsz() {
       if (typeof window === 'undefined' || !window || typeof window.innerWidth !== 'number') return
       const w = window.innerWidth
@@ -1151,11 +1183,21 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         cls.toggle('v2-responsive-tablet', (nm === 'TABLET'))
         cls.toggle('v2-responsive-tablet-portrait', resolved === 'TABLET_PORTRAIT')
       }
-      if (nm !== lastMode || (portrait && lastMode === 'TABLET' && resolved === 'TABLET_PORTRAIT') || (!portrait && lastMode && resolved === 'TABLET' && lastMode !== 'TABLET_PORTRAIT')) {
+      // FIX 6 — rebuild ONLY when the resolved responsive mode crosses a real boundary.
+      // Resizing within the same mode must NOT rebuild the scene (avoids resize storms).
+      if (resolved !== lastResolved) {
+        const changed = lastResolved !== null
+        lastResolved = resolved
         lastMode = nm
+        if (changed) rebuildCount += 1
         if (typeof officeHandle?.update === 'function') officeHandle.update(buildSnapshot())
         options.onResponsiveModeChange?.(resolved)
       }
+    }
+    // FIX 6 — debounce: coalesce rapid resize events to a single trailing evaluation.
+    function _rszDebounced() {
+      if (rszTimer) clearTimeout(rszTimer)
+      rszTimer = setTimeout(_rsz, 150)
     }
 
     // Initial mount of stage
@@ -1169,7 +1211,7 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
     rerender()
 
     if (typeof window !== 'undefined' && window && typeof window.addEventListener === 'function') {
-      window.addEventListener('resize', _rsz)
+      window.addEventListener('resize', _rszDebounced)
     }
 
     const handle = {
@@ -1178,6 +1220,9 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
       get helixOpen() { return helixOpen },
       get nodes() { return { topBar, navRail, stageWrap, helixRail, bottomNav } },
       get office() { return officeHandle },
+      // FIX 6 — expose rebuild metrics for the resize regression test.
+      get rebuildCount() { return rebuildCount },
+      get resolvedMode() { return lastResolved },
       setOfficeHandle(h) { officeHandle = h },
       setNav, toggleNav, setHelix, toggleHelix,
       openRoleInspector, openTaskInspector,
@@ -1213,8 +1258,9 @@ html[data-theme-core] .v2-evidence{display:flex;flex-wrap:wrap;gap:4px;}
         }
       },
       destroy() {
+        if (rszTimer) clearTimeout(rszTimer)
         if (typeof window !== 'undefined' && window && typeof window.removeEventListener === 'function') {
-          window.removeEventListener('resize', _rsz)
+          window.removeEventListener('resize', _rszDebounced)
         }
         destroyV2Shell()
         if (typeof globalThis.VAOCoreOfficeV2?.destroy === 'function') {/*noop*/}

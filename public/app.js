@@ -82,7 +82,7 @@
     const projectName = state.workdir ? (state.workdir.split(/[\\/]/).filter(Boolean).pop() || state.workdir) : '未指定项目'
 
     const members = { human: [], ai: [] }
-    const seatStates = { helix: statusToV2('thinking') }
+    const seatStates = {}
     const seatKinds = { helix: 'system' }
     const seatMembers = { helix: 'Helix' }
     const seatModels = {}
@@ -106,8 +106,25 @@
       if (t.kind === 'human' || t.status === 'waiting' || t.waiting === true) {
         const role = resolveVisualRoleForTask(t) || (typeof t.role === 'string' ? normalizeRoleId(t.role) : null) || 'human'
         const member = t.member || (t.who || t.whoId || (role && seatMembers[role]))
-        waitingHuman.push({ id: `wait-${t.id || String(Math.random()).slice(2, 8)}`, role, member, title: t.title || '等待人工确认', sinceMs: t.sinceMs || Date.now(), required: !!t.required })
+        // Deterministic stable key from existing task fields only; never Math.random().
+        const stableKey = t.id || (t.title && String(t.title)) || (t.whoId || t.agent || t.empId) || role || 'human'
+        const waitKey = t.id ? `wait-${t.id}` : `wait-${role}-${String(stableKey).replace(/[^a-z0-9]+/gi, '').slice(0, 24)}`
+        // Do not manufacture a timestamp: keep sinceMs absent when runtime did not supply it.
+        waitingHuman.push({ id: waitKey, role, member, title: t.title || '等待人工确认', sinceMs: typeof t.sinceMs === 'number' ? t.sinceMs : null, required: !!t.required })
       }
+    }
+    // Helix visual state must be derived from actual runtime state, never fabricated.
+    // disconnected/connecting -> truthful OFFLINE; idle -> IDLE; real orchestration (busy) -> WORKING;
+    // failed task -> BLOCKED; human handoff needed -> WAITING_HUMAN.
+    function deriveHelixState() {
+      if (state.mode !== 'demo' && state.mode !== 'fake') {
+        if (!(transport && transport.status === 'live')) return 'OFFLINE'
+      }
+      const anyFailed = (state.tasks || []).some((t) => t.status === 'failed')
+      if (anyFailed) return 'BLOCKED'
+      if (waitingHuman.length) return 'WAITING_HUMAN'
+      if (state.busy) return 'WORKING'
+      return 'IDLE'
     }
     const runtime = {
       workspace: { id: '', name: workspaceName, path: state.workdir || '' },
@@ -139,7 +156,7 @@
       if (t.at || t.statusAt) recent.push({ at: t.at || t.statusAt, text: `${t.id || ''} ${t.title || ''} · ${AGENT_STATUS[t.status] || t.status || ''}`.trim() })
     }
     const helix = {
-      state: seatStates.helix || (runtimeStatus === 'live' ? 'THINKING' : 'IDLE'),
+      state: deriveHelixState(),
       header: { label: 'HELIX', zh: '系统编排中枢', en: 'System Orchestrator' },
       conversation,
       summary: state.meeting?.summary || (state.busy ? '正在处理本轮任务，等待员工响应…' : (runtimeStatus === 'connecting' ? '连接中。说点什么开始工作。' : '待机中，准备好接收新任务。')),
@@ -164,7 +181,7 @@
         evidence: [],
         deps: t.deps || [],
       }
-      if (t.sinceMs || t.waiting === true || t.kind === 'human') { v2.sinceMs = t.sinceMs || Date.now(); v2.required = !!t.required }
+      if ((typeof t.sinceMs === 'number') || t.waiting === true || t.kind === 'human') { if (typeof t.sinceMs === 'number') v2.sinceMs = t.sinceMs; v2.required = !!t.required }
       v2Tasks.push(v2)
     }
     const seatSnapshot = { seatStates, seatKinds, seatMembers, seatModels, tasks: v2Tasks, edges: [] }
