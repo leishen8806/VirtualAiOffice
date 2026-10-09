@@ -269,9 +269,9 @@
       neck: '',
       torso: `
         <g class="review-board-torso" data-role="reviewer">
-          <rect x="26.5" y="47" width="9" height="12" rx="1.1" fill="#8B6F47" stroke="#5D4A30" stroke-width="0.5" opacity="0.92"/>
-          <rect x="27.3" y="48" width="7.4" height="1.2" rx="0.5" fill="#5D4A30" opacity="0.7"/>
-          <path d="M28 51 h6 M28 53.2 h4.8 M28 55.4 h5.4" stroke="#E8DCC6" stroke-width="0.55" opacity="0.8"/>
+          <rect x="29" y="50.5" width="6" height="8" rx="0.75" fill="#8B6F47" stroke="#5D4A30" stroke-width="0.4" opacity="0.92"/>
+          <rect x="29.5" y="51.2" width="4.9" height="0.8" rx="0.4" fill="#5D4A30" opacity="0.7"/>
+          <path d="M30 53 h3.6 M30.3 54.4 h3 M30 55.8 h3.6" stroke="#E8DCC6" stroke-width="0.4" opacity="0.8"/>
         </g>`,
       handLeft: '',
       handRight: `
