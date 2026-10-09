@@ -188,7 +188,7 @@
           <rect x="94" y="4" width="42" height="6.2" rx="1.6" fill="color-mix(in srgb,var(--role-architect) 28%,transparent)"/>
         </g>
       </g>
-      <g class="fe-monitor-bank" transform="translate(62 452)">
+      <g class="fe-monitor-bank" transform="translate(48 452)">
         <rect x="2" y="26" width="70" height="58" rx="3" fill="#0f1522" stroke="rgba(0,0,0,0.24)" stroke-width="0.85"/>
         <rect x="5" y="29" width="64" height="52" rx="1.6" fill="color-mix(in srgb,var(--role-frontend) 22%,#ffffff1a)"/>
         <g fill="#ffffff" opacity="0.86">
@@ -216,7 +216,7 @@
           </g>
         </g>
       </g>
-      <g class="be-terminal-suite" transform="translate(248 560) scale(0.88)">
+      <g class="be-terminal-suite" transform="translate(310 560) scale(0.70)">
         <rect x="2" y="2" width="124" height="88" rx="3" fill="#0b1020" stroke="rgba(0,0,0,0.25)" stroke-width="0.95"/>
         <rect x="5" y="5" width="118" height="82" rx="1.8" fill="#0a0e1c"/>
         <g font-family="ui-monospace, Menlo, monospace" font-size="6.2" fill="var(--done)" opacity="0.88">
@@ -327,7 +327,7 @@
         </g>
         <text x="27" y="5.5" font-size="3.8" text-anchor="middle" fill="#ffffff" opacity="0.6" style="font-family:var(--sans),system-ui;">QA DEVICE</text>
       </g>
-      <g class="review-diff-station" transform="translate(1290 470) scale(0.65)">
+      <g class="review-diff-station" transform="translate(1480 412) scale(0.24)">
         <rect x="2" y="2" width="204" height="104" rx="3.4" fill="rgba(255,255,255,0.55)" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
         <line x1="104" y1="2" x2="104" y2="106" stroke="rgba(0,0,0,0.15)" stroke-width="0.7"/>
         <g font-family="ui-monospace, Menlo, monospace" font-size="5.9">
