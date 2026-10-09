@@ -327,7 +327,7 @@
         </g>
         <text x="27" y="5.5" font-size="3.8" text-anchor="middle" fill="#ffffff" opacity="0.6" style="font-family:var(--sans),system-ui;">QA DEVICE</text>
       </g>
-      <g class="review-diff-station" transform="translate(1480 412) scale(0.24)">
+      <g class="review-diff-station" transform="translate(1520 490) scale(0.14)">
         <rect x="2" y="2" width="204" height="104" rx="3.4" fill="rgba(255,255,255,0.55)" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
         <line x1="104" y1="2" x2="104" y2="106" stroke="rgba(0,0,0,0.15)" stroke-width="0.7"/>
         <g font-family="ui-monospace, Menlo, monospace" font-size="5.9">
