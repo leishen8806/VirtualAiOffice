@@ -267,7 +267,12 @@
         <circle cx="27" cy="26.8" r="2.8" fill="none" stroke="#2a303e" stroke-width="1.1"/>
         <path d="M23.8 26.8 h0.4 M18 25 l-2.5 -1.5 M30 25 l2.5 -1.5" stroke="#2a303e" stroke-width="0.9" stroke-linecap="round"/>`,
       neck: '',
-      torso: '',
+      torso: `
+        <g class="review-board-torso" data-role="reviewer">
+          <rect x="26.5" y="47" width="9" height="12" rx="1.1" fill="#8B6F47" stroke="#5D4A30" stroke-width="0.5" opacity="0.92"/>
+          <rect x="27.3" y="48" width="7.4" height="1.2" rx="0.5" fill="#5D4A30" opacity="0.7"/>
+          <path d="M28 51 h6 M28 53.2 h4.8 M28 55.4 h5.4" stroke="#E8DCC6" stroke-width="0.55" opacity="0.8"/>
+        </g>`,
       handLeft: '',
       handRight: `
         <g class="stamp-hand">
@@ -410,13 +415,15 @@
     </g>`
   }
 
-  function stateIndicator(state) {
+  function stateIndicator(state, roleId) {
     const S = globalThis.VAOCoreStates
     if (!S) return ''
     const key = S.STATES?.[state]?.key || state.toLowerCase().replace(/_/g, '-')
     const color = `var(--${key})`
     const gly = S.stateGlyphG(state, 9.6, color) || ''
-    return `<g class="sk2-state-pill" transform="translate(-12 62)" opacity="0.88">
+    const pillTransform = roleId === 'helix' ? 'translate(54 14)' : 'translate(-12 62)'
+    const idleHidden = state === 'IDLE' ? ' style="display:none"' : ''
+    return `<g class="sk2-state-pill" transform="${pillTransform}" opacity="0.88"${idleHidden}>
       <rect x="0" y="0" width="30" height="11" rx="5.5" fill="var(--panel-2)" stroke="var(--line)" stroke-width="0.6" opacity="0.92"/>
       <g transform="translate(3.5 0.7)" fill="${color}">${gly}</g>
       <text x="15" y="8.2" font-size="6.6" fill="${color}" font-weight="700" style="font-family:var(--sans),system-ui;" text-anchor="middle" opacity="0.92">${S.STATES?.[state]?.zh || state}</text>
@@ -435,8 +442,8 @@
       <rect x="1.2" y="1.2" width="${w-2.4}" height="${h-2.4}" rx="1" fill="color-mix(in srgb, ${accent} ${active ? 22 : 10}%, #ffffff18)"/>
       ${content || ''}
     </g>`
-    if (ws === 'dual-monitor') return `<g class="ws-mini ws-dual" transform="translate(4.2 3.6) scale(0.80)">${monitor(0, 18, 12, '<rect x="3" y="3.5" width="5" height="1.5" rx="0.6" fill="#fff" opacity="0.85"/><rect x="3" y="6.5" width="12" height="1" rx="0.5" fill="#fff" opacity="0.55"/><rect x="3" y="8.5" width="10" height="1" rx="0.5" fill="#fff" opacity="0.45"/>')}${monitor(20, 18, 12, `<g stroke="${accent}" stroke-width="0.7" fill="none" opacity="0.85"><path d="M25 4 L29 4 L30 7 L26.5 9.5 L24 7 Z"/><circle cx="34" cy="6.5" r="1.6"/></g>`)}</g>`
-    if (ws === 'server-rack') return `<g class="ws-mini ws-server" transform="translate(4.2 3.6) scale(0.80)" opacity="${op}">
+    if (ws === 'dual-monitor') return `<g class="ws-mini ws-dual" transform="translate(1.2 3.6) scale(0.80)"><g transform="scale(0.95)">${monitor(0, 18, 12, '<rect x="3" y="3.5" width="5" height="1.5" rx="0.6" fill="#fff" opacity="0.85"/><rect x="3" y="6.5" width="12" height="1" rx="0.5" fill="#fff" opacity="0.55"/><rect x="3" y="8.5" width="10" height="1" rx="0.5" fill="#fff" opacity="0.45"/>')}${monitor(20, 18, 12, `<g stroke="${accent}" stroke-width="0.7" fill="none" opacity="0.85"><path d="M25 4 L29 4 L30 7 L26.5 9.5 L24 7 Z"/><circle cx="34" cy="6.5" r="1.6"/></g>`)}</g></g>`
+    if (ws === 'server-rack') return `<g class="ws-mini ws-server" transform="translate(-1.8 1.6) scale(0.70)" opacity="${op}">
       <rect x="0" y="0" width="42" height="16" rx="2" fill="rgba(255,255,255,0.55)" stroke="rgba(0,0,0,0.1)" stroke-width="0.6"/>
       <line x1="0" y1="5" x2="42" y2="5" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
       <line x1="0" y1="10.5" x2="42" y2="10.5" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
@@ -586,7 +593,7 @@ html[data-doc-hidden="true"] .sk2-arm-r {
         <g transform="rotate(${angle} 24 50)">
           ${skeleton(r, state)}
         </g>
-        ${showIndicator ? stateIndicator(state) : ''}
+        ${showIndicator ? stateIndicator(state, roleId) : ''}
         <g class="sk2-meta" transform="translate(0 74)" style="display:none;">
           ${memberBadge}${modelBadge}
         </g>

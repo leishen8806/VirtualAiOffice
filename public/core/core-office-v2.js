@@ -313,7 +313,7 @@
           </g>
         </g>
       </g>
-      <g class="device-test-screen" transform="translate(1216 244)">
+      <g class="device-test-screen" transform="translate(1328 228) scale(0.82)">
         <rect x="0" y="0" width="54" height="96" rx="7" fill="#1a1f2c" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
         <rect x="3.5" y="8" width="47" height="80" rx="4" fill="#ffffff" stroke="rgba(0,0,0,0.14)" stroke-width="0.65" opacity="0.75"/>
         <g transform="translate(7 12)" opacity="0.72">

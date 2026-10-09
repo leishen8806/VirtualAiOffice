@@ -1499,3 +1499,217 @@ test('VISUAL-7. [OFFLINE state one canonical] OFFLINE output: if showIndicator t
   const hasOfflineRingClass = svgOff.match(/class="[^"]*sk2-offline-mark[^"]*"/) || svgOff.match(/class="[^"]*offlineMark[^"]*"/)
   assert.ok(!hasOfflineRingClass, 'OFFLINE state MUST NOT render duplicate big prominent offlineMark ring/badge anywhere (showIndicator=false → no persistent signal; showIndicator=true → canonical pill only)')
 })
+
+/* =====================================================================
+ * FINAL CHARACTER OCCLUSION HOTFIX — FOCUSED REGRESSION TESTS
+ * Append-only block (never modify/delete tests above)
+ * =================================================================== */
+
+function hfParseTranslate(str) {
+  const m = /translate\(\s*([-0-9.]+)\s+([-0-9.]+)\s*\)/.exec(str || '')
+  if (!m) return [0, 0]
+  return [parseFloat(m[1]), parseFloat(m[2])]
+}
+function hfParseScale(str) {
+  const m = /scale\(\s*([-0-9.]+)\s*\)/.exec(str || '')
+  if (!m) return 1
+  return parseFloat(m[1])
+}
+function hfParseRects(str) {
+  const out = []
+  const re = /<rect\b[^>]*\bx="([0-9eE+.\-]+)"[^>]*\by="([0-9eE+.\-]+)"[^>]*\bwidth="([0-9eE+.\-]+)"[^>]*\bheight="([0-9eE+.\-]+)"/g
+  let m
+  while ((m = re.exec(str)) !== null) {
+    out.push({
+      x: parseFloat(m[1]), y: parseFloat(m[2]),
+      w: parseFloat(m[3]), h: parseFloat(m[4]),
+    })
+  }
+  return out
+}
+function hfBBoxIntersectPx(a, b) {
+  const ax2 = a.x + a.w, ay2 = a.y + a.h
+  const bx2 = b.x + b.w, by2 = b.y + b.h
+  const ix = Math.max(0, Math.min(ax2, bx2) - Math.max(a.x, b.x))
+  const iy = Math.max(0, Math.min(ay2, by2) - Math.max(a.y, b.y))
+  return ix * iy
+}
+function hfExtractTransformChain(svg, className) {
+  const outer = substringByClassName(svg, className)
+  if (!outer) return { group: '', transform: '' }
+  const openTagMatch = outer.match(/^<g\b([^>]*)>/)
+  return { group: outer, transform: (openTagMatch?.[1] || '') }
+}
+function hfWorkspaceRectsInFigure(svg, roleId) {
+  const CV2 = (loadV2Modules()).Chars
+  const scale = roleId === 'helix' ? 2.42 : 1.97
+  const wsScale = Math.min(1.12, Math.max(1.02, scale * 0.82))
+  const outerTX = 3, outerTY = 47.2
+  const wsG = substringByClassName(svg, 'ws-mini')
+  assert.ok(wsG.length > 20, `renderSVG(${roleId}) must contain ws-mini workstation group`)
+  const wsAttr = wsG.match(/^<g\b([^>]*)>/)?.[1] || ''
+  const [wsTX, wsTY] = hfParseTranslate(wsAttr)
+  const wsS = hfParseScale(wsAttr)
+  const allRects = hfParseRects(wsG)
+  const monitorRects = allRects.filter(r => r.h >= 3 && r.w >= 6).map(r => ({
+    x: outerTX + (wsTX + r.x * wsS) * wsScale,
+    y: outerTY + (wsTY + r.y * wsS) * wsScale,
+    w: r.w * wsS * wsScale,
+    h: r.h * wsS * wsScale,
+  }))
+  return monitorRects
+}
+const HF_HEAD_BBOX = {
+  x: 24 - 8.5, y: 25 - 8.5, w: 17, h: 17,
+}
+const HF_TORSO_APPROX = { w: 24, h: 28, area: 24 * 28 }
+
+test('HOTFIX-FE-NO-OVERLAP. [Frontend workstation ∩ head = 0] Frontend WORKING: every ws screen rect has zero intersection with head bbox (HEAD_CENTER±HEAD_RADIUS)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('frontend', { state: 'WORKING' })
+  const rects = hfWorkspaceRectsInFigure(svg, 'frontend')
+  assert.ok(rects.length >= 2, `Frontend dual-monitor workstation must have at least 2 screen rects. Got ${rects.length}`)
+  let totalOverlap = 0
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i]
+    const ov = hfBBoxIntersectPx(r, HF_HEAD_BBOX)
+    totalOverlap += ov
+    assert.equal(ov, 0,
+      `Frontend screen rect[${i}] (x=${r.x.toFixed(2)} y=${r.y.toFixed(2)} w=${r.w.toFixed(2)} h=${r.h.toFixed(2)}) ∩ head (x=${HF_HEAD_BBOX.x},y=${HF_HEAD_BBOX.y} w=${HF_HEAD_BBOX.w} h=${HF_HEAD_BBOX.h}) = ${ov} px² MUST be 0.`)
+  }
+  const minGapY = Math.min(...rects.map(r => r.y - (HF_HEAD_BBOX.y + HF_HEAD_BBOX.h)))
+  assert.ok(minGapY >= 6, `Y gap from head-bottom to closest screen-top must be ≥ 6px. Got minGapY=${minGapY.toFixed(2)}px`)
+  void totalOverlap
+})
+
+test('HOTFIX-BE-NO-OVERLAP. [Backend workstation ∩ head = 0] Backend WORKING: every ws server-rack rect has zero intersection with head bbox', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('backend', { state: 'WORKING' })
+  const rects = hfWorkspaceRectsInFigure(svg, 'backend')
+  assert.ok(rects.length >= 1, `Backend server-rack workstation must have rack rects. Got ${rects.length}`)
+  let totalOverlap = 0
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i]
+    const ov = hfBBoxIntersectPx(r, HF_HEAD_BBOX)
+    totalOverlap += ov
+    assert.equal(ov, 0,
+      `Backend rack rect[${i}] (x=${r.x.toFixed(2)} y=${r.y.toFixed(2)} w=${r.w.toFixed(2)} h=${r.h.toFixed(2)}) ∩ head (x=${HF_HEAD_BBOX.x},y=${HF_HEAD_BBOX.y} w=${HF_HEAD_BBOX.w} h=${HF_HEAD_BBOX.h}) = ${ov} px² MUST be 0.`)
+  }
+  const minGapY = Math.min(...rects.map(r => r.y - (HF_HEAD_BBOX.y + HF_HEAD_BBOX.h)))
+  assert.ok(minGapY >= 6, `Y gap from head-bottom to closest rack-top must be ≥ 6px. Got minGapY=${minGapY.toFixed(2)}px`)
+  void totalOverlap
+})
+
+test('HOTFIX-QA-DEVICE-RIGHT. [QA Device env moved RIGHT/scale] core-office-v2.js quality zone device-test-screen: translateX delta ≥ 20 (1248 vs old 1216) OR scale factor < 0.9 applied', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const qualityZoneStart = officeSrcV2.indexOf("function qualityZone()")
+  assert.ok(qualityZoneStart >= 0, 'qualityZone() function MUST exist in core-office-v2.js')
+  const qualityEnd = officeSrcV2.indexOf("function helixHubZone()", qualityZoneStart)
+  const qualityBody = officeSrcV2.slice(qualityZoneStart, qualityEnd >= 0 ? qualityEnd : officeSrcV2.length)
+  const deviceG = qualityBody.match(/<g\b[^>]*class="[^"]*device-test-screen[^"]*"[^>]*>/)
+  assert.ok(deviceG, `qualityZone MUST render device-test-screen group. Got zone body len=${qualityBody.length}`)
+  const gTag = deviceG[0]
+  const [tx, ty] = hfParseTranslate(gTag)
+  const sc = hfParseScale(gTag)
+  const hasRightShift = (tx >= 1236)
+  const hasScaleDown = (sc < 0.9 && sc > 0)
+  assert.ok(hasRightShift || hasScaleDown,
+    `QA DEVICE phone MUST have moved RIGHT by ≥20px (new translateX=${tx.toFixed(1)} ≥ 1236) OR carry scale factor < 0.9 (got scale=${sc.toFixed(3)}). gTag snippet: ${gTag.slice(0, 120)}`)
+  void ty
+})
+
+test('HOTFIX-IDLE-HIDDEN. [IDLE pill hidden visually] IDLE product render contains sk2-state-pill node AND display:none / visibility:hidden marker on that pill; semantics preserved in DOM', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('product', { state: 'IDLE' })
+  const pillIdx = svg.search(/class="[^"]*sk2-state-pill[^"]*"/)
+  assert.ok(pillIdx >= 0, 'IDLE state SVG MUST still contain sk2-state-pill node (DOM preserved for aria/inspector semantics)')
+  const pillRegionStart = Math.max(0, pillIdx - 40)
+  const pillRegionEnd = Math.min(svg.length, pillIdx + 240)
+  const pillRegion = svg.slice(pillRegionStart, pillRegionEnd)
+  const hasDisplayNone = /style="[^"]*display\s*:\s*none/.test(pillRegion)
+  const hasVisHidden = /style="[^"]*visibility\s*:\s*hidden/.test(pillRegion)
+  assert.ok(hasDisplayNone || hasVisHidden,
+    `IDLE state sk2-state-pill outer <g> MUST carry style="display:none" or visibility:hidden (visually hidden, DOM preserved for semantics). pillRegion contains display:none=${hasDisplayNone} visibility:hidden=${hasVisHidden}. region snippet: ${pillRegion.slice(0, 200)}`)
+})
+
+test('HOTFIX-WORKING-VISIBLE. [WORKING pill visible] WORKING frontend pill renders NO display:none marker — normal visible styling', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('frontend', { state: 'WORKING' })
+  const pillIdx = svg.search(/class="[^"]*sk2-state-pill[^"]*"/)
+  assert.ok(pillIdx >= 0, 'Frontend WORKING SVG MUST contain sk2-state-pill class')
+  const pillRegionStart = Math.max(0, pillIdx - 40)
+  const pillRegionEnd = Math.min(svg.length, pillIdx + 240)
+  const pillRegion = svg.slice(pillRegionStart, pillRegionEnd)
+  const hiddenSet = /style="[^"]*display\s*:\s*none[^"]*"/.test(pillRegion) || /style="[^"]*visibility\s*:\s*hidden[^"]*"/.test(pillRegion)
+  assert.ok(!hiddenSet, `Frontend WORKING state pill must NOT have display:none or visibility:hidden (must render normally visible).`)
+})
+
+test('HOTFIX-REVIEWING-VISIBLE. [REVIEWING pill visible] REVIEWING reviewer pill renders NO display:none marker', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('reviewer', { state: 'REVIEWING' })
+  const pillIdx = svg.search(/class="[^"]*sk2-state-pill[^"]*"/)
+  assert.ok(pillIdx >= 0, 'Reviewer REVIEWING SVG MUST contain sk2-state-pill class')
+  const pillRegionStart = Math.max(0, pillIdx - 40)
+  const pillRegionEnd = Math.min(svg.length, pillIdx + 240)
+  const pillRegion = svg.slice(pillRegionStart, pillRegionEnd)
+  const hiddenSet = /style="[^"]*display\s*:\s*none[^"]*"/.test(pillRegion) || /style="[^"]*visibility\s*:\s*hidden[^"]*"/.test(pillRegion)
+  assert.ok(!hiddenSet, `Reviewer REVIEWING state pill must NOT be hidden (must render normally).`)
+})
+
+test('HOTFIX-WAIT-VISIBLE. [WAITING_HUMAN pill visible] WAITING_HUMAN qa pill renders NO display:none marker', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('qa', { state: 'WAITING_HUMAN' })
+  const pillIdx = svg.search(/class="[^"]*sk2-state-pill[^"]*"/)
+  assert.ok(pillIdx >= 0, 'QA WAITING_HUMAN SVG MUST contain sk2-state-pill class')
+  const pillRegionStart = Math.max(0, pillIdx - 40)
+  const pillRegionEnd = Math.min(svg.length, pillIdx + 240)
+  const pillRegion = svg.slice(pillRegionStart, pillRegionEnd)
+  const hiddenSet = /style="[^"]*display\s*:\s*none[^"]*"/.test(pillRegion) || /style="[^"]*visibility\s*:\s*hidden[^"]*"/.test(pillRegion)
+  assert.ok(!hiddenSet, `QA WAITING_HUMAN state pill must NOT be hidden (amber glow/hand raised state must be visually indicated).`)
+})
+
+test('HOTFIX-REVIEWER-BOARD-SIZE. [Reviewer brown board ≤30% torso area] Reviewer torso accessory brown rect/board total area ≤ ~30% torso approximate area (24×28)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('reviewer', { state: 'IDLE' })
+  const torsoAcc = substringByClassName(svg, 'sk2-torso-accessory')
+  assert.ok(torsoAcc.length >= 10, 'Reviewer render MUST contain sk2-torso-accessory subgroup (brown review board lives here)')
+  const allRects = hfParseRects(torsoAcc)
+  const BROWN_HUES = ['#8b6f47', '#8B6F47', '#a0522d', '#A0522D', '#8b4513', '#8B4513', '#795548', '#704214', '#5d4a30', '#5D4A30']
+  const brownRects = allRects.filter(r => {
+    const idx = torsoAcc.indexOf(`x="${r.x}"`)
+    if (idx < 0) return false
+    const tag = torsoAcc.slice(Math.max(0, idx - 120), idx + 160)
+    return BROWN_HUES.some(h => tag.includes(h)) || tag.includes('review-board-torso') || tag.includes('data-role="reviewer"')
+  })
+  let brownArea = 0
+  for (const r of brownRects) brownArea += r.w * r.h
+  const torsoArea = HF_TORSO_APPROX.area
+  const ratio = torsoArea > 0 ? brownArea / torsoArea : 1
+  assert.ok(ratio <= 0.33,
+    `Reviewer brown review board total area = ${brownArea.toFixed(1)} px² / torso approx ${torsoArea} px² = ${(ratio*100).toFixed(1)}% MUST be ≤ 30% (tol +3%). board rect count=${brownRects.length} first 2 rects=${JSON.stringify(brownRects.slice(0,2))}`)
+  if (brownRects.length === 0) {
+    const reviewG = torsoAcc.includes('review-board-torso')
+    assert.ok(reviewG, `If brown-hue regex missed, structural class="review-board-torso" wrapper must exist in reviewer torso accessory. Got torsoAcc snippet: ${torsoAcc.slice(0, 300)}`)
+  }
+})
+
+test('HOTFIX-HELIX-PILL-INDEPENDENT. [Helix pill anchor] Helix THINKING state pill uses translate(54 14) (upper-right near command hub, NOT body-waist translate(-12 62) used by normal roles)', () => {
+  const M = loadV2Modules()
+  const CV2 = M.Chars
+  const svg = CV2.renderSVG('helix', { state: 'THINKING' })
+  const pillIdx = svg.search(/class="[^"]*sk2-state-pill[^"]*"/)
+  assert.ok(pillIdx >= 0, 'Helix THINKING MUST contain sk2-state-pill node')
+  const pillTag = svg.slice(Math.max(0, pillIdx - 60), Math.min(svg.length, pillIdx + 160))
+  const [tx, ty] = hfParseTranslate(pillTag)
+  const xGood = tx > 20
+  const yGood = ty < 40
+  assert.ok(xGood && yGood,
+    `Helix state pill translate MUST be independent (upper-right near command hub) instead of shared body waist translate(-12,62). Got pill translate(${tx.toFixed(1)}, ${ty.toFixed(1)}). Expected x>20 (current was x=-12 waist) AND y<40 (current was y=62 waist). tag snippet: ${pillTag.slice(0, 200)}`)
+})
