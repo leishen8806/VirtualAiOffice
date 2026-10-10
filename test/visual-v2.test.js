@@ -1794,6 +1794,74 @@ test('POSTM-FIX7b. [768px portrait top-bar CSS] no clipping / no brand-control c
     'tablet-portrait brand sizing rule MUST exist')
 })
 
+test('POSTM-FIX8a. [Workstation identity labels — demo renders two-line plates] every seat emits a persistent identity label with canonical role title (ROLES[].zh) + assigned member display name; model name never used in either field', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'demo' })
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('identity-labels-layer'), 'office MUST render identity-labels-layer')
+  assert.ok(html.includes('data-identity-label'), 'each workstation plate MUST carry data-identity-label marker')
+  // role title comes from ROLES[].zh (canonical), line-1 of the plate:
+  const productLabel = html.match(/data-role-title="([^"]*)"[^>]*data-member="([^"]*)"/)
+  assert.ok(productLabel, 'a workstation plate MUST carry data-role-title and data-member attributes')
+  // canonical zh title and assigned member from demo fixtures:
+  assert.ok(html.includes('data-role-title="产品经理"'), 'product plate title MUST be canonical zh 产品经理 (line-1 = role title)')
+  assert.ok(html.includes('data-member="李产品"'), 'product plate member MUST be assigned name 李产品 (line-2 = member display name)')
+  assert.ok(html.includes('data-role-title="前端工程师"'), 'frontend plate title MUST be canonical zh 前端工程师')
+  // the demo model (demo-model) is assigned to backend/architect/frontend/docs; it must NEVER leak into title or member:
+  if (html.includes('demo-model')) {
+    assert.ok(!/data-role-title="demo-model"|data-member="demo-model"/.test(html),
+      'model name "demo-model" MUST NOT replace role title or member display name in any plate')
+  }
+  handle.destroy()
+})
+
+test('POSTM-FIX8b. [Live — model must never replace member name] plate line-2 uses seatMembers only; a separately supplied seatModel (even a plausible name) is never written into data-member or data-role-title', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live', runtime: {}, helix: {}, snapshot: {} })
+  handle.update({
+    snapshot: {
+      seatMembers: { architect: 'Claude Live Test' },
+      seatModels: { architect: 'REPLACE-ME-MODEL' },
+    },
+  })
+  const html = collectV2HTML(handle)
+  assert.ok(html.includes('data-member="Claude Live Test"'),
+    'architect plate line-2 MUST be seatMembers value "Claude Live Test"')
+  assert.ok(!html.includes('data-member="REPLACE-ME-MODEL"'),
+    'model name must NEVER replace the member display name field')
+  assert.ok(!html.includes('data-role-title="REPLACE-ME-MODEL"'),
+    'model name must NEVER replace the role title field')
+  assert.ok(html.includes('data-role-title="架构师"'),
+    'architect plate line-1 must stay canonical zh 架构师 regardless of model')
+  handle.destroy()
+})
+
+test('POSTM-FIX8c. [Live — honest empty state] an unassigned seat renders honest "暂无成员" on line-2, never the model name, never a fabricated agent identity', () => {
+  const M = loadV2Modules()
+  const handle = M.Shell.bootstrap({ mode: 'live', runtime: {}, helix: {}, snapshot: {} })
+  const html = collectV2HTML(handle)
+  // a demo/real-time office must show persistent title for every workstation but honest empty member line:
+  assert.ok(html.includes('data-role-title="前端工程师"'),
+    'live station MUST still render canonical role title 前端工程师 even with no assigned member')
+  assert.ok(html.includes('暂无成员'), 'live unassigned station MUST render honest empty member state 暂无成员')
+  handle.destroy()
+})
+
+test('POSTM-FIX8d. [Label Z-order — between characters and capsules] identity-labels-layer MUST sit after characters-layer and before capsules-layer in the scene-svg (z-index 07.5), so labels never under-build characters nor overwrite task capsules', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const sceneStart = officeSrcV2.indexOf('<svg class="scene-svg"')
+  const sceneEnd = officeSrcV2.indexOf('</svg>', sceneStart)
+  const scene = officeSrcV2.slice(sceneStart, sceneEnd)
+  const charIdx = scene.indexOf('class="characters-layer"')
+  const labelIdx = scene.indexOf('identityLabelsLayer(labelMounts)')
+  const capsIdx = scene.indexOf('class="capsules-layer"')
+  assert.ok(charIdx >= 0, 'scene-svg must contain characters-layer')
+  assert.ok(labelIdx >= 0, 'scene-svg must reference identityLabelsLayer(labelMounts)')
+  assert.ok(capsIdx >= 0, 'scene-svg must contain capsules-layer')
+  assert.ok(charIdx < labelIdx && labelIdx < capsIdx,
+    `Z-order must be characters < identity-labels < capsules. Got characters=${charIdx} label=${labelIdx} capsules=${capsIdx}`)
+})
+
 test('HOTFIX-QA-DEVICE-RIGHT. [QA Device env moved RIGHT/scale] core-office-v2.js quality zone device-test-screen: translateX delta ≥ 20 (1248 vs old 1216) OR scale factor < 0.9 applied', () => {
   const officeSrcV2 = read('public/core/core-office-v2.js')
   const qualityZoneStart = officeSrcV2.indexOf("function qualityZone()")

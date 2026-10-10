@@ -141,6 +141,34 @@
     </g>`
   }
 
+  // Persistent two-line identity plate rendered at every workstation (Z-ORDER 07.5:
+  // after desk foregrounds, before task capsules). Line 1 = canonical role title
+  // (ROLES[].zh — NEVER the model name). Line2 = assigned member display name
+  // (seatMembers — NEVER replaced by seatModels). No member → honest empty state.
+  const LABEL_SCALE = Object.freeze({ normal: 1.97, helix: 2.42 })
+  const LABEL_ANCHOR_Y = Object.freeze({ normal: -42, helix: -128 })
+  const DESK_BOTTOM_LOCAL_Y = 74
+  function identityLabel(roleId, pos, r, memberName) {
+    if (roleId === 'human') return ''
+    const title = (r && r.zh) ? r.zh : roleId
+    const name = memberName ? String(memberName) : '暂无成员'
+    const scale = roleId === 'helix' ? LABEL_SCALE.helix : LABEL_SCALE.normal
+    const anchorY = roleId === 'helix' ? LABEL_ANCHOR_Y.helix : LABEL_ANCHOR_Y.normal
+    const deskBottom = pos.cy + anchorY + DESK_BOTTOM_LOCAL_Y * scale
+    const y = deskBottom + 10
+    return `<g class="identity-label" data-identity-label="1" data-role="${roleId}" data-role-title="${esc(title)}" data-member="${esc(name)}" transform="translate(${pos.cx - 52} ${y})" style="pointer-events:none;">
+      <rect x="0" y="-2" width="104" height="26" rx="6" fill="color-mix(in srgb, var(--panel-2) 94%, transparent)" stroke="rgba(0,0,0,0.10)" stroke-width="0.6"/>
+      <text x="52" y="9" text-anchor="middle" font-size="7" font-weight="700" letter-spacing="0.6" fill="var(--text)" style="font-family:var(--sans),system-ui;">${esc(title)}</text>
+      <text x="52" y="20" text-anchor="middle" font-size="6.4" font-weight="500" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">${esc(name)}</text>
+    </g>`
+  }
+
+  function identityLabelsLayer(figureMeta) {
+    const items = Object.values(figureMeta)
+    if (!items.length) return ''
+    return `<g class="identity-labels-layer" style="pointer-events:none;">${items.join('')}</g>`
+  }
+
   function planningZone() {
     return `<g class="zone zone-planning" data-zone="planning">
       <path d="M60 90 L580 90 L600 440 L60 440 Z" fill="color-mix(in srgb,var(--role-product) 3%,transparent)" stroke="none"/>
@@ -871,6 +899,7 @@
     for (const t of tasks) { if (t.role) (roleTasks[t.role] ||= []).push(t) }
 
     const figureMounts = {}
+    const labelMounts = {}
     for (const [roleId, pos] of Object.entries(ZONE_POSITIONS)) {
       if (roleId === 'human') continue
       const state = seatStates[roleId] || 'IDLE'
@@ -881,6 +910,8 @@
       figureMounts[roleId] = CV2
         ? CV2.renderSVG(roleId, { state, kind, memberName, model, angle: pos.angle, scale })
         : `<text x="${pos.cx}" y="${pos.cy}" font-size="10" fill="var(--text-muted)">${roleId}</text>`
+      const roleDef = CV2 ? CV2.role(roleId) : null
+      labelMounts[roleId] = identityLabel(roleId, pos, roleDef, memberName)
     }
 
     const taskCapsules = []
@@ -909,6 +940,7 @@
                05 workstation / screens (inside each character SVG paint L1)
                06 CHARACTER bodies (inside character SVG paint L3 skeleton)
                07 desk foregrounds (inside character SVG deskState)
+               07.5 identity-labels-layer (persistent two-line per-workstation plates)
                08 capsules-layer (task capsules UI above everything) -->
           ${planningZone()}
           ${engineeringZone()}
@@ -927,6 +959,7 @@
             }).join('')}
             ${(figureMounts.helix ? `<g class="char-anchor char-helix" data-role="helix" transform="translate(${ZONE_POSITIONS.helix.cx - 45} ${ZONE_POSITIONS.helix.cy - 128})" style="cursor:pointer;">${figureMounts.helix}</g>` : '')}
           </g>
+          ${identityLabelsLayer(labelMounts)}
           <g class="capsules-layer" style="pointer-events:auto;">
             ${overlayHTML}
           </g>
