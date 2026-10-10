@@ -145,21 +145,52 @@
   // after desk foregrounds, before task capsules). Line 1 = canonical role title
   // (ROLES[].zh — NEVER the model name). Line2 = assigned member display name
   // (seatMembers — NEVER replaced by seatModels). No member → honest empty state.
+  //
+  // READABILITY CONTRACT: the member display name is the PRIMARY identity line and MUST
+  // be visually stronger than the role title (larger, semibold, darker/higher contrast).
+  // Font sizes are calibrated per responsive office-mode from ACTUAL rendered scene scale
+  // (measured in pixels at 1440/1280/1024/768/390), so rendered CSS px meet the breakpoint
+  // minimums regardless of the viewBox scaling.
   const LABEL_SCALE = Object.freeze({ normal: 1.97, helix: 2.42 })
   const LABEL_ANCHOR_Y = Object.freeze({ normal: -42, helix: -128 })
   const DESK_BOTTOM_LOCAL_Y = 74
-  function identityLabel(roleId, pos, r, memberName) {
+  // SVG user-unit font sizes, tuned so (fontSize * sceneScale) lands on the target rendered
+  // px at each office mode. Member line is always larger + heavier than the role line.
+  const LABEL_FONT = Object.freeze({
+    DESKTOP_LARGE:    Object.freeze({ role: 17, name: 20, cardPadY: 7 }),
+    DESKTOP_COMPACT:  Object.freeze({ role: 18, name: 21, cardPadY: 7 }),
+    TABLET:           Object.freeze({ role: 20, name: 23, cardPadY: 8 }),
+    TABLET_PORTRAIT:  Object.freeze({ role: 8,  name: 9,  cardPadY: 6 }),
+    MOBILE:           Object.freeze({ role: 12, name: 14, cardPadY: 7 }),
+  })
+  function identityLabel(roleId, pos, r, memberName, officeMode) {
     if (roleId === 'human') return ''
     const title = (r && r.zh) ? r.zh : roleId
     const name = memberName ? String(memberName) : '暂无成员'
+    const modeFont = LABEL_FONT[officeMode] || LABEL_FONT.DESKTOP_LARGE
+    const fsRole = modeFont.role
+    const fsName = modeFont.name
     const scale = roleId === 'helix' ? LABEL_SCALE.helix : LABEL_SCALE.normal
     const anchorY = roleId === 'helix' ? LABEL_ANCHOR_Y.helix : LABEL_ANCHOR_Y.normal
     const deskBottom = pos.cy + anchorY + DESK_BOTTOM_LOCAL_Y * scale
-    const y = deskBottom + 10
-    return `<g class="identity-label" data-identity-label="1" data-role="${roleId}" data-role-title="${esc(title)}" data-member="${esc(name)}" transform="translate(${pos.cx - 52} ${y})" style="pointer-events:none;">
-      <rect x="0" y="-2" width="104" height="26" rx="6" fill="color-mix(in srgb, var(--panel-2) 94%, transparent)" stroke="rgba(0,0,0,0.10)" stroke-width="0.6"/>
-      <text x="52" y="9" text-anchor="middle" font-size="7" font-weight="700" letter-spacing="0.6" fill="var(--text)" style="font-family:var(--sans),system-ui;">${esc(title)}</text>
-      <text x="52" y="20" text-anchor="middle" font-size="6.4" font-weight="500" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">${esc(name)}</text>
+    const y = deskBottom + 10 * (fsName / 9)
+    // Compute a content-aware card width so long member names remain fully readable and
+    // never clipped: CJK ≈ full-width (×1.0), latin ≈ ×0.56 advance on the given font size.
+    const cjkW = (s) => Math.ceil((s.match(/[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/g) || []).length)
+    const latW = (s) => s.replace(/[\u2E80-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/g, '').length
+    const titleW = cjkW(title) * fsRole + latW(title) * fsRole * 0.56
+    const nameW = cjkW(name) * fsName + latW(name) * fsName * 0.56
+    const contentW = Math.max(titleW, nameW)
+    const cardW = Math.max(96, Math.ceil(contentW) + 26)
+    const cardH = fsRole + fsName + modeFont.cardPadY * 2
+    const roleY = modeFont.cardPadY + fsRole
+    const nameY = roleY + fsName * 1.06
+    const cx = pos.cx - cardW / 2
+    // name line: stronger (larger + semibold + full-contrast), role line: lighter (muted)
+    return `<g class="identity-label" data-identity-label="1" data-role="${roleId}" data-role-title="${esc(title)}" data-member="${esc(name)}" transform="translate(${cx} ${y})" style="pointer-events:none;">
+      <rect x="0" y="0" width="${cardW}" height="${cardH}" rx="7" fill="color-mix(in srgb, var(--panel-2) 96%, transparent)" stroke="rgba(0,0,0,0.22)" stroke-width="0.9"/>
+      <text x="${cardW / 2}" y="${roleY}" text-anchor="middle" font-size="${fsRole}" font-weight="600" letter-spacing="0.8" fill="var(--text-muted)" style="font-family:var(--sans),system-ui;">${esc(title)}</text>
+      <text x="${cardW / 2}" y="${nameY}" text-anchor="middle" font-size="${fsName}" font-weight="700" letter-spacing="0.4" fill="var(--text)" style="font-family:var(--sans),system-ui;">${esc(name)}</text>
     </g>`
   }
 
@@ -911,7 +942,7 @@
         ? CV2.renderSVG(roleId, { state, kind, memberName, model, angle: pos.angle, scale })
         : `<text x="${pos.cx}" y="${pos.cy}" font-size="10" fill="var(--text-muted)">${roleId}</text>`
       const roleDef = CV2 ? CV2.role(roleId) : null
-      labelMounts[roleId] = identityLabel(roleId, pos, roleDef, memberName)
+      labelMounts[roleId] = identityLabel(roleId, pos, roleDef, memberName, officeMode)
     }
 
     const taskCapsules = []

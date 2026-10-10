@@ -1862,6 +1862,51 @@ test('POSTM-FIX8d. [Label Z-order — between characters and capsules] identity-
     `Z-order must be characters < identity-labels < capsules. Got characters=${charIdx} label=${labelIdx} capsules=${capsIdx}`)
 })
 
+test('POSTM-FIX9a. [Readability — font hierarchy contract] member display name MUST be visually stronger than the role title for every responsive office-mode (member font-size > role font-size)', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const labelFontStart = officeSrcV2.indexOf('const LABEL_FONT')
+  assert.ok(labelFontStart >= 0, 'LABEL_FONT calibration map MUST exist in core-office-v2.js')
+  const modeEntries = officeSrcV2.slice(labelFontStart, officeSrcV2.indexOf('function identityLabel', labelFontStart))
+  for (const mode of ['DESKTOP_LARGE', 'DESKTOP_COMPACT', 'TABLET', 'TABLET_PORTRAIT', 'MOBILE']) {
+    const m = modeEntries.indexOf(`${mode}:`)
+    assert.ok(m >= 0, `LABEL_FONT MUST define ${mode}`)
+    const ch = modeEntries.slice(m, modeEntries.indexOf('}', m))
+    const roleF = Number((ch.match(/role:\s*(\d+)/) || [])[1])
+    const nameF = Number((ch.match(/name:\s*(\d+)/) || [])[1])
+    assert.ok(roleF > 0 && nameF > 0, `${mode} role/name font sizes MUST be positive (got role=${roleF} name=${nameF})`)
+    assert.ok(nameF > roleF, `${mode} member font (${nameF}) MUST be larger than role font (${roleF})`)
+  }
+})
+
+test('POSTM-FIX9b. [Readability — rendered px meet breakpoint minimums] calibrated per-mode font × measured scene-scale lands the member line atop the required minimum (node structural guard; screen-space px proven by browser acceptance)', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const anchor = officeSrcV2.indexOf('const LABEL_FONT')
+  const block = officeSrcV2.slice(anchor, officeSrcV2.indexOf('function identityLabel', anchor))
+  // sceneScale per mode is fixed by the frozen viewBox architecture (measured in Chromium):
+  const scales = { DESKTOP_LARGE: 0.76, DESKTOP_COMPACT: 0.725, TABLET: 0.64, TABLET_PORTRAIT: 1.67, MOBILE: 0.975 }
+  const mins = { DESKTOP_LARGE: { role: 12, name: 14 }, DESKTOP_COMPACT: { role: 12, name: 14 }, TABLET: { role: 12, name: 14 }, TABLET_PORTRAIT: { role: 12, name: 14 }, MOBILE: { role: 11, name: 13 } }
+  for (const mode of Object.keys(scales)) {
+    const s = block.indexOf(`${mode}:`)
+    const ch = block.slice(s, block.indexOf('}', s))
+    const roleF = Number((ch.match(/role:\s*(\d+)/) || [])[1])
+    const nameF = Number((ch.match(/name:\s*(\d+)/) || [])[1])
+    const rolePx = roleF * scales[mode]
+    const namePx = nameF * scales[mode]
+    assert.ok(rolePx >= mins[mode].role, `${mode} role rendered >= ${mins[mode].role}px (calibrated ${rolePx.toFixed(1)}px)`)
+    assert.ok(namePx >= mins[mode].name, `${mode} name rendered >= ${mins[mode].name}px (calibrated ${namePx.toFixed(1)}px)`)
+  }
+})
+
+test('POSTM-FIX9c. [Readability — contrast hierarchy] member line MUST use higher-contrast fill than the role line (role muted, member full text color + heavier weight)', () => {
+  const officeSrcV2 = read('public/core/core-office-v2.js')
+  const fn = officeSrcV2.slice(officeSrcV2.indexOf('function identityLabel'), officeSrcV2.indexOf('function identityLabelsLayer'))
+  // role line: font-weight 600 + var(--text-muted); member line: font-weight 700 + var(--text)
+  assert.ok(/font-weight="600"[^>]*fill="var\(--text-muted\)"/.test(fn) || /fill="var\(--text-muted\)"[^>]*font-weight="600"/.test(fn),
+    'role line MUST be the secondary (muted, medium-weight) line')
+  assert.ok(/font-weight="700"[^>]*fill="var\(--text\)"/.test(fn) || /fill="var\(--text\)"[^>]*font-weight="700"/.test(fn),
+    'member line MUST be the primary (full-contrast, semibold) line')
+})
+
 test('HOTFIX-QA-DEVICE-RIGHT. [QA Device env moved RIGHT/scale] core-office-v2.js quality zone device-test-screen: translateX delta ≥ 20 (1248 vs old 1216) OR scale factor < 0.9 applied', () => {
   const officeSrcV2 = read('public/core/core-office-v2.js')
   const qualityZoneStart = officeSrcV2.indexOf("function qualityZone()")
