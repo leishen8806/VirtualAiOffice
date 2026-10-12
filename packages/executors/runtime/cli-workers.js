@@ -167,6 +167,11 @@ class CliWorker extends BaseWorker {
     return this.cfg.command || (this.type === 'claude-cli' ? 'claude' : 'codex')
   }
 
+  /** CLI workers treat vision as explicitly false until integrated; NEVER silent-switch. */
+  supportsVision() {
+    return Boolean(this.cfg.vision === true || this.cfg.visionCapable === true)
+  }
+
   async check() {
     const r = await spawnCmd(this.command(), ['--version'], { cwd: this.workdir, env: this.env(), collect: true, timeoutMs: 20000 }).done
     this.available = r.code === 0
@@ -250,7 +255,12 @@ export class ClaudeCliWorker extends CliWorker {
   }
 
   /** One-shot question with no edits: planning, acceptance notes, reports. Read-only tools stay available. */
-  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask' } = {}) {
+  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask', images = [] } = {}) {
+    if (Array.isArray(images) && images.length > 0) {
+      if (!this.supportsVision()) {
+        throw Object.assign(new Error('VISION_UNSUPPORTED: 当前 CLI 项目组未启用视觉能力，图片不会被静默丢弃。请改用支持视觉的 API 项目组。'), { code: 'VISION_UNSUPPORTED' })
+      }
+    }
     const log = this.openLog(label, prompt)
     const args = ['-p', '--output-format', 'json', '--disallowedTools', 'Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Task,Agent']
     args.push(...this.modelArgs(model || this.modelFor('medium')))
@@ -297,7 +307,12 @@ export class CodexCliWorker extends CliWorker {
     return { args, parser: createCodexParser(workdir), outFile }
   }
 
-  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask' } = {}) {
+  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask', images = [] } = {}) {
+    if (Array.isArray(images) && images.length > 0) {
+      if (!this.supportsVision()) {
+        throw Object.assign(new Error('VISION_UNSUPPORTED: 当前 CLI 项目组未启用视觉能力，图片不会被静默丢弃。请改用支持视觉的 API 项目组。'), { code: 'VISION_UNSUPPORTED' })
+      }
+    }
     const log = this.openLog(label, prompt)
     const outFile = this.tmpFile(label)
     const args = ['exec', '--skip-git-repo-check', '-C', this.workdir, '-s', 'read-only', '-o', outFile]

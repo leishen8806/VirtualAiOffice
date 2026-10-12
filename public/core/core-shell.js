@@ -355,7 +355,8 @@
     return rail
   }
 
-  function renderHelixPanel({ helix, runtime }, composer = {}) {
+  function renderHelixPanel({ helix, runtime }, composer = {}, reuseFromNode = null) {
+    const Composer = globalThis.VAOCoreComposer
     const pane = el('div', { id: 'helix-panel-inner' })
     const conv = (helix.conversation || []).slice().slice(-12)
     const decisions = (helix.decisions || []).slice()
@@ -419,15 +420,48 @@
     }
     const cwrap = el('div', { class: 'helix-block' })
     cwrap.appendChild(convBlock)
-    const cform = el('form', { class: 'helix-composer', onsubmit: (e) => { e.preventDefault(); const ta = cform.querySelector('textarea'); if (ta.value.trim()) composer.onSend?.(ta.value.trim()); ta.value = '' } })
-    cform.innerHTML = `
-      <textarea rows="2" placeholder="跟 Helix 说说要做什么…" aria-label="给 Helix 的消息" style="font-size:12px;padding:6px 8px !important;"></textarea>
-      <button type="submit">发送</button>
-    `
-    cform.querySelector('textarea').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); cform.requestSubmit() }
-    })
-    cwrap.appendChild(cform)
+
+    const composerContext = {
+      runtimeId: runtime?.workspace?.id || '',
+      workspacePath: runtime?.workspace?.path || '',
+      projectPath: runtime?.project?.id || '',
+    }
+
+    let composerEl = null
+    if (reuseFromNode && typeof reuseFromNode.querySelector === 'function') {
+      const existing = reuseFromNode.querySelector('.helix-composer-v2')
+      if (existing && existing.parentElement) {
+        composerEl = existing
+        existing.parentElement.removeChild(existing)
+      }
+    }
+    if (!composerEl) {
+      if (Composer && typeof Composer.renderComposer === 'function') {
+        composerEl = Composer.renderComposer({
+          context: composerContext,
+          onSend: (t) => {
+            // Forward ONE normalized envelope (string or object). Transport.send()
+            // is the SINGLE boundary responsible for converting legacy plain-string
+            // senders into the canonical { clientMessageId?, text, attachmentIds? }
+            // shape. Do NOT drop the 2nd arg or strip attachmentIds here.
+            return composer.onSend?.(t)
+          },
+          onRebindAttachments: typeof composer.onRebindAttachments === 'function'
+            ? (payload) => composer.onRebindAttachments(payload)
+            : null,
+        })
+      } else {
+        composerEl = el('form', { class: 'helix-composer', onsubmit: (e) => { e.preventDefault(); const ta = composerEl.querySelector('textarea'); if (ta.value.trim()) composer.onSend?.(ta.value.trim()); ta.value = '' } })
+        composerEl.innerHTML = `
+          <textarea rows="2" placeholder="跟 Helix 说说要做什么…" aria-label="给 Helix 的消息" style="font-size:12px;padding:6px 8px !important;"></textarea>
+          <button type="submit">发送</button>
+        `
+        composerEl.querySelector('textarea').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); composerEl.requestSubmit() }
+        })
+      }
+    }
+    cwrap.appendChild(composerEl)
     pane.appendChild(cwrap)
 
     if (waiting.length > 0) {
@@ -534,10 +568,20 @@
     const rail = renderRail({ runtime, onPickSeat: options.onPickSeat, onNavigate: navHandler, activeNav })
     const canvas = el('main', { id: 'office-canvas', role: 'main', 'aria-label': '办公室楼层 · Office Floor: Helix 指挥台居中，周围是 规划工作室 / 工程站 / 质检 / 文档 / 人类区' })
     const helixPanel = el('aside', { id: 'helix-panel', 'aria-label': 'Helix 系统编排中枢面板' })
-    const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) })
+    const innerHelixPanel = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => {
+      // Preserve the envelope across the shell → application bridge.
+      // Only normalize legacy string callers; object envelopes pass verbatim.
+      if (t && typeof t === 'object') return options.onConversationSend?.(t)
+      if (full && typeof full === 'object') return options.onConversationSend?.(full)
+      return options.onConversationSend?.(String(t ?? ''))
+    }, onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) })
     helixPanel.appendChild(innerHelixPanel)
     helixDrawer.innerHTML = ''
-    helixDrawer.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) }))
+    helixDrawer.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => {
+      if (t && typeof t === 'object') return options.onConversationSend?.(t)
+      if (full && typeof full === 'object') return options.onConversationSend?.(full)
+      return options.onConversationSend?.(String(t ?? ''))
+    }, onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }))
 
     document.body.appendChild(bar)
     document.body.appendChild(rail)
@@ -564,8 +608,15 @@
         if (next.runtime) Object.assign(runtime, next.runtime)
         if (next.helix) Object.assign(helix, next.helix)
         if (next.runtime || next.helix) {
+          const oldPanel = helixPanel.firstElementChild
+          const oldDrawer = helixDrawer.firstElementChild
           helixPanel.innerHTML = ''
-          helixPanel.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t) => options.onConversationSend?.(t) }))
+          helixPanel.appendChild(renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full), onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }, oldPanel))
+          if (oldDrawer) {
+            const newDrawer = renderHelixPanel({ helix, runtime }, { onSend: (t, full) => options.onConversationSend?.(t ?? full?.text ?? '', full), onRebindAttachments: (payload) => options.onRebindAttachments?.(payload) }, oldDrawer)
+            helixDrawer.innerHTML = ''
+            helixDrawer.appendChild(newDrawer)
+          }
         }
         if (next.snapshot) officeHandle.update(next.snapshot)
         if (next.runtime) {

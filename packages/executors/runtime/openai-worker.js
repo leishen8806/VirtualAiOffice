@@ -251,6 +251,12 @@ export class OpenAIWorker extends BaseWorker {
     this.plugins = new Set()
   }
 
+  /** True iff this group's config has explicitly enabled vision for its base model. */
+  supportsVision() {
+    return Boolean(this.cfg.vision === true || this.cfg.visionCapable === true ||
+      (Array.isArray(this.cfg.visionModels) && this.cfg.visionModels.length > 0))
+  }
+
   apiKey() {
     return fillEnv(this.cfg.apiKey || '') || (this.cfg.apiKeyEnv ? process.env[this.cfg.apiKeyEnv] || '' : '')
   }
@@ -470,14 +476,29 @@ export class OpenAIWorker extends BaseWorker {
     }
   }
 
-  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask' } = {}) {
+  async ask(prompt, { model, timeoutMs = 5 * 60 * 1000, label = 'ask', images = [] } = {}) {
     const log = this.openLog(label, prompt)
     const ac = new AbortController()
     this.aborts.add(ac)
     const timer = setTimeout(() => ac.abort(), timeoutMs)
     try {
-      const { message } = await this.chat([{ role: 'user', content: prompt }], { model: model || this.modelFor('medium'), signal: ac.signal })
-      const text = typeof message.content === 'string' ? message.content : ''
+      let content
+      if (Array.isArray(images) && images.length > 0) {
+        if (!this.supportsVision()) {
+          throw Object.assign(new Error('VISION_UNSUPPORTED: 当前项目组未启用视觉能力，图片不会被静默丢弃'), { code: 'VISION_UNSUPPORTED' })
+        }
+        content = [{ type: 'text', text: prompt }, ...images.map((im) => {
+          const mime = String(im.mime || im.mimeType || 'image/png').trim()
+          const b64 = String(im.base64 || im.data || '').replace(/^data:[^,]+,/, '')
+          return { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } }
+        })]
+      } else {
+        content = prompt
+      }
+      const { message } = await this.chat([{ role: 'user', content }], { model: model || this.modelFor('medium'), signal: ac.signal })
+      const text = typeof message.content === 'string' ? message.content :
+        Array.isArray(message.content) ? message.content.map((p) => typeof p === 'string' ? p : (p && p.type === 'text' ? p.text : '')).join('') :
+        ''
       log?.end(text)
       return text
     } catch (e) {
