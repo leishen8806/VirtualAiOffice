@@ -25,7 +25,8 @@
 - 品牌迁移 V1（PR #6、#7）
 - 视觉身份 V2 文档（PR #8）
 - 交互办公室 V2 实现（PR #11）
-- 待合并：审计修复（PR #12，分支 fix/post-merge-audit-v2）——未合并
+- 待合并：审计修复（分支 fix/post-merge-audit-v2）——目前没有 PR，未合并
+- 未合并：PR #12「Visual v2/core shell a」（分支 visual-v2/core-shell-a，含 PR #10 的 Helix 多模态输入）——已审查，结论为拆分落地，暂不合并
 
 ## Stage 2B — Human Channel Gateway
 
