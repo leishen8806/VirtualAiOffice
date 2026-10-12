@@ -269,3 +269,21 @@ test('skin routes: anyone with the page can list, saving goes through the skin s
   const big = await post('/api/skins/save', { skin: { name: 'x'.repeat(10), pad: 'a'.repeat(1_000_000) } })
   assert.equal(JSON.parse(big.body).ok, true)
 })
+
+test('empty configured tokens never start a session from the guide URL', async (t) => {
+  for (const token of ['', undefined]) {
+    const { req } = await start(t, { host: '127.0.0.1', token })
+    for (const query of ['token=', 'token=anything']) {
+      const page = await req(`/?${query}`)
+      assert.equal(page.status, 200)
+      assert.equal(page.headers['set-cookie'], undefined)
+    }
+  }
+  const { req } = await start(t, { host: '127.0.0.1', token: 'secret' })
+  const empty = await req('/?token=')
+  assert.equal(empty.status, 200)
+  assert.equal(empty.headers['set-cookie'], undefined)
+  const guide = await req('/?token=secret')
+  assert.equal(guide.status, 302)
+  assert.match(guide.headers['set-cookie'][0], /vao_sid=/)
+})

@@ -166,7 +166,7 @@ export function createServer(coord, {
       // Blocks DNS-rebinding: a page on another domain can't talk to us through a hostname it controls.
       if (!hostOk(req)) return send(res, 403, 'Forbidden host')
 
-      if (req.method === 'GET' && url.pathname === '/' && sameSecret(url.searchParams.get('token'), token)) {
+      if (req.method === 'GET' && url.pathname === '/' && typeof token === 'string' && token.trim() && sameSecret(url.searchParams.get('token'), token)) {
         return issueSession(res)
       }
 
