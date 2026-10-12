@@ -67,6 +67,11 @@ async function runViewport(browser, baseUrl, vp) {
     await page.goto(`${baseUrl}/?skin=core`, { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('html[data-theme-core]', { timeout: 15000 })
 
+    if (vp.roles) {
+      await page.waitForSelector(roleSelector(), { timeout: 15000 })
+    }
+    await page.waitForTimeout(1500)
+
     const errDetail = [...pageErrors, ...consoleErrors]
     results.push({ name: 'no-page-errors', fail: errDetail.length > 0, detail: `pageerrors=${pageErrors.length} console.errors=${consoleErrors.length}${errDetail.length ? ' · ' + errDetail.slice(0, 2).join(' | ') : ''}` })
 
@@ -148,7 +153,11 @@ async function main() {
       })
     })
   }
-  fs.rmSync(workdir, { recursive: true, force: true })
+  try {
+    fs.rmSync(workdir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+  } catch (e) {
+    console.warn(`清理临时目录失败（不影响结果）：${e.message}`)
+  }
 
   return allFail
 }
