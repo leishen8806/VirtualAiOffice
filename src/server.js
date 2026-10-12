@@ -136,108 +136,108 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
       if (url.pathname === '/events' || url.pathname.startsWith('/api/')) {
         if (!authOk(req)) return send(res, 401, 'Missing or wrong token')
 
-      if (req.method === 'GET' && url.pathname === '/events') {
-        res.writeHead(200, {
-          ...securityHeaders,
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-store',
-          Connection: 'keep-alive',
-          'X-Accel-Buffering': 'no',
-        })
-        safeWrite(res, `data: ${JSON.stringify({ type: 'snapshot', state: coord.snapshot() })}\n\n`)
-        clients.add(res)
-        req.on('close', () => clients.delete(res))
-        return
-      }
-      if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, coord.snapshot())
+        if (req.method === 'GET' && url.pathname === '/events') {
+          res.writeHead(200, {
+            ...securityHeaders,
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-store',
+            Connection: 'keep-alive',
+            'X-Accel-Buffering': 'no',
+          })
+          safeWrite(res, `data: ${JSON.stringify({ type: 'snapshot', state: coord.snapshot() })}\n\n`)
+          clients.add(res)
+          req.on('close', () => clients.delete(res))
+          return
+        }
+        if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, coord.snapshot())
 
-      // 「接入员工」会装软件、开终端、写配置：只给本机用，局域网里的手机不行。
-      if (url.pathname.startsWith('/api/setup')) {
-        if (!setup) return send(res, 404, 'Not found')
-        if (!fromThisComputer(req)) return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上接入员工' })
-        if (req.method === 'GET' && url.pathname === '/api/setup') {
+        // 「接入员工」会装软件、开终端、写配置：只给本机用，局域网里的手机不行。
+        if (url.pathname.startsWith('/api/setup')) {
+          if (!setup) return send(res, 404, 'Not found')
+          if (!fromThisComputer(req)) return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上接入员工' })
+          if (req.method === 'GET' && url.pathname === '/api/setup') {
+            try {
+              return json(res, 200, await setup.status())
+            } catch (e) {
+              return json(res, 500, { ok: false, error: e.message })
+            }
+          }
+        }
+
+        // 自制皮肤：谁都能看；存、删、开文件夹只给本机。
+        if (req.method === 'GET' && url.pathname === '/api/skins') {
           try {
-            return json(res, 200, await setup.status())
+            return json(res, 200, skins.listSkins())
           } catch (e) {
             return json(res, 500, { ok: false, error: e.message })
           }
         }
-      }
+        if (url.pathname.startsWith('/api/skins/') && !fromThisComputer(req)) {
+          return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上改皮肤' })
+        }
 
-      // 自制皮肤：谁都能看；存、删、开文件夹只给本机。
-      if (req.method === 'GET' && url.pathname === '/api/skins') {
-        try {
-          return json(res, 200, skins.listSkins())
-        } catch (e) {
-          return json(res, 500, { ok: false, error: e.message })
-        }
-      }
-      if (url.pathname.startsWith('/api/skins/') && !fromThisComputer(req)) {
-        return json(res, 403, { ok: false, error: '只能在运行智序工场的那台电脑上改皮肤' })
-      }
-
-      if (req.method === 'POST') {
-        // Only same-origin JSON requests: a random website can't make the browser send these.
-        if (!originOk(req) || !String(req.headers['content-type'] || '').startsWith('application/json')) {
-          return send(res, 403, 'Forbidden')
-        }
-        let body = {}
-        try {
-          // 皮肤可能带图片，放宽到 12MB
-          body = JSON.parse((await readBody(req, url.pathname === '/api/skins/save' ? 12_000_000 : 200_000)) || '{}')
-        } catch {
-          return send(res, 400, 'Bad JSON')
-        }
-        if (url.pathname === '/api/message') {
-          const text = String(body.text || '').trim()
-          if (!text) return send(res, 400, 'Empty message')
-          coord.post(text)
-          return json(res, 200, { ok: true })
-        }
-        if (url.pathname === '/api/stop') {
-          coord.stop()
-          return json(res, 200, { ok: true })
-        }
-        if (url.pathname.startsWith('/api/skins/')) {
-          const actions = {
-            save: () => ({ ok: true, skin: skins.saveSkin(body.skin, { replace: !!body.replace }) }),
-            delete: () => skins.deleteSkin(body.id),
-            'open-folder': () => skins.openSkinsFolder(),
+        if (req.method === 'POST') {
+          // Only same-origin JSON requests: a random website can't make the browser send these.
+          if (!originOk(req) || !String(req.headers['content-type'] || '').startsWith('application/json')) {
+            return send(res, 403, 'Forbidden')
           }
-          const act = actions[url.pathname.slice('/api/skins/'.length)]
-          if (!act) return send(res, 404, 'Not found')
+          let body = {}
           try {
-            return json(res, 200, await act())
-          } catch (e) {
-            return json(res, 200, { ok: false, error: e.message })
+            // 皮肤可能带图片，放宽到 12MB
+            body = JSON.parse((await readBody(req, url.pathname === '/api/skins/save' ? 12_000_000 : 200_000)) || '{}')
+          } catch {
+            return send(res, 400, 'Bad JSON')
+          }
+          if (url.pathname === '/api/message') {
+            const text = String(body.text || '').trim()
+            if (!text) return send(res, 400, 'Empty message')
+            coord.post(text)
+            return json(res, 200, { ok: true })
+          }
+          if (url.pathname === '/api/stop') {
+            coord.stop()
+            return json(res, 200, { ok: true })
+          }
+          if (url.pathname.startsWith('/api/skins/')) {
+            const actions = {
+              save: () => ({ ok: true, skin: skins.saveSkin(body.skin, { replace: !!body.replace }) }),
+              delete: () => skins.deleteSkin(body.id),
+              'open-folder': () => skins.openSkinsFolder(),
+            }
+            const act = actions[url.pathname.slice('/api/skins/'.length)]
+            if (!act) return send(res, 404, 'Not found')
+            try {
+              return json(res, 200, await act())
+            } catch (e) {
+              return json(res, 200, { ok: false, error: e.message })
+            }
+          }
+          if (setup && url.pathname.startsWith('/api/setup/')) {
+            const actions = {
+              install: () => setup.install(body.tool),
+              'install-terminal': () => setup.installInTerminal(body.tool),
+              login: () => setup.login(body.tool),
+              test: () => (body.tool ? setup.testCli(body.tool) : setup.testApi(body.api || {})),
+              api: () => setup.saveApi(body),
+              remove: () => setup.remove(body.id),
+              recheck: () => setup.recheck(),
+            }
+            const act = actions[url.pathname.slice('/api/setup/'.length)]
+            if (!act) return send(res, 404, 'Not found')
+            try {
+              return json(res, 200, await act())
+            } catch (e) {
+              return json(res, 200, { ok: false, error: e.message })
+            }
           }
         }
-        if (setup && url.pathname.startsWith('/api/setup/')) {
-          const actions = {
-            install: () => setup.install(body.tool),
-            'install-terminal': () => setup.installInTerminal(body.tool),
-            login: () => setup.login(body.tool),
-            test: () => (body.tool ? setup.testCli(body.tool) : setup.testApi(body.api || {})),
-            api: () => setup.saveApi(body),
-            remove: () => setup.remove(body.id),
-            recheck: () => setup.recheck(),
-          }
-          const act = actions[url.pathname.slice('/api/setup/'.length)]
-          if (!act) return send(res, 404, 'Not found')
-          try {
-            return json(res, 200, await act())
-          } catch (e) {
-            return json(res, 200, { ok: false, error: e.message })
-          }
-        }
+        return send(res, 404, 'Not found')
       }
-      return send(res, 404, 'Not found')
-    }
 
-    if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Method not allowed')
-    const rel = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname).replace(/^\/+/, '')
-    const file = path.resolve(publicDir, rel)
-    if (!file.startsWith(path.resolve(publicDir) + path.sep)) return send(res, 403, 'Forbidden')
+      if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Method not allowed')
+      const rel = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname).replace(/^\/+/, '')
+      const file = path.resolve(publicDir, rel)
+      if (!file.startsWith(path.resolve(publicDir) + path.sep)) return send(res, 403, 'Forbidden')
       fs.readFile(file, (err, data) => {
         if (err) return send(res, 404, 'Not found')
         const type = TYPES[path.extname(file)] || 'application/octet-stream'
