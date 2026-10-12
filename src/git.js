@@ -72,7 +72,7 @@ export async function commitAll(dir, message) {
 /** How many working-tree files are changed, plus up to 10 of their porcelain paths. */
 export async function pendingChanges(dir) {
   const r = await git(dir, 'status', '--porcelain')
-  const lines = r.out.split('\n').filter(Boolean)
+  const lines = r.stdout.split(/\r?\n/).filter(Boolean)
   return { count: lines.length, files: lines.slice(0, 10) }
 }
 

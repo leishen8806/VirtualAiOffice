@@ -117,3 +117,16 @@ test('pendingChanges counts changed files and caps the file list', async () => {
   assert.equal(twelve.count, 12)
   assert.equal(twelve.files.length, 10)
 })
+
+test('pendingChanges keeps the porcelain path verbatim, including the leading space', async () => {
+  const dir = tmp()
+  await git.initRepo(dir)
+  await git.commitAll(dir, 'baseline')
+  fs.writeFileSync(path.join(dir, 'app.js'), 'v1\n')
+  await git.commitAll(dir, 'app')
+  // app.js is now a tracked file; an edit shows up as " M app.js" in porcelain.
+  fs.writeFileSync(path.join(dir, 'app.js'), 'v2\n')
+  const pending = await git.pendingChanges(dir)
+  assert.equal(pending.count, 1)
+  assert.equal(pending.files[0], ' M app.js')
+})

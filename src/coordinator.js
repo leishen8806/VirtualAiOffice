@@ -905,8 +905,8 @@ export class Coordinator extends EventEmitter {
       if (!(await git.isRepo(this.workdir))) {
         if (!this.config.git.autoInit || !(await git.initRepo(this.workdir))) return null
         const init = await git.commitAllDetailed(this.workdir, '智序工场：初始化仓库（开工前的原始文件）')
-        if (!init.ok) this.addMessage('system', `存档没成功（${init.reason}）：${init.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
-        this.addMessage('system', '已把工作目录初始化成 Git 仓库并存了一档：每一轮都会自动存档，说「/撤销」就能撤回。')
+        if (init.ok) this.addMessage('system', '已把工作目录初始化成 Git 仓库并存了一档：每一轮都会自动存档，说「/撤销」就能撤回。')
+        else this.addMessage('system', `存档没成功（${init.reason}）：${init.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
       } else if (await git.isDirty(this.workdir)) {
         const r = await git.commitAllDetailed(this.workdir, '智序工场：开工前存档（主人未提交的改动）')
         if (!r.ok) this.addMessage('system', `存档没成功（${r.reason}）：${r.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
