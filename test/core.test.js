@@ -280,8 +280,47 @@ test('/stop halts a running round', async (t) => {
     })
   })
   c.post('/stop')
+  await say(c, '/stop')
   await done
   assert.ok(c.tasks.every((t) => ['cancelled', 'skipped', 'done'].includes(t.status)), JSON.stringify(c.tasks.map((t) => t.status)))
   assert.ok(c.tasks.some((t) => t.status === 'cancelled'))
   assert.match(c.messages.at(-1).text, /停下/)
+})
+
+test('two rounds can be undone in sequence back to the starting tree', async (t) => {
+  const work = tmp()
+  const c = await rehearsal(t, { workdir: work, meeting: { enabled: true, save: true, maxAttendees: 3 }, git: { autoInit: true, autoCommit: true } })
+  c.workdir = work
+  for (const g of c.team.groups.values()) g.workdir = work
+  const pushes = []
+  c.on('event', (e) => {
+    if (e.type === 'commit') pushes.push(e.commit)
+  })
+  await say(c, '帮我做一个记账小网站')
+  await say(c, '帮我做一个记账小网站')
+  assert.equal(c.commitStack.length, 2, 'two rounds pushed two save points')
+  assert.deepEqual(pushes, [c.commitStack[0], c.commitStack[1]], 'each save point emitted as a commit event')
+  const meetings = () => {
+    const p = path.join(work, 'docs', 'meetings')
+    return fs.existsSync(p) ? fs.readdirSync(p) : []
+  }
+
+  await say(c, '/撤销')
+  assert.equal(c.commitStack.length, 1)
+  assert.equal(c.lastCommit, c.commitStack[0], 'lastCommit falls back to the previous save point')
+  assert.equal(meetings().length, 1, 'one round undone, one minutes file left')
+
+  await say(c, '/撤销')
+  assert.equal(c.commitStack.length, 0)
+  assert.equal(c.lastCommit, null, 'lastCommit is null when the stack is empty')
+  assert.equal(meetings().length, 0, 'both rounds undone, workdir back to the start')
+})
+
+test('a broken repo surfaces a save failure instead of silently swallowing it', async (t) => {
+  const work = tmp()
+  const c = await rehearsal(t, { workdir: work, git: { autoInit: false, autoCommit: true } })
+  c.workdir = work
+  for (const g of c.team.groups.values()) g.workdir = work
+  await say(c, '帮我做一个记账小网站')
+  assert.ok(c.messages.some((m) => m.role === 'system' && m.text.includes('存档没成功')), 'a system message reports the failed save')
 })

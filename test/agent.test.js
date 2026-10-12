@@ -73,3 +73,47 @@ test('git save points skip dependencies and secrets, and a round can be undone',
   assert.equal(r.ok, true, r.error)
   assert.equal(fs.readFileSync(path.join(dir, 'app.js'), 'utf8').replace(/\r\n/g, '\n'), 'v1\n')
 })
+
+test('commitAllDetailed reports committed vs nothing vs add-failed', async () => {
+  const dir = tmp()
+  await git.initRepo(dir)
+  // first commit takes the .gitignore; baseline is now clean
+  await git.commitAll(dir, 'baseline')
+  const nothing = await git.commitAllDetailed(dir, 'nope')
+  assert.equal(nothing.ok, true)
+  assert.equal(nothing.reason, 'nothing')
+  assert.equal(nothing.hash, null)
+  assert.equal(await git.commitAll(dir, 'nope'), null, 'commitAll still returns null when nothing to do')
+
+  fs.writeFileSync(path.join(dir, 'app.js'), 'v1\n')
+  const done = await git.commitAllDetailed(dir, 'first')
+  assert.equal(done.ok, true)
+  assert.equal(done.reason, 'committed')
+  assert.ok(done.hash, 'hash is present')
+  assert.equal(await git.commitAll(dir, 'second-added'), null, 'second add is nothing, no new hash')
+  fs.writeFileSync(path.join(dir, 'app.js'), 'v2\n')
+  assert.equal(await git.commitAll(dir, 'changed'), await git.head(dir), 'commitAll still returns the hash on success')
+
+  // not a git repo -> add-failed
+  const notRepo = tmp()
+  const bad = await git.commitAllDetailed(notRepo, 'oops')
+  assert.equal(bad.ok, false)
+  assert.equal(bad.reason, 'add-failed')
+  assert.ok(bad.error.length > 0)
+  assert.equal(await git.commitAll(notRepo, 'oops'), null)
+})
+
+test('pendingChanges counts changed files and caps the file list', async () => {
+  const dir = tmp()
+  await git.initRepo(dir)
+  await git.commitAll(dir, 'baseline')
+  for (let i = 0; i < 3; i++) fs.writeFileSync(path.join(dir, `f${i}.js`), 'x\n')
+  const three = await git.pendingChanges(dir)
+  assert.equal(three.count, 3)
+  assert.equal(three.files.length, 3)
+
+  for (let i = 3; i < 12; i++) fs.writeFileSync(path.join(dir, `f${i}.js`), 'x\n')
+  const twelve = await git.pendingChanges(dir)
+  assert.equal(twelve.count, 12)
+  assert.equal(twelve.files.length, 10)
+})
