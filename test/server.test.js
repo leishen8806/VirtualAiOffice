@@ -150,6 +150,60 @@ test('LAN authentication accepts header or session cookie, never query tokens', 
   assert.equal(wrong.headers?.['set-cookie'], undefined)
 })
 
+test('sessions expire by idle and absolute age while successful use refreshes idle age', async (t) => {
+  let now = 0
+  const { req } = await start(t, { host: '0.0.0.0', token: 'secret', now: () => now, sessionIdleMs: 100, sessionMaxAgeMs: 500 })
+  const cookie = (await req('/?token=secret')).headers['set-cookie'][0].split(';')[0]
+  now = 99
+  assert.equal((await req('/api/state', { headers: { Cookie: cookie } })).status, 200)
+  now = 198
+  assert.equal((await req('/api/state', { headers: { Cookie: cookie } })).status, 200)
+  now = 297
+  assert.equal((await req('/api/state', { headers: { Cookie: cookie } })).status, 200)
+  now = 501
+  assert.equal((await req('/api/state', { headers: { Cookie: cookie } })).status, 401)
+})
+
+test('session limits evict the least recently seen session and clean expired entries', async (t) => {
+  let now = 0
+  const { req } = await start(t, { host: '0.0.0.0', token: 'secret', now: () => now, maxSessions: 3, sessionIdleMs: 100, sessionMaxAgeMs: 1000 })
+  const getCookie = async () => (await req('/?token=secret')).headers['set-cookie'][0].split(';')[0]
+  const first = await getCookie(); now += 1
+  const second = await getCookie(); now += 1
+  const third = await getCookie(); now += 1
+  assert.equal((await req('/api/state', { headers: { Cookie: first } })).status, 200)
+  now += 1
+  assert.equal((await req('/api/state', { headers: { Cookie: second } })).status, 200)
+  now += 1
+  const fourth = await getCookie()
+  assert.equal((await req('/api/state', { headers: { Cookie: third } })).status, 401)
+  assert.equal((await req('/api/state', { headers: { Cookie: second } })).status, 200)
+  assert.equal((await req('/api/state', { headers: { Cookie: fourth } })).status, 200)
+  now += 101
+  const fifth = await getCookie()
+  assert.equal((await req('/api/state', { headers: { Cookie: fifth } })).status, 200)
+})
+
+test('session cookies declare the absolute lifetime', async (t) => {
+  const { req } = await start(t, { host: '0.0.0.0', token: 'secret', sessionMaxAgeMs: 7_200_000 })
+  const cookie = (await req('/?token=secret')).headers['set-cookie'][0]
+  assert.match(cookie, /Max-Age=7200/)
+  assert.match(cookie, /HttpOnly/)
+  assert.match(cookie, /SameSite=Strict/)
+  assert.match(cookie, /Path=\//)
+})
+
+test('loopback explicit tokens are enforced, while tokenless loopback remains open', async (t) => {
+  const open = await start(t, { host: '127.0.0.1' })
+  assert.equal((await open.req('/api/state')).status, 200)
+  const secured = await start(t, { host: '127.0.0.1', token: 'secret' })
+  assert.equal((await secured.req('/api/state')).status, 401)
+  assert.equal((await secured.req('/api/state', { headers: { 'X-Niuma-Token': 'secret' } })).status, 200)
+  const guide = await secured.req('/?token=secret')
+  assert.equal(guide.status, 302)
+  assert.match(guide.headers['set-cookie'][0], /Max-Age=/)
+})
+
 test('cookie-authenticated POST keeps the existing CSRF checks', async (t) => {
   const { port, req } = await start(t, { host: '0.0.0.0', token: 'secret' })
   const guide = await req('/?token=secret')

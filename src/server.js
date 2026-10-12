@@ -25,11 +25,21 @@ export function isLoopback(host) {
   return LOOPBACK.has(host)
 }
 
-export function createServer(coord, { publicDir, host, token, setup, skins = skinStore }) {
+export function createServer(coord, {
+  publicDir,
+  host,
+  token,
+  setup,
+  skins = skinStore,
+  sessionIdleMs = 12 * 60 * 60 * 1000,
+  sessionMaxAgeMs = 7 * 24 * 60 * 60 * 1000,
+  maxSessions = 32,
+  now = Date.now,
+}) {
   const clients = new Set()
   const loopbackOnly = isLoopback(host)
   if (!loopbackOnly && (typeof token !== 'string' || !token.trim())) throw new Error('A non-loopback server requires a non-empty token')
-  const sessions = new Set()
+  const sessions = new Map()
   // The request really comes from this computer (not a phone on the LAN), whatever address we listen on.
   const fromThisComputer = (req) => isLoopback(String(req.socket.remoteAddress || '').replace(/^::ffff:/, ''))
 
@@ -72,18 +82,38 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
     const i = part.indexOf('=')
     return i < 0 ? [] : [part.slice(0, i).trim(), part.slice(i + 1).trim()]
   }).filter((entry) => entry.length === 2))
+  const sessionKey = (sid) => crypto.createHash('sha256').update(sid).digest('hex')
+  const expired = (session, timestamp = now()) =>
+    timestamp - session.lastSeen >= sessionIdleMs || timestamp - session.createdAt >= sessionMaxAgeMs
+  const cleanupSessions = (timestamp = now()) => {
+    for (const [key, session] of sessions) if (expired(session, timestamp)) sessions.delete(key)
+  }
   const sessionOk = (req) => {
     const sid = cookies(req).vao_sid
     if (!sid) return false
-    for (const valid of sessions) if (sameSecret(sid, valid)) return true
-    return false
+    const key = sessionKey(sid)
+    const session = sessions.get(key)
+    if (!session) return false
+    const timestamp = now()
+    if (expired(session, timestamp)) {
+      sessions.delete(key)
+      return false
+    }
+    session.lastSeen = timestamp
+    return true
   }
   const issueSession = (res) => {
     const sid = crypto.randomBytes(24).toString('base64url')
-    sessions.add(sid)
+    const timestamp = now()
+    cleanupSessions(timestamp)
+    if (sessions.size >= maxSessions) {
+      const oldest = [...sessions.entries()].reduce((a, b) => (a[1].lastSeen <= b[1].lastSeen ? a : b))
+      sessions.delete(oldest[0])
+    }
+    sessions.set(sessionKey(sid), { createdAt: timestamp, lastSeen: timestamp })
     send(res, 302, '', 'text/plain; charset=utf-8', {
       Location: '/',
-      'Set-Cookie': `vao_sid=${sid}; HttpOnly; SameSite=Strict; Path=/`,
+      'Set-Cookie': `vao_sid=${sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${Math.floor(sessionMaxAgeMs / 1000)}`,
     })
   }
 
@@ -101,7 +131,14 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
       return false
     }
   }
-  const authOk = (req) => loopbackOnly || sameSecret(req.headers['x-niuma-token'], token) || sessionOk(req)
+  const authOk = (req) => {
+    if (typeof token === 'string' && token.trim()) {
+      const headerOk = sameSecret(req.headers['x-niuma-token'], token)
+      const cookieOk = sessionOk(req)
+      return headerOk || cookieOk
+    }
+    return loopbackOnly
+  }
 
   const readBody = (req, max = 200_000) =>
     new Promise((resolve, reject) => {
@@ -129,7 +166,7 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
       // Blocks DNS-rebinding: a page on another domain can't talk to us through a hostname it controls.
       if (!hostOk(req)) return send(res, 403, 'Forbidden host')
 
-      if (!loopbackOnly && req.method === 'GET' && url.pathname === '/' && sameSecret(url.searchParams.get('token'), token)) {
+      if (req.method === 'GET' && url.pathname === '/' && sameSecret(url.searchParams.get('token'), token)) {
         return issueSession(res)
       }
 
@@ -250,6 +287,9 @@ export function createServer(coord, { publicDir, host, token, setup, skins = ski
       return send(res, 500, 'Internal server error')
     }
   })
+  const sessionCleanup = setInterval(() => cleanupSessions(), 10 * 60 * 1000)
+  sessionCleanup.unref()
+  server.once('close', () => clearInterval(sessionCleanup))
   server.on('clientError', (_error, socket) => {
     try {
       if (socket.writable) socket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
