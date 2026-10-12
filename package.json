@@ -16,6 +16,7 @@
     "build:packages": "tsc -b",
     "test:packages": "tsc -b && node --test packages/*/dist-spec/*.spec.js",
     "verify:packaged-layout": "node scripts/verify-packaged-layout.mjs",
+    "test:browser": "node scripts/browser-acceptance.mjs",
     "test:all": "npm test && npm run test:packages && npm run verify:packaged-layout"
   },
   "files": [
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "~26.2.0",
+    "playwright": "1.63.0",
     "typescript": "~6.0.3"
   },
   "license": "MIT",
