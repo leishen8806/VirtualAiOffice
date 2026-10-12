@@ -1010,21 +1010,20 @@
 
   // ---- transports ------------------------------------------------------------
 
-  function connectLive(token) {
-    const q = token ? `?token=${encodeURIComponent(token)}` : ''
-    const es = new EventSource('/events' + q)
+  function connectLive() {
+    const es = new EventSource('/events')
     es.onmessage = (e) => handle(JSON.parse(e.data))
     es.onopen = () => setConn(state.mode === 'fake' ? 'fake' : 'live')
     es.onerror = () => setConn('off')
     const post = async (url, body) => {
-      const r = await fetch(url + q, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Niuma-Token': token }, body: JSON.stringify(body) })
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (!r.ok) throw new Error(`${r.status} ${await r.text()}`)
     }
     // 「接入员工」面板用：GET 不带 body，POST 带 JSON，都返回 JSON。
     const request = async (method, url, body) => {
-      const r = await fetch(url + q, {
+      const r = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Niuma-Token': token },
+        headers: { 'Content-Type': 'application/json' },
         body: method === 'GET' ? undefined : JSON.stringify(body || {}),
         cache: 'no-store',
       })
@@ -1035,12 +1034,12 @@
     return { send: (text) => post('/api/message', { text }), stop: () => post('/api/stop', {}), request }
   }
 
-  async function detectServer(token) {
+  async function detectServer() {
     if (location.hash === '#demo' || !/^https?:$/.test(location.protocol)) return false
     const ctl = new AbortController()
     const timer = setTimeout(() => ctl.abort(), 2500)
     try {
-      const r = await fetch('/api/state' + (token ? `?token=${encodeURIComponent(token)}` : ''), { signal: ctl.signal, cache: 'no-store' })
+      const r = await fetch('/api/state', { signal: ctl.signal, cache: 'no-store' })
       return r.ok && (r.headers.get('content-type') || '').includes('application/json')
     } catch {
       return false
@@ -1137,13 +1136,8 @@
   // ---- boot ------------------------------------------------------------------
 
   ;(async () => {
-    let token = ''
-    try {
-      token = new URLSearchParams(location.search).get('token') || sessionStorage.getItem('niuma-token') || ''
-      if (token) sessionStorage.setItem('niuma-token', token)
-    } catch {}
     renderSuggest()
-    if (await detectServer(token)) transport = connectLive(token)
+    if (await detectServer()) transport = connectLive()
     else transport = window.ShaniuDemo(handle)
     loadSkins()
   })()
