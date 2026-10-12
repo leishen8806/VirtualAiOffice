@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | Stage 0 | 基础：ADR、TypeScript 基础、领域实体、状态机、事件信封、执行器契约、最小 SQLite schema | 已完成并合并 | `domain-model.md`、`state-machines.md`、`event-contract.md`、`executor-contract.md`、`persistence.md` |
 | Stage 1A | 把旧 NiuMa 的执行器抽到 `packages/executors`，旧版改用同一份实现 | 已完成并合并（PR #3） | `docs/stage-1/executor-extraction-plan.md` |
-| Stage 1B | Tools / MCP 基础设施抽取（共享 `@vao/tools` 运行时） | 第一部分已合并（PR #5）；其余以 `docs/stage-1/tools-mcp-extraction.md` 为准 | `docs/stage-1/tools-mcp-extraction-plan.md`、`docs/stage-1/tools-mcp-extraction.md` |
+| Stage 1B | Tools / MCP 基础设施抽取（共享 `@vao/tools` 运行时） | 1B-A（抽取）已合并（PR #5）；1B-B（fail-closed 工具授权策略）未实施，范围见 `docs/stage-1/tools-mcp-extraction.md` | `docs/stage-1/tools-mcp-extraction-plan.md`、`docs/stage-1/tools-mcp-extraction.md` |
 | 待排期 | 办公室渲染器抽成独立包（ADR-001 迁移策略第 2 步的剩余部分） | 未排期，阶段编号待定 | 办公室渲染（Visual V2）目前作为旧版前端壳的一部分已合并（PR #11），尚未抽成独立包 |
 | Stage 1C | 把 Legacy 视觉皮肤作为**可选主题**提供给新壳 | 未开始 | 皮肤是 Legacy 可复用视觉资产，不定义新品牌；见 `product-identity.md` §6.1 |
 | **Stage 2A** | **持久化核心**：SQLite 运行时、Workspace / Project 运行时、Member、Role、RoleBinding、Approval、Event 持久化；领域命令层与授权服务；**范围化审批权限**（`approve.requirement` / `approve.delivery` / `approve.task_acceptance` / `approve.merge` / `approve.deployment` / `approve.financial`）；`HumanActionRequest`（生命周期 OPEN / DELIVERED / RESPONDED / EXPIRED / CANCELLED）、`MemberChannel` 存储 | 未开始 | 见 `human-channels.md` §22 |
@@ -44,7 +44,7 @@ Stage 0 ──► Stage 1A ──► Stage 1B ──► Stage 1C
    └────────────────────► Stage 2A ──► Stage 2B
 ```
 
-Stage 2A 依赖 Stage 0 的契约与 schema，不依赖 Stage 1B / 1C 的渲染器与主题抽取；Stage 2B 依赖 Stage 2A（持久化与范围化审批权限）。Stage 1 保持“稳定地抽取旧 NiuMa 资产”的范围，**不放入 Telegram 实现**。
+Stage 2A 依赖 Stage 0 的契约与 schema，不依赖 Stage 1B（Tools / MCP 抽取）、Stage 1C（主题抽取）以及办公室渲染器抽取；Stage 2B 依赖 Stage 2A（持久化与范围化审批权限）。Stage 1 保持“稳定地抽取旧 NiuMa 资产”的范围，**不放入 Telegram 实现**。
 
 ## 品牌与命名迁移
 
