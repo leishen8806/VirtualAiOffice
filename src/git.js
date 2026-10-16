@@ -48,14 +48,32 @@ async function identity(dir) {
   return email ? [] : ['-c', 'user.name=智序工场', '-c', 'user.email=office-coordinator@localhost']
 }
 
-/** Stage everything (minus the excludes) and commit. Returns the new commit hash, or null if nothing changed. */
-export async function commitAll(dir, message) {
+/**
+ * Stage everything (minus the excludes) and commit, reporting exactly what happened so the
+ * caller can tell "nothing to do" apart from a real failure.
+ * Returns { ok, hash, reason: 'committed' | 'nothing' | 'add-failed' | 'commit-failed', error }.
+ */
+export async function commitAllDetailed(dir, message) {
   const add = await git(dir, 'add', '-A', '--', '.', ...EXCLUDES)
-  if (add.code !== 0) return null
+  if (add.code !== 0) return { ok: false, hash: null, reason: 'add-failed', error: (add.stderr || add.stdout).trim().split('\n')[0] }
   const staged = await git(dir, 'diff', '--cached', '--quiet')
-  if (staged.code === 0) return null
+  if (staged.code === 0) return { ok: true, hash: null, reason: 'nothing', error: '' }
   const r = await git(dir, ...(await identity(dir)), 'commit', '-q', '--no-verify', '-m', message)
-  return r.code === 0 ? head(dir) : null
+  if (r.code !== 0) return { ok: false, hash: null, reason: 'commit-failed', error: (r.stderr || r.stdout).trim().split('\n')[0] }
+  return { ok: true, hash: await head(dir), reason: 'committed', error: '' }
+}
+
+/** Stage everything and commit; returns the new commit hash, or null if nothing changed or it failed. */
+export async function commitAll(dir, message) {
+  const r = await commitAllDetailed(dir, message)
+  return r.ok ? r.hash : null
+}
+
+/** How many working-tree files are changed, plus up to 10 of their porcelain paths. */
+export async function pendingChanges(dir) {
+  const r = await git(dir, 'status', '--porcelain')
+  const lines = r.stdout.split(/\r?\n/).filter(Boolean)
+  return { count: lines.length, files: lines.slice(0, 10) }
 }
 
 /** Undo a commit with a new "revert" commit (history is kept, nothing is lost). */

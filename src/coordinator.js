@@ -208,6 +208,7 @@ export class Coordinator extends EventEmitter {
     this.history = []
     this.stopFlag = false
     this.lastCommit = null
+    this.commitStack = []
     this.meeting = null
     this.minutes = ''
     this.stats = this.loadStats()
@@ -903,14 +904,17 @@ export class Coordinator extends EventEmitter {
     try {
       if (!(await git.isRepo(this.workdir))) {
         if (!this.config.git.autoInit || !(await git.initRepo(this.workdir))) return null
-        await git.commitAll(this.workdir, '智序工场：初始化仓库（开工前的原始文件）')
-        this.addMessage('system', '已把工作目录初始化成 Git 仓库并存了一档：每一轮都会自动存档，说「/撤销」就能撤回。')
+        const init = await git.commitAllDetailed(this.workdir, '智序工场：初始化仓库（开工前的原始文件）')
+        if (init.ok) this.addMessage('system', '已把工作目录初始化成 Git 仓库并存了一档：每一轮都会自动存档，说「/撤销」就能撤回。')
+        else this.addMessage('system', `存档没成功（${init.reason}）：${init.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
       } else if (await git.isDirty(this.workdir)) {
-        const h = await git.commitAll(this.workdir, '智序工场：开工前存档（主人未提交的改动）')
-        if (h) this.addMessage('system', `开工前先把你没提交的改动存了一档：${h.slice(0, 7)}`)
+        const r = await git.commitAllDetailed(this.workdir, '智序工场：开工前存档（主人未提交的改动）')
+        if (!r.ok) this.addMessage('system', `存档没成功（${r.reason}）：${r.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
+        else if (r.hash) this.addMessage('system', `开工前先把你没提交的改动存了一档：${r.hash.slice(0, 7)}`)
       }
       return await git.head(this.workdir)
-    } catch {
+    } catch (e) {
+      this.addMessage('system', `存档没成功（异常）：${e.message}。这一轮的改动没有被存档，/撤销 对它不可用。`)
       return null
     }
   }
@@ -918,27 +922,34 @@ export class Coordinator extends EventEmitter {
   async gitFinish(text) {
     if (!this.config.git?.autoCommit) return null
     try {
-      if (!(await git.isRepo(this.workdir))) return null
       const lines = this.tasks.filter((t) => t.kind !== 'verify').map((t) => `- [${STATUS_ZH[t.status] || t.status}] ${t.title}（${t.who}）`)
-      const h = await git.commitAll(this.workdir, `智序工场${this.stopFlag ? '（中途叫停）' : ''}：${truncate(text.replace(/\s+/g, ' '), 60)}\n\n${lines.join('\n')}`)
-      if (h) {
-        this.lastCommit = h
-        this.emitEvent({ type: 'commit', commit: h })
+      const pending = await git.pendingChanges(this.workdir)
+      const r = await git.commitAllDetailed(this.workdir, `智序工场${this.stopFlag ? '（中途叫停）' : ''}：${truncate(text.replace(/\s+/g, ' '), 60)}\n\n${lines.join('\n')}`)
+      if (!r.ok) {
+        this.addMessage('system', `存档没成功（${r.reason}）：${r.error}。这一轮的改动没有被存档，/撤销 对它不可用。`)
+        return null
       }
-      return h
-    } catch {
+      if (!r.hash) return null
+      this.commitStack.push(r.hash)
+      this.lastCommit = r.hash
+      this.emitEvent({ type: 'commit', commit: r.hash })
+      if (pending.count > 0) this.addMessage('system', `已存档 ${pending.count} 个文件（${r.hash.slice(0, 7)}）`)
+      return r.hash
+    } catch (e) {
+      this.addMessage('system', `存档没成功（异常）：${e.message}。这一轮的改动没有被存档，/撤销 对它不可用。`)
       return null
     }
   }
 
   async undo() {
-    if (!this.lastCommit) return this.addMessage('shaniu', '没有可以撤销的存档哦（协调器只撤销自己这次启动后做的改动）。')
-    const r = await git.revertCommit(this.workdir, this.lastCommit)
-    if (r.ok) {
-      this.addMessage('shaniu', `已撤回上一轮的改动（${this.lastCommit.slice(0, 7)}），撤销本身也存了档：${r.hash.slice(0, 7)}。`)
-      this.lastCommit = null
-      this.emitEvent({ type: 'commit', commit: null })
-    } else this.addMessage('shaniu', `撤销没成功：${r.error}。可能之后又有人改了同样的地方，需要主人手动处理。`)
+    if (!this.commitStack.length) return this.addMessage('shaniu', '没有可以撤销的存档哦（协调器只撤销自己这次启动后做的改动）。')
+    const hash = this.commitStack[this.commitStack.length - 1]
+    const r = await git.revertCommit(this.workdir, hash)
+    if (!r.ok) return this.addMessage('shaniu', `撤销没成功：${r.error}。可能之后又有人改了同样的地方，需要主人手动处理。`)
+    this.commitStack.pop()
+    this.lastCommit = this.commitStack.length ? this.commitStack[this.commitStack.length - 1] : null
+    this.emitEvent({ type: 'commit', commit: this.lastCommit })
+    this.addMessage('shaniu', `已撤回上一轮的改动（${hash.slice(0, 7)}），撤销本身也存了档：${r.hash.slice(0, 7)}。`)
   }
 
   // ---- hiring --------------------------------------------------------------------------
