@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import vm from 'node:vm'
 import { createRequire } from 'node:module'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
@@ -11,6 +12,12 @@ delete globalThis.VAOOfficeRendererRegistry
 delete require.cache[modulePath]
 require(modulePath)
 const R = globalThis.VAOOfficeRendererRegistry
+const loadRegistry = () => {
+  const sandbox = { URLSearchParams }
+  sandbox.globalThis = sandbox
+  vm.runInNewContext(fs.readFileSync(modulePath, 'utf8'), sandbox, { filename: modulePath })
+  return sandbox.VAOOfficeRendererRegistry
+}
 
 const methods = () => ({
   update() {}, setRoleState() {}, activateHumanArea() {}, pulseHelixTo() {}, destroy() {},
@@ -97,6 +104,8 @@ test('7. round-trip swap retains renderer-agnostic state without shared nested r
   const state = R.createViewState(original)
   const first = R.swap({ mount: {}, fromHandle: old, toId: '2d', snapshot: {}, mode: 'live', viewState: state })
   const second = R.swap({ mount: {}, fromHandle: first.handle, toId: '3d', snapshot: {}, mode: 'live', viewState: first.viewState })
+  assert.equal(first.ok, true)
+  assert.equal(second.ok, true)
   assert.deepEqual(second.viewState, original)
   assert.notEqual(second.viewState.filters, original.filters)
   assert.notEqual(second.viewState.camera, original.camera)
@@ -126,6 +135,7 @@ test('9. swap failures keep the old renderer or return a destroy warning', () =>
   assert.throws(() => R.swap({ mount: {}, fromHandle: handle({ destroy() { destroyed++ } }), toId: 'missing', viewState: {} }), /missing/)
   assert.equal(destroyed, 0)
   const result = R.swap({ mount: {}, fromHandle: handle({ destroy() { throw new Error('cleanup') } }), toId: '2d', viewState: {} })
+  assert.equal(result.ok, true)
   assert.equal(result.warnings.length, 1)
   assert.throws(() => R.assertHandleContract({ mode: null, mount: null }), /update.*destroy|destroy.*update/)
 })
@@ -139,4 +149,40 @@ test('10. mergeViewState freezes an independent copy and rejects private keys', 
   assert.notEqual(merged.filters, previous.filters)
   assert.ok(Object.isFrozen(merged))
   assert.throws(() => R.mergeViewState(previous, { cameraZ: 1 }), /cameraZ/)
+})
+
+test('11. failed attach restores the previous renderer without changing view state', () => {
+  const registry = loadRegistry()
+  let oldAttaches = 0
+  let destroys = 0
+  const attachFailure = new Error('webgl context lost')
+  registry.register('2d', { attach(mount, opts) {
+    oldAttaches++
+    return handle({ mount, mode: opts.mode, destroy() { destroys++ } })
+  } })
+  registry.register('3d', { attach() { throw attachFailure } })
+  const viewState = registry.createViewState({ selectedRoleId: 'reviewer', filters: { onlyMine: true } })
+  const result = registry.swap({ mount: {}, fromId: '2d', fromHandle: registry.get('2d').attach({}, {}), toId: '3d', snapshot: {}, mode: 'DESKTOP_LARGE', viewState })
+  assert.equal(result.ok, false)
+  assert.equal(result.id, '2d')
+  assert.equal(result.error, attachFailure)
+  assert.equal(result.viewState, viewState)
+  assert.equal(oldAttaches, 2)
+  assert.equal(destroys, 1)
+})
+
+test('12. failed attach throws only when restoring the previous renderer also fails', () => {
+  const registry = loadRegistry()
+  let oldAttaches = 0
+  registry.register('2d', { attach() {
+    oldAttaches++
+    if (oldAttaches > 1) throw new Error('2d restore failed')
+    return handle()
+  } })
+  registry.register('3d', { attach() { throw new Error('webgl context lost') } })
+  const old = registry.get('2d').attach({}, {})
+  assert.throws(
+    () => registry.swap({ mount: {}, fromId: '2d', fromHandle: old, toId: '3d', viewState: {} }),
+    /webgl context lost.*2d restore failed|2d restore failed.*webgl context lost/,
+  )
 })

@@ -99,14 +99,28 @@
     return createViewState({ ...clone(prev || {}), ...clone(patch) })
   }
 
-  function swap({ mount, fromHandle, toId, snapshot, mode, viewState } = {}) {
-    // Validate the destination first so a failed switch leaves the current renderer alive.
+  function swap({ mount, fromId = DEFAULT_RENDERER, fromHandle, toId, snapshot, mode, viewState } = {}) {
+    // Validate the destination first so an unavailable target leaves the current renderer alive.
     if (!has(toId)) throw new Error(`renderer ${toId}: not registered`)
     const warnings = []
     try { fromHandle?.destroy?.() } catch (error) { warnings.push(error) }
-    const newHandle = get(toId).attach(mount, { snapshot, mode })
-    assertHandleContract(newHandle)
-    return { handle: newHandle, id: toId, viewState: mergeViewState(createViewState(), viewState), warnings }
+    let newHandle
+    try {
+      newHandle = get(toId).attach(mount, { snapshot, mode })
+      assertHandleContract(newHandle)
+    } catch (error) {
+      if (newHandle) try { newHandle.destroy?.() } catch (cleanupError) { warnings.push(cleanupError) }
+      try {
+        const restoredHandle = get(fromId).attach(mount, { snapshot, mode })
+        assertHandleContract(restoredHandle)
+        return { ok: false, handle: restoredHandle, id: fromId, viewState, error, warnings }
+      } catch (restoreError) {
+        const failed = error?.message || String(error)
+        const restored = restoreError?.message || String(restoreError)
+        throw new Error(`renderer ${toId} failed: ${failed}; renderer ${fromId} restore failed: ${restored}`)
+      }
+    }
+    return { ok: true, handle: newHandle, id: toId, viewState: mergeViewState(createViewState(), viewState), warnings }
   }
 
   const api = Object.freeze({
