@@ -1,0 +1,1628 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "kenney-car-kit",
+      "name": "Kenney Car Kit",
+      "version": "2.0",
+      "author": "Kenney",
+      "source": "https://kenney-assets.itch.io/car-kit",
+      "license": "CC0-1.0",
+      "licenseFile": "assets/third-party/kenney-car-kit/LICENSE",
+      "downloadDate": "2026-10-22",
+      "productLine": "仓配",
+      "status": "rejected",
+      "rejectionReason": "No normal white cargo van with blue cab accent; available van is blue, delivery body is green, and ambulance has emergency markings.",
+      "archive": {
+        "file": "kenney_car-kit.zip",
+        "bytes": 3668013,
+        "sha256": "F8A69B83FBF94C9850079BC6E078EA3D8BA4C7393DD9F57F8BA544963D1B1D14",
+        "presentAtFinalAudit": false
+      },
+      "usedModels": [],
+      "evaluatedModels": [
+        {
+          "file": "van.glb",
+          "triangles": 2082,
+          "dimensions": [
+            1.5,
+            1.35,
+            2.75
+          ],
+          "decision": "reject-blue-body"
+        },
+        {
+          "file": "delivery.glb",
+          "triangles": 2476,
+          "dimensions": [
+            1.5,
+            1.65,
+            3.25
+          ],
+          "decision": "reject-green-cargo-body"
+        },
+        {
+          "file": "ambulance.glb",
+          "triangles": 2804,
+          "dimensions": [
+            1.5,
+            1.8,
+            3.25
+          ],
+          "decision": "reject-emergency-markings"
+        }
+      ],
+      "texture": {
+        "file": "Models/GLB format/Textures/colormap.png",
+        "width": 512,
+        "height": 512,
+        "sha256": "96B3839B65F6C58894CD693A27384D0DA35807C69D72B21AFE68D901ED44052E"
+      },
+      "excludedWithoutRead": [
+        {
+          "Path": "incoming/Overview.html",
+          "Reason": "board-authorized ignore: HTML"
+        },
+        {
+          "Path": "incoming/View Documentation.url",
+          "Reason": "board-authorized ignore: URL shortcut"
+        },
+        {
+          "Path": "incoming/Visit Kenney.url",
+          "Reason": "board-authorized ignore: URL shortcut"
+        },
+        {
+          "Path": "incoming/Visit Patreon.url",
+          "Reason": "board-authorized ignore: URL shortcut"
+        }
+      ],
+      "files": [
+        {
+          "Path": "incoming/kenney_car-kit.zip",
+          "Bytes": 3668013,
+          "SHA256": "F8A69B83FBF94C9850079BC6E078EA3D8BA4C7393DD9F57F8BA544963D1B1D14",
+          "PresentAtFinalAudit": false,
+          "Note": "Verified before manual extraction; ZIP no longer present at final audit."
+        },
+        {
+          "Path": "incoming/License.txt",
+          "Bytes": 710,
+          "SHA256": "068EBFB25D58425AFA39FE4901DC0D74B9F2155A6B1C6F0487A7E986A50C706C"
+        },
+        {
+          "Path": "incoming/Preview.png",
+          "Bytes": 132125,
+          "SHA256": "C02EAA957FE26E9DAD51437B6BB926CAA08432342B4E8C7731A2B88DE06F48B7"
+        },
+        {
+          "Path": "incoming/Models/FBX format/ambulance.fbx",
+          "Bytes": 146592,
+          "SHA256": "3B1BEACE419AA679D02F83072A31AD3F583F9F91DED878BB0F82D24C73E3ED1F"
+        },
+        {
+          "Path": "incoming/Models/FBX format/box.fbx",
+          "Bytes": 29376,
+          "SHA256": "3E7268C589ABB8952939701D3DD7EA0321466E2D8EFE459D71640FB1784169AA"
+        },
+        {
+          "Path": "incoming/Models/FBX format/cone-flat.fbx",
+          "Bytes": 30176,
+          "SHA256": "6C255ED6BA5E1C2878793899B2220DA569FAFD762921C98709448475C3F89B99"
+        },
+        {
+          "Path": "incoming/Models/FBX format/cone.fbx",
+          "Bytes": 30144,
+          "SHA256": "2E0A6BE75EADC8D6645C2D4972A367CFD0C2E40AE218D6B18E400FE547E7D7DC"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-bolt.fbx",
+          "Bytes": 28752,
+          "SHA256": "C5409D71C8715BBB9C37B49507A2F42DD745593C2FE479D721C8A393177FFC5A"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-bumper.fbx",
+          "Bytes": 26448,
+          "SHA256": "4E4A81DA584D029592838FF13AB5DBDE69D8C5CD0C3A3B0611F3CD806D17CFAF"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-door-window.fbx",
+          "Bytes": 27344,
+          "SHA256": "F05FFD5CA9AB125A3F90A36BDEB0255527E4227E5AB74E9F6EB48551D7F1F0BC"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-door.fbx",
+          "Bytes": 27072,
+          "SHA256": "FAFFC50042ABB66B07DDBBB1F930A220C67E53DD684B9E2899A37D33FD811E7A"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-drivetrain-axle.fbx",
+          "Bytes": 29344,
+          "SHA256": "061D5D73EB451E50ABEFDA017CFFFAC889CA465F171071400B01895BC0FCEF6D"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-drivetrain.fbx",
+          "Bytes": 34384,
+          "SHA256": "A58B53C46FBDD1158701A5CD95FB9A612813A61EA60A18EDA002254460B1B91C"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-nut.fbx",
+          "Bytes": 29040,
+          "SHA256": "B1B5365E12AD9FFC376BC678DF17DD51C466E464ED1906C573D79E2707E25BB6"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-plate-a.fbx",
+          "Bytes": 28480,
+          "SHA256": "5040F327486D19BA51CEB1FEE97500034935235A5B340EB302EF2CD36BE19D3D"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-plate-b.fbx",
+          "Bytes": 26128,
+          "SHA256": "D33A7F81A268A03A9D21A27865BEF2B90568F63034EBD179C5471186771082F1"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-plate-small-a.fbx",
+          "Bytes": 27600,
+          "SHA256": "5620059CF0A7A99D86686B9C797FE7C5F19AC7F34E7C2E665B273584731E9634"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-plate-small-b.fbx",
+          "Bytes": 26096,
+          "SHA256": "047072C3C96ACF45E690E7E4F9220C9F48D9E8B47474DF9C900EBD7D7B9A98F7"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-spoiler-a.fbx",
+          "Bytes": 25696,
+          "SHA256": "6BB4EACF2723B3EF4BEFFAF8C773D82382C99D5F8B038CA35CC72F89B9E6ADFD"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-spoiler-b.fbx",
+          "Bytes": 25488,
+          "SHA256": "AEA80DE624E83A465718C86522FEFF5DFB0AFB1AD5D169EDAE9FDB3AD2F0AA8F"
+        },
+        {
+          "Path": "incoming/Models/FBX format/debris-tire.fbx",
+          "Bytes": 33168,
+          "SHA256": "0B5918491A6BF83BE844B073236E2C088A0FCD1B861E6F0CCA9EC43211EB9405"
+        },
+        {
+          "Path": "incoming/Models/FBX format/delivery-flat.fbx",
+          "Bytes": 131360,
+          "SHA256": "0C0E1682C2C1C9A25452952FC4638A788F681E8501FDDF83DBB9E0A3FD6D8BD3"
+        },
+        {
+          "Path": "incoming/Models/FBX format/delivery.fbx",
+          "Bytes": 134720,
+          "SHA256": "D37EE9D0A671C7A25C9FBD4A7A95668985AF4392F6D966815B245FDC52A8B025"
+        },
+        {
+          "Path": "incoming/Models/FBX format/firetruck.fbx",
+          "Bytes": 136736,
+          "SHA256": "BF9906AA7D9A2EF4F852E825094B02E1D7C800DCF22F5DAC00348A0E518F9A12"
+        },
+        {
+          "Path": "incoming/Models/FBX format/garbage-truck.fbx",
+          "Bytes": 150688,
+          "SHA256": "29D91CEAF762A6F8604FCE8ADE147A45D564FCD3C6AC9563EBA85120ECAACA3F"
+        },
+        {
+          "Path": "incoming/Models/FBX format/hatchback-sports.fbx",
+          "Bytes": 116016,
+          "SHA256": "D9104DE117F52786E1E9DA1F670900B8DEDAC3E5BC3F355F3E638B30EE7568D2"
+        },
+        {
+          "Path": "incoming/Models/FBX format/police.fbx",
+          "Bytes": 125824,
+          "SHA256": "112B73E86EE2CE0D48A4D3CC957D12748855E75AC280A3650FFF31EEC1137239"
+        },
+        {
+          "Path": "incoming/Models/FBX format/race-future.fbx",
+          "Bytes": 113408,
+          "SHA256": "29A1427338A9FFD90AF5F421B5BF922BB4177D25850C0C5C6D3893DBEB55F918"
+        },
+        {
+          "Path": "incoming/Models/FBX format/race.fbx",
+          "Bytes": 111920,
+          "SHA256": "F48C8F5C5981C021914696E24BFFB550F394A0B420AC7BCC5401E2A2D8BA43AD"
+        },
+        {
+          "Path": "incoming/Models/FBX format/sedan-sports.fbx",
+          "Bytes": 120432,
+          "SHA256": "9D4CD1510CBB58523D718917DAD696E692613CA43490898810D9AE60B6117E54"
+        },
+        {
+          "Path": "incoming/Models/FBX format/sedan.fbx",
+          "Bytes": 114352,
+          "SHA256": "88C30699BA32B7A63CA52504A7FA85F8E2BAC1C96A2791FB5119ABE6121D8E1F"
+        },
+        {
+          "Path": "incoming/Models/FBX format/suv-luxury.fbx",
+          "Bytes": 115520,
+          "SHA256": "C7E14BA0E52072E140605E79FE2B8C724FA411D42D5767ACD0D52D74F78ABF3D"
+        },
+        {
+          "Path": "incoming/Models/FBX format/suv.fbx",
+          "Bytes": 135152,
+          "SHA256": "29F46269068E8515F482F420502858686E96547B4DD1E4DBE3E2377BF4C7CDDD"
+        },
+        {
+          "Path": "incoming/Models/FBX format/taxi.fbx",
+          "Bytes": 115456,
+          "SHA256": "FC1B2A853DD8856E41DB034465EBBF5B968D9EEA1D36151B2F60E75144E61C86"
+        },
+        {
+          "Path": "incoming/Models/FBX format/tractor-police.fbx",
+          "Bytes": 134208,
+          "SHA256": "3FC5BEFEE489A98734B65D0C3BE6F1EED582CFCBDBCF79DB62C3EF21F5ABFF12"
+        },
+        {
+          "Path": "incoming/Models/FBX format/tractor-shovel.fbx",
+          "Bytes": 141296,
+          "SHA256": "4F657C5642FD643F2FABF8FEEB9D1534F4566270475C182F7C70B6A665C4F83B"
+        },
+        {
+          "Path": "incoming/Models/FBX format/tractor.fbx",
+          "Bytes": 124448,
+          "SHA256": "55591587FE19476CED760AA345F939CC906F17197C90C89837BAD28A79A0895A"
+        },
+        {
+          "Path": "incoming/Models/FBX format/truck-flat.fbx",
+          "Bytes": 125056,
+          "SHA256": "6D0F740D01BD09AC64DEE5485A45766FA0EA71E5B466C7509DAED410A1FA11D8"
+        },
+        {
+          "Path": "incoming/Models/FBX format/truck.fbx",
+          "Bytes": 116368,
+          "SHA256": "330CD7BB46964543CFF120C62106601234DC4A52166C31634B8C4CEE1CBFB914"
+        },
+        {
+          "Path": "incoming/Models/FBX format/van.fbx",
+          "Bytes": 115520,
+          "SHA256": "8A84FC289E310D7BAC860381D9C54FB39CDCC34592415286A7E1BE7C583F6A24"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-dark.fbx",
+          "Bytes": 35488,
+          "SHA256": "35B6A0FA4A63E86305D3FBC988A81A3FFC97E3783AB8AD24981D6208C55CB6E3"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-default.fbx",
+          "Bytes": 34128,
+          "SHA256": "FA32A5B76CE5D55C8E5C32DE46DD379715474D19CC27E38EA18568BD41D96828"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-racing.fbx",
+          "Bytes": 35488,
+          "SHA256": "FF5803E07604A76B1FA50C01A48B9B0F167DB95EF9132C75C9B4779B9826894D"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-tractor-back.fbx",
+          "Bytes": 39680,
+          "SHA256": "1FFBD5C2AEDF5572D5ABC3CC5E1FE2D7A3DD2EA4B5D3C8B5CFB0D559C8700F32"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-tractor-dark-back.fbx",
+          "Bytes": 39008,
+          "SHA256": "1D3FF52A215590A9B18609F2D132B626A2FB0B8BC02A72F202FF2136794B493B"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-tractor-dark-front.fbx",
+          "Bytes": 35824,
+          "SHA256": "21BC8664A6B8C406404040243B98391D8F95A678908A81D8C2A89BBBD73067D3"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-tractor-front.fbx",
+          "Bytes": 35792,
+          "SHA256": "1D18589644A8E5BB5F411614F98A5CA215B54D598585B4F586FDE4379B56A289"
+        },
+        {
+          "Path": "incoming/Models/FBX format/wheel-truck.fbx",
+          "Bytes": 37696,
+          "SHA256": "3266DED75F5D0AD9B03E4DCC016B231ADBD1576DE149A564CA5A1ACFFCFFDC20"
+        },
+        {
+          "Path": "incoming/Models/FBX format/Textures/colormap.png",
+          "Bytes": 11634,
+          "SHA256": "96B3839B65F6C58894CD693A27384D0DA35807C69D72B21AFE68D901ED44052E"
+        },
+        {
+          "Path": "incoming/Models/GLB format/ambulance.glb",
+          "Bytes": 233620,
+          "SHA256": "B903387965B214BAAB3321BDD3884CF427DF804C0A6259ECF94CB8BF061FB023"
+        },
+        {
+          "Path": "incoming/Models/GLB format/box.glb",
+          "Bytes": 14124,
+          "SHA256": "3F0702D11C17B1ACCA51F23E2F7181A49C89412D372EA79C6E4ED1A3BA12BD53"
+        },
+        {
+          "Path": "incoming/Models/GLB format/cone-flat.glb",
+          "Bytes": 16728,
+          "SHA256": "4C3C88D164BFB994EF8100D6AA0114DAF4CE28F087849743A6E1E9AD59B96268"
+        },
+        {
+          "Path": "incoming/Models/GLB format/cone.glb",
+          "Bytes": 16712,
+          "SHA256": "760E3E5FBA725C9E6133D61BF856CD73B28BE0D26ECDB4B30316E67F771F81B1"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-bolt.glb",
+          "Bytes": 4784,
+          "SHA256": "8E0FA0724D260B26DD6F5850B7F58B9E41E99A1CB8D852139EF025688435118F"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-bumper.glb",
+          "Bytes": 11328,
+          "SHA256": "A22FCBFE253C207562CCDBFFB76F4A24DCD849DA5C8F35A5A82FC8D9FD68DB32"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-door-window.glb",
+          "Bytes": 7592,
+          "SHA256": "0E80F6553322C6B5B98FD365547A3E0B0227FC99BF25CF7696AD389A2C02FC18"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-door.glb",
+          "Bytes": 7072,
+          "SHA256": "3F385C9142C336AF6DE47E996A19D6E786DD89EF247750FD2FBA0C557EE57F80"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-drivetrain-axle.glb",
+          "Bytes": 18756,
+          "SHA256": "5C915756D99B303E3B55E867875BED1870584A73250EBED16E85B1C48DCE06CF"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-drivetrain.glb",
+          "Bytes": 36912,
+          "SHA256": "BAAD1E9AFAFE8C5CF65B95E8DAD636F40FB6562BBAB0A4CA813DC8402CE3C19A"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-nut.glb",
+          "Bytes": 4760,
+          "SHA256": "E97981F647206C8E83E98F14C84CF93D24DBA6C55E9CE685AE4E406E524A8C2A"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-plate-a.glb",
+          "Bytes": 5064,
+          "SHA256": "EE5B680E419A6CCBC7B3F3FF506720A3E1358D6B8BD9C6FFBA4F6B46DF5E5BC1"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-plate-b.glb",
+          "Bytes": 5396,
+          "SHA256": "8FBD4816A0B411741CC17FD36C89F68DAB2F5048371F2095ED63C3CCF8B35034"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-plate-small-a.glb",
+          "Bytes": 4244,
+          "SHA256": "4E736123B5A4F59DA6115DB45B1D6823CC448F7187FB4A6810A01568B8B3881E"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-plate-small-b.glb",
+          "Bytes": 5408,
+          "SHA256": "7DF8D3C4D98689264FF68B58E90CDF619D9007914577B20BE47B6997D83BA64C"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-spoiler-a.glb",
+          "Bytes": 5632,
+          "SHA256": "82A9B80E4518CF7614AAFD413F10881EB8682FC6D99EA41F24B41B9BD8A35884"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-spoiler-b.glb",
+          "Bytes": 8616,
+          "SHA256": "8447902F07A3859C82970B9C5E6DCFDD5F574AE4CAB9D2C74793C8FB50630D71"
+        },
+        {
+          "Path": "incoming/Models/GLB format/debris-tire.glb",
+          "Bytes": 26568,
+          "SHA256": "E3B81204761465A4404E9795A1AF84CF739483A39037DB1EF93C9E467B1DC37D"
+        },
+        {
+          "Path": "incoming/Models/GLB format/delivery-flat.glb",
+          "Bytes": 214472,
+          "SHA256": "726B8C3EAD64287A97AB94AE83A0A6805ECD8E674E05DBE9F8326DEE5D0E41DD"
+        },
+        {
+          "Path": "incoming/Models/GLB format/delivery.glb",
+          "Bytes": 240296,
+          "SHA256": "A40E322FE1F208791AECFB0F164F1F3E5099DFD6D2EAD86566258138EEA3C72D"
+        },
+        {
+          "Path": "incoming/Models/GLB format/firetruck.glb",
+          "Bytes": 232468,
+          "SHA256": "AB459B5063D64FBE3861C6B7203C250A9652C143B61FE4BD9C50252F8C8DDDF6"
+        },
+        {
+          "Path": "incoming/Models/GLB format/garbage-truck.glb",
+          "Bytes": 268244,
+          "SHA256": "3D8E52275D5671E455AF969E406FA701C50B0854AD2784E7ABBD55364A5F4010"
+        },
+        {
+          "Path": "incoming/Models/GLB format/hatchback-sports.glb",
+          "Bytes": 197820,
+          "SHA256": "F8D054777CEE3B46453BB698171069224DC4C62BFA89FF8C36543DDDC5F65669"
+        },
+        {
+          "Path": "incoming/Models/GLB format/police.glb",
+          "Bytes": 195356,
+          "SHA256": "5B9C5F27E3156DF6063BF15A1F0BD6473BCC167A12CC32F3055B8B2CF11710D0"
+        },
+        {
+          "Path": "incoming/Models/GLB format/race-future.glb",
+          "Bytes": 173176,
+          "SHA256": "F63D9495274B8043BF6DBE2635F76CEE5B175B53627BCE07786CC4F4D126D550"
+        },
+        {
+          "Path": "incoming/Models/GLB format/race.glb",
+          "Bytes": 167288,
+          "SHA256": "E73F4344923C6BA951B1C4FD99AB27EA2FAA0C3086D9161708864DE333496414"
+        },
+        {
+          "Path": "incoming/Models/GLB format/sedan-sports.glb",
+          "Bytes": 177692,
+          "SHA256": "843B2E9C859D64D8DED7EA40EA871BE98DF820AAA7458FB0E5352AC0F7988C19"
+        },
+        {
+          "Path": "incoming/Models/GLB format/sedan.glb",
+          "Bytes": 172236,
+          "SHA256": "9FF651A3F038306D32E953BD5FA33A942EA8DE48C6A53671EDB0A5DDD0CBA8D5"
+        },
+        {
+          "Path": "incoming/Models/GLB format/suv-luxury.glb",
+          "Bytes": 175928,
+          "SHA256": "53ABCBBC128DC3EEC65030C20BD38C875DB4792BD9181533CEFCCAF7EF689EA6"
+        },
+        {
+          "Path": "incoming/Models/GLB format/suv.glb",
+          "Bytes": 207588,
+          "SHA256": "787D024349CC38CD0346B93F357A4136F6B1CA5F611CDF69916CDC027BA26D9F"
+        },
+        {
+          "Path": "incoming/Models/GLB format/taxi.glb",
+          "Bytes": 175600,
+          "SHA256": "B5D942A8B289A4BDC6B1EAFAA0383077277617F751845F35C007D40DA4A60BF9"
+        },
+        {
+          "Path": "incoming/Models/GLB format/tractor-police.glb",
+          "Bytes": 196324,
+          "SHA256": "A9D142EFF2625564CB0FD0EAC4D35CE0ADB02D0A1909EB489A29AAE444868E4D"
+        },
+        {
+          "Path": "incoming/Models/GLB format/tractor-shovel.glb",
+          "Bytes": 222600,
+          "SHA256": "B7721911842B8638E57B3DA34D98A3AAA7B5FF1D47D7F73969DFB66F496474D2"
+        },
+        {
+          "Path": "incoming/Models/GLB format/tractor.glb",
+          "Bytes": 175976,
+          "SHA256": "B1249BEE3D71C32124728235074C42BE9A3639D4846178AD1BAD78284A20C3FA"
+        },
+        {
+          "Path": "incoming/Models/GLB format/truck-flat.glb",
+          "Bytes": 207444,
+          "SHA256": "E315EE939E8151821E0E5FA02E6B0A1E61FBA4E9CE323B698C2399C5A22DC082"
+        },
+        {
+          "Path": "incoming/Models/GLB format/truck.glb",
+          "Bytes": 176376,
+          "SHA256": "C3402B7D80837AB1DA8AA61612C05D277288AD0C901CF7C8DC506484062700D0"
+        },
+        {
+          "Path": "incoming/Models/GLB format/van.glb",
+          "Bytes": 175688,
+          "SHA256": "0F26D296CBAB406F32E3802C9959A48C3A901D9A618EE77A2A502570068C01B8"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-dark.glb",
+          "Bytes": 29132,
+          "SHA256": "DC8A0F9280AADFF522C9518BF387FE3A4D2894EFAD8DA42FCA486CFE3D011201"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-default.glb",
+          "Bytes": 26836,
+          "SHA256": "B885ABD4E8435FE8221F5E3852D643A474E153DE028732E571D071D3BAC80133"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-racing.glb",
+          "Bytes": 29136,
+          "SHA256": "1C281F84A6DCD8210D5083D2425AE7F71B8189DC84FAE2D8008F6FF3F523F017"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-tractor-back.glb",
+          "Bytes": 36644,
+          "SHA256": "78B4E1B1581F319551FB1BAEC9AA2DC828174ADD1CA7BDC7AA57C845C548355E"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-tractor-dark-back.glb",
+          "Bytes": 36660,
+          "SHA256": "9F082416CBBC2462A28CCC841838FF395F0B634E8B618B5D1E88B51DBDEF8AEE"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-tractor-dark-front.glb",
+          "Bytes": 29172,
+          "SHA256": "7BEB63CC3A5A36A90A8BFF47C87CD7BD746BF087788D359E3B6C4EDE07B4367E"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-tractor-front.glb",
+          "Bytes": 29160,
+          "SHA256": "7B88D7D2B1B0D29143B11DAF904023A11ADB81B0790DED08DE1712C5028429A1"
+        },
+        {
+          "Path": "incoming/Models/GLB format/wheel-truck.glb",
+          "Bytes": 34320,
+          "SHA256": "748CD90A6D6AF6F2784F318F313947AAAC926A8F105F537C50CB373B97D6676C"
+        },
+        {
+          "Path": "incoming/Models/GLB format/Textures/colormap.png",
+          "Bytes": 11634,
+          "SHA256": "96B3839B65F6C58894CD693A27384D0DA35807C69D72B21AFE68D901ED44052E"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/ambulance.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/ambulance.obj",
+          "Bytes": 167723,
+          "SHA256": "A53159D73AD91E7DB536CE4E72F6BAEA96A7A1EFC5095956560E60D80FBBFFD4"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/box.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/box.obj",
+          "Bytes": 12281,
+          "SHA256": "E9A3BE073148F5D36551184711880E2532170639D50F31E676CED2BE2C4488C4"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/cone-flat.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/cone-flat.obj",
+          "Bytes": 14857,
+          "SHA256": "9ED74E48AD13EB1C410E74EA2E0B5B969EF0CE7ECC5B93F73C700E5E223208EF"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/cone.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/cone.obj",
+          "Bytes": 15074,
+          "SHA256": "78C6B47805B3926FD80478B199E639859C5CF75127B666AB35EB2E81BD8EBD1F"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-bolt.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-bolt.obj",
+          "Bytes": 2660,
+          "SHA256": "9A5979756F340DE36DB8614998E56B08AA122E9BDE27FC193EB4C468E87F3E10"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-bumper.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-bumper.obj",
+          "Bytes": 8201,
+          "SHA256": "630B22B884966B7644A74D15350C44525E2319B50D49BFD381554E44EE0903D1"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-door-window.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-door-window.obj",
+          "Bytes": 6555,
+          "SHA256": "02E6AEDFD6F76AB0D243C6D7A3CE35D838E0CDB79A80E360F15FA8A454551678"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-door.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-door.obj",
+          "Bytes": 6036,
+          "SHA256": "19B071E1CA28A1BFB94A44CE6A9DDDA8222507068A30FFEB15DFF359F703E5C5"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-drivetrain-axle.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-drivetrain-axle.obj",
+          "Bytes": 16594,
+          "SHA256": "5BEEB1A546DA184BEC89AA3AC8E6F319EE267E52AD2E6A15BCE5D046CDDED610"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-drivetrain.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-drivetrain.obj",
+          "Bytes": 33422,
+          "SHA256": "2FAD041A1C67E4ECE3351978094AB0468D9EAD9D26034856F51D86206F3E8552"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-nut.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-nut.obj",
+          "Bytes": 2859,
+          "SHA256": "EDFC35FEC6E2FA1D1CDB3D94FB0B8AE8A14C6AD9C999158D702A49A4E3A4AF09"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-a.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-a.obj",
+          "Bytes": 3021,
+          "SHA256": "A9CA71AEB640FD5A236001759DD8849B884FB0BB989B97D96846F7CB8DD2854E"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-b.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-b.obj",
+          "Bytes": 3954,
+          "SHA256": "D3808467CB343676D8A74892EF07B0D54736AC51F2BB7BF6CF113182467B6205"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-small-a.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-small-a.obj",
+          "Bytes": 2170,
+          "SHA256": "E4C92A03E080BF8140D0C2A52FD64F1817672ACA69D437CD894AAA1A70B5864F"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-small-b.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-plate-small-b.obj",
+          "Bytes": 4034,
+          "SHA256": "CF8E7E28F59E46DC5A9DC5FC298ED40D6846B19A7B24279962FD368E6CA9B8DC"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-spoiler-a.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-spoiler-a.obj",
+          "Bytes": 3396,
+          "SHA256": "FE9E90E69F873AF5F778BA02E3EA9ABFF98F419E79DF3D0A37F2C547E84E0720"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-spoiler-b.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-spoiler-b.obj",
+          "Bytes": 6020,
+          "SHA256": "82E93BC5DFF8EEFDADC75F91A1C42708FD9F70497FA638B397617A5ECD2D0B3C"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-tire.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/debris-tire.obj",
+          "Bytes": 24130,
+          "SHA256": "25A589B664B79FFCF528C0F9DD87AF1C09D499E83ADA8CACDB00CF0E03A54BE8"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/delivery-flat.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/delivery-flat.obj",
+          "Bytes": 147970,
+          "SHA256": "E1C4C3AD03D148BF43829F5BA62F57CAF5E92666F5573FF06FE63A2913A2C359"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/delivery.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/delivery.obj",
+          "Bytes": 149612,
+          "SHA256": "51BDA95EC09C56EE1025565AFB74B302F0CD53CC201A6244203E2D55C45535E0"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/firetruck.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/firetruck.obj",
+          "Bytes": 170002,
+          "SHA256": "70A281C7C020B262E2FB599555512083080EBCCF60F2B12C4B3A6634A367C2A1"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/garbage-truck.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/garbage-truck.obj",
+          "Bytes": 185261,
+          "SHA256": "D283B642431777E402EE96CFBD6A28A22E04FA46C3419FAC97F666BD7E3039C4"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/hatchback-sports.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/hatchback-sports.obj",
+          "Bytes": 124118,
+          "SHA256": "84EB8AE8B2DE714689C55D324C9711DA4F93066C443EE622FFE589F58EDF008E"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/police.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/police.obj",
+          "Bytes": 136687,
+          "SHA256": "BAA5559B653ABCFBE125028BD68D11BCAE10F0420BCD0D7F2E3C84506EC7682C"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/race-future.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/race-future.obj",
+          "Bytes": 119984,
+          "SHA256": "DE71BFCE3944316D7F8A2F6302711B7CD3F7ABEC48FAEF7B4E03CF1B5DE6D7DA"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/race.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/race.obj",
+          "Bytes": 114677,
+          "SHA256": "9F5D4958151C0B4B5013F86F7BC0A14B884279BC8E60FDC7F18D5023793A5821"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/sedan-sports.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/sedan-sports.obj",
+          "Bytes": 122367,
+          "SHA256": "D6025130D3F27F8B5E3FDA8DB8B3F65003FE66A7C16F20B8723518E46B169E27"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/sedan.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/sedan.obj",
+          "Bytes": 119317,
+          "SHA256": "140FD87A759B1A6B60BE3E545552E9E6EDB9DD472176FA5FD4DB00FCE4CF1308"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/suv-luxury.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/suv-luxury.obj",
+          "Bytes": 116248,
+          "SHA256": "DFA2126FBBD6E06BC252BD2A63AC6157BF087D1F818C751C9365AEF45B4E142F"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/suv.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/suv.obj",
+          "Bytes": 151416,
+          "SHA256": "B5AFC88ED3B8BA7C7D87EE709E520C86B908163DA9C7AF38C65D14083B2A7A33"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/taxi.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/taxi.obj",
+          "Bytes": 120095,
+          "SHA256": "1B24EF667DE0FCD375C2A5E7C69ED477EEF0C75BA4241583833B48450769FB10"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor-police.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor-police.obj",
+          "Bytes": 161727,
+          "SHA256": "B2631B10C99A4CA8B6745D5F4126CF3ACC9059B315FD12F5927B0482392A94D7"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor-shovel.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor-shovel.obj",
+          "Bytes": 177655,
+          "SHA256": "1B8D50B8311782AB82E87EA4130F0C11995463309F45AE15A1C75FB82BDD3169"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/tractor.obj",
+          "Bytes": 144449,
+          "SHA256": "224CADFDFB1FA5327D40F7A7C29A936FA0A454D64673BDF2B41283B931D3BF25"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/truck-flat.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/truck-flat.obj",
+          "Bytes": 147926,
+          "SHA256": "ACF4D8CFEACA793FD3472C817FF2AD778543ECD79CA5FA9A14CFA3A658D23E6E"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/truck.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/truck.obj",
+          "Bytes": 122413,
+          "SHA256": "B6A7F12390075E1C464FABCE471F943CC897DEA651817F625EDAB6111DCC7630"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/van.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/van.obj",
+          "Bytes": 123286,
+          "SHA256": "4C280894A497C80F6D96BEA2E8B93E885A83B2F2DDE317F037C01DB5E8A01BC1"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-dark.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-dark.obj",
+          "Bytes": 31601,
+          "SHA256": "0DD0A3BC26BE6002839AB2A8A1E2ACE7472605B3F0958893511619195DBA54F0"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-default.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-default.obj",
+          "Bytes": 30743,
+          "SHA256": "159C93A4916DD59324C693252A66FB85A05971F3BD1C83597E81E6BC4D22CA1D"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-racing.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-racing.obj",
+          "Bytes": 30975,
+          "SHA256": "228C758CC5F85D724A2A9682C15D02525E40AC022CADF4BD20CC54E146E8AE3A"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-back.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-back.obj",
+          "Bytes": 42436,
+          "SHA256": "D8C9835FF5A395BC6AE6C0E1A6C1218F893064AC9267E727690428A20BC52945"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-dark-back.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-dark-back.obj",
+          "Bytes": 41013,
+          "SHA256": "D7FD37511A8D930AAA8B0AB8F7F3CD7B10CA22D15D56772DE0E4E6688FF892B0"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-dark-front.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-dark-front.obj",
+          "Bytes": 31944,
+          "SHA256": "609C918DBA2197DABD0501ECCDEDDB8DC7576A37DA12600CF346FC989A3AB057"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-front.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-tractor-front.obj",
+          "Bytes": 32026,
+          "SHA256": "76F90F403719D53EC86A5D21B2BCD2BB091AA55B3321E329F9C420F63E919397"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-truck.mtl",
+          "Bytes": 98,
+          "SHA256": "45A6736AA344A0C7E286B9C43C6A48F25B6A2F78D8C5949E430C3B4A93B4E060"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/wheel-truck.obj",
+          "Bytes": 41126,
+          "SHA256": "0BF66FFA62943C380D7853B23BED897C666CC563BA78883C05848D524EEE9230"
+        },
+        {
+          "Path": "incoming/Models/OBJ format/Textures/colormap.png",
+          "Bytes": 11634,
+          "SHA256": "96B3839B65F6C58894CD693A27384D0DA35807C69D72B21AFE68D901ED44052E"
+        },
+        {
+          "Path": "incoming/Previews/ambulance.png",
+          "Bytes": 2045,
+          "SHA256": "6FC2654A00119158C512C99FA0094995EFC52D47D55ECCAAF39F901510686962"
+        },
+        {
+          "Path": "incoming/Previews/box.png",
+          "Bytes": 1831,
+          "SHA256": "41AE6600A072BE36666ECDA5CC885B922AD43F6C64D1B78F9F492CCA0D183858"
+        },
+        {
+          "Path": "incoming/Previews/cone-flat.png",
+          "Bytes": 1725,
+          "SHA256": "028BD21EC1F79F707EF63F25E59A44CE5E3B5271136E4E218187BF8E806B42C5"
+        },
+        {
+          "Path": "incoming/Previews/cone.png",
+          "Bytes": 1532,
+          "SHA256": "CAF5F99DCE3D9DADAF1973AEEA91DF5EAEEE67B368963CAECF1722A3DE5D2AF7"
+        },
+        {
+          "Path": "incoming/Previews/debris-bolt.png",
+          "Bytes": 1569,
+          "SHA256": "F10DD48EA85580CD47E45566AEC5962086D049500AEC53BD44406BCC72FE9E39"
+        },
+        {
+          "Path": "incoming/Previews/debris-bumper.png",
+          "Bytes": 1705,
+          "SHA256": "46468F25528526FFDBE258568110CB63E01D0284181411353C0F47F72F5AA2C0"
+        },
+        {
+          "Path": "incoming/Previews/debris-door-window.png",
+          "Bytes": 1792,
+          "SHA256": "07EDC7D91FDD9310E7612BA43CB2493B97B9445ED000AD76A3265C3D52487C00"
+        },
+        {
+          "Path": "incoming/Previews/debris-door.png",
+          "Bytes": 1786,
+          "SHA256": "2644671C909BD9781E51349015899B076EA08C22F5D5C47523C2816B0DEF934F"
+        },
+        {
+          "Path": "incoming/Previews/debris-drivetrain-axle.png",
+          "Bytes": 1707,
+          "SHA256": "B5E16F40CCEE9003D3D75D794BAAD95EFC74562A450DBCBBD2A920ED9D316760"
+        },
+        {
+          "Path": "incoming/Previews/debris-drivetrain.png",
+          "Bytes": 1596,
+          "SHA256": "C872BFA6B4AC55649F40E9AAEF28655F87C7EB0125630DBFD9CA5581FFE49347"
+        },
+        {
+          "Path": "incoming/Previews/debris-nut.png",
+          "Bytes": 1786,
+          "SHA256": "F17A34837490EBE9222045D24B5AB44775C34DC05DBBC1C4B34DBA1095575766"
+        },
+        {
+          "Path": "incoming/Previews/debris-plate-a.png",
+          "Bytes": 1726,
+          "SHA256": "D1A8E2F4FD5E6763EB29EB0AB9F5E89082C171A3818E0BE94B93C20CC4FA232B"
+        },
+        {
+          "Path": "incoming/Previews/debris-plate-b.png",
+          "Bytes": 1839,
+          "SHA256": "8C055AA2514D053D20A3183FE2F7A45CB33B602D3EC6A846FBF12CD49F22A253"
+        },
+        {
+          "Path": "incoming/Previews/debris-plate-small-a.png",
+          "Bytes": 1613,
+          "SHA256": "00929D832C951F8C68DE26681F4FBE25D1C9943AD466AACCD6EB50327C96D921"
+        },
+        {
+          "Path": "incoming/Previews/debris-plate-small-b.png",
+          "Bytes": 1900,
+          "SHA256": "7F8D8BD31B28F4EA59DC5621ADB1BCB52266ECD9808D77FDBD1B387FE6BB9DEE"
+        },
+        {
+          "Path": "incoming/Previews/debris-spoiler-a.png",
+          "Bytes": 1652,
+          "SHA256": "06B37CD68AD872C8470CDDF7754F8EF0F7C6D3427188EF49F6024DD6B7B2BBE5"
+        },
+        {
+          "Path": "incoming/Previews/debris-spoiler-b.png",
+          "Bytes": 1730,
+          "SHA256": "903C83DA8F5740CAE6A741E5E88173AAF5F4234D97E74C4C8C2AB69B7175B169"
+        },
+        {
+          "Path": "incoming/Previews/debris-tire.png",
+          "Bytes": 1992,
+          "SHA256": "D4905FEDFBB7B3F4C9D4080335B23804072C7095CFBE258310955C09E6560DF0"
+        },
+        {
+          "Path": "incoming/Previews/delivery-flat.png",
+          "Bytes": 1860,
+          "SHA256": "3FCB04D3A776282DD4A815B8D718BF029CF96ED7D67D247B5FD7FE920AF8AF1A"
+        },
+        {
+          "Path": "incoming/Previews/delivery.png",
+          "Bytes": 1995,
+          "SHA256": "2A6A25FF10DB910254367E0039EA2C8FDA744144542C8D1854ADFA99F2FE8CFA"
+        },
+        {
+          "Path": "incoming/Previews/firetruck.png",
+          "Bytes": 2158,
+          "SHA256": "FE29E373F92BF44AF7271719E409574B67E3A076D8259A3526CACBEB3A7B8A93"
+        },
+        {
+          "Path": "incoming/Previews/garbage-truck.png",
+          "Bytes": 2030,
+          "SHA256": "431B997A00F17B96A342C26B5339B6CBAE9377D8361DD6FE7225FE19E6CE1027"
+        },
+        {
+          "Path": "incoming/Previews/hatchback-sports.png",
+          "Bytes": 2049,
+          "SHA256": "449F5765EF55207C0EFAFBF5C902EB4257259A5CF29E9F456B737F0E9670E69A"
+        },
+        {
+          "Path": "incoming/Previews/police.png",
+          "Bytes": 2024,
+          "SHA256": "A1F27D7D02AA51D08307AA4E32C48B72D0B466D3CFA00DFE11A47C995E446D48"
+        },
+        {
+          "Path": "incoming/Previews/race-future.png",
+          "Bytes": 2008,
+          "SHA256": "B2B4B6BADB7F02C2B53C6FD09D6E43E55FA75046FEC5CC5750C5E4F8BAC244E2"
+        },
+        {
+          "Path": "incoming/Previews/race.png",
+          "Bytes": 2064,
+          "SHA256": "795B3C590257503EB1E6DBDC2B50E5B6E4F13AE291394669FE38B345F69C6356"
+        },
+        {
+          "Path": "incoming/Previews/sedan-sports.png",
+          "Bytes": 2129,
+          "SHA256": "105D288161383EC1B4BAAB2B7B005D2BDB4C0894589DAFA3EC7AA611DD6F5BA9"
+        },
+        {
+          "Path": "incoming/Previews/sedan.png",
+          "Bytes": 1963,
+          "SHA256": "37CA65B9BFFE195582FDD71CE463205FD9B9EB005174A14024610655E0906B5E"
+        },
+        {
+          "Path": "incoming/Previews/suv-luxury.png",
+          "Bytes": 2041,
+          "SHA256": "E8A1FEAD4A8138A4A65687B76A15A54BAB1EA4D1A419BF2B6B48F8350C720FBE"
+        },
+        {
+          "Path": "incoming/Previews/suv.png",
+          "Bytes": 2077,
+          "SHA256": "8F04255A649104753865FB69C8667047F65D3C99CF15120456AA766F2CB67619"
+        },
+        {
+          "Path": "incoming/Previews/taxi.png",
+          "Bytes": 1875,
+          "SHA256": "302271E1FF38A99375FCD373CA8C40907F0AA9DFD8EC3CD2437E8E3636C2E678"
+        },
+        {
+          "Path": "incoming/Previews/tractor-police.png",
+          "Bytes": 1925,
+          "SHA256": "97C2EF002C7B44AE231BBB2DBF19B86E477E2BF0C86AFAB4302917FAFAF82202"
+        },
+        {
+          "Path": "incoming/Previews/tractor-shovel.png",
+          "Bytes": 1815,
+          "SHA256": "4DFAF989A288C8295938CF9797FFB4C871F57EA47D22F0159033F9EFA571F0EF"
+        },
+        {
+          "Path": "incoming/Previews/tractor.png",
+          "Bytes": 1901,
+          "SHA256": "FFB72D76022C1614F713799F1F399534BE41554768D3BDF0E347588EC006EAA5"
+        },
+        {
+          "Path": "incoming/Previews/truck-flat.png",
+          "Bytes": 2047,
+          "SHA256": "D38D14333339532C41B1DCDD96D1AC298D3C1EBAB32A3612C6F819DC4EE668D9"
+        },
+        {
+          "Path": "incoming/Previews/truck.png",
+          "Bytes": 1978,
+          "SHA256": "579CF23D9627EAF3C8FEC08E78781ACD5181B72DBFE3529CF2624C60BA50A70A"
+        },
+        {
+          "Path": "incoming/Previews/van.png",
+          "Bytes": 2004,
+          "SHA256": "47A6CCD9E0C2D4F556D473AA5648C52518FF84437D7AB5FCFD3E6973A91AE864"
+        },
+        {
+          "Path": "incoming/Previews/wheel-dark.png",
+          "Bytes": 2003,
+          "SHA256": "BD34F3840139CD19AEC55E1C51485981CBB6596EAE5F32629F909F31A9B7A199"
+        },
+        {
+          "Path": "incoming/Previews/wheel-default.png",
+          "Bytes": 1984,
+          "SHA256": "7959D5A93802AF37113A9D273DBFCD7FAC4446C2DCE2B55E479670DE9372DC5B"
+        },
+        {
+          "Path": "incoming/Previews/wheel-racing.png",
+          "Bytes": 1971,
+          "SHA256": "4770C82BCE47CD1A27022434FE84D3F5313FB2826B6AF6B1404EAEE1E38F1774"
+        },
+        {
+          "Path": "incoming/Previews/wheel-tractor-back.png",
+          "Bytes": 1961,
+          "SHA256": "5C941D3C5E7C6DF531354B7DC8F8E328C6673B01B20A43541175791E53EF3F1A"
+        },
+        {
+          "Path": "incoming/Previews/wheel-tractor-dark-back.png",
+          "Bytes": 1999,
+          "SHA256": "419BAE5A149315E4D65FDC4A8ABD3DC8A4CE6484DD39C5B3A6C497F7F2130066"
+        },
+        {
+          "Path": "incoming/Previews/wheel-tractor-dark-front.png",
+          "Bytes": 2000,
+          "SHA256": "CD6DE4C099AB98502FE40CE3E17C593D1E6BE70292041E19F0D6964B185C5598"
+        },
+        {
+          "Path": "incoming/Previews/wheel-tractor-front.png",
+          "Bytes": 1978,
+          "SHA256": "CAD111AB8072883A4BA8CA2527685B423D35B06F218ACEDE1DC5B3704B9F5795"
+        },
+        {
+          "Path": "incoming/Previews/wheel-truck.png",
+          "Bytes": 1942,
+          "SHA256": "5577096736AF31D8C130C86148B7FDCC61FD5664870CE48275E11616572EFD9D"
+        }
+      ]
+    }
+  ],
+  "textures": [
+    {
+      "id": "gpt-texture-oak-light",
+      "label": "浅色橡木",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/oak-light.jpg",
+      "outputSha256": "F07A8DEC411122A0B880962DC6D6EFC62AA641F6158C521CF9A69A8F851DE738",
+      "originalFile": "asset-intake/gpt-textures/office/1-office-oak-light.png",
+      "originalSha256": "DC757B58D74966DB1B061E6262B4E3877B30851E0A555C6683CE124FD03A9CF7",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 184843,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 6.25,
+          "tb": 9.38,
+          "lrReference": 1.61,
+          "tbReference": 8.25
+        },
+        "after": {
+          "lr": 1.59,
+          "tb": 1.29,
+          "lrReference": 1.47,
+          "tbReference": 7.74
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-walnut-bar",
+      "label": "胡桃木吧台",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/walnut-bar.jpg",
+      "outputSha256": "963BF8D5F6705246808BE8A06D5CFD689DE2D7AC16E71661B64D3C43F5F456C0",
+      "originalFile": "asset-intake/gpt-textures/office/2-office-walnut-bar.png",
+      "originalSha256": "F80953586E734FC1C11E833D9B4BB60D49501586C5674E8F0212D7D2854D3C10",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 163602,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 4.82,
+          "tb": 5.26,
+          "lrReference": 1.39,
+          "tbReference": 4.5
+        },
+        "after": {
+          "lr": 1.51,
+          "tb": 1.43,
+          "lrReference": 1.28,
+          "tbReference": 4.5
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-plaster-warm",
+      "label": "暖白粉刷墙",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/plaster-warm.jpg",
+      "outputSha256": "9E5BF14583C02DB6C4A650D48B6D3AE3485E916DBEF2B7059A6ADD750A980A49",
+      "originalFile": "asset-intake/gpt-textures/office/3-office-plaster-warm.png",
+      "originalSha256": "961F361C58673F6477E37F75ED2B87AC2793B3DD4292DFC759AC9DE6F58D5C9C",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 187832,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 4.56,
+          "tb": 5.42,
+          "lrReference": 3.99,
+          "tbReference": 5.48
+        },
+        "after": {
+          "lr": 1.8,
+          "tb": 1.62,
+          "lrReference": 3.41,
+          "tbReference": 4.91
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-stone-floor",
+      "label": "浅色石材地面",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/stone-floor.jpg",
+      "outputSha256": "5BFA69DF73761493921ACDA516AA94BFD4500B62CAAE978E8E2A0A60C0CF6E4B",
+      "originalFile": "asset-intake/gpt-textures/office/4-office-stone-floor.png",
+      "originalSha256": "B8C2813EFB01EFBCC664644133E79FC945C5E61B92776E5DAC1CF498C67E260A",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 240816,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 16.98,
+          "tb": 11.1,
+          "lrReference": 4.45,
+          "tbReference": 5.59
+        },
+        "after": {
+          "lr": 2.01,
+          "tb": 1.71,
+          "lrReference": 4.35,
+          "tbReference": 5.39
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-fabric-cream",
+      "label": "米色织物",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/fabric-cream.jpg",
+      "outputSha256": "BCD988DE5318720DCF4FBC93E7EC2FA41AB86DC6E5747C8B373FECF7546EFC8D",
+      "originalFile": "asset-intake/gpt-textures/office/5-office-fabric-cream.png",
+      "originalSha256": "EE81E5895E70A84F6902FA17718EE1D9B14EF6993E75D998D0C258792E7A44D8",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 282470,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 23.69,
+          "tb": 22.19,
+          "lrReference": 6.52,
+          "tbReference": 7.78
+        },
+        "after": {
+          "lr": 2.23,
+          "tb": 2.03,
+          "lrReference": 6.26,
+          "tbReference": 7.42
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-sign-blank",
+      "label": "门头底图",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/sign-blank.jpg",
+      "outputSha256": "3EF65E302ED5CD90659666E50DA7DA6C40A81E9E6D1C2456A1E55EA29B781E64",
+      "originalFile": "asset-intake/gpt-textures/office/6-office-sign-blank.png",
+      "originalSha256": "01016BD34461316A6185EFE67FB816850551FDB6C7F4DC5A183EE2CD3BB70697",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 256,
+      "bytes": 24404,
+      "tile": false,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": null,
+      "processing": "中心裁剪至 1024×256；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-leaf-atlas",
+      "label": "绿植叶片图集",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/leaf-atlas.png",
+      "outputSha256": "D25367F8A03ADDE93655C82865A2B992C491DB05227298ECE64ACE77AF70B127",
+      "originalFile": "asset-intake/gpt-textures/office/7-office-leaf-atlas.png",
+      "originalSha256": "7A7ECA2CC55C7F0EDBB6C4004B1D7FCAEA7A84DD57EB8A5FF9DF745629995985",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 704,
+      "height": 352,
+      "bytes": 228318,
+      "tile": false,
+      "alpha": true,
+      "alphaAssessment": {
+        "status": "待重绘",
+        "fringeRatio": 0.09,
+        "transparentRatio": 0.69
+      },
+      "seam": null,
+      "processing": "长边缩至 704；亮度去黑底；2 px Alpha 腐蚀；边缘向叶片内部均色去溢色；PNG。"
+    },
+    {
+      "id": "gpt-texture-floor-concrete",
+      "label": "仓配混凝土地面",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/floor-concrete.jpg",
+      "outputSha256": "170DEDB6788059FE4ED2FA63A60D7610890E2E1A20A67EB1B0FCB32483C6CF93",
+      "originalFile": "asset-intake/gpt-textures/campus/8-campus-floor-concrete.png",
+      "originalSha256": "4E8DF7C5A3C33B132BFADC427F91A7B195AE75BDC7FECBCA0B37B34AA264D68A",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 253852,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 14.8,
+          "tb": 15.59,
+          "lrReference": 5.59,
+          "tbReference": 6.3
+        },
+        "after": {
+          "lr": 1.86,
+          "tb": 2.26,
+          "lrReference": 5.54,
+          "tbReference": 6.21
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-asphalt-dock",
+      "label": "月台沥青",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/asphalt-dock.jpg",
+      "outputSha256": "784AB6FF58DBDBE3462037A982C845DE3AE58B6C44D8EDF88AFAA78862D37123",
+      "originalFile": "asset-intake/gpt-textures/campus/9-campus-asphalt-dock.png",
+      "originalSha256": "81DAFFDB6662D8A264234B6A60E46FE41C573EA5F0589E3993E9236EC333AAE4",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 315120,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 15.23,
+          "tb": 13.45,
+          "lrReference": 9.28,
+          "tbReference": 9.87
+        },
+        "after": {
+          "lr": 2.15,
+          "tb": 2.09,
+          "lrReference": 9.3,
+          "tbReference": 9.8
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-rack-paint",
+      "label": "货架喷漆色带",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/rack-paint.jpg",
+      "outputSha256": "D6A04F76B6FECD531CE7E8F0668D4E31159B8E6AD9BFB851B60925FC5B7C4548",
+      "originalFile": "asset-intake/gpt-textures/campus/10-campus-rack-paint.png",
+      "originalSha256": "2D6433BC55A023E7C11A4551A6D32E7DFBE63611DBA120B4C04D421AC8B94FF9",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 512,
+      "bytes": 115905,
+      "tile": false,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": null,
+      "processing": "保持比例，长边缩至 1024；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-carton-atlas",
+      "label": "纸箱图集",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/carton-atlas.jpg",
+      "outputSha256": "B05966488276B427129022A6E5C3A65E887FAC211D355D2E2EEF177D31DBFDA1",
+      "originalFile": "asset-intake/gpt-textures/campus/11-campus-carton-atlas.png",
+      "originalSha256": "D7E505C1C51FCE240FDBF328286AB93B4DA6C83303913D8B4411D18F7CBD7098",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 512,
+      "bytes": 100284,
+      "tile": false,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": null,
+      "processing": "保持比例，长边缩至 1024；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-pallet-wrap",
+      "label": "托盘缠绕膜",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/pallet-wrap.jpg",
+      "outputSha256": "8F5ED5910C193963258C90B25EF256AE3A015BBE58E5D5A3455A91A21F697608",
+      "originalFile": "asset-intake/gpt-textures/campus/12-campus-pallet-wrap.png",
+      "originalSha256": "EA5EC3B719793D810CEE56C3E972844EF536D2DD004C094BA010AF9CA4A69FD7",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 216698,
+      "tile": true,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": {
+        "before": {
+          "lr": 24.72,
+          "tb": 27.14,
+          "lrReference": 2.35,
+          "tbReference": 9.19
+        },
+        "after": {
+          "lr": 1.83,
+          "tb": 1.76,
+          "lrReference": 2.29,
+          "tbReference": 8.67
+        },
+        "pass": true
+      },
+      "processing": "中心正方形裁剪至 1024×1024；半幅偏移；64 px 重叠渐变混合；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-truck-livery",
+      "label": "车身涂装",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/truck-livery.jpg",
+      "outputSha256": "80401F878970E70DDBAE47817E804440C2AC37E797BFC8632B4A7B8F0A07E7F4",
+      "originalFile": "asset-intake/gpt-textures/campus/13-campus-truck-livery.png",
+      "originalSha256": "FF207466A8E80842E6FBBC21E23D8583CD9E4CCBF283589603230E4192B889D6",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 1024,
+      "height": 512,
+      "bytes": 46436,
+      "tile": false,
+      "alpha": false,
+      "alphaAssessment": null,
+      "seam": null,
+      "processing": "保持比例，长边缩至 1024；sRGB JPEG，质量 88。"
+    },
+    {
+      "id": "gpt-texture-palm-atlas",
+      "label": "棕榈叶片图集",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/palm-atlas.png",
+      "outputSha256": "5CA87D0EE65787EDF48630347093DD412235DB62A1BB10737A763847130EE622",
+      "originalFile": "asset-intake/gpt-textures/campus/14-campus-palm-atlas.png",
+      "originalSha256": "17C54C4BAE1BD4C5CE047385244F2DF8D54DBCD8BAF6CE94D9CEE31387FE0EB8",
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "license": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "width": 704,
+      "height": 352,
+      "bytes": 378061,
+      "tile": false,
+      "alpha": true,
+      "alphaAssessment": {
+        "status": "待重绘",
+        "fringeRatio": 0.2,
+        "transparentRatio": 0.45
+      },
+      "seam": null,
+      "processing": "长边缩至 704；亮度去黑底；2 px Alpha 腐蚀；边缘向叶片内部均色去溢色；PNG。"
+    }
+  ]
+}

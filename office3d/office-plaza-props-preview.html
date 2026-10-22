@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,"><title>DR 广场道具 | Virtual AI Office</title>
+  <style>
+    :root { color-scheme:light; --bg:#f4f1ea; --text:#49453e; --panel:#fffdf7; --line:#b89b64 }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#292721; --text:#f6f2e9; --panel:#39362f }
+    * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif }
+    header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:18px 24px; border-bottom:1px solid var(--line) }
+    h1,p { margin:0 } h1 { font-size:22px }.tools { display:flex; gap:8px; flex-wrap:wrap }
+    button,select { min-height:44px; padding:8px 12px; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:8px; font:inherit }
+    :focus-visible { outline:3px solid var(--line); outline-offset:3px } #stage { height:calc(100vh - 184px); min-height:380px }
+    canvas { display:block; touch-action:none } footer { padding:14px 24px } #metrics { font-weight:650 }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>DR 广场道具模块</h1><p>无品牌程序化占位 · 办公生活线 · 后续由 R3-6B 决定世界位置</p></div>
+    <div class="tools">
+      <select id="tier" aria-label="画质"><option value="high">高档</option><option value="low">低档</option></select>
+      <select id="view" aria-label="机位"><option value="overview">广场全景</option><option value="vendors">餐车近景</option><option value="garden">花带与树</option></select>
+      <button id="theme">深色主题</button><button id="measure">测量模块增量</button>
+    </div>
+  </header>
+  <div id="stage"></div>
+  <footer>
+    <p id="metrics" role="status">读取静态资源…</p>
+    <p>3种供应点 · 2组阳伞桌椅 · 4路灯 · 4长椅 · 3花带 · 4景观树；拖动旋转，滚轮缩放。</p>
+  </footer>
+  <script type="module">
+    import * as THREE from '/vendor/three/three.module.js'
+    import { OFFICE_THEME_V2 as T } from '/office-theme-v2.js'
+    import { buildOfficePlazaProps } from '/office-plaza-props.js'
+    const stage=document.getElementById('stage'),scene=new THREE.Scene(),root=new THREE.Group()
+    scene.add(root)
+    const renderer=new THREE.WebGLRenderer({antialias:true})
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=false;stage.append(renderer.domElement)
+    const camera=new THREE.PerspectiveCamera(42,1,.1,120),target=new THREE.Vector3(0,1,1)
+    scene.add(new THREE.HemisphereLight(0xffffff,0xb89b64,1.25))
+    const sun=new THREE.DirectionalLight(0xfff1dc,1.35);sun.position.set(-8,18,-8);scene.add(sun)
+    const ground=new THREE.Mesh(new THREE.CircleGeometry(18,64),new THREE.MeshStandardMaterial({color:T.exteriorWall,roughness:.92}))
+    ground.rotation.x=-Math.PI/2;ground.position.y=-.02;scene.add(ground)
+    const canvasTex=(w,h,draw)=>{
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h
+      draw(canvas.getContext('2d'),w,h)
+      const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace
+      texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.needsUpdate=true
+      return texture
+    }
+    let props,az=.74,el=.64,radius=35,drag=null,sampling=null
+    function orbit(){camera.position.set(target.x+radius*Math.cos(el)*Math.sin(az),radius*Math.sin(el),target.z+radius*Math.cos(el)*Math.cos(az));camera.lookAt(target)}
+    function build(){
+      props?.dispose()
+      props=buildOfficePlazaProps({THREE,root,canvasTex,low:document.getElementById('tier').value==='low'})
+      window.__officePlazaProps.props=props
+    }
+    window.__officePlazaProps={renderer,scene,camera,root,readings:[]}
+    build();orbit()
+    const resize=()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix()}
+    addEventListener('resize',resize);resize()
+    renderer.domElement.addEventListener('pointerdown',event=>{drag={x:event.clientX,y:event.clientY};renderer.domElement.setPointerCapture(event.pointerId)})
+    renderer.domElement.addEventListener('pointermove',event=>{if(!drag)return;az-=(event.clientX-drag.x)*.006;el=Math.max(.18,Math.min(1.45,el+(event.clientY-drag.y)*.006));drag={x:event.clientX,y:event.clientY};orbit()})
+    renderer.domElement.addEventListener('pointerup',()=>{drag=null});renderer.domElement.addEventListener('pointercancel',()=>{drag=null})
+    renderer.domElement.addEventListener('wheel',event=>{event.preventDefault();radius=Math.max(12,Math.min(55,radius+event.deltaY*.03));orbit()},{passive:false})
+    document.getElementById('tier').onchange=build
+    document.getElementById('theme').onclick=()=>{const dark=document.documentElement.dataset.theme==='dark';document.documentElement.dataset.theme=dark?'light':'dark';document.getElementById('theme').textContent=dark?'深色主题':'浅色主题'}
+    document.getElementById('view').onchange=event=>{
+      if(event.target.value==='vendors'){target.set(0,1,-3);az=.18;el=.38;radius=22}
+      else if(event.target.value==='garden'){target.set(8,1,5);az=.9;el=.42;radius=20}
+      else{target.set(0,1,1);az=.74;el=.64;radius=35}
+      orbit()
+    }
+    document.getElementById('measure').onclick=()=>{sampling={step:0,values:[]}}
+    function frame(){
+      requestAnimationFrame(frame)
+      if(document.hidden)return
+      scene.background=new THREE.Color(document.documentElement.dataset.theme==='dark'?0x292721:T.exteriorWall)
+      if(sampling)props.root.visible=sampling.step!==1
+      renderer.render(scene,camera)
+      const reading={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles}
+      if(sampling){
+        sampling.values.push(reading);sampling.step++
+        if(sampling.step===3){const [on,off,restored]=sampling.values;window.__officePlazaProps.readings.push({on,off,restored,delta:{calls:on.calls-off.calls,triangles:on.triangles-off.triangles},self:props.summary()});sampling=null;props.root.visible=true}
+      }
+      const own=props.summary()
+      document.getElementById('metrics').textContent=`模块自报 ${own.calls} calls / ${own.triangles.toLocaleString()} 三角形 · 预览总帧 ${reading.calls} calls / ${reading.triangles.toLocaleString()} 三角形 · ${own.instances} 组道具`
+    }
+    requestAnimationFrame(frame)
+  </script>
+</body>
+</html>

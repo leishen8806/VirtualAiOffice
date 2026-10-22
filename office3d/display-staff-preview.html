@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,"><title>展示部门 · 模拟角色 | Virtual AI Office</title>
+  <style>
+    :root { color-scheme:light; --bg:#f4f1ea; --panel:#f6f2e9; --text:#49453e; --line:#b89b64 }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#292721; --panel:#39362f; --text:#f6f2e9 }
+    * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; overflow-x:clip }
+    header,footer { padding:16px 24px } header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--line) }
+    h1,p { margin:0 } h1 { font-size:22px } .tools { display:flex; align-items:center; flex-wrap:wrap; gap:8px }
+    button,select,label { min-height:44px; font:inherit } button,select { border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:var(--panel); color:var(--text) }
+    label { display:flex; align-items:center; gap:8px; padding:4px 8px } input { width:22px; height:22px }
+    :focus-visible { outline:3px solid var(--line); outline-offset:3px } #stage { height:calc(100vh - 260px); min-height:360px; position:relative }
+    canvas { display:block; touch-action:none } #metrics { font-weight:600 } #detail { margin-top:8px } #error { color:#b43c26 } [hidden] { display:none!important }
+    @media(max-width:640px) { header,footer { padding:12px } h1 { font-size:19px } #stage { height:420px } }
+  </style>
+</head>
+<body>
+  <header><div><h1>展示部门 · 模拟角色</h1><p>Virtual AI Office · 独立静态预览 · 零 token · 非真实同事</p></div>
+    <div class="tools">
+      <label><input id="enabled" type="checkbox">展示人物</label>
+      <select id="speed" aria-label="模拟时钟速度"><option value="1">1×</option><option value="20">20×</option><option value="60" selected>60×</option></select>
+      <select id="tier" aria-label="画质"><option value="high">高档 · 12人</option><option value="low">低档 · 隐藏人物</option></select>
+      <select id="view" aria-label="机位"><option value="all">全景</option><option value="bar">吧台</option><option value="market">市场部</option><option value="service">客服部</option><option value="aftersales">售后部</option><option value="marketing">营销部</option></select>
+      <button id="theme">深色主题</button><button id="pause">暂停</button><button id="measure">测量人物增量</button><button id="reset">重置时钟</button>
+    </div>
+  </header>
+  <div id="stage" aria-label="四个展示部门和中央茶水吧台"></div>
+  <footer><p id="metrics" role="status">读取静态资源…</p><p id="clock"></p>
+    <p>固定种子2707 · 每人每小时0–2次 · 同时行走≤2 · 家具始终保留</p>
+    <p>预览休息点在东西缺口对应的通行环侧；缺口内部路线尚待 O5 联调。点击部门地面查看展示区域说明。</p>
+    <p id="detail" role="status">展示部门 · 模拟角色（不是同事搜索结果）</p><p id="error" role="alert" hidden></p>
+  </footer>
+  <script type="module" src="/display-staff-preview.js"></script>
+</body>
+</html>

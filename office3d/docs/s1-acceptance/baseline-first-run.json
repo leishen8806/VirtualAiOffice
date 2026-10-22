@@ -1,0 +1,1041 @@
+{
+  "measuredAt": "2026-10-20T10:32:20.064Z",
+  "url": "http://office.localhost:3200/",
+  "viewport": {
+    "width": 480,
+    "height": 1188
+  },
+  "tiers": {
+    "high": {
+      "overview": {
+        "fps": 20.357869923925872,
+        "frameMs": 49.12105263157891,
+        "renderMs": 11.300000011920929,
+        "calls": 1331,
+        "triangles": 261179,
+        "lights": 18,
+        "rendered": 107,
+        "dpr": 1.0000000298023224,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            -0.24966383231644507,
+            122.56711089903648,
+            102.28261630475184
+          ],
+          "target": [
+            -11,
+            0,
+            0
+          ]
+        }
+      },
+      "foyer": {
+        "fps": 59.99803285138209,
+        "frameMs": 16.667213114754052,
+        "renderMs": 9.199999988079071,
+        "calls": 572,
+        "triangles": 217381,
+        "lights": 18,
+        "rendered": 233,
+        "dpr": 0.850000025331974,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            16.183303945258814,
+            8.23289317353359,
+            21.768812462191192
+          ],
+          "target": [
+            14.998855447458027,
+            0,
+            10.49953777685805
+          ]
+        }
+      },
+      "plaza": {
+        "fps": 60.00600060005992,
+        "frameMs": 16.665000000000024,
+        "renderMs": 8.899999976158142,
+        "calls": 939,
+        "triangles": 304184,
+        "lights": 18,
+        "rendered": 350,
+        "dpr": 0.918000027358532,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            4.308110472475098,
+            11.183735523317504,
+            39.41860564810301
+          ],
+          "target": [
+            2.00057415116009,
+            0,
+            22.999447898622865
+          ]
+        }
+      },
+      "geometry": {
+        "rows": [
+          {
+            "id": "a1_counter",
+            "exists": true,
+            "world": {
+              "x0": -43,
+              "x1": -34,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "planned": {
+              "x0": -43,
+              "x1": -34,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "a1_stools",
+            "exists": true,
+            "world": {
+              "x0": -42.5,
+              "x1": -35.5,
+              "z0": 10,
+              "z1": 11
+            },
+            "planned": {
+              "x0": -42.5,
+              "x1": -35.5,
+              "z0": 10,
+              "z1": 11
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "a2_vending_wall",
+            "exists": true,
+            "world": {
+              "x0": -30,
+              "x1": -26,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "planned": {
+              "x0": -30,
+              "x1": -26,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "a2_snack_cabinet",
+            "exists": true,
+            "world": {
+              "x0": -24.5,
+              "x1": -22.5,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "planned": {
+              "x0": -24.5,
+              "x1": -22.5,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "a2_table",
+            "exists": true,
+            "world": {
+              "x0": -20.5,
+              "x1": -18.5,
+              "z0": 9.5,
+              "z1": 10.5
+            },
+            "planned": {
+              "x0": -20.5,
+              "x1": -18.5,
+              "z0": 9.5,
+              "z1": 10.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "lounge_west_sofa",
+            "exists": true,
+            "world": {
+              "x0": -13.5,
+              "x1": -11.5,
+              "z0": 9,
+              "z1": 12
+            },
+            "planned": {
+              "x0": -13.5,
+              "x1": -11.5,
+              "z0": 9,
+              "z1": 12
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "lounge_coffee_table",
+            "exists": true,
+            "world": {
+              "x0": -10.9,
+              "x1": -8.1,
+              "z0": 9.1,
+              "z1": 11.9
+            },
+            "planned": {
+              "x0": -10.5,
+              "x1": -8.5,
+              "z0": 9.5,
+              "z1": 11.5
+            },
+            "overflow": 0.4,
+            "collides": true
+          },
+          {
+            "id": "lounge_east_sofa",
+            "exists": true,
+            "world": {
+              "x0": -7.5,
+              "x1": -5.5,
+              "z0": 9,
+              "z1": 12
+            },
+            "planned": {
+              "x0": -7.5,
+              "x1": -5.5,
+              "z0": 9,
+              "z1": 12
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "reception_desk",
+            "exists": true,
+            "world": {
+              "x0": 8.5,
+              "x1": 14.5,
+              "z0": 8.5,
+              "z1": 9.511
+            },
+            "planned": {
+              "x0": 8.5,
+              "x1": 14.5,
+              "z0": 8.5,
+              "z1": 9.5
+            },
+            "overflow": 0.011,
+            "collides": true
+          },
+          {
+            "id": "handoff_box",
+            "exists": true,
+            "world": {
+              "x0": 14.5,
+              "x1": 15.5,
+              "z0": 9,
+              "z1": 10.011
+            },
+            "planned": {
+              "x0": 14.5,
+              "x1": 15.5,
+              "z0": 9,
+              "z1": 10
+            },
+            "overflow": 0.011,
+            "collides": true
+          },
+          {
+            "id": "notice_attendance_wall",
+            "exists": true,
+            "world": {
+              "x0": 16,
+              "x1": 21,
+              "z0": 8,
+              "z1": 9.011
+            },
+            "planned": {
+              "x0": 16,
+              "x1": 21,
+              "z0": 8,
+              "z1": 9
+            },
+            "overflow": 0.011,
+            "collides": false
+          },
+          {
+            "id": "waiting_sofa",
+            "exists": true,
+            "world": {
+              "x0": 16,
+              "x1": 21,
+              "z0": 10,
+              "z1": 11
+            },
+            "planned": {
+              "x0": 16,
+              "x1": 21,
+              "z0": 10,
+              "z1": 11
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "plaza_bike_rack",
+            "exists": true,
+            "world": {
+              "x0": -9,
+              "x1": -5,
+              "z0": 16.5,
+              "z1": 17.5
+            },
+            "planned": {
+              "x0": -9,
+              "x1": -5,
+              "z0": 16.5,
+              "z1": 17.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "plaza_west_lamp",
+            "exists": true,
+            "world": {
+              "x0": -10,
+              "x1": -9,
+              "z0": 17.5,
+              "z1": 18.5
+            },
+            "planned": {
+              "x0": -10,
+              "x1": -9,
+              "z0": 17.5,
+              "z1": 18.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "plaza_east_lamp",
+            "exists": true,
+            "world": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 17.5,
+              "z1": 18.5
+            },
+            "planned": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 17.5,
+              "z1": 18.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b0_coffee_cart",
+            "exists": true,
+            "world": {
+              "x0": -9,
+              "x1": -5,
+              "z0": 19,
+              "z1": 22
+            },
+            "planned": {
+              "x0": -9,
+              "x1": -5,
+              "z0": 19,
+              "z1": 22
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b0_table_1",
+            "exists": true,
+            "world": {
+              "x0": -9,
+              "x1": -7,
+              "z0": 23,
+              "z1": 25
+            },
+            "planned": {
+              "x0": -9,
+              "x1": -7,
+              "z0": 23,
+              "z1": 25
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b0_table_2",
+            "exists": true,
+            "world": {
+              "x0": -6,
+              "x1": -4,
+              "z0": 25.5,
+              "z1": 26.5
+            },
+            "planned": {
+              "x0": -6,
+              "x1": -4,
+              "z0": 25.5,
+              "z1": 26.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b1_stall",
+            "exists": true,
+            "world": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 17.5,
+              "z1": 20.5
+            },
+            "planned": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 17.5,
+              "z1": 20.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b2_stall",
+            "exists": true,
+            "world": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 21.5,
+              "z1": 24.5
+            },
+            "planned": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 21.5,
+              "z1": 24.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "b3_stall",
+            "exists": true,
+            "world": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 25.5,
+              "z1": 28.5
+            },
+            "planned": {
+              "x0": 9,
+              "x1": 13,
+              "z0": 25.5,
+              "z1": 28.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_west_bench_1",
+            "exists": true,
+            "world": {
+              "x0": -9.5,
+              "x1": -6.5,
+              "z0": 28,
+              "z1": 29
+            },
+            "planned": {
+              "x0": -9.5,
+              "x1": -6.5,
+              "z0": 28,
+              "z1": 29
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_west_bench_2",
+            "exists": true,
+            "world": {
+              "x0": -6.5,
+              "x1": -3.5,
+              "z0": 28,
+              "z1": 29
+            },
+            "planned": {
+              "x0": -6.5,
+              "x1": -3.5,
+              "z0": 28,
+              "z1": 29
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_east_bench_1",
+            "exists": true,
+            "world": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 21.5,
+              "z1": 24.5
+            },
+            "planned": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 21.5,
+              "z1": 24.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_east_bench_2",
+            "exists": true,
+            "world": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 25.5,
+              "z1": 28.5
+            },
+            "planned": {
+              "x0": 13,
+              "x1": 14,
+              "z0": 25.5,
+              "z1": 28.5
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_west_planter",
+            "exists": true,
+            "world": {
+              "x0": -10,
+              "x1": -4,
+              "z0": 29,
+              "z1": 30
+            },
+            "planned": {
+              "x0": -10,
+              "x1": -4,
+              "z0": 29,
+              "z1": 30
+            },
+            "overflow": 0,
+            "collides": true
+          },
+          {
+            "id": "south_east_planter",
+            "exists": true,
+            "world": {
+              "x0": 7,
+              "x1": 14,
+              "z0": 29,
+              "z1": 30
+            },
+            "planned": {
+              "x0": 7,
+              "x1": 14,
+              "z0": 29,
+              "z1": 30
+            },
+            "overflow": 0,
+            "collides": true
+          }
+        ],
+        "allExist": true,
+        "boundsWithinTolerance": true,
+        "loungeCoffeeTable": {
+          "id": "lounge_coffee_table",
+          "exists": true,
+          "world": {
+            "x0": -10.9,
+            "x1": -8.1,
+            "z0": 9.1,
+            "z1": 11.9
+          },
+          "planned": {
+            "x0": -10.5,
+            "x1": -8.5,
+            "z0": 9.5,
+            "z1": 11.5
+          },
+          "overflow": 0.4,
+          "collides": true
+        },
+        "collision": {
+          "checks": 353,
+          "contacts": 0,
+          "triangles": 33691,
+          "bodies": 214
+        },
+        "occupiedPoints": [],
+        "panelRedraws": {
+          "handoff": {
+            "redraws": 1,
+            "signature": "{\"title\":\"对话功能未开启\",\"lines\":[\"请在本机配置中开启\"]}",
+            "visible": true
+          },
+          "attendance": {
+            "redraws": 3,
+            "signature": "{\"title\":\"今日动态\",\"lines\":[\"已下班 0 人\",\"暂停 25 · 异常 0\",\"当前没有待处理事项\",\"晨会 done\",\"通过 3 · 剔除 3\",\"KhmerX / PayEase 15 天上线 0% · 闸门 A：过渡形态可行（B0 压测报告） · 2026-10-17\"]}",
+            "visible": true
+          },
+          "notice": {
+            "redraws": 1,
+            "signature": "{\"title\":\"公告与访客\",\"lines\":[\"公告 · 今天还没有公告\",\"尚无访客记录\"]}",
+            "visible": true
+          }
+        }
+      },
+      "motion": {
+        "consumer": {
+          "started": false,
+          "plan": true,
+          "returned": true,
+          "steps": 0,
+          "timeouts": 0
+        },
+        "waiting": {
+          "started": false,
+          "arrived": false,
+          "fiveMinutes": false,
+          "returned": true
+        },
+        "cat": {
+          "diagnostics": 0,
+          "entries": []
+        }
+      },
+      "errors": []
+    },
+    "medium": {
+      "overview": {
+        "fps": 43.277269597718075,
+        "frameMs": 23.1068181818182,
+        "renderMs": 7.300000011920929,
+        "calls": 727,
+        "triangles": 197103,
+        "lights": 8,
+        "rendered": 154,
+        "dpr": 1.0000000298023224,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            -0.24966383231644507,
+            122.56711089903648,
+            102.28261630475184
+          ],
+          "target": [
+            -11,
+            0,
+            0
+          ]
+        }
+      },
+      "foyer": {
+        "fps": 60,
+        "frameMs": 16.666666666666668,
+        "renderMs": 4.300000011920929,
+        "calls": 303,
+        "triangles": 145000,
+        "lights": 8,
+        "rendered": 272,
+        "dpr": 1.0000000298023224,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            16.18335801096986,
+            8.232547706519396,
+            21.76840311169037
+          ],
+          "target": [
+            14.99895684140179,
+            0,
+            10.49957872441226
+          ]
+        }
+      },
+      "plaza": {
+        "fps": 60,
+        "frameMs": 16.666666666666668,
+        "renderMs": 4.200000047683716,
+        "calls": 361,
+        "triangles": 153827,
+        "lights": 8,
+        "rendered": 386,
+        "dpr": 1.0000000298023224,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            4.30810763010523,
+            11.183736214477786,
+            39.41860998027446
+          ],
+          "target": [
+            2.000570984770273,
+            0,
+            22.99945093662031
+          ]
+        }
+      },
+      "geometry": null,
+      "motion": {
+        "consumer": {
+          "started": false,
+          "plan": true,
+          "returned": true,
+          "steps": 0,
+          "timeouts": 0
+        },
+        "waiting": {
+          "started": false,
+          "arrived": false,
+          "fiveMinutes": false,
+          "returned": true
+        },
+        "cat": {
+          "diagnostics": 0,
+          "entries": []
+        }
+      },
+      "errors": []
+    },
+    "low": {
+      "overview": {
+        "fps": 16.766678432756784,
+        "frameMs": 59.64210526315793,
+        "renderMs": 5.199999988079071,
+        "calls": 431,
+        "triangles": 130757,
+        "lights": 4,
+        "rendered": 86,
+        "dpr": 1,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            -0.24966383231644507,
+            122.56711089903648,
+            102.28261630475184
+          ],
+          "target": [
+            -11,
+            0,
+            0
+          ]
+        }
+      },
+      "foyer": {
+        "fps": 30,
+        "frameMs": 33.333333333333336,
+        "renderMs": 3.100000023841858,
+        "calls": 139,
+        "triangles": 80480,
+        "lights": 4,
+        "rendered": 146,
+        "dpr": 1,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            16.183357396382302,
+            8.232551633585036,
+            21.7684077649553
+          ],
+          "target": [
+            14.998955688813695,
+            0,
+            10.499578258943991
+          ]
+        }
+      },
+      "plaza": {
+        "fps": 30,
+        "frameMs": 33.333333333333336,
+        "renderMs": 3.200000047683716,
+        "calls": 192,
+        "triangles": 96825,
+        "lights": 4,
+        "rendered": 202,
+        "dpr": 1,
+        "reason": "URL强制",
+        "source": "url",
+        "hidden": false,
+        "summary": {
+          "sourceMeshes": 745,
+          "medium": {
+            "removed": 2,
+            "added": 1
+          },
+          "low": {
+            "removed": 230,
+            "added": 67
+          },
+          "instanced": [
+            22,
+            30
+          ],
+          "lowTextures": 0
+        },
+        "camera": {
+          "position": [
+            4.308158117393809,
+            11.183724232609983,
+            39.41853335627556
+          ],
+          "target": [
+            2.0006271730515777,
+            0,
+            22.999396901362186
+          ]
+        }
+      },
+      "geometry": null,
+      "motion": {
+        "consumer": {
+          "started": false,
+          "plan": true,
+          "returned": true,
+          "steps": 0,
+          "timeouts": 0
+        },
+        "waiting": {
+          "started": false,
+          "arrived": false,
+          "fiveMinutes": false,
+          "returned": true
+        },
+        "cat": {
+          "diagnostics": 0,
+          "entries": []
+        }
+      },
+      "errors": []
+    }
+  },
+  "ui": {},
+  "wallGo": {
+    "tour": true,
+    "overview": true,
+    "review": true,
+    "plan": true,
+    "plaza": true,
+    "product": true,
+    "eng": true,
+    "quality": true,
+    "drlife": true,
+    "ops": true,
+    "kb": true,
+    "meet": true,
+    "board": true,
+    "errors": []
+  },
+  "errors": [],
+  "panelRedrawsOneMinute": {
+    "before": {
+      "handoff": {
+        "redraws": 1,
+        "signature": "{\"title\":\"对话功能未开启\",\"lines\":[\"请在本机配置中开启\"]}",
+        "visible": true
+      },
+      "attendance": {
+        "redraws": 3,
+        "signature": "{\"title\":\"今日动态\",\"lines\":[\"已下班 0 人\",\"暂停 25 · 异常 0\",\"当前没有待处理事项\",\"晨会 done\",\"通过 3 · 剔除 3\",\"KhmerX / PayEase 15 天上线 0% · 闸门 A：过渡形态可行（B0 压测报告） · 2026-10-17\"]}",
+        "visible": true
+      },
+      "notice": {
+        "redraws": 1,
+        "signature": "{\"title\":\"公告与访客\",\"lines\":[\"公告 · 今天还没有公告\",\"尚无访客记录\"]}",
+        "visible": true
+      }
+    },
+    "after": {
+      "handoff": {
+        "redraws": 1,
+        "signature": "{\"title\":\"对话功能未开启\",\"lines\":[\"请在本机配置中开启\"]}",
+        "visible": true
+      },
+      "attendance": {
+        "redraws": 3,
+        "signature": "{\"title\":\"今日动态\",\"lines\":[\"已下班 0 人\",\"暂停 25 · 异常 0\",\"当前没有待处理事项\",\"晨会 done\",\"通过 3 · 剔除 3\",\"KhmerX / PayEase 15 天上线 0% · 闸门 A：过渡形态可行（B0 压测报告） · 2026-10-17\"]}",
+        "visible": true
+      },
+      "notice": {
+        "redraws": 1,
+        "signature": "{\"title\":\"公告与访客\",\"lines\":[\"公告 · 今天还没有公告\",\"尚无访客记录\"]}",
+        "visible": true
+      }
+    }
+  },
+  "mobile": {
+    "width": 390,
+    "scrollWidth": 390,
+    "overflow": false,
+    "errors": []
+  }
+}

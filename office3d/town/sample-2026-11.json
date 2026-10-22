@@ -1,0 +1,59 @@
+[
+  {
+    "agent": "Frontend1",
+    "month": "2026-11",
+    "daysInMonth": 30,
+    "workedDays": 30,
+    "availableDays": 30,
+    "monthsOfService": 2,
+    "metrics": { "observedDays": 30, "evaluatedTasks": 10, "firstPassRate": 0.75, "avgReworkRounds": 0, "blockedShare": 0.75, "successRate": 0 },
+    "mineAdventureDays": [
+      { "date": "2026-11-02", "eligible": true },
+      { "date": "2026-11-05", "eligible": true },
+      { "date": "2026-11-09", "eligible": true }
+    ]
+  },
+  {
+    "agent": "Lead",
+    "month": "2026-11",
+    "daysInMonth": 30,
+    "workedDays": 30,
+    "availableDays": 30,
+    "monthsOfService": 18,
+    "metrics": { "observedDays": 30, "evaluatedTasks": 12, "firstPassRate": 0.9, "avgReworkRounds": 0.2, "blockedShare": 0.1, "successRate": 0.95 },
+    "recordIncome": [{ "kind": "proposal_adopted", "count": 2, "basis": "CMP-255 方案被采纳" }]
+  },
+  {
+    "agent": "Reviewer1",
+    "month": "2026-11",
+    "daysInMonth": 30,
+    "workedDays": 30,
+    "availableDays": 30,
+    "monthsOfService": 24,
+    "confirmedViolations": [{ "task": "CMP-296", "reason": "漏审风险项" }],
+    "recordIncome": [{ "kind": "knowledge_contribution", "count": 2, "basis": "评审规范笔记" }]
+  },
+  {
+    "agent": "Reviewer2",
+    "month": "2026-11",
+    "daysInMonth": 30,
+    "workedDays": 30,
+    "availableDays": 30,
+    "monthsOfService": 30,
+    "recordIncome": [{ "kind": "knowledge_contribution", "count": 1, "basis": "检查表维护" }]
+  },
+  {
+    "agent": "OpsEngineer",
+    "month": "2026-11",
+    "daysInMonth": 30,
+    "workedDays": 29,
+    "availableDays": 30,
+    "monthsOfService": 11,
+    "metrics": { "observedDays": 29, "evaluatedTasks": 8, "firstPassRate": 0.8, "avgReworkRounds": 0.5, "blockedShare": 0.2, "successRate": 1 },
+    "mineAdventureDays": [
+      { "date": "2026-11-01", "eligible": true },
+      { "date": "2026-11-08", "eligible": true },
+      { "date": "2026-11-15", "eligible": true }
+    ]
+  }
+]

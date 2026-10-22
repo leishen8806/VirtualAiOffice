@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "tools/texture-prep.mjs",
+  "textures": [
+    {
+      "id": "gpt-texture-oak-light",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/oak-light.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 6.25,
+          "tb": 9.38,
+          "lrReference": 1.61,
+          "tbReference": 8.25
+        },
+        "after": {
+          "lr": 1.59,
+          "tb": 1.29,
+          "lrReference": 1.47,
+          "tbReference": 7.74
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-walnut-bar",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/walnut-bar.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 4.82,
+          "tb": 5.26,
+          "lrReference": 1.39,
+          "tbReference": 4.5
+        },
+        "after": {
+          "lr": 1.51,
+          "tb": 1.43,
+          "lrReference": 1.28,
+          "tbReference": 4.5
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-plaster-warm",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/plaster-warm.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 4.56,
+          "tb": 5.42,
+          "lrReference": 3.99,
+          "tbReference": 5.48
+        },
+        "after": {
+          "lr": 1.8,
+          "tb": 1.62,
+          "lrReference": 3.41,
+          "tbReference": 4.91
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-stone-floor",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/stone-floor.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 16.98,
+          "tb": 11.1,
+          "lrReference": 4.45,
+          "tbReference": 5.59
+        },
+        "after": {
+          "lr": 2.01,
+          "tb": 1.71,
+          "lrReference": 4.35,
+          "tbReference": 5.39
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-fabric-cream",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/fabric-cream.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 23.69,
+          "tb": 22.19,
+          "lrReference": 6.52,
+          "tbReference": 7.78
+        },
+        "after": {
+          "lr": 2.23,
+          "tb": 2.03,
+          "lrReference": 6.26,
+          "tbReference": 7.42
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-sign-blank",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/sign-blank.jpg",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-leaf-atlas",
+      "productLine": "office",
+      "outputFile": "assets/textures/office-v2/leaf-atlas.png",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": {
+        "status": "待重绘",
+        "fringeRatio": 0.09,
+        "transparentRatio": 0.69
+      }
+    },
+    {
+      "id": "gpt-texture-floor-concrete",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/floor-concrete.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 14.8,
+          "tb": 15.59,
+          "lrReference": 5.59,
+          "tbReference": 6.3
+        },
+        "after": {
+          "lr": 1.86,
+          "tb": 2.26,
+          "lrReference": 5.54,
+          "tbReference": 6.21
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-asphalt-dock",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/asphalt-dock.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 15.23,
+          "tb": 13.45,
+          "lrReference": 9.28,
+          "tbReference": 9.87
+        },
+        "after": {
+          "lr": 2.15,
+          "tb": 2.09,
+          "lrReference": 9.3,
+          "tbReference": 9.8
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-rack-paint",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/rack-paint.jpg",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-carton-atlas",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/carton-atlas.jpg",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-pallet-wrap",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/pallet-wrap.jpg",
+      "tile": true,
+      "seam": {
+        "before": {
+          "lr": 24.72,
+          "tb": 27.14,
+          "lrReference": 2.35,
+          "tbReference": 9.19
+        },
+        "after": {
+          "lr": 1.83,
+          "tb": 1.76,
+          "lrReference": 2.29,
+          "tbReference": 8.67
+        },
+        "pass": true
+      },
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-truck-livery",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/truck-livery.jpg",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": null
+    },
+    {
+      "id": "gpt-texture-palm-atlas",
+      "productLine": "campus",
+      "outputFile": "assets/textures/dr-campus/palm-atlas.png",
+      "tile": false,
+      "seam": null,
+      "alphaAssessment": {
+        "status": "待重绘",
+        "fringeRatio": 0.2,
+        "transparentRatio": 0.45
+      }
+    }
+  ]
+}

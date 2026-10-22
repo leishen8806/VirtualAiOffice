@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>仓库 · 个人空间 | Virtual AI Office</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { color-scheme:dark; --bg:#101820; --panel:#1b282f; --text:#edf3f4; --muted:#b5c6cb; --gold:#d2b778; --line:#55616a }
+    :root[data-theme="light"] { color-scheme:light; --bg:#e8eef0; --panel:#fff; --text:#1d2b33; --muted:#536570; --gold:#806238; --line:#aab6bd }
+    * { box-sizing:border-box }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 "Microsoft YaHei",sans-serif }
+    main { max-width:1180px; margin:auto; padding:28px 20px 100px }
+    header { display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:space-between }
+    h1 { font-size:26px; margin:0 } h2 { font-size:18px; margin:24px 0 12px } h3 { margin:12px 0 4px }
+    .subtitle, .source { color:var(--muted) }
+    .controls { display:flex; gap:10px; flex-wrap:wrap }
+    button, .button, input, select { font:inherit; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; min-height:44px }
+    button, .button { cursor:pointer } .button { display:inline-flex; text-decoration:none; align-items:center; justify-content:center }
+    :focus-visible { outline:3px solid var(--gold); outline-offset:3px }
+    .toolbar { display:flex; gap:12px; margin:20px 0; flex-wrap:wrap }
+    input { flex:1; min-width:0 } select { max-width:100% }
+    .glass { background:var(--panel); border:1px solid var(--line); border-radius:14px }
+    .inventory-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(235px,1fr)); gap:16px }
+    .inventory-card { padding:18px } .inventory-card p { margin:8px 0; overflow-wrap:anywhere }
+    .inventory-card .button { width:100%; border-color:var(--gold) }
+    .footprint { display:grid; gap:3px; height:85px; align-content:center; justify-content:center; background:var(--bg); border-radius:8px }
+    .footprint span { width:16px; height:16px; border:1px solid var(--gold); background:color-mix(in srgb,var(--gold) 25%,transparent) }
+    #inventorySummary { padding:14px; font-weight:600 } #inventoryNotice { color:var(--muted) }
+    footer { position:fixed; bottom:0; left:0; right:0; padding:12px 20px; color:var(--muted); background:var(--bg); border-top:1px solid var(--line) }
+    @media(max-width:480px) { main { padding:20px 12px 100px } h1 { font-size:22px } .toolbar { flex-direction:column } .controls { width:100% } .controls .button { flex:1 } .inventory-grid { grid-template-columns:1fr } }
+  </style>
+</head>
+<body>
+  <main id="homeInventory">
+    <header>
+      <div><h1>仓库 · 我的物品库存</h1><p class="subtitle">Virtual AI Office · 个人空间</p></div>
+      <div class="controls"><a class="button" href="/home.html">进入个人空间</a><button id="inventoryTheme" type="button">切换深浅主题</button></div>
+    </header>
+    <p id="inventoryNotice" role="status" aria-live="polite">正在读取本机库存…</p>
+    <div id="inventorySummary" class="glass"></div>
+    <div class="toolbar">
+      <input id="inventorySearch" type="search" placeholder="搜索名称或物品编号" aria-label="搜索物品">
+      <select id="inventoryCategory" aria-label="筛选物品类别"><option value="">所有类别</option></select>
+      <button id="inventoryReload" type="button">重新读取</button>
+    </div>
+    <div id="inventoryList"></div>
+  </main>
+  <footer>示意 · 虚拟物品，不对应现实资产权益</footer>
+  <script type="module" src="/home-inventory.js"></script>
+</body>
+</html>

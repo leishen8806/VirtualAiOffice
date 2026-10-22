@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:,">
+  <title>Helix 指挥视图 | Virtual AI Office</title>
+  <style>
+    :root { color-scheme:light; --bg:#f4f6f8; --surface:#fff; --text:#25333f; --muted:#586778; --line:#d4dde5; --accent:#315e88; --success:#206747; --waiting:#825b17; --failure:#a63b43; --unknown:#586778; --execution:#315e88 }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#101820; --surface:#192530; --text:#e5edf4; --muted:#afbdcc; --line:#3b4d5e; --accent:#9cbee4; --success:#89d7ac; --waiting:#efd394; --failure:#f6a1ab; --unknown:#afbdcc; --execution:#9cbee4 }
+    * { box-sizing:border-box }
+    [hidden] { display:none !important }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif; overflow-x:clip }
+    main { max-width:1600px; padding:28px; margin:auto }
+    h1,h2,h3,p { margin:0 } h1 { font-size:28px; letter-spacing:-.5px } h2 { font-size:18px } h3 { font-size:15px }
+    .eyebrow { font-size:12px; letter-spacing:1.5px; color:var(--accent); margin-bottom:4px }
+    .muted,small { color:var(--muted) } p { overflow-wrap:anywhere }
+    header,.controls,.tabs,.pagination { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    header { justify-content:space-between; margin-bottom:20px }
+    button,select,a.button { font:inherit; min-height:44px; padding:9px 13px; color:var(--text); border:1px solid var(--line); background:var(--surface); border-radius:8px; max-width:100%; cursor:pointer }
+    a.button { display:inline-flex; align-items:center; text-decoration:none }
+    button:disabled { opacity:.5; cursor:not-allowed }
+    :focus-visible { outline:3px solid var(--accent); outline-offset:3px }
+    .banner { padding:12px 16px; border-left:4px solid var(--waiting); background:var(--surface); margin-bottom:16px; font-weight:600 }
+    .toolbar { display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:18px }
+    label { display:grid; gap:4px; color:var(--muted); min-width:0 }
+    .toolbar label select { width:100% }
+    .scope { color:var(--muted); margin:12px 0 }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:16px 0 24px }
+    .metric { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:10px; min-width:0 }
+    .metric strong { display:block; font-size:18px; margin:8px 0; overflow-wrap:anywhere }
+    .workspace { display:grid; grid-template-columns:minmax(230px,1fr) minmax(220px,1fr) minmax(270px,1.2fr); gap:20px }
+    .panel { border-top:2px solid var(--line); padding-top:14px; min-width:0 }
+    .panel h2 { margin-bottom:12px }
+    .task { display:block; width:100%; text-align:left; margin:10px 0; padding:14px; overflow-wrap:anywhere }
+    .task[aria-pressed="true"] { border-color:var(--accent); box-shadow:inset 3px 0 var(--accent) }
+    .task span,.task small { display:block }
+    .badge { font-weight:600; color:var(--unknown) }
+    .badge[data-tone="success"] { color:var(--success) } .badge[data-tone="waiting"] { color:var(--waiting) }
+    .badge[data-tone="failure"] { color:var(--failure) } .badge[data-tone="execution"] { color:var(--execution) }
+    .tabs { margin:10px 0 } .tabs [aria-selected="true"] { border-color:var(--accent); color:var(--accent); font-weight:600 }
+    .record { background:var(--surface); padding:14px; border:1px solid var(--line); border-radius:8px; margin:10px 0; overflow-wrap:anywhere }
+    .record p + p { margin-top:5px }
+    .timeline { margin-top:24px }
+    .timeline-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px }
+    .timeline-list .record { margin:0 }
+    .empty { padding:38px 24px; border:1px dashed var(--line); border-radius:10px; background:var(--surface) }
+    .mobile-tabs { display:none }
+    footer { margin-top:26px; color:var(--muted); border-top:1px solid var(--line); padding-top:16px }
+    #quality { font-weight:600 } #notice { margin-bottom:18px }
+    @media(max-width:1100px) { main { padding:20px } .workspace { grid-template-columns:1fr 1fr } #detailsPanel { grid-column:1 / -1 } }
+    @media(max-width:640px) {
+      main { padding:16px 12px } h1 { font-size:23px }
+      .metrics { grid-template-columns:1fr; gap:10px } .metric { padding:14px }
+      .workspace,.timeline-list { display:block }
+      .toolbar { align-items:stretch } .toolbar label { flex:1 1 140px }
+      .toolbar .controls { width:100% } .mobile-tabs { display:flex; margin:18px 0 }
+      .mobile-tabs button { flex:1 } .tabs { flex-wrap:nowrap } .tabs button { flex:1; padding:8px }
+      body[data-tab="queue"] #detailsPanel,body[data-tab="queue"] #timelinePanel { display:none }
+      body[data-tab="details"] #queuePanel,body[data-tab="details"] #relationsPanel,body[data-tab="details"] #timelinePanel { display:none }
+      body[data-tab="timeline"] #queuePanel,body[data-tab="timeline"] #relationsPanel,body[data-tab="timeline"] #detailsPanel { display:none }
+      .timeline-list .record { margin:10px 0 }
+    }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important } }
+    body[data-stale="true"] *,body[data-stale="true"] *::before,body[data-stale="true"] *::after { animation:none !important; transition:none !important }
+  </style>
+</head>
+<body data-tab="queue" data-stale="true">
+  <main>
+    <header>
+      <div><p class="eyebrow">VIRTUAL AI OFFICE / HELIX</p><h1>指挥视图</h1><p class="muted">只读督办 · 证据、执行与下一步决策</p></div>
+      <div class="controls"><a class="button" href="/">返回办公室</a><button id="theme" type="button" aria-label="切换深浅主题">切换深色</button></div>
+    </header>
+    <div id="modeBanner" class="banner">合成演示 · 非真实数据</div>
+    <div class="toolbar">
+      <label>数据模式<select id="mode" aria-label="数据模式"><option value="demo">合成演示</option><option value="live">live · 授权数据</option></select></label>
+      <label>场景<select id="scenario" aria-label="演示场景" disabled></select></label>
+      <div class="controls"><button id="previous" type="button" disabled aria-label="上一个时间片">上一步</button><span id="sliceLabel">时间片未知</span><button id="next" type="button" disabled aria-label="下一个时间片">下一步</button><button id="play" type="button" disabled aria-label="自动播放时间片">自动播放</button><button id="reload" type="button" aria-label="重新读取指挥数据">重新读取</button></div>
+    </div>
+    <p id="notice" role="status" aria-live="polite">正在读取指挥视图…</p>
+    <div id="content" hidden>
+      <div id="scope" class="scope"></div>
+      <p id="quality"></p><p id="summary" class="muted"></p>
+      <div id="metrics" class="metrics"></div>
+      <nav class="tabs mobile-tabs" role="tablist" aria-label="手机视图">
+        <button id="tab-queue" role="tab" aria-selected="true" aria-controls="queuePanel" data-tab="queue">队列</button>
+        <button id="tab-details" role="tab" aria-selected="false" aria-controls="detailsPanel" data-tab="details">详情</button>
+        <button id="tab-timeline" role="tab" aria-selected="false" aria-controls="timelinePanel" data-tab="timeline">时间线</button>
+      </nav>
+      <div class="workspace">
+        <section id="queuePanel" class="panel" aria-label="任务队列"><h2>任务队列</h2><select id="filter" aria-label="筛选任务阶段"><option value="">全部阶段</option></select><div id="queue"></div><div class="pagination"><button id="queuePrevious" type="button">上一页</button><span id="queuePage"></span><button id="queueNext" type="button">下一页</button></div></section>
+        <section id="relationsPanel" class="panel" aria-label="关系"><h2>关系</h2><div class="tabs" role="tablist" aria-label="关系类型"><button role="tab" aria-selected="true" data-relation="organization">组织</button><button role="tab" aria-selected="false" data-relation="dependencies">依赖</button><button role="tab" aria-selected="false" data-relation="calls">调用</button></div><div id="relations"></div></section>
+        <section id="detailsPanel" class="panel" aria-label="执行详情"><h2>执行详情</h2><div id="details"></div></section>
+      </div>
+      <section id="timelinePanel" class="panel timeline" aria-label="事件时间线"><h2>事件时间线</h2><p id="timelineGap" class="muted"></p><div id="timeline" class="timeline-list"></div><div class="pagination"><button id="timelinePrevious" type="button">上一页</button><span id="timelinePage"></span><button id="timelineNext" type="button">下一页</button></div></section>
+    </div>
+    <footer>执行结束 ≠ 验证通过 ≠ 验收完成。合成记录不计入真实验收；本页不会触发任务或审批。</footer>
+  </main>
+  <script src="/town-nav-config.js"></script>
+  <script type="module" src="/place-bar.js"></script>
+  <script type="module" src="/command-view.js"></script>
+</body>
+</html>

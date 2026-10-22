@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <title>金边小镇 · 智序工场</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='25' fill='%23dfc27d'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23111820'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/town.css">
+</head>
+<body>
+  <main class="map-shell">
+    <canvas id="townMap" tabindex="0" aria-label="金边小镇地图。可拖动、缩放并点选智序工场·办公室、DR 仓配服务中心、行政区或其它地标。"></canvas>
+    <header class="map-head glass">
+      <a class="back" href="/">← 回到办公室</a>
+      <div class="map-title">
+        <p class="eyebrow">DR LIFE+ · PHNOM PENH</p>
+        <h1>金边小镇</h1>
+        <p class="subtitle">14 个 Khan · 城市只读底图</p>
+      </div>
+      <div class="label-switch" aria-label="地名显示模式">
+        <span>地名</span>
+        <button type="button" data-label-mode="zh" aria-pressed="true">中文</button>
+        <button type="button" data-label-mode="en" aria-pressed="false">English</button>
+        <button type="button" data-label-mode="km" aria-pressed="false">高棉文</button>
+      </div>
+    </header>
+    <aside id="detail" class="detail glass" aria-live="polite" aria-label="地图选中详情">
+      <p class="eyebrow">地图详情</p>
+      <h2 id="detailTitle">选择一个区或地标</h2>
+      <dl>
+        <div><dt>中文名</dt><dd id="detailZh">–</dd></div>
+        <div><dt>英文名</dt><dd id="detailEn">–</dd></div>
+        <div><dt>高棉文名</dt><dd id="detailKm">–</dd></div>
+        <div><dt>类型</dt><dd id="detailType">–</dd></div>
+        <div><dt>所在 Khan</dt><dd id="detailKhan">–</dd></div>
+        <div><dt>经纬度</dt><dd id="detailLatLon">–</dd></div>
+      </dl>
+    </aside>
+    <div id="placeTooltip" class="place-tooltip glass" role="tooltip" hidden></div>
+    <div id="mapFallback" class="map-fallback glass" hidden>使用本地备份地图</div>
+    <nav class="map-controls glass" aria-label="地图缩放">
+      <button id="zoomIn" type="button" aria-label="放大地图">＋</button>
+      <button id="zoomOut" type="button" aria-label="缩小地图">−</button>
+      <button id="resetMap" type="button" aria-label="回到完整地图">⌂</button>
+    </nav>
+    <details class="legend glass">
+      <summary>图例</summary>
+      <ul>
+        <li><span class="legend-dot zone"></span>行政区</li>
+        <li><span class="legend-dot road"></span>主干路</li>
+        <li><span class="legend-dot water"></span>水系</li>
+        <li><span class="legend-dot landmark"></span>地标</li>
+        <li><span class="legend-dot office"></span>办公室 / 仓配地点</li>
+      </ul>
+    </details>
+    <div id="zoomStatus" class="zoom-status glass" aria-live="polite">100%</div>
+    <div id="perf" class="perf glass" hidden>绘制 – ms</div>
+    <div id="mapError" class="map-error glass" role="alert" hidden>
+      <strong>地图数据未能载入</strong><span>请检查本地地图模块后重试。</span>
+      <button id="reloadMap" type="button">重新加载</button>
+    </div>
+    <footer class="attribution glass">© OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">ODbL</a></footer>
+  </main>
+  <script type="module" src="/town.js"></script>
+</body>
+</html>

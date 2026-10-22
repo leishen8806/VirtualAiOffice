@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23101820'/%3E%3Cpath d='M16 46V18h9v19h14V18h9v28z' fill='%23d2b778'/%3E%3C/svg%3E">
+  <title>个人空间（示意）</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101820; --panel:rgba(24,34,42,.9); --text:#edf3f4; --muted:#aebec5; --gold:#d2b778 }
+    :root[data-theme="light"] { color-scheme: light; --bg:#e8eef0; --panel:rgba(255,255,255,.9); --text:#1d2b33; --muted:#5a6a72; --gold:#91713f }
+    * { box-sizing: border-box }
+    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font: 14px/1.4 Inter, "Microsoft YaHei", sans-serif }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none }
+    header, footer { position: fixed; z-index: 2; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none }
+    header { top: 16px } footer { bottom: 16px; align-items: flex-end }
+    .glass { border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); background: var(--panel); box-shadow: 0 12px 32px rgba(0,0,0,.2); backdrop-filter: blur(12px); border-radius: 14px }
+    .title { padding: 12px 16px } h1 { margin: 0; font-size: 20px } p { margin: 4px 0 0; color: var(--muted) }
+    .controls { display: flex; gap: 6px; padding: 7px; pointer-events: auto }
+    button { border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent); border-radius: 8px; padding: 7px 10px; color: var(--text); background: transparent; cursor: pointer }
+    .legend { padding: 9px 12px; color: var(--muted) }
+    .status { padding: 9px 12px }
+    .home-editor { position: fixed; z-index: 4; left: 16px; right: 16px; bottom: 16px; padding: 10px; display: grid; gap: 8px; background: var(--panel); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); border-radius: 14px }
+    .home-editor-tools, .home-editor-tray { display: flex; flex-wrap: wrap; gap: 6px }
+    .home-editor-message { color: var(--muted); min-height: 1.4em }
+    .home-editor button:disabled { opacity: .45; cursor: not-allowed }
+    @media (max-width: 480px) { .home-editor { left: 8px; right: 8px; bottom: 8px; max-height: 42vh; overflow: auto } .home-editor-tools button { padding: 6px 8px } }
+    @media (max-width: 640px) { header, footer { left: 10px; right: 10px } .controls { flex-wrap: wrap; max-width: 170px } h1 { font-size: 17px } }
+  </style>
+</head>
+<body>
+  <canvas id="homeCanvas" aria-label="个人空间三维房间"></canvas>
+  <header>
+    <div class="title glass"><h1>个人空间（示意）</h1><p>拖动旋转 · 滚轮缩放 · 门洞朝南</p></div>
+    <div class="controls glass"><button id="themeDark" type="button">深色</button><button id="themeLight" type="button">浅色</button><button id="cameraReset" type="button">复位</button><button id="editHome" type="button">编辑布置</button></div>
+  </header>
+  <footer>
+    <div class="legend glass">演示数据，刷新后不保留</div>
+    <div id="homeStatus" class="status glass" aria-live="polite">载入房间…</div>
+  </footer>
+  <script type="module" src="/home-page.js?a4p=1"></script>
+</body>
+</html>
