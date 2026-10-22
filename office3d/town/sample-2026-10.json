@@ -1,0 +1,29 @@
+[
+  {
+    "agent": "Frontend1",
+    "month": "2026-10",
+    "daysInMonth": 31,
+    "workedDays": 17,
+    "availableDays": 17,
+    "monthsOfService": 0,
+    "metrics": { "observedDays": 6, "evaluatedTasks": 1, "firstPassRate": null, "avgReworkRounds": null, "blockedShare": null, "successRate": null },
+    "mineAdventureDays": [
+      { "date": "2026-10-16", "eligible": true },
+      { "date": "2026-10-20", "eligible": true }
+    ]
+  },
+  {
+    "agent": "Backend1",
+    "month": "2026-10",
+    "daysInMonth": 31,
+    "workedDays": 17,
+    "availableDays": 17,
+    "monthsOfService": 0,
+    "metrics": { "observedDays": 6, "evaluatedTasks": 1, "firstPassRate": null, "avgReworkRounds": null, "blockedShare": null, "successRate": null },
+    "projectBonuses": [{ "reason": "里程碑 M0", "amount": 8, "basis": "roadmap G0 通过" }],
+    "mineAdventureDays": [
+      { "date": "2026-10-18", "eligible": true },
+      { "date": "2026-10-25", "eligible": false }
+    ]
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "currency": "DRC",
+  "baseWage": 280,
+  "payDay": 15,
+  "payHour": 9,
+  "tiers": {
+    "T1": { "label": "执行岗", "monthly": 336 },
+    "T2": { "label": "专业岗", "monthly": 468 },
+    "T3": { "label": "高级岗", "monthly": 636 },
+    "T4": { "label": "负责人", "monthly": 840 },
+    "GA": { "label": "守门岗A", "monthly": 795, "gatekeeper": true, "integrityAllowance": 80 },
+    "GB": { "label": "守门岗B", "monthly": 585, "gatekeeper": true, "integrityAllowance": 59 }
+  },
+  "roles": {
+    "Frontend1": "T1", "Backend1": "T1", "Go1": "T1", "Go2": "T1", "React1": "T1",
+    "Backend2": "T1", "Frontend2": "T1", "UIUX": "T1", "QAAutomation": "T1", "Localizer": "T1",
+    "OpsEngineer": "T2", "PM": "T2",
+    "FrontendSenior": "T3", "BackendSenior": "T3", "GoSenior": "T3", "ReactSenior": "T3",
+    "DBEngineer": "T3", "Architect": "T3",
+    "Lead": "T4", "OpsLead": "T4",
+    "Reviewer1": "GA", "Reviewer2": "GA", "SecurityReviewer": "GA", "LedgerAuditor": "GB", "KnowledgeKeeper": "GB"
+  },
+  "allowances": {
+    "fullAttendance": 10,
+    "mealPerDay": 0.5,
+    "transportMonthly": 7,
+    "seniorityPerHalfYear": 2,
+    "seniorityCap": 11
+  },
+  "assessment": {
+    "min": 0.8,
+    "mid": 1.0,
+    "max": 1.5,
+    "midScore": 60,
+    "minSamples": { "observedDays": 7, "evaluatedTasks": 3 },
+    "weights": { "firstPass": 0.40, "rework": 0.25, "unblocked": 0.20, "success": 0.15 },
+    "reworkCapRounds": 3
+  },
+  "sideIncome": {
+    "mineAdventureDailyMax": 3,
+    "mineAdventureMonthlyShareOfBase": 0.10,
+    "recordBased": {
+      "knowledge_contribution": { "amount": 5, "monthlyMax": 4 },
+      "proposal_adopted": { "amount": 3, "monthlyMax": 5 },
+      "defect_found": { "amount": 4, "monthlyMax": 4 }
+    },
+    "inflationGuardShareOfPayroll": 0.08
+  },
+  "economy": {
+    "treasuryEndowmentMonths": 1.0,
+    "treasuryCapMonths": 2.0,
+    "mint": { "maxShareOfPayroll": 0.25, "pauseWhenSupplyAboveMonths": 6.0, "outputIndexDefault": 1.0 },
+    "livingCost": { "rentShareOfBase": 0.32, "utilityShareOfBase": 0.05 },
+    "tax": { "threshold": 300, "rate": 0.12 },
+    "spendPropensity": { "daily": 0.55, "goods": 0.25 },
+    "hoardFee": { "freeMonthsOfIncome": 3.0, "start": 0.03, "step": 0.005, "min": 0.01, "max": 0.10, "lowerBandShare": 0.6 },
+    "savings": { "monthlyInterest": 0.002 },
+    "price": { "cpiMin": 0.8, "cpiMax": 1.5, "targetPerCapitaMonthsOfIncome": 2.0 }
+  }
+}

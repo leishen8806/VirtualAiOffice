@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,"><title>中央茶水吧台 | Virtual AI Office</title>
+  <style>
+    :root { color-scheme:light; --bg:#f4f1ea; --text:#49453e; --panel:#fffdf7; --line:#b89b64 }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#292721; --text:#f6f2e9; --panel:#39362f }
+    * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif }
+    header { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:18px 24px; border-bottom:1px solid var(--line) }
+    h1,p { margin:0 } h1 { font-size:22px } .tools { display:flex; gap:8px; flex-wrap:wrap }
+    button,select { color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 12px; min-height:44px; font:inherit }
+    :focus-visible { outline:3px solid var(--line);outline-offset:3px } #stage { height:calc(100vh - 185px); min-height:360px }
+    canvas { display:block; touch-action:none } footer { padding:16px 24px } #metrics { font-weight:600 }
+  </style>
+</head>
+<body>
+  <header><div><h1>中央茶水吧台</h1><p>Virtual AI Office · 暖白、浅木、玻璃与绿植 · 独立静态预览</p></div><div class="tools"><select id="tier" aria-label="画质"><option value="high">高档 · 10 凳</option><option value="low">低档 · 6 凳</option></select><select id="view" aria-label="机位"><option value="angle">斜45°</option><option value="top">俯视</option><option value="close">近景</option></select><button id="theme">深色主题</button><button id="measure">测量模块增量</button></div></header>
+  <div id="stage"></div><footer><p id="metrics" role="status">读取静态资源…</p><p>圆心 (2,-1) · Ø7m · 东西1.5m缺口 · 12段碰撞 · 通行环 r=6…8m</p><p>拖动旋转，滚轮缩放。主场景接入与人物互动留待 O4b。</p></footer>
+  <script type="module">
+    import * as THREE from '/vendor/three/three.module.js'
+    import { LAYOUT_V2 } from '/office-layout.js'
+    import { OFFICE_THEME_V2 as T } from '/office-theme-v2.js'
+    import { buildOfficeBar } from '/office-bar.js'
+    const scene=new THREE.Scene(),root=new THREE.Group(),stage=document.getElementById('stage')
+    scene.add(root)
+    const renderer=new THREE.WebGLRenderer({antialias:true})
+    renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=false
+    stage.append(renderer.domElement)
+    const camera=new THREE.PerspectiveCamera(42,1,.1,100),target=new THREE.Vector3(2,0,-1)
+    scene.add(new THREE.HemisphereLight(0xffffff,0xb89b64,1.3))
+    const light=new THREE.DirectionalLight(0xfff3dc,1.2);light.position.set(-4,12,4);scene.add(light)
+    let bar,az=.65,el=.7,radius=23,drag=null,sampling=null
+    function orbit(){camera.position.set(target.x+radius*Math.cos(el)*Math.sin(az),radius*Math.sin(el),target.z+radius*Math.cos(el)*Math.cos(az));camera.lookAt(target)}
+    function build(){bar?.dispose();bar=buildOfficeBar({THREE,root,layout:LAYOUT_V2,low:document.getElementById('tier').value==='low'});window.__officeBarPreview.bar=bar}
+    window.__officeBarPreview={renderer,scene,camera,root,readings:[]}
+    build();orbit()
+    const resize=()=>{renderer.setSize(stage.clientWidth,stage.clientHeight);camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix()}
+    addEventListener('resize',resize);resize()
+    renderer.domElement.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId)})
+    renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;az-=(e.clientX-drag.x)*.006;el=Math.max(.15,Math.min(1.55,el+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};orbit()})
+    renderer.domElement.addEventListener('pointerup',()=>{drag=null})
+    renderer.domElement.addEventListener('pointercancel',()=>{drag=null})
+    renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();radius=Math.max(9,Math.min(40,radius+e.deltaY*.025));orbit()},{passive:false})
+    document.getElementById('tier').onchange=build
+    document.getElementById('theme').onclick=()=>{const dark=document.documentElement.dataset.theme==='dark';document.documentElement.dataset.theme=dark?'light':'dark';document.getElementById('theme').textContent=dark?'深色主题':'浅色主题'}
+    document.getElementById('view').onchange=e=>{el=e.target.value==='top'?1.55:e.target.value==='close'?.4:.7;radius=e.target.value==='close'?15:23;orbit()}
+    document.getElementById('measure').onclick=()=>{sampling={step:0,values:[]}}
+    function frame(){
+      requestAnimationFrame(frame)
+      if(document.hidden)return
+      scene.background=new THREE.Color(document.documentElement.dataset.theme==='dark'?0x292721:T.exteriorWall)
+      if(sampling)bar.root.visible=sampling.step!==1
+      renderer.render(scene,camera)
+      const reading={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles}
+      if(sampling){
+        sampling.values.push(reading);sampling.step++
+        if(sampling.step===3){const [on,off,restored]=sampling.values;window.__officeBarPreview.readings.push({on,off,restored,delta:{calls:on.calls-off.calls,triangles:on.triangles-off.triangles},low:bar.summary().low});sampling=null;bar.root.visible=true}
+      }
+      document.getElementById('metrics').textContent=`模块 calls ${reading.calls} · 三角形 ${reading.triangles} · ${bar.summary().seats} 吧凳 / ${bar.summary().sofas} 沙发席`
+    }
+    requestAnimationFrame(frame)
+  </script>
+</body>
+</html>

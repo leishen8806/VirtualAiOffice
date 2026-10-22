@@ -1,0 +1,39 @@
+{
+  "company": { "id": "demo-company", "name": "demo-company" },
+  "state": {
+    "at": "2026-10-21T05:00:00.000Z",
+    "projects": [{ "id": "demo-project", "companyId": "demo-company", "name": "KhmerX" }],
+    "assigned": {
+      "at": "2026-10-21T05:00:00.000Z",
+      "complete": true,
+      "items": [
+        { "id": "demo-label-blocked", "issueId": "demo-blocked", "companyId": "demo-company", "projectId": "demo-project", "title": "demo-blocked", "status": "blocked", "agentId": "demo-agent", "at": "2026-10-21T04:00:00.000Z" },
+        { "id": "demo-label-review", "issueId": "demo-review", "companyId": "demo-company", "projectId": "demo-project", "title": "demo-review", "status": "in_review", "agentId": "demo-agent", "at": "2026-10-21T04:00:00.000Z" }
+      ]
+    },
+    "agents": {
+      "at": "2026-10-21T05:00:00.000Z",
+      "complete": true,
+      "items": [{ "id": "demo-agent", "companyId": "demo-company", "model": "demo-model", "status": "running" }]
+    },
+    "waiting": [{ "kind": "question", "issueId": "demo-blocked", "projectId": "demo-project", "agentId": "demo-agent", "since": "2026-10-21T04:30:00.000Z" }]
+  },
+  "completed": [
+    { "id": "demo-done", "companyId": "demo-company", "projectId": "demo-project", "title": "demo-success", "status": "done", "assigneeAgentId": "demo-agent", "createdAt": "2026-10-20T04:00:00.000Z", "completedAt": "2026-10-21T04:00:00.000Z" }
+  ],
+  "detail": {
+    "id": "demo-blocked", "companyId": "demo-company", "projectId": "demo-project",
+    "title": "demo-blocked", "status": "blocked", "assigneeAgentId": "demo-agent",
+    "createdAt": "2026-10-20T04:00:00.000Z", "updatedAt": "2026-10-21T04:00:00.000Z",
+    "blockedBy": [], "parentId": null
+  },
+  "runs": [
+    { "id": "demo-run", "companyId": "demo-company", "contextSnapshot": { "issueId": "demo-blocked" }, "agentId": "demo-agent", "status": "running", "startedAt": "2026-10-21T04:30:00.000Z", "finishedAt": null, "usageJson": null },
+    { "id": "demo-run-review", "companyId": "demo-company", "contextSnapshot": { "taskId": "demo-review" }, "agentId": "demo-agent", "status": "succeeded", "startedAt": "2026-10-21T04:00:00.000Z", "finishedAt": "2026-10-21T04:05:00.000Z", "usageJson": "{\"inputTokens\":3,\"outputTokens\":4}" },
+    { "id": "demo-run-foreign", "companyId": "demo-company", "contextSnapshot": { "issueId": "demo-foreign" }, "agentId": "demo-agent", "status": "succeeded", "startedAt": "2026-10-21T04:00:00.000Z", "finishedAt": "2026-10-21T04:05:00.000Z", "usageJson": { "inputTokens": 8, "outputTokens": 9 } },
+    { "id": "demo-run-unmapped", "companyId": "demo-company", "agentId": "demo-agent", "status": "succeeded", "startedAt": "2026-10-21T04:00:00.000Z", "finishedAt": "2026-10-21T04:05:00.000Z", "usageJson": null }
+  ],
+  "activity": [
+    { "id": "demo-event", "companyId": "demo-company", "actorId": "demo-agent", "actorType": "agent", "agentId": "demo-agent", "action": "issue.updated", "entityType": "issue", "entityId": "demo-blocked", "createdAt": "2026-10-21T04:30:00.000Z", "responsibleUserId": null, "runId": "demo-run" }
+  ]
+}

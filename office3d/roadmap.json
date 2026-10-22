@@ -1,0 +1,69 @@
+{
+  "note": "产品里程碑，由董事会（或 Lead 经董事会同意）维护。status: planned | in_progress | done | waived。大屏只展示这里的内容，不推算、不编造。evidence 写证据（报告 / PR / 任务编号）。",
+  "updated": "2026-10-19",
+  "products": [
+    {
+      "id": "khmerx",
+      "name": "KhmerX / PayEase 15 天上线",
+      "source": "KhmerX 仓库（E:/KhmerX）docs/tasks/queue/orchestration-prompts.md §6 各闸门；日历见 docs/tasks/queue/_common.md（周一至周六，第 8 天 10-24 功能冻结）",
+      "milestones": [
+        {
+          "id": "A",
+          "name": "闸门 A：过渡形态可行（B0 压测报告）",
+          "due": "2026-10-17T17:00:00+07:00",
+          "status": "planned",
+          "note": "灰度机压测报告尚未产出（L2 等董事会放行）",
+          "evidence": ""
+        },
+        {
+          "id": "C",
+          "name": "闸门 C：代码完成与功能冻结",
+          "due": "2026-10-24T17:00:00+07:00",
+          "status": "planned",
+          "note": "代码卡大多已合并进 main，待核对 CI 与预发部署记录",
+          "evidence": ""
+        },
+        {
+          "id": "D",
+          "name": "闸门 D：切读与对账",
+          "due": "2026-10-27T17:00:00+07:00",
+          "status": "planned",
+          "note": "",
+          "evidence": ""
+        },
+        {
+          "id": "E",
+          "name": "闸门 E：压测达标（600 人）",
+          "due": "2026-10-29T17:00:00+07:00",
+          "status": "planned",
+          "note": "依赖灰度机部署与 L2 压测",
+          "evidence": ""
+        },
+        {
+          "id": "F",
+          "name": "闸门 F：上线准备（恢复 / 回滚演练）",
+          "due": "2026-10-30T10:00:00+07:00",
+          "status": "planned",
+          "note": "",
+          "evidence": ""
+        },
+        {
+          "id": "G",
+          "name": "闸门 G：放量决定（灰度 50/150 人）",
+          "due": "2026-11-02T17:00:00+07:00",
+          "status": "planned",
+          "note": "",
+          "evidence": ""
+        }
+      ]
+    }
+  ],
+  "boardItems": [
+    {
+      "ident": "CMP-285",
+      "what": "灰度源站部署：请提供新窗口（日期、起止时刻、时区），并亲自填好源站 config.json 的登录配置（CMP-305）",
+      "since": "2026-10-19T07:12:55Z"
+    }
+  ],
+  "boardItemsNote": "待董事会提供的事项（大屏「需要领导决定」会显示）。对应任务一结束（done/cancelled）就自动消失；事项办完后可删除这一条。"
+}

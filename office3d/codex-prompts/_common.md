@@ -1,0 +1,30 @@
+# 办公室 3D · Codex 任务公共规则（每个提示词都隐含包含本页）
+
+## 项目与目录
+- 代码目录：`E:\VirtualAIOffice\paperclip-ops\office3d\`。Node 原生 ES 模块 + 浏览器原生 ES 模块 + Three.js；**没有 Git、没有构建步骤、没有 npm 依赖**。
+- 先读：`README.md`（里面有每个功能的说明）、`index.html`（样式变量、`.glass`、`.chip`、`.ptag`、`#bottombar`）、`ui.js`（`createUI`、各 `open…` 弹窗）、`app.js`（镜头 / 小地图 / 人物 / 评审室投票会）、`server.mjs`（`state()`、`act()`、HTTP 入口）。
+- 服务 `node server.mjs`（端口 3200）**已经在运行**：**不要自己再启动第二个实例**（会重复启动 Telegram 轮询、晨会、委员会定时，造成重复消息和重复任务）。需要验证时，只对 `http://127.0.0.1:3200` 发 GET；改了 `server.mjs` 之后让人手动重启（见汇报格式 §5）。
+
+## 开工前
+- 把你要改的文件各复制一份到 `E:\VirtualAIOffice\paperclip-ops\office3d-backup-<任务名>\`（没有 Git，这是唯一的回退办法）。
+- **一次只跑一个 Codex 任务**：所有任务都会改 `index.html` / `ui.js` / `app.js`，同时改会互相覆盖。上一个任务验收完再开下一个。
+
+## 一律禁止
+- 联网、安装依赖、改 `package.json`（没有）、改 `vendor/`、下载任何素材。
+- 向 Paperclip 发 POST / PATCH / PUT / DELETE（只允许对 `http://127.0.0.1:3200` 的 GET 看真实数据形状）。
+- 发任何 Telegram 消息；读取、打印、修改 `telegram*.json`、`telegram-*.dpapi`、`lan.json`、任何密钥。
+- 改这些文件的逻辑：`committee.mjs`、`standup.mjs`、`acceptance.mjs`、`telegram.mjs`、`today.mjs`、`stats.mjs`（除非任务卡明确允许只读引用）。**不要改 `server.mjs` 里的局域网访问码 / 只读 / Host 校验 / `act()` 鉴权这部分**：新增的接口必须是 GET、放在现有鉴权之后（局域网设备同样要过访问码，且只读）。
+- 启动或停止任何服务；改作息（`../workhours/`）、改 Paperclip 里的任何配置。
+
+## 代码风格
+- 与周围代码一致：中文注释说明「为什么」、不写多余注释；不引入框架；所有显示的文字用 `esc()` 转义；数据缺失显示「–」，不得出现 `undefined` / `NaN` / `Infinity`。
+- 深色 / 浅色都要看得清（沿用现有 CSS 变量和 `.glass`）；`body.clean`（隐藏面板）时新增的面板要跟着隐藏。
+- 不写假数据、不做假通过；做不到的验证如实写「未验证」。
+
+## 汇报格式（每个任务都按这个交）
+1. 改动文件清单（新增 / 修改，各多少行）和备份目录位置。
+2. 任务卡里的要求哪一条没照做、为什么。
+3. 测试的完整命令和真实输出末尾（`node --test tests/…`）。语法检查：**`.mjs` 用 `node --check x.mjs`；浏览器模块（`.js`）必须用 `node --input-type=module --check < x.js`**——`node --check x.js` 会把 ES 模块当普通脚本，对模板字符串等错误误报「通过」（治理中心就因此打不开过一次）。改过任何浏览器模块后，必须在浏览器里实际打开 http://office.localhost:3200/ 确认页面能加载、控制台无报错，再交回。
+4. 用真实数据（对运行中的服务做只读 GET）验证的结果，贴关键 JSON 片段。
+5. 需要人工做的事：重启服务（`server.mjs` 改过才需要；在现有终端里 Ctrl+C 后重新运行 `node E:\VirtualAIOffice\paperclip-ops\office3d\server.mjs`）、浏览器 Ctrl+F5，并列出 3 个肉眼检查点。
+6. 你发现但没处理的范围外问题。

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <title>个人空间物品模型 · A7</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='25' fill='%23d2b778'/%3E%3Crect x='20' y='20' width='24' height='24' rx='5' fill='%23101820'/%3E%3C/svg%3E">
+  <style>
+    :root { color-scheme: dark; --bg:#101820; --panel:rgba(24,34,42,.9); --text:#edf3f4; --muted:#aebec5; --gold:#d2b778; }
+    :root[data-theme="light"] { color-scheme:light; --bg:#e8eef0; --panel:rgba(255,255,255,.9); --text:#1d2b33; --muted:#5a6a72; --gold:#91713f; }
+    * { box-sizing:border-box }
+    body { margin:0; overflow:hidden; background:var(--bg); color:var(--text); font:14px/1.4 Inter,"Microsoft YaHei",sans-serif }
+    canvas { display:block; width:100vw; height:100vh; touch-action:none }
+    header { position:fixed; inset:16px 16px auto 16px; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none }
+    .title,.controls,.stats { border:1px solid color-mix(in srgb,var(--gold) 45%,transparent); background:var(--panel); box-shadow:0 12px 32px rgba(0,0,0,.18); backdrop-filter:blur(12px) }
+    .title { padding:12px 16px; border-radius:14px }
+    h1 { margin:0; font-size:19px } p { margin:4px 0 0; color:var(--muted) }
+    .controls { display:flex; gap:6px; padding:7px; border-radius:12px; pointer-events:auto }
+    button { border:1px solid color-mix(in srgb,var(--gold) 60%,transparent); border-radius:8px; padding:7px 10px; color:var(--text); background:transparent; cursor:pointer }
+    .stats { position:fixed; left:16px; right:16px; bottom:16px; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px 12px; padding:10px 14px; border-radius:14px }
+    .item { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .item strong { color:var(--gold) } .item span { color:var(--muted); font-size:12px }
+    @media (max-width:850px) { .stats { grid-template-columns:repeat(3,minmax(0,1fr)); max-height:34vh; overflow:auto } }
+  </style>
+</head>
+<body>
+  <canvas id="gallery" aria-label="12件个人空间物品三维模型画廊"></canvas>
+  <header>
+    <div class="title"><h1>个人空间物品模型</h1><p>拖动旋转 · 滚轮缩放 · 每格 0.5 米</p></div>
+    <div class="controls"><button id="dark" type="button">深色</button><button id="light" type="button">浅色</button><button id="reset" type="button">复位</button></div>
+  </header>
+  <section id="stats" class="stats" aria-label="模型统计"></section>
+  <script type="module">
+    import * as THREE from './vendor/three/three.module.js'
+    import { buildItem, createMaterials, ITEM_DEFS, ITEM_STATS } from './home-items-3d.js'
+
+    const canvas = document.querySelector('#gallery')
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true })
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5))
+    renderer.shadowMap.enabled = true
+    const scene = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
+    const target = new THREE.Vector3(0, 0.45, 0)
+    scene.add(new THREE.HemisphereLight(0xeaf4ff, 0x54616a, 2.0))
+    const key = new THREE.DirectionalLight(0xffe6b5, 2.2); key.position.set(-5, 10, 5); key.castShadow = true; scene.add(key)
+    const materials = createMaterials(THREE)
+    const positions = [-5.25,-1.75,1.75,5.25]
+    const rows = [-3.2,0,3.2]
+    const gridMaterial = new THREE.LineBasicMaterial({ color:0x60727b, transparent:true, opacity:0.28 })
+    const outlineMaterial = new THREE.LineBasicMaterial({ color:0xd2b778, transparent:true, opacity:0.9 })
+    for (let x=-7; x<=7; x+=0.5) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,-4.8),new THREE.Vector3(x,0,4.8)])
+      scene.add(new THREE.Line(geometry,gridMaterial))
+    }
+    for (let z=-4.8; z<=4.8; z+=0.5) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-7,0,z),new THREE.Vector3(7,0,z)])
+      scene.add(new THREE.Line(geometry,gridMaterial))
+    }
+    ITEM_DEFS.forEach((item,index) => {
+      const x=positions[index%4], z=rows[Math.floor(index/4)]
+      const group=buildItem(THREE,item.id,{materials}); group.position.set(x,0,z); scene.add(group)
+      const w=item.footprint.w*0.5,d=item.footprint.d*0.5
+      const points=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]].map(([px,pz])=>new THREE.Vector3(x+px,0.018,z+pz))
+      const outline=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),outlineMaterial); scene.add(outline)
+      const stat=ITEM_STATS[item.id], line=document.createElement('div'); line.className='item'
+      const name=document.createElement('strong'); name.textContent=`${item.name} ${item.footprint.w}×${item.footprint.d}格`
+      const detail=document.createElement('span'); detail.textContent=` · ${stat.meshes}网格 / ${stat.triangles}三角形`
+      line.append(name,detail); document.querySelector('#stats').append(line)
+    })
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(15,10),new THREE.MeshStandardMaterial({color:0xcbd4d5,roughness:0.96}))
+    floor.rotation.x=-Math.PI/2; floor.position.y=-0.012; floor.receiveShadow=true; scene.add(floor)
+    let yaw=0.58,pitch=0.66,distance=17,drag=null
+    function placeCamera(){ camera.position.set(Math.sin(yaw)*Math.cos(pitch)*distance,Math.sin(pitch)*distance,Math.cos(yaw)*Math.cos(pitch)*distance).add(target); camera.lookAt(target) }
+    function theme(value){ document.documentElement.dataset.theme=value; scene.background=new THREE.Color(value==='light'?0xe8eef0:0x101820) }
+    document.querySelector('#dark').onclick=()=>theme('dark'); document.querySelector('#light').onclick=()=>theme('light')
+    document.querySelector('#reset').onclick=()=>{yaw=.58;pitch=.66;distance=17;placeCamera()}
+    canvas.addEventListener('pointerdown',event=>{drag={x:event.clientX,y:event.clientY};canvas.setPointerCapture(event.pointerId)})
+    canvas.addEventListener('pointermove',event=>{if(!drag)return;yaw-=(event.clientX-drag.x)*.006;pitch=Math.max(.25,Math.min(1.25,pitch+(event.clientY-drag.y)*.005));drag={x:event.clientX,y:event.clientY};placeCamera()})
+    canvas.addEventListener('pointerup',()=>{drag=null})
+    canvas.addEventListener('wheel',event=>{event.preventDefault();distance=Math.max(10,Math.min(25,distance+event.deltaY*.01));placeCamera()},{passive:false})
+    function resize(){const w=innerWidth,h=innerHeight;if(canvas.width!==Math.floor(w*renderer.getPixelRatio())||canvas.height!==Math.floor(h*renderer.getPixelRatio()))renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+    theme(new URLSearchParams(location.search).get('theme')==='light'?'light':'dark'); placeCamera()
+    renderer.setAnimationLoop(()=>{resize();renderer.render(scene,camera)})
+  </script>
+</body>
+</html>

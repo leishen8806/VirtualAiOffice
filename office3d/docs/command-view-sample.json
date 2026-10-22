@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-21T05:00:00.000Z",
+  "dataAgeMs": { "value": 180000, "reason": null },
+  "mode": "demo",
+  "company": { "id": "demo-company", "name": "合成演示公司" },
+  "scope": {
+    "project": { "value": "demo-project", "reason": null },
+    "range": { "from": "2026-10-21T04:00:00.000Z", "to": "2026-10-21T05:00:00.000Z" }
+  },
+  "summary": {
+    "tasks": { "value": 1, "reason": null },
+    "running": { "value": 0, "reason": null },
+    "accepted": { "value": null, "reason": "EVIDENCE_NOT_CONNECTED" },
+    "cost": {
+      "currency": "USD",
+      "confirmedAmount": { "value": null, "reason": "NO_CONFIRMED_COST" },
+      "totalAmount": { "value": null, "reason": "COST_NOT_RETURNED" },
+      "confirmedRuns": { "value": 0, "reason": null },
+      "unknownCostRuns": { "value": 3, "reason": null },
+      "missingUsageRuns": { "value": 1, "reason": null },
+      "observedRuns": { "value": 3, "reason": null },
+      "lastUpdatedAt": { "value": "2026-10-21T05:00:00.000Z", "reason": null }
+    }
+  },
+  "queue": [
+    {
+      "taskId": "demo-task",
+      "projectId": "demo-project",
+      "title": "合成任务：整理示意交付物",
+      "rawStatus": "done",
+      "stage": "pending_verification",
+      "stageReason": "EVIDENCE_NOT_CONNECTED",
+      "ownerId": { "value": "demo-agent", "reason": null },
+      "blocker": "delivered_unaccepted",
+      "nextHandler": { "value": "demo-reviewer", "reason": null },
+      "entry": "acceptance",
+      "waitingSince": { "value": null, "reason": "NO_STATUS_TRANSITION" },
+      "waitingMs": { "value": null, "reason": "NO_STATUS_TRANSITION" },
+      "progress": {
+        "passed": { "value": null, "reason": "NO_TEST_EVIDENCE" },
+        "total": { "value": null, "reason": "NO_TEST_EVIDENCE" }
+      },
+      "evidence": { "value": null, "reason": "EVIDENCE_NOT_CONNECTED" }
+    }
+  ],
+  "relations": {
+    "organization": {
+      "items": [{ "from": "demo-reviewer", "to": "demo-agent", "type": "reports_to", "source": "agents", "confidence": "observed" }],
+      "complete": true,
+      "reason": null
+    },
+    "dependencies": { "items": [], "complete": false, "reason": "DEP_NOT_LOADED" },
+    "calls": { "items": [], "complete": false, "reason": "NO_CALL_EVIDENCE" }
+  },
+  "execution": {
+    "items": [
+      {
+        "runId": "demo-run",
+        "taskId": "demo-task",
+        "agentId": "demo-agent",
+        "status": "succeeded",
+        "startedAt": { "value": "2026-10-21T04:20:00.000Z", "reason": null },
+        "finishedAt": { "value": "2026-10-21T04:40:00.000Z", "reason": null },
+        "model": { "value": null, "reason": "RUN_MODEL_NOT_RETURNED" },
+        "modelSource": "unknown",
+        "usage": { "value": null, "reason": "USAGE_NOT_RETURNED" },
+        "cost": { "value": null, "reason": "COST_NOT_RETURNED" },
+        "family": "gpt",
+        "healthCategory": "upstream"
+      }
+    ],
+    "complete": false,
+    "reason": "PARTIAL_PAGE"
+  },
+  "timeline": {
+    "items": [
+      { "id": "demo-event-create", "taskId": "demo-task", "runId": { "value": null, "reason": "NOT_APPLICABLE" }, "at": "2026-10-21T04:00:00.000Z", "type": "issue.created", "operator": "board", "source": "activity", "stage": "pending_verification", "stageReason": "NO_AUTHORIZATION_EVIDENCE", "evidence": { "value": null, "reason": "NO_AUTHORIZATION_EVIDENCE" } },
+      { "id": "demo-event-claim", "taskId": "demo-task", "runId": { "value": "demo-run", "reason": null }, "at": "2026-10-21T04:10:00.000Z", "type": "task.started", "operator": "agent", "source": "synthetic", "stage": "claimed", "stageReason": "SYNTHETIC_DEMO", "evidence": { "value": null, "reason": "NO_CHECKOUT_EVIDENCE" } },
+      { "id": "demo-event-execute", "taskId": "demo-task", "runId": { "value": "demo-run", "reason": null }, "at": "2026-10-21T04:20:00.000Z", "type": "execution.activity", "operator": "agent", "source": "synthetic", "stage": "executing", "stageReason": "SYNTHETIC_DEMO", "evidence": { "value": null, "reason": "NO_EXECUTION_EVIDENCE" } },
+      { "id": "demo-event-rework", "taskId": "demo-task", "runId": { "value": "demo-run", "reason": null }, "at": "2026-10-21T04:30:00.000Z", "type": "issue.updated", "operator": "agent", "source": "activity", "stage": "pending_verification", "stageReason": "NO_STATUS_TRANSITION", "evidence": { "value": null, "reason": "NO_STATUS_TRANSITION" } },
+      { "id": "demo-event-deliver", "taskId": "demo-task", "runId": { "value": "demo-run", "reason": null }, "at": "2026-10-21T04:40:00.000Z", "type": "issue.work_product_created", "operator": "agent", "source": "activity", "stage": "pending_verification", "stageReason": "NO_ACCEPTANCE_EVIDENCE", "evidence": { "value": null, "reason": "NO_ACCEPTANCE_EVIDENCE" } }
+    ],
+    "complete": false,
+    "reason": "NO_STATUS_TRANSITION"
+  },
+  "quality": {
+    "synthetic": true,
+    "freshness": { "stale": true, "reason": "STALE_DATA", "maxAgeMs": 120000, "animationAllowed": false },
+    "sources": [
+      { "source": "state", "ageMs": { "value": 180000, "reason": null }, "complete": false, "reason": "SYNTHETIC_DEMO" },
+      { "source": "evidence", "ageMs": { "value": null, "reason": "EVIDENCE_NOT_CONNECTED" }, "complete": false, "reason": "EVIDENCE_NOT_CONNECTED" }
+    ],
+    "gaps": ["EVIDENCE_NOT_CONNECTED", "NO_STATUS_TRANSITION", "DEP_NOT_LOADED", "COST_NOT_RETURNED"],
+    "writesAllowed": false
+  }
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>DR 仓配园区 · 动效预览</title>
+  <script type="importmap">{"imports":{"three":"/vendor/three/three.module.js"}}</script>
+  <style>
+    :root { color-scheme:dark; --bg:#182327; --panel:#223238; --text:#f2e8d3; --line:#567177; --accent:#e0af55 }
+    :root[data-theme="light"] { color-scheme:light; --bg:#ebe5d9; --panel:#f8f3e8; --text:#293b3d; --line:#8b9c99; --accent:#885d16 }
+    * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--text); font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif }
+    header { padding:18px 24px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line) }
+    h1 { margin:0; font-size:21px } p { margin:0 } .tools { display:flex; flex-wrap:wrap; gap:8px }
+    button,select { min-height:44px; font:inherit; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:5px; padding:8px 12px; cursor:pointer }
+    :focus-visible { outline:3px solid var(--accent); outline-offset:2px }
+    #stage { height:calc(100vh - 190px); min-height:400px } canvas { display:block; width:100%; height:100%; touch-action:none }
+    footer { padding:16px 24px; border-top:1px solid var(--line) } #readout { color:var(--accent); font-weight:600 }
+  </style>
+</head>
+<body>
+  <header><div><h1>DR 仓配园区 · 动效预览</h1><p>演示数据 · 固定种子 2606 · 拖动旋转 / 滚轮缩放</p></div><div class="tools"><select id="tier" aria-label="画质"><option value="high">高档</option><option value="low">低档（全部静态）</option></select><button id="pause">暂停动画</button><button id="theme">浅色主题</button><button id="measure">测量可见性增量</button></div></header>
+  <div id="stage"></div>
+  <footer><p id="readout" role="status">准备静态资源…</p><p id="progress">演示数据 · 播放进度 0 秒</p><p>叉车：封闭走道；车辆：月台展示通道；传送带：拣货 → 包装。本页不读取业务接口。</p></footer>
+  <script type="module">
+    import * as THREE from 'three'
+    import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '/office-layout.js'
+    import { buildCampusMotion } from '/dr-campus-motion.js'
+    import { createDemoCampusEventSource } from '/dr-campus-motion-logic.js'
+    import { mergeCampusStatic } from '/dr-campus-registry.js'
+    const stage = document.getElementById('stage'), quality = { tier: 'high' }
+    const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(42, 1, .1, 500)
+    camera.position.set(-106, 48, 55)
+    const renderer = new THREE.WebGLRenderer({ antialias:true })
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); renderer.shadowMap.enabled = false
+    stage.append(renderer.domElement)
+    const target = new THREE.Vector3(-130, 0, 1)
+    let azimuth=.45, elevation=.65, radius=75, drag=null
+    const orbit = () => { camera.position.set(target.x+radius*Math.cos(elevation)*Math.sin(azimuth),radius*Math.sin(elevation),target.z+radius*Math.cos(elevation)*Math.cos(azimuth));camera.lookAt(target) }
+    orbit()
+    renderer.domElement.addEventListener('pointerdown', event => { drag={x:event.clientX,y:event.clientY};renderer.domElement.setPointerCapture(event.pointerId) })
+    renderer.domElement.addEventListener('pointermove', event => { if(!drag)return;azimuth-=(event.clientX-drag.x)*.006;elevation=Math.max(.2,Math.min(1.4,elevation+(event.clientY-drag.y)*.006));drag={x:event.clientX,y:event.clientY};orbit() })
+    renderer.domElement.addEventListener('pointerup', () => { drag=null })
+    renderer.domElement.addEventListener('wheel', event => { event.preventDefault();radius=Math.max(30,Math.min(140,radius+event.deltaY*.04));orbit() }, {passive:false})
+    scene.add(new THREE.HemisphereLight(0xe4eff1, 0x4a4840, 2.8))
+    const light = new THREE.DirectionalLight(0xffe5b3, 2); light.position.set(-150, 35, 10); scene.add(light)
+    const root = new THREE.Group(); scene.add(root)
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(90, .2, 50), new THREE.MeshStandardMaterial({ color:0x435452 }))
+    floor.position.set(-126, -.14, -2.8); root.add(floor)
+    const rackMaterial = new THREE.MeshStandardMaterial({ color:0x597a82 })
+    for (const x of [-142, -133, -124, -115]) {
+      const rack = new THREE.Mesh(new THREE.BoxGeometry(2, 2.7, 14), rackMaterial)
+      rack.position.set(x + 1, 1.35, -1); root.add(rack)
+    }
+    const dockMaterial = new THREE.MeshStandardMaterial({ color:0x9c8768 })
+    for (const x of [-158, -149]) {
+      const dock = new THREE.Mesh(new THREE.BoxGeometry(6, .8, .4), dockMaterial)
+      dock.position.set(x, .4, -18); root.add(dock)
+    }
+    let sourceMs = 0, last = null, paused = false, motion, merged = null, sampling = null
+    const sourceEpoch = performance.now()
+    const source = createDemoCampusEventSource({ now: () => performance.now() - sourceEpoch, seed:2606 })
+    const layout = { campus:CAMPUS, zones:CAMPUS_ZONES, shuttle:CAMPUS_SHUTTLE_STRIP }
+    function build() {
+      motion?.dispose(); merged?.dispose?.()
+      if (merged) root.children.filter(row => row.userData.qualityProxy && row.name.startsWith('campus-')).forEach(row => row.removeFromParent())
+      motion = buildCampusMotion({ THREE, root, layout, quality, eventSource:source })
+      motion.setPaused(paused)
+      merged = quality.tier === 'low' ? mergeCampusStatic(THREE, root) : null
+      window.__campusMotionPreview.motion = motion
+    }
+    window.__campusMotionPreview = { renderer, scene, camera, root, quality, readings:[], measure: () => document.getElementById('measure').click() }
+    build()
+    const resize = () => { renderer.setSize(stage.clientWidth, stage.clientHeight); camera.aspect = stage.clientWidth / stage.clientHeight; camera.updateProjectionMatrix() }
+    addEventListener('resize', resize); resize()
+    document.getElementById('tier').onchange = (event) => { quality.tier = event.target.value; location.href = `${location.pathname}?q=${quality.tier}` }
+    if (new URLSearchParams(location.search).get('q') === 'low') { quality.tier='low'; document.getElementById('tier').value='low'; build() }
+    document.getElementById('pause').onclick = () => { paused=!paused; motion.setPaused(paused); document.getElementById('pause').textContent=paused?'恢复动画':'暂停动画' }
+    document.getElementById('theme').onclick = () => {
+      const dark=document.documentElement.dataset.theme==='dark'
+      document.documentElement.dataset.theme=dark?'light':'dark'
+      document.getElementById('theme').textContent=dark?'深色主题':'浅色主题'
+    }
+    document.getElementById('measure').onclick = () => { sampling={step:0, values:[], paused}; motion.setPaused(true) }
+    document.addEventListener('visibilitychange', () => { last=null })
+    function frame(time) {
+      requestAnimationFrame(frame)
+      const dt=last===null?0:Math.max(0, Math.min(.1,(time-last)/1000)); last=time
+      sourceMs=performance.now()-sourceEpoch
+      if (document.hidden) return
+      source.advance()
+      motion.onFrame(dt, { camera })
+      scene.background=new THREE.Color(document.documentElement.dataset.theme==='dark'?0x182327:0xebe5d9)
+      if (sampling) {
+        motion.root.visible=sampling.step!==1
+      }
+      renderer.render(scene,camera)
+      const reading={calls:renderer.info.render.calls,triangles:renderer.info.render.triangles}
+      if (sampling) {
+        sampling.values.push(reading); sampling.step++
+        if (sampling.step===3) {
+          const [on,off,restored]=sampling.values
+          const result={tier:quality.tier,on,off,restored,calls:on.calls-off.calls,triangles:on.triangles-off.triangles,lowMerged:quality.tier==='low'}
+          window.__campusMotionPreview.readings.push(result)
+          const wasPaused=sampling.paused
+          sampling=null;motion.root.visible=true;motion.setPaused(wasPaused)
+        }
+      }
+      document.getElementById('readout').textContent=`整页 calls ${reading.calls} · 三角形 ${reading.triangles} | 模块 ${JSON.stringify(motion.summary())}`
+      document.getElementById('progress').textContent=`演示数据 · 播放进度 ${(sourceMs/1000).toFixed(1)} 秒 · 动画 ${(motion.summary().animationMs/1000||0).toFixed(1)} 秒`
+    }
+    requestAnimationFrame(frame)
+  </script>
+</body>
+</html>

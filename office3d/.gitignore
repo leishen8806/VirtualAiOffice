@@ -1,0 +1,16 @@
+# Local credentials, configuration and runtime state are never part of the snapshot.
+/*.json
+!/roadmap.json
+!/town-map.json
+/*.dpapi
+/*.log
+*.bak*
+.env*
+*.pem
+*.key
+/chats/
+/events/
+/artifacts/
+/_ref/
+/office3d-backup-*/
+node_modules/
