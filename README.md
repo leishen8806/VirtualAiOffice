@@ -4,11 +4,19 @@
 
 办公室按**项目组**编排，每个项目组就是一种 AI 模型：Claude Code、Codex、DeepSeek、中转站 API……组里坐着各有技能的**员工**，每个员工就是一个 skill 文件。所有人在同一间办公室里上班：谁在读哪个文件、跑什么命令，头顶气泡里都看得到；开会时大家走到会议桌边发言；派活时协调器会起身把任务单送到工位上；干完了会举手欢呼，出错了会冒冷汗。
 
-![智序工场演示](docs/demo-anime.gif)
+![智序工场·办公区改造概念图（目标样式，非实机截图）](docs/visuals/target-office.png)
+
+> 本页配图为**目标样式概念图**（改造完成后的预期效果），并非当前实机截图；实机截图将在各阶段验收后逐张替换 `docs/visuals/` 下对应文件，文件名保持不变。
+
+**智序小镇的两个地点（概念图）**
+
+![DR 仓配服务中心概念图](docs/visuals/target-dr-campus.png)
+
+![DR 智慧仓配调度中心概念图](docs/visuals/target-dr-dashboard.png)
 
 **有桌面软件**：Windows / macOS / Linux 安装包在 [Releases](https://github.com/leishen8806/VirtualAiOffice/releases) 下载，装好双击就能用。**有好几套皮肤**，一键切换：
 
-![五套二次元皮肤：樱花、夜班、赛博霓虹、猫耳咖啡、像素复古](docs/skins.png)
+![五套二次元皮肤：樱花、夜班、赛博霓虹、猫耳咖啡、像素复古](docs/visuals/target-skins.svg)
 
 演示视频（像素版，办公室协调器讲解 + 字幕，1 分 54 秒）：[1080p](docs/niuma-demo.mp4) · [2K](docs/niuma-demo-2k.mp4)
 
@@ -56,7 +64,7 @@
 
 点页面右上角的「**接入员工**」（桌面版也可以用菜单「项目 → 接入员工」；一个员工都没到岗时会自动弹出来）：
 
-![接入员工面板](docs/setup.png)
+![接入员工面板](docs/visuals/target-setup.svg)
 
 - **Claude Code / Codex**：点「一键安装」，装好后点「登录」，在弹出的窗口里登录账号，再点「测试」看它能不能回话。电脑上还没有 Node.js 时面板会提示先装（Windows 上也能一键装）。
 - **API 员工**：选一家（DeepSeek、通义千问、Kimi、智谱、硅基流动、OpenRouter、中转站、本地模型或自定义），填上 API Key（中转站和自定义还要填地址和模型名），点「测试并接入」。测试通过，新的项目组马上坐进工位，不用重启。
@@ -232,7 +240,7 @@ look: glasses
 
 皮肤栏最后有「**＋ 做皮肤**」：选一个主色一键配出整套颜色（或者 🎲 随机一套），再细调界面、墙、地板、天空、桌子的颜色，换窗外风景（樱花、城市夜景、赛博城市、花园、大海、自己的图片）、飘落效果（花瓣、雪花、星光、泡泡）、墙上花纹，放一张墙纸，开关猫耳、养猫、台灯、霓虹灯。改一下，后面的办公室就跟着变，满意了点「保存」。
 
-![做皮肤编辑器](docs/skin-editor.png)
+![做皮肤编辑器](docs/visuals/target-skin-editor.svg)
 
 也可以直接写皮肤文件：复制 [模板 `docs/skins/template.json`](docs/skins/template.json)（每一项都有中文说明），改好颜色放进 `~/.niuma/skins/`，切回窗口就能在皮肤栏里看到。做好的皮肤可以「导出文件」发给朋友，朋友「导入文件」就能用。详细说明见 [自己做皮肤](docs/skin-guide.md)。
 
