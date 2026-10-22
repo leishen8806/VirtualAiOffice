@@ -1,4 +1,14 @@
 const TAU = Math.PI * 2
+// people.js + sit_chair_idle_relaxed_01 全循环实测（人物原点朝 +z）：
+// male hipY/kneeZ/footZ = .57691/.32253/.59118m；female = .58626/.33929/.40283m。
+// seatTop 取双体型髋高中值约 .5816m 减 .08m 软垫压缩；前沿 .24m 落在膝关节之后。
+export const LOUNGE_SIT = Object.freeze({
+  seatTop: .5,
+  seatDepth: .48,
+  legRoom: .34,
+  hipForward: .03,
+  hipLift: 0,
+})
 export function barSpec(layout = {}) {
   const bar = layout.bar || layout
   return { center: { x: bar.center?.x ?? 2, z: bar.center?.z ?? -1 }, radius: bar.radius ?? 3.5,
@@ -39,7 +49,8 @@ export function barLounges(layout) {
   return ['east', 'west'].flatMap(side => [-20, 0, 20].map((degree, index) => {
     const angle = (degree + (side === 'west' ? 180 : 0)) * Math.PI / 180
     return { id: `lounge-${side}-${index + 1}`, side, x: center.x + Math.cos(angle) * 5.25, z: center.z + Math.sin(angle) * 5.25,
-      yaw: -angle - Math.PI / 2, appX: center.x + Math.cos(angle) * 4.7, appZ: center.z + Math.sin(angle) * 4.7, angle }
+      yaw: Math.PI / 2 - angle, appX: center.x + Math.cos(angle) * 4.7, appZ: center.z + Math.sin(angle) * 4.7, angle,
+      sitOffset: { forward: LOUNGE_SIT.hipForward, lift: LOUNGE_SIT.hipLift } }
   }))
 }
 export function validateBarGeometry(layout) {

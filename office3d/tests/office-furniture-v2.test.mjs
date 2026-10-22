@@ -3,13 +3,41 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V2, SEATS } from '../office-layout.js'
-import { officeFurnitureV2Spec, placeOfficeFurnitureV2 } from '../office-furniture-v2.js'
+import { MONITOR_GLASS_SOURCE, monitorScreenFit, workstationDesktop, officeFurnitureV2Spec, placeOfficeFurnitureV2 } from '../office-furniture-v2.js'
 import { mergeOfficeStatic } from '../office-v2-registry.js'
 
 const spec = officeFurnitureV2Spec(LAYOUT_V2)
 const overlaps = (a, b) => a.x0 < b.x1 - 1e-9 && a.x1 > b.x0 + 1e-9 && a.z0 < b.z1 - 1e-9 && a.z1 > b.z0 + 1e-9
 const inside = (a, b) => a.x0 > b.x0 + .14 && a.x1 < b.x1 - .14 && a.z0 > b.z0 + .14 && a.z1 < b.z1 - .14
 const box = (x, z, w, d) => ({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 })
+
+test('O4c measured monitor glass drives parallel, centred 1.5mm screen fits for both yaws', () => {
+  const raw = fs.readFileSync(new URL('../assets/models/furniture/computerScreen.glb', import.meta.url))
+  const jsonLength = raw.readUInt32LE(12), gltf = JSON.parse(raw.subarray(20, 20 + jsonLength).toString('utf8'))
+  const bin = 28 + jsonLength, primitive = gltf.meshes[0].primitives.find(item => gltf.materials[item.material].name === 'metal')
+  const accessor = gltf.accessors[primitive.indices], view = gltf.bufferViews[accessor.bufferView]
+  const indices = Array.from({ length: accessor.count }, (_, i) => raw.readUInt32LE(bin + view.byteOffset + i * 4))
+  const positions = [...new Set(indices)].map(i => [0, 1, 2].map(axis => raw.readFloatLE(bin + gltf.bufferViews[0].byteOffset + i * 12 + axis * 4)))
+  const low = positions.reduce((a, p) => a[1] < p[1] ? a : p), high = positions.reduce((a, p) => a[1] > p[1] ? a : p)
+  assert.deepEqual(indices, [112, 111, 110, 111, 112, 113]); assert.equal(positions.length, 4)
+  const measuredCenter = [0, 1, 2].map(axis => (Math.min(...positions.map(p => p[axis])) + Math.max(...positions.map(p => p[axis]))) / 2)
+  const measuredNormal = [0, 1, 2].map(axis => raw.readFloatLE(bin + gltf.bufferViews[1].byteOffset + indices[0] * 12 + axis * 4))
+  measuredCenter.forEach((value, axis) => assert.ok(Math.abs(MONITOR_GLASS_SOURCE.center[axis] - value) < 1e-9)); assert.deepEqual(MONITOR_GLASS_SOURCE.normal, measuredNormal)
+  assert.ok(Math.abs(MONITOR_GLASS_SOURCE.width - (Math.max(...positions.map(p => p[0])) - Math.min(...positions.map(p => p[0])))) < 1e-9)
+  assert.ok(Math.abs(MONITOR_GLASS_SOURCE.height - Math.hypot(high[1] - low[1], high[2] - low[2])) < 1e-9)
+  for (const yaw of [0, Math.PI]) {
+    const fit = monitorScreenFit({ x: 3, y: .76, z: 4, yaw }), front = new THREE.Vector3(0, 0, 1).applyEuler(new THREE.Euler(fit.pitch, fit.yaw, 0, 'YXZ'))
+    assert.ok(front.dot(new THREE.Vector3(...fit.normal)) > Math.cos(Math.PI / 180))
+    const delta = new THREE.Vector3(fit.center.x - fit.glassCenter.x, fit.center.y - fit.glassCenter.y, fit.center.z - fit.glassCenter.z)
+    assert.ok(Math.abs(delta.dot(new THREE.Vector3(...fit.normal)) - .0015) < 1e-9)
+    assert.ok(delta.clone().addScaledVector(new THREE.Vector3(...fit.normal), -.0015).length() < .005)
+    assert.ok(fit.width < fit.glassWidth && fit.height < fit.glassHeight)
+    const desktop = workstationDesktop({ x: 3, z: 4, yaw }), forward = new THREE.Vector2(Math.sin(yaw), Math.cos(yaw)), right = new THREE.Vector2(Math.cos(yaw), -Math.sin(yaw))
+    const keyFromMonitor = new THREE.Vector2(desktop.keyboard.x - desktop.monitor.x, desktop.keyboard.z - desktop.monitor.z)
+    const mouseFromKey = new THREE.Vector2(desktop.mouse.x - desktop.keyboard.x, desktop.mouse.z - desktop.keyboard.z)
+    assert.ok(Math.abs(keyFromMonitor.dot(forward) - .32) < 1e-9); assert.ok(Math.abs(mouseFromKey.dot(right) - .54) < 1e-9)
+  }
+})
 
 test('O4 keeps all 25 frozen desk coordinates and real region mappings', () => {
   assert.equal(spec.workstations.length, 25)
@@ -114,6 +142,7 @@ test('O4 renderer uses one shadow-free batch, collision proxies and private warm
   const visible = []; value.root.traverse(o => { if (o.isMesh && o.visible) visible.push(o) })
   assert.equal(visible.length, 1); assert.ok(visible[0].isMesh)
   assert.equal(visible[0].castShadow, false); assert.equal(visible[0].receiveShadow, false)
+  assert.equal(visible[0].material.polygonOffset, true)
   assert.equal(value.wing.seats.length, 14)
   assert.equal(scrs.length, 29)
   assert.equal(bodies.filter(b => b.kind === 'desk').length, 26)

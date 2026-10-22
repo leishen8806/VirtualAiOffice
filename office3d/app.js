@@ -314,7 +314,7 @@ try {
 }
 loadText('马上就好…', 1)
 const furnitureCollision = createFurnitureCollision()
-const officeFurnitureV2 = startOfficeV2({ THREE, scene, quality: qualityPolicy, materials: M, collision: furnitureCollision, canvasTex, A, placeFurniture, makeScreenTexture, floor })
+const officeFurnitureV2 = startOfficeV2({ THREE, scene, quality: qualityPolicy, materials: M, collision: furnitureCollision, canvasTex, A, placeFurniture, makeScreenTexture, floor, now: () => new Date().getTime() })
 function furn(name, x, z, opt) {
   const f = placeFurniture(A, name, x, z, opt)
   scene.add(f.group)
@@ -1841,8 +1841,8 @@ function showDetail(id) {
   $('detailChat').disabled = WALL_MODE || document.body.classList.contains('lan') || a.status === 'terminated'
   $('detailChat').title = WALL_MODE ? '大屏模式不提供对话' : document.body.classList.contains('lan') ? '对话内容只允许在运行服务的电脑上查看' : a.status === 'terminated' ? '已离职，不能对话' : '与这位同事对话'
   $('detailChat').onclick = () => ui.openChat(id)
-  $('detailDispatch').disabled = document.body.classList.contains('lan')
-  if ($('detailDispatch').disabled) $('detailDispatch').title = '局域网只读，请在运行服务的电脑上操作'
+  $('detailDispatch').disabled = document.body.classList.contains('lan') || latestState?.stale?.active
+  if ($('detailDispatch').disabled) $('detailDispatch').title = latestState?.stale?.active ? 'Paperclip 暂不可用' : '局域网只读，请在运行服务的电脑上操作'
   $('detailDispatch').onclick = () => ui.openDispatch(id)
   const ob = $('detailOpen')
   if (ob) ob.onclick = () => ui.openIssue(a.task.issueId, a.task.status === 'in_review' ? 'review' : 'view')

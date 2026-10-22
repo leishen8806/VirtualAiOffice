@@ -2,6 +2,7 @@ import {
   HIDDEN_LANDMARKS,
   collectLabelCandidates,
   displayNameLines,
+  drawPlaceBadge,
   fitView,
   hitTest,
   khanNameMeta,
@@ -10,6 +11,7 @@ import {
   loadMapWithFallback,
   mapBounds,
   nextLabelFrame,
+  PLACE_LANDMARK_IDS,
   resolveLabelPlacement,
   safeReadLabelMode,
   safeWriteLabelMode,
@@ -18,6 +20,7 @@ import {
   worldToScreen,
   zoomAt,
 } from './town-map-core.js'
+import { placeNavigation } from './place-bar.js'
 
 const canvas = document.getElementById('townMap')
 const ctx = canvas.getContext('2d')
@@ -36,28 +39,51 @@ const perfEl = document.getElementById('perf')
 const perfMode = new URLSearchParams(location.search).get('perf') === '1'
 const fallbackEl = document.getElementById('mapFallback')
 const mapErrorEl = document.getElementById('mapError')
+const placeTooltipEl = document.getElementById('placeTooltip')
 const zoomStatusEl = document.getElementById('zoomStatus')
 const modeButtons = [...document.querySelectorAll('[data-label-mode]')]
 const darkQuery = matchMedia('(prefers-color-scheme: dark)')
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
-const OFFICE = { id: 'office-zixu-workshop', label: '智序工场', point: [2923.049448, -1807.793269] }
+const PLACE_IDS = PLACE_LANDMARK_IDS
 const KHAN_DARK = ['#1d4752', '#513d67', '#25506c', '#614638', '#365746', '#59456d', '#31535e', '#72563b', '#2a5261', '#60425f', '#3d654e', '#6a513b', '#334f71', '#6c4653']
 const KHAN_LIGHT = ['#c6ded9', '#dccfea', '#c9dceb', '#ead8ca', '#c9ddd0', '#ddd2eb', '#cadde1', '#e7d7c4', '#c5dce1', '#e0d0e1', '#d0e1cb', '#e6dbc5', '#cbd5ec', '#e5d0d7']
 const ROAD_WIDTHS = Object.freeze({ motorway: 4.8, trunk: 3.8, primary: 2.8, secondary: 1.8 })
 
 let data = null
+let places = []
 let bounds = null
 let view = null
 let cssWidth = 1
 let cssHeight = 1
 let dpr = 1
 let selected = null
+let hoveredPlaceId = ''
 let labelMode = safeReadLabelMode()
 let staticDirty = true
 let scheduled = false
 let labelAlphaState = new Map()
 const pointers = new Map()
 const frameTimes = []
+const PLACE_SUMMARY = Object.freeze({
+  'office-zixu-workshop': '办公室 · AI 团队指挥中心',
+  'dr-logistics-campus': '仓配地点 · 仓配调度中心',
+})
+const PLACE_RING = Object.freeze({
+  'office-zixu-workshop': '#9a6b24',
+  'dr-logistics-campus': '#e8832a',
+})
+const placeLogo = new Image()
+let placeLogoState = 'loading'
+placeLogo.decoding = 'async'
+placeLogo.addEventListener('load', () => {
+  placeLogoState = 'ready'
+  invalidate(false)
+}, { once: true })
+placeLogo.addEventListener('error', () => {
+  placeLogoState = 'failed'
+  invalidate(false)
+}, { once: true })
+placeLogo.src = '/assets/logo.png'
 
 const theme = () => darkQuery.matches ? {
   bg: '#101922',
@@ -179,32 +205,22 @@ function drawStatic() {
   staticDirty = false
 }
 
-function drawOffice(g, c) {
-  const point = screen(OFFICE.point)
-  g.save()
-  g.translate(point.x, point.y)
-  g.strokeStyle = c.gold
-  g.fillStyle = c.gold
-  g.lineWidth = 2
-  g.beginPath()
-  g.arc(0, 0, 10, 0, Math.PI * 2)
-  g.stroke()
-  g.beginPath()
-  g.arc(0, 0, 4, 0, Math.PI * 2)
-  g.fill()
-  g.beginPath()
-  g.moveTo(0, -16)
-  g.lineTo(5, -7)
-  g.lineTo(-5, -7)
-  g.closePath()
-  g.fill()
-  g.font = '700 13px "Segoe UI",sans-serif'
-  g.textAlign = 'left'
-  g.fillText('智序工场', 15, -2)
-  g.font = '10px "Segoe UI",sans-serif'
-  g.fillStyle = c.muted
-  g.fillText('示意位置', 15, 12)
-  g.restore()
+function drawPlaces(g, c) {
+  for (const place of places) {
+    const point = screen(place.point)
+    const color = PLACE_RING[place.id] || c.gold
+    const active = hoveredPlaceId === place.id || selected?.item?.id === place.id
+    g.save()
+    g.translate(point.x, point.y)
+    drawPlaceBadge(g, {
+      scale: view.scale,
+      color,
+      active,
+      logo: placeLogo,
+      logoReady: placeLogoState === 'ready',
+    })
+    g.restore()
+  }
 }
 
 function drawLandmarks(g, c) {
@@ -212,6 +228,7 @@ function drawLandmarks(g, c) {
   g.strokeStyle = c.outline
   g.lineWidth = 2
   for (const landmark of data.layers.landmarks) {
+    if (PLACE_IDS.includes(landmark.id)) continue
     if (HIDDEN_LANDMARKS.includes(landmark.name)) continue
     if (view.scale < 1.2 && landmark.name !== 'Independence Monument') continue
     const point = screen(landmark.point)
@@ -225,7 +242,7 @@ function drawLandmarks(g, c) {
 
 function labelFont(kind, index) {
   if (kind === 'khan') return index === 0 ? '700 12px "Segoe UI",sans-serif' : '11px "Segoe UI",sans-serif'
-  if (kind === 'office') return '700 12px "Segoe UI",sans-serif'
+  if (kind === 'office' || kind === 'place') return '700 12px "Segoe UI",sans-serif'
   return index === 0 ? '11px "Segoe UI",sans-serif' : '10px "Segoe UI",sans-serif'
 }
 
@@ -238,21 +255,30 @@ function measureLabel(text, kind, index) {
 }
 
 function drawLabels(g, c) {
-  const layout = resolveLabelPlacement(collectLabelCandidates({ data, view, width: cssWidth, height: cssHeight, mode: labelMode, office: OFFICE }), measureLabel)
+  const layout = resolveLabelPlacement(collectLabelCandidates({ data, view, width: cssWidth, height: cssHeight, mode: labelMode, places }), measureLabel)
   const frame = nextLabelFrame(layout, labelAlphaState, reducedMotion.matches)
   labelAlphaState = frame.alphaState
   g.textBaseline = 'top'
   for (const label of frame.draw.filter((item) => item.x + item.w >= 0 && item.y + item.h >= 0 && item.x <= cssWidth && item.y <= cssHeight)) {
     g.save()
     g.globalAlpha = label.alpha
+    if (label.kind === 'place') {
+      g.fillStyle = 'rgba(255, 252, 245, 0.94)'
+      g.strokeStyle = PLACE_RING[label.item?.id] || '#9a6b24'
+      g.lineWidth = 1
+      g.beginPath()
+      g.roundRect(label.x, label.y, label.w, label.h, 7)
+      g.fill()
+      g.stroke()
+    }
     g.strokeStyle = c.outline
     g.lineJoin = 'round'
     g.lineWidth = 4
     let y = label.y + 3
     for (let i = 0; i < label.lines.length; i++) {
       g.font = labelFont(label.kind, i)
-      g.fillStyle = label.kind === 'khan' || label.kind === 'office' ? c.text : c.muted
-      g.strokeText(label.lines[i], label.x + label.paddingX, y)
+      g.fillStyle = label.kind === 'place' ? '#20343b' : label.kind === 'khan' || label.kind === 'office' ? c.text : c.muted
+      if (label.kind !== 'place') g.strokeText(label.lines[i], label.x + label.paddingX, y)
       g.fillText(label.lines[i], label.x + label.paddingX, y)
       y += label.lineHeight
     }
@@ -263,6 +289,7 @@ function drawLabels(g, c) {
 
 function drawSelection(g, c) {
   if (!selected) return
+  if (PLACE_IDS.includes(selected.item?.id)) return
   g.strokeStyle = c.gold
   g.fillStyle = c.gold
   g.lineWidth = 3
@@ -290,7 +317,7 @@ function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.drawImage(staticCanvas, 0, 0)
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  drawOffice(ctx, c)
+  drawPlaces(ctx, c)
   drawLandmarks(ctx, c)
   const animatingLabels = drawLabels(ctx, c)
   drawSelection(ctx, c)
@@ -386,7 +413,50 @@ function setDetail(hit) {
 
 function selectAt(clientX, clientY) {
   const rect = canvas.getBoundingClientRect()
-  setDetail(hitTest({ x: clientX - rect.left, y: clientY - rect.top }, data, view, cssWidth, cssHeight))
+  const hit = hitTest({ x: clientX - rect.left, y: clientY - rect.top }, data, view, cssWidth, cssHeight)
+  setDetail(hit)
+  return hit
+}
+
+function hidePlaceTooltip() {
+  placeTooltipEl.hidden = true
+  document.body.dataset.placeHover = 'false'
+  if (hoveredPlaceId) {
+    hoveredPlaceId = ''
+    invalidate(false)
+  }
+}
+
+function updatePlaceTooltip(event) {
+  if (!data || !view || pointers.size) {
+    hidePlaceTooltip()
+    return
+  }
+  const rect = canvas.getBoundingClientRect()
+  const hit = hitTest({ x: event.clientX - rect.left, y: event.clientY - rect.top }, data, view, cssWidth, cssHeight)
+  const summary = hit?.kind === 'landmark' ? PLACE_SUMMARY[hit.item.id] : ''
+  if (!summary) {
+    hidePlaceTooltip()
+    return
+  }
+  if (hoveredPlaceId !== hit.item.id) {
+    hoveredPlaceId = hit.item.id
+    invalidate(false)
+  }
+  placeTooltipEl.textContent = `${hit.item.name}\n${summary}`
+  placeTooltipEl.style.left = `${Math.max(12, Math.min(cssWidth - 292, event.clientX + 14))}px`
+  placeTooltipEl.style.top = `${Math.max(12, Math.min(cssHeight - 72, event.clientY + 14))}px`
+  placeTooltipEl.hidden = false
+  document.body.dataset.placeHover = 'true'
+}
+
+function navigateToPlace(item) {
+  const target = placeNavigation(item.id)
+  document.body.dataset.placeTransition = 'true'
+  placeTooltipEl.textContent = `正在进入${target.name}…`
+  placeTooltipEl.hidden = false
+  const wait = reducedMotion.matches ? 0 : 160
+  setTimeout(() => location.assign(target.placeHref), wait)
 }
 
 canvas.addEventListener('wheel', (event) => {
@@ -428,13 +498,18 @@ canvas.addEventListener('pointermove', (event) => {
     invalidate(true)
   }
 })
+canvas.addEventListener('pointermove', updatePlaceTooltip)
+canvas.addEventListener('pointerleave', hidePlaceTooltip)
 
 function pointerEnd(event) {
   const pointer = pointers.get(event.pointerId)
   pointers.delete(event.pointerId)
   if (pointers.size < 2) delete pointers.pinch
   if (!pointers.size) canvas.classList.remove('dragging')
-  if (!pointers.size && pointer && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) < 5) selectAt(event.clientX, event.clientY)
+  if (!pointers.size && pointer && Math.hypot(event.clientX - pointer.startX, event.clientY - pointer.startY) < 5) {
+    const hit = selectAt(event.clientX, event.clientY)
+    if (hit?.kind === 'landmark' && PLACE_IDS.includes(hit.item.id)) navigateToPlace(hit.item)
+  }
 }
 
 canvas.addEventListener('pointerup', pointerEnd)
@@ -474,6 +549,7 @@ try {
   })
   if (!validateMapData(loaded.data)) throw new Error('地图数据校验失败')
   data = loaded.data
+  places = data.layers.landmarks.filter((item) => PLACE_IDS.includes(item.id))
   fallbackEl.hidden = !loaded.usedFallback
   bounds = mapBounds(data.layers.khans)
   resize()

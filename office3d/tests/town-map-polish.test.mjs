@@ -10,11 +10,14 @@ import {
   LANDMARK_TYPE_TEXT,
   collectLabelCandidates,
   displayNameLines,
+  drawPlaceBadge,
   fitView,
+  hitTest,
   khanNameMeta,
   landmarkNameMeta,
   loadMapWithFallback,
   mapBounds,
+  placeMarkerMetrics,
   resolveLabelPlacement,
   typeText,
   worldToScreen,
@@ -22,6 +25,10 @@ import {
 
 const root = path.resolve(import.meta.dirname, '..')
 const OFFICE = { id: 'office-fictional', label: '智序工场', point: [2614, -1468] }
+const PLACES = [
+  { id: 'office-zixu-workshop', name: '智序工场·办公室', point: [2923, -1808] },
+  { id: 'dr-logistics-campus', name: 'DR 仓配服务中心', point: [7364, -4012] },
+]
 
 function overlap(a, b, gap = 4) {
   return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap
@@ -99,6 +106,11 @@ test('label tiers, priority and collision handling follow M1-C rules', () => {
   const full = collectLabelCandidates({ data: mapData, view: baseView, width: 1280, height: 900, mode: 'zh', office: OFFICE })
   assert.equal(full.some((item) => item.kind.startsWith('landmark')), false)
   assert.equal(full.filter((item) => item.kind === 'khan').length, 14)
+  const withPlaces = collectLabelCandidates({ data: mapData, view: baseView, width: 1280, height: 900, mode: 'zh', places: PLACES })
+  assert.deepEqual(withPlaces.filter((item) => item.kind === 'place').map((item) => item.item.id), [
+    'office-zixu-workshop',
+    'dr-logistics-campus',
+  ])
 
   const majorView = { ...baseView, scale: 1.35 }
   const major = collectLabelCandidates({ data: mapData, view: majorView, width: 1280, height: 900, mode: 'zh', office: OFFICE })
@@ -122,10 +134,81 @@ test('label tiers, priority and collision handling follow M1-C rules', () => {
   for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) assert.equal(overlap(placed[i], placed[j]), false)
 })
 
+test('place badges scale, fit the full logo and keep a 32px hit radius', () => {
+  const small = placeMarkerMetrics(0.35, 979, 544)
+  const normal = placeMarkerMetrics(1, 979, 544)
+  const large = placeMarkerMetrics(3, 979, 544)
+  assert.equal(small.diameter, 28)
+  assert.ok(normal.diameter >= 28 && normal.diameter <= 44)
+  assert.equal(large.diameter, 44)
+  assert.ok([small, normal, large].every((item) => item.hitRadius >= 32))
+  assert.ok(Math.abs(large.logoWidth / large.logoHeight - 979 / 544) < 1e-9)
+  assert.ok(large.logoWidth <= large.diameter * 0.72)
+  assert.ok(large.logoHeight <= large.diameter * 0.55)
+
+  const data = structuredClone(mapData)
+  data.layers.landmarks.push(...PLACES)
+  const view = fitView(mapBounds(data.layers.khans), 1280, 900)
+  const center = worldToScreen({ x: PLACES[0].point[0], y: PLACES[0].point[1] }, view, 1280, 900)
+  assert.equal(hitTest({ x: center.x + 31, y: center.y }, data, view, 1280, 900)?.item.id, PLACES[0].id)
+  assert.notEqual(hitTest({ x: center.x + 33, y: center.y }, data, view, 1280, 900)?.item?.id, PLACES[0].id)
+})
+
+test('place badge draws the logo once and falls back to the existing ring marker', () => {
+  const calls = []
+  const context = new Proxy({}, {
+    get(target, key) {
+      if (key in target) return target[key]
+      target[key] = (...args) => calls.push([key, ...args])
+      return target[key]
+    },
+    set(target, key, value) {
+      calls.push([key, value])
+      target[key] = value
+      return true
+    },
+  })
+  const logo = { naturalWidth: 979, naturalHeight: 544 }
+  const rendered = drawPlaceBadge(context, { scale: 3, color: '#e8832a', active: true, logo, logoReady: true })
+  assert.equal(rendered.usedLogo, true)
+  assert.equal(calls.filter(([name]) => name === 'drawImage').length, 1)
+  assert.ok(calls.some(([name, value]) => name === 'lineWidth' && value === 3.5))
+
+  calls.length = 0
+  const fallback = drawPlaceBadge(context, { scale: 1, color: '#9a6b24', logo, logoReady: false })
+  assert.equal(fallback.usedLogo, false)
+  assert.equal(calls.some(([name]) => name === 'drawImage'), false)
+  assert.ok(calls.some(([name]) => name === 'moveTo'))
+})
+
+test('both place labels survive congestion and stay named in every label mode', () => {
+  for (const mode of ['zh', 'en', 'km']) {
+    const labels = collectLabelCandidates({
+      data: mapData,
+      view: fitView(mapBounds(mapData.layers.khans), 1280, 900),
+      width: 1280,
+      height: 900,
+      mode,
+      places: PLACES,
+    }).filter((item) => item.kind === 'place')
+    assert.deepEqual(labels.map((item) => item.lines[0]), ['智序工场·办公室', 'DR 仓配服务中心'])
+  }
+  const crowded = resolveLabelPlacement([
+    { key: 'place:office', kind: 'place', lines: ['智序工场·办公室'], anchor: { x: 100, y: 100 }, markerRadius: 20, alpha: 1 },
+    { key: 'place:dr', kind: 'place', lines: ['DR 仓配服务中心'], anchor: { x: 100, y: 100 }, markerRadius: 20, alpha: 1 },
+    { key: 'khan:x', kind: 'khan', lines: ['区域'], anchor: { x: 100, y: 100 }, alpha: 1 },
+    { key: 'landmark:x', kind: 'landmark-major', lines: ['地标'], anchor: { x: 100, y: 100 }, alpha: 1 },
+  ], () => 80)
+  assert.deepEqual(crowded.visible.filter((item) => item.kind === 'place').map((item) => item.key), ['place:office', 'place:dr'])
+  assert.deepEqual(crowded.hidden.map((item) => item.key).sort(), ['khan:x', 'landmark:x'])
+})
+
 test('landmark type translations cover every type present in the data', () => {
   const types = [...new Set(mapData.layers.landmarks.map((item) => item.type))].sort()
-  assert.deepEqual(types, Object.keys(LANDMARK_TYPE_TEXT).sort())
+  assert.ok(types.every((type) => Object.hasOwn(LANDMARK_TYPE_TEXT, type)))
   for (const type of types) assert.notEqual(typeText(type), '地标')
+  assert.equal(typeText('office'), '办公地点')
+  assert.equal(typeText('logistics-center'), '仓配地点')
 })
 
 test('static checks keep the map page offline, safe and within size budget', () => {
@@ -137,7 +220,7 @@ test('static checks keep the map page offline, safe and within size budget', () 
   const fetchMatches = js.match(/\bfetch\s*\(/g) || []
 
   for (const [name, text] of [['town.js', js], ['town-map-core.js', core], ['town-names.js', names]]) {
-    for (const bad of [/innerHTML/, /\beval\s*\(/, /new Function/, /document\.write/, /XMLHttpRequest/, /WebSocket/]) assert.doesNotMatch(text, bad, `${name} ${bad}`)
+    for (const bad of [/innerHTML/, /\beval\s*\(/, /new Function/, /document\.write/, /XMLHttpRequest/, /WebSocket/, /Math\.random/, /Date\.now/]) assert.doesNotMatch(text, bad, `${name} ${bad}`)
   }
   assert.equal(fetchMatches.length, 1)
   assert.match(js, /fetchImpl:\s*\(url\)\s*=>\s*fetch\(url\)/)
@@ -146,6 +229,8 @@ test('static checks keep the map page offline, safe and within size budget', () 
   assert.match(html, /https:\/\/www\.openstreetmap\.org\/copyright/)
   assert.match(html, /rel="noopener noreferrer"/)
   assert.doesNotMatch(css, /@import|url\(\s*['"]?https?:/i)
+  assert.equal((js.match(/new Image\(\)/g) || []).length, 1)
+  assert.equal((js.match(/placeLogo\.src = '\/assets\/logo\.png'/g) || []).length, 1)
   const total = ['town.html', 'town.css', 'town.js', 'town-map-core.js', 'town-map-data.js', 'town-names.js'].reduce((sum, file) => sum + fs.statSync(path.join(root, file)).size, 0)
   assert.ok(total <= 2 * 1024 * 1024, total)
 })

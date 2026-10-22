@@ -83,7 +83,7 @@ export function buildOfficeShellV2({ THREE, scene, layout, materials, collision,
   const atlas = low ? null : labelAtlas(canvasTex, labelParts)
   const opaque = new THREE.MeshStandardMaterial({ color: 0xffffff, map: atlas?.texture || null, roughness: THEME.wallRoughness, metalness: .02 })
   if (atlas) opaque.onBeforeCompile = (shader) => {
-    shader.vertexShader = `attribute vec2 instanceAtlas; varying vec2 vOfficeAtlasUv;\n${shader.vertexShader}`.replace('#include <uv_vertex>', '#include <uv_vertex>\nvOfficeAtlasUv = vec2(vMapUv.x, vMapUv.y * instanceAtlas.x + instanceAtlas.y);')
+    shader.vertexShader = `attribute vec2 instanceAtlas; varying vec2 vOfficeAtlasUv;\n${shader.vertexShader}`.replace('#include <uv_vertex>', '#include <uv_vertex>\nvOfficeAtlasUv = vec2(vMapUv.x, (1.0 - vMapUv.y) * instanceAtlas.x + instanceAtlas.y);')
     shader.fragmentShader = `varying vec2 vOfficeAtlasUv;\n${shader.fragmentShader}`.replace('#include <map_fragment>', '#ifdef USE_MAP\n\tvec4 sampledDiffuseColor = texture2D( map, vOfficeAtlasUv );\n\tdiffuseColor *= sampledDiffuseColor;\n#endif')
   }
   const glass = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: THEME.glassOpacity, roughness: THEME.glassRoughness, depthWrite: false })

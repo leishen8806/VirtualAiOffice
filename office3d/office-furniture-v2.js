@@ -4,6 +4,25 @@ import { LAYOUT_V1 } from './office-layout.js'
 
 const bounds = (x, z, w, d) => ({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 })
 
+// computerScreen.glb 的 metal 四边面实测值；显示面原始法线向座椅侧并后仰 8°。
+export const MONITOR_GLASS_SOURCE = Object.freeze({ center: Object.freeze([.19634400494396687, .1712790373712778, -.05207117833197117]), normal: Object.freeze([0, .13917310535907745, .9902680516242981]), width: .379136648029089, height: .2336606421593705 })
+const MONITOR_MODEL = Object.freeze({ centerX: .1963440030813217, centerZ: -.05200199782848358, width: .39268800616264343, height: .29428520798683167, depth: .10400399565696716 })
+
+export function monitorScreenFit({ x, y, z, width = .66, height = .46, depth = .16, yaw = 0 }) {
+  const sx = width / MONITOR_MODEL.width, sy = height / MONITOR_MODEL.height, sz = depth / MONITOR_MODEL.depth
+  const ny0 = MONITOR_GLASS_SOURCE.normal[1] / sy, nz0 = MONITOR_GLASS_SOURCE.normal[2] / sz, nl = Math.hypot(ny0, nz0)
+  const ny = ny0 / nl, nz = nz0 / nl, sin = Math.sin(yaw), cos = Math.cos(yaw), lx = (MONITOR_GLASS_SOURCE.center[0] - MONITOR_MODEL.centerX) * sx, lz = (MONITOR_GLASS_SOURCE.center[2] - MONITOR_MODEL.centerZ) * sz
+  const normal = [sin * nz, ny, cos * nz], glassCenter = { x: x + cos * lx + sin * lz, y: y + MONITOR_GLASS_SOURCE.center[1] * sy, z: z - sin * lx + cos * lz }
+  const glassWidth = MONITOR_GLASS_SOURCE.width * sx, glassHeight = MONITOR_GLASS_SOURCE.height * Math.hypot(MONITOR_GLASS_SOURCE.normal[2] * sy, MONITOR_GLASS_SOURCE.normal[1] * sz)
+  return { center: { x: glassCenter.x + normal[0] * .0015, y: glassCenter.y + normal[1] * .0015, z: glassCenter.z + normal[2] * .0015 }, glassCenter, normal, glassWidth, glassHeight, width: glassWidth - .012, height: glassHeight - .012, yaw, pitch: -Math.asin(ny), offset: .0015 }
+}
+
+export function workstationDesktop(seat) {
+  const yaw = seat.yaw || 0, point = (dx, dz) => ({ x: seat.x + Math.cos(yaw) * dx + Math.sin(yaw) * dz, z: seat.z - Math.sin(yaw) * dx + Math.cos(yaw) * dz })
+  const monitor = point(0, -.17), keyboard = point(-.12, .15), mouse = point(.42, .15)
+  return { yaw, monitor, keyboard, mouse, fit: monitorScreenFit({ ...monitor, y: .76, yaw }) }
+}
+
 export function officeFurnitureV2Spec(layout) {
   const workstations = Object.entries(layout.seats).map(([name, [region, x, z]]) => ({
     name, region, x, z, desk: bounds(x, z, 1.4, .7),
@@ -77,24 +96,25 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
     bake(mesh); mesh.geometry.dispose(); mesh.material.dispose()
   }
   function chair(seat, name = 'chairDesk') { return asset(name, seat.x, seat.z, .62, 1.04, .6, 0, seat.yaw + Math.PI, true) }
-  function screen(x, y, z, w, h, title = '', yaw = 0) {
+  function screen(x, y, z, w, h, title = '', yaw = 0, pitch = 0) {
     const slot = { x: screenSlots.length % 8 * 256, y: Math.floor(screenSlots.length / 8) * 144 }
     const scr = makeScreenTexture(); scr.tex.dispose()
     scr.tex = { set needsUpdate(value) { if (value) { atlasContext.drawImage(scr.ctx.canvas, slot.x, slot.y); atlas.needsUpdate = true } } }
     if (title) { scr.ctx.fillStyle = THEME.nameplate; scr.ctx.fillRect(0, 0, 256, 144); scr.ctx.fillStyle = THEME.nameplateText; scr.ctx.font = '18px sans-serif'; scr.ctx.fillText(title, 12, 42); scr.tex.needsUpdate = true }
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial())
-    mesh.position.set(x, y, z); mesh.rotation.y = yaw; bake(mesh, slot); mesh.geometry.dispose(); mesh.material.dispose()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }))
+    mesh.position.set(x, y, z); mesh.rotation.order = 'YXZ'; mesh.rotation.set(pitch, yaw, 0); bake(mesh, slot); mesh.geometry.dispose(); mesh.material.dispose()
     screenSlots.push(scr)
     return scr
   }
   for (const seat of spec.workstations) {
+    const { yaw, monitor, keyboard, mouse, fit } = workstationDesktop(seat)
     asset('desk', seat.x, seat.z, 1.4, .76, .7)
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(1.4, .76, .7)); proxy.position.set(seat.x, .38, seat.z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'desk')
     const c = chair(seat.chair)
-    asset('computerScreen', seat.x, seat.z - .17, .66, .46, .16, .76)
-    asset('computerKeyboard', seat.x - .12, seat.z + .15, .42, .02, .14, .765)
-    asset('computerMouse', seat.x + .42, seat.z + .15, .06, .025, .09, .765)
-    const scr = screen(seat.x, 1.065, seat.z - .075, .55, .31)
+    asset('computerScreen', monitor.x, monitor.z, .66, .46, .16, .76, yaw)
+    asset('computerKeyboard', keyboard.x, keyboard.z, .42, .02, .14, .765, yaw)
+    asset('computerMouse', mouse.x, mouse.z, .06, .025, .09, .765, yaw)
+    const scr = screen(fit.center.x, fit.center.y, fit.center.z, fit.width, fit.height, '', fit.yaw, fit.pitch)
     // 保留运行层的桌位句柄与徽标，整体可见性由注册根控制。
     const group = new THREE.Group(); group.name = `office2-desk-${seat.name}`; group.userData.dynamic = true; group.position.set(seat.x, 0, seat.z); root.add(group)
     handles.set(`${seat.x},${seat.z}`, { group, scr, chair: c })
@@ -123,7 +143,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d)); proxy.position.set(x, 1.1, z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'officeWall')
     box(x, 2.21, z, w > d ? w : .025, .025, d > w ? d : .025, THEME.trim)
   }
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, map: atlas, roughness: .82, metalness: .02 })
+  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, map: atlas, roughness: .82, metalness: .02, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })
   // 只统一顶点格式与屏幕 atlas；跨部件的合并交给注册口，避免维护第二套合并器。
   geometryParts.forEach(({ geometry, colors, uv }, index) => {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3)); geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))

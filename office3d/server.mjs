@@ -50,7 +50,9 @@ import { createHomeStore } from './town/home-store.mjs'
 import { createHomeRoutes } from './town/home-routes.mjs'
 import { commandViewEnabled, createCommandViewRoutes } from './command-view-routes.mjs'
 import { createCommandLiveWiring } from './command-view-wiring.mjs'
+import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
+import { createLastGoodState, loadStateComponents, createBackgroundHealth } from './state-last-good.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
@@ -166,8 +168,8 @@ const TYPES = {
   '.txt': 'text/plain; charset=utf-8',
 }
 
-async function get(p) {
-  const r = await fetch(PAPERCLIP + p, { signal: AbortSignal.timeout(8000) })
+async function get(p, { signal } = {}) {
+  const r = await fetch(PAPERCLIP + p, { signal: signal || AbortSignal.timeout(8000) })
   if (!r.ok) throw new Error(`${p} -> ${r.status}`)
   return r.json()
 }
@@ -245,6 +247,11 @@ try {
 const HOME_TOKEN = crypto.randomBytes(32).toString('hex')
 const homeStore = createHomeStore({ dir: path.join(HERE, 'town', 'data'), now: Date.now })
 const homeRoutes = createHomeRoutes({ enabled: HOME_ENABLED, ownerId: 'board', token: HOME_TOKEN, store: homeStore })
+let TOWN_NAV_ENABLED = false
+try {
+  TOWN_NAV_ENABLED = townNavEnabled(JSON.parse(fs.readFileSync(path.join(HERE, 'town-nav.json'), 'utf8')))
+} catch {}
+const TOWN_NAV_CLIENT = townNavClientScript(TOWN_NAV_ENABLED)
 let COMMAND_VIEW_ENABLED = false
 let commandViewConfig = {}
 try {
@@ -821,7 +828,8 @@ function voteSessions(agents) {
 
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
-let healthCache = { at: 0, report: null }
+const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
+const backgroundHealth = createBackgroundHealth({ get, company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }) })
 async function refreshProjects() {
   try {
     const p = await get(`/api/companies/${COMPANY}/projects`)
@@ -831,8 +839,11 @@ async function refreshProjects() {
 refreshProjects()
 setInterval(refreshProjects, 5 * 60 * 1000)
 
-async function backlogRows() {
-  if (Date.now() - backlogCache.at < 60 * 1000) return backlogCache.rows
+async function backlogRows(strict = false) {
+  if (Date.now() - backlogCache.at < 60 * 1000) {
+    if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+    return backlogCache.rows
+  }
   try {
     const result = await get(`/api/companies/${COMPANY}/issues?status=backlog`)
     const rows = Array.isArray(result) ? result : result.issues || []
@@ -849,7 +860,7 @@ async function backlogRows() {
         assigneeAgentId: i.assigneeAgentId || null,
       } : {}),
     })) }
-  } catch { backlogCache = { at: Date.now(), rows: backlogCache.rows } }
+  } catch (error) { if (strict) throw error; backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true } }
   return backlogCache.rows
 }
 
@@ -912,31 +923,14 @@ async function schedulerCompletedRows() {
 }
 
 async function healthReport() {
-  if (healthCache.report && Date.now() - healthCache.at < 30 * 1000) return healthCache.report
-  const [agentsRaw, runsRaw] = await Promise.all([
-    get(`/api/companies/${COMPANY}/agents`),
-    get(`/api/companies/${COMPANY}/heartbeat-runs?limit=1000`),
-  ])
-  const agents = Array.isArray(agentsRaw) ? agentsRaw : agentsRaw.agents || []
-  const runs = Array.isArray(runsRaw) ? runsRaw : runsRaw.runs || []
-  const duty = world().duty || {}
-  const report = buildHealth({ now: new Date(), agents, runs, schedule: { days: duty.days } })
-  healthCache = { at: Date.now(), report }
-  return report
+  return backgroundHealth.read()
 }
 
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
-  const [agents, dash, issues, runs, approvals, activity, approvalsAll, backlog] = await Promise.all([
-    get(`/api/companies/${COMPANY}/agents`),
-    get(`/api/companies/${COMPANY}/dashboard`),
-    get(`/api/companies/${COMPANY}/issues?status=todo,in_progress,in_review,blocked`),
-    get(`/api/companies/${COMPANY}/heartbeat-runs?limit=40`),
-    get(`/api/companies/${COMPANY}/approvals?status=pending`),
-    get(`/api/companies/${COMPANY}/activity?limit=500`),
-    get(`/api/companies/${COMPANY}/approvals`),
-    backlogRows(),
-  ])
+  return lastGoodState.run(async () => {
+  const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
+    await loadStateComponents({ get, company: COMPANY, backlog: () => backlogRows(true) })
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -958,7 +952,7 @@ async function state() {
   const waitingAgents = new Set(issueList.filter((i) => ['in_review', 'blocked'].includes(i.status)).map((i) => i.assigneeAgentId))
   const names = readNames()
   const idle = agents.filter((a) => a.status === 'idle' && !liveRun.has(a.id) && !waitingAgents.has(a.id)).map((a) => ({ id: a.id, name: names[a.id] || a.name, title: a.title }))
-  gossip.maybeGenerate({ onDuty: !!(w.duty && w.duty.on), people: idle })
+  if (!gaps.some(gap => gap.source === 'runs')) gossip.maybeGenerate({ onDuty: !!(w.duty && w.duty.on), people: idle })
   stats.ingest({ runs, activity })
   const daily = stats.daily()
   const out = {
@@ -1026,19 +1020,35 @@ async function state() {
     }))
     out.contractView = summarizeContracts(contractTasks, { now: Date.now() })
   }
+  if (gaps.some(gap => gap.source === 'approvalsAll')) out.events = out.events.filter(event => !['submit_to_board', 'board_decision'].includes(event.kind))
   try { ledger.ingest(out.events) } catch (e) { console.log('[ledger] 记账失败：' + String((e && e.message) || e)) } // 账本出错只记日志，不影响 /state
   try { out.ledger = ledger.view() } catch { out.ledger = { enabled: true, date: null, count: 0, capped: false, since: null, firstAt: null, corrupt: 0 } }
   try {
     const h = await healthReport()
     out.healthLevel = { level: h.level, text: h.text }
+    if (h.stale) out.healthLevel.stale = h.stale
   } catch {
     out.healthLevel = { level: 'warn', text: '健康数据暂不可用' }
   }
   out.today = computeToday({ now: out.at, doneLedger: daily.done, assigned: issueList.concat(backlog), waiting: out.waiting, runsToday: daily, projects: projectsCache, duty: out.world.duty })
+  if (gaps.length) {
+    out.gaps = gaps
+    const missing = name => gaps.some(gap => gap.source === name)
+    const unknown = { value: null, reason: 'UPSTREAM_UNAVAILABLE' }
+    if (missing('runs')) out.today.runs = { total: unknown, succeeded: unknown, failed: unknown }
+    if (missing('activity')) {
+      out.today.done = out.today.total = out.today.percent = out.today.comments = out.today.waiting = unknown
+      out.today.decisions = { approved: unknown, rejected: unknown }
+      out.today.byProject = []
+      out.awards = []
+    }
+    if (missing('backlog')) out.today.backlog = unknown
+  }
   acceptance.onState(out.waiting, out.world && out.world.duty && out.world.duty.on)
   telegram.onState(out, { daily: () => stats.daily() }).catch(() => {}) // 通知在后台发，不拖慢页面
   commandLive.capture(out)
   return out
+  })
 }
 
 http
@@ -1077,6 +1087,10 @@ http
       }
       if (wallScope && (req.method !== 'GET' || ((API_PATHS.has(url.pathname) || authRoute) && !['/state', '/wall/data'].includes(url.pathname)))) return json(403, { error: '大屏链接只能看大屏，不能做别的' })
       if (lanUser && ['/chat', '/chat/summary'].includes(url.pathname)) return json(403, { error: '对话内容只允许在运行服务的电脑上查看' })
+      if (url.pathname === '/town-nav-config.js') {
+        if (req.method !== 'GET') return json(405, { error: '不支持' })
+        return res.writeHead(200, { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }).end(TOWN_NAV_CLIENT)
+      }
       if (url.pathname === '/command-view' || url.pathname === '/command-view/scenarios') {
         const input = { method: req.method, path: url.pathname, query: url.search, wallScope, now: Date.now(), principal: !lanUser && !wallAuthed(req) ? 'local_full' : 'restricted' }
         const reply = await commandLive.handle(input) || commandViewRoutes?.handle(input)
@@ -1230,7 +1244,10 @@ http
         return json(200, await issueDetail(id))
       }
       if (url.pathname === '/state') {
-        const st = await state()
+        let st
+        try { st = await state() } catch (error) {
+          return json(503, { error: 'STATE_UNAVAILABLE_NO_SNAPSHOT', reason: 'UPSTREAM_UNAVAILABLE' })
+        }
         st.foyer = foyer.summary() // S1-2：前厅摘要（无哈希、无逐设备信息、无 IP / UA）
         if (lanUser) { st.lan = true; if (!LAN.write) st.actToken = '' } // 局域网设备：不下发操作令牌
         if (lanUser && !LAN.write && st.memory) st.memory = redactState({ memory: st.memory }).memory

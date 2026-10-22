@@ -7,6 +7,7 @@ export const HIDDEN_LANDMARKS = Object.freeze(['Baby Mckie Shop', '(stupa)'])
 export const LABEL_MODE_KEY = 'town.labelMode'
 export const LABEL_FADE_RATE = 0.22
 export const LABEL_GAP = 4
+export const PLACE_LANDMARK_IDS = Object.freeze(['office-zixu-workshop', 'dr-logistics-campus'])
 export const MAJOR_LANDMARKS = Object.freeze([
   'Independence Monument',
   'Royal Palace',
@@ -29,6 +30,8 @@ export const LANDMARK_TYPE_TEXT = Object.freeze({
   'shop:mall': '商场',
   'tourism:attraction': '景点',
   'tourism:museum': '博物馆',
+  office: '办公地点',
+  'logistics-center': '仓配地点',
 })
 
 const TEXT_CONTROL_RE = /[\u0000-\u001f\u007f\u2028\u2029<>]/g
@@ -41,6 +44,59 @@ const smooth = (a, b, value) => {
 }
 
 export const clampScale = (scale) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
+
+export function placeMarkerMetrics(scale, imageWidth = 0, imageHeight = 0) {
+  const diameter = 28 + smooth(0.8, 3, clampScale(scale)) * 16
+  const maxLogoWidth = diameter * 0.72
+  const maxLogoHeight = diameter * 0.55
+  const ratio = imageWidth > 0 && imageHeight > 0 ? imageWidth / imageHeight : 1
+  const logoWidth = Math.min(maxLogoWidth, maxLogoHeight * ratio)
+  const logoHeight = logoWidth / ratio
+  return Object.freeze({
+    diameter,
+    radius: diameter / 2,
+    hitRadius: Math.max(32, diameter / 2),
+    logoWidth,
+    logoHeight,
+  })
+}
+
+export function drawPlaceBadge(context, {
+  scale,
+  color,
+  active = false,
+  logo = null,
+  logoReady = false,
+} = {}) {
+  const metrics = placeMarkerMetrics(scale, logo?.naturalWidth, logo?.naturalHeight)
+  context.strokeStyle = color
+  context.lineWidth = active ? 3.5 : 2
+  context.beginPath()
+  context.arc(0, 0, metrics.radius, 0, Math.PI * 2)
+  context.fillStyle = '#fbf8f0'
+  context.fill()
+  context.stroke()
+  if (logoReady && logo?.naturalWidth > 0 && logo?.naturalHeight > 0) {
+    context.save()
+    context.beginPath()
+    context.arc(0, 0, Math.max(1, metrics.radius - 3), 0, Math.PI * 2)
+    context.clip()
+    context.drawImage(logo, -metrics.logoWidth / 2, -metrics.logoHeight / 2, metrics.logoWidth, metrics.logoHeight)
+    context.restore()
+    return { ...metrics, usedLogo: true }
+  }
+  context.fillStyle = color
+  context.beginPath()
+  context.arc(0, 0, 4, 0, Math.PI * 2)
+  context.fill()
+  context.beginPath()
+  context.moveTo(0, -metrics.radius - 6)
+  context.lineTo(5, -metrics.radius + 3)
+  context.lineTo(-5, -metrics.radius + 3)
+  context.closePath()
+  context.fill()
+  return { ...metrics, usedLogo: false }
+}
 
 export function sanitizeText(value, limit = 80) {
   if (typeof value !== 'string') return ''
@@ -158,7 +214,8 @@ export function hitTest(screenPoint, data, view, width, height, landmarkRadius =
   for (let i = visible.length - 1; i >= 0; i--) {
     const landmark = visible[i]
     const point = worldToScreen({ x: landmark.point[0], y: landmark.point[1] }, view, width, height)
-    if (Math.hypot(screenPoint.x - point.x, screenPoint.y - point.y) <= landmarkRadius) return { kind: 'landmark', item: landmark }
+    const radius = PLACE_LANDMARK_IDS.includes(landmark.id) ? placeMarkerMetrics(view.scale).hitRadius : landmarkRadius
+    if (Math.hypot(screenPoint.x - point.x, screenPoint.y - point.y) <= radius) return { kind: 'landmark', item: landmark }
   }
   const world = screenToWorld(screenPoint, view, width, height)
   for (let i = data.layers.khans.length - 1; i >= 0; i--) {
@@ -208,6 +265,7 @@ export function displayNameLines(meta, mode = DEFAULT_LABEL_MODE) {
 }
 
 export function labelPriority(candidate) {
+  if (candidate.kind === 'place') return 5
   if (candidate.kind === 'khan') return 4
   if (candidate.kind === 'office') return 3
   if (candidate.kind === 'landmark-major') return 2
@@ -218,7 +276,7 @@ export function isMajorLandmark(name) {
   return MAJOR_LANDMARKS.includes(name)
 }
 
-export function collectLabelCandidates({ data, view, width, height, mode, office }) {
+export function collectLabelCandidates({ data, view, width, height, mode, office, places = [] }) {
   const candidates = []
   for (const khan of data.layers.khans) {
     const point = worldToScreen({ x: khan.center[0], y: khan.center[1] }, view, width, height)
@@ -242,7 +300,21 @@ export function collectLabelCandidates({ data, view, width, height, mode, office
       item: office,
     })
   }
+  for (const place of places) {
+    if (!place?.point) continue
+    const point = worldToScreen({ x: place.point[0], y: place.point[1] }, view, width, height)
+    candidates.push({
+      key: `place:${place.id || place.name}`,
+      kind: 'place',
+      lines: [sanitizeText(place.name || place.label || '地点')],
+      anchor: point,
+      markerRadius: placeMarkerMetrics(view.scale).radius,
+      alpha: 1,
+      item: place,
+    })
+  }
   for (const landmark of data.layers.landmarks) {
+    if (places.some((place) => place.id === landmark.id)) continue
     if (HIDDEN_LANDMARKS.includes(landmark.name)) continue
     const major = isMajorLandmark(landmark.name)
     const alpha = major ? smooth(1.2, 1.5, view.scale) : smooth(1.82, 2.18, view.scale)
@@ -261,13 +333,13 @@ export function collectLabelCandidates({ data, view, width, height, mode, office
 }
 
 export function measureLabelBox(candidate, measureText) {
-  const lineHeight = candidate.kind === 'khan' ? 15 : candidate.kind === 'office' ? 14 : 13
-  const paddingX = candidate.kind === 'khan' ? 7 : 6
+  const lineHeight = candidate.kind === 'khan' ? 15 : candidate.kind === 'office' || candidate.kind === 'place' ? 14 : 13
+  const paddingX = candidate.kind === 'khan' ? 7 : candidate.kind === 'place' ? 8 : 6
   const widths = candidate.lines.map((line, index) => measureText(line, candidate.kind, index))
   const boxWidth = Math.max(...widths, 18) + paddingX * 2
   const boxHeight = candidate.lines.length * lineHeight + 6
   const centered = candidate.kind === 'khan'
-  const x = centered ? candidate.anchor.x - boxWidth / 2 : candidate.anchor.x + 9
+  const x = centered ? candidate.anchor.x - boxWidth / 2 : candidate.anchor.x + (candidate.kind === 'place' ? candidate.markerRadius + 6 : 9)
   const y = centered ? candidate.anchor.y - boxHeight / 2 : candidate.anchor.y - boxHeight / 2
   return {
     x,
@@ -287,7 +359,7 @@ export function resolveLabelPlacement(candidates, measureText, gap = LABEL_GAP) 
     const box = measureLabelBox(candidate, measureText)
     const label = { ...candidate, ...box, priority: labelPriority(candidate) }
     const overlaps = placed.some((item) => label.x < item.x + item.w + gap && item.x < label.x + label.w + gap && label.y < item.y + item.h + gap && item.y < label.y + label.h + gap)
-    if (overlaps) hidden.push({ ...label, alpha: 0 })
+    if (overlaps && candidate.kind !== 'place') hidden.push({ ...label, alpha: 0 })
     else placed.push(label)
   }
   return { visible: placed, hidden }

@@ -48,10 +48,15 @@ const KIND = {
   task: { icon: '🛠️', label: '', go: '查看' },
 }
 const STATUS = { todo: '待开始', in_progress: '进行中', in_review: '待验收', blocked: '阻塞', done: '已完成', backlog: '待排期', cancelled: '已取消' }
+export function staleView(stale) {
+  const active = stale?.active === true, minutes = Number.isFinite(stale?.ageMs) ? Math.max(0, Math.floor(stale.ageMs / 60000)) : null
+  return { active, text: !active ? '' : stale.reason === 'STALE_DATA' ? `数据已过期 ${minutes === null ? '时间未知' : `${minutes} 分钟`}` : `数据来自 ${minutes === null ? '时间未知' : `${minutes} 分钟前`} · Paperclip 暂不可用` }
+}
 
 export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let token = null
   let state = null
+  let staleKey = ''
   let busy = false
   // T15：验收证据版本核对（只读）：待验收卡片徽标与「版本已变」二次确认用的数据。
   // 页面按需拉一次 /evidence-version（批量），服务端缓存 60 秒；客户端同样 60 秒内不重拉，避免每次轮询都跑 git。
@@ -93,6 +98,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
   let lastResult = null
   async function post(body, errors = {}) {
+    if (staleView(state?.stale).active) { toast('Paperclip 暂不可用', false); return false }
     if (state?.lan) { toast('局域网只读，请在运行服务的电脑上操作', false); return false }
     if (busy) return false
     busy = true
@@ -122,7 +128,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     modal.innerHTML = `<button class="close" data-x>×</button>${html}`
     wrap.classList.add('show')
     modal.querySelector('[data-x]').onclick = close
-    if (state?.lan) modal.querySelectorAll('.actions .btn, #nameSave').forEach((b) => { if (!['mView', 'govHistory'].includes(b.id)) { b.disabled = true; b.title = '局域网只读，请在运行服务的电脑上操作' } })
+    const stale = staleView(state?.stale)
+    if (state?.lan || stale.active) modal.querySelectorAll('.actions .btn, #nameSave').forEach((b) => { if (!['mView', 'govHistory'].includes(b.id)) { b.disabled = true; b.title = stale.active ? 'Paperclip 暂不可用' : '局域网只读，请在运行服务的电脑上操作' } })
   }
   function close() { if (chatPoll) clearTimeout(chatPoll); chatPoll = null; wrap.classList.remove('show'); modal.innerHTML = '' }
   wrap.addEventListener('click', (e) => { if (e.target === wrap) close() })
@@ -1119,6 +1126,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     },
     render(s) {
       state = s
+      const stale = staleView(s.stale)
+      if (stale.text !== staleKey) { staleKey = stale.text; $('staleBanner').textContent = stale.text; $('staleBanner').style.display = stale.active ? '' : 'none' }
       homeEntry.style.display = canShowHomeEntry({ fullAccess: Boolean(s.actToken), lan: Boolean(s.lan), wall: new URLSearchParams(location.search).has('wall') }) ? '' : 'none'
       if ($('commandEntry')) $('commandEntry').hidden = !canShowHomeEntry({ fullAccess: Boolean(s.actToken), lan: Boolean(s.lan), wall: new URLSearchParams(location.search).has('wall') })
       token = s.actToken || token
@@ -1154,8 +1163,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       $('questCount').textContent = n
       $('questCount').classList.toggle('zero', n === 0)
       $('todoChip').classList.toggle('pulse', n > 0)
-      $('dispatchBtn').disabled = !!s.lan
-      $('dispatchBtn').title = s.lan ? '局域网只读，请在运行服务的电脑上操作' : '新建任务，或把待排期的任务派给某位同事'
+      $('dispatchBtn').disabled = !!s.lan || stale.active
+      $('dispatchBtn').title = stale.active ? 'Paperclip 暂不可用' : s.lan ? '局域网只读，请在运行服务的电脑上操作' : '新建任务，或把待排期的任务派给某位同事'
       const tl = $('taskList')
       tl.innerHTML = ''
       // 所有已派发、还没结束的任务（进行中 / 阻塞 / 待开始 / 待验收），点开可以看详情、发评论、取消

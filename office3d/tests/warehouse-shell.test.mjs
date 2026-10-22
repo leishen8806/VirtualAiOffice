@@ -53,7 +53,10 @@ test('warehouse wall decals and ground lines keep a stable depth offset', () => 
 test('app wiring stays minimal and does not add unsafe APIs', async () => {
   const current = await readFile(path.join(root, 'app.js'), 'utf8')
   const backup = await readFile(path.resolve(root, '..', 'office3d-backup-s2-2', 'app.js'), 'utf8')
-  const old = new Set(backup.split(/\r?\n/)), added = current.split(/\r?\n/).filter(line => !old.has(line))
+  const old = new Set(backup.split(/\r?\n/)), allAdded = current.split(/\r?\n/).filter(line => !old.has(line))
+  const h2b = allAdded.filter(line => line.includes("latestState?.stale?.active"))
+  assert.equal(h2b.length, 2, 'H2b 仅允许两行降级态派发禁用接线')
+  const added = allAdded.filter(line => !h2b.includes(line))
   assert.ok(added.length <= 30, `新增 ${added.length} 行`)
-  assert.doesNotMatch(added.join('\n'), /innerHTML|\beval\b|fetch\s*\(|Math\.random|\b(?:buy|price|balance|wallet)\b/i)
+  assert.doesNotMatch(allAdded.join('\n'), /innerHTML|\beval\b|fetch\s*\(|Math\.random|\b(?:buy|price|balance|wallet)\b/i)
 })

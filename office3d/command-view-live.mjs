@@ -228,7 +228,10 @@ export function createLiveSource({ get, projectName = 'KhmerX', rangeDays = 14, 
       ...snap([], captured.health.at, captured.health.complete === true),
       incidents: (captured.health.incidents || []).slice(0, 200).map((row) => ({ agentIds: (row.agentIds || []).filter((agentId) => agents.some((agent) => agent.id === agentId)) })),
     }
-    const output = projectCommandView({ now: new Date(ms).toISOString(), mode: 'live', company, scope: { project: projectId, range: { from, to } }, sources })
+    const projectNow = clock()
+    if (projectNow === null || Date.parse(to) > projectNow) return empty('SOURCE_FAILED')
+    if (!isIso(captured.at)) sources.generatedAt = new Date(projectNow).toISOString()
+    const output = projectCommandView({ now: new Date(projectNow).toISOString(), mode: 'live', company, scope: { project: projectId, range: { from, to } }, sources })
     if (output.ok === false) return empty('SOURCE_FAILED')
     for (const row of output.queue) {
       row.stage = 'pending_verification'

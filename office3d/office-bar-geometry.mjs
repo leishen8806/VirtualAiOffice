@@ -1,1 +1,1 @@
-export { barArcs, barColliders, barGaps, barLounges, barSeats, barSpec, validateBarGeometry } from './office-bar-geometry.js'
+export { LOUNGE_SIT, barArcs, barColliders, barGaps, barLounges, barSeats, barSpec, validateBarGeometry } from './office-bar-geometry.js'

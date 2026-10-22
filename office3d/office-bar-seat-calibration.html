@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>吧岛坐姿校准</title>
+  <script type="importmap">{"imports":{"three":"/vendor/three/three.module.js"}}</script>
+</head>
+<body>
+  <pre id="output">正在加载真实人物与 sit_chair_idle_relaxed_01…</pre>
+  <script type="module">
+    import * as THREE from 'three'
+    import { createPerson, loadExtras, loadPeople } from '/people.js'
+
+    const output = document.getElementById('output')
+    const point = bone => {
+      const value = new THREE.Vector3()
+      bone.getWorldPosition(value)
+      return { x: value.x, y: value.y, z: value.z }
+    }
+    const find = (root, suffix) => {
+      let result = null
+      root.traverse(item => {
+        if (!result && item.isBone && item.name.endsWith(suffix)) result = item
+      })
+      if (!result) throw new Error(`Missing bone: ${suffix}`)
+      return result
+    }
+    const median = values => {
+      const sorted = [...values].sort((a, b) => a - b)
+      return sorted[Math.floor(sorted.length / 2)]
+    }
+    const summarize = values => ({
+      min: Math.min(...values),
+      median: median(values),
+      max: Math.max(...values),
+    })
+    const measure = (people, avatar) => {
+      const gender = people.avatars[avatar].gender
+      const relaxed = people.extras[gender].lounge.find(clip => clip.name.endsWith('sit_chair_idle_relaxed_01'))
+      if (!relaxed) throw new Error(`Missing relaxed clip: ${gender}`)
+      people.extras[gender].lounge = [relaxed]
+      const actor = createPerson(people, avatar)
+      actor.group.position.set(0, 0, 0)
+      actor.group.rotation.y = 0
+      actor.pose.seed = 0
+      actor.pose.sit = 1
+      actor.pose.walk = 0
+      actor.pose.lounge = 1
+      const bones = {
+        hip: find(actor.parts.model, 'Bip01_Pelvis'),
+        kneeL: find(actor.parts.model, 'Bip01_L_Calf'),
+        kneeR: find(actor.parts.model, 'Bip01_R_Calf'),
+        footL: find(actor.parts.model, 'Bip01_L_Foot'),
+        footR: find(actor.parts.model, 'Bip01_R_Foot'),
+        toeL: find(actor.parts.model, 'Bip01_L_Toe0'),
+        toeR: find(actor.parts.model, 'Bip01_R_Toe0'),
+      }
+      for (let time = 0; time < .6; time += 1 / 60) actor.solve(1 / 60)
+      const rows = []
+      const duration = relaxed.duration
+      for (let time = 0; time < duration; time += 1 / 60) {
+        actor.solve(1 / 60)
+        actor.group.updateMatrixWorld(true)
+        const values = Object.fromEntries(Object.entries(bones).map(([key, bone]) => [key, point(bone)]))
+        rows.push({
+          hipY: values.hip.y,
+          kneeZ: Math.max(values.kneeL.z, values.kneeR.z),
+          footZ: Math.max(values.footL.z, values.footR.z, values.toeL.z, values.toeR.z),
+          bones: values,
+        })
+      }
+      return {
+        avatar,
+        gender,
+        clip: relaxed.name,
+        duration,
+        samples: rows.length,
+        hipY: summarize(rows.map(row => row.hipY)),
+        kneeZ: summarize(rows.map(row => row.kneeZ)),
+        footZ: summarize(rows.map(row => row.footZ)),
+        midpoint: rows[Math.floor(rows.length / 2)],
+      }
+    }
+
+    try {
+      const people = await loadPeople()
+      await loadExtras(people)
+      const result = {
+        method: 'people.js loadPeople + loadExtras + createPerson; root=(0,0,0), yaw=0 faces +z; 60Hz full-clip sampling',
+        male: measure(people, 'Male_Adult_01'),
+        female: measure(people, 'Female_Adult_01'),
+      }
+      window.__loungeCalibration = result
+      output.textContent = JSON.stringify(result, null, 2)
+    } catch (error) {
+      window.__loungeCalibrationError = error.stack || error.message
+      output.textContent = window.__loungeCalibrationError
+      throw error
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{
+  "tiers": {
+    "high": {
+      "motion": {
+        "quality": "high",
+        "consumer": {
+          "started": true,
+          "returned": true
+        },
+        "waiting": {
+          "started": true,
+          "arrived": true,
+          "fiveMinutes": true,
+          "returned": true
+        },
+        "cat": {
+          "before": [
+            1.94,
+            0,
+            3.7
+          ],
+          "after": [
+            1.99,
+            0,
+            13.3
+          ],
+          "moved": true,
+          "maxStepDist": 0.025000000000000615,
+          "diagnostics": []
+        }
+      },
+      "errors": []
+    },
+    "medium": {
+      "motion": {
+        "quality": "medium",
+        "consumer": {
+          "started": true,
+          "returned": true
+        },
+        "waiting": {
+          "started": true,
+          "arrived": true,
+          "fiveMinutes": true,
+          "returned": true
+        },
+        "cat": {
+          "before": [
+            1.95,
+            0,
+            3.73
+          ],
+          "after": [
+            1.99,
+            0,
+            13.27
+          ],
+          "moved": true,
+          "maxStepDist": 0.025000000000000234,
+          "diagnostics": []
+        }
+      },
+      "errors": []
+    },
+    "low": {
+      "motion": {
+        "quality": "low",
+        "consumer": {
+          "started": true,
+          "returned": true
+        },
+        "waiting": {
+          "started": true,
+          "arrived": true,
+          "fiveMinutes": true,
+          "returned": true
+        },
+        "cat": {
+          "before": [
+            1.95,
+            0,
+            3.77
+          ],
+          "after": [
+            1.99,
+            0,
+            13.22
+          ],
+          "moved": true,
+          "maxStepDist": 0.025000000000000265,
+          "diagnostics": []
+        }
+      },
+      "errors": []
+    }
+  },
+  "errors": []
+}

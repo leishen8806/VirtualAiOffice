@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { OFFICE_GEO } from './office-geo.mjs'
+import { DR_CAMPUS_GEO, OFFICE_GEO } from './office-geo.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const MAX_BYTES = 400 * 1024
@@ -33,10 +33,10 @@ function sanitizeValue(key, value) {
   return out
 }
 
-function officePoint() {
+function geoPoint(geo) {
   return [
-    (OFFICE_GEO.lon - MAP_ORIGIN.lon) * METERS_PER_DEG_LON,
-    (OFFICE_GEO.lat - MAP_ORIGIN.lat) * METERS_PER_DEG_LAT,
+    (geo.lon - MAP_ORIGIN.lon) * METERS_PER_DEG_LON,
+    (geo.lat - MAP_ORIGIN.lat) * METERS_PER_DEG_LAT,
   ]
 }
 
@@ -50,47 +50,65 @@ function pointInRing(point, ring) {
   return inside
 }
 
-function officeKhan(layers, point) {
+function placeKhan(layers, point) {
   return layers.khans.find((khan) => khan.rings.some((ring) => pointInRing(point, ring)))?.name || '未知'
 }
 
-function addOfficeLandmark(data) {
-  const point = officePoint()
+function placeLandmark(data, { id, geo, type, name, note }) {
+  const point = geoPoint(geo)
+  return {
+    id,
+    name: name ?? geo.name,
+    ...(geo.address ? { address: geo.address } : {}),
+    note: note ?? geo.note,
+    lat: geo.lat,
+    lon: geo.lon,
+    khan: placeKhan(data.layers, point),
+    type,
+    point,
+  }
+}
+
+function addPlaceLandmarks(data) {
   return {
     ...data,
     layers: {
       ...data.layers,
       landmarks: [
         ...data.layers.landmarks,
-        {
+        placeLandmark(data, {
           id: 'office-zixu-workshop',
-          name: OFFICE_GEO.name,
-          address: OFFICE_GEO.address,
-          note: `${OFFICE_GEO.note}；示意位置`,
-          lat: OFFICE_GEO.lat,
-          lon: OFFICE_GEO.lon,
-          khan: officeKhan(data.layers, point),
+          geo: OFFICE_GEO,
           type: 'office',
-          point,
-        },
+          name: '智序工场·办公室',
+          note: `${OFFICE_GEO.note}；示意位置`,
+        }),
+        placeLandmark(data, {
+          id: 'dr-logistics-campus',
+          geo: DR_CAMPUS_GEO,
+          type: 'logistics-center',
+          name: 'DR 仓配服务中心',
+          note: DR_CAMPUS_GEO.note,
+        }),
       ],
     },
   }
 }
 
 function redactOfficeDetails(data) {
+  const placeIds = new Set(['office-zixu-workshop', 'dr-logistics-campus'])
   return {
     ...data,
     layers: {
       ...data.layers,
-      landmarks: data.layers.landmarks.map((item) => item.id === 'office-zixu-workshop'
+      landmarks: data.layers.landmarks.map((item) => placeIds.has(item.id)
         ? {
             ...item,
             address: undefined,
             lat: undefined,
             lon: undefined,
             point: Array.isArray(item.point) ? item.point.map((value) => Math.round(value / 500) * 500) : undefined,
-            note: '示意位置',
+            note: item.id === 'office-zixu-workshop' ? '示意位置' : '粗化位置',
           }
         : item),
     },
@@ -146,7 +164,7 @@ export function loadTownMap({ file = path.join(HERE, 'town-map.json'), log = () 
       throw new TownMapJsonError('地图数据不是合法 JSON')
     }
     validateTownMap(parsed, raw.byteLength)
-    const sourceData = path.resolve(file) === path.join(HERE, 'town-map.json') ? addOfficeLandmark(parsed) : parsed
+    const sourceData = path.resolve(file) === path.join(HERE, 'town-map.json') ? addPlaceLandmarks(parsed) : parsed
     const data = sanitizeValue('', sourceData)
     const body = JSON.stringify(data)
     const etag = strongEtag(body)

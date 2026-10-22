@@ -9,6 +9,9 @@ import { createQueueBoard, createWaitingBoard as legacyWaitingBoard, waitingPlan
 const browser = typeof location !== 'undefined'
 const [legacyWing, legacyPartitions, legacyFun] = browser ? await Promise.all([import('./wing.js'), import('./office-partitions.js'), import('./fun.js')]) : [null, null, null]
 export const OFFICE_LAYOUT = resolveOfficeLayout(browser ? location.search : '')
+const [bar, departments, staff] = !browser || OFFICE_LAYOUT.version === 2 ? await Promise.all([
+  import('./office-bar.js'), import('./display-departments.js'), import('./display-staff.js'),
+]) : []
 export const officeSeats = layout => layout.version === 2 ? Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, layout.seats[name]])) : LEGACY_SEATS
 export const SEATS = officeSeats(OFFICE_LAYOUT)
 const navigation = createOfficeNavigation(OFFICE_LAYOUT)
@@ -41,8 +44,28 @@ export const officeV2Modules = Object.freeze([
     if (!context.get('shell')) throw new Error('外壳不可用')
     return placeOfficeFurnitureV2({ ...context, parent: context.root })
   }],
-  // ['bar', buildOfficeBarV2]：由 O6 登记，不在本卡实现。
-  // ['displayStaff', buildOfficeDisplayStaffV2]：由 O7 登记，不在本卡实现。
+  // navigation 已注册同源的 12 段；模型保留不可见代理，但不重复交给碰撞系统。
+  ['bar', context => {
+    // 模块已自行合批/简化；禁止画质系统把副本搬到办公区根之外。
+    context.root.userData.dynamic = true
+    return bar.buildOfficeBar({ ...context, collision: undefined })
+  }],
+  ['displayDepartments', context => {
+    context.root.userData.dynamic = true
+    return departments.buildDisplayDepartments(context)
+  }],
+  ['displayStaff', context => {
+    const search = context.search ?? (browser ? location.search : '')
+    const params = new URLSearchParams(search)
+    if (params.getAll('display').length !== 1 || params.get('display') !== '1') return {}
+    const value = staff.buildDisplayStaff({ ...context, config: undefined, search })
+    let low = context.quality?.tier === 'low'
+    return { ...value, onFrame() {
+      const nextLow = context.quality?.tier === 'low'
+      if (nextLow !== low) { value.setLow(nextLow); low = nextLow }
+      value.update()
+    } }
+  }],
 ])
 
 export function startOfficeV2(shared) {

@@ -151,3 +151,5 @@ DR 广场高画质 +10 calls 低于 +45 目标和 +60 硬上限；低画质 +1 �
 - 面板字号：`docs/s1-acceptance/visual-capture.json`
 - 运行开关：`docs/s1-acceptance/runtime-state.json`
 - 截图：`docs/s1-acceptance/screenshots/`
+
+> 注：本报告引用的验收截图已按董事会 2026-10-22 规则（验证完成后清除验证截图）删除；数据与结论以文中表格与日志为准。

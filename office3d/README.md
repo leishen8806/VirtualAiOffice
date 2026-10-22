@@ -1213,3 +1213,25 @@ O4b 遗留：25 个桌位句柄归入 furniture mount；句柄保留动态标记
 浏览器真实模型最终复跑：32秒、1323帧，25人完成全部离岗/返回，再完成四人派发、A/B会议、咖啡往返与董事会访问；0超时/放弃/看门狗/墙体穿越。小橘完成董事会、北侧室内、广场和通行环四段。属于浏览器内加速验收，不是真实业务的一整天，也不证明任意角度服装均无穿模。
 
 `app.js` 相对开工备份 +3/-6，净减3行：入口导入行、旧布局数据导入行、`stand: officeStand(home)`；无新增独立模块接线。开工备份、全量日志和逐帧日志在上一级 `office3d-backup-o5/`。没有启停任何服务，没有 Paperclip 写请求；验收拦截和临时动画钩子结束后恢复。O6/O7/O8的视觉施工不属于本卡。
+
+## H2：state 最近成功快照与健康后台刷新
+
+`state-last-good.mjs` 提供单次并发聚合、凭据字段递归剥离、内存快照和 `state-last-good.json.tmp` + rename 原子持久化。启动读取合法成功快照，缺失/损坏则忽略；磁盘写失败保留内存，不覆盖上次成功文件。JSON和临时文件不在静态白名单。快照包含原 `at`，不包含操作令牌、访问码、密码、密钥、Cookie或授权字段；非枚举调度来源不持久化。
+
+`state()` 的 agents/dashboard/issues 为必需来源；runs/approvals/activity/approvalsAll/backlog 可选失败置空，并返回 `gaps: [{source, reason:'UPSTREAM_UNAVAILABLE'}]`。依赖缺失运行、活动、backlog的今日统计使用 `{value:null,reason:'UPSTREAM_UNAVAILABLE'}`，不把未取得数据当成已知零。正常聚合字段保持，健康冷缓存例外按真实未知报告；活动缺失不补造会议/事件/奖项，审批全集缺失不生成审批动画事件。
+
+必需来源失败时 `/state` 返回200的最近成功副本，`actToken:''`，附 `stale:{active:true,since:<原at>,ageMs,reason:'UPSTREAM_UNAVAILABLE'}`；快照超过30分钟改为 `STALE_DATA`，仍200。没有可用快照返回503：`{error:'STATE_UNAVAILABLE_NO_SNAPSHOT',reason:'UPSTREAM_UNAVAILABLE'}`。成功恢复不带stale；降级/恢复各只在状态转换时打印一条日志。LAN/大屏仍通过原脱敏出口，快照不因读请求被修改；`/act` 鉴权与上游失败行为完全不变，不使用快照假报写入成功。
+
+`healthReport()` 永远返回缓存并按需启动单个后台刷新，刷新间隔30秒、超时20秒，失败保留原报告并附stale；首次未加载返回warn/“健康数据暂不可用”及NOT_LOADED，不虚构健康。仍拉 `heartbeat-runs?limit=1000`，复用H1 `buildHealth`，不降低limit或改变判定。`get`仅允许此后台刷新传入AbortSignal，其余调用继续8秒超时。
+
+验证用注入假上游和提取的实际state/路由，不加载真实server、不重启服务、不写Paperclip。H2交付后由董事会手动重启并验正常、慢上游、首次无快照及重启文件恢复；顶部stale提示另卡处理，本卡不改前端。
+
+## S2-10：DR 智慧仓配服务中心演示中控台
+
+访问 `http://office.localhost:3200/dr-console.html` 打开独立静态演示页。页面只使用本地确定性模拟数据，不读取 Paperclip、真实订单、库存、车辆或视频，也不会发送操作请求。深色主题为默认，可切换浅色主题；W1 / W2 / W3 与作业流水筛选均在浏览器内完成。
+
+专项验证：
+
+```text
+node --max-old-space-size=2048 --test --test-timeout=60000 tests/dr-console-data.test.mjs tests/dr-console-static.test.mjs
+```

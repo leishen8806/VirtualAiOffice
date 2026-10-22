@@ -1,0 +1,69 @@
+{
+  "viewport": {
+    "width": 480,
+    "height": 1188
+  },
+  "scenes": [
+    "foyer-overview",
+    "central-reception-carpet",
+    "service-panels",
+    "waiting-sofa",
+    "plaza-overview",
+    "coffee-cart",
+    "stalls-benches-lamps"
+  ],
+  "panelText": {
+    "handoff": [
+      {
+        "line": "请在本机配置中开启",
+        "width": 378,
+        "effectiveTextureFont": 42
+      }
+    ],
+    "attendance": [
+      {
+        "line": "已下班 0 人",
+        "width": 211,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "暂停 25 · 异常 0",
+        "width": 320,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "当前没有待处理事项",
+        "width": 378,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "晨会 done",
+        "width": 196,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "通过 3 · 剔除 3",
+        "width": 296,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "KhmerX / PayEase 15 天上线 0% · 闸门 A：过渡形态可行（B0 压测报告） · 2026-10-17",
+        "width": 1696,
+        "effectiveTextureFont": 23
+      }
+    ],
+    "notice": [
+      {
+        "line": "公告 · 今天还没有公告",
+        "width": 439,
+        "effectiveTextureFont": 42
+      },
+      {
+        "line": "尚无访客记录",
+        "width": 252,
+        "effectiveTextureFont": 42
+      }
+    ]
+  },
+  "errors": []
+}

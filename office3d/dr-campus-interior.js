@@ -1,14 +1,22 @@
+import { CAMBODIA_CITIES, CAMBODIA_OUTLINE_D, CAMBODIA_ROUTE_PAIRS, MAP_VIEW } from './dr-cambodia-outline.js'
+
 export const SCREEN_REFRESH_MS = 5000
+export const DISPATCH_SCREEN_STYLE = Object.freeze({
+  panel: '#24485c', mapFill: '#183847', outline: '#8fb4c1', outlineWidth: 4,
+  route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 30,
+  node: '#b7d4e0', phnomPenh: '#d5af62', phnomPenhRadius: 14, cityRadius: 7,
+})
 
 const seeded = value => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
 export const screenSliceAt = elapsedMs => Math.max(0, Math.floor(elapsedMs / SCREEN_REFRESH_MS))
 
 export function screenFrame(seed = 2808, timeSlice = 0) {
   const random = seeded((seed + timeSlice * 7919) >>> 0)
-  const nodes = Object.freeze(Array.from({ length: 5 }, (_, index) => Object.freeze({ id: `SIM-${index + 1}`, x: .12 + random() * .68, y: .2 + random() * .42, state: ['就绪', '流转', '待检'][Math.floor(random() * 3)] })))
+  const nodes = Object.freeze(CAMBODIA_CITIES.map(item => Object.freeze({ id: item.id, name: item.name, x: item.x / MAP_VIEW.width, y: item.y / MAP_VIEW.height, labelX: item.labelX, labelY: item.labelY, state: ['就绪', '流转', '待检'][Math.floor(random() * 3)] })))
+  const nodeIndex = Object.fromEntries(nodes.map((item, index) => [item.id, index]))
   const bars = Object.freeze(Array.from({ length: 4 }, (_, index) => Math.round(28 + random() * 58)))
   const lights = Object.freeze(Array.from({ length: 3 }, (_, index) => ['绿', '黄', '绿'][Math.floor((random() + index) * 2) % 3]))
-  return Object.freeze({ timeSlice, watermark: '模拟数据 · 示意', nodes, links: Object.freeze([[0, 1], [1, 2], [2, 3], [1, 4]]), bars, lights })
+  return Object.freeze({ timeSlice, watermark: '模拟数据 · 示意', nodes, links: Object.freeze(CAMBODIA_ROUTE_PAIRS.map(([from, to]) => Object.freeze([nodeIndex[from], nodeIndex[to]]))), bars, lights })
 }
 
 const zone = (zones, id) => zones.find(item => item.id === id)
@@ -25,16 +33,28 @@ const quad = (positions, uvs, indices, x, y, z, width, height, u0, u1) => {
 
 function draw(ctx, width, height, frame) {
   ctx.fillStyle = '#111c25'; ctx.fillRect(0, 0, width, height)
-  ctx.fillStyle = '#1b3040'; ctx.fillRect(28, 32, 610, 448)
-  ctx.strokeStyle = '#5f94a9'; ctx.lineWidth = 4; ctx.strokeRect(28, 32, 610, 448)
+  ctx.fillStyle = DISPATCH_SCREEN_STYLE.panel; ctx.fillRect(28, 32, 610, 448)
+  ctx.strokeStyle = DISPATCH_SCREEN_STYLE.outline; ctx.lineWidth = 4; ctx.strokeRect(28, 32, 610, 448)
   ctx.fillStyle = '#d5af62'; ctx.font = '700 30px sans-serif'; ctx.fillText(frame.watermark, 52, 76)
-  ctx.strokeStyle = '#8fb4c1'; ctx.lineWidth = 3
-  for (const [from, to] of frame.links) { const a = frame.nodes[from], b = frame.nodes[to]; ctx.beginPath(); ctx.moveTo(52 + a.x * 560, 96 + a.y * 310); ctx.lineTo(52 + b.x * 560, 96 + b.y * 310); ctx.stroke() }
-  for (const node of frame.nodes) { ctx.fillStyle = node.state === '待检' ? '#d5af62' : '#6fbf9c'; ctx.beginPath(); ctx.arc(52 + node.x * 560, 96 + node.y * 310, 12, 0, Math.PI * 2); ctx.fill() }
-  frame.bars.forEach((value, index) => { ctx.fillStyle = '#6da2bd'; ctx.fillRect(68 + index * 128, 438 - value * 1.6, 74, value * 1.6) })
+  const mapX = 58, mapY = 100, mapW = 548, mapH = 286, mapScale = Math.min(mapW / MAP_VIEW.width, mapH / MAP_VIEW.height)
+  ctx.save(); ctx.translate(mapX, mapY); ctx.scale(mapScale, mapScale); ctx.fillStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.outline; ctx.lineWidth = DISPATCH_SCREEN_STYLE.outlineWidth / mapScale
+  const outline = new Path2D(CAMBODIA_OUTLINE_D); ctx.fill(outline); ctx.stroke(outline); ctx.restore()
+  ctx.strokeStyle = DISPATCH_SCREEN_STYLE.route; ctx.lineWidth = DISPATCH_SCREEN_STYLE.routeWidth
+  for (const [from, to] of frame.links) { const a = frame.nodes[from], b = frame.nodes[to]; ctx.beginPath(); ctx.moveTo(mapX + a.x * MAP_VIEW.width * mapScale, mapY + a.y * MAP_VIEW.height * mapScale); ctx.lineTo(mapX + b.x * MAP_VIEW.width * mapScale, mapY + b.y * MAP_VIEW.height * mapScale); ctx.stroke() }
+  ctx.font = `600 ${DISPATCH_SCREEN_STYLE.labelSize}px sans-serif`
+  for (const node of frame.nodes) {
+    const x = mapX + node.x * MAP_VIEW.width * mapScale, y = mapY + node.y * MAP_VIEW.height * mapScale, phnomPenh = node.id === 'phnom-penh'
+    ctx.fillStyle = phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenh : DISPATCH_SCREEN_STYLE.node
+    if (phnomPenh) { ctx.shadowColor = DISPATCH_SCREEN_STYLE.phnomPenh; ctx.shadowBlur = 18 }
+    ctx.beginPath(); ctx.arc(x, y, phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenhRadius : DISPATCH_SCREEN_STYLE.cityRadius, 0, Math.PI * 2); ctx.fill()
+    ctx.shadowBlur = 0; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.lineWidth = 4
+    ctx.strokeText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
+    ctx.fillStyle = DISPATCH_SCREEN_STYLE.label; ctx.fillText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
+  }
   ctx.fillStyle = '#18232b'; ctx.fillRect(674, 32, 322, 448); ctx.strokeStyle = '#d5af62'; ctx.strokeRect(674, 32, 322, 448)
   ctx.fillStyle = '#f4f1eb'; ctx.font = '700 34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DR 仓配服务中心', 835, 156); ctx.fillText('示意展示', 835, 206)
-  ctx.fillStyle = '#d5af62'; ctx.font = '600 28px sans-serif'; ctx.fillText('授权标签 · 示意 / 模拟', 835, 274); ctx.fillText('参观外观 · 非业务入口', 835, 330); ctx.textAlign = 'left'
+  ctx.fillStyle = '#d5af62'; ctx.font = '600 25px sans-serif'; ctx.fillText('车辆 / 订单 / 月台', 835, 270)
+  ctx.fillStyle = '#8fb4c1'; ctx.font = '500 21px sans-serif'; ctx.fillText(`${frame.bars[0]} / ${frame.bars[1]} / ${frame.bars[2]}`, 835, 310); ctx.fillText('授权标签 · 示意 / 模拟', 835, 354); ctx.fillText('参观外观 · 非业务入口', 835, 398); ctx.textAlign = 'left'
 }
 
 export function buildCampusInterior({ THREE, root, canvasTex, layout, quality }) {

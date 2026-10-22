@@ -1,4 +1,14 @@
+import { CAMBODIA_CITIES, CAMBODIA_OUTLINE_D, CAMBODIA_ROUTE_PAIRS } from './dr-cambodia-outline.js'
+
+export const MAP_NOTE = Object.freeze({ x: 285, y: 266, width: 217, height: 14 })
+export const consoleMapLabels = () => CAMBODIA_CITIES.map(item => Object.freeze({
+  id: item.id, x: item.x + item.labelX, y: item.y + item.labelY,
+  width: item.name.length * 15, height: 17,
+}))
+
 export function campusMapSvg(activeZone = 'ALL') {
-  const active = (id) => activeZone === 'ALL' || activeZone === id ? ' active' : ''
-  return `<svg viewBox="0 0 520 270" role="img" aria-label="柬埔寨物流网络示意图"><path class="outline" d="M171 36l89-18 65 24 50 56-18 56-58 26-27 62-61-2-40-49-69-10-19-58 38-45z"/><path class="route" d="M230 105L143 72M230 105l99 46M230 105l-54 87M230 105l128-36"/><g class="node${active('W1')}" data-zone="W1"><circle cx="230" cy="105" r="9"/><text x="243" y="109">金边 · W1</text></g><g class="node${active('W2')}" data-zone="W2"><circle cx="143" cy="72" r="7"/><text x="84" y="61">暹粒 · W2</text></g><g class="node${active('W3')}" data-zone="W3"><circle cx="176" cy="192" r="7"/><text x="115" y="215">西哈努克 · W3</text></g><g class="node"><circle cx="329" cy="151" r="6"/><text x="339" y="157">马德望</text></g><g class="node"><circle cx="358" cy="69" r="6"/><text x="368" y="65">波贝</text></g><text class="mapNote" x="18" y="252">计划路线 · 示意地图 · 模拟轨迹</text></svg>`
+  const byId = Object.fromEntries(CAMBODIA_CITIES.map(item => [item.id, item]))
+  const routes = CAMBODIA_ROUTE_PAIRS.map(([from, to]) => `<path class="route" d="M${byId[from].x.toFixed(2)} ${byId[from].y.toFixed(2)}L${byId[to].x.toFixed(2)} ${byId[to].y.toFixed(2)}"/>`).join('')
+  const nodes = CAMBODIA_CITIES.map(item => `<g class="node${item.id === 'phnom-penh' ? ' active' : ''}" data-city="${item.id}"><circle cx="${item.x.toFixed(2)}" cy="${item.y.toFixed(2)}" r="${item.id === 'phnom-penh' ? 12 : 7}"/><text x="${(item.x + item.labelX).toFixed(2)}" y="${(item.y + item.labelY).toFixed(2)}">${item.name}</text></g>`).join('')
+  return `<svg viewBox="0 0 520 270" role="img" aria-label="柬埔寨物流网络示意图" data-campus-filter="${activeZone}"><path class="outline" d="${CAMBODIA_OUTLINE_D}"/>${routes}${nodes}<text class="mapNote" x="${MAP_NOTE.x}" y="${MAP_NOTE.y}">金边起点 · 示意配送目的地 · 模拟轨迹</text></svg>`
 }

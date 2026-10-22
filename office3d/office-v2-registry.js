@@ -58,17 +58,39 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
   const root = new THREE.Group(); root.name = 'office2-root'
   const modules = new Map(), built = new Map(), skipped = []
   let merged = { removed: 0, added: 0 }, builtOnce = false
+  let frameHook = null, previousFrame = null, sourceNow = null, lastFrame = null, animationMs = 0
+  const stopped = new Set(), bounds = new THREE.Box3(), frustum = new THREE.Frustum(), projection = new THREE.Matrix4()
+  const resetFrame = () => { lastFrame = null }
+  const onFrame = (dt, { camera } = {}) => {
+    if (globalThis.document?.hidden || !root.visible) { resetFrame(); return }
+    for (let parent = root.parent; parent; parent = parent.parent) if (!parent.visible) { resetFrame(); return }
+    if (camera) {
+      root.updateWorldMatrix(true, true)
+      frustum.setFromProjectionMatrix(projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse))
+      if (!frustum.intersectsBox(bounds.setFromObject(root))) { resetFrame(); return }
+    }
+    const delta = Number.isFinite(dt) ? Math.min(.1, Math.max(0, dt)) : 0
+    animationMs += delta * 1000
+    for (const [name, value] of built) if (!stopped.has(name) && value.onFrame) {
+      try { value.onFrame(delta) }
+      catch (error) {
+        stopped.add(name); const message = String(error?.message || error)
+        skipped.push({ name, error: `onFrame: ${message}` }); console.warn(`[office-v2:${name}] 已停用更新：${message}`)
+      }
+    }
+  }
   const get = name => built.get(name)
   const register = (name, factory) => { modules.set(name, factory); return root }
   const buildAll = (shared = {}) => {
     if (builtOnce) return root
     builtOnce = true; scene.add(root)
+    sourceNow = shared.now || (() => 0); animationMs = sourceNow()
     for (const [name, factory] of modules) {
       const mount = new THREE.Group(); mount.name = `office2-${name}-root`; root.add(mount)
       const pending = [], collision = shared.collision && { ...shared.collision, add: (...args) => pending.push(args) }
       const sceneBefore = new Map(scene.children.map(child => [child, child.visible]))
       try {
-        const value = factory({ ...shared, THREE, root: mount, scene, layout, quality, low: quality?.tier === 'low', collision, get }) || {}
+        const value = factory({ ...shared, THREE, root: mount, scene, layout, quality, low: quality?.tier === 'low', collision, get, now: () => animationMs }) || {}
         let part = 0
         mount.traverse(object => { if (object !== mount && !object.name.startsWith(`office2-${name}-`)) object.name = `office2-${name}-${object.name.replace(/^office2-/, '') || `part-${part++}`}` })
         built.set(name, value)
@@ -82,9 +104,21 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
       }
     }
     merged = mergeOfficeStatic(THREE, root)
+    if ([...built.values()].some(value => value.onFrame)) {
+      previousFrame = scene.onBeforeRender
+      frameHook = function (renderer, currentScene, camera, ...args) {
+        previousFrame?.call(this, renderer, currentScene, camera, ...args)
+        const stamp = sourceNow(), dt = lastFrame === null ? 0 : (stamp - lastFrame) / 1000
+        lastFrame = stamp; onFrame(dt, { camera })
+      }
+      scene.onBeforeRender = frameHook
+      globalThis.document?.addEventListener?.('visibilitychange', resetFrame)
+    }
     return root
   }
   const dispose = () => {
+    if (frameHook && scene.onBeforeRender === frameHook) scene.onBeforeRender = previousFrame
+    globalThis.document?.removeEventListener?.('visibilitychange', resetFrame)
     merged.dispose?.()
     for (const [name, value] of [...built].reverse()) {
       try { value.dispose?.() }
@@ -94,5 +128,5 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
     if (scene.userData.officeV2?.root === root) delete scene.userData.officeV2
   }
   const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged: { removed: merged.removed, added: merged.added } })
-  return { root, register, buildAll, dispose, summary, get }
+  return { root, register, buildAll, dispose, summary, get, onFrame }
 }

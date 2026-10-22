@@ -12,12 +12,93 @@ import { buildDisplayMarket } from '../display-market.js'
 import { buildDisplayService } from '../display-service.js'
 import { buildDisplayAftersales } from '../display-aftersales.js'
 import { buildDisplayMarketing } from '../display-marketing.js'
+import { displayAtlas } from '../display-staff-mesh.js'
+import { buildOfficeBar } from '../office-bar.js'
 
 const roster = logic.displayRoster(LAYOUT_V2)
 const routes = new Map(roster.map(p => [p.id, logic.displayRoute(LAYOUT_V2, p)]))
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
 const contains = (r, p) => p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1
 const source = file => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
+
+function canvasTexFixture() {
+  const calls = []
+  const canvasTex = (w, h, draw, repeat, srgb = true) => {
+    const operations = [], contexts = [], sizes = []
+    const ctx = {
+      fillRect(...args) { operations.push(['fillRect', ...args]) },
+      fillText(...args) { operations.push(['fillText', ...args]) },
+    }
+    for (const key of ['font', 'fillStyle', 'textAlign']) Object.defineProperty(ctx, key, {
+      set(value) { operations.push([key, value]) },
+    })
+    const canvas = { getContext(kind) { contexts.push(kind); assert.equal(kind, '2d'); return ctx } }
+    for (const key of ['width', 'height']) Object.defineProperty(canvas, key, {
+      get() { return key === 'width' ? w : h },
+      set(value) { sizes.push([key, value]) },
+    })
+    canvas.width = w; canvas.height = h
+    draw(canvas.getContext('2d'), w, h)
+    const texture = { image: canvas, colorSpace: srgb ? THREE.SRGBColorSpace : '', anisotropy: 16,
+      dispose() { this.disposed = true } }
+    calls.push({ w, h, operations, contexts, sizes, texture })
+    return texture
+  }
+  return { canvasTex, calls }
+}
+
+test('atlas accepts faithful ctx-width-height canvasTex contract and draws department labels', () => {
+  const f = canvasTexFixture()
+  const texture = displayAtlas(THREE, [['市场部', '展示部门 · 模拟角色'], ['客服部', '展示部门 · 模拟角色']], f.canvasTex)
+  const call = f.calls[0]
+  assert.equal(texture, call.texture)
+  assert.equal(texture.colorSpace, THREE.SRGBColorSpace)
+  assert.deepEqual(call.contexts, ['2d'])
+  assert.deepEqual(call.sizes, [['width', 1024], ['height', 256]])
+  assert.deepEqual(call.operations.find(op => op[0] === 'fillRect'), ['fillRect', 0, 0, 1024, 256])
+  assert.deepEqual(call.operations.filter(op => op[0] === 'fillText').map(op => op.slice(1)), [
+    ['市场部', 512, 50], ['展示部门 · 模拟角色', 512, 98],
+    ['客服部', 512, 178], ['展示部门 · 模拟角色', 512, 226],
+  ])
+  assert.ok(call.operations.some(op => op[0] === 'font'))
+  assert.ok(call.operations.some(op => op[0] === 'fillStyle'))
+})
+
+test('faithful canvasTex builds departments, twelve staff and bar; low staff creates nothing', () => {
+  const f = canvasTexFixture(), root = new THREE.Group()
+  const departments = buildDisplayDepartments({ THREE, root, layout: LAYOUT_V2, canvasTex: f.canvasTex })
+  assert.equal(departments.summary().desks, 12)
+  assert.equal(departments.summary().calls, 1)
+  assert.deepEqual(f.calls[0].operations.filter(op => op[0] === 'fillText').map(op => op[1]),
+    ['市场部', '展示部门 · 模拟角色', '客服部', '展示部门 · 模拟角色',
+      '售后部', '展示部门 · 模拟角色', '营销部', '展示部门 · 模拟角色'])
+  const staff = buildDisplayStaff({ THREE, root, layout: LAYOUT_V2, config: { enabled: true }, canvasTex: f.canvasTex })
+  assert.equal(staff.summary().failure, null)
+  assert.equal(staff.summary().count, 12)
+  assert.equal(staff.summary().calls, 2)
+  assert.equal(staff.positions().length, 12)
+  assert.equal(f.calls[1].w, 256); assert.equal(f.calls[1].h, 128)
+  assert.ok(f.calls[1].operations.some(op => op[0] === 'fillText' && op[1] === '模拟'))
+  const before = f.calls.length
+  const low = buildDisplayStaff({ THREE, root, layout: LAYOUT_V2, config: { enabled: true }, low: true, canvasTex: f.canvasTex })
+  assert.equal(low.summary().failure, null)
+  assert.equal(low.summary().count, 0); assert.equal(low.summary().calls, 0)
+  assert.equal(low.root.children.length, 0); assert.equal(f.calls.length, before)
+  for (const tier of [false, true]) {
+    const bar = buildOfficeBar({ THREE, root, layout: LAYOUT_V2, low: tier, canvasTex: f.canvasTex })
+    assert.equal(bar.summary().calls, tier ? 1 : 3)
+    assert.equal(f.calls.length, before) // 吧台接收依赖但未绘制任何 canvas 纹理。
+    bar.dispose()
+  }
+  staff.dispose(); low.dispose(); departments.dispose()
+  assert.equal(root.children.length, 0)
+  assert.ok(f.calls.every(call => call.texture.disposed === true))
+})
+
+test('atlas without canvasTex or document returns null without throwing', () => {
+  assert.equal(typeof document, 'undefined')
+  assert.equal(displayAtlas(THREE, [['模拟']]), null)
+})
 
 test('display flag requires literal true, invalid/missing JSON stays off, URL opt-in is explicit', () => {
   for (const value of [null, undefined, {}, '', '{broken', { enabled: false }, { enabled: 1 }, { enabled: 'true' }]) assert.equal(logic.displayConfig(value).enabled, false)

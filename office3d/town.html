@@ -10,7 +10,7 @@
 </head>
 <body>
   <main class="map-shell">
-    <canvas id="townMap" tabindex="0" aria-label="金边小镇地图。可拖动、缩放并点选行政区或地标。"></canvas>
+    <canvas id="townMap" tabindex="0" aria-label="金边小镇地图。可拖动、缩放并点选智序工场·办公室、DR 仓配服务中心、行政区或其它地标。"></canvas>
     <header class="map-head glass">
       <a class="back" href="/">← 回到办公室</a>
       <div class="map-title">
@@ -37,6 +37,7 @@
         <div><dt>经纬度</dt><dd id="detailLatLon">–</dd></div>
       </dl>
     </aside>
+    <div id="placeTooltip" class="place-tooltip glass" role="tooltip" hidden></div>
     <div id="mapFallback" class="map-fallback glass" hidden>使用本地备份地图</div>
     <nav class="map-controls glass" aria-label="地图缩放">
       <button id="zoomIn" type="button" aria-label="放大地图">＋</button>
@@ -50,7 +51,7 @@
         <li><span class="legend-dot road"></span>主干路</li>
         <li><span class="legend-dot water"></span>水系</li>
         <li><span class="legend-dot landmark"></span>地标</li>
-        <li><span class="legend-dot office"></span>智序工场虚构位置</li>
+        <li><span class="legend-dot office"></span>办公室 / 仓配地点</li>
       </ul>
     </details>
     <div id="zoomStatus" class="zoom-status glass" aria-live="polite">100%</div>

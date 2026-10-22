@@ -71,7 +71,7 @@ test('O4b default entry allocates no 3D objects and preserves model cast order',
   const seats = officeSeats(LAYOUT_V2)
   assert.deepEqual(Object.keys(seats), Object.keys(SEATS))
   for (const name of Object.keys(SEATS)) assert.deepEqual(seats[name], LAYOUT_V2.seats[name])
-  assert.deepEqual(officeV2Modules.map(([id]) => id), ['navigation', 'shell', 'furniture'])
+  assert.deepEqual(officeV2Modules.map(([id]) => id), ['navigation', 'shell', 'furniture', 'bar', 'displayDepartments', 'displayStaff'])
   const wing = {}, partitions = {}, scene = { userData: { officeV2: { get: () => ({ wing, partitions }) } } }
   assert.equal(buildWing({ scene }), wing); assert.equal(buildOfficePartitions({ scene }), partitions)
 })
@@ -88,14 +88,14 @@ test('O4b boots both real modules atomically and falls back without leaked scene
   assert.ok(furniture); assert.equal(floor.visible, false)
   const registry = furniture.registry
   assert.equal(scene.userData.officeV2, registry)
-  assert.deepEqual(registry.summary().modules, ['navigation', 'shell', 'furniture'])
+  assert.deepEqual(registry.summary().modules, ['navigation', 'shell', 'furniture', 'bar', 'displayDepartments', 'displayStaff'])
   assert.ok(registry.summary().merged.removed > 100); assert.equal(registry.summary().merged.added, 1)
   assert.equal(registry.summary().skipped.length, 0)
   assert.equal(furniture.spec.workstations.length, 25)
   assert.equal(registry.get('shell').spec[0].x0, -34)
   assert.ok(bodies.length > 100)
   let visibleMeshes = 0; registry.root.traverse(mesh => { if (mesh.isMesh && mesh.visible) visibleMeshes++ })
-  assert.equal(visibleMeshes, 3)
+  assert.equal(visibleMeshes, 7)
   registry.dispose(); assert.equal(scene.children.length, 0); assert.equal(scene.userData.officeV2, undefined)
   const failedScene = new THREE.Scene(), failedBodies = [], failedFloor = { visible: true }
   assert.equal(startOfficeV2({ ...shared, scene: failedScene, floor: failedFloor, A: null, collision: { add: (...args) => failedBodies.push(args) } }), null)

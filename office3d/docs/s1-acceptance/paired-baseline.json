@@ -1,0 +1,751 @@
+{
+  "measuredAt": "2026-10-20T11:21:32.691Z",
+  "viewport": {
+    "width": 480,
+    "height": 1188
+  },
+  "source": {
+    "beforeApp": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-s1-3\\app.js",
+    "sharedLayout": "E:\\VirtualAIOffice\\paperclip-ops\\office3d\\office-layout.js",
+    "after": "E:\\VirtualAIOffice\\paperclip-ops\\office3d"
+  },
+  "tiers": {
+    "high": {
+      "before": {
+        "overview": {
+          "full": {
+            "fps": 11.754068716094032,
+            "frameMs": 85.07692307692308,
+            "renderMs": 9.400000035762787,
+            "calls": 1299,
+            "triangles": 253187,
+            "lights": 18,
+            "rendered": 83,
+            "dpr": 0.850000025331974,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 29.518842861359857,
+            "frameMs": 33.876666666666644,
+            "renderMs": 7.300000011920929,
+            "calls": 1299,
+            "triangles": 253187,
+            "lights": 18,
+            "rendered": 142,
+            "dpr": 0.850000025331974,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "foyer": {
+          "full": {
+            "fps": 57.1653853735461,
+            "frameMs": 17.4931034482759,
+            "renderMs": 6.699999988079071,
+            "calls": 560,
+            "triangles": 215649,
+            "lights": 18,
+            "rendered": 281,
+            "dpr": 0.918000027358532,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 57.09223348754811,
+            "frameMs": 17.51551724137927,
+            "renderMs": 6.399999976158142,
+            "calls": 560,
+            "triangles": 215649,
+            "lights": 18,
+            "rendered": 350,
+            "dpr": 0.918000027358532,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "plaza": {
+          "full": {
+            "fps": 57,
+            "frameMs": 17.54385964912281,
+            "renderMs": 6.400000035762787,
+            "calls": 637,
+            "triangles": 224483,
+            "lights": 18,
+            "rendered": 487,
+            "dpr": 0.9914400295472147,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 57.23307677126497,
+            "frameMs": 17.472413793103474,
+            "renderMs": 5.800000011920929,
+            "calls": 637,
+            "triangles": 224483,
+            "lights": 18,
+            "rendered": 556,
+            "dpr": 0.9914400295472147,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "errors": []
+      },
+      "after": {
+        "overview": {
+          "full": {
+            "fps": 46.70263306224342,
+            "frameMs": 21.412068965517204,
+            "renderMs": 7.5,
+            "calls": 1331,
+            "triangles": 261179,
+            "lights": 18,
+            "rendered": 152,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 57.06976286529572,
+            "frameMs": 17.522413793103436,
+            "renderMs": 7.400000035762787,
+            "calls": 1331,
+            "triangles": 261179,
+            "lights": 18,
+            "rendered": 222,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "foyer": {
+          "full": {
+            "fps": 57.17665615141948,
+            "frameMs": 17.48965517241382,
+            "renderMs": 7.5,
+            "calls": 572,
+            "triangles": 217381,
+            "lights": 18,
+            "rendered": 361,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 57.01366361938469,
+            "frameMs": 17.53965517241378,
+            "renderMs": 6,
+            "calls": 572,
+            "triangles": 217381,
+            "lights": 18,
+            "rendered": 430,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "plaza": {
+          "full": {
+            "fps": 56.98565533503639,
+            "frameMs": 17.54827586206895,
+            "renderMs": 6.300000011920929,
+            "calls": 647,
+            "triangles": 227155,
+            "lights": 18,
+            "rendered": 568,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 57.2669826224329,
+            "frameMs": 17.46206896551723,
+            "renderMs": 5.600000023841858,
+            "calls": 647,
+            "triangles": 227155,
+            "lights": 18,
+            "rendered": 637,
+            "dpr": 1.0000000298023224,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "errors": []
+      }
+    },
+    "low": {
+      "before": {
+        "overview": {
+          "full": {
+            "fps": 30.132192846034236,
+            "frameMs": 33.18709677419353,
+            "renderMs": 3.300000011920929,
+            "calls": 421,
+            "triangles": 126761,
+            "lights": 4,
+            "rendered": 97,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 30.132192846034236,
+            "frameMs": 33.18709677419353,
+            "renderMs": 3.300000011920929,
+            "calls": 421,
+            "triangles": 126761,
+            "lights": 4,
+            "rendered": 97,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "foyer": {
+          "full": {
+            "fps": 30.064979148482244,
+            "frameMs": 33.2612903225806,
+            "renderMs": 3.600000023841858,
+            "calls": 135,
+            "triangles": 79614,
+            "lights": 4,
+            "rendered": 151,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 30.064979148482244,
+            "frameMs": 33.2612903225806,
+            "renderMs": 3.600000023841858,
+            "calls": 135,
+            "triangles": 79614,
+            "lights": 4,
+            "rendered": 151,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "plaza": {
+          "full": {
+            "fps": 29.711795582846367,
+            "frameMs": 33.65666666666669,
+            "renderMs": 3,
+            "calls": 191,
+            "triangles": 95453,
+            "lights": 4,
+            "rendered": 206,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 29.711795582846367,
+            "frameMs": 33.65666666666669,
+            "renderMs": 3,
+            "calls": 191,
+            "triangles": 95453,
+            "lights": 4,
+            "rendered": 206,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 732,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 221,
+                "added": 64
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "errors": []
+      },
+      "after": {
+        "overview": {
+          "full": {
+            "fps": 30.08832378918753,
+            "frameMs": 33.23548387096783,
+            "renderMs": 5.099999964237213,
+            "calls": 431,
+            "triangles": 130757,
+            "lights": 4,
+            "rendered": 139,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 30.08832378918753,
+            "frameMs": 33.23548387096783,
+            "renderMs": 5.099999964237213,
+            "calls": 431,
+            "triangles": 130757,
+            "lights": 4,
+            "rendered": 139,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "foyer": {
+          "full": {
+            "fps": 29.907287409032044,
+            "frameMs": 33.43666666666662,
+            "renderMs": 3.900000035762787,
+            "calls": 139,
+            "triangles": 80480,
+            "lights": 4,
+            "rendered": 194,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 29.907287409032044,
+            "frameMs": 33.43666666666662,
+            "renderMs": 3.900000035762787,
+            "calls": 139,
+            "triangles": 80480,
+            "lights": 4,
+            "rendered": 194,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "plaza": {
+          "full": {
+            "fps": 29.97002997002997,
+            "frameMs": 33.36666666666667,
+            "renderMs": 3.100000023841858,
+            "calls": 192,
+            "triangles": 96825,
+            "lights": 4,
+            "rendered": 248,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          },
+          "main": {
+            "fps": 29.97002997002997,
+            "frameMs": 33.36666666666667,
+            "renderMs": 3.100000023841858,
+            "calls": 192,
+            "triangles": 96825,
+            "lights": 4,
+            "rendered": 248,
+            "dpr": 1,
+            "reason": "URL强制",
+            "source": "url",
+            "hidden": false,
+            "summary": {
+              "sourceMeshes": 745,
+              "medium": {
+                "removed": 2,
+                "added": 1
+              },
+              "low": {
+                "removed": 230,
+                "added": 67
+              },
+              "instanced": [
+                22,
+                30
+              ],
+              "lowTextures": 0
+            }
+          }
+        },
+        "errors": []
+      }
+    }
+  },
+  "errors": []
+}

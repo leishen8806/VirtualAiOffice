@@ -452,3 +452,65 @@ test('detail failure keeps UNKNOWN_TIME and successful loaded activity keeps kno
   }
   assert.equal(succeeded.calls.length, 4)
 })
+
+test('advancing clock is sampled again after detail sources load so their ages stay known', async () => {
+  const f = fixture(), calls = []
+  let time = Date.parse(f.state.at) + 19000
+  const ticks = []
+  const now = () => {
+    const value = time
+    ticks.push(value)
+    time += 50
+    return value
+  }
+  const get = async (path, options) => {
+    calls.push({ path, options })
+    if (path.includes('/issues?')) return copy(f.completed)
+    if (path.includes('/activity?')) return copy(f.activity)
+    if (path.includes('/heartbeat-runs?')) return copy(f.runs)
+    return copy(f.detail)
+  }
+  const source = createLiveSource({ get, now })
+  const output = await valid(source, {
+    principal: 'local_full', company: f.company, state: f.state, taskId: 'demo-blocked',
+  })
+  assert.equal(calls.length, 4)
+  assert.ok(ticks.length >= 6)
+  assert.equal(Date.parse(output.scope.range.to), Date.parse(f.state.at))
+  assert.ok(Date.parse(output.scope.range.to) <= ticks.at(-1))
+  for (const name of ['execution', 'timeline', 'activity']) {
+    const age = output.quality.sources.find(row => row.source === name)?.ageMs
+    assert.equal(typeof age?.value, 'number', `${name}: ${JSON.stringify(age)}`)
+    assert.equal(age.reason, null)
+    assert.ok(age.value >= 0)
+  }
+  assert.equal(typeof output.dataAgeMs.value, 'number')
+  assert.equal(output.dataAgeMs.reason, null)
+  assert.equal(output.quality.freshness.stale, false)
+  assert.equal(output.quality.freshness.reason, null)
+  assert.equal(output.quality.freshness.animationAllowed, true)
+})
+
+test('fixed clock keeps detail projection deterministic and source failures explicitly unknown', async () => {
+  const fixed = setup()
+  fixed.advance(19000)
+  const input = { ...fixed.input, taskId: 'demo-blocked' }
+  const first = await valid(fixed.source, input)
+  const second = await valid(fixed.source, input)
+  assert.deepEqual(second, first)
+  assert.equal(first.dataAgeMs.value, 19000)
+  assert.equal(first.quality.freshness.stale, false)
+  for (const name of ['execution', 'timeline', 'activity']) {
+    assert.deepEqual(first.quality.sources.find(row => row.source === name).ageMs, { value: 0, reason: null })
+  }
+  const failed = setup({ get: (path, options, f) => path.endsWith('/demo-blocked')
+    ? { status: 503, body: null }
+    : path.includes('/issues?') ? copy(f.completed)
+      : path.includes('/activity?') ? copy(f.activity) : copy(f.runs) })
+  failed.advance(19000)
+  const failure = await valid(failed.source, { ...failed.input, taskId: 'demo-blocked' })
+  assert.deepEqual(failure.dataAgeMs, { value: null, reason: 'UNKNOWN_TIME' })
+  assert.deepEqual(failure.quality.freshness, {
+    stale: true, reason: 'UNKNOWN_TIME', maxAgeMs: 120000, animationAllowed: false,
+  })
+})
