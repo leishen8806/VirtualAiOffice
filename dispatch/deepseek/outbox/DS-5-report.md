@@ -13,7 +13,7 @@
 三张表全部用断言固定**当前真实行为**：
 
 1. **表一：必须删除的键名（51 个）**，含 `token` / `accessToken` / `access_token` / `ACCESS-TOKEN` / `refreshToken` / `password` / `passphrase` / `secret` / `clientSecret` / `apiKey` / `API-KEY` / `accessKey` / `access_code` / `authorization` / `cookie` / `Set-Cookie` / `csrfToken` / `jwt` / `bearer` / `credential` / `actToken` / 中文 `访问码`·`令牌`·`口令`·`密钥` 等；每个键在**顶层 / 嵌套对象 / 数组元素里的对象 / 三层深**四个位置各测一次，断言键被删、同层字段保留、输出里搜不到该键的值。
-2. **表二：普通键（43 个）**：业务键（`name`/`status`/`at`/`agents`/`tasks`/`title`/`costCents` 等 32 个）断言保留；含 `token` 字样的统计键（`inputTokens`/`outputTokens`/`cachedInputTokens`/`maxTokens`/`promptTokens`/`totalTokens`/`tokenCount`）与含敏感子串的普通词（`tokenizer`/`secretary`/`authorizationless`/`credentialHint`）按当前行为断言**被删**。
+2. **表二：普通键（42 个）**：业务键（`name`/`status`/`at`/`agents`/`tasks`/`title`/`costCents` 等 32 个）断言保留；含 `token` 字样的统计键（`inputTokens`/`outputTokens`/`cachedInputTokens`/`maxTokens`/`promptTokens`/`totalTokens`/`tokenCount`）与含敏感子串的普通词（`tokenizer`/`secretary`/`authorizationless`/`credentialHint`）按当前行为断言**被删**。
 3. **表三：敏感变体（23 个）**：`to-ken`、`tok3n`、大写 `TOKEN`、零宽字符 `tok\u200ben`、`pass_word`、`passwd`、`pwd`、`pwdHash`、`private_key`、`privateKey`、`privateKeyPath`、`signingKey`、`sessionId`、`sessionKey`、`session_secret_value`、`x-api-key`、`proxy-authorization`、`otp`、`otpCode`、`pin`、`pinCode`、`seed`、`mnemonic`，逐项断言删/留。
 
 其它性质：凭据键 getter 不被读取（用会 `assert.fail` 的 getter 验证）、普通键 getter 会被读取（当前行为）；深度冻结入参调用不抛错且入参不变；数组顺序与 `null`/数字/布尔值原样保留；非对象入参原样返回；循环引用抛 `RangeError`、1000 层可处理、5000 层抛 `RangeError`；混合快照输出递归搜不到已登记凭据键名。
