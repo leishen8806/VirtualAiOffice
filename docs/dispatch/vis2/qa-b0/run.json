@@ -1,0 +1,5199 @@
+{
+  "label": "b0",
+  "sha": "cbddb9fa3b874f7f56c8410928a8edd23013795c",
+  "generatedAt": "2026-10-23T04:38:00.440Z",
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v22.22.1",
+    "browser": "156.0.8078.47",
+    "playwright": "<VIS2_PLAYWRIGHT env>",
+    "viewport": "1280x720",
+    "dpr": 1,
+    "serverPort": 54754,
+    "mockPort": 54753,
+    "paperclip": "mock (127.0.0.1)",
+    "networkPolicy": "只允许 mock 端口与 office3d 端口；外部请求被阻断并记账"
+  },
+  "scenes": [
+    {
+      "scene": "office-default",
+      "note": "默认入口（PLACE_LATEST 未批准为默认）",
+      "url": "/",
+      "loadMs": 17472,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/",
+          "type": "document"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/app.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/rig.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets3d.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/env.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/ui.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/screen-awake.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/merge.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/quality.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/people.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/furniture-collision.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/warehouse-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-scene-spec.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-panels.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/replay.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/place-mode.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-place-view.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/GLTFLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/SkeletonUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/objects/Sky.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/EffectComposer.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/RenderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/GTAOPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/OutputPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/landmarks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/search.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/collab-graph.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/chat-panel.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/contract-format.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-inventory.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/FBXLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/garment-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.core.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v2-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-furniture-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/director.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-paths.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-racks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-interior.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v3-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-island.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-zones.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-departments.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-cambodia-outline.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room-screen.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-bar-geometry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/CopyShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/ShaderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/MaskPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/BufferGeometryUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/Pass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/GTAOShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/PoissonDenoiseShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/math/SimplexNoise.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/OutputShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-editor-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cloth-spring.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-theme-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/libs/fflate.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSCurve.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/pedestrian-traffic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-console-data.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-demo-snapshot.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-occlusion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-mesh.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/wing.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-partitions.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/fun.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cat-play.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "other"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/desk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairDesk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerScreen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerKeyboard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerMouse.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/laptop.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/pottedPlant.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall1.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall2.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseClosed.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseOpen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/books.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampRoundTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampSquareFloor.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofa.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofaLong.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeChair.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/tableCoffee.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/rugRectangle.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/sideTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/trashcan.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/table.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairModernCushion.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairRounded.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/coatRack.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/speaker.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/cabinetTelevision.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo-mark.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/anim/UAL1_Standard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_01/Male_Adult_01_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_02/Male_Adult_02_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_03/Male_Adult_03_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_04/Male_Adult_04_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_05/Male_Adult_05_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_06/Male_Adult_06_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_07/Male_Adult_07_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_08/Male_Adult_08_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_09/Male_Adult_09_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_10/Male_Adult_10_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_11/Male_Adult_11_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_12/Male_Adult_12_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_01/Female_Adult_01_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_02/Female_Adult_02_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_03/Female_Adult_03_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_04/Female_Adult_04_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_05/Female_Adult_05_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_06/Female_Adult_06_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_07/Female_Adult_07_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_08/Female_Adult_08_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_09/Female_Adult_09_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_10/Female_Adult_10_facial.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_01/m002_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_01/m002_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_01/m002_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_03/m004_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_03/m004_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_03/m004_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_02/m003_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_02/m003_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_02/m003_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_05/m009_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_05/m009_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_05/m009_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_06/m011_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_06/m011_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_06/m011_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_07/m013_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_07/m013_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_07/m013_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_09/m017_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_09/m017_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_09/m017_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_10/m024_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_10/m024_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_10/m024_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_08/m014_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_08/m014_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_08/m014_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_11/m001_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_11/m001_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_12/m007_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_12/m007_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_02/f002_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_02/f002_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_02/f002_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_06/f202_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_06/f202_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_06/f202_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_04/m006_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_04/m006_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Male_Adult_04/m006_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_01/f001_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_01/f001_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_01/f001_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_03/f003_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_03/f003_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_03/f003_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_04/f004_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_04/f004_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_04/f004_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_05/f005_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_05/f005_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_05/f005_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_07/f007_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_07/f007_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_07/f007_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_10/f201_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_10/f201_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_10/f201_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_08/f008_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_08/f008_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_08/f008_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_09/f009_body_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_09/f009_head_color.jpg",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/Female_Adult_09/f009_opacity_color.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_gestic_thoughtful.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_gestic_talk_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_walk_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_gestic_thoughtful.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_gestic_talk_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_walk_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/wall/data",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_idle_look_around.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_idle_scratch_head.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_idle_touch_face.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_idle_yawn.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_table_breathe_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_chair_idle_relaxed_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_sit_chair_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_idle_look_around_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_idle_stretch_arms_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_drink_idle.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/m_cell_phone_textmessage.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_look_around.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_scratch_head.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_touch_face.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_yawn.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_breathe_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_table_idle_stretch_arms.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_chair_idle_relaxed_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_sit_chair_idle_neutral_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_idle_look_around_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_idle_stretch_arms_01.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_drink_idle.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/people/anim/f_cell_phone_textmessage.fbx",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        }
+      ],
+      "requestSummary": {
+        "total": 285,
+        "byPath": [
+          [
+            "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+            5
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_1_Normal.png",
+            5
+          ],
+          [
+            "/state",
+            4
+          ],
+          [
+            "/assets/logo.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_Normal.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Brown.png",
+            2
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Normal.png",
+            2
+          ],
+          [
+            "/",
+            1
+          ],
+          [
+            "/app.js",
+            1
+          ],
+          [
+            "/vendor/three/three.module.js",
+            1
+          ],
+          [
+            "/rig.js",
+            1
+          ],
+          [
+            "/assets3d.js",
+            1
+          ],
+          [
+            "/env.js",
+            1
+          ],
+          [
+            "/ui.js",
+            1
+          ],
+          [
+            "/screen-awake.js",
+            1
+          ],
+          [
+            "/merge.js",
+            1
+          ],
+          [
+            "/quality.js",
+            1
+          ],
+          [
+            "/people.js",
+            1
+          ],
+          [
+            "/furniture-collision.js",
+            1
+          ]
+        ],
+        "writes": 0
+      },
+      "metrics": {
+        "ready": true,
+        "place": {
+          "kind": "office",
+          "layout": 1,
+          "placeId": "drlife-office",
+          "campus": false,
+          "controlRoom": false
+        },
+        "canvasCount": 2,
+        "quality": {
+          "fps": 20.65506048982001,
+          "frameMs": 48.414285714285704,
+          "renderMs": 1.6999999284744263,
+          "calls": 329,
+          "triangles": 57508,
+          "lights": 8,
+          "rendered": 57,
+          "placeholderMs": 6285.600000023842,
+          "firstRenderMs": 6582.399999976158,
+          "qualityReadyMs": 6475.299999952316,
+          "dpr": 1,
+          "reason": "等待6秒预热",
+          "source": "warmup",
+          "hidden": false
+        },
+        "rendererInfo": {
+          "calls": 329,
+          "triangles": 57508,
+          "geometries": 312,
+          "textures": 62,
+          "dpr": 1,
+          "width": 1280,
+          "height": 720
+        },
+        "gpu": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)"
+        },
+        "objects": 1775,
+        "meshes": 1481,
+        "instrumentation": {
+          "raf": 114,
+          "rafActive": 1,
+          "timers": 4,
+          "intervalsCreated": 4
+        },
+        "fetchCalls": [
+          "http://127.0.0.1:54754/assets/models/furniture/desk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairDesk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerScreen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerKeyboard.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerMouse.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/laptop.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/pottedPlant.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall1.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall2.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseClosed.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseOpen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/books.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampRoundTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampSquareFloor.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofa.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofaLong.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeChair.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/tableCoffee.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/rugRectangle.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/sideTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/trashcan.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/table.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairModernCushion.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairRounded.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/coatRack.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/speaker.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/cabinetTelevision.glb",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_1_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_2_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/anim/UAL1_Standard.glb",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_01/Male_Adult_01_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_02/Male_Adult_02_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_03/Male_Adult_03_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_04/Male_Adult_04_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_05/Male_Adult_05_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_06/Male_Adult_06_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_07/Male_Adult_07_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_08/Male_Adult_08_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_09/Male_Adult_09_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_10/Male_Adult_10_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_11/Male_Adult_11_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Male_Adult_12/Male_Adult_12_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_01/Female_Adult_01_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_02/Female_Adult_02_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_03/Female_Adult_03_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_04/Female_Adult_04_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_05/Female_Adult_05_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_06/Female_Adult_06_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_07/Female_Adult_07_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_08/Female_Adult_08_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_09/Female_Adult_09_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/Female_Adult_10/Female_Adult_10_facial.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_gestic_thoughtful.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_gestic_talk_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_walk_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_gestic_thoughtful.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_gestic_talk_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_walk_neutral_01.fbx",
+          "/state",
+          "/foyer",
+          "/wall/data",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_idle_look_around.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_idle_scratch_head.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_idle_touch_face.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_idle_yawn.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_table_breathe_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_chair_idle_relaxed_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_sit_chair_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_idle_look_around_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_idle_stretch_arms_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_drink_idle.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/m_cell_phone_textmessage.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_look_around.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_scratch_head.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_touch_face.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_yawn.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_breathe_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_table_idle_stretch_arms.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_chair_idle_relaxed_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_sit_chair_idle_neutral_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_idle_look_around_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_idle_stretch_arms_01.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_drink_idle.fbx",
+          "http://127.0.0.1:54754/assets/models/people/anim/f_cell_phone_textmessage.fbx"
+        ],
+        "labelsVisible": true,
+        "visibility": "visible"
+      },
+      "frames": {
+        "samples": 471,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 166.6
+      },
+      "console": []
+    },
+    {
+      "scene": "office-layout3",
+      "note": "rev3 展示通道",
+      "url": "/?place=office&layout=3",
+      "loadMs": 11472,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/?place=office&layout=3",
+          "type": "document"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/app.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/rig.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets3d.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/env.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/ui.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/screen-awake.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/merge.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/quality.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/people.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/furniture-collision.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/warehouse-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-scene-spec.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-panels.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/replay.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/place-mode.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-place-view.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/GLTFLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/SkeletonUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/objects/Sky.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/EffectComposer.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/RenderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/GTAOPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/OutputPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/landmarks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/search.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/collab-graph.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/chat-panel.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/contract-format.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-inventory.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/FBXLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/garment-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v2-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-furniture-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/director.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-paths.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.core.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-racks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-interior.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-cambodia-outline.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room-screen.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v3-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-island.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-zones.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-departments.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-bar-geometry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/BufferGeometryUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/CopyShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/ShaderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/MaskPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/Pass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/GTAOShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/PoissonDenoiseShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/math/SimplexNoise.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/OutputShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-editor-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cloth-spring.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-theme-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/libs/fflate.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSCurve.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/pedestrian-traffic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-console-data.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-demo-snapshot.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-occlusion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-mesh.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/wing.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-partitions.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/fun.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cat-play.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "other"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/desk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairDesk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerScreen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerKeyboard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerMouse.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/laptop.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/pottedPlant.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall1.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall2.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseClosed.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseOpen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/books.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampRoundTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampSquareFloor.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofa.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofaLong.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeChair.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/tableCoffee.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/rugRectangle.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/sideTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/trashcan.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/table.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairModernCushion.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairRounded.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/coatRack.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/speaker.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/cabinetTelevision.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo-mark.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/anim/UAL1_Standard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/wall/data",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/state",
+          "type": "fetch"
+        }
+      ],
+      "requestSummary": {
+        "total": 166,
+        "byPath": [
+          [
+            "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+            5
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_1_Normal.png",
+            5
+          ],
+          [
+            "/state",
+            4
+          ],
+          [
+            "/assets/logo.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_Normal.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Brown.png",
+            2
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Normal.png",
+            2
+          ],
+          [
+            "/?place=office&layout=3",
+            1
+          ],
+          [
+            "/app.js",
+            1
+          ],
+          [
+            "/vendor/three/three.module.js",
+            1
+          ],
+          [
+            "/rig.js",
+            1
+          ],
+          [
+            "/assets3d.js",
+            1
+          ],
+          [
+            "/env.js",
+            1
+          ],
+          [
+            "/ui.js",
+            1
+          ],
+          [
+            "/screen-awake.js",
+            1
+          ],
+          [
+            "/merge.js",
+            1
+          ],
+          [
+            "/quality.js",
+            1
+          ],
+          [
+            "/people.js",
+            1
+          ],
+          [
+            "/furniture-collision.js",
+            1
+          ]
+        ],
+        "writes": 0
+      },
+      "metrics": {
+        "ready": true,
+        "place": {
+          "kind": "office",
+          "layout": 3,
+          "placeId": "drlife-office",
+          "campus": false,
+          "controlRoom": false
+        },
+        "canvasCount": 2,
+        "quality": {
+          "fps": 60.00600060006001,
+          "frameMs": 16.665,
+          "renderMs": 1.7000000476837158,
+          "calls": 60,
+          "triangles": 69583,
+          "lights": 8,
+          "rendered": 146,
+          "placeholderMs": 383.10000002384186,
+          "firstRenderMs": 489.2000000476837,
+          "qualityReadyMs": 454.60000002384186,
+          "dpr": 1,
+          "reason": "等待6秒预热",
+          "source": "warmup",
+          "hidden": false
+        },
+        "rendererInfo": {
+          "calls": 60,
+          "triangles": 69583,
+          "geometries": 63,
+          "textures": 15,
+          "dpr": 1,
+          "width": 1280,
+          "height": 720
+        },
+        "gpu": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)"
+        },
+        "objects": 925,
+        "meshes": 868,
+        "instrumentation": {
+          "raf": 164,
+          "rafActive": 1,
+          "timers": 4,
+          "intervalsCreated": 4
+        },
+        "fetchCalls": [
+          "http://127.0.0.1:54754/assets/models/furniture/desk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairDesk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerScreen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerKeyboard.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerMouse.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/laptop.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/pottedPlant.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall1.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall2.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseClosed.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseOpen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/books.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampRoundTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampSquareFloor.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofa.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofaLong.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeChair.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/tableCoffee.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/rugRectangle.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/sideTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/trashcan.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/table.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairModernCushion.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairRounded.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/coatRack.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/speaker.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/cabinetTelevision.glb",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_1_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_2_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/anim/UAL1_Standard.glb",
+          "/state",
+          "/foyer",
+          "/wall/data"
+        ],
+        "labelsVisible": true,
+        "visibility": "visible"
+      },
+      "frames": {
+        "samples": 475,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 116.7
+      },
+      "console": []
+    },
+    {
+      "scene": "warehouse-dr",
+      "note": "DR 仓配地点",
+      "url": "/?place=dr",
+      "loadMs": 11636,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/?place=dr",
+          "type": "document"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/app.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/rig.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets3d.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/env.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/ui.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/screen-awake.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/merge.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/quality.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/people.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/furniture-collision.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/warehouse-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-scene-spec.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-panels.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/replay.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/place-mode.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-place-view.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/GLTFLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/SkeletonUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/objects/Sky.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/EffectComposer.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/RenderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/GTAOPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/OutputPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/landmarks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/FBXLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/garment-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/search.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/collab-graph.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/chat-panel.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/contract-format.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-inventory.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v2-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-furniture-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/director.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-paths.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-racks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-interior.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-cambodia-outline.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room-screen.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v3-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-island.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-zones.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-departments.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-bar-geometry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.core.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/CopyShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/ShaderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/MaskPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/Pass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/BufferGeometryUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/GTAOShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/PoissonDenoiseShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/math/SimplexNoise.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/OutputShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cloth-spring.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/libs/fflate.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSCurve.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-editor-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-theme-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/pedestrian-traffic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-console-data.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-demo-snapshot.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-occlusion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-mesh.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/wing.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-partitions.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/fun.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cat-play.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "other"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/desk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairDesk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerScreen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerKeyboard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerMouse.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/laptop.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/pottedPlant.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall1.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall2.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseClosed.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseOpen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/books.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampRoundTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampSquareFloor.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofa.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofaLong.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeChair.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/tableCoffee.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/rugRectangle.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/sideTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/trashcan.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/table.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairModernCushion.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairRounded.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/coatRack.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/speaker.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/cabinetTelevision.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo-mark.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/anim/UAL1_Standard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+          "type": "image"
+        }
+      ],
+      "requestSummary": {
+        "total": 161,
+        "byPath": [
+          [
+            "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+            5
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_1_Normal.png",
+            5
+          ],
+          [
+            "/assets/logo.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_Normal.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Brown.png",
+            2
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Normal.png",
+            2
+          ],
+          [
+            "/?place=dr",
+            1
+          ],
+          [
+            "/app.js",
+            1
+          ],
+          [
+            "/vendor/three/three.module.js",
+            1
+          ],
+          [
+            "/rig.js",
+            1
+          ],
+          [
+            "/assets3d.js",
+            1
+          ],
+          [
+            "/env.js",
+            1
+          ],
+          [
+            "/ui.js",
+            1
+          ],
+          [
+            "/screen-awake.js",
+            1
+          ],
+          [
+            "/merge.js",
+            1
+          ],
+          [
+            "/quality.js",
+            1
+          ],
+          [
+            "/people.js",
+            1
+          ],
+          [
+            "/furniture-collision.js",
+            1
+          ],
+          [
+            "/office-v2-modules.js",
+            1
+          ]
+        ],
+        "writes": 0
+      },
+      "metrics": {
+        "ready": true,
+        "place": {
+          "kind": "warehouse",
+          "layout": null,
+          "placeId": "drlife-warehouse",
+          "campus": true,
+          "controlRoom": false
+        },
+        "canvasCount": 2,
+        "quality": {
+          "fps": 60,
+          "frameMs": 16.666666666666668,
+          "renderMs": 1.4000000953674316,
+          "calls": 58,
+          "triangles": 33920,
+          "lights": 8,
+          "rendered": 152,
+          "placeholderMs": 0,
+          "firstRenderMs": 476.2999999523163,
+          "qualityReadyMs": 413.60000002384186,
+          "dpr": 1,
+          "reason": "等待6秒预热",
+          "source": "warmup",
+          "hidden": false
+        },
+        "rendererInfo": {
+          "calls": 58,
+          "triangles": 33920,
+          "geometries": 64,
+          "textures": 17,
+          "dpr": 1,
+          "width": 1280,
+          "height": 720
+        },
+        "gpu": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)"
+        },
+        "objects": 1926,
+        "meshes": 1597,
+        "instrumentation": {
+          "raf": 166,
+          "rafActive": 1,
+          "timers": 1,
+          "intervalsCreated": 1
+        },
+        "fetchCalls": [
+          "http://127.0.0.1:54754/assets/models/furniture/desk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairDesk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerScreen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerKeyboard.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerMouse.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/laptop.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/pottedPlant.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall1.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall2.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseClosed.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseOpen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/books.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampRoundTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampSquareFloor.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofa.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofaLong.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeChair.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/tableCoffee.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/rugRectangle.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/sideTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/trashcan.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/table.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairModernCushion.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairRounded.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/coatRack.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/speaker.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/cabinetTelevision.glb",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_1_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_2_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/anim/UAL1_Standard.glb"
+        ],
+        "labelsVisible": false,
+        "visibility": "visible"
+      },
+      "frames": {
+        "samples": 473,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 150
+      },
+      "console": []
+    },
+    {
+      "scene": "warehouse-control-room",
+      "note": "仓配中控室",
+      "url": "/?place=drlife-warehouse&controlRoom=1",
+      "loadMs": 11615,
+      "requests": [
+        {
+          "method": "GET",
+          "path": "/?place=drlife-warehouse&controlRoom=1",
+          "type": "document"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/app.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/rig.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets3d.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/env.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/ui.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/screen-awake.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/merge.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/quality.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/people.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/furniture-collision.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/warehouse-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shell.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-modules.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-scene-spec.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-panels.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/replay.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/place-mode.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-place-view.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/GLTFLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/SkeletonUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/objects/Sky.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/EffectComposer.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/RenderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/GTAOPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/OutputPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/landmarks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/loaders/FBXLoader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/garment-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/search.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/collab-graph.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/chat-panel.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/contract-format.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-inventory.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v2-registry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v2-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-furniture-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/director.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/foyer-paths.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-racks.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-interior.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-cambodia-outline.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-control-room-screen.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-layout-v3-scene.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-island.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-zones.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-departments.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/three.core.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-bar-geometry.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/utils/BufferGeometryUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/CopyShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/ShaderPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/MaskPass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/postprocessing/Pass.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/GTAOShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/PoissonDenoiseShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/math/SimplexNoise.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/shaders/OutputShader.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cloth-spring.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/libs/fflate.module.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSCurve.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-editor-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/home-room.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-theme-v2.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/pedestrian-traffic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-console-data.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-demo-snapshot.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-motion-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/dr-campus-shuttle-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-v3-occlusion.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-logic.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/display-staff-mesh.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/vendor/three/jsm/curves/NURBSUtils.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/wing.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/office-partitions.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/fun.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/cat-play.js",
+          "type": "script"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "other"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/desk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairDesk.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerScreen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerKeyboard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/computerMouse.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/laptop.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/pottedPlant.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall1.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/plantSmall2.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseClosed.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/bookcaseOpen.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/books.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampRoundTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/lampSquareFloor.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofa.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeSofaLong.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/loungeChair.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/tableCoffee.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/rugRectangle.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/sideTable.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/trashcan.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/table.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairModernCushion.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/chairRounded.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/coatRack.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/speaker.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/furniture/cabinetTelevision.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/logo-mark.png",
+          "type": "image"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Male_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/Superhero_Female_FullBody.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Brown.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Eye_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buzzed.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Beard.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Long.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_1_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/hair/Hair_Buns.bin",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Hair_2_Normal.png",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/anim/UAL1_Standard.glb",
+          "type": "fetch"
+        },
+        {
+          "method": "GET",
+          "path": "/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+          "type": "image"
+        }
+      ],
+      "requestSummary": {
+        "total": 161,
+        "byPath": [
+          [
+            "/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+            5
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_1_Normal.png",
+            5
+          ],
+          [
+            "/assets/logo.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Hair_2_Normal.png",
+            3
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Brown.png",
+            2
+          ],
+          [
+            "/assets/models/characters/tex/T_Eye_Normal.png",
+            2
+          ],
+          [
+            "/?place=drlife-warehouse&controlRoom=1",
+            1
+          ],
+          [
+            "/app.js",
+            1
+          ],
+          [
+            "/vendor/three/three.module.js",
+            1
+          ],
+          [
+            "/rig.js",
+            1
+          ],
+          [
+            "/assets3d.js",
+            1
+          ],
+          [
+            "/env.js",
+            1
+          ],
+          [
+            "/ui.js",
+            1
+          ],
+          [
+            "/screen-awake.js",
+            1
+          ],
+          [
+            "/merge.js",
+            1
+          ],
+          [
+            "/quality.js",
+            1
+          ],
+          [
+            "/people.js",
+            1
+          ],
+          [
+            "/furniture-collision.js",
+            1
+          ],
+          [
+            "/office-v2-modules.js",
+            1
+          ]
+        ],
+        "writes": 0
+      },
+      "metrics": {
+        "ready": true,
+        "place": {
+          "kind": "warehouse",
+          "layout": null,
+          "placeId": "drlife-warehouse",
+          "campus": true,
+          "controlRoom": true
+        },
+        "canvasCount": 2,
+        "quality": {
+          "fps": 60,
+          "frameMs": 16.666666666666668,
+          "renderMs": 1,
+          "calls": 126,
+          "triangles": 68040,
+          "lights": 8,
+          "rendered": 152,
+          "placeholderMs": 0,
+          "firstRenderMs": 470.7999999523163,
+          "qualityReadyMs": 411.1999999284744,
+          "dpr": 1,
+          "reason": "等待6秒预热",
+          "source": "warmup",
+          "hidden": false
+        },
+        "rendererInfo": {
+          "calls": 126,
+          "triangles": 68040,
+          "geometries": 132,
+          "textures": 13,
+          "dpr": 1,
+          "width": 1280,
+          "height": 720
+        },
+        "gpu": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)"
+        },
+        "objects": 1990,
+        "meshes": 1656,
+        "instrumentation": {
+          "raf": 166,
+          "rafActive": 1,
+          "timers": 1,
+          "intervalsCreated": 1
+        },
+        "fetchCalls": [
+          "http://127.0.0.1:54754/assets/models/furniture/desk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairDesk.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerScreen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerKeyboard.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/computerMouse.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/laptop.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/pottedPlant.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall1.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/plantSmall2.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseClosed.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/bookcaseOpen.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/books.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampRoundTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/lampSquareFloor.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofa.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeSofaLong.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/loungeChair.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/tableCoffee.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/rugRectangle.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/sideTable.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/trashcan.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/table.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairModernCushion.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/chairRounded.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/coatRack.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/speaker.glb",
+          "http://127.0.0.1:54754/assets/models/furniture/cabinetTelevision.glb",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Male_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_1_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Dark.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Male_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/Superhero_Female_FullBody.bin",
+          "./assets/models/characters/tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/tex/T_Hair_2_Normal.png",
+          "./assets/models/characters/tex/T_Eye_Brown.png",
+          "./assets/models/characters/tex/T_Eye_Normal.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+          "./assets/models/characters/tex/T_Superhero_Female_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.gltf",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buzzed.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Beard.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Long.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_SimpleParted.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+          "http://127.0.0.1:54754/assets/models/characters/hair/Hair_Buns.bin",
+          "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+          "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+          "http://127.0.0.1:54754/assets/models/anim/UAL1_Standard.glb"
+        ],
+        "labelsVisible": false,
+        "visibility": "visible"
+      },
+      "frames": {
+        "samples": 473,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 150
+      },
+      "console": []
+    }
+  ],
+  "lifecycle": [
+    {
+      "cycle": 1,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 87,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 161536
+    },
+    {
+      "cycle": 2,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 152992
+    },
+    {
+      "cycle": 3,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 151952
+    },
+    {
+      "cycle": 4,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 144848
+    },
+    {
+      "cycle": 5,
+      "canvasCount": 2,
+      "calls": 52,
+      "triangles": 56119,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 147008
+    },
+    {
+      "cycle": 6,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 147280
+    },
+    {
+      "cycle": 7,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 147280
+    },
+    {
+      "cycle": 8,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 148992
+    },
+    {
+      "cycle": 9,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 149888
+    },
+    {
+      "cycle": 10,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 150240
+    },
+    {
+      "cycle": 11,
+      "canvasCount": 2,
+      "calls": 52,
+      "triangles": 56119,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 84,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 150240
+    },
+    {
+      "cycle": 12,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 162032
+    },
+    {
+      "cycle": 13,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 87,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 150512
+    },
+    {
+      "cycle": 14,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 184496
+    },
+    {
+      "cycle": 15,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 162768
+    },
+    {
+      "cycle": 16,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 160224
+    },
+    {
+      "cycle": 17,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 166096
+    },
+    {
+      "cycle": 18,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 166096
+    },
+    {
+      "cycle": 19,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 85,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 163488
+    },
+    {
+      "cycle": 20,
+      "canvasCount": 2,
+      "calls": 60,
+      "triangles": 69583,
+      "dpr": 1,
+      "instrumentation": {
+        "raf": 86,
+        "rafActive": 1,
+        "timers": 4,
+        "intervalsCreated": 4
+      },
+      "serverRssKb": 175296
+    }
+  ],
+  "serverMemory": {
+    "rssStartKb": 161536,
+    "rssEndKb": 175296,
+    "rssSeries": [
+      161536,
+      152992,
+      151952,
+      144848,
+      147008,
+      147280,
+      147280,
+      148992,
+      149888,
+      150240,
+      150240,
+      162032,
+      150512,
+      184496,
+      162768,
+      160224,
+      166096,
+      166096,
+      163488,
+      175296
+    ]
+  },
+  "parity": [
+    {
+      "file": "tests/dr-console-data.test.mjs",
+      "exit": 0,
+      "tail": "# tests 3\n# suites 0\n# pass 3\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 42.671167"
+    },
+    {
+      "file": "tests/dr-console-dynamic.test.mjs",
+      "exit": 0,
+      "tail": "# tests 7\n# suites 0\n# pass 7\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 44.897292"
+    },
+    {
+      "file": "tests/campus-layout.test.mjs",
+      "exit": 0,
+      "tail": "# tests 8\n# suites 0\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 49.504"
+    }
+  ],
+  "upstream": {
+    "mockTotal": 215,
+    "mockByMethod": {
+      "GET": 215
+    },
+    "mockWrites": 0,
+    "blockedServerFetch": [
+      {
+        "blocked": "https://api.open-meteo.com/v1/forecast",
+        "at": "2026-10-23T04:36:31.825Z"
+      },
+      {
+        "blocked": "https://api.rainviewer.com/public/weather-maps.json",
+        "at": "2026-10-23T04:36:31.826Z"
+      },
+      {
+        "blocked": "https://api.open-meteo.com/v1/forecast",
+        "at": "2026-10-23T04:37:31.826Z"
+      },
+      {
+        "blocked": "https://api.rainviewer.com/public/weather-maps.json",
+        "at": "2026-10-23T04:37:31.829Z"
+      }
+    ],
+    "blockedBrowserRequests": []
+  },
+  "console": [],
+  "coverage": {
+    "q0_isolated": true,
+    "q1_feature_matrix": "NOT_RUN（B0 无办公室/仓配功能开关配置文件；候选 C0 未提供）",
+    "q2_lifecycle": "PARTIAL（20 轮页面加载，非候选开关的进入/退出切换）",
+    "q3_parity": "PARTIAL（B0 共享快照单测；候选 2D/3D 映射未提供）",
+    "q4_visual": "NOT_RUN（参考包 office-target/current、campus-target/current 未提供；截图仅作证据）",
+    "q4_perf": "PARTIAL（本机 Chromium 采样，无 Trae 冻结预算，不能宣称 4K/60fps）",
+    "browser_compat": "PARTIAL（仅本机 Chromium）"
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "generatedAt": "2026-10-23T04:38:50.180Z",
+  "module": "office3d/dr-demo-snapshot.js + dr-campus-interior.js + dr-control-room-screen.js",
+  "refreshMs": 1800,
+  "rows": [
+    {
+      "elapsed": 0,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 1,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 1799,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 1800,
+      "expectedTick": 1,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 3600,
+      "expectedTick": 2,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 90000,
+      "expectedTick": 50,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": 3600000,
+      "expectedTick": 2000,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": -5,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": null,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    },
+    {
+      "elapsed": null,
+      "expectedTick": 0,
+      "pass": true,
+      "checks": {
+        "deterministic": true,
+        "desktopGeneration": true,
+        "campusKpis": true,
+        "campusWaybills": true,
+        "campusEvents": true,
+        "controlKpis": true,
+        "controlWaybills": true,
+        "controlGeneratedAt": true,
+        "noNaN": true
+      }
+    }
+  ],
+  "failed": 0,
+  "verdict": "PASS"
+}
