@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>DR 仓配 · 装卸月台样板（候选静态预览，非部署）</title>
+  <script type="importmap">{"imports":{"three":"/vendor/three/three.module.js"}}</script>
+  <style>
+    :root { color-scheme:dark; --bg:#162125; --text:#f2e8d3; --accent:#e0af55 }
+    * { box-sizing:border-box } body { margin:0; color:var(--text); background:var(--bg); font:14px/1.5 "Segoe UI","Microsoft YaHei",sans-serif }
+    header { min-height:76px; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #526d74 }
+    h1,p { margin:0 } h1 { font-size:18px } .tag { color:#ffe9d2; background:#7a3b1a; padding:2px 9px; border-radius:4px }
+    #stage { height:calc(100vh - 116px); min-height:430px } canvas { display:block; width:100%; height:100% }
+    footer { height:40px; padding:9px 20px; color:var(--accent); border-top:1px solid #526d74; overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
+  </style>
+</head>
+<body>
+  <header><div><h1>装卸月台局部 · 白色车辆 / 护栏 / 标线 <span class="tag">候选静态预览，非部署</span></h1><p>独立 W-V1 私有样板；不含业务请求、定时器或主场景注册。</p></div></header>
+  <div id="stage"></div><footer id="readout">准备…</footer>
+  <script type="module">
+    import * as THREE from 'three'
+    import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '/office-layout.js'
+    import { buildVis2RackCell } from '/dr-vis2-rack-cell.js'
+    import { buildVis2DockSample } from '/dr-vis2-dock-sample.js'
+    const stage = document.getElementById('stage'), readout = document.getElementById('readout')
+    const renderer = new THREE.WebGLRenderer({ antialias:true }); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true; renderer.outputColorSpace = THREE.SRGBColorSpace; stage.appendChild(renderer.domElement)
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xb9c0c4)
+    const camera = new THREE.PerspectiveCamera(40, 1, .1, 400), root = new THREE.Group(); scene.add(root)
+    scene.add(new THREE.HemisphereLight(0xf6f4ef, 0x879299, 1.35))
+    const sun = new THREE.DirectionalLight(0xfffaf0, 1.25); sun.position.set(-130, 45, 30); sun.castShadow = true; scene.add(sun)
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 50), new THREE.MeshStandardMaterial({ color:0xc9c6be, roughness:.92 })); floor.rotation.x = -Math.PI / 2; floor.position.set(-146, -.01, -10); floor.receiveShadow = true; scene.add(floor)
+    const layout = { campus:CAMPUS, zones:CAMPUS_ZONES, shuttle:CAMPUS_SHUTTLE_STRIP }
+    const rack = buildVis2RackCell({ THREE, root, layout, baseY:0, quality:{ tier:'high' } })
+    const dock = buildVis2DockSample({ THREE, root, layout, baseY:0, quality:{ tier:'high' } })
+    const target = new THREE.Vector3(-146, 0.8, -15), controls = { az:-.6, el:.35, r:22, update() { const c = Math.cos(this.el); camera.position.set(target.x + this.r * c * Math.sin(this.az), target.y + this.r * Math.sin(this.el), target.z + this.r * c * Math.cos(this.az)); camera.lookAt(target) } }
+    const view = (position, focus) => { target.set(...focus); const point = new THREE.Vector3(...position).sub(target); controls.r = point.length(); controls.el = Math.asin(point.y / controls.r); controls.az = Math.atan2(point.x, point.z); controls.update() }
+    let drag = null
+    renderer.domElement.addEventListener('pointerdown', event => { drag = [event.clientX, event.clientY]; renderer.domElement.setPointerCapture(event.pointerId) })
+    renderer.domElement.addEventListener('pointerup', () => { drag = null })
+    renderer.domElement.addEventListener('pointermove', event => { if (!drag) return; controls.az -= (event.clientX - drag[0]) * .005; controls.el = Math.max(.05, Math.min(1.45, controls.el + (event.clientY - drag[1]) * .005)); drag = [event.clientX, event.clientY]; controls.update() })
+    renderer.domElement.addEventListener('wheel', event => { event.preventDefault(); controls.r = Math.max(5, Math.min(100, controls.r * (event.deltaY > 0 ? 1.1 : .9))); controls.update() }, { passive:false })
+    const resize = () => { renderer.setSize(stage.clientWidth, stage.clientHeight, false); camera.aspect = stage.clientWidth / stage.clientHeight; camera.updateProjectionMatrix() }
+    addEventListener('resize', resize); resize(); view([-169, 15, -5], [-146, .8, -15])
+    window.__vis2Dock = { THREE, renderer, scene, camera, rack, dock, view }
+    readout.textContent = JSON.stringify({ rack:rack.summary(), dock:dock.summary() })
+    renderer.setAnimationLoop(() => renderer.render(scene, camera))
+  </script>
+</body>
+</html>
