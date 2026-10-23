@@ -32,6 +32,7 @@ import { createBlockedPatrol, blockedReason } from './blocked.mjs'
 import { createRework } from './rework.mjs'
 import { createEvidenceVersion } from './evidence-version.mjs'
 import { loadCompletionPolicy, createCompletionGate, completionMessage } from './completion-policy.mjs'
+import { loadDispatchPolicy, decideAssign, decideCreate, dispatchMessage } from './dispatch-policy.mjs'
 import { createHandoff } from './handoff.mjs'
 import { createFoyer } from './foyer.mjs'
 import { createMemory, scanMemoryText } from './memory.mjs'
@@ -337,6 +338,10 @@ const ledger = createEventsLedger({ redactText, dir: HERE, now: Date.now, tz: PN
 const completionPolicy = (() => {
   try { return loadCompletionPolicy(fs.readFileSync(path.join(HERE, 'completion-policy.json'), 'utf8')) } catch { return loadCompletionPolicy(null) }
 })()
+// 派发准入（DS-8 R2）：同样默认关闭，dispatch-policy.json 是运行数据（不入库），启动时只读一次。
+const dispatchPolicy = (() => {
+  try { return loadDispatchPolicy(fs.readFileSync(path.join(HERE, 'dispatch-policy.json'), 'utf8')) } catch { return loadDispatchPolicy(null) }
+})()
 let completionGateFn = async () => ({ allow: true, mode: 'off', reasons: [], audit: null, skipped: true })
 
 async function act(a, options = {}) {
@@ -415,26 +420,42 @@ async function act(a, options = {}) {
       body.assigneeAgentId = ag.id
       body.status = 'todo'
     }
-    const created = await send('POST', `/api/companies/${COMPANY}/issues`, body)
-    if (!CONTRACT_VIEW_ENABLED) return created
+    // DS-8：契约先检查、再决定以什么状态创建（不新增上游请求次数）。
     const parsed = parseContract(description)
     const checked = parsed.found ? validateContract(parsed.contract, { assignee: body.assigneeAgentId || '' }) : null
-    return {
-      ...created,
-      contractCheck: {
-        state: !parsed.found ? 'none' : checked.ok ? 'complete' : 'incomplete',
-        errors: checked ? checked.errors.map((item) => ({ field: item.field, code: item.code })) : [],
-      },
+    const contractCheck = {
+      state: !parsed.found ? 'none' : checked.ok ? 'complete' : 'incomplete',
+      errors: checked ? checked.errors.map((item) => ({ field: item.field, code: item.code })) : [],
     }
+    const dispatchDecision = decideCreate({ policy: dispatchPolicy, contractCheck, wantsExecutable: Boolean(body.assigneeAgentId) })
+    if (dispatchDecision.forceDraft) {
+      body.status = 'backlog'
+      delete body.assigneeAgentId
+    }
+    const created = await send('POST', `/api/companies/${COMPANY}/issues`, body)
+    const dispatchCheck = dispatchPolicy.mode === 'off' || (!dispatchDecision.reasons.length && !dispatchDecision.forceDraft)
+      ? null
+      : { mode: dispatchDecision.mode, reasons: dispatchDecision.reasons, forcedDraft: dispatchDecision.forceDraft }
+    if (!CONTRACT_VIEW_ENABLED) return dispatchCheck ? { ...created, dispatchCheck } : created
+    return { ...created, contractCheck, ...(dispatchCheck ? { dispatchCheck } : {}) }
   }
   if (a.type === 'assign') {
     need(UUID.test(a.issueId || ''), '任务 id 不对')
     const [i, ag] = await Promise.all([get(`/api/issues/${a.issueId}`), assignee(a.assigneeAgentId)])
     need(i.status === 'backlog' || i.status === 'todo', '只能指派「待排期 / 待开始」的任务')
     need(!MONEY_RE.test(i.description || '') || MONEY_OK.has(ag.name), '资金类任务只能交给 GoSenior 或 DBEngineer')
-    const open = (i.blockedBy || []).filter((b) => b.status !== 'done' && b.status !== 'cancelled')
-    need(!open.length || a.force === true, `依赖未完成：${open.map((b) => b.identifier).join('、')}`)
-    return send('PATCH', `/api/issues/${a.issueId}`, { assigneeAgentId: ag.id, status: 'todo' })
+    const blockers = Array.isArray(i.blockedBy) ? i.blockedBy : i.blockedBy ? [i.blockedBy] : []
+    const override = a.override === true || a.overrideReason ? { reason: str(a.overrideReason, 500) } : null
+    const dispatchDecision = decideAssign({ policy: dispatchPolicy, issue: i, blockers, force: a.force === true, override, localFullAccess: options.localFullAccess === true })
+    if (!dispatchDecision.allow) {
+      if (dispatchDecision.mode === 'off') {
+        const open = blockers.filter((b) => b && b.status !== 'done' && b.status !== 'cancelled')
+        need(false, `依赖未完成：${open.map((b) => b.identifier).join('、')}`)
+      }
+      throw Object.assign(new Error(dispatchMessage(dispatchDecision)), { status: 409 })
+    }
+    const result = await send('PATCH', `/api/issues/${a.issueId}`, { assigneeAgentId: ag.id, status: 'todo' })
+    return dispatchDecision.audit && dispatchDecision.audit.override ? { ...result, dispatchAudit: dispatchDecision.audit } : result
   }
   // 取消任务：先发一条带原因的评论，再标为已取消；负责人正在跑这个任务时一并停掉那次运行
   if (a.type === 'cancel_issue') {

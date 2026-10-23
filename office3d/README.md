@@ -502,6 +502,19 @@ node E:\VirtualAIOffice\paperclip-ops\office3d\server.mjs
 - **覆盖范围**（与 `done-rules.mjs` 的 `enforcementBoundary` 同口径）：覆盖的是「办公室 3D 的任务验收流程 / 完成判定调用」；**未覆盖**：Agent 绕过办公室 3D 直接改 Paperclip 完成状态、Paperclip 原生领取 / 执行锁和其它入口、未接入本规则引擎的历史或外部工作流——这些必须单独授权和验证。
 - **安全边界不变**：局域网访问码、只读、Host 校验、`act()` 鉴权段保持原样；特批复用现有「本机完整权限」判定，不新增身份机制；不联网、不装依赖。自检：`node --test tests/completion-policy.test.mjs tests/completion-policy-wiring.test.mjs`。
 
+## 派发准入（dispatch-policy.mjs，DS-8 R2，2026-10-23；默认关闭，重启后生效）
+
+把 `act()` 里两处「派发」入口（`assign` 手动指派、`create_issue` 新建任务）统一过一道准入，沿用完成策略（DS-7）的结构：**默认 `off`，行为与改前完全一致**。
+
+- **三种模式**（`dispatch-policy.json`，运行数据、**不入库**；仓库只提供 `dispatch-policy.json.example`，内容 `{ "mode": "off" }`）：
+  - `off`：完全按旧逻辑——依赖里 `done` 与 `cancelled` 都算已满足，`force: true` 可直接放行（不写审计）。
+  - `warn`：放行，但把原因码附在结果里（`DEP_PENDING` / `DEP_CANCELLED` / `DEP_UNKNOWN`；创建侧 `NO_CONTRACT` / `CONTRACT_INCOMPLETE`）。
+  - `enforce`：依赖未满足即拒绝（**不发写请求**），`force` 不再单独生效；创建时契约不完整**只能建成草稿**（`backlog`、不指定负责人），契约完整才允许 `todo` + 负责人。
+- **依赖口径与调度核心一致**（`scheduler-core.mjs`）：`done` / `completed` 算满足；`cancelled` / `canceled` 默认**不算**交付（返回 `DEP_CANCELLED`），除非 `dispatch-policy.json` 显式 `"cancelledDependencySatisfies": true`；依赖字段不可靠 → `DEP_UNKNOWN`。
+- **人工例外**：仅 `enforce` 的 `assign` 支持 `override`（`overrideReason` 去空白 ≥10 字 + 本机完整权限），放行时返回 `dispatchAudit`（含原因与时间）；LAN / 大屏不能例外，尝试会得到 `OVERRIDE_NOT_ALLOWED`。创建入口不提供例外。
+- **覆盖范围**：办公室 3D 的 `assign` / `create_issue` 两个入口；**未覆盖**：Paperclip 原生指派、Agent 直接调用上游接口、其它未接入本规则引擎的工作流——这些必须单独授权和验证。
+- **安全边界不变**：局域网访问码、只读、Host 校验、`act()` 鉴权段保持原样；「本机完整权限」沿用 DS-7 已接好的 `options.localFullAccess`。自检：`node --test tests/dispatch-policy.test.mjs tests/dispatch-policy-wiring.test.mjs`。
+
 ## 前厅访客登记与公告（foyer.mjs，S1-2，2026-10-20；默认关闭，重启后生效）
 
 前厅的两项新数据：匿名访客登记 + 董事会手写公告。**默认关闭**：`foyer.json` 的 `visitors.enabled:false` / `announcement.enabled:false`；文件缺失按全部关闭、损坏视为关闭并在 `/state.foyer.corrupt:true` 提示，不崩溃。状态文件 `foyer.json` **原子写入**（`.tmp` 改名），且不在静态文件白名单里（`/foyer.json` 404，谁都读不到 salt 和摘要）。
