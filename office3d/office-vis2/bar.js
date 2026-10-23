@@ -45,10 +45,10 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
     batch.add(new THREE.CylinderGeometry(.065, .065, .18, 10), '#D9D3C6', [x, 1.145, z], 0, .46)
     batch.add(new THREE.CylinderGeometry(.073, .073, .025, 10), '#C9A57A', [x, 1.2475, z], 0, .65, 0, 'wood')
   }
-  // 柜门缝收在内弧立面之内；合入原批次，不增加 draw call。
+  // 内移 1 mm 避开高低档折线内壁；合入原批次，不增加 draw call。
   for (const arc of barArcs(barLayout)) for (let i = 1; i < 6; i++) {
     const a = arc.start + (arc.end - arc.start) * i / 6
-    batch.add(new THREE.BoxGeometry(.014, .63, .008), '#756857', [center.x + Math.cos(a) * 2.096, .49, center.z + Math.sin(a) * 2.096], Math.PI / 2 - a, .85)
+    batch.add(new THREE.BoxGeometry(.014, .63, .008), '#756857', [center.x + Math.cos(a) * 2.095, .49, center.z + Math.sin(a) * 2.095], Math.PI / 2 - a, .85)
   }
   for (const offset of [-.15, .15]) {
     const cup = new THREE.CylinderGeometry(.075, .06, .15, 10)

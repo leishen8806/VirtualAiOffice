@@ -88,7 +88,7 @@
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "E926DAAD6F9EDF4C565A1FA3B8E7F1118CE411E784BF1DFDD86615A13D771925",
+      "sha256": "F1697FDDE063BFF8ED082CA3A4B930C779E5111BCEA364598006EC74546C7497",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false

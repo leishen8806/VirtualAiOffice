@@ -23,6 +23,33 @@ const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRe
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
 
+test('Q-V1 cabinet seams clear actual faceted inner-wall triangles in both quality tiers', () => {
+  for (const low of [false, true]) {
+    const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3, low })
+    const mesh = value.root.getObjectByName('tea-bar-body-top-equipment'), p = mesh.geometry.attributes.position, colors = mesh.geometry.attributes.color
+    const tint = new THREE.Color('#756857'), seams = [], walls = []
+    for (let i = 0; i < p.count; i += 3) {
+      const seam = Math.abs(colors.getX(i) - tint.r) < 1e-6 && Math.abs(colors.getY(i) - tint.g) < 1e-6 && Math.abs(colors.getZ(i) - tint.b) < 1e-6
+      for (let j = 0; j < 3; j++) {
+        if (seam) seams.push(new THREE.Vector3().fromBufferAttribute(p, i + j))
+        else walls.push(p.getX(i + j), p.getY(i + j), p.getZ(i + j))
+      }
+    }
+    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(walls, 3))
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), body = new THREE.Mesh(geometry, material); body.updateMatrixWorld()
+    try {
+      assert.equal(seams.length, 360, 'all ten seam boxes are sampled, not an empty selection')
+      for (const vertex of seams) {
+        const origin = new THREE.Vector3(LAYOUT_V3.bar.center.x, vertex.y, LAYOUT_V3.bar.center.z), direction = vertex.clone().sub(origin).normalize()
+        const wall = new THREE.Raycaster(origin, direction).intersectObject(body)[0]
+        assert.ok(wall, 'actual inner-wall triangle exists behind each seam vertex')
+        const clearance = wall.distance - origin.distanceTo(vertex)
+        assert.ok(clearance > .0002 && clearance < .01, `${low ? 'low' : 'high'} clearance ${clearance}`)
+      }
+    } finally { geometry.dispose(); material.dispose(); value.dispose() }
+  }
+})
+
 test('O-V2 plaza reuses props, keeps source anchors and exports nonoverlapping integration footprints', () => {
   const before = JSON.stringify(LAYOUT_V3), batch = createSampleBatch(THREE), root = new THREE.Group()
   const placements = appendOfficePlaza({ THREE, batch, layout: LAYOUT_V3 }), built = batch.build(root, 'plaza-test')
