@@ -30,10 +30,24 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   const revisedDoor = "layoutRect('drlife', 'Dr.life+ 工作室', 9, 27, 7, 13, { side: 'north', at: 24 })"
   // O5 经董事会授权仅替换吧台碰撞段；仍逐字守住其余旧源码。
   const barBlock = /(?:\/\/ 复用吧台模块[^\n]*\n)?const V2_BAR_SEGMENTS = [\s\S]*?(?=\r?\n\r?\nconst V2_BAR_SEATS)/
-  const restored = currentSource.replace(barBlock, baselineSource.match(barBlock)[0])
+  // R3-2 仅追加独立 V3 数据与选择分支；还原后继续逐字守住旧布局源码。
+  const v3Block = /\r?\nconst V3_REGIONS = [\s\S]*?(?=\r?\nconst LAYOUT_V1_DATA)/
+  const resolverBlock = /export const resolveOfficeLayout = \(search = ''\) => \{[\s\S]*?\r?\n\}/
+  const restored = currentSource
+    .replace(v3Block, '')
+    .replace(/^export const LAYOUT_V3 = .*\r?\n/m, '')
+    .replace(resolverBlock, baselineSource.match(resolverBlock)[0])
+    .replace(barBlock, baselineSource.match(barBlock)[0])
   assert.equal(restored.replace(revisedDoor, revisedDoor.replace('at: 24', 'at: 18')).startsWith(baselineSource), true)
   for (const key of Object.keys(baseline)) {
     const expected = comparable(baseline[key])
+    if (key === 'resolveOfficeLayout') {
+      assert.equal(current.resolveOfficeLayout('?layout=2'), current.LAYOUT_V2)
+      assert.equal(current.resolveOfficeLayout(''), current.LAYOUT_V1)
+      assert.equal(current.resolveOfficeLayout('?layout=2&layout=1'), current.LAYOUT_V1)
+      assert.equal(current.resolveOfficeLayout('?layout=3'), current.LAYOUT_V3)
+      continue
+    }
     if (key === 'LAYOUT_V2') {
       for (const rooms of [expected.regions, expected.rooms]) rooms.find(room => room.id === 'drlife').doors[0].at = 24
       expected.bar.segments = barColliders(expected).map(({ x0, x1, z0, z1 }, index) => ({ index, x0, x1, z0, z1, angle: index * 30 + 15 }))

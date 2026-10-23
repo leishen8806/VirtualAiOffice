@@ -8,6 +8,10 @@ import {
   mountPlaceBar,
   placeNavigation,
 } from '../place-bar.js'
+import {
+  PLACE_ID_BY_LANDMARK,
+  placeIdForLandmark,
+} from '../town-map-core.js'
 import { townNavClientScript, townNavEnabled } from '../town-nav.mjs'
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8')
@@ -15,13 +19,93 @@ const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 test('place navigation maps both locations and their professional workbenches', () => {
   assert.deepEqual(placeNavigation('office-zixu-workshop'), PLACE_NAVIGATION.office)
   assert.deepEqual(placeNavigation('dr-logistics-campus'), PLACE_NAVIGATION.dr)
-  assert.equal(PLACE_NAVIGATION.office.placeHref, '/?place=office')
+  assert.deepEqual(PLACE_ID_BY_LANDMARK, {
+    'office-zixu-workshop': 'drlife-office',
+    'dr-logistics-campus': 'drlife-warehouse',
+  })
+  assert.equal(placeIdForLandmark('office-zixu-workshop'), 'drlife-office')
+  assert.equal(placeIdForLandmark('dr-logistics-campus'), 'drlife-warehouse')
+  assert.equal(
+    PLACE_NAVIGATION.office.placeHref,
+    '/?place=drlife-office&layout=3',
+  )
   assert.equal(PLACE_NAVIGATION.office.workbenchHref, '/command-view.html')
-  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?campus=1&place=dr')
+  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?place=drlife-warehouse')
   assert.equal(PLACE_NAVIGATION.dr.workbenchHref, '/dr-console.html')
   assert.equal(currentPlace({ pathname: '/command-view.html', search: '' }).id, 'office')
   assert.equal(currentPlace({ pathname: '/', search: '?campus=1&place=dr' }).id, 'dr')
+  assert.equal(currentPlace({ pathname: '/', search: '?place=drlife-warehouse' }).id, 'dr')
   assert.equal(currentPlace({ pathname: '/dr-console.html', search: '' }).id, 'dr')
+})
+
+function mockDocument() {
+  const makeNode = (name) => ({
+    name,
+    children: [],
+    textContent: '',
+    className: '',
+    attributes: {},
+    append(...children) {
+      this.children.push(...children)
+    },
+    prepend(...children) {
+      this.children.unshift(...children)
+    },
+    setAttribute(key, value) {
+      this.attributes[key] = value
+    },
+    querySelectorAll(selector) {
+      const matches = []
+      const visit = (node) => {
+        if (selector.startsWith('span') && node.name === 'span') matches.push(node)
+        for (const child of node.children || []) visit(child)
+      }
+      visit(this)
+      return matches
+    },
+  })
+  const body = makeNode('body')
+  body.dataset = { company: 'DR.LIFE' }
+  return {
+    body,
+    head: makeNode('head'),
+    createElement: makeNode,
+    getElementById: () => null,
+  }
+}
+
+test('place bar renders canonical place hrefs', () => {
+  const officeDocument = mockDocument()
+  const officeBar = mountPlaceBar({
+    config: { enabled: true },
+    documentRef: officeDocument,
+    locationRef: { pathname: '/', search: '?place=office' },
+  })
+  const officeLinks = officeBar.children.filter((node) => node.name === 'a')
+  assert.deepEqual(
+    officeLinks.map((link) => [link.textContent, link.href]),
+    [
+      ['返回小镇', '/town.html'],
+      ['前往DR 仓配服务中心', '/?place=drlife-warehouse'],
+      ['AI 团队指挥中心', '/command-view.html'],
+    ],
+  )
+
+  const warehouseDocument = mockDocument()
+  const warehouseBar = mountPlaceBar({
+    config: { enabled: true },
+    documentRef: warehouseDocument,
+    locationRef: { pathname: '/', search: '?place=drlife-warehouse' },
+  })
+  const warehouseLinks = warehouseBar.children.filter((node) => node.name === 'a')
+  assert.deepEqual(
+    warehouseLinks.map((link) => [link.textContent, link.href]),
+    [
+      ['返回小镇', '/town.html'],
+      ['前往智序工场·办公室', '/?place=drlife-office&layout=3'],
+      ['仓配调度中心', '/dr-console.html'],
+    ],
+  )
 })
 
 test('town navigation switch fails closed and emits only a boolean client config', () => {
@@ -81,9 +165,28 @@ test('town markers stay visible and navigable independently of town-nav switch',
   assert.match(map, /id: 'office-zixu-workshop'/)
   assert.match(map, /id: 'dr-logistics-campus'/)
   assert.match(source, /import \{ placeNavigation \} from '\.\/place-bar\.js'/)
+  assert.match(source, /placeNavigation\(placeIdForLandmark\(item\.id\)\)/)
   assert.match(source, /location\.assign\(target\.placeHref\)/)
+  assert.match(read('place-bar.js'), /latestSearch\('drlife-office'\)/)
+  assert.match(read('place-bar.js'), /latestSearch\('drlife-warehouse'\)/)
   assert.match(source, /办公室 · AI 团队指挥中心/)
   assert.match(source, /仓配地点 · 仓配调度中心/)
   assert.match(html, /id="placeTooltip"/)
   assert.doesNotMatch(source, /库存|订单|任务状态/)
+})
+
+test('town place transition resets after bfcache restore and cancelled navigation', () => {
+  const source = read('town.js')
+  const css = read('town.css')
+  const placeBar = read('place-bar.js')
+  const commandView = read('command-view.html')
+  assert.match(source, /addEventListener\('pageshow',/)
+  assert.match(source, /delete document\.body\.dataset\.placeTransition/)
+  assert.match(source, /clearPlaceTransition\(true\)/)
+  assert.match(source, /addEventListener\('pagehide',/)
+  assert.match(source, /schedulePlaceTransitionFallback\(\{/)
+  assert.match(source, /isPageLeaving: \(\) => pageLeaving/)
+  const opacity = Number(css.match(/data-place-transition="true"[^}]*opacity:([.\d]+)/)?.[1])
+  assert.ok(opacity >= 0.9, opacity)
+  assert.doesNotMatch(placeBar + commandView, /placeTransition|data-place-transition/)
 })

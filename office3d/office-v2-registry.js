@@ -3,7 +3,7 @@ const dynamic = object => {
   return false
 }
 
-export function mergeOfficeStatic(THREE, root) {
+export function mergeOfficeStatic(THREE, root, batchPrefix = 'office2') {
   root.updateWorldMatrix(true, true)
   const local = root.matrixWorld.clone().invert(), groups = new Map(), generated = []
   root.traverse(mesh => {
@@ -45,7 +45,7 @@ export function mergeOfficeStatic(THREE, root) {
     }
     pieces.forEach(piece => piece.dispose()); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
     const source = list[0], batch = new THREE.Mesh(geometry, source.material)
-    batch.name = `office2-merged-batch-${generated.length + 1}`; batch.castShadow = source.castShadow; batch.receiveShadow = source.receiveShadow
+    batch.name = `${batchPrefix}-merged-batch-${generated.length + 1}`; batch.castShadow = source.castShadow; batch.receiveShadow = source.receiveShadow
     batch.layers.mask = source.layers.mask; batch.renderOrder = source.renderOrder; batch.userData.qualityProxy = true
     batch.frustumCulled = source.frustumCulled
     root.add(batch); generated.push(batch)
@@ -54,8 +54,8 @@ export function mergeOfficeStatic(THREE, root) {
   return { removed, added: generated.length, dispose() { generated.forEach(mesh => { mesh.removeFromParent(); mesh.geometry.dispose() }) } }
 }
 
-export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
-  const root = new THREE.Group(); root.name = 'office2-root'
+export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName = 'office2-root', batchPrefix = 'office2' }) {
+  const root = new THREE.Group(); root.name = rootName
   const modules = new Map(), built = new Map(), skipped = []
   let merged = { removed: 0, added: 0 }, builtOnce = false
   let frameHook = null, previousFrame = null, sourceNow = null, lastFrame = null, animationMs = 0
@@ -72,7 +72,7 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
     const delta = Number.isFinite(dt) ? Math.min(.1, Math.max(0, dt)) : 0
     animationMs += delta * 1000
     for (const [name, value] of built) if (!stopped.has(name) && value.onFrame) {
-      try { value.onFrame(delta) }
+      try { value.onFrame(delta, { camera, now: animationMs }) }
       catch (error) {
         stopped.add(name); const message = String(error?.message || error)
         skipped.push({ name, error: `onFrame: ${message}` }); console.warn(`[office-v2:${name}] 已停用更新：${message}`)
@@ -86,13 +86,13 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
     builtOnce = true; scene.add(root)
     sourceNow = shared.now || (() => 0); animationMs = sourceNow()
     for (const [name, factory] of modules) {
-      const mount = new THREE.Group(); mount.name = `office2-${name}-root`; root.add(mount)
+      const mount = new THREE.Group(); mount.name = `${batchPrefix}-${name}-root`; root.add(mount)
       const pending = [], collision = shared.collision && { ...shared.collision, add: (...args) => pending.push(args) }
       const sceneBefore = new Map(scene.children.map(child => [child, child.visible]))
       try {
         const value = factory({ ...shared, THREE, root: mount, scene, layout, quality, low: quality?.tier === 'low', collision, get, now: () => animationMs }) || {}
         let part = 0
-        mount.traverse(object => { if (object !== mount && !object.name.startsWith(`office2-${name}-`)) object.name = `office2-${name}-${object.name.replace(/^office2-/, '') || `part-${part++}`}` })
+        mount.traverse(object => { if (object !== mount && !object.name.startsWith(`${batchPrefix}-${name}-`)) object.name = `${batchPrefix}-${name}-${object.name.replace(/^office2-/, '').replace(/^office3-/, '') || `part-${part++}`}` })
         built.set(name, value)
         for (const args of pending) shared.collision.add(...args)
       } catch (error) {
@@ -103,7 +103,7 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
         console.warn(`[office-v2:${name}] 已跳过：${message}`)
       }
     }
-    merged = mergeOfficeStatic(THREE, root)
+    merged = mergeOfficeStatic(THREE, root, batchPrefix)
     if ([...built.values()].some(value => value.onFrame)) {
       previousFrame = scene.onBeforeRender
       frameHook = function (renderer, currentScene, camera, ...args) {

@@ -3,7 +3,7 @@ import { CAMBODIA_CITIES, CAMBODIA_OUTLINE_D, CAMBODIA_ROUTE_PAIRS, MAP_VIEW } f
 export const SCREEN_REFRESH_MS = 5000
 export const DISPATCH_SCREEN_STYLE = Object.freeze({
   panel: '#24485c', mapFill: '#183847', outline: '#8fb4c1', outlineWidth: 4,
-  route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 30,
+  route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 40,
   node: '#b7d4e0', phnomPenh: '#d5af62', phnomPenhRadius: 14, cityRadius: 7,
 })
 
@@ -47,7 +47,7 @@ function draw(ctx, width, height, frame) {
     ctx.fillStyle = phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenh : DISPATCH_SCREEN_STYLE.node
     if (phnomPenh) { ctx.shadowColor = DISPATCH_SCREEN_STYLE.phnomPenh; ctx.shadowBlur = 18 }
     ctx.beginPath(); ctx.arc(x, y, phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenhRadius : DISPATCH_SCREEN_STYLE.cityRadius, 0, Math.PI * 2); ctx.fill()
-    ctx.shadowBlur = 0; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.lineWidth = 4
+    ctx.shadowBlur = 0; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.lineWidth = 5
     ctx.strokeText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
     ctx.fillStyle = DISPATCH_SCREEN_STYLE.label; ctx.fillText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
   }

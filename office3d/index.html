@@ -46,6 +46,14 @@
   body.clean #top, body.clean #quest, body.clean #detail, body.clean #help, body.clean #replayHint, body.clean #dock { display:none !important; }
   body.clean #todayPanel { display:none !important; }
   body.clean #searchPanel { display:none !important; }
+  #drPanel { display:none; }
+  body.place-dr .chips, body.place-dr #todayPanel, body.place-dr #quest, body.place-dr #detail, body.place-dr #zones, body.place-dr #labels, body.place-dr #bubbles, body.place-dr .catTag, body.place-dr #catPlayStatus, body.place-dr #replayHint, body.place-dr #searchPanel, body.place-dr #staleBanner, body.place-dr #tools .grp, body.place-dr #searchBtn { display:none !important; }
+  body.place-dr #drPanel { display:block; position:fixed; z-index:6; top:76px; right:14px; width:320px; max-width:calc(100vw - 28px); padding:14px; box-sizing:border-box; }
+  #drPanel h2 { margin:0 0 4px; color:var(--gold2); font-size:16px; } #drPanel .dr-sub { color:var(--muted); font-size:11px; }
+  #drPanel .dr-actions { display:flex; gap:8px; margin:12px 0; } #drPanel .dr-actions a { flex:1; padding:8px; border:1px solid var(--line); border-radius:9px; color:var(--text); text-align:center; text-decoration:none; }
+  #drPanel .dr-flow { margin:6px 0; color:var(--muted); font-size:12px; } #drPanel .dr-flow b { color:var(--gold2); }
+  #drZoneSearch { width:100%; box-sizing:border-box; margin-top:10px; padding:8px 10px; border:1px solid var(--line); border-radius:9px; background:rgba(0,0,0,.2); color:var(--text); }
+  #drZoneResults { display:grid; gap:4px; max-height:190px; margin-top:6px; overflow:auto; } #drZoneResults button { border:0; border-radius:7px; padding:6px 8px; background:transparent; color:var(--text); text-align:left; cursor:pointer; } #drZoneResults button:hover { background:rgba(255,255,255,.1); }
   #todayPanel { position:fixed; z-index:5; top:70px; left:14px; width:330px; max-width:calc(100vw - 28px); padding:10px 12px; }
   #todayPanel.collapsed .today-body, #todayPanel.collapsed .today-duty { display:none; }
   #todayPanel .today-summary { display:none; color:var(--gold2); font-size:12px; white-space:nowrap; }
@@ -365,6 +373,13 @@
 </div>
 
 <div id="todayPanel" class="glass collapsed" aria-label="今日工作情况"></div>
+
+<section id="drPanel" class="glass" aria-label="仓配地点">
+  <h2>DR 仓配服务中心</h2><div class="dr-sub">仓配地点 · 演示场景</div>
+  <div class="dr-actions"><a href="/dr-console.html">调度中心</a><a id="drControlRoomLink" href="/?place=drlife-warehouse&amp;controlRoom=1">进入调度中控室</a><a href="/town.html">返回小镇</a></div>
+  <div class="dr-flow"><b>W1</b> 入库、质检与智慧云仓流程</div><div class="dr-flow"><b>W2</b> 拣货、包装与周转流程</div><div class="dr-flow"><b>W3</b> 集货、发货与配送流程</div>
+  <input id="drZoneSearch" type="search" autocomplete="off" placeholder="搜索 14 个园区功能区"><div id="drZoneResults"></div>
+</section>
 
 <div id="quest" class="glass collapsed">
   <div class="qhead" id="questHead"><h2>等你处理</h2><button class="dispatch" id="dispatchBtn" title="新建任务，或把待排期的任务派给某位同事">＋ 派发任务</button><span class="count zero" id="questCount">0</span><span class="note" id="questFold">展开</span></div>

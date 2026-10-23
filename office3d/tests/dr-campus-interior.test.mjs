@@ -19,7 +19,7 @@ test('dispatch screen is deterministic, simulated and rate-bounded', () => {
 test('S2-11b dispatch screen uses the readable restrained blue and gold palette', () => {
   assert.deepEqual(DISPATCH_SCREEN_STYLE, {
     panel: '#24485c', mapFill: '#183847', outline: '#8fb4c1', outlineWidth: 4,
-    route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 30,
+    route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 40,
     node: '#b7d4e0', phnomPenh: '#d5af62', phnomPenhRadius: 14, cityRadius: 7,
   })
 })

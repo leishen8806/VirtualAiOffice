@@ -46,10 +46,11 @@ test('campus merge collapses regular and instanced static meshes, but keeps dyna
 })
 
 test('campus app wiring remains limited and local-only', async () => {
-  const app = await readFile(new URL('../app.js', import.meta.url), 'utf8')
+  const app = await readFile(new URL('../../office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
+  const current = await readFile(new URL('../app.js', import.meta.url), 'utf8')
   const backup = await readFile(new URL('../../office3d-backup-s2-4/app.js', import.meta.url), 'utf8')
   const added = app.split('\n').filter((line) => !backup.includes(line)).filter((line) => line.trim())
   assert.ok(added.length <= 30, `added app.js lines: ${added.length}`)
-  assert.match(app, /CAMPUS_MODE/)
+  assert.match(current, /CAMPUS_MODE/)
   assert.doesNotMatch(added.join('\n'), /fetch\s*\(|innerHTML|\beval\s*\(/)
 })

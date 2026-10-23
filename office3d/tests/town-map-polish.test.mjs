@@ -17,8 +17,10 @@ import {
   landmarkNameMeta,
   loadMapWithFallback,
   mapBounds,
+  nextLabelFrame,
   placeMarkerMetrics,
   resolveLabelPlacement,
+  schedulePlaceTransitionFallback,
   typeText,
   worldToScreen,
 } from '../town-map-core.js'
@@ -142,8 +144,9 @@ test('place badges scale, fit the full logo and keep a 32px hit radius', () => {
   assert.ok(normal.diameter >= 28 && normal.diameter <= 44)
   assert.equal(large.diameter, 44)
   assert.ok([small, normal, large].every((item) => item.hitRadius >= 32))
+  assert.ok([small, normal, large].every((item) => item.logoWidth >= 22))
   assert.ok(Math.abs(large.logoWidth / large.logoHeight - 979 / 544) < 1e-9)
-  assert.ok(large.logoWidth <= large.diameter * 0.72)
+  assert.ok(large.logoWidth <= large.diameter * 0.8)
   assert.ok(large.logoHeight <= large.diameter * 0.55)
 
   const data = structuredClone(mapData)
@@ -152,6 +155,29 @@ test('place badges scale, fit the full logo and keep a 32px hit radius', () => {
   const center = worldToScreen({ x: PLACES[0].point[0], y: PLACES[0].point[1] }, view, 1280, 900)
   assert.equal(hitTest({ x: center.x + 31, y: center.y }, data, view, 1280, 900)?.item.id, PLACES[0].id)
   assert.notEqual(hitTest({ x: center.x + 33, y: center.y }, data, view, 1280, 900)?.item?.id, PLACES[0].id)
+})
+
+test('place transition fallback clears only when pagehide did not occur', () => {
+  let callback
+  let delay
+  let leaving = false
+  let clears = 0
+  const timer = schedulePlaceTransitionFallback({
+    isPageLeaving: () => leaving,
+    clear: () => { clears++ },
+    schedule: (next, milliseconds) => {
+      callback = next
+      delay = milliseconds
+      return 42
+    },
+  })
+  assert.equal(timer, 42)
+  assert.equal(delay, 1500)
+  callback()
+  assert.equal(clears, 1)
+  leaving = true
+  callback()
+  assert.equal(clears, 1)
 })
 
 test('place badge draws the logo once and falls back to the existing ring marker', () => {
@@ -201,6 +227,8 @@ test('both place labels survive congestion and stay named in every label mode', 
   ], () => 80)
   assert.deepEqual(crowded.visible.filter((item) => item.kind === 'place').map((item) => item.key), ['place:office', 'place:dr'])
   assert.deepEqual(crowded.hidden.map((item) => item.key).sort(), ['khan:x', 'landmark:x'])
+  const firstFrame = nextLabelFrame(crowded)
+  assert.ok(firstFrame.draw.filter((item) => item.kind === 'place').every((item) => item.alpha === 1))
 })
 
 test('landmark type translations cover every type present in the data', () => {
