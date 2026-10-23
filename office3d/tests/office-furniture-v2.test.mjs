@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
-import { LAYOUT_V2, SEATS } from '../office-layout.js'
+import { LAYOUT_V2, LAYOUT_V3, SEATS } from '../office-layout.js'
 import { MONITOR_GLASS_SOURCE, monitorScreenFit, workstationDesktop, officeFurnitureV2Spec, placeOfficeFurnitureV2 } from '../office-furniture-v2.js'
 import { mergeOfficeStatic } from '../office-v2-registry.js'
 
@@ -118,7 +118,49 @@ test('O4 meeting seats are A=8 B=6; boss, board and bookshelves do not overlap',
   assert.ok(spec.opsScreen.y > 2.2, 'ops screen stays above the door')
 })
 
-function fixture(withLegacy = false) {
+const doorApproach = (region) => {
+  const door = region.doors[0], half = door.width / 2
+  if (door.side === 'north') return { x0: door.at - half, x1: door.at + half, z0: region.z0, z1: region.z0 + 1.2 }
+  if (door.side === 'south') return { x0: door.at - half, x1: door.at + half, z0: region.z1 - 1.2, z1: region.z1 }
+  if (door.side === 'west') return { x0: region.x0, x1: region.x0 + 1.2, z0: door.at - half, z1: door.at + half }
+  return { x0: region.x1 - 1.2, x1: region.x1, z0: door.at - half, z1: door.at + half }
+}
+
+test('O-06 derives meeting tables, seats and screens from V3 room boundaries without changing V2 fallback coordinates', () => {
+  const v2 = officeFurnitureV2Spec(LAYOUT_V2), v3 = officeFurnitureV2Spec(LAYOUT_V3)
+  assert.deepEqual(v2.meetings.map(({ id, x, z, screen }) => ({ id, x, z, screen: { x: screen.x, z: screen.z, yaw: screen.yaw } })), [
+    { id: 'A', x: -12.5, z: -14, screen: { x: -12.5, z: -17.72, yaw: 0 } },
+    { id: 'B', x: -5.5, z: -14, screen: { x: -5.5, z: -17.72, yaw: 0 } },
+  ])
+  assert.deepEqual(v3.meetings.map(({ id, x, z, screen }) => ({ id, x, z, screen: { x: screen.x, z: screen.z, yaw: screen.yaw } })), [
+    { id: 'A', x: -23, z: -7.5, screen: { x: -27.72, z: -7.5, yaw: Math.PI / 2 } },
+    { id: 'B', x: -12.5, z: -7.5, screen: { x: -8.78, z: -7.5, yaw: -Math.PI / 2 } },
+  ])
+  assert.deepEqual(new Set(v3.workstations.map(item => item.name)), new Set(Object.keys(SEATS)))
+  assert.deepEqual(new Set(v3.workstations.map(item => item.name)), new Set(Object.keys(LAYOUT_V3.seats)))
+  assert.deepEqual(v3.workstations.map(item => [item.name, item.region, item.x, item.z]), Object.entries(LAYOUT_V3.seats).map(([name, [region, x, z]]) => [name, region, x, z]))
+  assert.equal(new Set(v3.meetings.flatMap(room => room.seats.map(seat => `${room.id}:${seat.x},${seat.z}`))).size, 14)
+
+  for (const room of v3.meetings) {
+    const region = LAYOUT_V3.regions.find(item => item.id === room.region)
+    const table = box(room.x, room.z, room.w, room.d)
+    const screen = room.screen.yaw % Math.PI === 0
+      ? box(room.screen.x, room.screen.z, room.screen.w, .05)
+      : box(room.screen.x, room.screen.z, .05, room.screen.w)
+    assert.ok(inside(table, region), `${room.id}/table`)
+    assert.ok(inside(screen, region), `${room.id}/screen`)
+    assert.equal(overlaps(table, doorApproach(region)), false, `${room.id}/table door approach`)
+    assert.equal(overlaps(screen, doorApproach(region)), false, `${room.id}/screen door approach`)
+    for (const seat of room.seats) {
+      const chair = box(seat.x, seat.z, .62, .62)
+      assert.ok(inside(chair, region), `${room.id}/chair`)
+      assert.equal(overlaps(chair, table), false, `${room.id}/chair table`)
+      assert.equal(overlaps(chair, doorApproach(region)), false, `${room.id}/chair door approach`)
+    }
+  }
+})
+
+function fixture(withLegacy = false, layout = LAYOUT_V2) {
   const scene = new THREE.Scene(), bodies = [], scrs = []
   const legacy = []
   if (withLegacy) for (const [w, h, d, x, z] of [[20, 2, .3, -20, -13], [.2, 2, 26, 22, 0], [20, 2, .3, -90, -13]]) {
@@ -130,12 +172,22 @@ function fixture(withLegacy = false) {
   const placeFurniture = (assets, name, x, z, { y = 0, rotY = 0 }) => { const group = new THREE.Group(); group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ name: 'wood' }))); group.position.set(x, y, z); group.rotation.y = rotY; return { group, size: new THREE.Vector3(1, 1, 1) } }
   const canvasTex = () => ({ image: { getContext: ctx }, dispose() {} })
   const makeScreenTexture = () => { const scr = { ctx: ctx(), tex: { dispose() {} }, scroll: 0, last: '' }; scrs.push(scr); return scr }
-  const value = placeOfficeFurnitureV2({ THREE, scene, layout: LAYOUT_V2, A, placeFurniture, collision: { add(g, kind) { bodies.push({ g, kind, bounds: new THREE.Box3().setFromObject(g) }) } }, canvasTex, makeScreenTexture })
+  const value = placeOfficeFurnitureV2({ THREE, scene, layout, A, placeFurniture, collision: { add(g, kind) { bodies.push({ g, kind, bounds: new THREE.Box3().setFromObject(g) }) } }, canvasTex, makeScreenTexture })
   const merged = mergeOfficeStatic(THREE, value.root), dispose = value.dispose
   assert.ok(merged.removed > 100); assert.equal(merged.added, 1)
   value.dispose = () => { merged.dispose(); dispose() }
   return { value, scene, bodies, scrs, legacy }
 }
+
+test('O-06 V3 furniture keeps its own meeting proxies and does not duplicate V2 wall colliders', () => {
+  const { value, bodies } = fixture(false, LAYOUT_V3)
+  assert.deepEqual(value.spec.meetings.map(room => [room.id, room.x, room.z]), [['A', -23, -7.5], ['B', -12.5, -7.5]])
+  assert.equal(bodies.filter(body => body.kind === 'officeWall').length, 0)
+  assert.equal(bodies.filter(body => body.kind === 'table').length, 3)
+  assert.equal(bodies.filter(body => body.kind === 'meetingTable').length, 1)
+  assert.equal(value.wing.seats.length, 14)
+  value.dispose()
+})
 
 test('O4 renderer uses one shadow-free batch, collision proxies and private warm materials', () => {
   const { value, scene, bodies, scrs } = fixture()

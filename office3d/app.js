@@ -334,8 +334,9 @@ function furn(name, x, z, opt) {
 }
 
 // ───────────────────────── 西翼：会议室 + 运维 / 知识库工作区 ─────────────────────────
-const wing = buildWing({ scene, box, add, M, VI, canvasTex, marble, furn, A, WALL_H, BACK_Z, carpet, furnitureCollision })
-const MEET_SEATS = wing.seats
+// Rev3 由 registry 的 furniture3 模块创建同一套会议家具，不能先叠加旧西翼再销毁。
+let wing = LAYOUT3_MODE ? { seats: [], drawSchedule() {}, drawRoom() {} } : buildWing({ scene, box, add, M, VI, canvasTex, marble, furn, A, WALL_H, BACK_Z, carpet, furnitureCollision })
+let MEET_SEATS = wing.seats
 // 会议室里每个座位的走法：从工位 → 过道 → 西翼入口 → 会议室门 → 绕过桌子的侧过道 → 座位
 for (const seat of MEET_SEATS) seat.pathFn = v => meetingTrip(v.home, seat)
 
@@ -953,6 +954,11 @@ for (const child of scene.children) if (child.userData.legacyHangingSign) child.
 
 // rev3 不复用旧外壳、家具、广场和仓配旧址；保留灯光，V3 注册根独立接管场景。
 const activeCollision = LAYOUT3_MODE ? createFurnitureCollision() : furnitureCollision; const officeV3 = LAYOUT3_MODE ? (() => { const legacy = scene.children.filter((child) => !environmentRoots.has(child) && !child.isLight && !child.isCamera); const envConflicts = selectEnvironmentConflicts(environmentRoots, LAYOUT_V3); demolishLegacyScene(scene, new Set([...legacy, ...envConflicts])); return startOfficeV3({ THREE, scene, quality: qualityPolicy, layout: LAYOUT_V3, collision: activeCollision, A, placeFurniture, canvasTex, makeScreenTexture, floor, search: location.search }) })() : null
+if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
+  wing = officeV3.get('furniture3').wing
+  MEET_SEATS = wing.seats
+  for (const seat of MEET_SEATS) seat.pathFn = v => meetingTrip(v.home, seat)
+}
 
 // ───────────────────────── 区域标牌 ─────────────────────────
 const zoneLabels = []

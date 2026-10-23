@@ -23,6 +23,22 @@ export function workstationDesktop(seat) {
   return { yaw, monitor, keyboard, mouse, fit: monitorScreenFit({ ...monitor, y: .76, yaw }) }
 }
 
+const meetingRegion = (layout, id) => {
+  const region = layout.regions?.find(item => item.id === id)
+  if (!region) throw new Error(`缺少会议区域: ${id}`)
+  return region
+}
+
+const meetingScreen = (region) => {
+  const door = region.doors?.[0]
+  const side = door?.side === 'south' ? 'north' : door?.side === 'north' ? 'south' : door?.side === 'east' ? 'west' : 'east'
+  const center = { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
+  if (side === 'north') return { ...center, z: region.z0 + .28, yaw: 0, side }
+  if (side === 'south') return { ...center, z: region.z1 - .28, yaw: Math.PI, side }
+  if (side === 'west') return { ...center, x: region.x0 + .28, yaw: Math.PI / 2, side }
+  return { ...center, x: region.x1 - .28, yaw: -Math.PI / 2, side }
+}
+
 export function officeFurnitureV2Spec(layout) {
   const workstations = Object.entries(layout.seats).map(([name, [region, x, z]]) => ({
     name, region, x, z, desk: bounds(x, z, 1.4, .7),
@@ -30,12 +46,20 @@ export function officeFurnitureV2Spec(layout) {
     front: bounds(x, z - .8, 1.4, .9),
   }))
   const meetings = [
-    { id: 'A', region: 'review', x: -12.5, z: -14, w: 4, d: 1.4, round: false },
-    { id: 'B', region: 'plan', x: -5.5, z: -14, w: 1.8, d: 1.8, round: true },
-  ].map(room => ({ ...room, seats: room.round
+    { id: 'A', region: 'review', w: 4, d: 1.4, round: false },
+    { id: 'B', region: 'plan', w: 1.8, d: 1.8, round: true },
+  ].map((meeting) => {
+    const region = meetingRegion(layout, meeting.region)
+    // V2 的已验收位置保持不变；其余布局从稳定 room id 的真实边界推导。
+    const center = layout.version === 2
+      ? (meeting.id === 'A' ? { x: -12.5, z: -14 } : { x: -5.5, z: -14 })
+      : { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
+    const room = { ...meeting, ...center, yaw: 0, screen: { ...meetingScreen(region), y: 2.4, w: 2, h: 1.125 } }
+    return { ...room, seats: room.round
     ? Array.from({ length: 6 }, (_, i) => { const angle = i * Math.PI / 3; return { room: room.id, x: room.x + Math.sin(angle) * 1.45, z: room.z + Math.cos(angle) * 1.45, yaw: angle, meeting: true } })
     : [...[-1.4, 0, 1.4].flatMap(dx => [{ room: room.id, x: room.x + dx, z: room.z - 1.15, yaw: Math.PI, meeting: true }, { room: room.id, x: room.x + dx, z: room.z + 1.15, yaw: 0, meeting: true }]), { room: room.id, x: room.x - 2.5, z: room.z, yaw: -Math.PI / 2, meeting: true }, { room: room.id, x: room.x + 2.5, z: room.z, yaw: Math.PI / 2, meeting: true }],
-  }))
+    }
+  })
   const boss = { desk: layout.boss.desk, chair: { x: layout.boss.desk.x, z: layout.boss.desk.z - 1, yaw: Math.PI }, stand: layout.boss.stand }
   // 会议桌沿南北方向，避开同房间内固定的老板桌。
   const board = { ...layout.boardTable, w: 1.4, d: 3.6 }
@@ -135,13 +159,15 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
   // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
   for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
-  const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.x, 2.4, -17.72, 2, 1.125, `会议室 ${room.id}`)]))
+  const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.screen.x, room.screen.y, room.screen.z, room.screen.w, room.screen.h, `会议室 ${room.id}`, room.screen.yaw)]))
   const boardScr = screen(-20, 2.4, -17.72, 2, 1.125, '董事会')
   // v2 独立浅金细线，旧布局材质保持原样。
-  for (const part of buildOfficeShellV2Spec(layout).filter(part => part.kind === 'glass' && !part.locked)) {
-    const w = part.x1 - part.x0, d = part.z1 - part.z0, x = (part.x0 + part.x1) / 2, z = (part.z0 + part.z1) / 2
-    const proxy = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d)); proxy.position.set(x, 1.1, z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'officeWall')
-    box(x, 2.21, z, w > d ? w : .025, .025, d > w ? d : .025, THEME.trim)
+  if (layout.version === 2) {
+    for (const part of buildOfficeShellV2Spec(layout).filter(part => part.kind === 'glass' && !part.locked)) {
+      const w = part.x1 - part.x0, d = part.z1 - part.z0, x = (part.x0 + part.x1) / 2, z = (part.z0 + part.z1) / 2
+      const proxy = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, d)); proxy.position.set(x, 1.1, z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'officeWall')
+      box(x, 2.21, z, w > d ? w : .025, .025, d > w ? d : .025, THEME.trim)
+    }
   }
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, map: atlas, roughness: .82, metalness: .02, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })
   // 只统一顶点格式与屏幕 atlas；跨部件的合并交给注册口，避免维护第二套合并器。
