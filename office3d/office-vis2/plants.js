@@ -16,4 +16,3 @@ export function buildOfficeSamplePlants({ THREE, root, layout = LAYOUT_V3, asset
   const plants = batch.build(group, 'sample-instanced-potted-plants', poses); root.add(group)
   return { root: group, placements: poses, summary: () => ({ calls: 1, triangles: plants.triangles(), pots: poses.length }), dispose() { plants.dispose(); group.removeFromParent() } }
 }
-
