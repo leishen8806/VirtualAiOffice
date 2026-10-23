@@ -125,7 +125,7 @@ function updateClock() {
 }
 function setTheme(theme) { document.documentElement.dataset.theme = theme; $('#theme').textContent = theme === 'light' ? '深色' : '浅色'; $('#theme').setAttribute('aria-pressed', String(theme === 'light')) }
 
-// shortcut: 园区主体使用 W1/W2/W3 园区全景（dr-cam-overview）；需要自由机位时再接独立三维模型。
+// shortcut: 园区主体使用从《仪表盘6.0》整图裁剪的 W1/W2/W3 园区鸟瞰（dr-campus-hero.jpg）；需要自由机位时再接独立三维模型。
 const plate = new Image()
 plate.addEventListener('error', () => $('#campus').classList.add('imageFailed'))
 plate.src = '/assets/demo/dr-campus-hero.jpg'
