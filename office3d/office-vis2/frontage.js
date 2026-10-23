@@ -1,4 +1,5 @@
 import { createSampleBatch } from './batch.js'
+import { receptionBackdrop } from './foyer.js'
 
 export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex }) {
   const f = layout.foyer, group = new THREE.Group(); group.name = 'office-vis2-frontage'; root.add(group)
@@ -23,10 +24,12 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
   specs.forEach((s, i) => { helper.position.set(s.x, 1.4, s.z); helper.rotation.y = s.yaw; helper.scale.set(s.width, 2.75, 1); helper.updateMatrix(); panels.setMatrixAt(i, helper.matrix) })
   panels.instanceMatrix.needsUpdate = true; panels.renderOrder = 2; panels.name = 'vis2-neutral-transparent-glass'; group.add(panels)
   let label, texture, labelMaterial, disposed = false
-  if (canvasTex) {
-    texture = canvasTex(1024, 128, (ctx, width, height) => { ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '500 58px Microsoft YaHei, sans-serif'; ctx.fillText('前厅接待  ·  RECEPTION', width / 2, height / 2) })
-    labelMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }); label = new THREE.Mesh(new THREE.PlaneGeometry(3.7, .46), labelMaterial)
-    label.position.set(layout.frontDesk.center.x, 1.88, layout.frontDesk.z0 - .24); group.add(label)
-  }
-  return { root: group, mapping: { glass: specs, gatePosts, entrance: { x: mid, z: f.z1, width: 4 } }, summary: () => ({ calls: label ? 3 : 2, triangles: fixed.triangles() + 8 + (label ? 2 : 0) }), dispose() { if (disposed) return; disposed = true; fixed.dispose(); geometry.dispose(); material.dispose(); panels.dispose(); label?.geometry.dispose(); labelMaterial?.dispose(); texture?.dispose(); group.removeFromParent() } }
+  const dispose = () => { if (disposed) return; disposed = true; fixed.dispose(); geometry.dispose(); material.dispose(); panels.dispose(); label?.geometry.dispose(); labelMaterial?.dispose(); texture?.dispose(); group.removeFromParent() }
+  try { if (canvasTex) {
+    const surface = receptionBackdrop(layout.frontDesk).grille
+    texture = canvasTex(1024, 64, (ctx, width, height) => { ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '500 48px Microsoft YaHei, sans-serif'; ctx.fillText('前厅接待  ·  RECEPTION', width / 2, height / 2) })
+    labelMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }); label = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .15), labelMaterial)
+    label.name = 'vis2-reception-wayfinding'; label.position.set(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002); group.add(label)
+  } } catch (error) { dispose(); throw error }
+  return { root: group, mapping: { glass: specs, gatePosts, entrance: { x: mid, z: f.z1, width: 4 } }, summary: () => ({ calls: label ? 3 : 2, triangles: fixed.triangles() + 8 + (label ? 2 : 0) }), dispose }
 }

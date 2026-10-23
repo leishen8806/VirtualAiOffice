@@ -15,11 +15,10 @@ export function buildOfficeSampleZone(context) {
   const modules = []; let merged, bar, foyer, floor, plants, brand, frontage, disposed = false
   const dispose = () => { if (disposed) return; disposed = true; merged?.dispose(); modules.slice().reverse().forEach(v => v.dispose()); group.removeFromParent() }
   try {
-    bar = buildOfficeTeaBarSample({ ...context, root: group })
-    foyer = buildOfficeFoyerFurniture({ ...context, root: group })
-    floor = buildOfficeFloorPattern({ ...context, root: group })
-    plants = buildOfficeSamplePlants({ ...context, root: group })
-    modules.push(bar, foyer, floor, plants)
+    modules.push(bar = buildOfficeTeaBarSample({ ...context, root: group }))
+    modules.push(foyer = buildOfficeFoyerFurniture({ ...context, root: group }))
+    modules.push(floor = buildOfficeFloorPattern({ ...context, root: group }))
+    modules.push(plants = buildOfficeSamplePlants({ ...context, root: group }))
     group.updateWorldMatrix(true, true)
     const inverse = group.matrixWorld.clone().invert(), parts = [], batch = createSampleBatch(THREE, context.assets)
     group.traverse(m => { if (m.isMesh && m.visible && (!m.isInstancedMesh || m.name.includes('concentric-rings'))) parts.push(m) })
@@ -34,10 +33,12 @@ export function buildOfficeSampleZone(context) {
     }
     merged = batch.build(group, 'sample-zone-static-surfaces')
     merged.mesh.castShadow = !context.low
-    brand = buildOfficeBrandMarks({ ...context, root: group })
-    frontage = buildOfficeVis2Frontage({ ...context, root: group })
-    modules.push(brand, frontage)
+    modules.push(brand = buildOfficeBrandMarks({ ...context, root: group }))
+    modules.push(frontage = buildOfficeVis2Frontage({ ...context, root: group }))
   } catch (error) { dispose(); throw error }
+  // 样板已自行合批；沿用宿主 qualityProxy 约定，避免通用降档抹去表面/小叶着色器。
+  group.userData.dynamic = true
+  group.traverse(mesh => { if (mesh.isMesh) mesh.userData.qualityProxy = true })
   const summary = () => {
     let calls = 0, triangles = 0
     group.traverse(m => { if (m.isMesh && m.visible) { calls++; triangles += (m.geometry.index?.count ?? m.geometry.attributes.position.count) / 3 * (m.isInstancedMesh ? m.count : 1) } })

@@ -4,6 +4,14 @@
   "date": "2026-10-23",
   "baseline": "cbddb9fa3b874f7f56c8410928a8edd23013795c",
   "downloaded": false,
+  "followUpTask": "VIS3-CODEX-001/M1 (continues VIS2-O-R3)",
+  "followUpBaseline": "eee77accb1270b2dcec2042f84b1ec1dccf5e02e",
+  "previewContext": {
+    "file": "office-vis2/preview-context.js",
+    "source": "Reuses existing office shell, furniture placement and assets3d loader; no new downloaded model assets",
+    "assetProvenance": "assets/ASSET_LEDGER.md: Kenney Furniture Kit / Quaternius base and animation kits, recorded CC0 1.0",
+    "runtimeIntegration": false
+  },
   "externalReferencePhotosUsedAsTexture": false,
   "textures": [
     {
@@ -73,7 +81,7 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "24B4D314C3F7B17C4554461E13D481F8E02580CCFCCF540FE1E0C722DFEBD1E5",
+      "sha256": "197059F5F94249B0BA8BD2E7A6D62587EBBAB6F35E64771C9E7465F61319676C",
       "source": "Existing B0 procedural asset, reused unchanged",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -87,7 +95,7 @@
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "9CA1CCFD32F9510D36299752DB3045FDCD0F113990E193DF822DCE048E498B4F",
+      "sha256": "E5FC06CBF24FA071C8F448CE442C7F8143C1200B768B9601F725C1137CA9DC36",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -101,8 +109,29 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "52638F3386EB7AFF449ED39AF7E3DADEE62D345D44E8037551D2C954EB6FC08E",
+      "sha256": "345739376E375FB94B91A5E89FF01AA5249DA5708AAE0A953CB23CA7E57E0D37",
       "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/brand.js",
+      "sha256": "332226385FB9987C662A14FAC72F30204DE37C388830B6C51C3F591792FEC27E",
+      "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
+      "license": "Repository MIT for the source code; logo provenance remains recorded separately",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/floor.js",
+      "sha256": "1E1505E544A6E2BFB073A7DB37DD7EE164078A5AD23CE359960A28FF842052BA",
+      "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/completion.js",
+      "sha256": "F4B058D7DE6403726ACCA61EC7162CC0A21902AFDECD32B7569D415FF4C79E0A",
+      "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     }
@@ -115,5 +144,9 @@
     "references/office-target.png",
     "references/office-current.png",
     "asset-intake/gpt-textures/office"
-  ]
+  ],
+  "hashPolicy": {
+    "geometry": "UTF-8 source, CRLF replaced with LF, no other normalization; BOM and final newline preserved",
+    "texturesAndBrand": "raw file bytes"
+  }
 }

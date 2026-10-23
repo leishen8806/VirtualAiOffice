@@ -1,6 +1,11 @@
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
 
+export function receptionBackdrop(front) {
+  return { x0: front.x0 + .35, x1: front.x1 - .35, z0: front.z0 - .45, z1: front.z0 - .29, top: 2.35,
+    grille: { height: 2.3, depth: .045, faceZ: front.z0 - .29 + .04 + .045 / 2 } }
+}
+
 export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, assets } = {}) {
   if (!THREE || !root) throw new TypeError('buildOfficeFoyerFurniture requires THREE and root')
   const group = new THREE.Group(); group.name = 'office3-r3-foyer-furniture'
@@ -18,9 +23,9 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
   box(.38, .26, .035, '#2F4A5C', front.center.x + 1.3, 1.31, front.center.z - .2, .3)
   box(.035, .18, .035, '#9A968E', front.center.x + 1.3, 1.18, front.center.z - .2, .3, .7)
   box(.18, .02, .16, '#9A968E', front.center.x + 1.3, 1.15, front.center.z - .2, .3, .7)
-  const backdrop = { x0: front.x0 + .35, x1: front.x1 - .35, z0: front.z0 - .45, z1: front.z0 - .29 }
-  box(backdrop.x1 - backdrop.x0, 2.35, .16, '#D9D3C6', front.center.x, 1.175, (backdrop.z0 + backdrop.z1) / 2, .75, 0, 'stone')
-  for (let i = 0; i < 14; i++) box(.055, 2.3, .045, '#C9A57A', front.x0 + .5 + i * (front.x1 - front.x0 - 1) / 13, 1.15, backdrop.z1 + .04, .65, 0, 'wood')
+  const backdrop = receptionBackdrop(front), grille = backdrop.grille
+  box(backdrop.x1 - backdrop.x0, backdrop.top, .16, '#D9D3C6', front.center.x, backdrop.top / 2, (backdrop.z0 + backdrop.z1) / 2, .75, 0, 'stone')
+  for (let i = 0; i < 14; i++) box(.055, grille.height, grille.depth, '#C9A57A', front.x0 + .5 + i * (front.x1 - front.x0 - 1) / 13, grille.height / 2, grille.faceZ - grille.depth / 2, .65, 0, 'wood')
   const bw = bar.x1 - bar.x0, bd = bar.z1 - bar.z0
   box(bw, .85, bd * .55, '#C9A57A', bar.center.x, .5, bar.center.z, .65, 0, 'wood')
   box(bw + .02, .07, bd * .58, '#F4F1EA', bar.center.x, .96, bar.center.z, .35, 0, 'stone')

@@ -1,5 +1,7 @@
 # VIS2-O-LOGO — 中央茶水吧与前厅标识
 
+> 本文保留首轮交付记录。VIS2-O-R3 已修订吧台牌件切线、位置和资源释放，最终坐标以 `coordinate-mapping.json` 与 `R3-COMPLETION.md` 为准。
+
 ## 实施范围
 
 - 仅更新 VIS2-O 私有样板的 `office-vis2/assets.js`、`office-vis2/brand.js`、`office-vis2/sample.js`、预览机位、测试和本目录记录。
