@@ -110,7 +110,7 @@ function readConfig(file) {
     tests: null,
     module: null,
     mutations: [],
-    scan: { forbiddenApis: [], extraTerms: [] },
+    scan: { forbiddenApis: [], extraTerms: [], allowValuePattern: '^fixture-[A-Za-z0-9_-]+$', allowValueRegex: null },
   }
   if (!config.tests || typeof config.tests !== 'object') throw new VerifyError('缺少 tests 配置')
   cfg.tests = { cwd: String(config.tests.cwd || '.'), files: strings(config.tests.files || [], 'tests.files') }
@@ -139,6 +139,17 @@ function readConfig(file) {
   if (config.scan && typeof config.scan === 'object') {
     cfg.scan.forbiddenApis = strings(config.scan.forbiddenApis || [], 'scan.forbiddenApis')
     cfg.scan.extraTerms = strings(config.scan.extraTerms || [], 'scan.extraTerms')
+    if (config.scan.allowValuePattern !== undefined) {
+      if (typeof config.scan.allowValuePattern !== 'string' || config.scan.allowValuePattern === '') {
+        throw new VerifyError('scan.allowValuePattern 必须是非空字符串')
+      }
+      cfg.scan.allowValuePattern = config.scan.allowValuePattern
+    }
+    try {
+      cfg.scan.allowValueRegex = new RegExp(cfg.scan.allowValuePattern)
+    } catch (error) {
+      throw new VerifyError(`scan.allowValuePattern 不是合法正则：${error.message}`)
+    }
   }
   return cfg
 }
@@ -345,7 +356,7 @@ function buildScanRules(config) {
     ['aws_access_key', new RegExp('\\bAKIA' + '[0-9A-Z]{16}\\b')],
     ['slack_token', new RegExp('\\bxox' + '[abposr]-[A-Za-z0-9-]{10,}')],
     ['bearer_token', new RegExp('\\bBearer\\s+' + '[A-Za-z0-9._~+/=-]{12,}')],
-    ['credential_assignment', new RegExp('\\b(?:password|secret|api[_-]?key|access[_-]?token)\\b\\s*[:=]\\s*["\']' + '[^"\']{8,}["\']', 'i')],
+    ['credential_assignment', new RegExp('\\b(?:password|secret|api[_-]?key|access[_-]?token)\\b\\s*[:=]\\s*["\']' + '([^"\']{8,})["\']', 'i')],
     ['ipv4_address', new RegExp('\\b(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\b')],
     ['windows_drive_path', new RegExp('[A-Za-z]:' + '\\\\')],
     ['mac_user_path', new RegExp('/' + 'Users' + '/')],
@@ -355,9 +366,13 @@ function buildScanRules(config) {
   return rules
 }
 
+// 只有「赋值右侧字符串」这一类命中可以被测试夹具白名单降级；令牌 / 私钥等规则永远不放行。
+const VALUE_RULES = new Set(['credential_assignment'])
+
 function stepScan({ repo, base, head, config, changedFiles }) {
   const rules = buildScanRules(config)
   const hits = []
+  const allowedFixtures = []
   const deleted = new Set()
   const statusRaw = git(repo, ['diff', '--name-status', `${base}...${head}`])
   for (const line of statusRaw.split('\n').filter(Boolean)) {
@@ -372,11 +387,19 @@ function stepScan({ repo, base, head, config, changedFiles }) {
     const lines = content.split('\n')
     for (const [index, line] of lines.entries()) {
       for (const [rule, pattern] of rules) {
+        if (VALUE_RULES.has(rule)) {
+          const match = pattern.exec(line)
+          if (!match) continue
+          const value = match[1] || ''
+          if (config.scan.allowValueRegex.test(value)) allowedFixtures.push({ file, line: index + 1, rule })
+          else hits.push({ file, line: index + 1, rule })
+          continue
+        }
         if (pattern.test(line)) hits.push({ file, line: index + 1, rule })
       }
     }
   }
-  return { pass: hits.length === 0, hits }
+  return { pass: hits.length === 0, hits, allowedFixtures }
 }
 
 function main(argv) {
@@ -465,6 +488,11 @@ function main(argv) {
 
     // 5. 敏感信息与禁用 API 扫描
     result.steps.scan = stepScan({ repo: args.repo, base, head, config, changedFiles: result.steps.range.changed })
+    if (result.steps.scan.allowedFixtures.length) {
+      print(`      放行测试夹具假值 ${result.steps.scan.allowedFixtures.length} 处（ALLOWED_FIXTURE，不判失败）`)
+      for (const fixture of result.steps.scan.allowedFixtures) print(`      - ${fixture.file}:${fixture.line} [${fixture.rule}]`)
+      result.warnings.push(`allowed-fixtures:${result.steps.scan.allowedFixtures.length}`)
+    }
     if (result.steps.scan.pass) print('[5/5] 扫描 PASS')
     else {
       print(`[5/5] 扫描 FAIL：${result.steps.scan.hits.length} 处命中`)

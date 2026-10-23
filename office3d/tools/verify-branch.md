@@ -37,6 +37,7 @@ node tools/verify-branch.mjs --repo <仓库根目录> --base <基线 ref> --head
 | `mutations[]` | 否 | 每条 `{ name, find, replace }`；`find` 必须**按原样字符串恰好出现 1 次** |
 | `scan.forbiddenApis` | 否 | 额外禁用的 API 字面量（按字面量匹配，不经正则转义） |
 | `scan.extraTerms` | 否 | 额外禁查的词条（按字面量匹配） |
+| `scan.allowValuePattern` | 否 | 字符串正则，默认 `^fixture-[A-Za-z0-9_-]+$`。仅当 `credential_assignment` 命中行的**赋值右侧字符串整体**匹配它时，降级为 `ALLOWED_FIXTURE`（计入结果、不判失败）；私钥头与 `sk-` / `ghp_` / `github_pat_` / `AKIA` / Slack `xox?-` / `Bearer` 长串永远不能被它放行。非法正则退出码 5 |
 
 ### 变异语义（防误判）
 
@@ -122,6 +123,22 @@ head 不是当前检出时，脚本会自动 `git worktree add --detach` 到系�
   "scan": { "forbiddenApis": [], "extraTerms": [] }
 }
 ```
+
+### 测试夹具假值白名单
+
+脱敏测试里常见的 `'fixture-token'`、`'fixture-key'` 会被 `credential_assignment` 规则命中（形如 `password = '…'` 的长字符串赋值）。这类**明显假值**可以通过 `scan.allowValuePattern` 降级为 `ALLOWED_FIXTURE`，既不判失败、也不在输出里回显原文；真实形态的令牌（例如 `fixture-ghp_…`）仍会被令牌规则命中并判失败，因为令牌 / 私钥规则不受白名单影响。示例：
+
+```json
+{
+  "scan": {
+    "forbiddenApis": [],
+    "extraTerms": [],
+    "allowValuePattern": "^fixture-[A-Za-z0-9_-]+$"
+  }
+}
+```
+
+结果里 `hits` 与 `allowedFixtures` 分开列出（只有文件名 + 行号 + 规则名）。
 
 ## 扫描规则
 

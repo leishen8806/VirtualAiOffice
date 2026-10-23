@@ -80,6 +80,16 @@ function makeFixture() {
   branch('head-newline', (r) => {
     write(r, 'mod.mjs', MOD_SOURCE.replace(/\n/g, '\r\n'))
   })
+  branch('head-fixture-values', (r) => {
+    write(r, 'tests/fixture-values.test.mjs', "export const password = 'fixture-token'\nexport const secret = 'fixture-secret-1'\nexport const api_key = 'fixture-key-1'\n")
+  })
+  branch('head-fixture-ghp', (r) => {
+    const token = 'fixture-ghp_' + 'x'.repeat(40)
+    write(r, 'tests/fixture-ghp.test.mjs', `export const access_token = '${token}'\n`)
+  })
+  branch('head-custom-fixture', (r) => {
+    write(r, 'tests/custom-fixture.test.mjs', "export const secret = 'FAKE_SECRET_1'\n")
+  })
   branch('head-scan', (r) => {
     const token = 'ghp_' + 'x'.repeat(40)
     const ip = '10.' + '0.0.7'
@@ -227,6 +237,47 @@ test('扫描命中退出码 4，输出只含文件名/行号/规则名、不含�
   assert.match(result.stdout, /ipv4_address/)
   assert.equal(result.stdout.includes(token), false, '输出不得包含命中令牌原文')
   assert.equal(result.stdout.includes(ip), false, '输出不得包含命中 IP 原文')
+})
+
+test('扫描：明显的测试夹具假值降级为 ALLOWED_FIXTURE，不判失败且不回显原文', () => {
+  const { root } = makeFixture()
+  writeConfig(root, BASE_CONFIG({ allowedChanges: ['tests/fixture-values.test.mjs'] }))
+  const result = verify(root, ['--base', 'base', '--head', 'head-fixture-values', '--config', 'verify.json'])
+  assert.equal(result.code, 0, result.stdout + result.stderr)
+  assert.match(result.stdout, /放行测试夹具假值 3 处/)
+  assert.match(result.stdout, /credential_assignment/)
+  for (const secret of ['fixture-token', 'fixture-secret-1', 'fixture-key-1']) {
+    assert.equal(result.stdout.includes(secret), false, `输出不得包含假值原文：${secret}`)
+  }
+})
+
+test('扫描：fixture-ghp_ 形态的真实令牌不被白名单放行（退出码 4）', () => {
+  const { root } = makeFixture()
+  writeConfig(root, BASE_CONFIG({ allowedChanges: ['tests/fixture-ghp.test.mjs'] }))
+  const result = verify(root, ['--base', 'base', '--head', 'head-fixture-ghp', '--config', 'verify.json'])
+  assert.equal(result.code, 4, result.stdout + result.stderr)
+  assert.match(result.stdout, /github_ghp_token/)
+  assert.equal(result.stdout.includes('fixture-ghp_'), false, '输出不得包含令牌原文')
+})
+
+test('扫描：自定义 scan.allowValuePattern 生效，默认模式不放行', () => {
+  const { root } = makeFixture()
+  const file = 'tests/custom-fixture.test.mjs'
+  writeConfig(root, BASE_CONFIG({ allowedChanges: [file] }))
+  const withDefault = verify(root, ['--base', 'base', '--head', 'head-custom-fixture', '--config', 'verify.json'])
+  assert.equal(withDefault.code, 4, '默认仅放行 fixture- 前缀')
+  writeConfig(root, BASE_CONFIG({ allowedChanges: [file], scan: { forbiddenApis: [], extraTerms: [], allowValuePattern: '^FAKE_[A-Z0-9_]+$' } }))
+  const custom = verify(root, ['--base', 'base', '--head', 'head-custom-fixture', '--config', 'verify.json'])
+  assert.equal(custom.code, 0, custom.stdout + custom.stderr)
+  assert.match(custom.stdout, /放行测试夹具假值 1 处/)
+})
+
+test('扫描：非法 allowValuePattern 返回退出码 5 并说明原因', () => {
+  const { root } = makeFixture()
+  writeConfig(root, BASE_CONFIG({ allowedChanges: ['tests/fixture-values.test.mjs'], scan: { forbiddenApis: [], extraTerms: [], allowValuePattern: '([' } }))
+  const result = verify(root, ['--base', 'base', '--head', 'head-fixture-values', '--config', 'verify.json'])
+  assert.equal(result.code, 5, result.stdout + result.stderr)
+  assert.match(result.stdout + result.stderr, /allowValuePattern/)
 })
 
 test('成功与异常路径都会清理临时目录与 worktree', () => {
