@@ -1,7 +1,7 @@
 {
   "schema": "dr-console-demo-assets-v1",
   "note": "演示素材索引；每次改动素材需同步哈希与用途。",
-  "sectionImageSha256": "41e5ecbb73c66fb62acb4ffd46adf9056f6fdfc1b",
+  "sectionImageSha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6",
   "dashboard6_0FullSha256": "950d40ab45ed2536857096edd08e5beb54503c3ad29d6f02991da070ee35b61e",
   "assets": [
     {
