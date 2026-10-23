@@ -1,0 +1,22 @@
+{
+  "companyId": "company-a",
+  "observedAt": "2026-10-23T10:00:00.000Z",
+  "warehouses": [
+    { "id": "W1", "usedSlots": 12, "totalSlots": 20, "status": "operational" },
+    { "id": "W2", "usedSlots": 5, "totalSlots": 10, "status": "operational" },
+    { "id": "W3", "usedSlots": 0, "totalSlots": 15, "status": "maintenance" }
+  ],
+  "inventoryByCategory": [
+    { "name": "样例货类", "pallets": 17, "sku": 4, "unit": "托盘" }
+  ],
+  "pallets": 17,
+  "events": [
+    { "id": "in-1", "zone": "W1", "kind": "托盘上架", "pallets": 3, "at": 1 },
+    { "id": "out-1", "zone": "W3", "kind": "出库发运", "pallets": 2, "at": 2 }
+  ],
+  "vehicles": [{ "id": "truck-1", "zone": "W1", "inYard": true }],
+  "waybills": [{ "id": "shipment-1", "zone": "W3", "status": "运输中", "pallets": 2, "progress": 50, "from": "金边", "to": "暹粒", "eta": "2026-10-23T12:00:00.000Z" }],
+  "tasks": [{ "id": "work-1", "zone": "W2", "status": "进行中" }],
+  "devices": [{ "name": "叉车", "total": 3, "normal": 2 }],
+  "alerts": [{ "type": "设备", "count": 1 }]
+}
