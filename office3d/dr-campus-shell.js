@@ -1,5 +1,8 @@
 import { CAMPUS, CAMPUS_BUILDING, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
 
+// PlaneGeometry has no thickness: this is the finished floor's actual world-space Y.
+export const CAMPUS_FINISHED_FLOOR_Y = .06 - .6
+
 const inside = (part, bounds) => part.x0 >= bounds.x0 && part.x1 <= bounds.x1 && part.z0 >= bounds.z0 && part.z1 <= bounds.z1
 const rect = (name, bounds, extra = {}) => Object.freeze({ name, ...bounds, dynamic: false, ...extra })
 const zone = (zones, id) => zones.find((item) => item.id === id)
@@ -68,7 +71,7 @@ export function buildCampusShell({ THREE, root, canvasTex, layout, quality }) {
   const roofMeshes = []
   for (const part of spec) {
     if (part.name === 'campus-paving') plane(THREE, root, part, part.offset - .6, mats.paving)
-    else if (part.name === 'campus-building-floor') plane(THREE, root, part, part.offset - .6, mats.buildingGround)
+    else if (part.name === 'campus-building-floor') plane(THREE, root, part, CAMPUS_FINISHED_FLOOR_Y, mats.buildingGround)
     else if (part.name.startsWith('campus-wall-')) cube(THREE, root, part, 2.25, 4.5, mats.structure)
     else if (part.name.startsWith('campus-roof-')) roofMeshes.push(cube(THREE, root, part, 4.68, .28, mats.roof))
     else if (part.kind === 'selection') continue

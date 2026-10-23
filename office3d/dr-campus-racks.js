@@ -54,7 +54,7 @@ export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, repl
   solids.forEach((item, index) => put(mesh, index, THREE, item, item.color)); mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; root.add(mesh)
   let texture, labels
   if (!low) {
-    texture = canvasTex(1024, 150, (ctx, width, height) => { ctx.fillStyle = '#18232b'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, width - 6, height - 6); ctx.fillStyle = '#f4f1eb'; ctx.font = '700 55px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('A1       R2       C2       B2', width / 2, 68); ctx.fillStyle = '#d5af62'; ctx.font = '500 30px sans-serif'; ctx.fillText('穿梭机展示位（预留）', width / 2, 118) })
+    texture = canvasTex(1024, 150, (ctx, width, height) => { ctx.fillStyle = '#18232b'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, width - 6, height - 6); ctx.fillStyle = '#f4f1eb'; ctx.font = '700 55px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('A1       R2       C2       B2', width / 2, 68); ctx.fillStyle = '#d5af62'; ctx.font = '500 30px sans-serif'; ctx.fillText('穿梭机展示位（模拟）', width / 2, 118) })
     labels = new THREE.Mesh(new THREE.PlaneGeometry(30, 2.1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }))
     labels.name = 'campus-rack-labels'; labels.position.set(-127.5, 2.1, 6.13); root.add(labels)
   }
