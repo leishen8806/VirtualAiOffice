@@ -252,6 +252,13 @@ try {
   TOWN_NAV_ENABLED = townNavEnabled(JSON.parse(fs.readFileSync(path.join(HERE, 'town-nav.json'), 'utf8')))
 } catch {}
 const TOWN_NAV_CLIENT = townNavClientScript(TOWN_NAV_ENABLED)
+const visualEnabled = (file) => {
+  try { return JSON.parse(fs.readFileSync(path.join(HERE, file), 'utf8'))?.enabled === true } catch { return false }
+}
+const VISUAL_FLAGS = Object.freeze({
+  officeV2: visualEnabled('office-visual.json'),
+  campus: visualEnabled('campus-visual.json'),
+})
 let COMMAND_VIEW_ENABLED = false
 let commandViewConfig = {}
 try {
@@ -1090,6 +1097,10 @@ http
       if (url.pathname === '/town-nav-config.js') {
         if (req.method !== 'GET') return json(405, { error: '不支持' })
         return res.writeHead(200, { 'Content-Type': TYPES['.js'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }).end(TOWN_NAV_CLIENT)
+      }
+      if (url.pathname === '/visual-flags') {
+        if (req.method !== 'GET') return json(405, { error: '不支持' })
+        return json(200, VISUAL_FLAGS)
       }
       if (url.pathname === '/command-view' || url.pathname === '/command-view/scenarios') {
         const input = { method: req.method, path: url.pathname, query: url.search, wallScope, now: Date.now(), principal: !lanUser && !wallAuthed(req) ? 'local_full' : 'restricted' }
