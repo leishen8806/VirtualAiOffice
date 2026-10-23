@@ -147,9 +147,10 @@
     "brandMarks": [
       {
         "id": "bar-fascia",
-        "x": 3.1,
-        "y": 0.68,
-        "z": -2.472,
+        "x": 3.112571428571429,
+        "y": 0.6,
+        "z": -2.639377317173716,
+        "yaw": 0.31970414866274743,
         "width": 0.92,
         "height": 0.5112155260469867,
         "surface": "entrance-facing tea-bar fascia"

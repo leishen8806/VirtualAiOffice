@@ -1,0 +1,382 @@
+{
+  "task": "VIS2-O-R3",
+  "date": "2026-10-23",
+  "baseline": "eee77accb1270b2dcec2042f84b1ec1dccf5e02e",
+  "mode": "Private preview served from assigned worktree via browser GET resource interception; not deployed",
+  "device": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Ti (0x00002C05) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "scope": "Tea bar and foyer only",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "before": {
+    "summary": {
+      "calls": 11,
+      "triangles": 22702,
+      "seats": 10,
+      "sofas": 8,
+      "brandMarks": 3,
+      "realStaff": 0,
+      "scope": "tea-bar-and-foyer"
+    },
+    "probe": {
+      "samples": 120,
+      "medianMs": 16.699999999982538,
+      "p95Ms": 16.79999999998836,
+      "resolution": [
+        1920,
+        1080
+      ],
+      "quality": "high",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+    },
+    "render": {
+      "frame": 131,
+      "calls": 14,
+      "triangles": 27818,
+      "points": 0,
+      "lines": 0
+    },
+    "memory": {
+      "geometries": 13,
+      "textures": 8
+    }
+  },
+  "after": {
+    "high": {
+      "summary": {
+        "calls": 11,
+        "triangles": 22702,
+        "seats": 10,
+        "sofas": 8,
+        "brandMarks": 3,
+        "realStaff": 0,
+        "scope": "tea-bar-and-foyer"
+      },
+      "probe": {
+        "samples": 120,
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.799999999999955,
+        "renderCpuMedianMs": 0.6000000238418579,
+        "renderCpuP95Ms": 0.8999999761581421,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1.0000000298023224,
+        "quality": "high",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 126,
+        "calls": 14,
+        "triangles": 27818,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 13,
+        "textures": 8
+      },
+      "businessRequests": 0
+    },
+    "medium": {
+      "summary": {
+        "calls": 11,
+        "triangles": 22702,
+        "seats": 10,
+        "sofas": 8,
+        "brandMarks": 3,
+        "realStaff": 0,
+        "scope": "tea-bar-and-foyer"
+      },
+      "probe": {
+        "samples": 120,
+        "medianMs": 16.699999999999932,
+        "p95Ms": 16.700000000000273,
+        "renderCpuMedianMs": 0.6000000238418579,
+        "renderCpuP95Ms": 0.9000000357627869,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1.0000000298023224,
+        "quality": "medium",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 126,
+        "calls": 14,
+        "triangles": 27818,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 13,
+        "textures": 8
+      },
+      "businessRequests": 0
+    },
+    "low": {
+      "summary": {
+        "calls": 11,
+        "triangles": 17550,
+        "seats": 6,
+        "sofas": 8,
+        "brandMarks": 3,
+        "realStaff": 0,
+        "scope": "tea-bar-and-foyer"
+      },
+      "probe": {
+        "samples": 120,
+        "medianMs": 33.30000000000018,
+        "p95Ms": 33.400000000000546,
+        "renderCpuMedianMs": 0.5,
+        "renderCpuP95Ms": 0.699999988079071,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1,
+        "quality": "low",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 126,
+        "calls": 13,
+        "triangles": 17558,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 13,
+        "textures": 6
+      },
+      "businessRequests": 0
+    },
+    "occlusion": [
+      {
+        "id": "bar-fascia",
+        "firstHit": "office-vis2-approved-logo-marks",
+        "instanceId": 0
+      },
+      {
+        "id": "reception-desk",
+        "firstHit": "office-vis2-approved-logo-marks",
+        "instanceId": 1
+      },
+      {
+        "id": "reception-wall",
+        "firstHit": "office-vis2-approved-logo-marks",
+        "instanceId": 2
+      }
+    ],
+    "cycles": [
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 13,
+          "textures": 8
+        }
+      }
+    ],
+    "errors": []
+  },
+  "cameras": {
+    "overview": [
+      [
+        2,
+        25,
+        31
+      ],
+      [
+        2,
+        0.3,
+        -2
+      ]
+    ],
+    "eye": [
+      [
+        2,
+        1.65,
+        14
+      ],
+      [
+        2,
+        1.7,
+        -6
+      ]
+    ],
+    "reception": [
+      [
+        2,
+        2.1,
+        13.5
+      ],
+      [
+        2,
+        1.35,
+        8.1
+      ]
+    ],
+    "bar": [
+      [
+        11,
+        7,
+        3
+      ],
+      [
+        2,
+        1.15,
+        -6
+      ]
+    ],
+    "barBrand": [
+      [
+        2,
+        1.7,
+        2.8
+      ],
+      [
+        2,
+        0.56,
+        -2.47
+      ]
+    ],
+    "treeFront": [
+      [
+        2,
+        1.9,
+        2
+      ],
+      [
+        2,
+        2.1,
+        -6
+      ]
+    ],
+    "treeSide": [
+      [
+        10,
+        3,
+        -6
+      ],
+      [
+        2,
+        2,
+        -6
+      ]
+    ],
+    "treeOblique": [
+      [
+        7,
+        3.4,
+        0
+      ],
+      [
+        2,
+        2,
+        -6
+      ]
+    ]
+  },
+  "limitations": [
+    "Short foreground RAF and CPU-submission observations, not GPU timestamps",
+    "No main-scene GTAO, full-office agent load or production deployment validation",
+    "Blueprint reference package missing; existing local concept image viewed"
+  ],
+  "evidenceDirectory": "E:\\VirtualAIOffice\\office3d-backup-vis2-o-r3"
+}

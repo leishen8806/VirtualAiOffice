@@ -1,0 +1,741 @@
+{
+  "task": "VIS3-CODEX-001/M1",
+  "date": "2026-10-23",
+  "sourceBaseline": "eee77accb1270b2dcec2042f84b1ec1dccf5e02e",
+  "scope": "独立办公室预览；现有外壳与25工位复用；未部署",
+  "device": "Windows 10 / Chromium 155 / NVIDIA RTX 5070 Ti / 1920×1080 / deviceScaleFactor 1",
+  "sceneCameras": {
+    "officeOverview": [
+      [
+        2,
+        42,
+        45
+      ],
+      [
+        2,
+        0,
+        -4
+      ]
+    ],
+    "overview": [
+      [
+        2,
+        25,
+        31
+      ],
+      [
+        2,
+        0.3,
+        -2
+      ]
+    ],
+    "eye": [
+      [
+        2,
+        1.65,
+        14
+      ],
+      [
+        2,
+        1.7,
+        -6
+      ]
+    ],
+    "reception": [
+      [
+        2,
+        2.1,
+        13.5
+      ],
+      [
+        2,
+        1.35,
+        8.1
+      ]
+    ],
+    "bar": [
+      [
+        11,
+        7,
+        3
+      ],
+      [
+        2,
+        1.15,
+        -6
+      ]
+    ],
+    "barBrand": [
+      [
+        2,
+        1.7,
+        2.8
+      ],
+      [
+        2,
+        0.56,
+        -2.47
+      ]
+    ],
+    "treeFront": [
+      [
+        2,
+        1.9,
+        2
+      ],
+      [
+        2,
+        2.1,
+        -6
+      ]
+    ],
+    "treeSide": [
+      [
+        10,
+        3,
+        -6
+      ],
+      [
+        2,
+        2,
+        -6
+      ]
+    ],
+    "treeOblique": [
+      [
+        7,
+        3.4,
+        0
+      ],
+      [
+        2,
+        2,
+        -6
+      ]
+    ]
+  },
+  "performance": {
+    "high": {
+      "probe": {
+        "samples": 120,
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.799999999999727,
+        "renderCpuMedianMs": 0.9000000357627869,
+        "renderCpuP95Ms": 1.2999999523162842,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1.0000000298023224,
+        "quality": "high",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 127,
+        "calls": 21,
+        "triangles": 93516,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 19,
+        "textures": 9
+      },
+      "seats": [
+        {
+          "name": "Lead",
+          "region": "product",
+          "x": 14.2,
+          "z": -8
+        },
+        {
+          "name": "PM",
+          "region": "product",
+          "x": 17.5,
+          "z": -8
+        },
+        {
+          "name": "Architect",
+          "region": "product",
+          "x": 14.2,
+          "z": -4.5
+        },
+        {
+          "name": "UIUX",
+          "region": "product",
+          "x": 17.5,
+          "z": -4.5
+        },
+        {
+          "name": "FrontendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -8
+        },
+        {
+          "name": "Frontend1",
+          "region": "eng",
+          "x": 27,
+          "z": -8
+        },
+        {
+          "name": "Frontend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -8
+        },
+        {
+          "name": "BackendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -4.5
+        },
+        {
+          "name": "Backend1",
+          "region": "eng",
+          "x": 27,
+          "z": -4.5
+        },
+        {
+          "name": "Backend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -4.5
+        },
+        {
+          "name": "KnowledgeKeeper",
+          "region": "kb",
+          "x": 16.5,
+          "z": -15
+        },
+        {
+          "name": "QAAutomation",
+          "region": "quality",
+          "x": -15.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer1",
+          "region": "quality",
+          "x": -12.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer2",
+          "region": "quality",
+          "x": -15.5,
+          "z": 1.5
+        },
+        {
+          "name": "SecurityReviewer",
+          "region": "quality",
+          "x": -12.5,
+          "z": 1.5
+        },
+        {
+          "name": "OpsLead",
+          "region": "ops",
+          "x": -25,
+          "z": 0
+        },
+        {
+          "name": "OpsEngineer",
+          "region": "ops",
+          "x": -21,
+          "z": 0
+        },
+        {
+          "name": "GoSenior",
+          "region": "drlife",
+          "x": 14,
+          "z": 6
+        },
+        {
+          "name": "Go1",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 6
+        },
+        {
+          "name": "Go2",
+          "region": "drlife",
+          "x": 19,
+          "z": 6
+        },
+        {
+          "name": "DBEngineer",
+          "region": "drlife",
+          "x": 21,
+          "z": 6
+        },
+        {
+          "name": "LedgerAuditor",
+          "region": "drlife",
+          "x": 14,
+          "z": 9.5
+        },
+        {
+          "name": "ReactSenior",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 9.5
+        },
+        {
+          "name": "React1",
+          "region": "drlife",
+          "x": 19,
+          "z": 9.5
+        },
+        {
+          "name": "Localizer",
+          "region": "drlife",
+          "x": 21,
+          "z": 9.5
+        }
+      ]
+    },
+    "medium": {
+      "probe": {
+        "samples": 120,
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.800000000000182,
+        "renderCpuMedianMs": 0.8999999761581421,
+        "renderCpuP95Ms": 1.0999999642372131,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1.0000000298023224,
+        "quality": "medium",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 251,
+        "calls": 21,
+        "triangles": 93516,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 18,
+        "textures": 9
+      },
+      "seats": [
+        {
+          "name": "Lead",
+          "region": "product",
+          "x": 14.2,
+          "z": -8
+        },
+        {
+          "name": "PM",
+          "region": "product",
+          "x": 17.5,
+          "z": -8
+        },
+        {
+          "name": "Architect",
+          "region": "product",
+          "x": 14.2,
+          "z": -4.5
+        },
+        {
+          "name": "UIUX",
+          "region": "product",
+          "x": 17.5,
+          "z": -4.5
+        },
+        {
+          "name": "FrontendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -8
+        },
+        {
+          "name": "Frontend1",
+          "region": "eng",
+          "x": 27,
+          "z": -8
+        },
+        {
+          "name": "Frontend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -8
+        },
+        {
+          "name": "BackendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -4.5
+        },
+        {
+          "name": "Backend1",
+          "region": "eng",
+          "x": 27,
+          "z": -4.5
+        },
+        {
+          "name": "Backend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -4.5
+        },
+        {
+          "name": "KnowledgeKeeper",
+          "region": "kb",
+          "x": 16.5,
+          "z": -15
+        },
+        {
+          "name": "QAAutomation",
+          "region": "quality",
+          "x": -15.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer1",
+          "region": "quality",
+          "x": -12.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer2",
+          "region": "quality",
+          "x": -15.5,
+          "z": 1.5
+        },
+        {
+          "name": "SecurityReviewer",
+          "region": "quality",
+          "x": -12.5,
+          "z": 1.5
+        },
+        {
+          "name": "OpsLead",
+          "region": "ops",
+          "x": -25,
+          "z": 0
+        },
+        {
+          "name": "OpsEngineer",
+          "region": "ops",
+          "x": -21,
+          "z": 0
+        },
+        {
+          "name": "GoSenior",
+          "region": "drlife",
+          "x": 14,
+          "z": 6
+        },
+        {
+          "name": "Go1",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 6
+        },
+        {
+          "name": "Go2",
+          "region": "drlife",
+          "x": 19,
+          "z": 6
+        },
+        {
+          "name": "DBEngineer",
+          "region": "drlife",
+          "x": 21,
+          "z": 6
+        },
+        {
+          "name": "LedgerAuditor",
+          "region": "drlife",
+          "x": 14,
+          "z": 9.5
+        },
+        {
+          "name": "ReactSenior",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 9.5
+        },
+        {
+          "name": "React1",
+          "region": "drlife",
+          "x": 19,
+          "z": 9.5
+        },
+        {
+          "name": "Localizer",
+          "region": "drlife",
+          "x": 21,
+          "z": 9.5
+        }
+      ]
+    },
+    "low": {
+      "probe": {
+        "samples": 120,
+        "medianMs": 33.30000000000109,
+        "p95Ms": 33.400000000001455,
+        "renderCpuMedianMs": 0.699999988079071,
+        "renderCpuP95Ms": 0.8999999761581421,
+        "resolution": [
+          1920,
+          1080
+        ],
+        "dpr": 1,
+        "quality": "low",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+      },
+      "render": {
+        "frame": 375,
+        "calls": 17,
+        "triangles": 48643,
+        "points": 0,
+        "lines": 0
+      },
+      "memory": {
+        "geometries": 16,
+        "textures": 9
+      },
+      "seats": [
+        {
+          "name": "Lead",
+          "region": "product",
+          "x": 14.2,
+          "z": -8
+        },
+        {
+          "name": "PM",
+          "region": "product",
+          "x": 17.5,
+          "z": -8
+        },
+        {
+          "name": "Architect",
+          "region": "product",
+          "x": 14.2,
+          "z": -4.5
+        },
+        {
+          "name": "UIUX",
+          "region": "product",
+          "x": 17.5,
+          "z": -4.5
+        },
+        {
+          "name": "FrontendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -8
+        },
+        {
+          "name": "Frontend1",
+          "region": "eng",
+          "x": 27,
+          "z": -8
+        },
+        {
+          "name": "Frontend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -8
+        },
+        {
+          "name": "BackendSenior",
+          "region": "eng",
+          "x": 24.2,
+          "z": -4.5
+        },
+        {
+          "name": "Backend1",
+          "region": "eng",
+          "x": 27,
+          "z": -4.5
+        },
+        {
+          "name": "Backend2",
+          "region": "eng",
+          "x": 29.8,
+          "z": -4.5
+        },
+        {
+          "name": "KnowledgeKeeper",
+          "region": "kb",
+          "x": 16.5,
+          "z": -15
+        },
+        {
+          "name": "QAAutomation",
+          "region": "quality",
+          "x": -15.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer1",
+          "region": "quality",
+          "x": -12.5,
+          "z": -1.5
+        },
+        {
+          "name": "Reviewer2",
+          "region": "quality",
+          "x": -15.5,
+          "z": 1.5
+        },
+        {
+          "name": "SecurityReviewer",
+          "region": "quality",
+          "x": -12.5,
+          "z": 1.5
+        },
+        {
+          "name": "OpsLead",
+          "region": "ops",
+          "x": -25,
+          "z": 0
+        },
+        {
+          "name": "OpsEngineer",
+          "region": "ops",
+          "x": -21,
+          "z": 0
+        },
+        {
+          "name": "GoSenior",
+          "region": "drlife",
+          "x": 14,
+          "z": 6
+        },
+        {
+          "name": "Go1",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 6
+        },
+        {
+          "name": "Go2",
+          "region": "drlife",
+          "x": 19,
+          "z": 6
+        },
+        {
+          "name": "DBEngineer",
+          "region": "drlife",
+          "x": 21,
+          "z": 6
+        },
+        {
+          "name": "LedgerAuditor",
+          "region": "drlife",
+          "x": 14,
+          "z": 9.5
+        },
+        {
+          "name": "ReactSenior",
+          "region": "drlife",
+          "x": 16.5,
+          "z": 9.5
+        },
+        {
+          "name": "React1",
+          "region": "drlife",
+          "x": 19,
+          "z": 9.5
+        },
+        {
+          "name": "Localizer",
+          "region": "drlife",
+          "x": 21,
+          "z": 9.5
+        }
+      ]
+    },
+    "cycles": [
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 19,
+          "textures": 9
+        },
+        "contexts": 1,
+        "workstations": 25
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 19,
+          "textures": 9
+        },
+        "contexts": 1,
+        "workstations": 25
+      },
+      {
+        "closed": {
+          "geometries": 2,
+          "textures": 3
+        },
+        "open": {
+          "geometries": 19,
+          "textures": 9
+        },
+        "contexts": 1,
+        "workstations": 25
+      }
+    ],
+    "closed": {
+      "mode": "closed",
+      "memory": {
+        "geometries": 2,
+        "textures": 3
+      },
+      "contextSeats": 0
+    }
+  },
+  "video": {
+    "video": "M1-navigation-1080.webm",
+    "errors": [],
+    "nonGet": 0,
+    "business": 0,
+    "staticRequests": 173
+  },
+  "evidenceDirectory": "E:\\VirtualAIOffice\\office3d-backup-vis2-o-r3",
+  "tests": {
+    "targeted": {
+      "total": 14,
+      "pass": 14,
+      "fail": 0
+    },
+    "full": {
+      "total": 1177,
+      "pass": 1159,
+      "fail": 17,
+      "skip": 1,
+      "cancelled": 0,
+      "durationMs": 159815.6382
+    }
+  },
+  "fallbackVerification": {
+    "injection": "独立测试上下文中 TextureLoader.loadAsync 仅对 stone-floor.jpg 拒绝",
+    "mode": "closed",
+    "contextSeats": 0,
+    "remainingRoots": ["office-island"],
+    "memory": {"geometries": 2, "textures": 3},
+    "status": "样板未开启 · 已恢复原办公室",
+    "screenshot": "M1-quality-fallback.png",
+    "caveat": "首次仅拦截HTTP受到已解码图片缓存影响，未计为成功"
+  },
+  "idleVerification": {"durationMs": 1000, "frameBefore": 4, "frameAfter": 4, "realBackgroundHidden": "未验证"},
+  "limitations": [
+    "RAF间隔与CPU提交时间，不是GPU计时",
+    "没有主线GTAO、真人负载、真实热点和业务回归证明",
+    "缩景预览与主服务独立，shared loader接线未执行"
+  ]
+}

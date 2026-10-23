@@ -4,6 +4,14 @@
   "date": "2026-10-23",
   "baseline": "cbddb9fa3b874f7f56c8410928a8edd23013795c",
   "downloaded": false,
+  "followUpTask": "VIS3-CODEX-001/M1 (continues VIS2-O-R3)",
+  "followUpBaseline": "eee77accb1270b2dcec2042f84b1ec1dccf5e02e",
+  "previewContext": {
+    "file": "office-vis2/preview-context.js",
+    "source": "Reuses existing office shell, furniture placement and assets3d loader; no new downloaded model assets",
+    "assetProvenance": "assets/ASSET_LEDGER.md: Kenney Furniture Kit / Quaternius base and animation kits, recorded CC0 1.0",
+    "runtimeIntegration": false
+  },
   "externalReferencePhotosUsedAsTexture": false,
   "textures": [
     {
@@ -101,8 +109,22 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "52638F3386EB7AFF449ED39AF7E3DADEE62D345D44E8037551D2C954EB6FC08E",
+      "sha256": "F4BFA7E6FA128A952CFE86ED5999E40C3E5E2EC4FCAF9B9D3A50F26D905108E2",
       "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/brand.js",
+      "sha256": "EF5FA0C15036377336E81AFEB88A352DCBB10AAC0A380DD0811133FE6949BCC9",
+      "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
+      "license": "Repository MIT for the source code; logo provenance remains recorded separately",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/floor.js",
+      "sha256": "B5FE1477EFABFDC8539A8C7FC9E0234C7C6D68E6B51513DD895386A254547C10",
+      "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     }
