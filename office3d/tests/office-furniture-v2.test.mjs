@@ -128,6 +128,7 @@ const doorApproach = (region) => {
 
 test('O-06 derives meeting tables, seats and screens from V3 room boundaries without changing V2 fallback coordinates', () => {
   const v2 = officeFurnitureV2Spec(LAYOUT_V2), v3 = officeFurnitureV2Spec(LAYOUT_V3)
+  assert.deepEqual(v2.board.screen, { x: -20, z: -17.72, yaw: 0, side: 'north', y: 2.4, w: 2, h: 1.125 })
   assert.deepEqual(v2.meetings.map(({ id, x, z, screen }) => ({ id, x, z, screen: { x: screen.x, z: screen.z, yaw: screen.yaw } })), [
     { id: 'A', x: -12.5, z: -14, screen: { x: -12.5, z: -17.72, yaw: 0 } },
     { id: 'B', x: -5.5, z: -14, screen: { x: -5.5, z: -17.72, yaw: 0 } },
@@ -158,6 +159,12 @@ test('O-06 derives meeting tables, seats and screens from V3 room boundaries wit
       assert.equal(overlaps(chair, doorApproach(region)), false, `${room.id}/chair door approach`)
     }
   }
+  const boardRegion = LAYOUT_V3.regions.find(item => item.id === 'board')
+  const boardScreen = box(v3.board.screen.x, v3.board.screen.z, .05, v3.board.screen.w)
+  assert.deepEqual(v3.board.screen, { x: -8.78, z: -15, yaw: -Math.PI / 2, y: 2.4, w: 2, h: 1.125, side: 'east' })
+  assert.ok(inside(boardScreen, boardRegion), 'V3 board screen stays in boardroom')
+  assert.equal(overlaps(boardScreen, doorApproach(boardRegion)), false, 'V3 board screen clears boardroom door')
+  assert.ok(v3.board.screen.x > v3.board.x && v3.board.screen.yaw === -Math.PI / 2, 'V3 board screen faces the board table from the east wall')
 })
 
 function fixture(withLegacy = false, layout = LAYOUT_V2) {
