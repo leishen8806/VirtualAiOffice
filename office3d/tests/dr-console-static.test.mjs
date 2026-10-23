@@ -34,7 +34,9 @@ test('reference dashboard uses high-quality independent image slots and identifi
     assert.ok(bytes < 1000000, `${file} must remain below 1 MB`)
   }
   const html = read('dr-console.html')
-  assert.match(html, /dr-campus-reference\.webp/)
+  // D-V1：主图由「仓配剖面参考」改为 W1/W2/W3 园区全景；剖面参考仅保留 .sceneThumb 兜底（jpg）。
+  assert.match(html, /\.panorama\{[^}]*dr-cam-overview\.webp/)
+  assert.match(html, /dr-campus-reference\.jpg/)
   assert.match(html, /background-image:image-set\(/)
   assert.match(html, /\.sceneThumb\{background-repeat:no-repeat;background-size:contain/)
   assert.ok(html.includes(
