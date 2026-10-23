@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import crypto from 'node:crypto'
 import test from 'node:test'
 
 const root = new URL('../', import.meta.url)
@@ -34,10 +35,9 @@ test('reference dashboard uses high-quality independent image slots and identifi
     assert.ok(bytes < 1000000, `${file} must remain below 1 MB`)
   }
   const html = read('dr-console.html')
-  // D-V1：主图由「仓配剖面参考」改为 W1/W2/W3 园区全景；剖面参考仅保留 .sceneThumb 兜底（jpg）。
-  assert.match(html, /\.panorama\{[^}]*dr-cam-overview\.webp/)
+  // D-V1：主图 = W1/W2/W3 园区鸟瞰裁剪图；剖面参考仅保留 .sceneThumb 兜底（jpg）。
+  assert.match(html, /\.panorama\{[^}]*dr-campus-hero\.jpg/)
   assert.match(html, /dr-campus-reference\.jpg/)
-  assert.match(html, /background-image:image-set\(/)
   assert.match(html, /\.sceneThumb\{background-repeat:no-repeat;background-size:contain/)
   assert.ok(html.includes(
     '.videoGrid .sceneThumb.camera-d1,.videoGrid .sceneThumb.camera-d3,.videoGrid .sceneThumb.camera-entry,.videoGrid .sceneThumb.camera-w1{background-size:contain',
@@ -80,4 +80,26 @@ test('large-screen typography scales at 1920, 2560 and 3840 without changing mob
   assert.match(html, /@media\(min-width:1600px\)/)
   assert.match(html, /@media\(max-width:767px\)\{body\{font-size:12px\}/)
   assert.match(read('dr-console-map.js'), /<svg viewBox="0 0 520 270"/)
+})
+
+test('hero campus image content matches INDEX and is not the section image', () => {
+  const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(new URL(file, root))).digest('hex')
+  const INDEX = JSON.parse(read('assets/demo/INDEX.json'))
+  const hero = INDEX.assets.find((a) => a.file === 'dr-campus-hero.jpg')
+  assert.ok(hero, 'INDEX must register dr-campus-hero.jpg')
+  assert.equal(sha256('assets/demo/dr-campus-hero.jpg'), hero.sha256, 'hero file sha256 must equal INDEX value')
+  assert.notEqual(hero.sha256, INDEX.sectionImageSha256, 'hero must not be the section image')
+  assert.ok(!hero.sha256.startsWith('41e5ecbb'), 'hero must not be the byte-identical section webp')
+  // INDEX 里登记的哈希必须与实际文件哈希一致，且必须覆盖 assets/demo 下全部演示图片
+  const dirFiles = fs.readdirSync(new URL('assets/demo/', root)).filter((f) => f !== 'INDEX.json').sort()
+  const indexedFiles = INDEX.assets.map((a) => a.file).sort()
+  assert.deepEqual(indexedFiles, dirFiles, 'INDEX must list every demo asset file exactly once')
+  for (const a of INDEX.assets) {
+    assert.equal(sha256('assets/demo/' + a.file), a.sha256, `${a.file} sha256 mismatch vs INDEX`)
+  }
+  assert.equal(sha256('assets/demo/dr-campus-reference.jpg'), INDEX.dashboard6_0FullSha256, 'full dashboard sha256 must match INDEX')
+  // 主图文件必须不等于剖面图文件
+  const html = read('dr-console.html')
+  assert.match(html, /dr-campus-hero\.jpg/)
+  assert.doesNotMatch(html, /\.panorama\{[^}]*dr-cam-overview\.webp/)
 })

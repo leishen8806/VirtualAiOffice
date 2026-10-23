@@ -128,7 +128,7 @@ function setTheme(theme) { document.documentElement.dataset.theme = theme; $('#t
 // shortcut: 园区主体使用 W1/W2/W3 园区全景（dr-cam-overview）；需要自由机位时再接独立三维模型。
 const plate = new Image()
 plate.addEventListener('error', () => $('#campus').classList.add('imageFailed'))
-plate.src = '/assets/demo/dr-cam-overview.webp'
+plate.src = '/assets/demo/dr-campus-hero.jpg'
 renderNav(); renderKpis()
 document.querySelectorAll('.warehouse').forEach(button => button.addEventListener('click', () => { activeView = button.dataset.zone; setZone(button.dataset.zone) }))
 $('#eventFilter').addEventListener('change', renderPanels)
