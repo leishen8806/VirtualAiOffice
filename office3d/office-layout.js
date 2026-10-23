@@ -562,7 +562,7 @@ function createOfficeV3Navigation(layout) {
     const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
     if (door.side === 'east' || door.side === 'west') {
       const aisleZ = home.z < door.at ? room.z0 + .7 : room.z1 - .7
-      return dedupeRoute([routePoint(home), { x: inside.x, z: home.z }, { x: inside.x, z: aisleZ }, { x: inside.x, z: door.at }, outside])
+      return dedupeRoute([routePoint(home), { x: home.x, z: aisleZ }, { x: inside.x, z: aisleZ }, { x: inside.x, z: door.at }, outside])
     }
     const aisleX = home.x < door.at ? room.x0 + .7 : room.x1 - .7
     return dedupeRoute([routePoint(home), { x: home.x, z: inside.z }, { x: aisleX, z: inside.z }, { x: door.at, z: inside.z }, outside])
