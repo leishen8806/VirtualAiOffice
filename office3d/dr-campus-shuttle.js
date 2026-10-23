@@ -156,32 +156,39 @@ function buildRails(THREE, root, plan) {
   return { group, materials: [material, dark] }
 }
 
-export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, eventSource, now,
+export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, eventSource, now, visualCell = null,
   search = globalThis.location?.search || '' }) {
   const plan = shuttlePlan(layout), low = quality?.tier === 'low'
   const enabled = new URLSearchParams(search).get('campusMotion') !== '0'
-  const staticParts = buildRails(THREE, root, plan)
+  const activeVisualCell = visualCell || root.userData?.vis2RackCell
+  const externalVisual = activeVisualCell && typeof activeVisualCell.setShuttle === 'function'
+  const staticParts = externalVisual ? null : buildRails(THREE, root, plan)
   const group = new THREE.Group()
   group.name = 'campus-shuttle'
   group.userData.dynamic = !low
   group.userData.spec = CAMPUS_SHUTTLE_SPEC
   root.add(group)
-  const texture = low ? null : createWarningTexture(canvasTex)
-  const built = geometryBuilder(THREE, plan, low)
-  const material = new THREE.MeshStandardMaterial({ map: texture, vertexColors: true, roughness: .62, metalness: .34 })
-  const mesh = new THREE.Mesh(built.geometry, material)
-  mesh.name = 'campus-shuttle-vehicle'
-  mesh.userData.qualityProxy = true
-  mesh.frustumCulled = false
-  if (low) staticParts.group.add(mesh)
-  else group.add(mesh)
-  if (low) {
+  let texture = null, built = null, material = null, mesh = null, basePositions = null, colors = null
+  if (!externalVisual) {
+    texture = low ? null : createWarningTexture(canvasTex)
+    built = geometryBuilder(THREE, plan, low)
+    material = new THREE.MeshStandardMaterial({ map: texture, vertexColors: true, roughness: .62, metalness: .34 })
+    mesh = new THREE.Mesh(built.geometry, material)
+    mesh.name = 'campus-shuttle-vehicle'
+    mesh.userData.qualityProxy = true
+    mesh.frustumCulled = false
+    if (low) staticParts.group.add(mesh)
+    else group.add(mesh)
+  }
+  if (low && !externalVisual) {
     const lifecycle = new THREE.Object3D()
     lifecycle.name = 'campus-shuttle-lifecycle'
     group.add(lifecycle)
   }
-  const basePositions = built.geometry.attributes.position.array.slice()
-  const colors = built.geometry.attributes.color
+  if (!externalVisual) {
+    basePositions = built.geometry.attributes.position.array.slice()
+    colors = built.geometry.attributes.color
+  }
   const sourceEpoch = typeof now === 'function' ? now() : 0
   let fallbackTime = 0
   const source = eventSource || createDemoShuttleEventSource({
@@ -196,6 +203,7 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
   let state = initialShuttleState(plan), paused = false, failed = false, disposed = false, lastSource = null
   let playbackSource = null, playbackAnimation = null
   function translate(role, dx, dy, dz, visible = true) {
+    if (!built || !basePositions) return
     for (const range of built.ranges[role] || []) for (let vertex = range.start; vertex < range.start + range.count; vertex++) {
       const offset = vertex * 3
       built.geometry.attributes.position.array[offset] = basePositions[offset] + dx
@@ -204,6 +212,7 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
     }
   }
   function setIndicator(status) {
+    if (!built || !colors) return
     const value = new THREE.Color(status === 'pickup' ? COLORS.yellow : status === 'delivery' ? COLORS.orange : COLORS.green)
     for (const range of built.ranges.indicator || []) for (let vertex = range.start; vertex < range.start + range.count; vertex++) {
       colors.setXYZ(vertex, value.r, value.g, value.b)
@@ -211,14 +220,18 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
     colors.needsUpdate = true
   }
   function draw(time) {
-    const frame = shuttleFrame(state, time), dz = frame.position - built.carZ
-    translate('car', 0, 0, dz)
-    translate('indicator', 0, 0, dz)
-    translate('lift', 0, frame.lift, dz)
-    translate('top', 0, frame.lift, dz, frame.carrying)
-    frame.occupied.forEach((occupied, index) => translate(`slot-${index}`, 0, 0, 0, occupied))
-    setIndicator(frame.status)
-    built.geometry.attributes.position.needsUpdate = true
+    const frame = shuttleFrame(state, time)
+    if (externalVisual) activeVisualCell.setShuttle({ z: frame.position, lift: frame.lift })
+    else {
+      const dz = frame.position - built.carZ
+      translate('car', 0, 0, dz)
+      translate('indicator', 0, 0, dz)
+      translate('lift', 0, frame.lift, dz)
+      translate('top', 0, frame.lift, dz, frame.carrying)
+      frame.occupied.forEach((occupied, index) => translate(`slot-${index}`, 0, 0, 0, occupied))
+      setIndicator(frame.status)
+      built.geometry.attributes.position.needsUpdate = true
+    }
     group.userData.pallets = { total: palletCount(frame), occupied: [...frame.occupied], carrying: frame.carrying }
     group.userData.shuttle = { position: frame.position, lift: frame.lift, status: frame.status }
   }
@@ -279,8 +292,8 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
     onFrame,
     setPaused(value) { paused = value === true; clock.reset() },
     summary: () => ({
-      calls: low ? 0 : 1,
-      triangles: low ? 0 : (built.geometry.index?.count || built.geometry.attributes.position.count) / 3,
+      calls: externalVisual || low ? 0 : 1,
+      triangles: externalVisual || low ? 0 : (built.geometry.index?.count || built.geometry.attributes.position.count) / 3,
       vehicles: 1,
       pallets: group.userData.pallets?.total ?? 2,
       low,
@@ -293,10 +306,13 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
       disposed = true; failed = true
       unsubscribe?.()
       globalThis.document?.removeEventListener('visibilitychange', reset)
-      built.geometry.dispose(); material.dispose(); texture?.dispose?.()
-      staticParts.materials.forEach(value => value.dispose())
-      staticParts.group.traverse(item => { if (item.isMesh && item !== mesh) item.geometry.dispose() })
-      staticParts.group.removeFromParent(); group.removeFromParent()
+      if (!externalVisual) {
+        built.geometry.dispose(); material.dispose(); texture?.dispose?.()
+        staticParts.materials.forEach(value => value.dispose())
+        staticParts.group.traverse(item => { if (item.isMesh && item !== mesh) item.geometry.dispose() })
+        staticParts.group.removeFromParent()
+      }
+      group.removeFromParent()
     },
   }
 }

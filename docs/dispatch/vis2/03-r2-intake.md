@@ -48,3 +48,29 @@ and with an explicit replacement adapter:
 - Keep stable zone IDs and the existing shuttle state source.
 - Do not import or wire Claude B until its exact module contract and isolated tests
   are supplied and pass in its own worktree.
+
+## R2 Replacement Adapter
+
+The integration adapter registers `vis2Rack` before the old support modules:
+
+- `dr-campus-racks.js` receives `replaceRackCell: true`; it keeps the inspection,
+  picking, packing, receiving-door, shipping-door, and rack-label objects, while
+  omitting old rack frames, cartons, pallets, and the shuttle-strip base.
+- `dr-campus-shuttle.js` detects the registered `vis2RackCell`. It keeps the
+  existing deterministic event source, visibility pause behavior, and `onFrame`
+  lifecycle, but does not construct old rails or the old shuttle mesh. It passes the
+  existing `shuttleFrame` position and lift to `setShuttle`.
+- If the private cell fails to build, registry isolation leaves no cell on the root;
+  both support modules use their original visual paths. No extra render loop, timer,
+  business request, or interaction identifier is added.
+
+Verified source-level integration probe:
+
+```text
+modules: shell, vis2Rack, racks, motion, shuttle
+old campus-racks-static: absent
+old campus-shuttle-static: absent
+old campus-shuttle-vehicle: absent
+campus-rack-labels: retained
+registry dispose: scene children = 0
+```

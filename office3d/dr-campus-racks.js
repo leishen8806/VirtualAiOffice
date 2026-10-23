@@ -28,25 +28,27 @@ const put = (mesh, index, THREE, item, color) => {
   const matrix = new THREE.Matrix4().compose(new THREE.Vector3(item.x, item.y, item.z), new THREE.Quaternion(), new THREE.Vector3(item.sx, item.sy, item.sz))
   mesh.setMatrixAt(index, matrix); mesh.setColorAt(index, new THREE.Color(color))
 }
-const inside = (plan, low) => {
+const inside = (plan, low, replaceRackCell = false) => {
   const solids = []
-  for (const rack of plan.racks.slice(0, low ? 2 : 4)) for (const section of rack.sections) {
-    const z = (section.z0 + section.z1) / 2
-    for (const x of [section.x0 + .12, section.x1 - .12]) for (const end of [section.z0 + .12, section.z1 - .12]) solids.push({ x, y: 1.8, z: end, sx: .16, sy: 3.6, sz: .16, color: 0x2d608b })
-    for (const y of [1.1, 2.5]) solids.push({ x: (section.x0 + section.x1) / 2, y, z, sx: 2, sy: .16, sz: section.z1 - section.z0, color: 0xe18a3b })
+  if (!replaceRackCell) {
+    for (const rack of plan.racks.slice(0, low ? 2 : 4)) for (const section of rack.sections) {
+      const z = (section.z0 + section.z1) / 2
+      for (const x of [section.x0 + .12, section.x1 - .12]) for (const end of [section.z0 + .12, section.z1 - .12]) solids.push({ x, y: 1.8, z: end, sx: .16, sy: 3.6, sz: .16, color: 0x2d608b })
+      for (const y of [1.1, 2.5]) solids.push({ x: (section.x0 + section.x1) / 2, y, z, sx: 2, sy: .16, sz: section.z1 - section.z0, color: 0xe18a3b })
+    }
+    for (const item of plan.cargo.filter((_, index) => !low || index % 5 === 0)) solids.push({ x: (item.x0 + item.x1) / 2, y: item.height / 2, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: item.height, sz: item.z1 - item.z0, color: 0xc29b58 })
   }
-  for (const item of plan.cargo.filter((_, index) => !low || index % 5 === 0)) solids.push({ x: (item.x0 + item.x1) / 2, y: item.height / 2, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: item.height, sz: item.z1 - item.z0, color: 0xc29b58 })
   for (const item of [...plan.stations, ...plan.receivingDoors, ...plan.shippingDoors]) solids.push({ x: (item.x0 + item.x1) / 2, y: .55, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: 1.1, sz: Math.max(.18, item.z1 - item.z0), color: 0x5b6c73 })
-  solids.push({ x: (plan.shuttle.x0 + plan.shuttle.x1) / 2, y: .12, z: (plan.shuttle.z0 + plan.shuttle.z1) / 2, sx: plan.shuttle.x1 - plan.shuttle.x0, sy: .12, sz: plan.shuttle.z1 - plan.shuttle.z0, color: 0x718a96 })
+  if (!replaceRackCell) solids.push({ x: (plan.shuttle.x0 + plan.shuttle.x1) / 2, y: .12, z: (plan.shuttle.z0 + plan.shuttle.z1) / 2, sx: plan.shuttle.x1 - plan.shuttle.x0, sy: .12, sz: plan.shuttle.z1 - plan.shuttle.z0, color: 0x718a96 })
   return solids
 }
 
-export function buildCampusRacks({ THREE, root, canvasTex, layout, quality }) {
+export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, replaceRackCell = false }) {
   const plan = createCampusRackPlan({ zones: layout.zones, shuttle: layout.shuttle })
-  const low = quality?.tier === 'low', solids = inside(plan, low)
+  const low = quality?.tier === 'low', solids = inside(plan, low, replaceRackCell)
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .68, metalness: .24 })
   const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, solids.length)
-  mesh.name = 'campus-racks-static'; mesh.userData.qualityProxy = true; mesh.receiveShadow = true
+  mesh.name = replaceRackCell ? 'campus-racks-support' : 'campus-racks-static'; mesh.userData.qualityProxy = true; mesh.receiveShadow = true
   solids.forEach((item, index) => put(mesh, index, THREE, item, item.color)); mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; root.add(mesh)
   let texture, labels
   if (!low) {
