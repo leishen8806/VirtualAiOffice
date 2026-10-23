@@ -1,9 +1,9 @@
 import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
-import { buildOfficeShellV3 } from './office-layout-v3-scene.js'
+import { buildOfficeAlignedShell } from './office-vis2/shell-finish.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
-import { buildOfficeSampleHost } from './office-vis2/host.js'
-import { buildOfficeZones } from './office-zones.js'
+import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
+import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
 import { buildDisplayDepartments } from './display-departments.js'
 import { buildDisplayStaff } from './display-staff.js'
 
@@ -18,7 +18,7 @@ function buildOfficeFurnitureV3(context) {
   if (!context.A?.furn || typeof context.placeFurniture !== 'function' || typeof context.canvasTex !== 'function' || typeof context.makeScreenTexture !== 'function') {
     return pendingModule('office-furniture-v3')
   }
-  const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout })
+  const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
   return { ...furniture, displaySeats: context.layout.displaySeats, version: 3 }
 }
 
@@ -37,10 +37,10 @@ function buildDisplayStaffV3(context) {
 }
 
 export const officeV3Modules = Object.freeze([
-  ['shell3', context => buildOfficeShellV3(context)],
+  ['shell3', buildOfficeAlignedShell],
   ['furniture3', buildOfficeFurnitureV3],
   ['island', buildOfficeSampleHost],
-  ['zones', buildOfficeZones],
+  ['zones', buildOfficeAlignedZones],
   ['displayDepartments', buildDisplayDepartmentsV3],
   ['displayStaff', buildDisplayStaffV3],
 ])

@@ -61,7 +61,7 @@ async function rebuild() {
   key.castShadow = !low
   const shadowSize = tier === 'high' ? 2048 : 1024
   if (key.shadow.mapSize.x !== shadowSize) { key.shadow.map?.dispose(); key.shadow.map = null; key.shadow.mapSize.set(shadowSize, shadowSize) }
-  legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex })
+  legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex, floorY: .092 })
   enabled = false; if (reopen) await enter(); else draw()
   if (contextOpen && previewAssets && enabled) { mountContext(); setView(view) }
   else if (!enabled && previewAssets) { clearContext(); if (contextPoses[view]) setView('overview') }

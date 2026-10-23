@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "CB1986F8CC089DA74EFBDC37CCDAC1A7AB8CF9739800AAAF49826BE0D9E90A37",
+      "sha256": "0C77F0FAEEFD659ECEEDD8CB295F0A0A00C7EB72916EDBEDDD9760382058AE85",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -148,6 +148,20 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "10040793B28777B15393475A178FBA47804A032B986279B8C25EDE9552D94FAF"
+    },
+    {
+      "file": "office-vis2/shell-finish.js",
+      "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "8F860139B8B465F224A662DD11ACA3A4B9E1F9AF261B8337CDA14E94CD305CAC"
+    },
+    {
+      "file": "office-vis2/zone-finish.js",
+      "source": "Private visual refinement of existing zone seats, tables and stools within their existing floor footprints",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "EF45E5901AD5191CCF1D54F092971FC22077F1C4E2EEB9ACC3CB72EFE8F9ECA9"
     }
   ],
   "excluded": {

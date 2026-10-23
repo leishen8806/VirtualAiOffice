@@ -72,7 +72,7 @@ export function officeFurnitureV2Spec(layout) {
   return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen: { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 } }
 }
 
-export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A, placeFurniture, collision, canvasTex, makeScreenTexture }) {
+export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A, placeFurniture, collision, canvasTex, makeScreenTexture, warmPalette = false }) {
   const spec = officeFurnitureV2Spec(layout)
   const required = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'table', 'chairModernCushion', 'bookcaseOpen', 'books', 'pottedPlant']
   for (const name of required) if (!A?.furn?.[name]) throw new Error(`缺少办公家具 ${name}`)
@@ -89,9 +89,14 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   const geometryParts = [], handles = new Map(), screenSlots = []
   const atlas = canvasTex(2048, 1024, (ctx, w, h) => { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h) })
   const atlasContext = atlas.image.getContext('2d')
-  const wood = new THREE.Color(THEME.trim).lerp(new THREE.Color(THEME.nameplate), .55)
+  const wood = warmPalette ? new THREE.Color('#C49A6C') : new THREE.Color(THEME.trim).lerp(new THREE.Color(THEME.nameplate), .55)
   const white = new THREE.Color(THEME.nameplate), trim = new THREE.Color(THEME.trim)
-  const colorFor = material => !material.name || /plant/i.test(material.name) ? material.color : /wood/i.test(material.name) ? wood : /metalDark/i.test(material.name) ? trim : white
+  const fabric = new THREE.Color('#506A5A'), metal = new THREE.Color('#756D60'), dark = new THREE.Color('#3D4541')
+  const colorFor = material => !material.name || /plant/i.test(material.name) ? material.color
+    : warmPalette && /carpet|fabric|cushion/i.test(material.name) ? fabric
+    : warmPalette && /metalDark/i.test(material.name) ? dark
+    : warmPalette && /metal/i.test(material.name) ? metal
+    : /wood/i.test(material.name) ? wood : /metalDark/i.test(material.name) ? trim : white
   function bake(group, screen = null) {
     group.updateWorldMatrix(true, true)
     group.traverse(mesh => {

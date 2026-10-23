@@ -1,8 +1,23 @@
 import { createSampleBatch } from './batch.js'
 import { appendOfficePlaza } from './plaza.js'
 
+export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
+  const plaza = layout.plaza, c = plaza.center
+  const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
+  disk.rotateX(-Math.PI / 2); batch.add(disk, '#D9D3C6', [c.x, .09, c.z], 0, .9, 0, 'stone')
+  for (const radius of [3.1, 5.8, 8.3]) {
+    const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
+    ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)
+  }
+  for (let i = 0; i < plaza.radialSeams; i++) {
+    const a = i * Math.PI * 2 / plaza.radialSeams, length = plaza.radius - .25 - 3.2
+    batch.add(new THREE.BoxGeometry(.018, .006, length), '#B8AF9F', [c.x + Math.sin(a) * (3.2 + length / 2), .103, c.z + Math.cos(a) * (3.2 + length / 2)], a, .9)
+  }
+  batch.add(new THREE.BoxGeometry(3.8, .02, 1.8), '#D9D3C6', [c.x, .105, 12.9], 0, .78, 0, 'stone')
+}
+
 // Preview-owned decoration. Functional seats, colliders and navigation remain in the host.
-export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, low = false }) {
+export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, low = false, includePaving = true, includeZones = true }) {
   const group = new THREE.Group(); group.name = 'office-vis2-completion'; root.add(group)
   const batch = createSampleBatch(THREE), placements = [], displayIds = ['market', 'service', 'aftersales', 'marketing']
   const box = (x, y, z, w, h, d, color, surface = '') => batch.add(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, surface === 'wood' ? .66 : .78, 0, surface)
@@ -47,7 +62,7 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
     box((room.x0 + room.x1) / 2, 2.13, room.z0 + .27, 2.06, .98, .012, '#26333A')
     plant(room.x1 - .7, room.z0 + .85, .7)
   }
-  for (const id of ['creative', 'dining', 'leisure']) {
+  for (const id of includeZones ? ['creative', 'dining', 'leisure'] : []) {
     const room = layout.regions.find(value => value.id === id)
     if (!room) continue
     const x = (room.x0 + room.x1) / 2, z = (room.z0 + room.z1) / 2
@@ -61,17 +76,7 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
     placements.push({ kind: 'discussion-table', room: id, x, z, radius: 1.04 })
   }
   const plaza = layout.plaza, c = plaza.center
-  const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
-  disk.rotateX(-Math.PI / 2); batch.add(disk, '#D9D3C6', [c.x, .09, c.z], 0, .9, 0, 'stone')
-  for (const radius of [3.1, 5.8, 8.3]) {
-    const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
-    ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)
-  }
-  for (let i = 0; i < plaza.radialSeams; i++) {
-    const a = i * Math.PI * 2 / plaza.radialSeams, length = plaza.radius - .25 - 3.2
-    batch.add(new THREE.BoxGeometry(.018, .006, length), '#B8AF9F', [c.x + Math.sin(a) * (3.2 + length / 2), .103, c.z + Math.cos(a) * (3.2 + length / 2)], a, .9)
-  }
-  box(c.x, .105, 12.9, 3.8, .02, 1.8, '#D9D3C6', 'stone')
+  if (includePaving) appendOfficePlazaPaving({ THREE, batch, layout, low })
   placements.push(...appendOfficePlaza({ THREE, batch, layout }))
   for (const { x, z } of [{ x: -13, z: 16 }, { x: -13, z: 25 }, { x: 17, z: 16 }, { x: 17, z: 25 }]) {
     cylinder(x, 1.05, z, .13, 2.1, '#6A6253')
@@ -85,7 +90,7 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
   let sign, signTexture, signMaterial, disposed = false
   try {
     if (canvasTex) {
-      const rooms = [...displayIds, 'board', 'review', 'plan', 'creative'].map(id => layout.regions.find(room => room.id === id)).filter(Boolean)
+      const rooms = [...displayIds, 'board', 'review', 'plan', ...(includeZones ? ['creative'] : [])].map(id => layout.regions.find(room => room.id === id)).filter(Boolean)
       signTexture = canvasTex(1024, 512, (ctx, w, h) => {
         ctx.clearRect(0, 0, w, h)
         rooms.forEach((room, i) => {
