@@ -1,0 +1,166 @@
+TAP version 13
+# Subtest: wall screen: Cambodia outline, highlighted Phnom Penh, persistent simulated label and values from the snapshot
+ok 1 - wall screen: Cambodia outline, highlighted Phnom Penh, persistent simulated label and values from the snapshot
+  ---
+  duration_ms: 0.791292
+  type: 'test'
+  ...
+# Subtest: missing or malformed snapshots show the no-snapshot state, keep the label, and never invent numbers
+ok 2 - missing or malformed snapshots show the no-snapshot state, keep the label, and never invent numbers
+  ---
+  duration_ms: 0.56375
+  type: 'test'
+  ...
+# Subtest: the screen is a pure function of the snapshot: identical input, identical drawing; different snapshot, different drawing
+ok 3 - the screen is a pure function of the snapshot: identical input, identical drawing; different snapshot, different drawing
+  ---
+  duration_ms: 0.66225
+  type: 'test'
+  ...
+# Subtest: screen aspect is 2.4:1 and the canvas has the same ratio, so nothing is stretched
+ok 4 - screen aspect is 2.4:1 and the canvas has the same ratio, so nothing is stretched
+  ---
+  duration_ms: 7.26575
+  type: 'test'
+  ...
+# Subtest: exactly one straight row of four seats with equal pitch; every seat has two desk monitors
+ok 5 - exactly one straight row of four seats with equal pitch; every seat has two desk monitors
+  ---
+  duration_ms: 2.639792
+  type: 'test'
+  ...
+# Subtest: everything stays inside its own zone and below the roof; no floor slab is laid on the shared floor
+ok 6 - everything stays inside its own zone and below the roof; no floor slab is laid on the shared floor
+  ---
+  duration_ms: 2.203292
+  type: 'test'
+  ...
+# Subtest: update(): a new snapshot version redraws once, the same version does nothing, and it stops after dispose
+ok 7 - update(): a new snapshot version redraws once, the same version does nothing, and it stops after dispose
+  ---
+  duration_ms: 1.679292
+  type: 'test'
+  ...
+# Subtest: works inside the campus registry: glass and glow keep their own materials, textured screens are not merged
+ok 8 - works inside the campus registry: glass and glow keep their own materials, textured screens are not merged
+  ---
+  duration_ms: 16.079667
+  type: 'test'
+  ...
+# Subtest: quality low is lighter, and budgets hold
+ok 9 - quality low is lighter, and budgets hold
+  ---
+  duration_ms: 2.144875
+  type: 'test'
+  ...
+# Subtest: dispose is idempotent and frees geometry, materials and textures it owns
+ok 10 - dispose is idempotent and frees geometry, materials and textures it owns
+  ---
+  duration_ms: 1.577125
+  type: 'test'
+  ...
+# Subtest: replacement list names real legacy objects; the module has no simulation engine, timers, renderer or network
+ok 11 - replacement list names real legacy objects; the module has no simulation engine, timers, renderer or network
+  ---
+  duration_ms: 0.606542
+  type: 'test'
+  ...
+# Subtest: brand atlas: approved images are drawn without stretching, with the shop name on the wall panel
+ok 12 - brand atlas: approved images are drawn without stretching, with the shop name on the wall panel
+  ---
+  duration_ms: 0.171458
+  type: 'test'
+  ...
+# Subtest: brand atlas: without assets an original placeholder logo is drawn and the name is still shown
+ok 13 - brand atlas: without assets an original placeholder logo is drawn and the name is still shown
+  ---
+  duration_ms: 0.049125
+  type: 'test'
+  ...
+# Subtest: brand: logo is large on the showcase wall and on the desk fascia, clear of every niche and inside the wall
+ok 14 - brand: logo is large on the showcase wall and on the desk fascia, clear of every niche and inside the wall
+  ---
+  duration_ms: 1.451167
+  type: 'test'
+  ...
+# Subtest: brand: logo can be replaced at runtime with exactly one upload; the dispatch control room is untouched
+ok 15 - brand: logo can be replaced at runtime with exactly one upload; the dispatch control room is untouched
+  ---
+  duration_ms: 1.166291
+  type: 'test'
+  ...
+# Subtest: brand: gold accents use a metallic material that the registry does not merge away; module still loads no images itself
+ok 16 - brand: gold accents use a metallic material that the registry does not merge away; module still loads no images itself
+  ---
+  duration_ms: 9.214458
+  type: 'test'
+  ...
+# Subtest: structure uses exactly the approved blue and orange, from the shared layout rows
+ok 17 - structure uses exactly the approved blue and orange, from the shared layout rows
+  ---
+  duration_ms: 11.766458
+  type: 'test'
+  ...
+# Subtest: every rack element stays inside the high-rack zone and below the building roof
+ok 18 - every rack element stays inside the high-rack zone and below the building roof
+  ---
+  duration_ms: 8.371042
+  type: 'test'
+  ...
+# Subtest: loads rest on beams, never reach the beam above, and leave the top beam empty
+ok 19 - loads rest on beams, never reach the beam above, and leave the top beam empty
+  ---
+  duration_ms: 4.383583
+  type: 'test'
+  ...
+# Subtest: no two pallets overlap on the same level of the same bay
+ok 20 - no two pallets overlap on the same level of the same bay
+  ---
+  duration_ms: 1.966209
+  type: 'test'
+  ...
+# Subtest: rails and shuttle: wheels ride on the two rails, low body, pallet on the carrier, inside the strip
+ok 21 - rails and shuttle: wheels ride on the two rails, low body, pallet on the carrier, inside the strip
+  ---
+  duration_ms: 1.355125
+  type: 'test'
+  ...
+# Subtest: shuttle state is clamped to the rail path and ignores non-finite input
+ok 22 - shuttle state is clamped to the rail path and ignores non-finite input
+  ---
+  duration_ms: 1.613125
+  type: 'test'
+  ...
+# Subtest: deterministic for a seed, different for another, and low quality is lighter
+ok 23 - deterministic for a seed, different for another, and low quality is lighter
+  ---
+  duration_ms: 4.851
+  type: 'test'
+  ...
+# Subtest: works inside the campus registry: film keeps its own transparency, shuttle stays dynamic, static parts merge
+ok 24 - works inside the campus registry: film keeps its own transparency, shuttle stays dynamic, static parts merge
+  ---
+  duration_ms: 42.687792
+  type: 'test'
+  ...
+# Subtest: dispose is idempotent and frees geometry and materials it owns
+ok 25 - dispose is idempotent and frees geometry and materials it owns
+  ---
+  duration_ms: 1.256167
+  type: 'test'
+  ...
+# Subtest: the replacement list names real legacy objects and the module stays free of unsafe APIs
+ok 26 - the replacement list names real legacy objects and the module stays free of unsafe APIs
+  ---
+  duration_ms: 0.527625
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 140.705584

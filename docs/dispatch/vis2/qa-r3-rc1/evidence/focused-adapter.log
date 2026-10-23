@@ -1,0 +1,41 @@
+TAP version 13
+# [campus:vis2Rack] 已跳过：fixture vis2 failure
+# Subtest: integrated path replaces old rack/rail/shuttle objects but keeps support, labels and cell visuals
+ok 1 - integrated path replaces old rack/rail/shuttle objects but keeps support, labels and cell visuals
+  ---
+  duration_ms: 50.336084
+  type: 'test'
+  ...
+# Subtest: fallback path keeps the legacy visuals and adds no VIS2 objects when the private cell fails
+ok 2 - fallback path keeps the legacy visuals and adds no VIS2 objects when the private cell fails
+  ---
+  duration_ms: 6.979791
+  type: 'test'
+  ...
+# Subtest: static batch merging preserves dynamic objects and ownership; dispose is idempotent
+ok 3 - static batch merging preserves dynamic objects and ownership; dispose is idempotent
+  ---
+  duration_ms: 28.177708
+  type: 'test'
+  ...
+# Subtest: shuttle world coordinate, rail contact, lift and dynamic state semantics
+ok 4 - shuttle world coordinate, rail contact, lift and dynamic state semantics
+  ---
+  duration_ms: 2.458958
+  type: 'test'
+  ...
+# Subtest: visual flags loader is fail-closed for missing/malformed/failed fetches and ignores unknown fields
+ok 5 - visual flags loader is fail-closed for missing/malformed/failed fetches and ignores unknown fields
+  ---
+  duration_ms: 0.261833
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 148.066958

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: heart banyan keeps the calibrated size, genuine depth and 3-call/8k budget
+ok 1 - heart banyan keeps the calibrated size, genuine depth and 3-call/8k budget
+  ---
+  duration_ms: 17.919042
+  type: 'test'
+  ...
+# Subtest: heart banyan has two separated high lobes and a central notch in real geometry
+ok 2 - heart banyan has two separated high lobes and a central notch in real geometry
+  ---
+  duration_ms: 6.031875
+  type: 'test'
+  ...
+# Subtest: fixed-seed leaves repeat exactly, remain instanced and dispose only owned resources
+ok 3 - fixed-seed leaves repeat exactly, remain instanced and dispose only owned resources
+  ---
+  duration_ms: 8.136125
+  type: 'test'
+  ...
+# Subtest: VIS2 defaults closed for missing or malformed config and requests no textures
+ok 4 - VIS2 defaults closed for missing or malformed config and requests no textures
+  ---
+  duration_ms: 0.418833
+  type: 'test'
+  ...
+# Subtest: VIS2 material loading configures sRGB and releases partial successes on failure
+ok 5 - VIS2 material loading configures sRGB and releases partial successes on failure
+  ---
+  duration_ms: 0.40425
+  type: 'test'
+  ...
+# Subtest: VIS2 logo loading is optional and absent logos use named replacement slots
+ok 6 - VIS2 logo loading is optional and absent logos use named replacement slots
+  ---
+  duration_ms: 1.141
+  type: 'test'
+  ...
+# Subtest: VIS2 brand marks preserve the approved logo ratio and avoid co-planar backing
+ok 7 - VIS2 brand marks preserve the approved logo ratio and avoid co-planar backing
+  ---
+  duration_ms: 0.237916
+  type: 'test'
+  ...
+# Subtest: VIS2 closing while images load prevents late mounting and releases owned images
+ok 8 - VIS2 closing while images load prevents late mounting and releases owned images
+  ---
+  duration_ms: 0.201416
+  type: 'test'
+  ...
+# Subtest: VIS2 repeated entry/exit preserves host objects and cleans collisions and textures
+ok 9 - VIS2 repeated entry/exit preserves host objects and cleans collisions and textures
+  ---
+  duration_ms: 102.67725
+  type: 'test'
+  ...
+# Subtest: VIS2 public bar hook preserves closed B0 geometry and active seat IDs/positions
+ok 10 - VIS2 public bar hook preserves closed B0 geometry and active seat IDs/positions
+  ---
+  duration_ms: 25.2885
+  type: 'test'
+  ...
+# Subtest: VIS2 bar surfaces leave centre, both entry openings and operation floor clear
+ok 11 - VIS2 bar surfaces leave centre, both entry openings and operation floor clear
+  ---
+  duration_ms: 6.70025
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 199.511167

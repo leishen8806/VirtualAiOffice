@@ -1,0 +1,179 @@
+TAP version 13
+# Subtest: racks remain in highRack, clear of shuttle and deterministic
+ok 1 - racks remain in highRack, clear of shuttle and deterministic
+  ---
+  duration_ms: 1.510542
+  type: 'test'
+  ...
+# Subtest: rack modules stay static and avoid runtime data APIs
+ok 2 - rack modules stay static and avoid runtime data APIs
+  ---
+  duration_ms: 1.709
+  type: 'test'
+  ...
+# Subtest: plan keeps one double rail and all vehicle envelopes inside the 4x14m strip without rack overlap
+ok 3 - plan keeps one double rail and all vehicle envelopes inside the 4x14m strip without rack overlap
+  ---
+  duration_ms: 0.681042
+  type: 'test'
+  ...
+# Subtest: fixed seed event sources return the same sequence and subscriptions emit each id once
+ok 4 - fixed seed event sources return the same sequence and subscriptions emit each id once
+  ---
+  duration_ms: 0.813958
+  type: 'test'
+  ...
+# Subtest: confirmed events are idempotent and pallet count stays constant through pick and put
+ok 5 - confirmed events are idempotent and pallet count stays constant through pick and put
+  ---
+  duration_ms: 0.235584
+  type: 'test'
+  ...
+# Subtest: high module honors canvasTex contract and stays within one call and 2k triangles
+ok 6 - high module honors canvasTex contract and stays within one call and 2k triangles
+  ---
+  duration_ms: 8.285792
+  type: 'test'
+  ...
+# Subtest: low tier adds zero calls and merges the parked vehicle with static rails
+ok 7 - low tier adds zero calls and merges the parked vehicle with static rails
+  ---
+  duration_ms: 6.716917
+  type: 'test'
+  ...
+# Subtest: pause and root invisibility keep source advancing and resume without a first-frame jump
+ok 8 - pause and root invisibility keep source advancing and resume without a first-frame jump
+  ---
+  duration_ms: 4.471584
+  type: 'test'
+  ...
+# Subtest: campusMotion=0 stays static while the event source continues
+ok 9 - campusMotion=0 stays static while the event source continues
+  ---
+  duration_ms: 1.665666
+  type: 'test'
+  ...
+# Subtest: shuttle code is deterministic, warehouse-isolated and registered without app changes
+ok 10 - shuttle code is deterministic, warehouse-isolated and registered without app changes
+  ---
+  duration_ms: 1.05775
+  type: 'test'
+  ...
+# [campus:shell] 已跳过：Cannot read properties of undefined (reading 'x0')
+# Subtest: structure uses exactly the approved blue and orange, from the shared layout rows
+ok 11 - structure uses exactly the approved blue and orange, from the shared layout rows
+  ---
+  duration_ms: 11.8075
+  type: 'test'
+  ...
+# Subtest: every rack element stays inside the high-rack zone; vertical extent is measured from the finished floor
+ok 12 - every rack element stays inside the high-rack zone; vertical extent is measured from the finished floor
+  ---
+  duration_ms: 7.127333
+  type: 'test'
+  ...
+# Subtest: every pallet rests on both beams of its bay: beam x lies under the pallet and the pallet lies inside the beam length
+ok 13 - every pallet rests on both beams of its bay: beam x lies under the pallet and the pallet lies inside the beam length
+  ---
+  duration_ms: 4.471
+  type: 'test'
+  ...
+# Subtest: every carton lies inside its pallet footprint, sits on the deck, and clears the beam above
+ok 14 - every carton lies inside its pallet footprint, sits on the deck, and clears the beam above
+  ---
+  duration_ms: 9.954334
+  type: 'test'
+  ...
+# Subtest: no pallet, carton or film overlaps an upright, another pallet, or a neighbouring carton
+ok 15 - no pallet, carton or film overlaps an upright, another pallet, or a neighbouring carton
+  ---
+  duration_ms: 4.317708
+  type: 'test'
+  ...
+# Subtest: beams are attached to the uprights: each beam end reaches into the upright (no gap)
+ok 16 - beams are attached to the uprights: each beam end reaches into the upright (no gap)
+  ---
+  duration_ms: 2.025125
+  type: 'test'
+  ...
+# Subtest: shuttle chassis: wheels sit exactly on the two rails and stay there for every lift value
+ok 17 - shuttle chassis: wheels sit exactly on the two rails and stay there for every lift value
+  ---
+  duration_ms: 1.925167
+  type: 'test'
+  ...
+# Subtest: lift moves only the platform and its cargo; cargo never floats or intersects the chassis
+ok 18 - lift moves only the platform and its cargo; cargo never floats or intersects the chassis
+  ---
+  duration_ms: 1.269916
+  type: 'test'
+  ...
+# Subtest: host state: carrying, occupied and status are accepted from the host only, invalid values are ignored
+ok 19 - host state: carrying, occupied and status are accepted from the host only, invalid values are ignored
+  ---
+  duration_ms: 1.348875
+  type: 'test'
+  ...
+# Subtest: intermediate world positions are reachable: driving setShuttle with the real shuttleFrame reaches slot-b and is not clamped
+ok 20 - intermediate world positions are reachable: driving setShuttle with the real shuttleFrame reaches slot-b and is not clamped
+  ---
+  duration_ms: 1.593417
+  type: 'test'
+  ...
+# Subtest: shuttle geometry: every triangle winds counter-clockwise outward and matches its stored normal
+ok 21 - shuttle geometry: every triangle winds counter-clockwise outward and matches its stored normal
+  ---
+  duration_ms: 1.776209
+  type: 'test'
+  ...
+# Subtest: one vertical reference: baseY moves every part by exactly the same amount and nothing else
+ok 22 - one vertical reference: baseY moves every part by exactly the same amount and nothing else
+  ---
+  duration_ms: 2.047084
+  type: 'test'
+  ...
+# Subtest: legacy conflict fixture: at baseY = 0 the old shuttle base slab (y 0.06…0.18) would bury the new rails, so the old slab must be removed
+ok 23 - legacy conflict fixture: at baseY = 0 the old shuttle base slab (y 0.06…0.18) would bury the new rails, so the old slab must be removed
+  ---
+  duration_ms: 0.315167
+  type: 'test'
+  ...
+# Subtest: deterministic for a seed and different for another; low quality is lighter and creates no empty film mesh
+ok 24 - deterministic for a seed and different for another; low quality is lighter and creates no empty film mesh
+  ---
+  duration_ms: 4.2175
+  type: 'test'
+  ...
+# Subtest: quality contract: every mesh opts out of the global quality capture (qualityProxy) and the module handles its own low tier
+ok 25 - quality contract: every mesh opts out of the global quality capture (qualityProxy) and the module handles its own low tier
+  ---
+  duration_ms: 1.023166
+  type: 'test'
+  ...
+# Subtest: inside the real campus registry with the old modules: static parts merge, film and shuttle stay, and merged object names are NOT available for picking
+ok 26 - inside the real campus registry with the old modules: static parts merge, film and shuttle stay, and merged object names are NOT available for picking
+  ---
+  duration_ms: 42.843
+  type: 'test'
+  ...
+# Subtest: dispose releases every owned resource exactly once, also when called twice and after registry merging
+ok 27 - dispose releases every owned resource exactly once, also when called twice and after registry merging
+  ---
+  duration_ms: 26.992708
+  type: 'test'
+  ...
+# Subtest: the replacement list names real legacy objects and the module stays free of unsafe APIs
+ok 28 - the replacement list names real legacy objects and the module stays free of unsafe APIs
+  ---
+  duration_ms: 0.454792
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 240.67725
