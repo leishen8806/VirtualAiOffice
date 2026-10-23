@@ -15,7 +15,7 @@ const run = (mutate, out) => {
 }
 const results = {}
 for (const mutate of ['dup-loop', 'runtime-error']) {
-  const out = `/tmp/vis3/mut-${mutate}`
+  const out = `/tmp/vis3/mut-${mutate}-${process.pid}`
   const r = run(mutate, out)
   let failedCheck = ''
   try { const rep = JSON.parse(require('node:fs').readFileSync(path.join(out, 'report.json'), 'utf8')); failedCheck = (rep.scenes.office?.checks || []).filter((c) => !c.ok).map((c) => c.id).join(',') } catch {}
@@ -25,7 +25,7 @@ for (const mutate of ['dup-loop', 'runtime-error']) {
 const hits = { count: 0 }
 const srv = http.createServer((req, res) => { hits.count++; res.end('probe-received') })
 await new Promise((r) => srv.listen(3199, '127.0.0.1', r))
-const up = run('unauthorized-port', '/tmp/vis3/mut-unauthorized')
+const up = run('unauthorized-port', `/tmp/vis3/mut-unauthorized-${process.pid}`)
 srv.close()
 results['unauthorized-port'] = { exit: up.exit, probeHits: hits.count }
 results.verdict = results['dup-loop'].exit === 1 && results['runtime-error'].exit === 1 && results['unauthorized-port'].exit === 1 && results['unauthorized-port'].probeHits === 0

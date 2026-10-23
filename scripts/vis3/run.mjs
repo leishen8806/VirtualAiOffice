@@ -1,6 +1,7 @@
 // VIS3-TEST-001-FIX1：修复 T-01..T-12 的浏览器测试执行器。
 // 退出码：0 全部强制检查通过；1 任一强制检查失败；2 基础设施错误或强制检查未执行。
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
@@ -14,14 +15,21 @@ const parse = () => { const o = {}; for (let i = 2; i < process.argv.length; i++
 const A = parse()
 const REPO = A.repo ? path.resolve(A.repo) : process.cwd()
 const SCENES = String(A.scene || 'office,dashboard').split(',').map((s) => s.trim())
-const OUT = A.out ? path.resolve(A.out) : path.join('/tmp', 'vis3-out')
+const TMPDIR = fs.realpathSync(os.tmpdir())
+const TMP_ROOTS = [TMPDIR, fs.realpathSync('/tmp')].filter((d, i, a) => a.indexOf(d) === i)
+const rawOut = A.out ? path.resolve(A.out) : path.join(TMPDIR, `vis3-out-${process.pid}`)
+const OUT = path.join(fs.realpathSync(path.dirname(rawOut)), path.basename(rawOut))
+if (!TMP_ROOTS.some((d) => OUT === d || OUT.startsWith(d + path.sep))) { console.error('INFRA_ERROR: --out 必须位于系统临时目录内：' + OUT); process.exit(2) }
+if (OUT.startsWith(REPO + path.sep)) { console.error('INFRA_ERROR: --out 不得位于被测仓库内：' + OUT); process.exit(2) }
+if (fs.existsSync(OUT) && fs.readdirSync(OUT).length > 0) { console.error('INFRA_ERROR: --out 目录已存在且非空，拒绝覆盖：' + OUT); process.exit(2) }
 const DPR = Number(A.dpr || 1)
 const VIEWPORT = String(A.viewport || '1280x720').split('x').map(Number)
 const PW = A.playwright || process.env.VIS3_PLAYWRIGHT || require.resolve('playwright')
 const NETLOG = path.join(OUT, 'logs', 'blocked-network.jsonl')
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'screenshots'), { recursive: true }); fs.mkdirSync(path.join(OUT, 'logs'), { recursive: true }); fs.writeFileSync(NETLOG, '')
-const SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-const repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim()
+let SHA, repoCleanBefore
+try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim() }
+catch (e) { console.error('INFRA_ERROR: 无法读取被测仓库（非 git 或不可访问）：' + (e?.message || e)); process.exit(2) }
 const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
@@ -38,6 +46,9 @@ const collect = (page) => page.evaluate(() => {
   const gl = renderer?.getContext?.(); const dbg = gl?.getExtension?.('WEBGL_debug_renderer_info')
   return {
     ready: Boolean(renderer), names, colorCounts,
+    flags: window.__office?.visualFlags ?? null,
+    officeV2: Boolean(window.__office?.officeV2),
+    campus: window.__office?.campus ? window.__office.campus.summary() : null,
     rendererInfo: renderer ? { calls: renderer.info?.render?.calls, triangles: renderer.info?.render?.triangles, geometries: renderer.info?.memory?.geometries, textures: renderer.info?.memory?.textures, dpr: renderer.getPixelRatio?.() } : null,
     gpu: dbg && gl ? { vendor: gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL), renderer: gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) } : null,
     vis3: window.__vis3 || null,
@@ -56,6 +67,7 @@ async function openPage(browser, base, url, opts = {}) {
   const allowOrigins = new Set([`http://127.0.0.1:${base.split(':')[2]}`, `http://localhost:${base.split(':')[2]}`])
   const context = await browser.newContext({ viewport: { width: VIEWPORT[0], height: VIEWPORT[1] }, deviceScaleFactor: DPR, serviceWorkers: 'block' })
   const requests = [], errors = [], blocked = []
+  context.on('websocket', (ws) => { try { const u = new URL(ws.url()); if (!allowOrigins.has(u.origin)) { blocked.push({ blocked: u.origin + u.pathname, rule: 'websocket' }); ws.close() } } catch {} })
   await context.route('**/*', (route) => {
     const u = new URL(route.request().url())
     const local = ['127.0.0.1', 'localhost'].includes(u.hostname)
@@ -116,6 +128,16 @@ async function sceneDr(browser, base) {
   const rootsSeq = [], canvasSeq = []
   for (let i = 0; i < 6; i++) { await lf.page.goto(base + (i % 2 ? '/?campus=1' : '/'), { waitUntil: 'load', timeout: 45000 }); await waitReady(lf.page, () => Boolean(window.__office?.renderer)); await lf.page.waitForTimeout(400); const c = await collect(lf.page); const roots = await lf.page.evaluate(() => { let n = 0; window.__office?.scene.traverse((o) => { if (o.name === 'campus-root') n++ }); return n }); rootsSeq.push(roots); canvasSeq.push(c.rendererInfo ? 1 : 0) }
   addCheck(checks, 'dr-lifecycle-same-page', rootsSeq.every((r) => r <= 1), JSON.stringify(rootsSeq), true)
+  // 页面可见性：冻结生命周期状态后 RAF 不再注册
+  try {
+    const cdp = await lf.page.context().newCDPSession(lf.page)
+    await cdp.send('Page.setWebLifecycleState', { state: 'frozen' })
+    const fr0 = await lf.page.evaluate(() => window.__vis3.raf)
+    await lf.page.waitForTimeout(800)
+    const fr1 = await lf.page.evaluate(() => window.__vis3.raf)
+    await cdp.send('Page.setWebLifecycleState', { state: 'active' })
+    addCheck(checks, 'dr-visibility-freeze-no-raf', (fr1 - fr0) < 15, `frozen raf Δ=${fr1 - fr0}`, true)
+  } catch (e) { addCheck(checks, 'dr-visibility-freeze-no-raf', false, 'CDP Page.setWebLifecycleState 不可用', true) }
   await lf.context.close()
   return { checks, perf, requests: requests.length, blocked }
 }
@@ -157,7 +179,7 @@ async function sceneOffice(browser, base) {
 
 async function sceneDashboard(browser, base) {
   const checks = []
-  const { page, context, requests, errors } = await openPage(browser, base, '/dr-console.html')
+  const { page, context, requests, errors } = await openPage(browser, base, '/dr-console.html', { noApp: true, netLog: NETLOG })
   const ready = await waitReady(page, () => Boolean(document.body && document.body.innerText.length > 0))
   addCheck(checks, 'dashboard-ready', Boolean(ready), '看板文本就绪', true)
   addCheck(checks, 'dashboard-no-runtime-errors', errors.length === 0, JSON.stringify(errors.slice(0, 3)), true)
@@ -165,18 +187,64 @@ async function sceneDashboard(browser, base) {
   addCheck(checks, 'dashboard-kpi', /入库|出库|运单|W1|W2|W3/.test(text), '', true)
   addCheck(checks, 'dashboard-demo-label', /模拟|演示|示意/.test(text), '', true)
   addCheck(checks, 'dashboard-no-writes', requests.filter((r) => r.method !== 'GET' && r.method !== 'HEAD').length === 0, '0 写', true)
+  const loadMs = await navLoadMs(page)
   await shot(page, 'dashboard-desktop')
   await context.close()
-  return { checks, perf: { loadMs: await Promise.resolve(null), requests: requests.length } }
+  return { checks, perf: { loadMs, requests: requests.length } }
 }
 
 const browser = await require(PW).chromium.launch({ headless: true, channel: 'chrome' }).catch(async () => require(PW).chromium.launch({ headless: true }))
 report.browser = await browser.version()
 try {
+// ---- T-10 功能开关矩阵（针对带 /visual-flags 桥的集成分支，如 RC1） ----
+async function sceneFlags(browser, repo) {
+  const checks = []
+  const variants = [
+    { id: 'missing', office: false, campus: false, missing: true },
+    { id: 'corrupt', office: false, campus: false, corrupt: true },
+    { id: 'both-false', office: false, campus: false },
+    { id: 'office-only', office: true, campus: false },
+    { id: 'campus-only', office: false, campus: true },
+    { id: 'both-true', office: true, campus: true },
+  ]
+  const matrix = []
+  for (const v of variants) {
+    const { base, mock, stop } = await bootIsolated({ repo, office: v.office, campus: v.campus, missing: v.missing, corrupt: v.corrupt, outDir: OUT })
+    const flag = await fetch(base + '/visual-flags').then((r) => r.json()).catch(() => null)
+    const root = await openPage(browser, base, '/', { netLog: NETLOG })
+    await root.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
+    const rootScene = await collect(root.page)
+    const campus = await openPage(browser, base, '/?campus=1', { netLog: NETLOG })
+    await campus.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
+    const campusScene = await collect(campus.page)
+    const layout2 = await openPage(browser, base, '/?layout=2', { netLog: NETLOG })
+    await layout2.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
+    const layout2Scene = await collect(layout2.page)
+    const writes = [...root.requests, ...campus.requests, ...layout2.requests].filter((r) => r.method !== 'GET' && r.method !== 'HEAD').length
+    matrix.push({ id: v.id, flag, root: { flags: rootScene.flags, officeV2: rootScene.officeV2, campus: rootScene.campus }, campus: { flags: campusScene.flags, campus: campusScene.campus }, layout2: { officeV2: layout2Scene.officeV2 }, writes })
+    await root.context.close(); await campus.context.close(); await layout2.context.close(); stop()
+  }
+  let ok = true
+  for (const row of matrix) {
+    const v = variants.find((x) => x.id === row.id)
+    const expOffice = v.office && !v.missing && !v.corrupt
+    const expCampus = v.campus && !v.missing && !v.corrupt
+    const flagOk = row.flag && row.flag.officeV2 === expOffice && row.flag.campus === expCampus
+    const campusOk = Boolean(row.campus.campus) === expCampus
+    const officeOk = row.layout2.officeV2 === expOffice
+    if (!flagOk || !campusOk || !officeOk || row.writes !== 0) { ok = false; break }
+  }
+  addCheck(checks, 'flags-fail-closed-matrix', ok, JSON.stringify(matrix.map((r) => ({ id: r.id, flag: r.flag, campus: Boolean(r.campus.campus), layout2officeV2: r.layout2.officeV2, writes: r.writes }))), true)
+  addCheck(checks, 'flags-disabled-baseline', Boolean(matrix.find((r) => r.id === 'missing')?.campus.campus) === false && Boolean(matrix.find((r) => r.id === 'both-false')?.campus.campus) === false, '缺失/关闭时 campus 关闭', true)
+  addCheck(checks, 'flags-no-writes', matrix.every((r) => r.writes === 0), '0 写请求', true)
+  return { checks, matrix }
+}
+
   for (const sceneName of SCENES) {
     if (sceneName === 'dr') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: false, campus: true, outDir: OUT }); report.scenes.dr = await sceneDr(browser, base); report.scenes.dr.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
     if (sceneName === 'office') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: true, campus: false, outDir: OUT }); report.scenes.office = await sceneOffice(browser, base); report.scenes.office.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
     if (sceneName === 'dashboard') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: false, campus: false, outDir: OUT }); report.scenes.dashboard = await sceneDashboard(browser, base); report.scenes.dashboard.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
+    if (sceneName === 'flags') { report.scenes.flags = await sceneFlags(browser, REPO) }
   }
 } catch (error) {
   if (error instanceof InfraError) { console.error('INFRA_ERROR ' + error.message); process.exitCode = 2 } else { console.error('RUN_ERROR ' + (error?.stack || error)); process.exitCode = 2 }

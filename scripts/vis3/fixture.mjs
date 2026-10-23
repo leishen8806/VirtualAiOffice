@@ -21,7 +21,7 @@ function assertSafeRepo(repo) {
   return office3d
 }
 
-export async function bootIsolated({ repo, office = false, campus = false, outDir }) {
+export async function bootIsolated({ repo, office = false, campus = false, missing = false, corrupt = false, outDir }) {
   const office3d = assertSafeRepo(repo)
   // 拥有权：自建临时根，全部配置注入临时副本；不清理不属于本框架的目录
   const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-iso-'))
@@ -37,8 +37,10 @@ export async function bootIsolated({ repo, office = false, campus = false, outDi
     fs.writeFileSync(path.join(tmpRoot, 'workhours', 'workhours.json'), JSON.stringify({ start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5], tz: 'Asia/Phnom_Penh' }))
     fs.writeFileSync(path.join(tmpOffice, 'lan.json'), JSON.stringify({ enabled: false, write: false, code: 'fixture-lan-code' }))
     fs.writeFileSync(path.join(tmpOffice, 'wall.json'), JSON.stringify({ enabled: false, token: 'fixture-wall-token-0001' }))
-    fs.writeFileSync(path.join(tmpOffice, 'office-visual.json'), JSON.stringify({ enabled: office }))
-    fs.writeFileSync(path.join(tmpOffice, 'campus-visual.json'), JSON.stringify({ enabled: campus }))
+    const of = path.join(tmpOffice, 'office-visual.json'), cf = path.join(tmpOffice, 'campus-visual.json')
+    if (missing) { try { fs.rmSync(of, { force: true }) } catch {} ; try { fs.rmSync(cf, { force: true }) } catch {} }
+    else if (corrupt) { fs.writeFileSync(of, '{bad'); fs.writeFileSync(cf, '{bad') }
+    else { fs.writeFileSync(of, JSON.stringify({ enabled: office })); fs.writeFileSync(cf, JSON.stringify({ enabled: campus })) }
     const netLog = path.join(outDir, 'logs', 'blocked-network.jsonl')
     const mockLog = path.join(outDir, 'logs', 'mock-requests.jsonl')
     fs.mkdirSync(path.dirname(netLog), { recursive: true }); fs.writeFileSync(netLog, ''); fs.writeFileSync(mockLog, '')
