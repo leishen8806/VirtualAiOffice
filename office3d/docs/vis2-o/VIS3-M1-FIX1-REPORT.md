@@ -30,7 +30,7 @@
 ## 测试与范围边界
 
 - 定向：`node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=1 tests/office-vis2.test.mjs tests/office-heart-banyan.test.mjs`：**16/16 通过**。
-- 全量：相同内存、超时与单并发参数运行 `tests/*.test.mjs`：**1179 项，1161 通过、17 失败、1 跳过**；日志在本机 `E:\VirtualAIOffice\office3d-backup-vis2-o-r3\FIX1-full-test.log`。17 个失败与本 worktree 既有基线的失败数相同，含缺少历史 `office3d-backup-*` 文件和范围外的旧源码快照比较。本任务没有增添新的全量失败，也没有放宽断言。
+- 全量：相同内存、超时与单并发参数运行 `tests/*.test.mjs`：**1179 项，1161 通过、17 失败、1 跳过**；日志在本机 `E:\VirtualAIOffice\office3d-backup-vis2-o-r3\FIX1-full-test.log`。17 个失败与本 worktree 既有基线的失败数相同，含缺少历史 `office3d-backup-*` 文件和范围外的旧源码快照比较；本次未对原始失败集合逐项差分，不能据数量相同断言集合完全相同。没有放宽断言。
 - O-06 仍待 Trae：共享会议桌、六／八席、会议屏与路径必须整体修正；[精确交接](VIS3-M1-FIX1-HANDOFF.md)。本分支不修改共享家具、布局、导航、Paperclip 或仓配。
 - 新陈设目前只在独立预览；主场景可见性、人物穿行、热点和真实业务交互仍需 Trae 接线与独立复核。概念图比当前样板更丰富：会议房间和部分建筑细节仍未达到完整视觉验收。未录制视频，FIX1 本次卡要求的截图已提供。
 
