@@ -1,6 +1,6 @@
 import { buildSnapshot } from './dr-console-data.js'
 
-export const DR_OVERVIEW_SCHEMA = 'DrOverviewData v1'
+export const DR_OVERVIEW_SCHEMA = 'DrOverviewData v2'
 export const DR_DATA_STATES = Object.freeze(['live', 'demo', 'unavailable'])
 
 const FACILITIES = Object.freeze([
@@ -21,34 +21,41 @@ const MAP = Object.freeze({
   disclaimer: '路线与地点仅用于演示，不表示实时车辆位置或业务记录。',
 })
 
+export const DR_FACILITY_IDS = Object.freeze(FACILITIES.map(({ id }) => id))
+export const DR_EVENT_KINDS = Object.freeze(['托盘上架', '分拣复核完成', '区内移动', '出库发运', '车辆进场登记', '月台占用'])
+export const DR_TASK_STATUSES = Object.freeze(['进行中', '待处理', '已完成', '阻塞', '已取消'])
+export const DR_SHIPMENT_STATUSES = Object.freeze(['装车中', '等待月台', '运输中', '已完成', '异常'])
+const DEMO_COMPANY_RE = /^demo-[a-z0-9-]+$/i
+const DEMO_EPOCH_MS = Date.parse('2026-01-01T00:00:00.000Z')
+
 const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-const finite = (value) => Number.isFinite(value) ? value : null
 const nonNegative = (value) => Number.isFinite(value) && value >= 0 ? value : null
 const text = (value) => typeof value === 'string' && value.trim() ? value.trim() : null
 const iso = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : null
 const rows = (value) => Array.isArray(value) ? value : []
-const byId = (items, id) => rows(items).find((item) => item?.id === id) || null
 
 function metric(value, state, source, observedAt, freshness, reason = null) {
   return Object.freeze({ value, state, source, observedAt, freshness, reason })
 }
 
-function freshness(observedAt, now, maxAgeMs) {
+function freshness(observedAt, now, maxAgeMs, maxFutureMs) {
   if (!observedAt) return Object.freeze({ ageMs: null, stale: true, reason: 'UNKNOWN_TIME' })
-  const ageMs = Math.max(0, Date.parse(now) - Date.parse(observedAt))
-  return Object.freeze({ ageMs, stale: ageMs > maxAgeMs, reason: ageMs > maxAgeMs ? 'STALE' : null })
+  const ageMs = Date.parse(now) - Date.parse(observedAt)
+  if (ageMs < -maxFutureMs) return Object.freeze({ ageMs, stale: true, reason: 'FUTURE_OBSERVATION' })
+  if (ageMs > maxAgeMs) return Object.freeze({ ageMs, stale: true, reason: 'STALE' })
+  return Object.freeze({ ageMs, stale: false, reason: null })
 }
 
 function unavailable(companyId, reason = 'NO_AUTHORIZED_SOURCE', now = null) {
   const observed = iso(now)
-  const quality = freshness(null, observed || new Date(0).toISOString(), 0)
+  const quality = freshness(null, observed || '1970-01-01T00:00:00.000Z', 0, 0)
   const empty = (source) => metric(null, 'unavailable', source, null, quality, reason)
   return Object.freeze({
     schemaVersion: DR_OVERVIEW_SCHEMA,
     companyId: text(companyId),
     generatedAt: observed,
     mode: 'unavailable',
-    provenance: Object.freeze({ state: 'unavailable', source: 'none', verified: false, reason }),
+    provenance: Object.freeze({ state: 'unavailable', source: 'none', assertedSource: null, verified: false, verification: 'none', reason }),
     freshness: quality,
     facilities: Object.freeze(FACILITIES.map((facility) => Object.freeze({
       ...facility, status: empty('facility-status'), usedSlots: empty('facility-capacity'),
@@ -65,86 +72,118 @@ function unavailable(companyId, reason = 'NO_AUTHORIZED_SOURCE', now = null) {
   })
 }
 
-function sourceState(input) {
-  const source = input?.source
-  if (!isObject(source)) return { state: 'unavailable', reason: 'SOURCE_REQUIRED' }
-  if (source.kind === 'demo') return { state: 'demo', reason: null }
-  if (source.kind !== 'live') return { state: 'unavailable', reason: 'INVALID_SOURCE_KIND' }
-  if (source.authenticated !== true || source.authorized !== true || source.verified !== true) return { state: 'unavailable', reason: 'LIVE_SOURCE_NOT_VERIFIED' }
-  if (!text(input.companyId) || source.companyId !== input.companyId) return { state: 'unavailable', reason: 'COMPANY_SCOPE_MISMATCH' }
-  if (!iso(source.observedAt)) return { state: 'unavailable', reason: 'UNKNOWN_TIME' }
-  return { state: 'live', reason: null }
+function demoTime(timeSlice) {
+  const slice = Number.isFinite(timeSlice) && timeSlice >= 0 ? timeSlice : 0
+  return new Date(DEMO_EPOCH_MS + Math.floor(slice) * 10_000).toISOString()
 }
 
-function normalize(input, state, sourceName, observedAt, now, maxAgeMs) {
-  const payload = isObject(input.payload) ? input.payload : null
-  if (!payload) return unavailable(input.companyId, 'INVALID_PAYLOAD', now)
-  const quality = freshness(observedAt, now, maxAgeMs)
+function validFacilityRows(payload) {
+  const list = rows(payload.warehouses)
+  const ids = list.map((row) => text(row?.id))
+  if (ids.some((id) => !DR_FACILITY_IDS.includes(id))) return 'UNKNOWN_FACILITY_ID'
+  if (new Set(ids).size !== ids.length) return 'DUPLICATE_FACILITY_ID'
+  if (ids.length !== DR_FACILITY_IDS.length || DR_FACILITY_IDS.some((id) => !ids.includes(id))) return 'FACILITY_COVERAGE_INCOMPLETE'
+  for (const row of list) {
+    if (nonNegative(row.usedSlots) === null || nonNegative(row.totalSlots) === null || row.totalSlots <= 0 || row.usedSlots > row.totalSlots) return 'INVALID_FACILITY_CAPACITY'
+  }
+  return null
+}
+
+function validPayload(payload, state) {
+  if (!isObject(payload)) return 'INVALID_PAYLOAD'
+  const facilities = validFacilityRows(payload)
+  if (facilities) return facilities
+  const categories = rows(payload.inventoryByCategory)
+  if (!categories.length || categories.some((row) => !text(row?.name) || !text(row?.unit) || nonNegative(row?.pallets) === null || nonNegative(row?.sku) === null)) return 'INVALID_INVENTORY'
+  const categoryPallets = categories.reduce((sum, row) => sum + row.pallets, 0)
+  if (nonNegative(payload.pallets) === null || payload.pallets !== categoryPallets) return 'INVENTORY_TOTAL_MISMATCH'
+  for (const event of rows(payload.events)) {
+    if (!text(event?.id) || !DR_FACILITY_IDS.includes(event?.zone) || !DR_EVENT_KINDS.includes(event?.kind) || nonNegative(event?.pallets) === null) return 'INVALID_EVENT'
+    if (state === 'live' && !iso(event.at)) return 'INVALID_EVENT_TIME'
+  }
+  for (const task of rows(payload.tasks)) if (!text(task?.id) || !DR_FACILITY_IDS.includes(task?.zone) || !DR_TASK_STATUSES.includes(task?.status)) return 'INVALID_TASK_STATUS'
+  for (const shipment of rows(payload.waybills)) {
+    if (!text(shipment?.id) || !DR_FACILITY_IDS.includes(shipment?.zone) || !DR_SHIPMENT_STATUSES.includes(shipment?.status) ||
+      nonNegative(shipment?.pallets) === null || !Number.isFinite(shipment?.progress) || shipment.progress < 0 || shipment.progress > 100 ||
+      (state === 'live' && !iso(shipment?.eta))) return 'INVALID_SHIPMENT'
+  }
+  for (const device of rows(payload.devices)) if (!text(device?.name) || nonNegative(device?.total) === null || nonNegative(device?.normal) === null || device.normal > device.total) return 'INVALID_EQUIPMENT'
+  if (rows(payload.alerts).some((row) => !text(row?.type) || nonNegative(row?.count) === null)) return 'INVALID_ALERT'
+  return null
+}
+
+function normalize(payload, { companyId, state, sourceName, assertedSource, observedAt, now, maxAgeMs, maxFutureMs }) {
+  const quality = freshness(observedAt, now, maxAgeMs, maxFutureMs)
   const value = (raw, source, reason = 'INVALID_VALUE') => metric(raw, raw === null ? 'unavailable' : state, source, observedAt, quality, raw === null ? reason : null)
+  const facilities = new Map(rows(payload.warehouses).map((row) => [row.id, row]))
   const facilityRows = FACILITIES.map((facility) => {
-    const row = byId(payload.warehouses, facility.id)
-    const used = nonNegative(row?.usedSlots), total = nonNegative(row?.totalSlots)
-    const utilization = used !== null && total !== null && total > 0 && used <= total ? Math.round(used / total * 1000) / 10 : null
-    return Object.freeze({
-      ...facility,
-      status: value(text(row?.status) || (row ? 'known' : null), sourceName),
-      usedSlots: value(used, sourceName), totalSlots: value(total, sourceName),
-      utilization: value(utilization, sourceName),
-    })
+    const row = facilities.get(facility.id)
+    const utilization = Math.round(row.usedSlots / row.totalSlots * 1000) / 10
+    return Object.freeze({ ...facility, status: value(text(row.status), sourceName, 'STATUS_UNKNOWN'), usedSlots: value(row.usedSlots, sourceName), totalSlots: value(row.totalSlots, sourceName), utilization: value(utilization, sourceName) })
   })
-  const categories = rows(payload.inventoryByCategory).map((row) => Object.freeze({
-    name: text(row?.name), pallets: value(nonNegative(row?.pallets), sourceName),
-    sku: value(nonNegative(row?.sku), sourceName), unit: text(row?.unit),
-  })).filter((row) => row.name && row.unit)
-  const events = rows(payload.events).map((row) => Object.freeze({
-    id: text(row?.id), facilityId: text(row?.zone), kind: text(row?.kind),
-    pallets: value(nonNegative(row?.pallets), sourceName), at: nonNegative(row?.at),
-  })).filter((row) => row.id && row.facilityId && row.kind)
-  const inbound = events.filter((row) => row.kind === '托盘上架').reduce((sum, row) => sum + (row.pallets.value || 0), 0)
-  const outbound = events.filter((row) => row.kind === '出库发运').reduce((sum, row) => sum + (row.pallets.value || 0), 0)
-  const vehicles = rows(payload.vehicles).map((row) => Object.freeze({
-    id: text(row?.id), facilityId: text(row?.zone), inYard: row?.inYard === true,
-  })).filter((row) => row.id && row.facilityId)
+  const categories = rows(payload.inventoryByCategory).map((row) => Object.freeze({ name: row.name, pallets: value(row.pallets, sourceName), sku: value(row.sku, sourceName), unit: row.unit }))
+  const events = rows(payload.events).map((row, index) => Object.freeze({
+    id: row.id, facilityId: row.zone, kind: row.kind, pallets: value(row.pallets, sourceName),
+    at: value(state === 'demo' ? new Date(Date.parse(observedAt) + index * 1000).toISOString() : row.at, sourceName),
+  }))
+  const inbound = events.filter((row) => row.kind === '托盘上架').reduce((sum, row) => sum + row.pallets.value, 0)
+  const outbound = events.filter((row) => row.kind === '出库发运').reduce((sum, row) => sum + row.pallets.value, 0)
+  const vehicles = rows(payload.vehicles).map((row) => Object.freeze({ id: text(row?.id), facilityId: text(row?.zone), inYard: row?.inYard === true })).filter((row) => row.id)
   const shipments = rows(payload.waybills).map((row) => Object.freeze({
-    id: text(row?.id), facilityId: text(row?.zone), status: text(row?.status),
-    pallets: value(nonNegative(row?.pallets), sourceName), progress: value(finite(row?.progress) !== null && row.progress >= 0 && row.progress <= 100 ? row.progress : null, sourceName),
-    origin: text(row?.from), destination: text(row?.to), eta: text(row?.eta),
-  })).filter((row) => row.id && row.facilityId)
-  const orders = rows(payload.tasks).map((row) => Object.freeze({
-    id: text(row?.id), facilityId: text(row?.zone), status: text(row?.status),
-  })).filter((row) => row.id && row.facilityId)
-  const equipment = rows(payload.devices).map((row) => {
-    const total = nonNegative(row?.total), normal = nonNegative(row?.normal)
-    return Object.freeze({ name: text(row?.name), total: value(total, sourceName), normal: value(normal, sourceName),
-      unavailable: value(total !== null && normal !== null && normal <= total ? total - normal : null, sourceName) })
-  }).filter((row) => row.name)
-  const alerts = rows(payload.alerts).map((row) => Object.freeze({ type: text(row?.type), count: value(nonNegative(row?.count), sourceName) })).filter((row) => row.type)
-  const totalPallets = nonNegative(payload.pallets)
-  const totalUsed = facilityRows.reduce((sum, row) => sum + (row.usedSlots.value || 0), 0)
-  const totalSlots = facilityRows.reduce((sum, row) => sum + (row.totalSlots.value || 0), 0)
+    id: row.id, facilityId: row.zone, status: row.status, pallets: value(row.pallets, sourceName), progress: value(row.progress, sourceName),
+    origin: text(row.from), destination: text(row.to), eta: value(state === 'demo' ? observedAt : row.eta, sourceName),
+  }))
+  const orders = rows(payload.tasks).map((row) => Object.freeze({ id: row.id, facilityId: row.zone, status: row.status }))
+  const equipment = rows(payload.devices).map((row) => Object.freeze({ name: row.name, total: value(row.total, sourceName), normal: value(row.normal, sourceName), unavailable: value(row.total - row.normal, sourceName) }))
+  const alerts = rows(payload.alerts).map((row) => Object.freeze({ type: row.type, count: value(row.count, sourceName) }))
+  const totalUsed = facilityRows.reduce((sum, row) => sum + row.usedSlots.value, 0)
+  const totalSlots = facilityRows.reduce((sum, row) => sum + row.totalSlots.value, 0)
   return Object.freeze({
-    schemaVersion: DR_OVERVIEW_SCHEMA, companyId: text(input.companyId), generatedAt: observedAt, mode: state,
-    provenance: Object.freeze({ state, source: sourceName, verified: state === 'live', reason: null }),
+    schemaVersion: DR_OVERVIEW_SCHEMA, companyId, generatedAt: now, mode: state,
+    provenance: Object.freeze({
+      state, source: sourceName, assertedSource: assertedSource || null, verified: state === 'live',
+      verification: state === 'live' ? 'injected-authority-context' : 'deterministic-demo', reason: null,
+    }),
     freshness: quality, facilities: Object.freeze(facilityRows),
-    inventory: Object.freeze({ totalPallets: value(totalPallets, sourceName), categories: Object.freeze(categories) }),
+    inventory: Object.freeze({ totalPallets: value(payload.pallets, sourceName), categories: Object.freeze(categories) }),
     activity: Object.freeze({ inboundPallets: value(inbound, sourceName), outboundPallets: value(outbound, sourceName), events: Object.freeze(events) }),
     transport: Object.freeze({ vehiclesInYard: value(vehicles.filter((row) => row.inYard).length, sourceName), vehicles: Object.freeze(vehicles), shipments: Object.freeze(shipments) }),
     work: Object.freeze({ active: value(orders.filter((row) => row.status === '进行中').length, sourceName), pending: value(orders.filter((row) => row.status === '待处理').length, sourceName), orders: Object.freeze(orders) }),
     equipment: Object.freeze(equipment), alerts: Object.freeze({ total: value(alerts.reduce((sum, row) => sum + (row.count.value || 0), 0), sourceName), items: Object.freeze(alerts) }),
     utilization: value(totalSlots > 0 ? Math.round(totalUsed / totalSlots * 1000) / 10 : null, sourceName),
-    map: Object.freeze({ ...MAP, state, source: state === 'live' ? 'static-reference' : 'demo-reference', reason: null }),
+    map: Object.freeze({ ...MAP, state: 'demo', source: 'static-demonstration-map', reason: 'STATIC_DEMONSTRATION_MAP' }),
   })
 }
 
-export function adaptDrOverview(input = {}) {
-  const now = iso(input.now) || '2026-01-01T00:00:00.000Z'
-  const maxAgeMs = Number.isFinite(input.maxAgeMs) && input.maxAgeMs >= 0 ? input.maxAgeMs : 120000
-  const state = sourceState(input)
-  if (state.state === 'unavailable') return unavailable(input.companyId, state.reason, now)
-  const observedAt = state.state === 'live' ? input.source.observedAt : now
-  return normalize(input, state.state, input.source.name || state.state, observedAt, now, maxAgeMs)
+export function createDrOverviewAdapter({ verifyLive = null, maxAgeMs = 120000, maxFutureMs = 30000 } = {}) {
+  return (input = {}) => {
+    const companyId = text(input.companyId)
+    const source = isObject(input.source) ? input.source : null
+    if (!source) return unavailable(companyId, 'SOURCE_REQUIRED', input.now)
+    if (source.kind === 'demo') {
+      if (!companyId || !DEMO_COMPANY_RE.test(companyId)) return unavailable(companyId, 'DEMO_COMPANY_REQUIRED', input.now)
+      const observedAt = demoTime(input.timeSlice)
+      const payload = isObject(input.payload) ? input.payload : buildSnapshot({ seed: input.seed, timeSlice: input.timeSlice })
+      const invalid = validPayload(payload, 'demo')
+      return invalid ? unavailable(companyId, invalid, observedAt) : normalize(payload, { companyId, state: 'demo', sourceName: source.name || 'dr-console-deterministic-demo', assertedSource: source.name, observedAt, now: observedAt, maxAgeMs, maxFutureMs })
+    }
+    if (source.kind !== 'live') return unavailable(companyId, 'INVALID_SOURCE_KIND', input.now)
+    if (!iso(input.now)) return unavailable(companyId, 'NOW_REQUIRED', null)
+    if (typeof verifyLive !== 'function') return unavailable(companyId, 'TRUST_CONTEXT_REQUIRED', input.now)
+    if (!text(source.companyId) || !isObject(input.payload) || text(input.payload.companyId) !== companyId || source.companyId !== companyId) return unavailable(companyId, 'COMPANY_SCOPE_MISMATCH', input.now)
+    const trusted = verifyLive(Object.freeze({ companyId, source: Object.freeze({ companyId: text(source.companyId), name: text(source.name), observedAt: iso(source.observedAt) }), payload: input.payload }))
+    if (!isObject(trusted) || trusted.ok !== true || !text(trusted.companyId) || trusted.companyId !== companyId) return unavailable(companyId, 'LIVE_SOURCE_NOT_VERIFIED', input.now)
+    const observedAt = iso(source.observedAt)
+    if (!observedAt) return unavailable(companyId, 'OBSERVED_AT_REQUIRED', input.now)
+    const quality = freshness(observedAt, input.now, maxAgeMs, maxFutureMs)
+    if (quality.reason) return unavailable(companyId, quality.reason, input.now)
+    const invalid = validPayload(input.payload, 'live')
+    return invalid ? unavailable(companyId, invalid, input.now) : normalize(input.payload, { companyId, state: 'live', sourceName: text(trusted.sourceName) || 'authorized-read-only-source', assertedSource: source.name, observedAt, now: input.now, maxAgeMs, maxFutureMs })
+  }
 }
 
-export function createDemoDrOverview({ companyId = 'demo-company', seed = 2808, timeSlice = 0, now = '2026-01-01T00:00:00.000Z' } = {}) {
-  return adaptDrOverview({ companyId, payload: buildSnapshot({ seed, timeSlice }), source: { kind: 'demo', name: 'dr-console-deterministic-demo' }, now })
+export const adaptDrOverview = createDrOverviewAdapter()
+
+export function createDemoDrOverview({ companyId = 'demo-company', seed = 2808, timeSlice = 0 } = {}) {
+  return adaptDrOverview({ companyId, seed, timeSlice, source: { kind: 'demo', name: 'dr-console-deterministic-demo' } })
 }
