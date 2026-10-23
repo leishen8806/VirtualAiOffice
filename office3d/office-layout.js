@@ -337,6 +337,123 @@ const V2_LAYOUT = {
   plaza: PLAZA,
 }
 
+const V3_REGIONS = [
+  layoutRect('market', '市场部（展示）', -28, -20, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('board', '会议与决策', -18.5, -8.5, -18, -12, { side: 'west', at: -15 }),
+  layoutRect('review', '评审室 A', -28, -18, -10.5, -4.5, { side: 'east', at: -7.5 }),
+  layoutRect('plan', '计划室 B', -16.5, -8.5, -10.5, -4.5, { side: 'west', at: -7.5 }),
+  layoutRect('ops', '运营', -28, -18, -3, 4, { side: 'east', at: .5 }),
+  layoutRect('quality', '质量与安全', -16.5, -8.5, -3, 4, { side: 'west', at: .5 }),
+  layoutRect('aftersales', '售后部（展示）', -28, -20, 5.5, 11.5, { side: 'east', at: 8.5 }),
+  layoutRect('leisure', '休闲展示区', -18.5, -10.5, 5.5, 11.5, { side: 'west', at: 8.5 }),
+  layoutRect('kb', '知识', 12.5, 20.5, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('service', '客服部（展示）', 24, 32, -18, -12, { side: 'west', at: -15 }),
+  layoutRect('product', '产品', 12.5, 21.5, -10.5, -3, { side: 'east', at: -7 }),
+  layoutRect('eng', '工程', 23, 32, -10.5, -3, { side: 'west', at: -7 }),
+  layoutRect('creative', '创意讨论区', 12.5, 21.5, -1.5, 3.5, { side: 'east', at: 1 }),
+  layoutRect('dining', '餐饮休憩角', 23, 32, -1.5, 3.5, { side: 'west', at: 1 }),
+  layoutRect('drlife', 'D.life 工坊', 12.5, 22.5, 5, 12, { side: 'east', at: 8.5 }),
+  layoutRect('marketing', '营销部（展示）', 24, 32, 5, 12, { side: 'west', at: 8.5 }),
+]
+
+const V3_SEATS = {
+  Lead: ['product', 14.2, -8], PM: ['product', 17.5, -8], Architect: ['product', 14.2, -4.5], UIUX: ['product', 17.5, -4.5],
+  FrontendSenior: ['eng', 24.2, -8], Frontend1: ['eng', 27, -8], Frontend2: ['eng', 29.8, -8],
+  BackendSenior: ['eng', 24.2, -4.5], Backend1: ['eng', 27, -4.5], Backend2: ['eng', 29.8, -4.5],
+  KnowledgeKeeper: ['kb', 16.5, -15],
+  QAAutomation: ['quality', -15.5, -1.5], Reviewer1: ['quality', -12.5, -1.5], Reviewer2: ['quality', -15.5, 1.5], SecurityReviewer: ['quality', -12.5, 1.5],
+  OpsLead: ['ops', -25, 0], OpsEngineer: ['ops', -21, 0],
+  GoSenior: ['drlife', 14, 6], Go1: ['drlife', 16.5, 6], Go2: ['drlife', 19, 6], DBEngineer: ['drlife', 21, 6],
+  LedgerAuditor: ['drlife', 14, 9.5], ReactSenior: ['drlife', 16.5, 9.5], React1: ['drlife', 19, 9.5], Localizer: ['drlife', 21, 9.5],
+}
+
+const V3_DISPLAY_SEATS = [
+  ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
+  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 28, -15], ['service-3', 'service', 30.5, -15],
+  ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
+  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
+].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
+
+const V3_CENTER = Object.freeze({ x: 2, z: -6 })
+const V3_BAR_SEATS = Array.from({ length: 10 }, (_, index) => {
+  const angle = (index * 36 + 18) * Math.PI / 180
+  const tenth = (value) => Math.round(value * 10) / 10
+  return { id: `bar-seat-${index + 1}`, x: tenth(V3_CENTER.x + Math.cos(angle) * 4.2), z: tenth(V3_CENTER.z + Math.sin(angle) * 4.2) }
+})
+
+const V3_PLAZA = {
+  center: { x: 2, z: 21 }, radius: 9, diameter: 18, rings: 3, radialSeams: 8,
+  steps: { x0: -2, x1: 6, z0: 11, z1: 12 },
+  carts: [{ id: 'food-cart-1', x: -9, z: 21 }],
+  kiosks: [{ id: 'kiosk-1', x: 13, z: 18 }, { id: 'kiosk-2', x: 13, z: 21 }, { id: 'kiosk-3', x: 13, z: 24 }],
+  umbrellaTables: [{ x: -8, z: 15 }, { x: -8, z: 27 }, { x: 12, z: 15 }, { x: 12, z: 27 }],
+  lamps: [{ x: -8.5, z: 16 }, { x: -9, z: 20 }, { x: -8.5, z: 25 }, { x: -5, z: 30 }, { x: 9, z: 30 }, { x: 12.5, z: 25 }, { x: 13, z: 20 }, { x: 12.5, z: 16 }],
+  benches: [{ x: -7, z: 13.5 }, { x: -10, z: 23 }, { x: -6, z: 29.5 }, { x: 10, z: 29.5 }, { x: 14, z: 23 }, { x: 11, z: 13.5 }],
+  flowerBands: [{ x: -8.5, z: 21 }, { x: 12.5, z: 21 }, { x: -4, z: 29 }, { x: 8, z: 29 }],
+}
+
+const V3_LAYOUT = {
+  version: 3,
+  envelope: { x0: -28, x1: 32, z0: -18, z1: 12, width: 60, depth: 30, area: 1800 },
+  site: { x0: -28, x1: 32, z0: -18, z1: 30, width: 60, depth: 48, area: 2880 },
+  foyer: { id: 'foyer', x0: -6, x1: 10, z0: 4, z1: 12, width: 16, depth: 8 },
+  axis: { x: 2 },
+  regions: V3_REGIONS,
+  rooms: V3_REGIONS,
+  seats: V3_SEATS,
+  displaySeats: V3_DISPLAY_SEATS,
+  corridors: {
+    westNorthCross: { x0: -28, x1: -8.5, z0: -12, z1: -10.5, width: 1.5 },
+    westMiddleCross: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westSouthCross: { x0: -28, x1: -10.5, z0: 4, z1: 5.5, width: 1.5 },
+    eastNorthCross: { x0: 12.5, x1: 32, z0: -12, z1: -10.5, width: 1.5 },
+    eastMiddleCross: { x0: 12.5, x1: 32, z0: -3, z1: -1.5, width: 1.5 },
+    eastSouthCross: { x0: 12.5, x1: 32, z0: 3.5, z1: 5, width: 1.5 },
+    entranceAxis: { x0: 0, x1: 4, z0: 4, z1: 12, width: 4 },
+    centralRing: { center: V3_CENTER, r0: 6, r1: 10, width: 4 },
+  },
+  passages: {
+    entranceAxis: { x0: 0, x1: 4, z0: 4, z1: 12, width: 4 },
+    entranceSpine: { x0: 0, x1: 4, z0: -18, z1: 30, width: 4 },
+    westLoop: { center: V3_CENTER, side: 'west', r0: 6, r1: 10, width: 4 },
+    eastLoop: { center: V3_CENTER, side: 'east', r0: 6, r1: 10, width: 4 },
+  },
+  ring: { center: V3_CENTER, inner: 6, outer: 10, width: 4 },
+  island: { center: V3_CENTER, radius: 6, diameter: 12, treeRadius: 1.2, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
+  bar: { center: V3_CENTER, radius: 3.5, seats: V3_BAR_SEATS, gaps: [{ side: 'east', width: 1.5 }, { side: 'west', width: 1.5 }] },
+  frontDesk: { x0: -1, x1: 5, z0: 8.1, z1: 9.5, center: { x: 2, z: 8.8 } },
+  serviceBar: { x0: -5.3, x1: -2.3, z0: 7.3, z1: 9.3, center: { x: -3.8, z: 8.3 } },
+  waitingArc: { x0: 4, x1: 9, z0: 6.8, z1: 9.8, center: { x: 6.5, z: 8.3 } },
+  doors: {
+    south: { x0: 0, x1: 4, z: 12, width: 4 },
+    north: { x0: 0, x1: 4, z: -18, width: 4, locked: true },
+  },
+  boss: { desk: { x: -16.5, z: -15 }, stand: { x: -16.5, z: -13 }, region: 'board' },
+  boardTable: { x: -13.5, z: -15 },
+  meetingSeats: { A: 8, B: 6 },
+  regionFocus: Object.fromEntries([
+    ...V3_REGIONS.map((region) => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
+    ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
+    ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
+  ]),
+  miniBounds: { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+  plaza: V3_PLAZA,
+  greenBuffer: { width: 2.5, x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+  wallHeight: {
+    standard: 4.5, atrium: 6, windowBandBottom: 3.5,
+    occlusion: { triggerElevation: 40, loweredHeight: .9, glassOpacity: .08, transitionMs: 250 },
+  },
+  monitorFit: { source: 'MONITOR_GLASS_SOURCE', helper: 'monitorScreenFit', offsetMin: .001, offsetMax: .002, handWrittenTransform: false, extraCalls: 0 },
+  cameraDefaults: {
+    overview: { az: 0, el: 58, r: 78, target: [2, 0, 2], wallMode: 'full' },
+    orbit: { az: 35, el: 50, r: 72, target: [2, 0, -1], wallMode: 'camera-side-below-40' },
+    top: { az: 0, el: 82, r: 68, target: [2, 0, 1], wallMode: 'full' },
+    isometric: { az: -38, el: 48, r: 62, target: [2, 0, -1], wallMode: 'full' },
+    low: { az: -20, el: 28, r: 44, target: [2, 0, -1], wallMode: 'camera-side-lowered' },
+    follow: { az: 0, el: 34, r: 14, target: ['agent', 0, 'agent'], wallMode: 'camera-side-lowered' },
+  },
+}
+
 const LAYOUT_V1_DATA = {
   ENVELOPE, MAIN_FLOOR_X0, CORRIDORS, CORRIDOR_X, LOGO_AREA, CROSS_Z, FOYER_Z, AISLE_OFFSET,
   ENTRANCE, FOYER_RECEPTION, RECEPTION, OFFICE_ROOMS, SEATS, BOSS, BOARD_TABLE, BOARD_DOOR,
@@ -350,9 +467,14 @@ const LAYOUT_V1_DATA = {
 
 export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
+export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
-  return params.getAll('layout').length === 1 && params.get('layout') === '2' ? LAYOUT_V2 : LAYOUT_V1
+  const values = params.getAll('layout')
+  if (values.length !== 1) return LAYOUT_V1
+  if (values[0] === '2') return LAYOUT_V2
+  if (values[0] === '3') return LAYOUT_V3
+  return LAYOUT_V1
 }
 
 const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }

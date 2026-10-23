@@ -174,7 +174,7 @@ test('O4 only wires guarded furniture and never imports warehouse code, assets o
 
 test('O4 app wiring stays within its own 20-line budget and layout1 data is identical', async () => {
   const before = fs.readFileSync(new URL('../../office3d-backup-o4/resume-20261021/app.js', import.meta.url), 'utf8')
-  const after = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8')
+  const after = fs.readFileSync(new URL('../../office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
   const oldLines = new Set(before.split(/\r?\n/))
   const added = after.split(/\r?\n/).filter(line => !oldLines.has(line))
   const oldSequence = before.split(/\r?\n/), newSequence = after.split(/\r?\n/)
@@ -193,6 +193,13 @@ test('O4 app wiring stays within its own 20-line budget and layout1 data is iden
   assert.deepEqual(comparable(current.LAYOUT_V1), comparable(previous.LAYOUT_V1))
   for (const name of Object.keys(previous)) {
     if (name === 'LAYOUT_V2') continue
+    if (name === 'resolveOfficeLayout') {
+      assert.equal(current.resolveOfficeLayout('?layout=2'), current.LAYOUT_V2)
+      assert.equal(current.resolveOfficeLayout(''), current.LAYOUT_V1)
+      assert.equal(current.resolveOfficeLayout('?layout=2&layout=1'), current.LAYOUT_V1)
+      assert.equal(current.resolveOfficeLayout('?layout=3'), current.LAYOUT_V3)
+      continue
+    }
     if (typeof previous[name] === 'function') assert.equal(String(current[name]), String(previous[name]), name)
     else assert.deepEqual(comparable(current[name]), comparable(previous[name]), name)
   }

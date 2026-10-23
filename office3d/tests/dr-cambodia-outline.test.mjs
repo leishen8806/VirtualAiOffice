@@ -60,6 +60,9 @@ test('S2-11 console map is deterministic, city-only and keeps W labels in the ca
   assert.doesNotMatch(svg, /(?:金边|暹粒|马德望|波贝|西哈努克港|贡布|磅湛)[^<]{0,8}W[123]|data-zone="W[123]"/)
   const html = await readFile(new URL('../dr-console.html', import.meta.url), 'utf8')
   for (const zone of ['W1', 'W2', 'W3']) assert.match(html, new RegExp(`data-zone="${zone}"`))
+  assert.match(html, /\.outline\{fill:#24485c;stroke:#8fb4c1;stroke-width:4\}/)
+  assert.match(html, /\.route\{stroke:#b7d4e0;stroke-width:2\.5/)
+  assert.match(html, /drop-shadow\(0 0 6px var\(--gold\)\)/)
 })
 
 test('S2-11 shared map data stays pure and offline', async () => {

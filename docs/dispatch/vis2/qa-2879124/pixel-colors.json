@@ -1,0 +1,87 @@
+{
+  "canvas-rack.png": {
+    "size": [
+      1280,
+      602
+    ],
+    "colors": {
+      "blue": {
+        "pixels": 10860,
+        "ratio": 0.01409
+      },
+      "orange": {
+        "pixels": 10904,
+        "ratio": 0.01415
+      }
+    },
+    "nonBackgroundPixels": 474031
+  },
+  "canvas-overview.png": {
+    "size": [
+      1280,
+      602
+    ],
+    "colors": {
+      "blue": {
+        "pixels": 143,
+        "ratio": 0.00019
+      },
+      "orange": {
+        "pixels": 0,
+        "ratio": 0.0
+      }
+    },
+    "nonBackgroundPixels": 273244
+  },
+  "canvas-wheels.png": {
+    "size": [
+      1280,
+      602
+    ],
+    "colors": {
+      "blue": {
+        "pixels": 106,
+        "ratio": 0.00014
+      },
+      "orange": {
+        "pixels": 0,
+        "ratio": 0.0
+      }
+    },
+    "nonBackgroundPixels": 649627
+  },
+  "canvas-pallets.png": {
+    "size": [
+      1280,
+      602
+    ],
+    "colors": {
+      "blue": {
+        "pixels": 16247,
+        "ratio": 0.02108
+      },
+      "orange": {
+        "pixels": 29808,
+        "ratio": 0.03868
+      }
+    },
+    "nonBackgroundPixels": 542968
+  },
+  "canvas-low.png": {
+    "size": [
+      1280,
+      602
+    ],
+    "colors": {
+      "blue": {
+        "pixels": 15570,
+        "ratio": 0.02021
+      },
+      "orange": {
+        "pixels": 10870,
+        "ratio": 0.01411
+      }
+    },
+    "nonBackgroundPixels": 513185
+  }
+}

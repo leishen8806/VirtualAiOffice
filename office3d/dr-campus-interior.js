@@ -1,22 +1,63 @@
 import { CAMBODIA_CITIES, CAMBODIA_OUTLINE_D, CAMBODIA_ROUTE_PAIRS, MAP_VIEW } from './dr-cambodia-outline.js'
+import { deriveKpis } from './dr-console-data.js'
+import {
+  sharedDemoSnapshotAt,
+} from './dr-demo-snapshot.js'
+import { controlRoomLiveEnabled } from './dr-control-room-screen.js'
 
-export const SCREEN_REFRESH_MS = 5000
+export const SCREEN_REFRESH_MS = 1000
 export const DISPATCH_SCREEN_STYLE = Object.freeze({
   panel: '#24485c', mapFill: '#183847', outline: '#8fb4c1', outlineWidth: 4,
-  route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 30,
+  route: '#b7d4e0', routeWidth: 3, label: '#f4f1eb', labelSize: 40,
   node: '#b7d4e0', phnomPenh: '#d5af62', phnomPenhRadius: 14, cityRadius: 7,
 })
 
-const seeded = value => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
-export const screenSliceAt = elapsedMs => Math.max(0, Math.floor(elapsedMs / SCREEN_REFRESH_MS))
+export const screenSliceAt = elapsedMs => Math.max(
+  0,
+  Math.floor((Number(elapsedMs) || 0) / SCREEN_REFRESH_MS),
+)
+
+export function campusScreenSummary(snapshot) {
+  const kpis = deriveKpis(snapshot)
+  return Object.freeze({
+    kpis: Object.freeze({
+      inbound: kpis.inbound,
+      outbound: kpis.outbound,
+      inTransit: snapshot.waybills.filter(item => item.status !== '已完成').length,
+      onTimeRate: kpis.onTimeRate,
+    }),
+    waybills: Object.freeze(snapshot.waybills.map(item => Object.freeze({
+      id: item.id, status: item.status, progress: item.progress,
+    }))),
+    events: Object.freeze(snapshot.events.slice(-4).map(event => Object.freeze({
+      id: event.id, kind: event.kind, zone: event.zone,
+    }))),
+  })
+}
+
+export function campusScreenFrameAt(elapsedMs = 0) {
+  const snapshot = sharedDemoSnapshotAt(elapsedMs)
+  const nodes = Object.freeze(CAMBODIA_CITIES.map(item => Object.freeze({
+    id: item.id, name: item.name, x: item.x / MAP_VIEW.width,
+    y: item.y / MAP_VIEW.height, labelX: item.labelX, labelY: item.labelY,
+  })))
+  const nodeIndex = Object.fromEntries(nodes.map((item, index) => [item.id, index]))
+  return Object.freeze({
+    timeSlice: screenSliceAt(elapsedMs),
+    watermark: '模拟数据 · 示意',
+    nodes,
+    links: Object.freeze(CAMBODIA_ROUTE_PAIRS.map(([from, to]) =>
+      Object.freeze([nodeIndex[from], nodeIndex[to]]),
+    )),
+    snapshot,
+    summary: campusScreenSummary(snapshot),
+  })
+}
 
 export function screenFrame(seed = 2808, timeSlice = 0) {
-  const random = seeded((seed + timeSlice * 7919) >>> 0)
-  const nodes = Object.freeze(CAMBODIA_CITIES.map(item => Object.freeze({ id: item.id, name: item.name, x: item.x / MAP_VIEW.width, y: item.y / MAP_VIEW.height, labelX: item.labelX, labelY: item.labelY, state: ['就绪', '流转', '待检'][Math.floor(random() * 3)] })))
-  const nodeIndex = Object.fromEntries(nodes.map((item, index) => [item.id, index]))
-  const bars = Object.freeze(Array.from({ length: 4 }, (_, index) => Math.round(28 + random() * 58)))
-  const lights = Object.freeze(Array.from({ length: 3 }, (_, index) => ['绿', '黄', '绿'][Math.floor((random() + index) * 2) % 3]))
-  return Object.freeze({ timeSlice, watermark: '模拟数据 · 示意', nodes, links: Object.freeze(CAMBODIA_ROUTE_PAIRS.map(([from, to]) => Object.freeze([nodeIndex[from], nodeIndex[to]]))), bars, lights })
+  return campusScreenFrameAt(
+    Number.isFinite(seed) ? Math.max(0, timeSlice) * SCREEN_REFRESH_MS : 0,
+  )
 }
 
 const zone = (zones, id) => zones.find(item => item.id === id)
@@ -31,7 +72,7 @@ const quad = (positions, uvs, indices, x, y, z, width, height, u0, u1) => {
   uvs.push(u0, 0, u1, 0, u1, 1, u0, 1); indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
 }
 
-function draw(ctx, width, height, frame) {
+export function drawCampusDispatchScreen(ctx, width, height, frame) {
   ctx.fillStyle = '#111c25'; ctx.fillRect(0, 0, width, height)
   ctx.fillStyle = DISPATCH_SCREEN_STYLE.panel; ctx.fillRect(28, 32, 610, 448)
   ctx.strokeStyle = DISPATCH_SCREEN_STYLE.outline; ctx.lineWidth = 4; ctx.strokeRect(28, 32, 610, 448)
@@ -47,17 +88,145 @@ function draw(ctx, width, height, frame) {
     ctx.fillStyle = phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenh : DISPATCH_SCREEN_STYLE.node
     if (phnomPenh) { ctx.shadowColor = DISPATCH_SCREEN_STYLE.phnomPenh; ctx.shadowBlur = 18 }
     ctx.beginPath(); ctx.arc(x, y, phnomPenh ? DISPATCH_SCREEN_STYLE.phnomPenhRadius : DISPATCH_SCREEN_STYLE.cityRadius, 0, Math.PI * 2); ctx.fill()
-    ctx.shadowBlur = 0; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.lineWidth = 4
+    ctx.shadowBlur = 0; ctx.strokeStyle = DISPATCH_SCREEN_STYLE.mapFill; ctx.lineWidth = 5
     ctx.strokeText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
     ctx.fillStyle = DISPATCH_SCREEN_STYLE.label; ctx.fillText(node.name, x + node.labelX * mapScale, y + node.labelY * mapScale)
   }
   ctx.fillStyle = '#18232b'; ctx.fillRect(674, 32, 322, 448); ctx.strokeStyle = '#d5af62'; ctx.strokeRect(674, 32, 322, 448)
-  ctx.fillStyle = '#f4f1eb'; ctx.font = '700 34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DR 仓配服务中心', 835, 156); ctx.fillText('示意展示', 835, 206)
-  ctx.fillStyle = '#d5af62'; ctx.font = '600 25px sans-serif'; ctx.fillText('车辆 / 订单 / 月台', 835, 270)
-  ctx.fillStyle = '#8fb4c1'; ctx.font = '500 21px sans-serif'; ctx.fillText(`${frame.bars[0]} / ${frame.bars[1]} / ${frame.bars[2]}`, 835, 310); ctx.fillText('授权标签 · 示意 / 模拟', 835, 354); ctx.fillText('参观外观 · 非业务入口', 835, 398); ctx.textAlign = 'left'
+  const { kpis, waybills, events } = frame.summary
+  ctx.fillStyle = '#f4f1eb'; ctx.font = '700 28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('DR 仓配服务中心', 835, 72)
+  ctx.fillStyle = '#d5af62'; ctx.font = '600 20px sans-serif'; ctx.fillText('模拟数据 · 示意', 835, 104)
+  ctx.textAlign = 'left'; ctx.fillStyle = '#b7d4e0'; ctx.font = '600 20px sans-serif'
+  ctx.fillText(`入库 ${kpis.inbound} 托   出库 ${kpis.outbound} 托`, 696, 146)
+  ctx.fillText(`在途 ${kpis.inTransit} 单   准时 ${kpis.onTimeRate}%`, 696, 178)
+  ctx.fillStyle = '#d5af62'; ctx.font = '700 19px sans-serif'; ctx.fillText('运单摘要', 696, 220)
+  ctx.fillStyle = '#f4f1eb'; ctx.font = '500 16px sans-serif'
+  waybills.slice(0, 3).forEach((item, index) => {
+    ctx.fillText(`${item.id} · ${item.status} · ${item.progress}%`, 696, 250 + index * 28)
+  })
+  ctx.fillStyle = '#d5af62'; ctx.font = '700 19px sans-serif'; ctx.fillText('最近事件', 696, 350)
+  ctx.fillStyle = '#b7d4e0'; ctx.font = '500 16px sans-serif'
+  events.toReversed().slice(0, 3).forEach((event, index) => {
+    ctx.fillText(`${event.zone} · ${event.kind}`, 696, 380 + index * 28)
+  })
 }
 
-export function buildCampusInterior({ THREE, root, canvasTex, layout, quality }) {
+export function createCampusScreenLive({
+  context,
+  texture,
+  drawStatic,
+  isVisible = () => true,
+  search = globalThis.location?.search || '',
+  now = () => performance.now(),
+  schedule = setInterval,
+  unschedule = clearInterval,
+  documentRef = globalThis.document,
+} = {}) {
+  let timer = 0
+  let desired = false
+  let disposed = false
+  let accumulated = 0
+  let activeSince = 0
+  let lastSlice = -1
+  let uploads = 0
+  let lastSummary = campusScreenSummary(sharedDemoSnapshotAt(0))
+
+  const drawSnapshot = (elapsedMs) => {
+    const slice = screenSliceAt(elapsedMs)
+    if (slice === lastSlice) return
+    const frame = campusScreenFrameAt(elapsedMs)
+    drawCampusDispatchScreen(
+      context,
+      1024,
+      512,
+      frame,
+    )
+    lastSummary = frame.summary
+    lastSlice = slice
+    texture.needsUpdate = true
+    uploads += 1
+  }
+  const pause = () => {
+    if (!timer) return
+    accumulated += Math.max(0, now() - activeSince)
+    unschedule(timer)
+    timer = 0
+  }
+  const tick = () => {
+    if (disposed || !desired || documentRef?.hidden || !isVisible()) {
+      pause()
+      return
+    }
+    drawSnapshot(accumulated + Math.max(0, now() - activeSince))
+  }
+  const resume = () => {
+    if (
+      disposed || !desired || timer || documentRef?.hidden || !isVisible()
+    ) return
+    activeSince = now()
+    drawSnapshot(accumulated)
+    timer = schedule(tick, SCREEN_REFRESH_MS)
+  }
+  const start = () => {
+    if (disposed) return
+    if (desired) {
+      resume()
+      return
+    }
+    desired = true
+    accumulated = 0
+    lastSlice = -1
+    resume()
+  }
+  const stop = () => {
+    desired = false
+    if (timer) unschedule(timer)
+    timer = 0
+    accumulated = 0
+    lastSlice = -1
+    drawStatic()
+    lastSummary = campusScreenSummary(sharedDemoSnapshotAt(0))
+    texture.needsUpdate = true
+    uploads += 1
+  }
+  const onVisibility = () => {
+    if (documentRef?.hidden) pause()
+    else resume()
+  }
+  documentRef?.addEventListener?.('visibilitychange', onVisibility)
+  if (controlRoomLiveEnabled(search)) start()
+
+  return {
+    seen() {},
+    start,
+    stop,
+    dispose() {
+      if (disposed) return
+      desired = false
+      if (timer) unschedule(timer)
+      timer = 0
+      disposed = true
+      documentRef?.removeEventListener?.('visibilitychange', onVisibility)
+    },
+    metrics: () => Object.freeze({
+      running: !!timer,
+      desired,
+      uploads,
+      elapsedMs: accumulated + (timer ? Math.max(0, now() - activeSince) : 0),
+      summary: lastSummary,
+    }),
+  }
+}
+
+export function buildCampusInterior({
+  THREE,
+  root,
+  canvasTex,
+  layout,
+  quality,
+  search = globalThis.location?.search || '',
+  liveOptions = {},
+}) {
   const zones = layout.zones, dispatch = zone(zones, 'dispatch'), visitor = zone(zones, 'visitor'), showcase = zone(zones, 'showcase'), office = zone(zones, 'officeMeeting'), maintenance = zone(zones, 'maintenance')
   const props = []
   box(props, -161, .56, 8, 6.4, 1.12, 1.4, 0x344b58); box(props, -161, 1.18, 7.15, 5.8, .08, .32, 0xd5af62)
@@ -68,18 +237,49 @@ export function buildCampusInterior({ THREE, root, canvasTex, layout, quality })
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .72, metalness: .18 })
   const propsMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, props.length)
   propsMesh.name = 'campus-interior-static'; propsMesh.receiveShadow = false; props.forEach((item, index) => put(propsMesh, index, THREE, item)); propsMesh.instanceMatrix.needsUpdate = true; propsMesh.instanceColor.needsUpdate = true; root.add(propsMesh)
-  let slice = 0, seen = false, texture
-  texture = canvasTex(1024, 512, (ctx, width, height) => draw(ctx, width, height, screenFrame(2808, slice)))
+  let texture
+  let screenContext = null
+  const drawStatic = () => drawCampusDispatchScreen(
+    screenContext,
+    1024,
+    512,
+    screenFrame(2808, 0),
+  )
+  texture = canvasTex(1024, 512, (ctx, width, height) => {
+    screenContext = ctx
+    drawCampusDispatchScreen(ctx, width, height, screenFrame(2808, 0))
+  })
   const positions = [], uvs = [], indices = []
   quad(positions, uvs, indices, (dispatch.x0 + dispatch.x1) / 2, 3.15, dispatch.z0 + .16, 11.6, 5.8, 0, .64)
   quad(positions, uvs, indices, (showcase.x0 + showcase.x1) / 2, 3.15, showcase.z0 + .16, 12.8, 5.8, .66, 1)
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeBoundingSphere()
   const screen = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false }))
-  screen.name = 'campus-dispatch-simulation'; screen.userData.dynamic = quality?.tier !== 'low'; screen.onBeforeRender = () => { seen = true }; root.add(screen)
-  const timer = quality?.tier === 'low' ? null : setInterval(() => {
-    if (document.hidden || !seen) return
-    seen = false; slice++
-    draw(texture.image.getContext('2d'), 1024, 512, screenFrame(2808, slice)); texture.needsUpdate = true
-  }, SCREEN_REFRESH_MS)
-  return { dispose() { if (timer) clearInterval(timer); texture.dispose(); geometry.dispose(); material.dispose(); propsMesh.geometry.dispose(); screen.material.dispose() } }
+  screen.name = 'campus-dispatch-simulation'
+  const liveScreen = createCampusScreenLive({
+    context: screenContext,
+    texture,
+    drawStatic,
+    isVisible: () => root.visible !== false,
+    search,
+    ...liveOptions,
+  })
+  screen.userData.dynamic = liveScreen.metrics().desired
+  screen.onBeforeRender = () => liveScreen.seen()
+  root.add(screen)
+  root.userData.campusDispatchLive = liveScreen
+  return {
+    root,
+    start: () => liveScreen.start(),
+    stop: () => liveScreen.stop(),
+    liveMetrics: () => liveScreen.metrics(),
+    dispose() {
+      liveScreen.dispose()
+      delete root.userData.campusDispatchLive
+      texture.dispose()
+      geometry.dispose()
+      material.dispose()
+      propsMesh.geometry.dispose()
+      screen.material.dispose()
+    },
+  }
 }
