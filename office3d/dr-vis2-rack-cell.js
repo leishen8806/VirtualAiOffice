@@ -7,13 +7,13 @@
 // 竖向基准：构件内部全部以「完成面地坪」为 y = 0，整个 group 放在 baseY 上（group.position.y = baseY）。
 // baseY 必须由集成方按真实地坪标高传入；默认 0 只是组件预览 / 测试夹具，不是生产标高（summary().baseYSource 会标明）。
 import { createCampusRackPlan } from './dr-campus-racks.js'
-import { shuttlePlan } from './dr-campus-shuttle-logic.js'
+import { initialShuttleState, shuttlePlan } from './dr-campus-shuttle-logic.js'
 
 export const VIS2_COLORS = Object.freeze({
   upright: 0x2f6fa8, brace: 0x2f6fa8, beam: 0xe8832a,
   pallet: 0xb98a58, carton: 0xc9a06a, film: 0xeaf2f6,
   rail: 0x6b7780, sleeper: 0x3b434a, body: 0x56636d, stripe: 0xe8832a, bumper: 0x1e2428, wheel: 0x20262a, carrier: 0x9aa5ad,
-  lampIdle: 0x6fbf8f, lampMoving: 0xffc247, lampWork: 0x4aa3ff, lampUnknown: 0x8e979c,
+  lampIdle: 0x61df72, lampPickup: 0xf0c63c, lampDelivery: 0xe8832a, lampUnknown: 0x8e979c, // 与旧 dr-campus-shuttle.js 的指示灯一致：pickup 黄、delivery 橙、idle 绿
 })
 
 // 单位：米，y 从完成面地坪算起。立柱高 4.4，4 道横梁（第 4 道只作顶梁不放货），层间净空 1.3 − 横梁 0.12 − 托盘 0.12 ≈ 1.06，货高 ≤ 0.95。
@@ -21,7 +21,7 @@ export const VIS2_DIMENSIONS = Object.freeze({
   uprightSize: 0.1, uprightHeight: 4.4, beamLevels: Object.freeze([0.2, 1.5, 2.8, 4.1]), beamHeight: 0.12, beamThickness: 0.05, frameHalfDepth: 0.55,
   tieLevels: Object.freeze([0.3, 1.5, 2.7, 3.9]), braceSize: 0.045,
   palletX: 1.2, palletZ: 1.0, palletHeight: 0.12, loadMaxHeight: 0.95, cartonX: 0.575, cartonZ: 0.465,
-  railWidth: 0.08, railHeight: 0.06, railBase: 0.045, sleeperPitch: 0.8, railGauge: 1.4,
+  railWidth: 0.08, railHeight: 0.06, railBase: 0.045, sleeperPitch: 0.8, railGauge: 1.4, sleeperOverhang: 0.15, stagingOffset: 1.45,
   shuttle: Object.freeze({ length: 1.1, width: 1.7, height: 0.28, wheelRadius: 0.1, rideHeight: 0.26, maxLift: 0.12 }),
 })
 
@@ -148,14 +148,18 @@ function buildRackStructure(batches, rack, low, rng, stats) {
 function buildRails(batches, plan, stats) {
   const D = VIS2_DIMENSIONS, z0 = plan.path.z0 - 1.1, z1 = plan.path.z1 + 1.1, length = z1 - z0, midZ = (z0 + z1) / 2
   for (const x of plan.rails) { batches.rail.add(x, D.railBase + D.railHeight / 2, midZ, D.railWidth, D.railHeight, length, VIS2_COLORS.rail); stats.rails++ }
-  for (let z = z0 + 0.2; z <= z1 - 0.2; z += D.sleeperPitch) { batches.rail.add(plan.centerX, D.railBase / 2, z, plan.rails[1] - plan.rails[0] + 0.5, D.railBase, 0.14, VIS2_COLORS.sleeper); stats.sleepers++ }
+  for (let z = z0 + 0.2; z <= z1 - 0.2; z += D.sleeperPitch) { batches.rail.add(plan.centerX, D.railBase / 2, z, plan.rails[1] - plan.rails[0] + D.sleeperOverhang * 2, D.railBase, 0.14, VIS2_COLORS.sleeper); stats.sleepers++ }
   for (const x of plan.rails) for (const z of [z0 + 0.1, z1 - 0.1]) batches.rail.add(x, D.railBase + 0.1, z, 0.16, 0.2, 0.12, VIS2_COLORS.bumper)
 }
 
 const standard = (THREE, extra = {}) => new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62, metalness: 0.2, ...extra })
-const STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, moving: VIS2_COLORS.lampMoving, pickup: VIS2_COLORS.lampWork, put: VIS2_COLORS.lampWork })
+// 词表取自真实 shuttleFrame().status：idle / pickup / delivery（dr-campus-shuttle-logic.js）；其它字符串 → 灰色「未知」
+export const VIS2_STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, pickup: VIS2_COLORS.lampPickup, delivery: VIS2_COLORS.lampDelivery })
+const lampFor = (status) => Object.hasOwn(VIS2_STATUS_LAMP, status) ? VIS2_STATUS_LAMP[status] : VIS2_COLORS.lampUnknown
 
-export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, rows = null, baseY = 0 } = {}) {
+export function buildVis2RackCell(options = {}) {
+  const { THREE, root, layout, quality, seed = 4207, rows = null } = options
+  const baseYGiven = options.baseY !== undefined, baseY = baseYGiven ? options.baseY : 0 // 按「是否传入」判断，不按真假值：显式 baseY: 0 也是宿主给的标高
   if (!Number.isFinite(baseY)) throw new Error('baseY 必须是有限数值（完成面地坪标高）')
   const low = quality?.tier === 'low'
   const racksPlan = createCampusRackPlan({ zones: layout?.zones, shuttle: layout?.shuttle }), plan = shuttlePlan(layout), D = VIS2_DIMENSIONS, S = D.shuttle
@@ -201,12 +205,13 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.1), materials.lamp); lamp.name = 'vis2-shuttle-lamp'; lamp.position.set(S.width / 2 - 0.12, bodyY + S.height / 2 + 0.025, S.length / 2 - 0.12)
   for (const mesh of [chassis, platform, load, lamp]) { mesh.userData.qualityProxy = true; mesh.frustumCulled = false }
   lift.add(platform, load); shuttle.add(chassis, lift, lamp)
-  const slotB = plan.slots[1]; shuttle.position.set(plan.centerX, 0, slotB.z)
+  shuttle.position.set(plan.centerX, 0, plan.slots[0].z)
   group.add(shuttle)
 
-  // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.25），不压钢轨
+  // 货位托盘（只显示 occupied 的静态停放状态）：停在轨道东侧的停放位（x = 中线 + stagingOffset），与车体（半宽 0.85）、枕木（半宽 0.85）和钢轨都留出间隙。
+  // 宿主契约里取货 / 放货是瞬时的（pick 事件同时把 occupied[i] 置 false、carrying 置 true），没有「托盘横移」的中间状态，本构件不凭空造一个：见交付文档第四节。
   const slotBatch = createBoxBatch(THREE, 'vis2-slot-pallets', materials.slot, 3 * 8); slotBatch.mesh.userData.dynamic = true
-  const slotX = plan.centerX + 1.25
+  const slotX = plan.centerX + D.stagingOffset
   const drawSlots = (occupied) => {
     slotBatch.clear()
     plan.slots.forEach((slot, i) => { if (!occupied[i]) return
@@ -215,10 +220,11 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
     slotBatch.finish(); slotBatch.mesh.visible = slotBatch.mesh.count > 0
   }
   group.add(slotBatch.mesh)
-  const state = { z: slotB.z, lift: 0, carrying: true, occupied: [true, false, true], status: 'idle', source: 'fixture' }
+  const initial = initialShuttleState(plan) // 夹具初始状态直接取旧模块的初始状态（slot-a、不载货、[true,false,true]、idle），不另造一套
+  const state = { z: initial.position, lift: initial.lift, carrying: initial.carrying, occupied: [...initial.occupied], status: initial.status, source: 'fixture' }
   const applyState = () => {
     shuttle.position.z = state.z; lift.position.y = state.lift; load.visible = state.carrying === true
-    drawSlots(state.occupied); materials.lamp.color.setHex(STATUS_LAMP[state.status] ?? VIS2_COLORS.lampUnknown)
+    drawSlots(state.occupied); materials.lamp.color.setHex(lampFor(state.status))
   }
   applyState()
   root.add(group)
@@ -241,18 +247,21 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const summary = () => {
     group.updateMatrixWorld(true); bounds.setFromObject(chassis); const wheelBottom = bounds.min.y - baseY
     return { module: 'vis2-rack-cell', preview: '组件预览，尚未正式接入', quality: low ? 'low' : 'high', seed, rows: rowList.map((rack) => rack.label), ...stats,
-      baseY, baseYSource: baseY === 0 ? '默认 0：仅为组件预览 / 测试夹具，不是生产标高' : '宿主传入',
+      baseY, baseYSource: baseYGiven ? '宿主传入' : '默认 0：仅为组件预览 / 测试夹具，不是生产标高',
       vertical: { railTop: D.railBase + D.railHeight, wheelBottom: +wheelBottom.toFixed(4), chassisTop: S.rideHeight + S.height, maxLift: S.maxLift, rackTop: D.uprightHeight, topBeam: D.beamLevels[3] + D.beamHeight / 2 },
       state: { ...state, occupied: [...state.occupied] },
       instances: Object.fromEntries(Object.entries(batches).map(([name, batch]) => [name, batch.mesh.count])),
       componentPreviewDrawCalls: drawCalls(), triangles: Math.round(triangles()), replaces: VIS2_REPLACES.map((item) => item.legacy),
       note: '绘制调用与三角形只代表组件预览；接入 campus registry 后静态实例会被合并并统一材质，真实开销须在候选版本上实测。' }
   }
+  // 资源所有权：campus registry 的 mergeCampusStatic 会在合并时释放被合并网格的几何（并把网格移出场景）；
+  // 这里监听每个自有几何的 dispose 事件，自己的 dispose() 只释放「还没被别人释放」的几何，所以每个几何恰好释放一次。材质始终由本构件释放（registry 不碰）。
+  const ownedGeometries = [...Object.values(batches).map((batch) => batch.mesh.geometry), slotBatch.mesh.geometry, chassisGeometry, platformGeometry, loadGeometry, lamp.geometry], released = new Set()
+  for (const geometry of ownedGeometries) geometry.addEventListener('dispose', () => released.add(geometry))
   const dispose = () => {
     if (disposed) return; disposed = true
     group.removeFromParent()
-    for (const batch of [...Object.values(batches), slotBatch]) { batch.mesh.geometry.dispose(); batch.mesh.dispose?.() }
-    for (const geometry of [chassisGeometry, platformGeometry, loadGeometry, lamp.geometry]) geometry.dispose()
+    for (const geometry of ownedGeometries) if (!released.has(geometry)) geometry.dispose()
     for (const material of Object.values(materials)) material.dispose()
   }
   return { group, summary, setShuttle, dispose }
