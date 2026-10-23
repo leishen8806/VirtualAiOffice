@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "id": "VIS2-O",
+  "date": "2026-10-23",
+  "baseline": "cbddb9fa3b874f7f56c8410928a8edd23013795c",
+  "downloaded": false,
+  "externalReferencePhotosUsedAsTexture": false,
+  "textures": [
+    {
+      "file": "assets/textures/office-v2/oak-light.jpg",
+      "bytes": 184843,
+      "sha256": "F07A8DEC411122A0B880962DC6D6EFC62AA641F6158C521CF9A69A8F851DE738",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "licenseAsRecorded": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "provenanceEvidence": "assets/third-party/MANIFEST.json at B0",
+      "generationModel": "unknown",
+      "exactPerImagePrompt": "unknown",
+      "usage": "bar body, furniture wood"
+    },
+    {
+      "file": "assets/textures/office-v2/stone-floor.jpg",
+      "bytes": 240816,
+      "sha256": "5BFA69DF73761493921ACDA516AA94BFD4500B62CAAE978E8E2A0A60C0CF6E4B",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "licenseAsRecorded": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "provenanceEvidence": "assets/third-party/MANIFEST.json at B0",
+      "generationModel": "unknown",
+      "exactPerImagePrompt": "unknown",
+      "usage": "countertops, reception, private sample floor"
+    },
+    {
+      "file": "assets/textures/office-v2/fabric-cream.jpg",
+      "bytes": 282470,
+      "sha256": "BCD988DE5318720DCF4FBC93E7EC2FA41AB86DC6E5747C8B373FECF7546EFC8D",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "source": "董事会在 ChatGPT 生成，2026-10-22，按 `GPT-texture-redraw-prompts.md` 的提示词；原提示词文本未逐张保存",
+      "licenseAsRecorded": "AI 生成，由董事会按其账号适用的 OpenAI 使用条款使用；无第三方许可",
+      "provenanceEvidence": "assets/third-party/MANIFEST.json at B0",
+      "generationModel": "unknown",
+      "exactPerImagePrompt": "unknown",
+      "usage": "tinted woven seating"
+    }
+  ],
+  "geometry": [
+    {
+      "file": "office-heart-banyan.js",
+      "sha256": "24B4D314C3F7B17C4554461E13D481F8E02580CCFCCF540FE1E0C722DFEBD1E5",
+      "source": "Existing B0 procedural asset, reused unchanged",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/bar.js",
+      "sha256": "5FE2AAA1F012A5C381CF5BD79C2636E59EEB1B178613DBECB2B9D523F1DF3476",
+      "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/foyer.js",
+      "sha256": "9CA1CCFD32F9510D36299752DB3045FDCD0F113990E193DF822DCE048E498B4F",
+      "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/plants.js",
+      "sha256": "815A602C33C4B6FF5367ED8AD504EC96BD184CB92694E749A6781690F3E92BFA",
+      "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/frontage.js",
+      "sha256": "52638F3386EB7AFF449ED39AF7E3DADEE62D345D44E8037551D2C954EB6FC08E",
+      "source": "Private procedural geometry adapted in VIS2-O",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    }
+  ],
+  "excluded": {
+    "file": "assets/textures/office-v2/leaf-atlas.png",
+    "reason": "True alpha exists but broad-leaf shape unsuitable for banyan; green partial-alpha edge suitability not certified"
+  },
+  "missing": [
+    "references/office-target.png",
+    "references/office-current.png",
+    "asset-intake/gpt-textures/office"
+  ]
+}
