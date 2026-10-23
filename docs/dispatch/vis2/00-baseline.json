@@ -139,6 +139,28 @@
       "test": "node --max-old-space-size=2048 --test --test-timeout=60000 tests/*.test.mjs"
     }
   },
+  "vis2TR2Receipt": {
+    "capturedCandidate": "f3506f280fdd458d05629c904f33f480834c619e",
+    "activeLocalRuntime": {
+      "observedCommand": "node E:/VirtualAIOffice/paperclip-ops/office3d/server.mjs",
+      "relationship": "A separately running local service. Its working version is not assumed to equal this isolated integration candidate."
+    },
+    "claudeA": {
+      "commit": "2879124f4f89f64721a0c328bd4d052c25bd6934",
+      "sourceWorktree": "E:/VirtualAIOffice/vis2w-git",
+      "sourceBaseline": "cbddb9fa3b874f7f56c8410928a8edd23013795c",
+      "ancestry": "separate snapshot history; import must be reviewed as a file-level candidate",
+      "files": [
+        "office3d/dr-vis2-rack-cell.js",
+        "office3d/dr-vis2-rack-cell-preview.html",
+        "office3d/tests/dr-vis2-rack-cell.test.mjs",
+        "office3d/docs/dr-vis2-rack-cell.md"
+      ],
+      "contract": "buildVis2RackCell({ THREE, root, layout, quality, seed }) returns group, summary, setShuttle, and idempotent dispose.",
+      "isolatedTest": "10 pass, 0 fail using node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=2 tests/dr-vis2-rack-cell.test.mjs",
+      "BStatus": "not imported; no B commit or contract was supplied"
+    }
+  },
   "references": [
     "E:/VirtualAIOffice/knowledge/项目/参考/智序小镇·DR仓配服务中心概念图.png",
     "E:/VirtualAIOffice/knowledge/项目/参考/DR智慧仓配中心全景仪表盘6.0.png",
