@@ -47,6 +47,10 @@ function makeFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-branch-fixture-'))
   fixtures.push(root)
   git(root, ['init', '-q'])
+  // Git for Windows 默认 core.autocrlf=true：只改换行符的提交会被自动转换抹掉，
+  // 夹具必须显式关掉换行转换，否则 head-newline 分支的 commit 会以「nothing to commit」失败。
+  git(root, ['config', 'core.autocrlf', 'false'])
+  git(root, ['config', 'core.safecrlf', 'false'])
   git(root, ['config', 'user.email', 'fixture@example.invalid'])
   git(root, ['config', 'user.name', 'fixture'])
   write(root, 'mod.mjs', MOD_SOURCE)
@@ -101,6 +105,28 @@ const BASE_CONFIG = (overrides = {}) => ({
   ...overrides,
 })
 
+test('夹具固定 core.autocrlf=false（否则只改换行符的提交会被换行转换抹掉）', () => {
+  const { root } = makeFixture()
+  assert.equal(git(root, ['config', 'core.autocrlf']).trim(), 'false')
+  assert.equal(git(root, ['config', 'core.safecrlf']).trim(), 'false')
+  // 对照：同一个仓库把 autocrlf 打开时，CRLF 改动会被 add 规范化，暂存区没有差异
+  const probe = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-branch-autocrlf-'))
+  fixtures.push(probe)
+  git(probe, ['init', '-q'])
+  git(probe, ['config', 'user.email', 'fixture@example.invalid'])
+  git(probe, ['config', 'user.name', 'fixture'])
+  git(probe, ['config', 'core.autocrlf', 'true'])
+  write(probe, 'mod.mjs', 'a\nb\n')
+  git(probe, ['add', '-A'])
+  git(probe, ['commit', '-q', '-m', 'base'])
+  write(probe, 'mod.mjs', 'a\r\nb\r\n')
+  git(probe, ['add', '-A'])
+  assert.equal(run(probe, 'git', ['-C', probe, 'diff', '--cached', '--quiet']).status, 0, 'autocrlf=true 时只改换行符不会产生暂存差异')
+  git(probe, ['config', 'core.autocrlf', 'false'])
+  git(probe, ['add', '-A'])
+  assert.equal(run(probe, 'git', ['-C', probe, 'diff', '--cached', '--quiet']).status, 1, '关掉换行转换后才能提交换行差异')
+})
+
 test('越界改动判失败（退出码 1）并列出文件', () => {
   const { root } = makeFixture()
   writeConfig(root, BASE_CONFIG({ allowedChanges: ['tests/extra.test.mjs'] }))
@@ -128,6 +154,20 @@ test('测试失败时退出码 2', () => {
   const result = verify(root, ['--base', 'base', '--head', 'head-testfail', '--config', 'verify.json'])
   assert.equal(result.code, 2, result.stdout + result.stderr)
   assert.match(result.stdout, /测试 FAIL/)
+})
+
+test('仓库本地开启 core.autocrlf=true 时，worktree 检出为 CRLF 仍能完成验收', () => {
+  const { root } = makeFixture()
+  // 模拟 Git for Windows 默认设置；工具必须从 git 对象库读变异源，而不是读被换行转换的工作区。
+  git(root, ['config', 'core.autocrlf', 'true'])
+  writeConfig(root, BASE_CONFIG({
+    allowedChanges: ['tests/extra.test.mjs'],
+    module: { path: 'mod.mjs', envVar: 'MOD_MODULE', companions: [], mirrorTests: true },
+    mutations: [{ name: 'boundary', find: 'x >= limit', replace: 'x > limit' }],
+  }))
+  const result = verify(root, ['--base', 'base', '--head', 'head-good', '--config', 'verify.json'])
+  assert.equal(result.code, 0, result.stdout + result.stderr)
+  assert.match(result.stdout, /boundary: KILLED/)
 })
 
 test('有效变异 KILLED，整体通过', () => {

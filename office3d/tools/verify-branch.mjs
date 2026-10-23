@@ -51,6 +51,30 @@ function gitMaybe(repo, args) {
   return result.status === 0 ? result.stdout : null
 }
 
+function gitShowBuffer(repo, spec) {
+  // 不传 encoding：拿到的是 git 对象库里的原始字节，不受工作区 / core.autocrlf 换行转换影响。
+  const result = spawnSync('git', ['-C', repo, 'show', spec], { maxBuffer: 64 * 1024 * 1024 })
+  if (result.error || result.status !== 0) return null
+  return Buffer.isBuffer(result.stdout) ? result.stdout : Buffer.from(result.stdout || '')
+}
+
+function normalizeCrlf(buffer) {
+  const out = Buffer.allocUnsafe(buffer.length)
+  let length = 0
+  for (let i = 0; i < buffer.length; i++) {
+    if (buffer[i] === 13 && buffer[i + 1] === 10) continue
+    out[length++] = buffer[i]
+  }
+  return out.subarray(0, length)
+}
+
+// 按 ref 从对象库读文本（不读工作区），保证变异 find 的字符串与提交内容逐字节一致。
+function readBlobText(repo, ref, relativePath) {
+  const normalized = relativePath.replace(/\\/g, '/')
+  const blob = gitShowBuffer(repo, `${ref}:${normalized}`)
+  return blob === null ? null : blob.toString('utf8')
+}
+
 function resolveRef(repo, ref) {
   if (gitMaybe(repo, ['rev-parse', '--verify', '--quiet', ref]) !== null) return ref
   const remote = `origin/${ref}`
@@ -58,7 +82,6 @@ function resolveRef(repo, ref) {
   throw new VerifyError(`无法解析 ref：${ref}（也不存在 ${remote}）`, EXIT.args)
 }
 
-const normalizeEol = (text) => String(text).replace(/\r\n/g, '\n')
 const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex')
 
 function readConfig(file) {
@@ -141,14 +164,15 @@ function stepProtected(repo, base, head, config) {
   const failed = []
   const lineEndingOnly = []
   for (const file of config.protectedFiles) {
-    const before = gitMaybe(repo, ['show', `${base}:${file}`])
-    const after = gitMaybe(repo, ['show', `${head}:${file}`])
+    // 直接比较 git 对象库里的原始字节；不经过工作区，也不受 core.autocrlf 影响。
+    const before = gitShowBuffer(repo, `${base}:${file}`)
+    const after = gitShowBuffer(repo, `${head}:${file}`)
     if (before === null || after === null) {
       missing.push(file)
       continue
     }
-    if (before === after) continue
-    if (normalizeEol(before) === normalizeEol(after)) {
+    if (before.equals(after)) continue
+    if (normalizeCrlf(before).equals(normalizeCrlf(after))) {
       lineEndingOnly.push(file)
       continue
     }
@@ -197,13 +221,14 @@ function summarizeTests(result) {
   return { ...result, ok: result.fail === 0, reason: result.fail === 0 ? 'ok' : `${result.fail} 个测试失败` }
 }
 
-function copyFilePreserving(sourceRoot, relativePath, targetRoot, { forceMjs = false } = {}) {
+function copyFilePreserving(sourceRoot, relativePath, targetRoot, { forceMjs = false, content = null } = {}) {
   const normalized = relativePath.replace(/\\/g, '/')
   const targetRelative = forceMjs ? normalized.replace(/\.[^.\/]+$/, '.mjs') : normalized
   const source = path.join(sourceRoot, normalized)
   const target = path.join(targetRoot, targetRelative)
   fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.copyFileSync(source, target)
+  if (content === null) fs.copyFileSync(source, target)
+  else fs.writeFileSync(target, content)
   return target
 }
 
@@ -218,7 +243,7 @@ function copyTree(source, target, { skip = new Set(['node_modules', '.git']) } =
   }
 }
 
-function prepareMirror({ sourceRoot, caseDir, config }) {
+function prepareMirror({ sourceRoot, caseDir, config, readSource = (rel) => fs.readFileSync(path.join(sourceRoot, rel), 'utf8') }) {
   // 只镜像测试目录与被测模块（含 companions），避免复制整个大型资源目录。
   const mirrorRoot = path.join(caseDir, 'mirror')
   const sourceCwd = path.join(sourceRoot, config.tests.cwd)
@@ -231,14 +256,21 @@ function prepareMirror({ sourceRoot, caseDir, config }) {
     fs.mkdirSync(path.dirname(to), { recursive: true })
     fs.copyFileSync(from, to)
   }
-  const moduleCopy = copyFilePreserving(sourceRoot, config.module.path, mirrorRoot, { forceMjs: true })
-  for (const companion of config.module.companions) copyFilePreserving(sourceRoot, companion, mirrorRoot, { forceMjs: true })
+  const moduleCopy = copyFilePreserving(sourceRoot, config.module.path, mirrorRoot, { forceMjs: true, content: readSource(config.module.path) })
+  for (const companion of config.module.companions) copyFilePreserving(sourceRoot, companion, mirrorRoot, { forceMjs: true, content: readSource(companion) })
   return { cwd: targetCwd, moduleCopy }
 }
 
 function stepMutations({ repo, head, config, tempRoot, testsCwd }) {
   const mutations = []
   const tempDir = tempRoot
+  // Windows 上工作区可能因 core.autocrlf 被换成 CRLF；变异必须基于提交里的原始字节，
+  // 否则 find 会一个都匹配不到（NOT_APPLIED）。取不到 blob（如未跟踪文件）才回退工作区。
+  const readSource = (relativePath) => {
+    const blob = readBlobText(repo, head, relativePath)
+    if (blob !== null) return blob
+    return fs.readFileSync(path.join(repo, relativePath.replace(/\\/g, '/')), 'utf8')
+  }
   try {
     for (const [index, mutation] of config.mutations.entries()) {
       const caseDir = path.join(tempDir, `case-${index + 1}`)
@@ -249,12 +281,12 @@ function stepMutations({ repo, head, config, tempRoot, testsCwd }) {
         let moduleCopy
         let cwd
         if (config.module.mirrorTests) {
-          mirror = prepareMirror({ sourceRoot, caseDir, config })
+          mirror = prepareMirror({ sourceRoot, caseDir, config, readSource })
           moduleCopy = mirror.moduleCopy
           cwd = mirror.cwd
         } else {
-          moduleCopy = copyFilePreserving(sourceRoot, config.module.path, caseDir, { forceMjs: true })
-          for (const companion of config.module.companions) copyFilePreserving(sourceRoot, companion, caseDir, { forceMjs: true })
+          moduleCopy = copyFilePreserving(sourceRoot, config.module.path, caseDir, { forceMjs: true, content: readSource(config.module.path) })
+          for (const companion of config.module.companions) copyFilePreserving(sourceRoot, companion, caseDir, { forceMjs: true, content: readSource(companion) })
           cwd = testsCwd
         }
         const original = fs.readFileSync(moduleCopy, 'utf8')

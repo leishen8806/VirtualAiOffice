@@ -12,9 +12,9 @@
 
 | 文件 | 行数 | 内容 |
 |---|---|---|
-| `office3d/tools/verify-branch.mjs` | 477 | 只读验收工具 |
+| `office3d/tools/verify-branch.mjs` | 509 | 只读验收工具 |
 | `office3d/tools/verify-branch.md` | 128 | 用法、配置字段、退出码、跨平台示例、真实 pngmini 示例配置 |
-| `office3d/tests/verify-branch.test.mjs` | 231 | 自身测试（10 个 test，临时 `git init` 夹具） |
+| `office3d/tests/verify-branch.test.mjs` | 271 | 自身测试（12 个 test，临时 `git init` 夹具） |
 
 工具按卡片顺序执行五步：
 
@@ -41,17 +41,17 @@ node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=2 
 ```
 
 ```
-# tests 10
+# tests 12
 # suites 0
-# pass 10
+# pass 12
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 4942.752792
+# duration_ms 6200.344791
 ```
 
-覆盖：越界改动退出码 1；受保护文件仅换行差异通过并 WARN；测试失败退出码 2；有效变异 `KILLED`；测试抓不到的变异 `SURVIVED` 且退出码 3；`find` 0 次 / 2 次 / 替换后不变三种 `NOT_APPLIED` 且不影响通过；扫描命中退出码 4 且输出不含令牌/IP 原文；成功与异常路径都清理临时目录与 worktree；参数/配置/git 错误退出码 5；`--json` 结构。
+覆盖：越界改动退出码 1；受保护文件仅换行差异通过并 WARN；测试失败退出码 2；有效变异 `KILLED`；测试抓不到的变异 `SURVIVED` 且退出码 3；`find` 0 次 / 2 次 / 替换后不变三种 `NOT_APPLIED` 且不影响通过；**夹具固定 `core.autocrlf=false`，并回归验证 `autocrlf=true` 会抹掉只改换行符的提交**；**仓库本地 `autocrlf=true`、worktree 检出 CRLF 时仍能完成验收**；扫描命中退出码 4 且输出不含令牌/IP 原文；成功与异常路径都清理临时目录与 worktree；参数/配置/git 错误退出码 5；`--json` 结构。
 
 ### 2）pngmini 示例配置（真实运行，提交本工具三件套后）
 
@@ -75,13 +75,29 @@ RESULT PASS exit=0
 
 （本报告提交后再跑，范围检查会变成 PASS（4 个变更文件），其余不变。）
 
+## Windows 兼容性（2026-10-23 修复）
+
+**问题（规划者在 Windows 复现）**：Git for Windows 默认 `core.autocrlf=true`。测试夹具里 `head-newline` 分支只把文件换成 CRLF，`git add` 时被自动规范化回 LF，暂存区没有差异，`git commit -q -m head-newline` 以「nothing to commit」退出 1，导致 `tests/verify-branch.test.mjs` 10 个用例全部失败。本机把夹具 `core.autocrlf` 设为 `true` 可稳定复现同一现象（macOS 上同样复现，不是 Windows 特有逻辑）。
+
+**修了什么（只改 DS-6 的三个文件）**：
+
+1. **夹具仓库建好后立即固定换行配置**：`tests/verify-branch.test.mjs` 的 `makeFixture()` 在 `git init -q` 之后立刻执行 `git config core.autocrlf false` 与 `git config core.safecrlf false`，让「只改换行符」的 head-newline 提交真实落盘；并新增回归测试断言这两项配置为 `false`，同时用对照仓库证明 `autocrlf=true` 时同样的 CRLF 改动不会产生暂存差异（把机制钉死）。
+2. **工具比较受保护文件改为读原始字节**：`tools/verify-branch.mjs` 不再用 `git show` 的 UTF-8 字符串比较，改为 `spawnSync` 不带 `encoding` 取 **git 对象库原始 Buffer**，用 `Buffer.equals` 逐字节比较；只有「CRLF 归一化后相等」才判 `WARN 仅换行符不同`。这一步不经过工作区，因此不受 `core.autocrlf` / `.gitattributes` 的检出转换影响。
+3. **变异副本改为从 `head` 的 git blob 读源码**：原先复制被测模块读的是工作区文件，Windows 上检出会被换成 CRLF，导致 `find` 的换行不匹配、变异全部 `NOT_APPLIED`。现在 `readBlobText(repo, head, path)` 用 `git show <head>:<path>` 取提交里的原始内容（取不到才回退工作区），镜像 / 非镜像两种变异模式都改用它；worktree 只用来跑测试。
+
+**验证**：
+
+- 本机 12/12 通过，其中新增两条回归：① `autocrlf=true` 会抹掉换行提交、`false` 才能提交；② 仓库本地 `autocrlf=true`、`head` 不是当前检出（worktree 检出为 CRLF）时，验收仍得到 `boundary: KILLED`、退出码 0。
+- 临时把本仓库 `git config core.autocrlf true` 后跑 pngmini 示例验收：`范围检查 PASS / 受保护文件 PASS / 测试 PASS（11/11） / 变异自检 PASS（killed=3 notApplied=1） / 扫描 PASS`，退出码 0；跑完已 `git config --unset core.autocrlf` 恢复。
+- 说明：以上是在 macOS 上用 `autocrlf=true` **模拟** Windows 行为；真实 Git for Windows 环境仍请规划者复跑确认（见「未验证」）。
+
 ## 已知限制
 
 1. **pngmini 示例需要 `mirrorTests`**：基线里的 `tests/pngmini.test.mjs` 用相对 `import` 而不是 `envVar` 读取模块，严格按 envVar 契约跑变异会全部 `SURVIVED`。因此工具增加了可选字段 `module.mirrorTests`，文档示例打开它并把 `tests` 目录镜像到临时目录；默认仍是 envVar 契约。
 2. **示例配置的 `allowedChanges` 含有本工具自身文件**：基线分支已包含 pngmini 的合并，在 DS-6 分支直接验收时会看到本工具三件套；示例把这三项列入允许清单以便本分支演示，文档已注明「验收其它分支时替换为该分支实际变更清单」。
 3. **companion 扩展名统一改成 `.mjs`**：按卡片要求副本统一 `.mjs`；若被测模块用 `.js` 相对 import companion，改名后相对 import 会断，属于已知边界。
 4. **扫描是行级正则**：只覆盖卡片列出的模式；IPv4 规则可能对版本号样式的四段数字产生误报（命中只报规则名，不回显原文）。
-5. **Windows 未在真实 Windows 上跑过**：只保证路径处理走 `node:path`、命令不经过 shell、换行归一化；实际 Windows 验证仍由规划者本机做。
+5. **真实 Windows 上的最终复跑未做**：本轮已按 Windows 反馈修夹具 `autocrlf/safecrlf`、受保护文件原始字节比较、变异源读 git blob，并在 macOS 上用 `autocrlf=true` 模拟验证；实际 Git for Windows 环境仍请规划者复跑确认。
 6. **未对真实大型分支做性能验收**：自身测试用最小夹具；pngmini 示例 4 条变异约 3 秒。100+ 文件的变异集未测。
 
 ## 没做到
@@ -108,9 +124,9 @@ RESULT PASS exit=0
 
 | 文件 | 变更 |
 |---|---|
-| `office3d/tools/verify-branch.mjs` | 新增，477 行 |
+| `office3d/tools/verify-branch.mjs` | 新增，509 行 |
 | `office3d/tools/verify-branch.md` | 新增，128 行 |
-| `office3d/tests/verify-branch.test.mjs` | 新增，231 行 |
+| `office3d/tests/verify-branch.test.mjs` | 新增，271 行 |
 | `dispatch/deepseek/outbox/DS-6-report.md` | 新增（本报告） |
 
 `app.js`、`ui.js`、`index.html`、`server.mjs` 及其它已跟踪文件均未改动。
