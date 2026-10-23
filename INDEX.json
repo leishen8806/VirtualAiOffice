@@ -1,0 +1,106 @@
+{
+  "schema": "evidence-index-v1",
+  "branch": "evidence/vis-align-console-v1",
+  "note": "D-V1 首屏主图返工证据截图（真实浏览器 DPR=1）；sourceSha=对应代码分支提交",
+  "images": [
+    {
+      "file": "after-1024x768.png",
+      "sourceSha": "704a20fbd0780f10020607d50f1abda6c0e4c2c2",
+      "resolution": [
+        1024,
+        768
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "6f92d5db386b787f332de6d7c10b40d63b9635ccdf68de150459081faee34586"
+    },
+    {
+      "file": "after-1366x768.png",
+      "sourceSha": "704a20fbd0780f10020607d50f1abda6c0e4c2c2",
+      "resolution": [
+        1366,
+        768
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "c1c31d727c7ba2111fd9ef424d2a5f8cf2d4d566afc3c0fec0f1328aec657ace"
+    },
+    {
+      "file": "after-1920x1080.png",
+      "sourceSha": "704a20fbd0780f10020607d50f1abda6c0e4c2c2",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "a16f1a9060bf2426e4eb4d650fad9ddf30ac86943511317f0eebddeb64ac66f2"
+    },
+    {
+      "file": "after-600x900.png",
+      "sourceSha": "704a20fbd0780f10020607d50f1abda6c0e4c2c2",
+      "resolution": [
+        600,
+        900
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "df4676bf1ee7c822040e1df722a612dc937fa785bf4e275fb66c56c8a34dff4b"
+    },
+    {
+      "file": "side-by-side-1920-vs-reference.png",
+      "sourceSha": "704a20fbd0780f10020607d50f1abda6c0e4c2c2",
+      "resolution": [
+        3539,
+        1080
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "bf848371eb2217c8f87c89fefb76cc6a50b2cdc7f3514260e282138a11e23e98"
+    },
+    {
+      "file": "before-1024x768.png",
+      "sourceSha": "79b3f1a814bc9151a8a52004d277438c5ba49169",
+      "resolution": [
+        1024,
+        768
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "bec57633c8cfd5ef78339fad20ed2b311f53fe0f5744482bf4aad86f64140574"
+    },
+    {
+      "file": "before-1366x768.png",
+      "sourceSha": "79b3f1a814bc9151a8a52004d277438c5ba49169",
+      "resolution": [
+        1366,
+        768
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "ef95568fb3d8a9d037b8aca2cd0c5cfe4b887aee7686320e6dea64e494147632"
+    },
+    {
+      "file": "before-1920x1080.png",
+      "sourceSha": "79b3f1a814bc9151a8a52004d277438c5ba49169",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "b7936150e24caaa3ce6e701f6262238e6bf8d02e0d7af4a5f61066d0e925ecff"
+    },
+    {
+      "file": "before-600x900.png",
+      "sourceSha": "79b3f1a814bc9151a8a52004d277438c5ba49169",
+      "resolution": [
+        600,
+        900
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-23T17:40:32.925478+07:00",
+      "sha256": "d612a29d964d25d569fc02494a25aac02bfc99e6babf26cffbc0db114b02a9b0"
+    }
+  ]
+}
