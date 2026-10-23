@@ -553,9 +553,28 @@ const dedupeRoute = (points) => points.filter((point, index, all) => !index || M
 
 function createOfficeV3Navigation(layout) {
   const rooms = layout.regions, access = layout.meetingAccess
-  const legacy = LAYOUT_V1
   if (!access || !Object.values(access).every(Number.isFinite)) throw new Error('缺少 V3 会议通行合同')
   const findRoom = point => rooms.find(room => point.x > room.x0 && point.x < room.x1 && point.z > room.z0 && point.z < room.z1)
+  const entrance = {
+    x0: layout.doors.south.x0,
+    x1: layout.doors.south.x1,
+    inner: { x: layout.axis.x, z: layout.doors.south.z - .75 },
+    gate: [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: layout.axis.x, z: layout.doors.south.z + 1.75 }],
+  }
+  const lanes = {
+    westNorth: { x: -19.25, z: -11.25 },
+    westMiddle: { x: -17.25, z: -3.75 },
+    westSouth: { x: -19.25, z: 4.75 },
+    eastNorth: { x: 22.25, z: -11.25 },
+    eastMiddle: { x: 22.25, z: -2.25 },
+    eastSouth: { x: 23.25, z: 4.75 },
+    foyer: { x: -2, z: 4.75 },
+  }
+  const same = (a, b) => Math.hypot(a.x - b.x, a.z - b.z) < .001
+  const append = (points, ...next) => {
+    for (const point of next.flat()) if (!points.length || !same(points.at(-1), point)) points.push(routePoint(point))
+    return points
+  }
   const exit = (home) => {
     const room = findRoom(home)
     if (!room) return [routePoint(home)]
@@ -567,22 +586,31 @@ function createOfficeV3Navigation(layout) {
     const aisleX = home.x < door.at ? room.x0 + .7 : room.x1 - .7
     return dedupeRoute([routePoint(home), { x: home.x, z: inside.z }, { x: aisleX, z: inside.z }, { x: door.at, z: inside.z }, outside])
   }
-  const northAccess = (room, from) => {
-    if (room.x1 <= -8.5) {
-      const laneX = room.z1 <= -10.5 ? from.x : access.westSpineX
-      const middle = room.z1 <= -10.5 ? [] : [{ x: access.westSpineX, z: access.westMiddleZ }]
-      return dedupeRoute([...middle, { x: laneX, z: access.northZ }, { x: access.westSpineX, z: access.northZ }])
+
+  // 所有公共路线都先汇入对应侧的门外走廊，再走过前厅公共带。
+  // 每行走廊的 x 不同，避免跨过两排房间之间的实墙。
+  const toHub = (point) => {
+    const result = [routePoint(point)]
+    if (point.x < -8.5) {
+      if (point.z < -10.5) append(result, { x: lanes.westNorth.x, z: point.z }, lanes.westNorth, { x: lanes.westMiddle.x, z: lanes.westNorth.z }, lanes.westMiddle)
+      else if (point.z < 4.5) append(result, { x: lanes.westMiddle.x, z: point.z }, lanes.westMiddle)
+      else append(result, { x: lanes.westSouth.x, z: point.z }, lanes.westSouth, { x: lanes.westMiddle.x, z: lanes.westSouth.z }, lanes.westMiddle)
+      append(result, { x: lanes.westMiddle.x, z: lanes.westSouth.z }, lanes.westSouth, lanes.foyer)
+      return result
     }
-    const south = room.z0 >= 5 ? [{ x: from.x, z: access.eastSouthZ }, { x: access.eastSpineX, z: access.eastSouthZ }] : []
-    const middle = room.z0 >= 5 ? [{ x: access.eastSpineX, z: access.eastMiddleZ }] : []
-    return dedupeRoute([...south, ...middle, { x: access.eastSpineX, z: access.northZ }])
+    if (point.x > 12.5) {
+      if (point.z < -10.5) append(result, { x: lanes.eastNorth.x, z: point.z }, lanes.eastNorth, lanes.eastMiddle)
+      else if (point.z < 4.5) append(result, { x: lanes.eastMiddle.x, z: point.z }, lanes.eastMiddle)
+      else append(result, { x: lanes.eastSouth.x, z: point.z }, lanes.eastSouth)
+      append(result, { x: lanes.eastMiddle.x, z: lanes.eastSouth.z }, lanes.eastSouth, lanes.foyer)
+      return result
+    }
+    // 前厅服务台占用中轴，南侧入口从其西侧通过。
+    if (point.z > lanes.foyer.z) append(result, { x: lanes.foyer.x, z: point.z }, lanes.foyer)
+    else append(result, lanes.foyer)
+    return result
   }
-  const publicToMeetingDoor = (home, room) => {
-    const origin = findRoom(home), departure = exit(home), from = departure.at(-1)
-    if (!origin) throw new Error('V3 会议出发点不在已注册房间内')
-    const source = northAccess(origin, from)
-    return dedupeRoute([...departure, ...source, { x: access.westSpineX, z: access.northZ }, { x: access.westSpineX, z: roomDoor(room).at }])
-  }
+  const publicPath = (from, to) => dedupeRoute([...toHub(from), ...toHub(to).toReversed().slice(1)])
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
     const aisleZ = seat.z < center.z - .2 ? room.z0 + .65 : room.z1 - .65
@@ -591,14 +619,31 @@ function createOfficeV3Navigation(layout) {
   const meetings = (home, seat) => {
     const room = rooms.find(item => item.id === (seat?.room === 'A' ? 'review' : seat?.room === 'B' ? 'plan' : ''))
     if (!room || !Number.isFinite(seat?.x) || !Number.isFinite(seat?.z)) throw new Error('无效 V3 会议座位')
-    return dedupeRoute([...publicToMeetingDoor(home, room), ...meetingInterior(room, seat)])
+    const departure = exit(home), outside = doorExterior(room)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), outside).slice(1), ...meetingInterior(room, seat)])
+  }
+  const entry = home => exit(home).toReversed().slice(1)
+  const trip = (home, targetHome, stand = targetHome) => {
+    const departure = exit(home), arrival = entry(targetHome)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), arrival[0]).slice(1), ...arrival.slice(1), routePoint(stand)])
+  }
+  const lounge = (home, seat) => {
+    if (!Number.isFinite(seat?.x) || !Number.isFinite(seat?.z) || !Number.isFinite(seat?.appX) || !Number.isFinite(seat?.appZ)) throw new Error('无效 V3 休息座位')
+    const departure = exit(home), approach = { x: seat.appX, z: seat.appZ }
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), approach).slice(1), approach, routePoint(seat)])
+  }
+  const boardRoom = rooms.find(room => room.id === 'board')
+  const boardDoor = roomDoor(boardRoom), boardOutside = doorExterior(boardRoom, boardDoor), boardInside = doorInterior(boardRoom, boardDoor)
+  const boardTrip = (home, stand) => {
+    if (!Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error('无效 V3 董事会目标')
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), boardOutside).slice(1), boardInside, { x: boardInside.x, z: stand.z }, routePoint(stand)])
   }
   return {
-    roomAt: findRoom, standAt: home => ({ x: home.x, z: home.z }), officeExit: exit, meetingTrip: meetings,
-    // 本任务只替换会议路径；其它既有 V3 调用保持历史 fallback，避免扩大本次修复范围。
-    officeTrip: legacy.officeTrip, corridorPath: legacy.corridorPath, loungeTrip: legacy.loungeTrip, consumerTrip: legacy.consumerTrip, foyerTrip: legacy.foyerTrip, plazaTrip: legacy.plazaTrip, foyerReturnTrip: legacy.foyerReturnTrip, consumerAdvance: legacy.consumerAdvance, consumerDeparture: legacy.consumerDeparture,
-    ENTRANCE: layout.doors.south, CORRIDOR_X: layout.axis.x, BOARD_DOOR: doorExterior(rooms.find(room => room.id === 'board')), FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
-    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: access.eastMiddleZ },
+    roomAt: findRoom, standAt: home => ({ x: home.x, z: home.z }), officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
+    consumerTrip: () => { throw new Error('V3 未注册前厅访客路径') }, foyerTrip: () => { throw new Error('V3 未注册前厅访客路径') }, plazaTrip: () => { throw new Error('V3 未注册前厅访客路径') }, foyerReturnTrip: () => { throw new Error('V3 未注册前厅访客路径') }, consumerAdvance: () => [], consumerDeparture: (id, stand, back) => back.map(routePoint),
+    ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: { x: boardDoor.side === 'west' ? boardRoom.x0 : boardRoom.x1, zOut: boardOutside.z, zIn: boardInside.z, outside: boardOutside, inside: boardInside, side: boardDoor.side }, FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
+    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: lanes.foyer.z },
     LOUNGE_SEATS: barLounges(layout),
     COFFEE_SEATS: layout.bar.seats.map(seat => ({ ...seat, yaw: Math.atan2(seat.x - layout.axis.x, seat.z - layout.bar.center.z), appX: seat.x })),
   }

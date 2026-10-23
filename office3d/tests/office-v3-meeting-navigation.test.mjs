@@ -33,6 +33,21 @@ const crossesWall = (a, b, wall) => {
   const t = (wall.z0 - a.z) / (b.z - a.z), x = a.x + (b.x - a.x) * t
   return t > 1e-6 && t < 1 - 1e-6 && x > wall.x0 + 1e-6 && x < wall.x1 - 1e-6
 }
+const assertClearOfWalls = (route, label) => {
+  assert.ok(finiteRoute(route), `${label} has finite coordinates`)
+  for (let step = 1; step < route.length; step++) {
+    for (const wall of wallSegments) assert.equal(crossesWall(route[step - 1], route[step], wall), false, `${label} crosses ${wall.id}/${wall.side}`)
+  }
+}
+const actor = (id, home) => {
+  const group = new THREE.Group()
+  group.position.set(home.x, 0, home.z)
+  return {
+    id, name: id, home, stand: { x: home.x, z: home.z, yaw: home.yaw || 0 }, via: [],
+    char: { group, body: { head: new THREE.Object3D() }, pose: { sit: 1, walk: 0, carry: 0, type: 0, lounge: 0, phase: 0, yaw: 0, pitch: 0, talk: 0 } },
+    act: null,
+  }
+}
 
 test('J-01 routes all 14 V3 meeting seats through their actual doors without legacy west-wing coordinates', () => {
   const nav = createOfficeNavigation(LAYOUT_V3), homes = Object.values(LAYOUT_V3.seats).map(workHome)
@@ -90,4 +105,55 @@ test('J-01 director travel fails closed for malformed waypoints without changing
   } finally {
     console.warn = warn
   }
+})
+
+test('Q-01 V3 navigation provides one complete entrance, corridor, office and lounge contract', () => {
+  const nav = createOfficeNavigation(LAYOUT_V3)
+  assert.deepEqual(nav.ENTRANCE, {
+    x0: 0, x1: 4,
+    inner: { x: 2, z: 11.25 },
+    gate: [{ x: 2, z: 12.75 }, { x: 2, z: 13.75 }],
+  })
+  assert.deepEqual(nav.BOARD_DOOR, {
+    x: -18.5, zOut: -15, zIn: -15,
+    outside: { x: -19.25, z: -15 },
+    inside: { x: -17.9, z: -15 },
+    side: 'west',
+  })
+  const lead = workHome(LAYOUT_V3.seats.Lead), reviewer = workHome(LAYOUT_V3.seats.QAAutomation)
+  const exit = nav.officeExit(lead)
+  const commute = [...exit, ...nav.corridorPath(exit.at(-1), nav.ENTRANCE.inner).slice(1), ...nav.ENTRANCE.gate]
+  assertClearOfWalls(exit, 'V3 exit')
+  assertClearOfWalls(commute, 'V3 commute')
+  assertClearOfWalls(nav.officeTrip(lead, reviewer, reviewer), 'V3 office travel')
+  assertClearOfWalls(nav.loungeTrip(lead, nav.LOUNGE_SEATS[0]), 'V3 lounge travel')
+  const board = nav.boardTrip(lead, LAYOUT_V3.boss.stand)
+  assertClearOfWalls(board, 'V3 board travel')
+  assert.ok(board.some(point => point.x === nav.BOARD_DOOR.outside.x && point.z === nav.BOARD_DOOR.outside.z), 'board path uses V3 doorway exterior')
+  assert.ok(board.some(point => point.x === nav.BOARD_DOOR.inside.x && point.z === nav.BOARD_DOOR.inside.z), 'board path uses V3 doorway interior')
+  assert.deepEqual(board.at(-1), LAYOUT_V3.boss.stand)
+})
+
+test('Q-01/Q-02 actual V3 director arrival, departure and board action use finite paths without throwing', () => {
+  const lead = actor('Lead', workHome(LAYOUT_V3.seats.Lead))
+  const board = actor('board', { ...LAYOUT_V3.boss.desk, yaw: Math.PI })
+  board.stand = { ...LAYOUT_V3.boss.stand, yaw: 0 }
+  const director = createDirector({
+    layout: LAYOUT_V3,
+    views: new Map([[lead.id, lead]]),
+    board: { board },
+    layer: { appendChild() {} },
+    project: { tmp: new THREE.Vector3(), fn() {} },
+  })
+  assert.doesNotThrow(() => assert.equal(director.goHome(lead), true))
+  assertClearOfWalls(lead.act.pts, 'director V3 departure')
+  director.clear()
+  assert.doesNotThrow(() => assert.equal(director.arrive(lead), true))
+  assertClearOfWalls(lead.act.pts, 'director V3 arrival')
+  director.clear()
+  director.enqueue({ kind: 'report', from: lead.id, to: 'board', text: 'route check', at: '2026-10-23T00:00:00Z' })
+  assert.doesNotThrow(() => director.update(0))
+  assert.ok(lead.act, 'board action starts through the real director factory')
+  assertClearOfWalls(lead.act.pts, 'director V3 board travel')
+  assert.deepEqual(lead.act.pts.at(-1), { x: board.stand.x, z: board.stand.z })
 })

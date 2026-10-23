@@ -23,7 +23,7 @@ const isWalker = act => ['rise', 'walk'].includes(act.phase)
 
 export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout }) {
   const navigation = createOfficeNavigation(layout)
-  const { officeExit, officeTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
+  const { officeExit, officeTrip, boardTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
   const consumerAdvance = navigation.consumerAdvance || legacyConsumerAdvance, consumerDeparture = navigation.consumerDeparture || legacyConsumerDeparture
   const gInLounge = p => Math.abs(p.x - LOUNGE_AREA.x) < LOUNGE_AREA.width / 2 && Math.abs(p.z - LOUNGE_AREA.z) < LOUNGE_AREA.depth / 2
   // views: Map(agentId -> view)；board: { 名字 -> view }；layer: 气泡容器；project(vec3, el): 把世界坐标投到屏幕
@@ -149,6 +149,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
 
   function pathTo(v, tgt) {
     if (!tgt.board) return officeTrip(v.home, tgt.view.home, tgt.stand)
+    if (typeof boardTrip === 'function') return boardTrip(v.home, tgt.stand)
     const pts = officeExit(v.home)
     if (tgt.board) {
       pts.push(...corridorPath(pts.at(-1), { x: CORRIDOR_X, z: DOOR.zOut }), { x: DOOR.x, z: DOOR.zOut }, { x: DOOR.x, z: DOOR.zIn })
