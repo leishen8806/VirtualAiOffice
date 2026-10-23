@@ -50,11 +50,11 @@
     function view(pos, target) { controls.target.set(...target); const d = new THREE.Vector3(pos[0] - target[0], pos[1] - target[1], pos[2] - target[2]); controls.r = d.length(); controls.el = Math.asin(d.y / controls.r); controls.az = Math.atan2(d.x, d.z); controls.update() }
     const views = { over: [[-186, 34, 40], [-128, 1, -1]], rack: [[-160, 10, 22], [-141, 2, -2]], shuttle: [[-154, 4, 12], [-146, 0.6, 0]], aisle: [[-150, 1.7, 12], [-137, 1.8, -4]] }
     for (const [id, key] of [['v-over', 'over'], ['v-rack', 'rack'], ['v-shuttle', 'shuttle'], ['v-aisle', 'aisle']]) document.getElementById(id).onclick = () => view(...views[key])
-    document.getElementById('shuttle-move').onclick = () => { moving = !moving; t0 = performance.now(); document.getElementById('shuttle-move').textContent = moving ? '穿梭机移动 ■' : '穿梭机移动 ▶'; if (!moving) cell.setShuttle({ z: 0, lift: 0 }) }
+    document.getElementById('shuttle-move').onclick = () => { moving = !moving; t0 = performance.now(); document.getElementById('shuttle-move').textContent = moving ? '穿梭机移动 ■' : '穿梭机移动 ▶'; if (!moving) cell.setShuttle({ z: -1, lift: 0 }) }
     document.getElementById('quality').onclick = (event) => { tier = tier === 'high' ? 'low' : 'high'; event.target.textContent = `画质：${tier === 'high' ? '高' : '低'}`; build() }
     function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }
     addEventListener('resize', resize); resize(); build(); view(...views.over)
-    renderer.setAnimationLoop(() => { if (moving) { const s = (performance.now() - t0) / 1000, k = (Math.sin(s * 0.5) + 1) / 2; cell.setShuttle({ z: -6.6 + k * 11.2, lift: k > 0.85 ? 0.05 : 0 }) } renderer.render(scene, camera) })
+    renderer.setAnimationLoop(() => { if (moving) { const s = (performance.now() - t0) / 1000, k = (Math.sin(s * 0.5) + 1) / 2; cell.setShuttle({ z: -6.6 + k * 11.2, lift: k > 0.85 ? 0.12 : 0, status: 'moving' }) } renderer.render(scene, camera) })
   </script>
 </body>
 </html>
