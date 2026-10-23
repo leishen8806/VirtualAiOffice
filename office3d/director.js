@@ -401,8 +401,21 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
     return [...exit, ...corridorPath(exit.at(-1), ENTRANCE.inner), ...GATE]
   }
 
+  function validRoute(points) {
+    return Array.isArray(points) && points.length > 0 && points.every(point =>
+      point &&
+      typeof point === 'object' &&
+      Number.isFinite(point.x) &&
+      Number.isFinite(point.z),
+    )
+  }
+
   function travel(v, pts, seat, lounge, onDone, standing = false) {
     if (v.act) return false
+    if (!validRoute(pts)) {
+      console.warn('[director] 拒绝无效路径', v.name || v.id || '')
+      return false
+    }
     const fromLounge = gInLounge(v.char.group.position)
     const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'queued', t: 0, total: 0, yields: 0, pts, i: 0, back: true, carry: false, seat, lounge, onDone, standing, fromLounge, needsLane: lounge === true || fromLounge, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
     v.act = act
