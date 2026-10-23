@@ -35,10 +35,11 @@ test('reference dashboard uses high-quality independent image slots and identifi
   }
   const html = read('dr-console.html')
   assert.match(html, /dr-campus-reference\.webp/)
-  assert.match(html, /dr-campus-reference@2x\.webp/)
   assert.match(html, /background-image:image-set\(/)
   assert.match(html, /\.sceneThumb\{background-repeat:no-repeat;background-size:contain/)
-  assert.match(html, /\.videoGrid \.sceneThumb\.camera-d1,[^{]+background-size:contain/)
+  assert.ok(html.includes(
+    '.videoGrid .sceneThumb.camera-d1,.videoGrid .sceneThumb.camera-d3,.videoGrid .sceneThumb.camera-entry,.videoGrid .sceneThumb.camera-w1{background-size:contain',
+  ))
   for (const slot of ['overview', 'd1', 'd3', 'entry', 'w1']) {
     assert.match(html, new RegExp(`dr-cam-${slot}\\.webp`))
     assert.match(html, new RegExp(`camera-${slot}`))
@@ -48,6 +49,24 @@ test('reference dashboard uses high-quality independent image slots and identifi
   assert.match(html, /设计图 · 非直播/)
   assert.match(html, /aria-label="筛选 W1 智慧云仓"/)
   assert.doesNotMatch(read('dr-console.js'), /(?:import|from)\s*['"].*(?:app|ui|office-layout)\.js/)
+})
+
+test('every local image path referenced by the page exists', () => {
+  const html = read('dr-console.html')
+  const paths = new Set(
+    [...html.matchAll(/url\(\s*(['"]?)(\/[^'")]+)\1\s*\)/g)]
+      .map((match) => match[2])
+      .filter((path) => /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(path)),
+  )
+  assert.ok(paths.size > 0, 'page must reference at least one local image')
+  for (const path of paths) {
+    const fileUrl = new URL(path.slice(1), root)
+    assert.equal(
+      fs.existsSync(fileUrl),
+      true,
+      `referenced image must exist: ${path}`,
+    )
+  }
 })
 
 test('large-screen typography scales at 1920, 2560 and 3840 without changing mobile rules', () => {

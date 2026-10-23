@@ -2,6 +2,10 @@ import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
 import { buildOfficeShellV3 } from './office-layout-v3-scene.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
+import { buildOfficeIsland } from './office-island.js'
+import { buildOfficeZones } from './office-zones.js'
+import { buildDisplayDepartments } from './display-departments.js'
+import { buildDisplayStaff } from './display-staff.js'
 
 const pendingModule = name => ({
   pending: true,
@@ -18,14 +22,27 @@ function buildOfficeFurnitureV3(context) {
   return { ...furniture, displaySeats: context.layout.displaySeats, version: 3 }
 }
 
+const displayLayout = layout => ({ ...layout, version: 2, corridors: {
+  ...layout.corridors,
+  north: layout.corridors.westNorthCross,
+  south: layout.corridors.eastSouthCross,
+}, displayAdapter: 'v3' })
+
+function buildDisplayDepartmentsV3(context) {
+  return buildDisplayDepartments({ ...context, layout: displayLayout(context.layout) })
+}
+
+function buildDisplayStaffV3(context) {
+  return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
+}
+
 export const officeV3Modules = Object.freeze([
   ['shell3', context => buildOfficeShellV3(context)],
   ['furniture3', buildOfficeFurnitureV3],
-  // A 部分由会话二交付；先保留注册顺序和明确的待接状态，不创建第二套实现。
-  ['island', () => pendingModule('office-island')],
-  ['zones', () => pendingModule('office-zones')],
-  ['displayDepartments', () => pendingModule('displayDepartments')],
-  ['displayStaff', () => pendingModule('displayStaff')],
+  ['island', buildOfficeIsland],
+  ['zones', buildOfficeZones],
+  ['displayDepartments', buildDisplayDepartmentsV3],
+  ['displayStaff', buildDisplayStaffV3],
 ])
 
 export function startOfficeV3(shared) {
@@ -56,7 +73,7 @@ export function selectEnvironmentConflicts(environmentRoots, layout) {
   const site = layout?.site
   if (!site) return []
   return [...(environmentRoots || [])].filter((object) => {
-    if (!object || object.isLight || object.isCamera || isEnvironmentBackdrop(object)) return false
+    if (!object || object.isLight || object.isCamera || object.userData?.dynamic || isEnvironmentBackdrop(object)) return false
     const name = String(object.name || '').toLowerCase()
     if (/^(ground|terrain|world-ground)$/.test(name)) return false
     const p = worldPosition(object)

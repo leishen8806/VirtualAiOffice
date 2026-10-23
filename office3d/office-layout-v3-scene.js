@@ -61,7 +61,7 @@ const matrixEntry = (THREE, x0, x1, y, h, z0, z1) => ({ matrix: boxMatrix(THREE,
 
 export function buildOfficeShellV3({ THREE, root, layout, collision, low = false }) {
   const spec = buildOfficeShellV3Spec(layout), h = spec.wallHeight.standard
-  const warm = new THREE.MeshStandardMaterial({ color: THEME.exteriorWall, roughness: THEME.wallRoughness, vertexColors: true })
+  const warm = new THREE.MeshStandardMaterial({ color: THEME.exteriorWall, emissive: THEME.exteriorWall, emissiveIntensity: .28, roughness: THEME.wallRoughness, vertexColors: true, toneMapped: false })
   const inner = new THREE.MeshStandardMaterial({ color: THEME.interiorWall, roughness: THEME.wallRoughness })
   const glass = new THREE.MeshPhysicalMaterial({ color: THEME.glass, transparent: true, opacity: THEME.glassOpacity, roughness: THEME.glassRoughness, depthWrite: false })
   const proxies = []
@@ -69,15 +69,14 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const floorColors = [new THREE.Color(THEME.exteriorWall)]
   const buffer = spec.greenBuffer
   const bw = buffer.width
-  for (const [x0, x1, z0, z1] of [
-    [buffer.x0, buffer.x1, buffer.z0, buffer.z0 + bw],
-    [buffer.x0, buffer.x1, buffer.z1 - bw, buffer.z1],
-    [buffer.x0, 0, buffer.z0 + bw, buffer.z1 - bw],
-    [4, buffer.x1, buffer.z0 + bw, buffer.z1 - bw],
-  ]) { floorEntries.push(matrixEntry(THREE, x0, x1, 0, .05, z0, z1)); floorColors.push(new THREE.Color(THEME.exteriorWall)) }
-  for (const [x, z] of [[buffer.x0 + 1, buffer.z0 + 1], [buffer.x0 + 4, buffer.z0 + 1], [buffer.x1 - 1, buffer.z0 + 1], [buffer.x1 - 4, buffer.z0 + 1], [buffer.x0 + 1, buffer.z1 - 1], [buffer.x1 - 1, buffer.z1 - 1]]) {
-    floorEntries.push({ matrix: new THREE.Matrix4().makeScale(1.4, 1.4, 1.4).setPosition(x, .35, z) })
-    floorColors.push(new THREE.Color('#91b87b'))
+  const greenEntries = []
+  const addGreen = (x, z) => greenEntries.push({ matrix: new THREE.Matrix4().makeScale(.95, .8, .95).setPosition(x, .42, z) })
+  for (let x = buffer.x0 + 1.2; x < buffer.x1; x += 3.2) {
+    addGreen(x, buffer.z0 + bw / 2)
+    if (x < 0 || x > 4) addGreen(x, buffer.z1 - bw / 2)
+  }
+  for (let z = buffer.z0 + bw + 1.2; z < buffer.z1 - bw; z += 3.2) {
+    addGreen(buffer.x0 + bw / 2, z); addGreen(buffer.x1 - bw / 2, z)
   }
   const lowerEntries = [], lowerColors = [], glassEntries = []
   const wallState = []
@@ -96,9 +95,13 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
     if (!low) glassEntries.push(matrixEntry(THREE, x0, x1, solidHeight, 2.2 - solidHeight, z0, z1))
   }
   const floorMaterial = new THREE.MeshBasicMaterial({ color: THEME.exteriorWall })
+  const greenMaterial = new THREE.MeshStandardMaterial({ color: '#91b87b', roughness: .9 })
   const ground = addInstances(THREE, root, 'office3-ground', floorMaterial, floorEntries)
   ground.receiveShadow = false
+  const greenGeometry = new THREE.IcosahedronGeometry(.72, low ? 0 : 1)
+  const green = addInstances(THREE, root, 'office3-green-buffer', greenMaterial, greenEntries, [], greenGeometry)
   const walls = addInstances(THREE, root, 'office3-structure', warm, lowerEntries, lowerColors)
+  walls.castShadow = false; walls.receiveShadow = false
   const innerGlass = addInstances(THREE, root, 'office3-inner-glass', glass, glassEntries)
   const collisionEntries = []
   for (const segment of spec.inner) {
@@ -136,5 +139,5 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   }
   // 初始外墙完整高度；只有相机低于阈值时按帧改变视觉代理。
   wallState.forEach(state => { state.height = state.base })
-  return { root, spec, ground, walls, innerGlass, windows, onFrame: update, dispose() { for (const material of [warm, floorMaterial, inner, glass]) material.dispose(); for (const mesh of [ground, walls, innerGlass, windows]) { mesh?.geometry.dispose(); mesh?.removeFromParent() } for (const proxy of proxies) { proxy.geometry.dispose(); proxy.removeFromParent() } } }
+  return { root, spec, ground, green, walls, innerGlass, windows, onFrame: update, dispose() { for (const material of [warm, floorMaterial, greenMaterial, inner, glass]) material.dispose(); for (const mesh of [ground, green, walls, innerGlass, windows]) { mesh?.geometry.dispose(); mesh?.removeFromParent() } for (const proxy of proxies) { proxy.geometry.dispose(); proxy.removeFromParent() } } }
 }

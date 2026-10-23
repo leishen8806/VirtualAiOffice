@@ -23,15 +23,17 @@ test('R3-3 occlusion lowers only the camera-facing wall below the trigger angle'
   assert.equal(resolveWallOcclusion({ elevation: 28, cameraPosition: { x: 0, z: 10 }, target: { x: 0, z: 0 }, wallNormal: { x: 0, z: -1 }, thresholds }).lowered, false)
 })
 
-test('R3-4 registry is opt-in, isolated and exposes furniture plus pending A modules', () => {
+test('R3-4 registry is opt-in, isolated and exposes the complete V3 module chain', () => {
   const scene = new THREE.Scene(), collisions = []
   assert.equal(startOfficeV3({ THREE, scene, layout: LAYOUT_V1 }), null)
   const registry = startOfficeV3({ THREE, scene, layout: LAYOUT_V3, quality: { tier: 'high' }, collision: { add: (...args) => collisions.push(args) } })
   assert.ok(registry)
   assert.equal(registry.root.name, 'office3-root')
   assert.deepEqual(registry.summary().modules, ['shell3', 'furniture3', 'island', 'zones', 'displayDepartments', 'displayStaff'])
-  assert.equal(registry.get('island').pending, true)
-  assert.equal(registry.get('zones').status, '待接')
+  assert.equal(registry.get('island').pending, undefined)
+  assert.equal(registry.get('zones').pending, undefined)
+  assert.equal(registry.get('displayDepartments').pending, undefined)
+  assert.equal(registry.get('displayStaff').pending, undefined)
   assert.equal(registry.get('furniture3').pending, true)
   assert.ok(collisions.length >= 1)
   assert.equal(scene.children.includes(registry.root), true)
@@ -54,6 +56,14 @@ test('R3-3b removes only named/located conflicts and preserves environment backd
   assert.equal(scene.children.includes(insideTree), false)
   assert.equal(scene.children.includes(outsideTree), true)
   assert.equal(scene.children.includes(legacy), false)
+})
+
+test('R3-3c keeps the dynamically instanced crowns that belong to outside trees', () => {
+  const scene = new THREE.Scene()
+  const crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshBasicMaterial(), 1)
+  crown.name = 'environment-tree-crowns'; crown.userData.dynamic = true; crown.position.set(0, 0, 0); scene.add(crown)
+  const conflicts = selectEnvironmentConflicts(new Set([crown]), LAYOUT_V3)
+  assert.equal(conflicts.includes(crown), false)
 })
 
 test('R3-3 shell source stays local and does not depend on warehouse or network code', () => {

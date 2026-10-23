@@ -4,33 +4,9 @@ const FLOW_PATHS = Object.freeze([
   { id: 'review', color: '#ff9d42', points: [[.66,.58],[.73,.48],[.80,.55]] },
   { id: 'dispatch', color: '#5df08b', points: [[.80,.55],[.88,.45],[.94,.38]] },
 ])
-const EVENTS = Object.freeze([
-  ['入库上架', 'W1', '托盘进入智慧云仓'],
-  ['区内周转', 'W2', '订单进入复核队列'],
-  ['复核完成', 'W2', '分拣结果已确认'],
-  ['发运出库', 'W3', '车辆驶向配送区'],
-])
+import { DEMO_REFRESH_MS, demoSnapshotAt } from './dr-demo-snapshot.js'
 
-function clone(value) { return JSON.parse(JSON.stringify(value)) }
-export function demoSnapshotAt(base, elapsedMs) {
-  const tick = Math.max(0, Math.floor((Number(elapsedMs) || 0) / 1800))
-  const snapshot = clone(base)
-  const eventIndex = tick % EVENTS.length
-  const visible = EVENTS.slice(0, (tick % EVENTS.length) + 1)
-  snapshot.generatedAt = `demo-motion-${tick}`
-  snapshot.events = [...(base.events || []), ...visible.map(([kind, zone, detail], index) => ({
-    id: `motion-${Math.floor(tick / EVENTS.length)}-${index}`,
-    at: tick + index,
-    kind, zone, pallets: index === 3 ? 16 : 8, detail: `${detail} · 模拟`, demo: true,
-  }))].slice(-8)
-  snapshot.waybills = snapshot.waybills.map((item, index) => ({
-    ...item,
-    progress: Math.min(100, item.progress + ((tick + index) % 5) * 3),
-    status: index === eventIndex ? '处理中' : item.status,
-  }))
-  snapshot.tasks = snapshot.tasks.map((item, index) => ({ ...item, status: index === eventIndex % snapshot.tasks.length ? '进行中' : item.status }))
-  return snapshot
-}
+export { demoSnapshotAt } from './dr-demo-snapshot.js'
 
 export function flowCanvasDpr({
   viewportWidth = globalThis.innerWidth || 0,
@@ -53,7 +29,7 @@ function resizeFlowCanvas(canvas, windowRef) {
 function drawFlow(canvas, elapsedMs, windowRef) {
   const { width, height, dpr } = resizeFlowCanvas(canvas, windowRef)
   const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, width, height); ctx.lineCap = 'round'; ctx.lineJoin = 'round'
-  const pulse = (elapsedMs % 1800) / 1800
+  const pulse = (elapsedMs % DEMO_REFRESH_MS) / DEMO_REFRESH_MS
   for (const flow of FLOW_PATHS) {
     ctx.strokeStyle = `${flow.color}88`; ctx.lineWidth = 2.5 * dpr; ctx.setLineDash([8 * dpr, 8 * dpr]); ctx.lineDashOffset = -elapsedMs / 35
     ctx.beginPath(); flow.points.forEach(([x, y], index) => index ? ctx.lineTo(x * width, y * height) : ctx.moveTo(x * width, y * height)); ctx.stroke(); ctx.setLineDash([])
@@ -79,7 +55,7 @@ export function createDemoDisplay({
   let running = false, disposed = false, raf = 0, epoch = 0, lastTick = -1
   const update = (stamp) => {
     if (!running) return
-    const elapsed = Math.max(0, stamp - epoch); const tick = Math.floor(elapsed / 1800)
+    const elapsed = Math.max(0, stamp - epoch); const tick = Math.floor(elapsed / DEMO_REFRESH_MS)
     if (tick !== lastTick) { lastTick = tick; onSnapshot(demoSnapshotAt(baseSnapshot, elapsed)) }
     drawFlow(canvas, elapsed, windowRef); raf = requestFrame(update)
   }

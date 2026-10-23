@@ -13,7 +13,9 @@ export function mergeOfficeStatic(THREE, root, batchPrefix = 'office2') {
     const attributes = Object.entries(mesh.geometry.attributes)
     if (attributes.some(([, attr]) => attr.isInstancedBufferAttribute || attr.isInterleavedBufferAttribute) || Object.keys(mesh.geometry.morphAttributes).length) return
     const shape = attributes.map(([name, attr]) => `${name}:${attr.itemSize}:${attr.array.constructor.name}:${attr.normalized}`).sort().join('|')
-    const key = [mesh.material.uuid, shape, mesh.castShadow, mesh.receiveShadow, mesh.frustumCulled, mesh.renderOrder, mesh.layers.mask].join('|')
+    const material = mesh.material
+    const materialKey = [material?.map?.uuid || '', material?.color?.getHexString?.() || '', material?.roughness ?? '', material?.metalness ?? '', material?.transparent ?? '', material?.vertexColors ?? ''].join(':')
+    const key = [materialKey, shape, mesh.castShadow, mesh.receiveShadow, mesh.frustumCulled, mesh.renderOrder, mesh.layers.mask].join('|')
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(mesh)
   })

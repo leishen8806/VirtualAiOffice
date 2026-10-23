@@ -5,13 +5,14 @@ import {
   MAP_VIEW,
   projectLonLat,
 } from './dr-cambodia-outline.js'
-import { buildSnapshot, deriveKpis } from './dr-console-data.js'
-import { demoSnapshotAt } from './dr-console-demo.js'
+import { deriveKpis } from './dr-console-data.js'
+import {
+  DEMO_BASE_SNAPSHOT,
+  sharedDemoSnapshotAt,
+} from './dr-demo-snapshot.js'
 
 export const CONTROL_ROOM_LIVE_INTERVAL_MS = 1000
-export const CONTROL_ROOM_BASE_SNAPSHOT = Object.freeze(
-  buildSnapshot({ seed: 2808, timeSlice: 5 }),
-)
+export const CONTROL_ROOM_BASE_SNAPSHOT = DEMO_BASE_SNAPSHOT
 
 const text = (value, fallback = '–') => {
   const output = String(value ?? '').trim()
@@ -32,7 +33,7 @@ export function controlRoomLiveEnabled(search = '') {
 }
 
 export function controlRoomSnapshotAt(elapsedMs) {
-  return demoSnapshotAt(CONTROL_ROOM_BASE_SNAPSHOT, elapsedMs)
+  return sharedDemoSnapshotAt(elapsedMs)
 }
 
 function drawMap(ctx, x, y, width, height) {
@@ -224,6 +225,7 @@ export function createControlRoomLiveScreen({
   unschedule = clearInterval,
   documentRef = globalThis.document,
   isVisible = () => true,
+  clockElapsed = now,
   warn = (...args) => console.warn(...args),
 } = {}) {
   let provider = snapshotProvider
@@ -303,7 +305,7 @@ export function createControlRoomLiveScreen({
       return
     }
     desired = true
-    accumulated = 0
+    accumulated = Math.max(0, clockElapsed())
     signature = ''
     resume()
   }
