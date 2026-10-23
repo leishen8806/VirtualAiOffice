@@ -17,11 +17,40 @@ import { buildOfficeFoyerFurniture } from '../office-vis2/foyer.js'
 import { buildOfficeTeaBarSample } from '../office-vis2/bar.js'
 import { createSampleBatch } from '../office-vis2/batch.js'
 import { appendOfficePlaza } from '../office-vis2/plaza.js'
+import { buildOfficeSamplePlants } from '../office-vis2/plants.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
+
+test('O-V3 plants retain one instance batch and existing footprint with non-fabric two-sided foliage', () => {
+  const root = new THREE.Group(), a = buildOfficeSamplePlants({ THREE, root }), b = buildOfficeSamplePlants({ THREE, root: new THREE.Group() })
+  try {
+    const mesh = a.root.getObjectByName('sample-instanced-potted-plants'), g = mesh.geometry, p = g.attributes.position, normals = g.attributes.normal, surface = g.attributes.sampleSurface
+    assert.equal(mesh.count, 8); assert.equal(a.summary().calls, 1); assert.ok(a.summary().triangles <= 6528)
+    assert.deepEqual(a.placements, b.placements); assert.equal(sha256(p.array), sha256(b.root.children[0].geometry.attributes.position.array))
+    let leafVertices = 0; const leafNormals = new Map()
+    for (let i = 0; i < p.count; i++) {
+      assert.ok(Math.hypot(p.getX(i), p.getZ(i)) <= .5 && p.getY(i) >= -1e-6 && p.getY(i) <= 1.6, 'old collision envelope retained')
+      const normal = new THREE.Vector3().fromBufferAttribute(normals, i)
+      assert.ok(Math.abs(normal.length() - 1) < 1e-5, 'all rendered vertices have valid unit normals')
+      if (p.getY(i) > .6) { assert.equal(surface.getZ(i), 0, 'foliage must not inherit woven upholstery texture'); leafVertices++ }
+      if (Math.abs(surface.getX(i) - .76) < 1e-6) {
+        const key = [p.getX(i), p.getY(i), p.getZ(i)].map(v => v.toFixed(6)).join(',')
+        if (!leafNormals.has(key)) leafNormals.set(key, [])
+        leafNormals.get(key).push(normal)
+      }
+    }
+    assert.ok(leafVertices > 1000)
+    assert.ok(leafNormals.size > 100)
+    for (const values of leafNormals.values()) for (const normal of values) assert.ok(values.some(other => normal.dot(other) < -.999), 'each thin leaf surface has its own reversed back normal')
+    assert.equal(mesh.material.transparent, false, 'opaque geometry avoids transparent leaf overdraw')
+    let geometryDisposals = 0, materialDisposals = 0
+    g.addEventListener('dispose', () => geometryDisposals++); mesh.material.addEventListener('dispose', () => materialDisposals++)
+    a.dispose(); a.dispose(); assert.equal(geometryDisposals, 1); assert.equal(materialDisposals, 1); assert.equal(root.children.length, 0)
+  } finally { a.dispose(); b.dispose() }
+})
 
 test('Q-V1 reception curve has continuous outward normals while caps stay flat', () => {
   const value = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), f = LAYOUT_V3.frontDesk
