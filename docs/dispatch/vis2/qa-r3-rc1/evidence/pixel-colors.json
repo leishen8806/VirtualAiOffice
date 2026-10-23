@@ -1,0 +1,22 @@
+{
+  "rc1-wheel-close.png": {
+    "blue": 0.08257,
+    "orange": 0.03423
+  },
+  "rc1-eye-shuttle.png": {
+    "blue": 0.06563,
+    "orange": 0.00694
+  },
+  "rc1-overview-low.png": {
+    "blue": 0.08695,
+    "orange": 0.00019
+  },
+  "rc1-overview-high.png": {
+    "blue": 0.06959,
+    "orange": 0.00186
+  },
+  "rc1-rack-close.png": {
+    "blue": 0.08416,
+    "orange": 0.00541
+  }
+}

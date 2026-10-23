@@ -1,0 +1,180 @@
+{
+  "generatedAt": "2026-10-23T06:43:30.025Z",
+  "url": "http://127.0.0.1:58858/office-vis2-preview.html",
+  "checks": [
+    {
+      "id": "normal-logo-marks",
+      "ok": true,
+      "detail": "[\"office-vis2-approved-logo-marks\"]"
+    },
+    {
+      "id": "fallback-placeholder",
+      "ok": true,
+      "detail": "[\"office-vis2-brand-placeholder-slots\"]"
+    },
+    {
+      "id": "fallback-still-open",
+      "ok": true
+    },
+    {
+      "id": "no-unexpected-errors",
+      "ok": true,
+      "detail": "{\"normal\":[],\"fallback\":[\"Failed to load resource: net::ERR_FAILED\"]}"
+    }
+  ],
+  "normal": {
+    "tag": "normal",
+    "requests": [
+      "/office-vis2-preview.html",
+      "/office-vis2/preview.js",
+      "/vendor/three/three.module.js",
+      "/office-layout.js",
+      "/office-island.js",
+      "/office-vis2/sample.js",
+      "/office-theme-v2.js",
+      "/office-bar-geometry.js",
+      "/office-vis2/bar.js",
+      "/office-vis2/foyer.js",
+      "/office-vis2/floor.js",
+      "/office-vis2/plants.js",
+      "/office-vis2/batch.js",
+      "/office-vis2/assets.js",
+      "/office-vis2/frontage.js",
+      "/office-vis2/brand.js",
+      "/vendor/three/three.core.js",
+      "/office-heart-banyan.js",
+      "/assets/textures/office-v2/oak-light.jpg",
+      "/assets/textures/office-v2/stone-floor.jpg",
+      "/assets/textures/office-v2/fabric-cream.jpg",
+      "/assets/logo.png"
+    ],
+    "errors": [],
+    "snap": {
+      "mode": "open",
+      "summary": {
+        "calls": 11,
+        "triangles": 22702,
+        "seats": 10,
+        "sofas": 8,
+        "brandMarks": 3,
+        "realStaff": 0,
+        "scope": "tea-bar-and-foyer"
+      },
+      "names": [
+        "office-island",
+        "office-island-static-batch",
+        "office2-bar-collision-0-0",
+        "office2-bar-collision-0-1",
+        "office2-bar-collision-0-2",
+        "office2-bar-collision-0-3",
+        "office2-bar-collision-0-4",
+        "office2-bar-collision-0-5",
+        "office2-bar-collision-1-0",
+        "office2-bar-collision-1-1",
+        "office2-bar-collision-1-2",
+        "office2-bar-collision-1-3",
+        "office2-bar-collision-1-4",
+        "office2-bar-collision-1-5",
+        "office-sample-zone",
+        "office-vis2-bar",
+        "tea-bar-instanced-stools",
+        "tea-bar-instanced-lounges",
+        "office-heart-banyan",
+        "heart-banyan-small-leaf-clusters",
+        "office3-r3-foyer-furniture",
+        "foyer-instanced-curved-sofas",
+        "office3-r3-floor-pattern",
+        "office-sample-plants",
+        "sample-instanced-potted-plants",
+        "sample-zone-static-surfaces",
+        "office-vis2-brand-marks",
+        "office-vis2-brushed-metal-brand-backing",
+        "office-vis2-approved-logo-marks",
+        "office-vis2-frontage",
+        "frontage-fine-frames-and-entry-posts",
+        "vis2-neutral-transparent-glass"
+      ],
+      "status": "样板已开启 · 模拟展示，无业务操作",
+      "logoRequests": 1
+    }
+  },
+  "fallback": {
+    "tag": "fallback",
+    "requests": [
+      "/office-vis2-preview.html",
+      "/office-vis2/preview.js",
+      "/vendor/three/three.module.js",
+      "/office-layout.js",
+      "/office-island.js",
+      "/office-vis2/sample.js",
+      "/office-theme-v2.js",
+      "/office-bar-geometry.js",
+      "/office-vis2/bar.js",
+      "/office-vis2/foyer.js",
+      "/office-vis2/floor.js",
+      "/office-vis2/plants.js",
+      "/office-vis2/batch.js",
+      "/office-vis2/assets.js",
+      "/office-vis2/frontage.js",
+      "/office-vis2/brand.js",
+      "/vendor/three/three.core.js",
+      "/office-heart-banyan.js",
+      "/assets/textures/office-v2/oak-light.jpg",
+      "/assets/textures/office-v2/stone-floor.jpg",
+      "/assets/textures/office-v2/fabric-cream.jpg",
+      "/assets/logo.png"
+    ],
+    "errors": [
+      "Failed to load resource: net::ERR_FAILED"
+    ],
+    "snap": {
+      "mode": "open",
+      "summary": {
+        "calls": 11,
+        "triangles": 22702,
+        "seats": 10,
+        "sofas": 8,
+        "brandMarks": 3,
+        "realStaff": 0,
+        "scope": "tea-bar-and-foyer"
+      },
+      "names": [
+        "office-island",
+        "office-island-static-batch",
+        "office2-bar-collision-0-0",
+        "office2-bar-collision-0-1",
+        "office2-bar-collision-0-2",
+        "office2-bar-collision-0-3",
+        "office2-bar-collision-0-4",
+        "office2-bar-collision-0-5",
+        "office2-bar-collision-1-0",
+        "office2-bar-collision-1-1",
+        "office2-bar-collision-1-2",
+        "office2-bar-collision-1-3",
+        "office2-bar-collision-1-4",
+        "office2-bar-collision-1-5",
+        "office-sample-zone",
+        "office-vis2-bar",
+        "tea-bar-instanced-stools",
+        "tea-bar-instanced-lounges",
+        "office-heart-banyan",
+        "heart-banyan-small-leaf-clusters",
+        "office3-r3-foyer-furniture",
+        "foyer-instanced-curved-sofas",
+        "office3-r3-floor-pattern",
+        "office-sample-plants",
+        "sample-instanced-potted-plants",
+        "sample-zone-static-surfaces",
+        "office-vis2-brand-marks",
+        "office-vis2-brushed-metal-brand-backing",
+        "office-vis2-brand-placeholder-slots",
+        "office-vis2-frontage",
+        "frontage-fine-frames-and-entry-posts",
+        "vis2-neutral-transparent-glass"
+      ],
+      "status": "样板已开启 · 模拟展示，无业务操作",
+      "logoRequests": 1
+    }
+  },
+  "pass": true
+}
