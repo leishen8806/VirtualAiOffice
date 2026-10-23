@@ -111,6 +111,8 @@ test('lift moves only the platform and its cargo; cargo never floats or intersec
   assert.ok(near(c1.min.y, c0.min.y, 1e-9) && near(c1.max.y, c0.max.y, 1e-9), 'chassis does not move')
   assert.ok(l1.min.y >= p1.max.y - 1e-6, 'cargo does not sink into the platform when lifted')
   cell.setShuttle({ carrying: false }); assert.equal(load.visible, false); cell.setShuttle({ carrying: true }); assert.equal(load.visible, true)
+  const liftGroup = named(cell, 'vis2-shuttle-lift')
+  cell.setShuttle({ lift: 99 }); assert.ok(near(liftGroup.position.y, D.shuttle.maxLift, 1e-9), 'lift is clamped to the maximum'); cell.setShuttle({ lift: -5 }); assert.ok(near(liftGroup.position.y, 0, 1e-9), 'negative lift is clamped to 0')
 })
 
 test('host state: carrying, occupied and status are accepted from the host only, invalid values are ignored', () => {
