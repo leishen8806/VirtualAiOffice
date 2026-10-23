@@ -1,7 +1,7 @@
 import { createSampleBatch } from './batch.js'
 import { receptionBackdrop } from './foyer.js'
 
-export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex }) {
+export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex, includeEnclosure = true }) {
   const f = layout.foyer, group = new THREE.Group(); group.name = 'office-vis2-frontage'; root.add(group)
   const mid = (f.x0 + f.x1) / 2, batch = createSampleBatch(THREE, assets)
   const box = (x, y, z, w, h, d, tint, roughness = .4, metal = .55) => batch.add(new THREE.BoxGeometry(w, h, d), tint, [x, y, z], 0, roughness, metal)
@@ -25,11 +25,13 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
   panels.instanceMatrix.needsUpdate = true; panels.renderOrder = 2; panels.name = 'vis2-neutral-transparent-glass'; group.add(panels)
   let label, texture, labelMaterial, disposed = false
   const dispose = () => { if (disposed) return; disposed = true; fixed.dispose(); geometry.dispose(); material.dispose(); panels.dispose(); label?.geometry.dispose(); labelMaterial?.dispose(); texture?.dispose(); group.removeFromParent() }
+  // 主场景已有地面、墙与入口；预览围合不能遮盖它们或挡住已验收的侧行路线。
+  if (!includeEnclosure) { fixed.mesh.removeFromParent(); panels.removeFromParent() }
   try { if (canvasTex) {
     const surface = receptionBackdrop(layout.frontDesk).grille
     texture = canvasTex(1024, 64, (ctx, width, height) => { ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '500 48px Microsoft YaHei, sans-serif'; ctx.fillText('前厅接待  ·  RECEPTION', width / 2, height / 2) })
     labelMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }); label = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .15), labelMaterial)
     label.name = 'vis2-reception-wayfinding'; label.position.set(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002); group.add(label)
   } } catch (error) { dispose(); throw error }
-  return { root: group, mapping: { glass: specs, gatePosts, entrance: { x: mid, z: f.z1, width: 4 } }, summary: () => ({ calls: label ? 3 : 2, triangles: fixed.triangles() + 8 + (label ? 2 : 0) }), dispose }
+  return { root: group, mapping: { glass: includeEnclosure ? specs : [], gatePosts: includeEnclosure ? gatePosts : [], entrance: includeEnclosure ? { x: mid, z: f.z1, width: 4 } : null }, summary: () => ({ calls: (includeEnclosure ? 2 : 0) + (label ? 1 : 0), triangles: (includeEnclosure ? fixed.triangles() + 8 : 0) + (label ? 2 : 0) }), dispose }
 }

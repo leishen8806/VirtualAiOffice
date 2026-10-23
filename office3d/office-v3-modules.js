@@ -2,7 +2,7 @@ import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
 import { buildOfficeShellV3 } from './office-layout-v3-scene.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
-import { buildOfficeIsland } from './office-island.js'
+import { buildOfficeSampleHost } from './office-vis2/host.js'
 import { buildOfficeZones } from './office-zones.js'
 import { buildDisplayDepartments } from './display-departments.js'
 import { buildDisplayStaff } from './display-staff.js'
@@ -39,7 +39,7 @@ function buildDisplayStaffV3(context) {
 export const officeV3Modules = Object.freeze([
   ['shell3', context => buildOfficeShellV3(context)],
   ['furniture3', buildOfficeFurnitureV3],
-  ['island', buildOfficeIsland],
+  ['island', buildOfficeSampleHost],
   ['zones', buildOfficeZones],
   ['displayDepartments', buildDisplayDepartmentsV3],
   ['displayStaff', buildDisplayStaffV3],

@@ -109,7 +109,7 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "345739376E375FB94B91A5E89FF01AA5249DA5708AAE0A953CB23CA7E57E0D37",
+      "sha256": "B607E7EE2BAAC04EEA99142304830D465DA3641EA2C28770980301F69F835D03",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -123,7 +123,7 @@
     },
     {
       "file": "office-vis2/floor.js",
-      "sha256": "1E1505E544A6E2BFB073A7DB37DD7EE164078A5AD23CE359960A28FF842052BA",
+      "sha256": "973E81952CA020FCBB6E6D308FD65B02F8ABB476ED448B4EFA41DEC9CF03937D",
       "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
