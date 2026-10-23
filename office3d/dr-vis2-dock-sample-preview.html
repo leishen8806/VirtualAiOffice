@@ -29,6 +29,7 @@
     const camera = new THREE.PerspectiveCamera(40, 1, .1, 400), root = new THREE.Group(); scene.add(root)
     scene.add(new THREE.HemisphereLight(0xf6f4ef, 0x879299, 1.35))
     const sun = new THREE.DirectionalLight(0xfffaf0, 1.25); sun.position.set(-130, 45, 30); sun.castShadow = true; scene.add(sun)
+    for (const x of [-150.1, -141.9]) { const light = new THREE.PointLight(0xffc878, 18, 15, 2); light.position.set(x, 3.7, -16.4); scene.add(light) }
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 50), new THREE.MeshStandardMaterial({ color:0xc9c6be, roughness:.92 })); floor.rotation.x = -Math.PI / 2; floor.position.set(-146, -.01, -10); floor.receiveShadow = true; scene.add(floor)
     const layout = { campus:CAMPUS, zones:CAMPUS_ZONES, shuttle:CAMPUS_SHUTTLE_STRIP }
     const rack = buildVis2RackCell({ THREE, root, layout, baseY:0, quality:{ tier:'high' } })
@@ -41,7 +42,7 @@
     renderer.domElement.addEventListener('pointermove', event => { if (!drag) return; controls.az -= (event.clientX - drag[0]) * .005; controls.el = Math.max(.05, Math.min(1.45, controls.el + (event.clientY - drag[1]) * .005)); drag = [event.clientX, event.clientY]; controls.update() })
     renderer.domElement.addEventListener('wheel', event => { event.preventDefault(); controls.r = Math.max(5, Math.min(100, controls.r * (event.deltaY > 0 ? 1.1 : .9))); controls.update() }, { passive:false })
     const resize = () => { renderer.setSize(stage.clientWidth, stage.clientHeight, false); camera.aspect = stage.clientWidth / stage.clientHeight; camera.updateProjectionMatrix() }
-    addEventListener('resize', resize); resize(); view([-169, 15, -5], [-146, .8, -15])
+    addEventListener('resize', resize); resize(); view([-166, 11, -34], [-146, 1.1, -18])
     window.__vis2Dock = { THREE, renderer, scene, camera, rack, dock, view }
     readout.textContent = JSON.stringify({ rack:rack.summary(), dock:dock.summary() })
     renderer.setAnimationLoop(() => renderer.render(scene, camera))
