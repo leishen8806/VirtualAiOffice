@@ -6,6 +6,7 @@ import { barSeats, barLounges, barColliders } from '../office-bar-geometry.js'
 import { buildOfficeBar } from '../office-bar.js'
 import { officeVis2Enabled, loadOfficeVis2Assets } from '../office-vis2/assets.js'
 import { createOfficeVis2Controller } from '../office-vis2/sample.js'
+import { buildOfficeBrandMarks } from '../office-vis2/brand.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
@@ -26,7 +27,29 @@ test('VIS2 material loading configures sRGB and releases partial successes on fa
   assert.equal(l.state.created, 2); assert.equal(l.state.disposed, 2)
   const complete = loader(), assets = await loadOfficeVis2Assets(THREE, { enabled: true }, complete)
   assert.equal(assets.oak.colorSpace, THREE.SRGBColorSpace)
-  assets.dispose(); assets.dispose(); assert.equal(complete.state.disposed, 3)
+  assets.dispose(); assets.dispose(); assert.equal(complete.state.disposed, 4)
+})
+
+test('VIS2 logo loading is optional and absent logos use named replacement slots', async () => {
+  const l = loader(), original = l.loadAsync
+  l.loadAsync = url => url.includes('logo.png') ? Promise.reject(new Error('logo unavailable')) : original(url)
+  const assets = await loadOfficeVis2Assets(THREE, { enabled: true }, l)
+  assert.equal(assets.logo, null); assets.dispose(); assert.equal(l.state.disposed, 3)
+  const marks = buildOfficeBrandMarks({ THREE, root: new THREE.Group(), layout: LAYOUT_V3, assets, canvasTex })
+  assert.equal(marks.placeholder, true); assert.equal(marks.marks.length, 3)
+  assert.equal(marks.root.getObjectByName('office-vis2-brand-placeholder-slots').userData.replaceable, true)
+  assert.equal(marks.root.getObjectByName('office-vis2-brushed-metal-brand-backing').userData.depthOffset, .026)
+  marks.dispose()
+})
+
+test('VIS2 brand marks preserve the approved logo ratio and avoid co-planar backing', () => {
+  const assets = { logo: new THREE.Texture() }, root = new THREE.Group()
+  const marks = buildOfficeBrandMarks({ THREE, root, layout: LAYOUT_V3, assets, canvasTex })
+  assert.equal(marks.placeholder, false); assert.equal(marks.marks.length, 3)
+  for (const mark of marks.marks) assert.ok(Math.abs(mark.width / mark.height - 979 / 544) < 1e-12)
+  assert.equal(marks.root.getObjectByName('office-vis2-approved-logo-marks').material.map, assets.logo)
+  assert.equal(marks.root.getObjectByName('office-vis2-brushed-metal-brand-backing').userData.depthOffset, .026)
+  marks.dispose()
 })
 
 test('VIS2 closing while images load prevents late mounting and releases owned images', async () => {
@@ -35,7 +58,7 @@ test('VIS2 closing while images load prevents late mounting and releases owned i
   l.loadAsync = async url => { await gate; return original(url) }
   const root = new THREE.Group(), ctl = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: l })
   const opening = ctl.setConfig({ enabled: true }); await ctl.setConfig(null); release()
-  assert.equal(await opening, false); assert.equal(root.children.length, 0); assert.equal(l.state.disposed, 3)
+  assert.equal(await opening, false); assert.equal(root.children.length, 0); assert.equal(l.state.disposed, 4)
   ctl.dispose()
 })
 
@@ -45,11 +68,11 @@ test('VIS2 repeated entry/exit preserves host objects and cleans collisions and 
   const l = loader(), ctl = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: l, collision, canvasTex })
   for (let i = 0; i < 5; i++) {
     assert.equal(await ctl.setConfig({ enabled: true }), true)
-    assert.equal(registered.length, 12); assert.ok(ctl.summary().calls <= 10); assert.ok(ctl.summary().triangles < 28000)
+    assert.equal(registered.length, 12); assert.ok(ctl.summary().calls <= 12); assert.ok(ctl.summary().triangles < 28000)
     assert.equal(ctl.mapping.frontage.entrance.width, 4)
     await ctl.setConfig(null); assert.equal(root.children.length, 1); assert.equal(registered.length, 0)
   }
-  ctl.dispose(); ctl.dispose(); assert.equal(l.state.created, 15); assert.equal(l.state.disposed, 15); assert.equal(root.children[0].uuid, sentinel.uuid)
+  ctl.dispose(); ctl.dispose(); assert.equal(l.state.created, 20); assert.equal(l.state.disposed, 20); assert.equal(root.children[0].uuid, sentinel.uuid)
 })
 
 test('VIS2 public bar hook preserves closed B0 geometry and active seat IDs/positions', async () => {

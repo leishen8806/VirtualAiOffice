@@ -52,6 +52,24 @@
       "usage": "tinted woven seating"
     }
   ],
+  "brandAsset": {
+    "file": "assets/logo.png",
+    "bytes": 405899,
+    "sha256": "DC02C2EC81E1FEBC761660F44B5627C721D83408C89C0AE75DCC6DBC10EBC365",
+    "dimensions": [
+      979,
+      544
+    ],
+    "source": "Existing tracked project asset selected by the VIS2-O-LOGO addendum",
+    "licenseAsRecorded": "Unknown in the VIS2-O baseline record; treated as an approved existing project asset by the task assignment",
+    "usage": [
+      "bar fascia",
+      "reception desk",
+      "reception backdrop"
+    ],
+    "modified": false,
+    "replacementFallback": "Named placeholder slots when the image cannot load"
+  },
   "geometry": [
     {
       "file": "office-heart-banyan.js",

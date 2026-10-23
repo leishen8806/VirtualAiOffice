@@ -14,7 +14,7 @@ const camera = new THREE.PerspectiveCamera(42, 1, .1, 150)
 const groundMaterial = new THREE.MeshStandardMaterial({ color: '#E8DECD', roughness: .9 }), groundGeometry = new THREE.PlaneGeometry(24, 30), ground = new THREE.Mesh(groundGeometry, groundMaterial)
 ground.rotation.x = -Math.PI / 2; ground.position.set(2, -.04, -2); ground.receiveShadow = true; scene.add(ground)
 let legacy, controller, low = false, view = 'overview', disposed = false, enabled = false, probing = false, probeEpoch = 0
-const poses = Object.freeze({ overview: [[2, 25, 31], [2, .3, -2]], eye: [[2, 1.65, 14], [2, 1.7, -6]], bar: [[11, 7, 3], [2, 1.15, -6]], treeFront: [[2, 1.9, 2], [2, 2.1, -6]], treeSide: [[10, 3, -6], [2, 2, -6]] })
+const poses = Object.freeze({ overview: [[2, 25, 31], [2, .3, -2]], eye: [[2, 1.65, 14], [2, 1.7, -6]], reception: [[2, 2.1, 13.5], [2, 1.35, 8.1]], bar: [[11, 7, 3], [2, 1.15, -6]], barBrand: [[2, 1.7, 2.8], [2, .56, -2.47]], treeFront: [[2, 1.9, 2], [2, 2.1, -6]], treeSide: [[10, 3, -6], [2, 2, -6]] })
 function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t }
 function draw() {
   if (disposed || document.hidden) return

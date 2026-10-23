@@ -5,16 +5,21 @@ import { buildOfficeSamplePlants } from './plants.js'
 import { createSampleBatch } from './batch.js'
 import { officeVis2Enabled, loadOfficeVis2Assets } from './assets.js'
 import { buildOfficeVis2Frontage } from './frontage.js'
+import { buildOfficeBrandMarks } from './brand.js'
 
 // 只收拢样板资产自己创建的静态表面，保留小叶裁边着色器和家具实例。
 export function buildOfficeSampleZone(context) {
   const { THREE, root } = context
   if (!THREE || !root) throw new TypeError('buildOfficeSampleZone requires THREE and root')
   const group = new THREE.Group(); group.name = 'office-sample-zone'; root.add(group)
-  const modules = []; let merged, disposed = false
+  const modules = []; let merged, bar, foyer, floor, plants, brand, frontage, disposed = false
   const dispose = () => { if (disposed) return; disposed = true; merged?.dispose(); modules.slice().reverse().forEach(v => v.dispose()); group.removeFromParent() }
   try {
-    for (const build of [buildOfficeTeaBarSample, buildOfficeFoyerFurniture, buildOfficeFloorPattern, buildOfficeSamplePlants]) modules.push(build({ ...context, root: group }))
+    bar = buildOfficeTeaBarSample({ ...context, root: group })
+    foyer = buildOfficeFoyerFurniture({ ...context, root: group })
+    floor = buildOfficeFloorPattern({ ...context, root: group })
+    plants = buildOfficeSamplePlants({ ...context, root: group })
+    modules.push(bar, foyer, floor, plants)
     group.updateWorldMatrix(true, true)
     const inverse = group.matrixWorld.clone().invert(), parts = [], batch = createSampleBatch(THREE, context.assets)
     group.traverse(m => { if (m.isMesh && m.visible && (!m.isInstancedMesh || m.name.includes('concentric-rings'))) parts.push(m) })
@@ -29,14 +34,16 @@ export function buildOfficeSampleZone(context) {
     }
     merged = batch.build(group, 'sample-zone-static-surfaces')
     merged.mesh.castShadow = !context.low
-    modules.push(buildOfficeVis2Frontage({ ...context, root: group }))
+    brand = buildOfficeBrandMarks({ ...context, root: group })
+    frontage = buildOfficeVis2Frontage({ ...context, root: group })
+    modules.push(brand, frontage)
   } catch (error) { dispose(); throw error }
   const summary = () => {
     let calls = 0, triangles = 0
     group.traverse(m => { if (m.isMesh && m.visible) { calls++; triangles += (m.geometry.index?.count ?? m.geometry.attributes.position.count) / 3 * (m.isInstancedMesh ? m.count : 1) } })
-    return { calls, triangles, seats: modules[0].seats.length, sofas: 8, realStaff: 0, scope: 'tea-bar-and-foyer' }
+    return { calls, triangles, seats: bar.seats.length, sofas: 8, brandMarks: brand.marks.length, realStaff: 0, scope: 'tea-bar-and-foyer' }
   }
-  return { root: group, summary, seats: modules[0].seats, lounges: modules[0].lounges, colliders: modules[0].colliders, mapping: { foyer: modules[1].footprints, frontage: modules[4].mapping, plants: modules[3].placements.map(p => ({ ...p, radius: .5, height: 1.6 })), treePool: { ...context.layout.bar.center, radius: 1.05, height: .4 }, unchangedBarColliders: modules[0].colliders }, dispose }
+  return { root: group, summary, seats: bar.seats, lounges: bar.lounges, colliders: bar.colliders, mapping: { foyer: foyer.footprints, frontage: frontage.mapping, brandMarks: brand.marks, plants: plants.placements.map(p => ({ ...p, radius: .5, height: 1.6 })), treePool: { ...context.layout.bar.center, radius: 1.05, height: .4 }, unchangedBarColliders: bar.colliders }, dispose }
 }
 
 export function createOfficeVis2Controller(context) {

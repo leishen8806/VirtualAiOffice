@@ -144,6 +144,35 @@
       "radius": 1.05,
       "height": 0.4
     },
+    "brandMarks": [
+      {
+        "id": "bar-fascia",
+        "x": 3.1,
+        "y": 0.68,
+        "z": -2.472,
+        "width": 0.92,
+        "height": 0.5112155260469867,
+        "surface": "entrance-facing tea-bar fascia"
+      },
+      {
+        "id": "reception-desk",
+        "x": 2,
+        "y": 0.68,
+        "z": 9.526,
+        "width": 0.82,
+        "height": 0.4556486210418795,
+        "surface": "reception desk front"
+      },
+      {
+        "id": "reception-wall",
+        "x": 2,
+        "y": 1.7,
+        "z": 8.04,
+        "width": 1.45,
+        "height": 0.8057201225740551,
+        "surface": "reception backdrop"
+      }
+    ],
     "unchangedBarColliders": [
       {
         "id": "office2-bar-collision-0-0",
@@ -258,6 +287,18 @@
           -6
         ]
       ],
+      "reception": [
+        [
+          2,
+          2.1,
+          13.5
+        ],
+        [
+          2,
+          1.35,
+          8.1
+        ]
+      ],
       "bar": [
         [
           11,
@@ -268,6 +309,18 @@
           2,
           1.15,
           -6
+        ]
+      ],
+      "barBrand": [
+        [
+          2,
+          1.7,
+          2.8
+        ],
+        [
+          2,
+          0.56,
+          -2.47
         ]
       ],
       "treeFront": [
