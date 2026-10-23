@@ -77,18 +77,22 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   root.name = 'campus-root'
   const modules = new Map(), built = new Map(), skipped = []
   let merged = { removed: 0, added: 0 }, disposeMerged = () => {}
-  let lastFrame = null, frameHook = null, previousFrame = null
+  let lastFrame = null, frameHook = null, previousFrame = null, builtOnce = false
   const sourceEpoch = globalThis.performance.now()
   const now = () => Math.max(0, globalThis.performance.now() - sourceEpoch)
   const resetFrame = () => { lastFrame = null }
   const stopped = new Set()
   const onFrame = (dt, context = {}) => {
+    if (globalThis.document?.hidden || !root.visible) { resetFrame(); return }
+    for (let parent = root.parent; parent; parent = parent.parent) if (!parent.visible) { resetFrame(); return }
     for (const [name, value] of built) if (!stopped.has(name) && value.onFrame) {
       try { value.onFrame(dt, context) } catch { stopped.add(name) }
     }
   }
   const register = (name, factory) => { modules.set(name, factory); return root }
   const buildAll = (shared = {}) => {
+    if (builtOnce) return root
+    builtOnce = true
     scene.add(root)
     for (const [name, factory] of modules) {
       try { built.set(name, factory({ THREE, root, layout, now, ...shared }) || {}) }
@@ -115,6 +119,14 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
     globalThis.document?.removeEventListener('visibilitychange', resetFrame)
     disposeMerged(); for (const value of built.values()) value.dispose?.(); built.clear(); root.removeFromParent()
   }
+  const activate = () => {
+    root.visible = true
+    resetFrame()
+  }
+  const deactivate = () => {
+    root.visible = false
+    resetFrame()
+  }
   const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged, motion: built.get('motion')?.summary?.() || null })
-  return { root, register, buildAll, dispose, summary, onFrame }
+  return { root, register, buildAll, dispose, summary, onFrame, activate, deactivate }
 }

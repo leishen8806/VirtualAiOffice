@@ -1,0 +1,70 @@
+{
+  "task": "VIS2-T",
+  "capturedAt": "2026-10-23",
+  "repository": {
+    "root": "E:/VirtualAIOffice/vis2-t-integrator",
+    "origin": "git@github.com:leishen8806/VirtualAiOffice.git",
+    "branch": "vis2/terra-integration",
+    "b0": "9e8c4f99ea29166b173d40a762178b9933c972ca",
+    "remoteMainReference": "f88ebc4a54dd8441d846aaee8f9b93d79fe1e747",
+    "remoteMainAvailability": "not present in this shallow Office3D snapshot; no ancestry claim is made",
+    "sourceWorktree": "E:/VirtualAIOffice/office3d-git",
+    "sourceWorktreeStatus": "untracked .ocr-pilot/ retained and not copied"
+  },
+  "runtime": {
+    "sceneDirectory": "office3d",
+    "serviceEntrypoint": "office3d/server.mjs",
+    "browserEntrypoint": "office3d/index.html -> office3d/app.js",
+    "defaultPreviewUrl": "http://127.0.0.1:3200/",
+    "campusPreviewUrl": "http://127.0.0.1:3200/?campus=1",
+    "node": "v25.9.0",
+    "npm": "11.12.1",
+    "testCommand": "node --max-old-space-size=2048 --test --test-timeout=60000 tests/*.test.mjs",
+    "syntaxCommands": [
+      "node --check server.mjs",
+      "node --input-type=module --check < app.js"
+    ]
+  },
+  "rendering": {
+    "camera": {
+      "type": "PerspectiveCamera",
+      "desktopFov": 38,
+      "mobileFov": 60,
+      "near": 0.1,
+      "far": 6000
+    },
+    "quality": {
+      "default": "medium",
+      "wallDefault": "high",
+      "tiers": {
+        "low": { "dpr": 1, "fps": 30, "lights": 4 },
+        "medium": { "dpr": 1.25, "fps": 60, "lights": 8 },
+        "high": { "dpr": 1.5, "fps": 60, "lights": 18 }
+      }
+    },
+    "colorManagement": {
+      "toneMapping": "ACESFilmicToneMapping",
+      "exposure": 0.85,
+      "outputColorSpace": "SRGBColorSpace",
+      "fog": "dynamic weather fog"
+    }
+  },
+  "featureFlags": {
+    "officeConfig": "office3d/office-visual.json",
+    "campusConfig": "office3d/campus-visual.json",
+    "endpoint": "GET /visual-flags",
+    "default": "off",
+    "failureMode": "off"
+  },
+  "references": [
+    "E:/VirtualAIOffice/knowledge/项目/参考/智序小镇·DR仓配服务中心概念图.png",
+    "E:/VirtualAIOffice/knowledge/项目/参考/DR智慧仓配中心全景仪表盘6.0.png",
+    "E:/VirtualAIOffice/knowledge/项目/参考/dr-logistics-center-concept-prompt-v1.txt"
+  ],
+  "materials": {
+    "office": "office3d/assets/textures/office-v2/",
+    "campus": "office3d/assets/textures/dr-campus/",
+    "models": "office3d/assets/models/",
+    "ledger": "office3d/assets/ASSET_LEDGER.md"
+  }
+}

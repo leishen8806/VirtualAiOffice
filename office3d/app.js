@@ -13,6 +13,7 @@ import { buildWarehouseShell } from './warehouse-shell.js'
 import { createCampusRegistry } from './dr-campus-registry.js'
 import { campusModules } from './dr-campus-modules.js'
 import { hideCampusEnvironment } from './dr-campus-shell.js'
+import { loadVisualFlags } from './visual-flags.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -25,7 +26,8 @@ const POLL_MS = 3000
 // 大屏嵌入模式（?wall=1）：给 /wall 大屏页里的 iframe 用——隐藏所有面板和工具栏、镜头自动巡游、不弹窗；上层页面通过 window.__office.wallGo(区域) 切镜头
 const WALL_MODE = new URLSearchParams(location.search).has('wall')
 const FIXED_DPR = new URLSearchParams(location.search).has('fixeddpr') // 诊断用：关闭自适应分辨率（刷新后闪屏时，打开 /?fixeddpr=1 对比一下）
-const CAMPUS_MODE = new URLSearchParams(location.search).get('campus') === '1'
+const VISUAL_FLAGS = await loadVisualFlags()
+const CAMPUS_MODE = VISUAL_FLAGS.campus && new URLSearchParams(location.search).get('campus') === '1'
 if (WALL_MODE) document.addEventListener('DOMContentLoaded', () => document.body.classList.add('clean', 'wall'))
 const ROOM = { w: ENVELOPE.x1 - MAIN_FLOOR_X0, d: ENVELOPE.z1 - ENVELOPE.z0 }
 const BACK_Z = -ROOM.d / 2
@@ -314,7 +316,9 @@ try {
 }
 loadText('马上就好…', 1)
 const furnitureCollision = createFurnitureCollision()
-const officeFurnitureV2 = startOfficeV2({ THREE, scene, quality: qualityPolicy, materials: M, collision: furnitureCollision, canvasTex, A, placeFurniture, makeScreenTexture, floor, now: () => new Date().getTime() })
+const officeFurnitureV2 = VISUAL_FLAGS.officeV2
+  ? startOfficeV2({ THREE, scene, quality: qualityPolicy, materials: M, collision: furnitureCollision, canvasTex, A, placeFurniture, makeScreenTexture, floor, now: () => new Date().getTime() })
+  : null
 function furn(name, x, z, opt) {
   const f = placeFurniture(A, name, x, z, opt)
   scene.add(f.group)
@@ -2087,6 +2091,7 @@ window.__office.furnitureCollision = furnitureCollision
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.warehouseShell = warehouseShell
 window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal({ az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.visualFlags = Object.freeze({ ...VISUAL_FLAGS })
 window.__office.foyerSpec = foyerSceneSpec()
 window.__office.foyerPanels = () => Object.fromEntries([...foyerPanels].map(([id, panel]) => [id, { redraws: panel.redraws, signature: panel.signature, visible: panel.mesh.visible }]))
 window.__office.quality={get tier(){return qualityPolicy.tier},get metrics(){return {...qualityMetrics,dpr:renderer.getPixelRatio(),reason:qualityPolicy.reason,source:qualityPolicy.source,hidden:document.hidden}},select:q=>{if(qualityPolicy.select(q,qualityStorage))applyQuality()},summary:()=>sceneQuality.summary()}

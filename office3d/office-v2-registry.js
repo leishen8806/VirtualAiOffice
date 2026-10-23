@@ -127,6 +127,14 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout }) {
     built.clear(); root.removeFromParent()
     if (scene.userData.officeV2?.root === root) delete scene.userData.officeV2
   }
+  const activate = () => {
+    root.visible = true
+    resetFrame()
+  }
+  const deactivate = () => {
+    root.visible = false
+    resetFrame()
+  }
   const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged: { removed: merged.removed, added: merged.added } })
-  return { root, register, buildAll, dispose, summary, get, onFrame }
+  return { root, register, buildAll, dispose, summary, get, onFrame, activate, deactivate }
 }
