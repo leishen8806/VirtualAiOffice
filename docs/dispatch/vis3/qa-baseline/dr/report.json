@@ -1,0 +1,346 @@
+{
+  "sha": "e988a864b1804bc12b9ca8257e1bca156ce55574",
+  "generatedAt": "2026-10-23T06:51:19.812Z",
+  "env": {
+    "platform": "darwin",
+    "node": "v22.22.1",
+    "dpr": 1,
+    "viewport": "1280x720"
+  },
+  "scenes": {
+    "dr": {
+      "checks": [
+        {
+          "id": "dr-campus-built",
+          "ok": true,
+          "detail": "null"
+        },
+        {
+          "id": "dr-no-legacy-racks",
+          "ok": true
+        },
+        {
+          "id": "dr-new-rack-colors",
+          "ok": true,
+          "detail": "{\"oldBlue\":0,\"newBlue\":6048,\"orange\":4656}"
+        },
+        {
+          "id": "dr-labels-retained",
+          "ok": true
+        },
+        {
+          "id": "dr-film-dynamic",
+          "ok": true
+        },
+        {
+          "id": "dr-shuttle-moves-in-view",
+          "ok": true,
+          "detail": "z 4.85 → 4.753441177627254"
+        },
+        {
+          "id": "dr-no-writes",
+          "ok": true,
+          "detail": "writes=0"
+        },
+        {
+          "id": "dr-low-quality-built",
+          "ok": true,
+          "detail": "low 场景含 vis2-shuttle"
+        },
+        {
+          "id": "dr-motion-disabled",
+          "ok": true,
+          "detail": "campusMotion=0 z -6.85 → -6.85"
+        },
+        {
+          "id": "dr-lifecycle-no-duplicate-root",
+          "ok": true,
+          "detail": "[0,1,0,1,0,1,0,1]"
+        },
+        {
+          "id": "dr-lifecycle-canvas-stable",
+          "ok": true,
+          "detail": "[2]"
+        }
+      ],
+      "perf": {
+        "loadMs": 8,
+        "frames": {
+          "samples": 301,
+          "p50": 16.7,
+          "p95": 16.8,
+          "max": 16.8
+        },
+        "rendererInfo": {
+          "calls": 181,
+          "triangles": 122499,
+          "geometries": 324,
+          "textures": 52,
+          "dpr": 1
+        },
+        "gpu": {
+          "vendor": "Google Inc. (Apple)",
+          "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5, Unspecified Version)"
+        },
+        "canvasCount": 2,
+        "vis3": {
+          "raf": 238,
+          "rafActive": 1,
+          "intervals": 4,
+          "timeouts": 1,
+          "fetchCalls": [
+            "/visual-flags",
+            "http://127.0.0.1:59063/assets/models/furniture/desk.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/chairDesk.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/computerScreen.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/computerKeyboard.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/computerMouse.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/laptop.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/pottedPlant.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/plantSmall1.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/plantSmall2.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/bookcaseClosed.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/bookcaseOpen.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/books.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/lampRoundTable.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/lampSquareFloor.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/loungeSofa.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/loungeSofaLong.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/loungeChair.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/tableCoffee.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/rugRectangle.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/sideTable.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/trashcan.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/table.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/chairModernCushion.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/chairRounded.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/coatRack.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/speaker.glb",
+            "http://127.0.0.1:59063/assets/models/furniture/cabinetTelevision.glb",
+            "http://127.0.0.1:59063/assets/models/characters/Superhero_Male_FullBody.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/Superhero_Male_FullBody.bin",
+            "./assets/models/characters/tex/T_Hair_1_BaseColor.png",
+            "./assets/models/characters/tex/T_Hair_1_Normal.png",
+            "./assets/models/characters/tex/T_Eye_Brown.png",
+            "./assets/models/characters/tex/T_Eye_Normal.png",
+            "./assets/models/characters/tex/T_Superhero_Male_Dark.png",
+            "./assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+            "./assets/models/characters/tex/T_Superhero_Male_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/Superhero_Female_FullBody.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/Superhero_Female_FullBody.bin",
+            "./assets/models/characters/tex/T_Hair_2_BaseColor.png",
+            "./assets/models/characters/tex/T_Hair_2_Normal.png",
+            "./assets/models/characters/tex/T_Eye_Brown.png",
+            "./assets/models/characters/tex/T_Eye_Normal.png",
+            "./assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+            "./assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+            "./assets/models/characters/tex/T_Superhero_Female_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Beard.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Buns.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Buzzed.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Long.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_SimpleParted.gltf",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Buzzed.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Beard.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Buns.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_Long.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_2_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_2_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_SimpleParted.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+            "http://127.0.0.1:59063/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+            "./assets/models/characters/hair/../tex/T_Hair_1_BaseColor.png",
+            "./assets/models/characters/hair/../tex/T_Hair_1_Normal.png",
+            "http://127.0.0.1:59063/assets/models/anim/UAL1_Standard.glb",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_01/Male_Adult_01_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_02/Male_Adult_02_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_03/Male_Adult_03_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_04/Male_Adult_04_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_05/Male_Adult_05_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_06/Male_Adult_06_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_07/Male_Adult_07_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_08/Male_Adult_08_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_09/Male_Adult_09_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_10/Male_Adult_10_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_11/Male_Adult_11_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Male_Adult_12/Male_Adult_12_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_01/Female_Adult_01_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_02/Female_Adult_02_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_03/Female_Adult_03_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_04/Female_Adult_04_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_05/Female_Adult_05_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_06/Female_Adult_06_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_07/Female_Adult_07_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_08/Female_Adult_08_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_09/Female_Adult_09_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/Female_Adult_10/Female_Adult_10_facial.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_gestic_thoughtful.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_gestic_talk_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_walk_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_gestic_thoughtful.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_gestic_talk_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_walk_neutral_01.fbx",
+            "/state",
+            "/foyer",
+            "/wall/data",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_idle_look_around.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_idle_scratch_head.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_idle_touch_face.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_idle_yawn.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_table_breathe_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_chair_idle_relaxed_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_sit_chair_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_idle_look_around_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_idle_stretch_arms_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_drink_idle.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/m_cell_phone_textmessage.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_look_around.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_scratch_head.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_touch_face.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_yawn.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_breathe_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_table_idle_stretch_arms.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_chair_idle_relaxed_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_sit_chair_idle_neutral_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_idle_look_around_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_idle_stretch_arms_01.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_drink_idle.fbx",
+            "http://127.0.0.1:59063/assets/models/people/anim/f_cell_phone_textmessage.fbx",
+            "/state"
+          ]
+        }
+      },
+      "lifecycle": [
+        {
+          "round": 1,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 0
+        },
+        {
+          "round": 2,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 1
+        },
+        {
+          "round": 3,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 0
+        },
+        {
+          "round": 4,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 1
+        },
+        {
+          "round": 5,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 0
+        },
+        {
+          "round": 6,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 1
+        },
+        {
+          "round": 7,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 0
+        },
+        {
+          "round": 8,
+          "canvas": 2,
+          "geom": 14,
+          "tex": 2,
+          "roots": 1
+        }
+      ],
+      "requests": 275,
+      "mockWrites": 0,
+      "mockTotal": 155,
+      "pass": true
+    }
+  },
+  "browser": "156.0.8078.47",
+  "blockedNetwork": 4,
+  "blockedBrowser": 0,
+  "dr_checks": [
+    {
+      "id": "dr-campus-built",
+      "ok": true,
+      "detail": "null"
+    },
+    {
+      "id": "dr-no-legacy-racks",
+      "ok": true
+    },
+    {
+      "id": "dr-new-rack-colors",
+      "ok": true,
+      "detail": "{\"oldBlue\":0,\"newBlue\":6048,\"orange\":4656}"
+    },
+    {
+      "id": "dr-labels-retained",
+      "ok": true
+    },
+    {
+      "id": "dr-film-dynamic",
+      "ok": true
+    },
+    {
+      "id": "dr-shuttle-moves-in-view",
+      "ok": true,
+      "detail": "z 4.85 → 4.753441177627254"
+    },
+    {
+      "id": "dr-no-writes",
+      "ok": true,
+      "detail": "writes=0"
+    },
+    {
+      "id": "dr-low-quality-built",
+      "ok": true,
+      "detail": "low 场景含 vis2-shuttle"
+    },
+    {
+      "id": "dr-motion-disabled",
+      "ok": true,
+      "detail": "campusMotion=0 z -6.85 → -6.85"
+    },
+    {
+      "id": "dr-lifecycle-no-duplicate-root",
+      "ok": true,
+      "detail": "[0,1,0,1,0,1,0,1]"
+    },
+    {
+      "id": "dr-lifecycle-canvas-stable",
+      "ok": true,
+      "detail": "[2]"
+    }
+  ]
+}
