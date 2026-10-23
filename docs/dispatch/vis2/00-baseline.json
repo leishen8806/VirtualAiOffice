@@ -9,7 +9,13 @@
     "remoteMainReference": "f88ebc4a54dd8441d846aaee8f9b93d79fe1e747",
     "remoteMainAvailability": "not present in this shallow Office3D snapshot; no ancestry claim is made",
     "sourceWorktree": "E:/VirtualAIOffice/office3d-git",
-    "sourceWorktreeStatus": "untracked .ocr-pilot/ retained and not copied"
+    "sourceWorktreeStatus": "untracked .ocr-pilot/ retained and not copied",
+    "isolatedRuntimePrerequisites": {
+      "company-id.txt": "absent",
+      "lan.json": "absent",
+      "wall.json": "absent",
+      "names.json": "absent"
+    }
   },
   "runtime": {
     "sceneDirectory": "office3d",
