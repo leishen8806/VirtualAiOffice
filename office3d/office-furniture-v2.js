@@ -29,7 +29,7 @@ const meetingRegion = (layout, id) => {
   return region
 }
 
-const meetingScreen = (region) => {
+const roomScreen = (region) => {
   const door = region.doors?.[0]
   const side = door?.side === 'south' ? 'north' : door?.side === 'north' ? 'south' : door?.side === 'east' ? 'west' : 'east'
   const center = { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
@@ -54,7 +54,7 @@ export function officeFurnitureV2Spec(layout) {
     const center = layout.version === 2
       ? (meeting.id === 'A' ? { x: -12.5, z: -14 } : { x: -5.5, z: -14 })
       : { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
-    const room = { ...meeting, ...center, yaw: 0, screen: { ...meetingScreen(region), y: 2.4, w: 2, h: 1.125 } }
+    const room = { ...meeting, ...center, yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
     return { ...room, seats: room.round
     ? Array.from({ length: 6 }, (_, i) => { const angle = i * Math.PI / 3; return { room: room.id, x: room.x + Math.sin(angle) * 1.45, z: room.z + Math.cos(angle) * 1.45, yaw: angle, meeting: true } })
     : [...[-1.4, 0, 1.4].flatMap(dx => [{ room: room.id, x: room.x + dx, z: room.z - 1.15, yaw: Math.PI, meeting: true }, { room: room.id, x: room.x + dx, z: room.z + 1.15, yaw: 0, meeting: true }]), { room: room.id, x: room.x - 2.5, z: room.z, yaw: -Math.PI / 2, meeting: true }, { room: room.id, x: room.x + 2.5, z: room.z, yaw: Math.PI / 2, meeting: true }],
@@ -62,7 +62,11 @@ export function officeFurnitureV2Spec(layout) {
   })
   const boss = { desk: layout.boss.desk, chair: { x: layout.boss.desk.x, z: layout.boss.desk.z - 1, yaw: Math.PI }, stand: layout.boss.stand }
   // 会议桌沿南北方向，避开同房间内固定的老板桌。
-  const board = { ...layout.boardTable, w: 1.4, d: 3.6 }
+  const boardRegion = meetingRegion(layout, 'board')
+  const boardScreen = layout.version === 2
+    ? { x: -20, z: -17.72, yaw: 0, side: 'north', y: 2.4, w: 2, h: 1.125 }
+    : { ...roomScreen(boardRegion), y: 2.4, w: 2, h: 1.125 }
+  const board = { ...layout.boardTable, w: 1.4, d: 3.6, screen: boardScreen }
   const boardSeats = [...[-1.2, 0, 1.2].flatMap(dz => [{ x: board.x - 1.15, z: board.z + dz, yaw: -Math.PI / 2 }, { x: board.x + 1.15, z: board.z + dz, yaw: Math.PI / 2 }]), { x: board.x, z: board.z - 2.35, yaw: Math.PI }, { x: board.x, z: board.z + 2.35, yaw: 0 }]
   const shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
   return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen: { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 } }
@@ -160,7 +164,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
   for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
   const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.screen.x, room.screen.y, room.screen.z, room.screen.w, room.screen.h, `会议室 ${room.id}`, room.screen.yaw)]))
-  const boardScr = screen(-20, 2.4, -17.72, 2, 1.125, '董事会')
+  const boardScr = screen(spec.board.screen.x, spec.board.screen.y, spec.board.screen.z, spec.board.screen.w, spec.board.screen.h, '董事会', spec.board.screen.yaw)
   // v2 独立浅金细线，旧布局材质保持原样。
   if (layout.version === 2) {
     for (const part of buildOfficeShellV2Spec(layout).filter(part => part.kind === 'glass' && !part.locked)) {

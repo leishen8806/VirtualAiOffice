@@ -431,6 +431,15 @@ const V3_LAYOUT = {
   boss: { desk: { x: -16.5, z: -15 }, stand: { x: -16.5, z: -13 }, region: 'board' },
   boardTable: { x: -13.5, z: -15 },
   meetingSeats: { A: 8, B: 6 },
+  // V3 会议动线使用真实门洞之间的空隙和北侧公共转接带；不复用 V1 西翼入口。
+  meetingAccess: {
+    northZ: -11.25,
+    westSpineX: -17.25,
+    eastSpineX: 22.25,
+    westMiddleZ: -3.75,
+    eastMiddleZ: -2.25,
+    eastSouthZ: 4.25,
+  },
   regionFocus: Object.fromEntries([
     ...V3_REGIONS.map((region) => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
     ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
@@ -521,8 +530,83 @@ export const CAMPUS_FOCUS = freezeDeep({ label: 'DR 仓配服务中心（示意�
 export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: 24, z0: -28, z1: 44 })
 import { barColliders, barLounges } from './office-bar-geometry.js'
 
+const routePoint = (point) => ({ x: point.x, z: point.z })
+const roomCenter = (room) => ({ x: (room.x0 + room.x1) / 2, z: (room.z0 + room.z1) / 2 })
+const roomDoor = (room) => {
+  const door = room?.doors?.[0]
+  if (!door || !Number.isFinite(door.at) || !Number.isFinite(door.width) || door.width <= 0) throw new Error(`房间没有可用门洞: ${room?.id || 'unknown'}`)
+  return door
+}
+const doorInterior = (room, door = roomDoor(room)) => {
+  if (door.side === 'east') return { x: room.x1 - .6, z: door.at }
+  if (door.side === 'west') return { x: room.x0 + .6, z: door.at }
+  if (door.side === 'south') return { x: door.at, z: room.z1 - .6 }
+  return { x: door.at, z: room.z0 + .6 }
+}
+const doorExterior = (room, door = roomDoor(room)) => {
+  if (door.side === 'east') return { x: room.x1 + .75, z: door.at }
+  if (door.side === 'west') return { x: room.x0 - .75, z: door.at }
+  if (door.side === 'south') return { x: door.at, z: room.z1 + .75 }
+  return { x: door.at, z: room.z0 - .75 }
+}
+const dedupeRoute = (points) => points.filter((point, index, all) => !index || Math.hypot(point.x - all[index - 1].x, point.z - all[index - 1].z) > .001)
+
+function createOfficeV3Navigation(layout) {
+  const rooms = layout.regions, access = layout.meetingAccess
+  const legacy = LAYOUT_V1
+  if (!access || !Object.values(access).every(Number.isFinite)) throw new Error('缺少 V3 会议通行合同')
+  const findRoom = point => rooms.find(room => point.x > room.x0 && point.x < room.x1 && point.z > room.z0 && point.z < room.z1)
+  const exit = (home) => {
+    const room = findRoom(home)
+    if (!room) return [routePoint(home)]
+    const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
+    if (door.side === 'east' || door.side === 'west') {
+      const aisleZ = home.z < door.at ? room.z0 + .7 : room.z1 - .7
+      return dedupeRoute([routePoint(home), { x: inside.x, z: home.z }, { x: inside.x, z: aisleZ }, { x: inside.x, z: door.at }, outside])
+    }
+    const aisleX = home.x < door.at ? room.x0 + .7 : room.x1 - .7
+    return dedupeRoute([routePoint(home), { x: home.x, z: inside.z }, { x: aisleX, z: inside.z }, { x: door.at, z: inside.z }, outside])
+  }
+  const northAccess = (room, from) => {
+    if (room.x1 <= -8.5) {
+      const laneX = room.z1 <= -10.5 ? from.x : access.westSpineX
+      const middle = room.z1 <= -10.5 ? [] : [{ x: access.westSpineX, z: access.westMiddleZ }]
+      return dedupeRoute([...middle, { x: laneX, z: access.northZ }, { x: access.westSpineX, z: access.northZ }])
+    }
+    const south = room.z0 >= 5 ? [{ x: from.x, z: access.eastSouthZ }, { x: access.eastSpineX, z: access.eastSouthZ }] : []
+    const middle = room.z0 >= 5 ? [{ x: access.eastSpineX, z: access.eastMiddleZ }] : []
+    return dedupeRoute([...south, ...middle, { x: access.eastSpineX, z: access.northZ }])
+  }
+  const publicToMeetingDoor = (home, room) => {
+    const origin = findRoom(home), departure = exit(home), from = departure.at(-1)
+    if (!origin) throw new Error('V3 会议出发点不在已注册房间内')
+    const source = northAccess(origin, from)
+    return dedupeRoute([...departure, ...source, { x: access.westSpineX, z: access.northZ }, { x: access.westSpineX, z: roomDoor(room).at }])
+  }
+  const meetingInterior = (room, seat) => {
+    const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
+    const aisleZ = seat.z < center.z - .2 ? room.z0 + .65 : room.z1 - .65
+    return dedupeRoute([inside, { x: inside.x, z: aisleZ }, { x: seat.x, z: aisleZ }, routePoint(seat)])
+  }
+  const meetings = (home, seat) => {
+    const room = rooms.find(item => item.id === (seat?.room === 'A' ? 'review' : seat?.room === 'B' ? 'plan' : ''))
+    if (!room || !Number.isFinite(seat?.x) || !Number.isFinite(seat?.z)) throw new Error('无效 V3 会议座位')
+    return dedupeRoute([...publicToMeetingDoor(home, room), ...meetingInterior(room, seat)])
+  }
+  return {
+    roomAt: findRoom, standAt: home => ({ x: home.x, z: home.z }), officeExit: exit, meetingTrip: meetings,
+    // 本任务只替换会议路径；其它既有 V3 调用保持历史 fallback，避免扩大本次修复范围。
+    officeTrip: legacy.officeTrip, corridorPath: legacy.corridorPath, loungeTrip: legacy.loungeTrip, consumerTrip: legacy.consumerTrip, foyerTrip: legacy.foyerTrip, plazaTrip: legacy.plazaTrip, foyerReturnTrip: legacy.foyerReturnTrip, consumerAdvance: legacy.consumerAdvance, consumerDeparture: legacy.consumerDeparture,
+    ENTRANCE: layout.doors.south, CORRIDOR_X: layout.axis.x, BOARD_DOOR: doorExterior(rooms.find(room => room.id === 'board')), FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
+    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: access.eastMiddleZ },
+    LOUNGE_SEATS: barLounges(layout),
+    COFFEE_SEATS: layout.bar.seats.map(seat => ({ ...seat, yaw: Math.atan2(seat.x - layout.axis.x, seat.z - layout.bar.center.z), appX: seat.x })),
+  }
+}
+
 // 调用方持有选定版本；旧版导出和数据不参与重写。
 export function createOfficeNavigation(layout = LAYOUT_V1) {
+  if (layout.version === 3) return createOfficeV3Navigation(layout)
   if (layout.version !== 2) return LAYOUT_V1
   const rooms = layout.regions, center = layout.bar.center, corridors = layout.corridors
   const northZ = (corridors.north.z0 + corridors.north.z1) / 2, southZ = (corridors.south.z0 + corridors.south.z1) / 2
