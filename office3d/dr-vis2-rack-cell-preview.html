@@ -28,6 +28,7 @@
     import * as THREE from 'three'
     import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '/office-layout.js'
     import { buildVis2RackCell } from '/dr-vis2-rack-cell.js'
+    import { applyShuttleEvent, confirmedShuttleEvents, createDemoShuttleEventSource, initialShuttleState, shuttleFrame, shuttlePlan } from '/dr-campus-shuttle-logic.js'
     const layout = { campus: CAMPUS, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }
     const stage = document.getElementById('stage'), readout = document.getElementById('readout')
     const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true
@@ -46,15 +47,17 @@
     floor.rotation.x = -Math.PI / 2; floor.position.set(-128, -0.001, -2); floor.receiveShadow = true; scene.add(floor)
     const holder = new THREE.Group(); scene.add(holder)
     let cell = null, tier = 'high', moving = false, t0 = 0
+    const plan = shuttlePlan(layout) // 预览夹具：用旧模块真实的演示事件源 + 状态折叠 + shuttleFrame 驱动，状态词表与宿主一致（idle / pickup / delivery）
+    const frameAt = (ms) => { const source = createDemoShuttleEventSource({ now: () => ms, plan }), events = confirmedShuttleEvents(source.snapshot().events, ms, plan); return shuttleFrame(events.reduce((state, event) => applyShuttleEvent(state, event, plan), initialShuttleState(plan)), ms) }
     function build() { cell?.dispose(); cell = buildVis2RackCell({ THREE, root: holder, layout, quality: { tier } }); cell.group.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true } }); window.__vis2 = { cell, THREE, scene, camera, renderer, view }; readout.textContent = JSON.stringify(cell.summary()) }
     function view(pos, target) { controls.target.set(...target); const d = new THREE.Vector3(pos[0] - target[0], pos[1] - target[1], pos[2] - target[2]); controls.r = d.length(); controls.el = Math.asin(d.y / controls.r); controls.az = Math.atan2(d.x, d.z); controls.update() }
     const views = { over: [[-186, 34, 40], [-128, 1, -1]], rack: [[-160, 10, 22], [-141, 2, -2]], shuttle: [[-154, 4, 12], [-146, 0.6, 0]], aisle: [[-150, 1.7, 12], [-137, 1.8, -4]] }
     for (const [id, key] of [['v-over', 'over'], ['v-rack', 'rack'], ['v-shuttle', 'shuttle'], ['v-aisle', 'aisle']]) document.getElementById(id).onclick = () => view(...views[key])
-    document.getElementById('shuttle-move').onclick = () => { moving = !moving; t0 = performance.now(); document.getElementById('shuttle-move').textContent = moving ? '穿梭机移动 ■' : '穿梭机移动 ▶'; if (!moving) cell.setShuttle({ z: -1, lift: 0 }) }
+    document.getElementById('shuttle-move').onclick = () => { moving = !moving; t0 = performance.now(); document.getElementById('shuttle-move').textContent = moving ? '穿梭机移动 ■' : '穿梭机移动 ▶'; if (!moving) cell.setShuttle({ z: plan.slots[0].z, lift: 0, carrying: false, occupied: [true, false, true], status: 'idle' }) }
     document.getElementById('quality').onclick = (event) => { tier = tier === 'high' ? 'low' : 'high'; event.target.textContent = `画质：${tier === 'high' ? '高' : '低'}`; build() }
     function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }
     addEventListener('resize', resize); resize(); build(); view(...views.over)
-    renderer.setAnimationLoop(() => { if (moving) { const s = (performance.now() - t0) / 1000, k = (Math.sin(s * 0.5) + 1) / 2; cell.setShuttle({ z: -6.6 + k * 11.2, lift: k > 0.85 ? 0.12 : 0, status: 'moving' }) } renderer.render(scene, camera) })
+    renderer.setAnimationLoop(() => { if (moving) { const frame = frameAt(performance.now() - t0); cell.setShuttle({ z: frame.position, lift: frame.lift, carrying: frame.carrying, occupied: frame.occupied, status: frame.status }) } renderer.render(scene, camera) })
   </script>
 </body>
 </html>
