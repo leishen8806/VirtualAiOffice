@@ -13,16 +13,30 @@ import { createSceneQuality } from '../quality.js'
 import { mergeOfficeStatic } from '../office-v2-registry.js'
 import { buildOfficePreviewContext } from '../office-vis2/preview-context.js'
 import { buildOfficeCompletionVisual } from '../office-vis2/completion.js'
+import { buildOfficeFoyerFurniture } from '../office-vis2/foyer.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
+const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
+
+test('VIS2 source hashing canonicalizes checkout newlines without hiding source changes', () => {
+  const lf = 'export const example = 1\n// 中文\n', crlf = lf.replace(/\n/g, '\r\n')
+  assert.equal(sourceHash(lf), sourceHash(crlf))
+  assert.notEqual(sourceHash(lf.replace('= 1', '= 2')), sourceHash(lf))
+  assert.notEqual(sourceHash(lf + '\n'), sourceHash(lf), 'trailing content is not silently trimmed')
+})
 
 test('VIS2 manifest hashes match tracked geometry, textures and brand asset', async () => {
   const manifest = JSON.parse(await readFile(new URL('../office-vis2/MANIFEST.json', import.meta.url), 'utf8'))
-  for (const entry of [...manifest.geometry, ...manifest.textures, manifest.brandAsset]) {
-    const url = new URL(entry.file.startsWith('office-vis2/') || entry.file.startsWith('assets/') ? '../' + entry.file : '../' + entry.file, import.meta.url)
-    const actual = createHash('sha256').update(await readFile(url)).digest('hex').toUpperCase()
-    assert.equal(entry.sha256, actual, entry.file)
+  for (const entry of manifest.geometry) {
+    const source = await readFile(new URL('../' + entry.file, import.meta.url), 'utf8'), lf = source.replace(/\r\n/g, '\n')
+    assert.equal(entry.sha256, sourceHash(lf), entry.file + ' LF checkout')
+    assert.equal(entry.sha256, sourceHash(lf.replace(/\n/g, '\r\n')), entry.file + ' CRLF checkout')
+    assert.notEqual(entry.sha256, sourceHash(lf + '\n// source mutation'), entry.file + ' rejects content change')
+  }
+  for (const entry of [...manifest.textures, manifest.brandAsset]) {
+    assert.equal(entry.sha256, sha256(await readFile(new URL('../' + entry.file, import.meta.url))), entry.file)
   }
 })
 
@@ -98,15 +112,38 @@ test('VIS2 brand marks follow the curved fascia without trim penetration and pre
   marks.dispose(); marks.dispose(); assert.equal(released, 2)
 })
 
-test('VIS2 reception labels clear the brand wall and construction failure releases mounted resources', async () => {
+test('VIS2 reception lettering and brand backing attach to the actual grille within its boundaries', async () => {
   const root = new THREE.Group(), ctl = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: loader(), canvasTex })
   assert.equal(await ctl.setConfig({ enabled: true }), true)
-  const wall = ctl.mapping.brandMarks.find(m => m.id === 'reception-wall'), label = ctl.root.getObjectByName('vis2-reception-wayfinding')
+  const foyer = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), front = LAYOUT_V3.frontDesk
+  foyer.root.updateMatrixWorld(true); root.updateMatrixWorld(true)
+  const solid = foyer.root.getObjectByName('foyer-reception-coffee-tables'), slatX = front.x0 + .5 + 7 * (front.x1 - front.x0 - 1) / 13
+  const hit = new THREE.Raycaster(new THREE.Vector3(slatX, 2.2, front.z1 + 1), new THREE.Vector3(0, 0, -1)).intersectObject(solid)[0]
+  assert.ok(hit, 'ray samples the real grille triangles, not a repeated target constant')
+  const label = ctl.root.getObjectByName('vis2-reception-wayfinding'), bounds = new THREE.Box3().setFromObject(label)
+  const points = solid.geometry.attributes.position, grillePoints = Array.from({ length: points.count }, (_, i) => i).filter(i => Math.abs(points.getZ(i) - hit.point.z) < 1e-5)
+  const grilleTop = Math.max(...grillePoints.map(i => points.getY(i)))
+  assert.ok(bounds.min.z - hit.point.z >= .001 && bounds.max.z - hit.point.z <= .003, 'lettering is 1–3 mm in front of the visible grille')
+  assert.ok(bounds.min.y >= 0 && bounds.max.y <= grilleTop - .005, 'entire plane remains below architectural top')
+  assert.ok(bounds.min.x >= foyer.footprints.backdrop.x0 && bounds.max.x <= foyer.footprints.backdrop.x1)
+  const normal = new THREE.Vector3().fromBufferAttribute(label.geometry.attributes.normal, 0).transformDirection(label.matrixWorld)
+  assert.ok(normal.dot(hit.face.normal) > .9999, 'front face points toward the entrance, parallel to grille')
   const backing = ctl.root.getObjectByName('office-vis2-brushed-metal-brand-backing').geometry.attributes.position
-  const wallTop = Math.max(...Array.from({ length: backing.count }, (_, i) => backing.getY(i)).filter(y => y > 1.5))
-  assert.ok(label.position.y - label.geometry.parameters.height / 2 > wallTop + .025, 'text clears actual background plate')
-  assert.ok(label.position.z > wall.z + .05, 'text remains in front of panel')
-  ctl.dispose()
+  const wallPoints = Array.from({ length: backing.count }, (_, i) => i).filter(i => backing.getY(i) > 1.05)
+  const backZ = Math.min(...wallPoints.map(i => backing.getZ(i))), frontZ = Math.max(...wallPoints.map(i => backing.getZ(i)))
+  assert.ok(backZ - hit.point.z >= .001 && backZ - hit.point.z <= .003, 'actual backing rear clears grille by 1–3 mm')
+  assert.ok(bounds.min.y > Math.max(...wallPoints.map(i => backing.getY(i))) + .01, 'lettering and logo backplate do not overlap')
+  const logos = ctl.root.getObjectByName('office-vis2-approved-logo-marks'), lp = logos.geometry.attributes.position, ln = logos.geometry.attributes.normal
+  const logoPoints = Array.from({ length: lp.count }, (_, i) => i).filter(i => lp.getY(i) > 1.05)
+  for (const i of logoPoints) {
+    assert.ok(lp.getZ(i) - frontZ > .0005 && lp.getZ(i) - frontZ < .0015, 'brand plane clears backing front by 1 mm')
+    assert.ok(ln.getZ(i) > .9999, 'brand faces the entrance')
+  }
+  ctl.dispose(); foyer.dispose()
+})
+
+test('VIS2 construction failure releases mounted resources', async () => {
+  const root = new THREE.Group()
   const allocated = new Set(), released = new Set(), registered = new Set()
   const failing = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: loader(), collision: { add(v) { registered.add(v) }, remove(v) { registered.delete(v) } }, canvasTex() {
     root.traverse(mesh => { if (mesh.isMesh) for (const value of [mesh.geometry, ...[mesh.material].flat()]) { allocated.add(value.uuid); value.addEventListener('dispose', () => released.add(value.uuid)) } })

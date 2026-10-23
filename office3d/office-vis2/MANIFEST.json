@@ -81,7 +81,7 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "24B4D314C3F7B17C4554461E13D481F8E02580CCFCCF540FE1E0C722DFEBD1E5",
+      "sha256": "197059F5F94249B0BA8BD2E7A6D62587EBBAB6F35E64771C9E7465F61319676C",
       "source": "Existing B0 procedural asset, reused unchanged",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -95,7 +95,7 @@
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "9CA1CCFD32F9510D36299752DB3045FDCD0F113990E193DF822DCE048E498B4F",
+      "sha256": "E5FC06CBF24FA071C8F448CE442C7F8143C1200B768B9601F725C1137CA9DC36",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -109,21 +109,21 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "0D9FB61696D339CC51271A815D73E986E10023E4EAC612EDCE60D841B138DA27",
+      "sha256": "345739376E375FB94B91A5E89FF01AA5249DA5708AAE0A953CB23CA7E57E0D37",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/brand.js",
-      "sha256": "D79B624C1CCA897D6350030343CE8DF9F19C36E207AC96CD034583FF83EC1F79",
+      "sha256": "332226385FB9987C662A14FAC72F30204DE37C388830B6C51C3F591792FEC27E",
       "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
       "license": "Repository MIT for the source code; logo provenance remains recorded separately",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/floor.js",
-      "sha256": "B5FE1477EFABFDC8539A8C7FC9E0234C7C6D68E6B51513DD895386A254547C10",
+      "sha256": "1E1505E544A6E2BFB073A7DB37DD7EE164078A5AD23CE359960A28FF842052BA",
       "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -144,5 +144,9 @@
     "references/office-target.png",
     "references/office-current.png",
     "asset-intake/gpt-textures/office"
-  ]
+  ],
+  "hashPolicy": {
+    "geometry": "UTF-8 source, CRLF replaced with LF, no other normalization; BOM and final newline preserved",
+    "texturesAndBrand": "raw file bytes"
+  }
 }

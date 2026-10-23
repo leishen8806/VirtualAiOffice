@@ -1,4 +1,6 @@
 // Office-only brand plaques. The shared scene loader remains responsible for feature gating.
+import { receptionBackdrop } from './foyer.js'
+
 function curvedPanel(THREE, center, radius, width, height, y, yaw, depth = 0) {
   const positions = [], uvs = [], indices = [], segments = 20, half = width / (2 * radius)
   const point = (angle, elevation, r) => [center.x + Math.sin(angle) * r, elevation, center.z + Math.cos(angle) * r]
@@ -51,10 +53,12 @@ function joinGeometry(THREE, parts) {
 export function buildOfficeBrandMarks({ THREE, root, layout, assets, canvasTex } = {}) {
   if (!THREE || !root || !layout) throw new TypeError('buildOfficeBrandMarks requires THREE, root and layout')
   const center = layout.bar.center, front = layout.frontDesk, barRadius = layout.bar.radius, angle = Math.asin(1.1 / barRadius)
+  const grille = receptionBackdrop(front).grille
   const marks = [
     { id: 'bar-fascia', x: center.x + Math.sin(angle) * (barRadius + .06), y: .50, z: center.z + Math.cos(angle) * (barRadius + .06), width: .92, yaw: angle },
     { id: 'reception-desk', x: front.center.x, y: .68, z: front.z1 + .026, width: .82, yaw: 0 },
-    { id: 'reception-wall', x: front.center.x, y: 1.7, z: front.z0 - .06, width: 1.45, yaw: 0 },
+    // 背板厚 35 mm，背面离格栅 2 mm，标识面离背板正面 1 mm。
+    { id: 'reception-wall', x: front.center.x, y: 1.65, z: grille.faceZ + .002 + .035 + .001, width: 1.45, yaw: 0, backingOffset: .0185 },
   ].map(mark => ({ ...mark, height: mark.width / (979 / 544) }))
   const group = new THREE.Group(); group.name = 'office-vis2-brand-marks'; root.add(group)
   const backingMaterial = new THREE.MeshStandardMaterial({ color: '#B89B64', metalness: .72, roughness: .42, emissive: '#7a5827', emissiveIntensity: .16 })
@@ -70,7 +74,7 @@ export function buildOfficeBrandMarks({ THREE, root, layout, assets, canvasTex }
   const backingBarVertices = backingParts[0].geometry.index.count, logoBarVertices = logoParts[0].geometry.index.count
   const helper = new THREE.Object3D()
   for (const mark of marks.slice(1)) {
-    helper.position.set(mark.x, mark.y, mark.z - .026); helper.rotation.y = 0; helper.scale.set(mark.width + .16, mark.height + .14, .035); helper.updateMatrix()
+    helper.position.set(mark.x, mark.y, mark.z - (mark.backingOffset ?? .026)); helper.rotation.y = 0; helper.scale.set(mark.width + .16, mark.height + .14, .035); helper.updateMatrix()
     backingParts.push({ geometry: new THREE.BoxGeometry(1, 1, 1), matrix: helper.matrix.clone() })
     helper.position.z = mark.z; helper.scale.set(mark.width, mark.height, 1); helper.updateMatrix()
     logoParts.push({ geometry: new THREE.PlaneGeometry(1, 1), matrix: helper.matrix.clone() })
