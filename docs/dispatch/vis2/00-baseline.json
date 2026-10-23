@@ -55,6 +55,28 @@
       "fog": "dynamic weather fog"
     }
   },
+  "performance": {
+    "measurementState": "blocked: isolated runtime prerequisites are absent, so no fixed-device browser measurement is claimed",
+    "requiredRecord": [
+      "device and GPU",
+      "browser version",
+      "viewport and DPR",
+      "camera goal",
+      "feature flag state",
+      "render.calls and render.triangles"
+    ],
+    "candidateBudgets": {
+      "officeVisual": {
+        "high": { "additionalCallsMax": 12, "additionalTrianglesMax": 25000 },
+        "low": { "additionalCallsMax": 4, "additionalTrianglesMax": 8000 }
+      },
+      "campusVisual": {
+        "additionalCallsMax": 30,
+        "additionalTrianglesMax": 60000,
+        "source": "approved S2-17 sample-zone budget"
+      }
+    }
+  },
   "featureFlags": {
     "officeConfig": "office3d/office-visual.json",
     "campusConfig": "office3d/campus-visual.json",
