@@ -11,10 +11,12 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
   const group = new THREE.Group(); group.name = 'office3-r3-foyer-furniture'
   const front = layout.frontDesk, bar = layout.serviceBar, sofa = layout.waitingArc, batch = createSampleBatch(THREE, assets)
   const box = (w, h, d, tint, x, y, z, rough = .7, metal = 0, grain = '') => batch.add(new THREE.BoxGeometry(w, h, d), tint, [x, y, z], 0, rough, metal, grain)
+  let counterVertices = 0
   const counter = (bounds, height, tint, bottom) => {
     const w = bounds.x1 - bounds.x0, d = bounds.z1 - bounds.z0, shape = new THREE.Shape()
     shape.moveTo(-w / 2, -d / 2); shape.lineTo(w / 2, -d / 2); shape.quadraticCurveTo(w / 2, d / 2, 0, d / 2); shape.quadraticCurveTo(-w / 2, d / 2, -w / 2, -d / 2)
     const g = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false, curveSegments: 20 }); g.rotateX(-Math.PI / 2); g.rotateY(Math.PI)
+    counterVertices += g.attributes.position.count
     batch.add(g, tint, [bounds.center.x, bottom, bounds.center.z], 0, bottom > 1 ? .4 : .65, tint === '#B89B64' ? .65 : 0, bottom > 1 ? 'stone' : '')
   }
   // 前台保持原边界，以弧面台身、薄台面和香槟金腰线形成接待台轮廓。
@@ -53,6 +55,14 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
   batch.add(new THREE.CylinderGeometry(.43, .43, .045, 24), '#C9A57A', [seatCenter.x, .46, seatCenter.z], 0, .6, 0, 'wood')
   batch.add(new THREE.CylinderGeometry(.2, .27, .4, 16), '#D9D3C6', [seatCenter.x, .23, seatCenter.z], 0, .8)
   const fixed = batch.build(group, 'foyer-reception-coffee-tables')
+  const p = fixed.mesh.geometry.attributes.position, n = fixed.mesh.geometry.attributes.normal, normal = new THREE.Vector3()
+  // 合批生成原 UV 后才平滑前四段台身的曲面，保留台面/背面硬边及贴图方向。
+  for (let i = 0; i < counterVertices; i++) if (Math.abs(n.getY(i)) < .001 && n.getZ(i) > 0) {
+    const x = p.getX(i) - front.center.x, w = front.x1 - front.x0, d = front.z1 - front.z0
+    const t = Math.sqrt(Math.max(0, 1 - 2 * Math.abs(x) / w))
+    normal.set(Math.sign(x) * 2 * d * (1 - t), 0, w * t).normalize()
+    n.setXYZ(i, normal.x, normal.y, normal.z)
+  }
   const upholstery = createSampleBatch(THREE, assets)
   const arc = (inner, outer, y, height, tint, rough) => {
     const shape = new THREE.Shape(), a0 = .18 * Math.PI, a1 = .82 * Math.PI

@@ -23,6 +23,26 @@ const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRe
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
 
+test('Q-V1 reception curve has continuous outward normals while caps stay flat', () => {
+  const value = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), f = LAYOUT_V3.frontDesk
+  const g = value.root.getObjectByName('foyer-reception-coffee-tables').geometry, p = g.attributes.position, n = g.attributes.normal
+  let curved = 0, caps = 0
+  try {
+    for (let i = 0; i < p.count; i++) {
+      if (![.215, 1.1].some(y => Math.abs(p.getY(i) - y) < 1e-6) || p.getX(i) < f.x0 || p.getX(i) > f.x1 || p.getZ(i) < f.z0 || p.getZ(i) > f.z1) continue
+      const normal = new THREE.Vector3().fromBufferAttribute(n, i)
+      if (Math.abs(normal.y) > .9) { assert.ok(Math.abs(normal.y) > .99999); caps++; continue }
+      if (normal.z <= .001) continue
+      const x = p.getX(i) - f.center.x, t = Math.sqrt(Math.max(0, 1 - 2 * Math.abs(x) / (f.x1 - f.x0)))
+      const expected = new THREE.Vector3(Math.sign(x) * 2 * (f.z1 - f.z0) * (1 - t), 0, (f.x1 - f.x0) * t).normalize()
+      assert.ok(normal.distanceTo(expected) < .0001, 'each duplicated curve vertex uses the same analytic normal')
+      curved++
+    }
+    assert.ok(curved >= 200, 'actual reception curved sides sampled')
+    assert.ok(caps >= 100, 'top and bottom hard edges retained')
+  } finally { value.dispose() }
+})
+
 test('Q-V1 cabinet seams clear actual faceted inner-wall triangles in both quality tiers', () => {
   for (const low of [false, true]) {
     const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3, low })
