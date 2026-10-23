@@ -20,7 +20,7 @@
 <body>
   <header>
     <div><h1>调度中控室 + 接待展示 · 样板 <span class="tag">组件预览，尚未正式接入</span></h1><p>运行指标来自预览页喂入的既有演示快照（dr-demo-snapshot.js）· 地面与灯光仅为预览夹具 · 拖动旋转 / 滚轮缩放</p></div>
-    <div class="tools"><button id="v-front">中控 · 正面</button><button id="v-oblique">中控 · 斜侧</button><button id="v-back">中控 · 从后向东看仓储</button><button id="v-reception">接待台</button><button id="v-showcase">展示墙</button><button id="advance">快照推进 ▶</button><button id="quality">画质：高</button></div>
+    <div class="tools"><button id="v-front">中控 · 正面</button><button id="v-oblique">中控 · 斜侧</button><button id="v-back">中控 · 从后向东看仓储</button><button id="v-reception">接待台</button><button id="v-showcase">展示墙</button><button id="v-lobby">前厅看展示墙</button><button id="v-interior">室内总览</button><button id="brand">品牌：素材</button><button id="advance">快照推进 ▶</button><button id="quality">画质：高</button></div>
   </header>
   <div id="stage"></div>
   <footer><p id="readout" role="status">准备…</p></footer>
@@ -47,12 +47,17 @@
     const holder = new THREE.Group(); scene.add(holder)
     // 宿主提供的 canvasTex：与 app.js 同签名 canvasTex(w, h, draw)，draw 收到 (ctx2d, w, h)
     const canvasTex = (w, h, draw) => { const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; draw(canvas.getContext('2d'), w, h); const t = new THREE.CanvasTexture(canvas); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t }
+    // 已批准的品牌素材（assets/logo.png 完整标识、assets/logo-mark.png 图标）由预览页加载后传入；构件自己不加载任何图片
+    const loadImage = (src) => new Promise((resolve) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = () => resolve(null); image.src = src })
+    const logos = { full: await loadImage('/assets/logo.png'), mark: await loadImage('/assets/logo-mark.png') }
+    let useAssets = true
     let suite = null, tier = 'high', playing = false, t0 = performance.now(), lastTick = -1
     const snapshotAt = (ms) => demoSnapshotAt(DEMO_BASE_SNAPSHOT, ms)
-    function build() { suite?.dispose(); suite = buildVis2DispatchSuite({ THREE, root: holder, layout, quality: { tier }, canvasTex, snapshot: snapshotAt(0) }); window.__vis2b = { suite, THREE, scene, camera, renderer, view, snapshotAt }; readout.textContent = JSON.stringify(suite.summary()) }
+    function build() { suite?.dispose(); suite = buildVis2DispatchSuite({ THREE, root: holder, layout, quality: { tier }, canvasTex, snapshot: snapshotAt(0), logo: useAssets ? logos : null }); window.__vis2b = { suite, THREE, scene, camera, renderer, view, snapshotAt }; readout.textContent = JSON.stringify(suite.summary()) }
     function view(pos, target) { controls.target.set(...target); const d = new THREE.Vector3(pos[0] - target[0], pos[1] - target[1], pos[2] - target[2]); controls.r = d.length(); controls.el = Math.asin(d.y / controls.r); controls.az = Math.atan2(d.x, d.z); controls.update() }
-    const views = { front: [[-158.5, 1.8, 8], [-167.7, 2.1, 8]], oblique: [[-156.2, 3.4, 13.2], [-165, 1.4, 6.5]], back: [[-165, 1.7, 8], [-150, 1.8, 8]], reception: [[-161, 2.6, 29.6], [-161.5, 1.5, 23.8]], showcase: [[-141, 2.6, 28.8], [-142, 1.9, 20.5]] }
-    for (const [id, key] of [['v-front', 'front'], ['v-oblique', 'oblique'], ['v-back', 'back'], ['v-reception', 'reception'], ['v-showcase', 'showcase']]) document.getElementById(id).onclick = () => view(...views[key])
+    const views = { front: [[-158.5, 1.8, 8], [-167.7, 2.1, 8]], oblique: [[-156.2, 3.4, 13.2], [-165, 1.4, 6.5]], back: [[-165, 1.7, 8], [-150, 1.8, 8]], reception: [[-161, 2.6, 29.6], [-161.5, 1.5, 23.8]], showcase: [[-141, 2.6, 28.8], [-142, 1.9, 20.5]], lobby: [[-164.5, 2.0, 28.2], [-142, 2.1, 20.6]], interior: [[-176, 12, 40], [-150, 1.5, 22]] }
+    for (const [id, key] of [['v-front', 'front'], ['v-oblique', 'oblique'], ['v-back', 'back'], ['v-reception', 'reception'], ['v-showcase', 'showcase'], ['v-lobby', 'lobby'], ['v-interior', 'interior']]) document.getElementById(id).onclick = () => view(...views[key])
+    document.getElementById('brand').onclick = (e) => { useAssets = !useAssets; suite.setLogo(useAssets ? logos : null); e.target.textContent = `品牌：${useAssets ? '素材' : '占位'}`; readout.textContent = JSON.stringify(suite.summary()) }
     document.getElementById('advance').onclick = (e) => { playing = !playing; t0 = performance.now(); e.target.textContent = playing ? '快照推进 ■' : '快照推进 ▶' }
     document.getElementById('quality').onclick = (e) => { tier = tier === 'high' ? 'low' : 'high'; e.target.textContent = `画质：${tier === 'high' ? '高' : '低'}`; build() }
     function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }

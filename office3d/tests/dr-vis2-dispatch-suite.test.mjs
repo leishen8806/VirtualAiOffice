@@ -108,7 +108,7 @@ test('works inside the campus registry: glass and glow keep their own materials,
 
 test('quality low is lighter, and budgets hold', () => {
   const high = build().suite.summary(), low = build({ quality: { tier: 'low' } }).suite.summary()
-  assert.ok(high.drawCalls <= 9 && high.triangles <= 12000, `high ${high.triangles}`)
+  assert.ok(high.drawCalls <= 11 && high.triangles <= 12000, `high ${high.triangles}`)
   assert.ok(low.triangles < high.triangles)
 })
 
@@ -129,4 +129,71 @@ test('replacement list names real legacy objects; the module has no simulation e
   for (const forbidden of ['requestAnimationFrame', 'setInterval', 'setTimeout', 'Math.random', 'Date.now', 'performance.now', 'fetch(', 'innerHTML', 'WebGLRenderer', 'localStorage']) assert.equal(source.includes(forbidden), false, forbidden)
   const imports = [...source.matchAll(/^import .* from '(.+)'$/gm)].map((match) => match[1]).sort()
   assert.deepEqual(imports, ['./dr-cambodia-outline.js', './dr-console-data.js'], 'no dependency on the demo event source or on A')
+})
+
+// ———————————————— B1：品牌标识 ————————————————
+import { VIS2B_BRAND, containRect, drawBrandAtlas } from '../dr-vis2-dispatch-suite.js'
+
+const fakeImage = (w, h) => ({ naturalWidth: w, width: w, naturalHeight: h, height: h })
+const drawArgs = (ctx) => ctx.calls.filter((c) => c === 'drawImage').length
+// 带参数记录的桩：捕获 drawImage 的实参
+const stubWithImages = () => {
+  const texts = [], images = [], calls = []
+  const ctx = new Proxy({ texts, images, calls }, {
+    get: (t, key) => (key === 'texts' || key === 'images' || key === 'calls' ? t[key] : key === 'fillText' ? (value) => { texts.push(String(value)) } : key === 'drawImage' ? (...args) => { images.push(args); calls.push('drawImage') } : () => { calls.push(String(key)) }),
+    set: () => true,
+  })
+  return ctx
+}
+
+test('brand atlas: approved images are drawn without stretching, with the shop name on the wall panel', () => {
+  const ctx = stubWithImages(), full = fakeImage(979, 544), mark = fakeImage(313, 390)
+  drawBrandAtlas(ctx, 2048, 1024, { full, mark })
+  assert.equal(ctx.images.length, 2)
+  for (const [image, dx, dy, dw, dh] of ctx.images) assert.ok(Math.abs(dw / dh - image.naturalWidth / image.naturalHeight) < 1e-9, 'aspect ratio preserved')
+  assert.ok(ctx.texts.includes(VIS2B_BRAND.name) && VIS2B_BRAND.name === 'DR 仓配服务中心')
+  const wall = VIS2B_BRAND.wallTile, [, x, y, w, h] = ctx.images[0]
+  assert.ok(x >= wall.x && y >= wall.y && x + w <= wall.x + wall.w && y + h <= wall.y + wall.h, 'full logo stays inside the wall tile')
+  const fascia = VIS2B_BRAND.fasciaTile, [, fx, fy, fw, fh] = ctx.images[1]
+  assert.ok(fx >= fascia.x && fy >= fascia.y && fx + fw <= fascia.x + fascia.w && fy + fh <= fascia.y + fascia.h, 'mark stays inside the fascia tile')
+})
+
+test('brand atlas: without assets an original placeholder logo is drawn and the name is still shown', () => {
+  const ctx = stubWithImages(); drawBrandAtlas(ctx, 2048, 1024, null)
+  assert.equal(ctx.images.length, 0); assert.ok(ctx.texts.filter((t) => t === 'DR').length >= 2, 'placeholder monogram on both tiles')
+  assert.ok(ctx.texts.includes(VIS2B_BRAND.name)); assert.equal(containRect({}, 0, 0, 10, 10), null)
+})
+
+test('brand: logo is large on the showcase wall and on the desk fascia, clear of every niche and inside the wall', () => {
+  const { suite } = build({ logo: { full: fakeImage(979, 544), mark: fakeImage(313, 390) } }), b = suite.summary().brand, s = suite.summary()
+  assert.equal(s.logo.source, 'asset'); assert.equal(b.name, 'DR 仓配服务中心'); assert.equal(b.niches.length, 4)
+  const panelW = b.panel.x1 - b.panel.x0, panelH = b.panel.y1 - b.panel.y0
+  assert.ok(panelW >= 3 && panelH >= 2, 'brand panel is large (>= 3 x 2 m)')
+  for (const niche of b.niches) assert.ok(niche.x1 <= b.panel.x0 - 0.5 || niche.x0 >= b.panel.x1 + 0.5, 'at least 0.5 m clear of each niche')
+  assert.ok(b.panel.x0 >= b.wall.x0 && b.panel.x1 <= b.wall.x1 && b.panel.y0 >= 0 && b.panel.y1 < b.wall.y1 && b.wall.y1 < VIS2B_DIMENSIONS.roomHeight)
+  assert.ok(b.panel.z - b.wall.z <= 0.3, 'mounted flat on the wall, nothing protrudes into the circulation space')
+  assert.ok(b.fascia.z - b.desk.z <= 0.07, 'fascia plaque protrudes at most 7 cm from the desk face')
+  assert.ok(b.fascia.y0 >= 0 && b.fascia.y1 <= 1.05, 'plaque is on the desk front')
+  assert.equal(suite.group.getObjectByName('vis2b-brand').geometry.attributes.position.count, 8)
+})
+
+test('brand: logo can be replaced at runtime with exactly one upload; the dispatch control room is untouched', () => {
+  const { suite } = build(), before = suite.summary(), brand = suite.group.getObjectByName('vis2b-brand'), version = brand.material.map.version
+  assert.equal(before.logo.source, 'placeholder')
+  assert.equal(suite.setLogo({ full: fakeImage(979, 544), mark: fakeImage(313, 390) }), true)
+  assert.equal(brand.material.map.version, version + 1); assert.equal(suite.summary().logo.source, 'asset')
+  assert.deepEqual(suite.summary().seatZ, before.seatZ); assert.equal(suite.summary().seats, 4)
+  assert.equal(suite.group.getObjectByName('vis2b-desk-screens').geometry.attributes.position.count, 32)
+  assert.equal(suite.summary().screen.ratio, 2.4); assert.equal(suite.summary().redraws, 0, 'setLogo does not touch the data screens')
+  suite.dispose(); assert.equal(suite.setLogo(null), false)
+})
+
+test('brand: gold accents use a metallic material that the registry does not merge away; module still loads no images itself', () => {
+  const scene = new THREE.Scene(), registry = createCampusRegistry({ THREE, scene, quality: { tier: 'high' }, layout })
+  registry.register('vis2Dispatch', (context) => buildVis2DispatchSuite({ ...context, canvasTex: makeCanvasTex(), snapshot: snapshotA }))
+  registry.buildAll({ quality: { tier: 'high' } })
+  const gold = registry.root.getObjectByName('vis2b-gold'); assert.ok(gold); assert.ok(gold.material.metalness > 0.4 && gold.material.metalness < 0.7, 'subtle metallic')
+  assert.ok(registry.root.getObjectByName('vis2b-brand')); registry.dispose()
+  const source = fs.readFileSync(new URL('../dr-vis2-dispatch-suite.js', import.meta.url), 'utf8')
+  for (const forbidden of ['new Image', 'TextureLoader', 'ImageLoader', 'createImageBitmap']) assert.equal(source.includes(forbidden), false, forbidden)
 })

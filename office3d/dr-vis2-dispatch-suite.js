@@ -120,7 +120,6 @@ const NICHES = Object.freeze([
   Object.freeze({ title: 'W2 订单周转', sub: '分拣 · 复核 · 包装', icon: 'boxes' }),
   Object.freeze({ title: 'W3 集货配送', sub: '集货 · 装车 · 配送', icon: 'truck' }),
   Object.freeze({ title: '设备与维护', sub: '点检 · 保养 · 备件', icon: 'gear' }),
-  Object.freeze({ title: '访客与展示', sub: '服务中心 · 方案介绍', icon: 'people' }),
 ])
 export function drawShowcaseAtlas(ctx, width, height) {
   const tw = width / NICHES.length
@@ -145,6 +144,41 @@ export function drawReceptionPlate(ctx, width, height) {
   ctx.font = 'bold 84px sans-serif'; ctx.fillText('DR 仓配服务中心', width / 2, height * 0.38); ctx.font = '52px sans-serif'; ctx.fillText('访客接待 · 示意', width / 2, height * 0.72); ctx.restore()
 }
 
+// ——— 品牌（B1）：DR 标识。优先使用宿主传入的已批准素材图（assets/logo.png、assets/logo-mark.png）；没有时画一个可替换的原创占位标识。———
+export const VIS2B_BRAND = Object.freeze({ name: 'DR 仓配服务中心', sub: '智序小镇 · 示意', atlas: Object.freeze({ width: 2048, height: 1024 }), wallTile: Object.freeze({ x: 0, y: 0, w: 1536, h: 1024 }), fasciaTile: Object.freeze({ x: 1536, y: 0, w: 512, h: 512 }) })
+const imageSize = (image) => ({ w: Number(image?.naturalWidth ?? image?.width) || 0, h: Number(image?.naturalHeight ?? image?.height) || 0 })
+// 等比缩放放入矩形（不拉伸、不裁切）；返回实际绘制矩形。
+export function containRect(image, x, y, w, h) {
+  const size = imageSize(image); if (!size.w || !size.h) return null
+  const scale = Math.min(w / size.w, h / size.h), dw = size.w * scale, dh = size.h * scale
+  return { x: x + (w - dw) / 2, y: y + (h - dh) / 2, w: dw, h: dh }
+}
+// 可替换的原创占位标识：金边切角方框 + 「DR」字样 + 小横线；不模仿任何现有商标。
+export function drawLogoPlaceholder(ctx, cx, cy, size) {
+  const r = size / 2, k = size * 0.12
+  ctx.save(); ctx.lineWidth = size * 0.045; ctx.strokeStyle = '#d5af62'; ctx.fillStyle = 'rgba(42,51,56,.92)'
+  ctx.beginPath(); ctx.moveTo(cx - r + k, cy - r); ctx.lineTo(cx + r - k, cy - r); ctx.lineTo(cx + r, cy - r + k); ctx.lineTo(cx + r, cy + r - k); ctx.lineTo(cx + r - k, cy + r); ctx.lineTo(cx - r + k, cy + r); ctx.lineTo(cx - r, cy + r - k); ctx.lineTo(cx - r, cy - r + k); ctx.closePath(); ctx.fill(); ctx.stroke()
+  ctx.fillStyle = '#d5af62'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `bold ${size * 0.5}px sans-serif`; ctx.fillText('DR', cx, cy - size * 0.04)
+  ctx.fillRect(cx - size * 0.28, cy + size * 0.26, size * 0.56, size * 0.03); ctx.restore()
+}
+export function drawBrandAtlas(ctx, width, height, logo = null) {
+  const wt = VIS2B_BRAND.wallTile, ft = VIS2B_BRAND.fasciaTile
+  ctx.save()
+  // 展示墙品牌面板（暖白底 + 大标识 + 金线 + 名称）
+  ctx.fillStyle = '#f4f0e6'; ctx.fillRect(wt.x, wt.y, wt.w, wt.h)
+  ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(wt.x + 14, wt.y + 14, wt.w - 28, wt.h - 28)
+  const full = containRect(logo?.full, wt.x + 200, wt.y + 90, wt.w - 400, 470)
+  if (full) ctx.drawImage(logo.full, full.x, full.y, full.w, full.h); else drawLogoPlaceholder(ctx, wt.x + wt.w / 2, wt.y + 320, 400)
+  ctx.fillStyle = '#d5af62'; ctx.fillRect(wt.x + 360, wt.y + 650, wt.w - 720, 6)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#2a3338'; ctx.font = 'bold 128px sans-serif'; ctx.fillText(VIS2B_BRAND.name, wt.x + wt.w / 2, wt.y + 830)
+  ctx.fillStyle = '#8a6d2f'; ctx.font = '48px sans-serif'; ctx.fillText(VIS2B_BRAND.sub, wt.x + wt.w / 2, wt.y + 925)
+  // 前台立面标识牌（深石墨底 + 金边 + 标识图标）
+  ctx.fillStyle = '#2a3338'; ctx.fillRect(ft.x, ft.y, ft.w, ft.h); ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 8; ctx.strokeRect(ft.x + 12, ft.y + 12, ft.w - 24, ft.h - 24)
+  const mark = containRect(logo?.mark, ft.x + 70, ft.y + 60, ft.w - 140, ft.h - 120)
+  if (mark) ctx.drawImage(logo.mark, mark.x, mark.y, mark.w, mark.h); else drawLogoPlaceholder(ctx, ft.x + ft.w / 2, ft.y + ft.h / 2, 300)
+  ctx.restore()
+}
+
 // ——————————————————— 实例化辅助 ———————————————————
 function createBatch(THREE, name, material, geometry, capacity) {
   const mesh = new THREE.InstancedMesh(geometry, material, Math.max(1, capacity)); mesh.name = name; mesh.count = 0
@@ -162,7 +196,7 @@ function createBatch(THREE, name, material, geometry, capacity) {
 
 const zoneOf = (zones, id) => { const zone = zones.find((item) => item.id === id); if (!zone) throw new Error(`布局里没有区域 ${id}`); return zone }
 
-export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex, snapshot = null } = {}) {
+export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex, snapshot = null, logo = null } = {}) {
   if (typeof canvasTex !== 'function') throw new Error('需要宿主提供 canvasTex(w, h, draw)')
   const low = quality?.tier === 'low', D = VIS2B_DIMENSIONS, C = VIS2B_COLORS, zones = layout?.zones || []
   const control = zoneOf(zones, 'dispatch'), visitor = zoneOf(zones, 'visitor'), showcase = zoneOf(zones, 'showcase')
@@ -172,6 +206,8 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   const foliage = createBatch(THREE, 'vis2b-foliage', new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0, flatShading: true }), new THREE.IcosahedronGeometry(0.5, low ? 0 : 1), 60)
   const glow = createBatch(THREE, 'vis2b-glow', new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), new THREE.BoxGeometry(1, 1, 1), 60)
   const glass = createBatch(THREE, 'vis2b-glass', new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide }), new THREE.BoxGeometry(1, 1, 1), 24)
+  const gold = createBatch(THREE, 'vis2b-gold', new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.38, metalness: 0.55 }), new THREE.BoxGeometry(1, 1, 1), 80)
+  gold.mesh.userData.dynamic = true // 含轻金属质感，不让 registry 并进统一材质
   glow.mesh.userData.dynamic = true; glass.mesh.userData.dynamic = true // 不让 campus registry 把它们并进统一材质 / .46 透明批次
   const regions = { control: null, reception: null, showcase: null }
   const track = (name, x0, x1, z0, z1) => { const r = regions[name] || { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity }; regions[name] = { x0: Math.min(r.x0, x0), x1: Math.max(r.x1, x1), z0: Math.min(r.z0, z0), z1: Math.max(r.z1, z1) } }
@@ -179,6 +215,7 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   const cyl = (region, x, y, z, d, h, hex) => { round.add(x, y, z, d, h, d, hex); track(region, x - d / 2, x + d / 2, z - d / 2, z + d / 2) }
   const leaf = (region, x, y, z, d, hex = C.leaf) => { foliage.add(x, y, z, d, d * 0.9, d, hex); track(region, x - d / 2, x + d / 2, z - d / 2, z + d / 2) }
   const glowBox = (region, x, y, z, sx, sy, sz, hex) => { glow.add(x, y, z, sx, sy, sz, hex); track(region, x - sx / 2, x + sx / 2, z - sz / 2, z + sz / 2) }
+  const goldBox = (region, x, y, z, sx, sy, sz) => { gold.add(x, y, z, sx, sy, sz, C.gold); track(region, x - sx / 2, x + sx / 2, z - sz / 2, z + sz / 2) }
   const pane = (region, x, y, z, sx, sy, sz) => { glass.add(x, y, z, sx, sy, sz, C.glass); track(region, x - sx / 2, x + sx / 2, z - sz / 2, z + sz / 2) }
 
   // ——— 中控室（区域 dispatch：x −168…−154，z 0…16）：大屏在西墙，四席面向大屏，仓储在东侧（玻璃外）———
@@ -257,7 +294,8 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   glowBox('reception', vx, 0.12, deskRZ + 0.39, 4.5, 0.03, 0.03, C.warm)
   box('reception', vx, 0.6, deskRZ - 0.5, 3.6, 0.04, 0.6, C.oak) // 内侧工作台
   box('reception', vx, 1.9, deskRZ - 1.5, 4.8, 3.2, 0.14, C.wall) // 背景墙
-  box('reception', vx, 2.9, deskRZ - 1.42, 2.8, 0.5, 0.03, C.gold) // 金色铭牌底（文字另画）
+  goldBox('reception', vx, 2.9, deskRZ - 1.42, 2.8, 0.5, 0.03) // 金色铭牌底（文字另画）
+  goldBox('reception', vx, 1.045, deskRZ + 0.4, 4.7, 0.022, 0.03) // 台面前沿金色收边
   for (const s of [-1, 1]) { box('reception', vx + s * 0.8, 0.5, deskRZ - 0.95, 0.5, 0.06, 0.5, C.chairSeat); box('reception', vx + s * 0.8, 0.8, deskRZ - 1.15, 0.5, 0.55, 0.06, C.chairSeat); cyl('reception', vx + s * 0.8, 0.25, deskRZ - 0.95, 0.08, 0.5, C.chairFrame) }
   // 休闲区：两张沙发 + 圆几 + 绿植
   for (const [sx2, sz2, yaw] of [[visitor.x0 + 2.4, visitor.z1 - 2.2, 0], [visitor.x0 + 5.2, visitor.z1 - 2.2, 0]]) {
@@ -268,16 +306,21 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
 
   // ——— 服务中心展示区（区域 showcase：x −154…−130，z 20…30）：北墙展示墙 + 中央展示台 ———
   const sx = (showcase.x0 + showcase.x1) / 2, wallZ = showcase.z0 + 0.35, nichePositions = []
-  box('showcase', sx, H / 2 - 0.4, wallZ, 18.5, H - 0.8, 0.2, C.wall)
+  const wallH = 3.9
+  box('showcase', sx, wallH / 2, wallZ, 18.5, wallH, 0.2, C.wall)
   for (let i = 0; i < 36; i++) box('showcase', sx - 8.9 + i * 0.5, 1.0, wallZ + 0.13, 0.22, 2.0, 0.05, i % 2 ? C.oak : C.oakDark) // 木格栅护墙
-  for (let i = 0; i < 5; i++) {
-    const nx = sx - 7.2 + i * 3.6
+  const NICHE_X = [-7.5, -3.9, 3.9, 7.5], PANEL = { x: sx, y: 2.2, w: 3.6, h: 2.4 }
+  for (const dx of NICHE_X) {
+    const nx = sx + dx
     glowBox('showcase', nx, 2.35, wallZ + 0.14, 2.6, 1.7, 0.04, C.niche) // 背光底板（其上贴展龛画面）
     nichePositions.push([nx, 2.35, wallZ + 0.17])
-    for (const [dx, dz2, w, h2] of [[0, 0.86, 2.74, 0.06], [0, -0.86, 2.74, 0.06], [1.34, 0, 0.06, 1.78], [-1.34, 0, 0.06, 1.78]]) box('showcase', nx + dx, 2.35 + dz2, wallZ + 0.17, w, h2, 0.04, C.gold)
+    for (const [fx, fz2, w, h2] of [[0, 0.86, 2.74, 0.06], [0, -0.86, 2.74, 0.06], [1.34, 0, 0.06, 1.78], [-1.34, 0, 0.06, 1.78]]) goldBox('showcase', nx + fx, 2.35 + fz2, wallZ + 0.17, w, h2, 0.04)
     box('showcase', nx, 0.55, wallZ + 0.5, 1.6, 0.08, 0.5, C.stone); box('showcase', nx, 0.3, wallZ + 0.5, 1.5, 0.5, 0.42, C.oakDark)
   }
-  glowBox('showcase', sx, H - 1.1, wallZ + 0.2, 17, 0.04, 0.1, C.warm)
+  // 品牌面板：居中、比展龛大得多（3.6 x 2.4 m），两侧各留约 0.9 m 空隙，不与任何展龛重叠
+  glowBox('showcase', PANEL.x, PANEL.y, wallZ + 0.14, PANEL.w + 0.2, PANEL.h + 0.2, 0.04, C.niche)
+  for (const [fx, fy, w, h2] of [[0, PANEL.h / 2 + 0.06, PANEL.w + 0.3, 0.1], [0, -PANEL.h / 2 - 0.06, PANEL.w + 0.3, 0.1], [PANEL.w / 2 + 0.1, 0, 0.1, PANEL.h + 0.22], [-PANEL.w / 2 - 0.1, 0, 0.1, PANEL.h + 0.22]]) goldBox('showcase', PANEL.x + fx, PANEL.y + fy, wallZ + 0.19, w, h2, 0.06)
+  glowBox('showcase', sx, 3.62, wallZ + 0.2, 17, 0.04, 0.1, C.warm) // 顶部暖光带：移到所有展龛与品牌面板之上，不再横穿画面
   // 中央展示台：长台 + 仓配园区缩微模型（盒体示意）
   const tableZ = showcase.z0 + 5.2
   box('showcase', sx, 0.45, tableZ, 5.0, 0.9, 1.6, C.stone); box('showcase', sx, 0.93, tableZ, 5.1, 0.05, 1.7, C.desk)
@@ -292,13 +335,38 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   nichePositions.forEach(([nx, ny, nz], i) => { const base = nichePos.length / 3, hw = 1.2, hh = 0.8, u0 = i / NICHES.length, u1 = (i + 1) / NICHES.length
     for (const [px, py, u, v] of [[-hw, -hh, u0, 0], [hw, -hh, u1, 0], [hw, hh, u1, 1], [-hw, hh, u0, 1]]) { nichePos.push(nx + px, ny + py, nz); nicheUv.push(u, v) }
     nicheIdx.push(base, base + 1, base + 2, base, base + 2, base + 3); track('showcase', nx - hw, nx + hw, nz - 0.01, nz + 0.01) })
-  const nicheTexture = canvasTex(2560, 384, (ctx, w, h) => drawShowcaseAtlas(ctx, w, h)), nicheGeometry = new THREE.BufferGeometry()
+  const nicheTexture = canvasTex(512 * NICHES.length, 384, (ctx, w, h) => drawShowcaseAtlas(ctx, w, h)), nicheGeometry = new THREE.BufferGeometry()
   nicheGeometry.setAttribute('position', new THREE.Float32BufferAttribute(nichePos, 3)); nicheGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(nicheUv, 2)); nicheGeometry.setIndex(nicheIdx); nicheGeometry.computeVertexNormals(); nicheGeometry.computeBoundingSphere()
   const nicheMaterial = new THREE.MeshBasicMaterial({ map: nicheTexture, toneMapped: false }), niches = new THREE.Mesh(nicheGeometry, nicheMaterial); niches.name = 'vis2b-showcase-panels'
   const plateTexture = canvasTex(1024, 256, (ctx, w, h) => drawReceptionPlate(ctx, w, h)), plateMaterial = new THREE.MeshBasicMaterial({ map: plateTexture, toneMapped: false })
   const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), plateMaterial); plate.name = 'vis2b-reception-plate'; plate.position.set(vx, 2.9, deskRZ - 1.4); track('reception', vx - 1.4, vx + 1.4, deskRZ - 1.41, deskRZ - 1.39)
   plate.rotation.y = 0
-  group.add(deskScreens, wallScreen, niches, plate)
+  // 品牌：展示墙大面板 + 前台立面标识牌（2 个四边形合并为 1 个几何，同一张图集）
+  const A = VIS2B_BRAND.atlas, FASCIA = { x: vx, y: 0.55, z: deskRZ + 0.405, s: 0.7 }
+  const quad = (cx, cy, z, w, h, tile, positions, uvs, indices) => {
+    const base = positions.length / 3, u0 = tile.x / A.width, u1 = (tile.x + tile.w) / A.width, v0 = 1 - (tile.y + tile.h) / A.height, v1 = 1 - tile.y / A.height
+    for (const [px, py, u, v] of [[-1, -1, u0, v0], [1, -1, u1, v0], [1, 1, u1, v1], [-1, 1, u0, v1]]) { positions.push(cx + px * w / 2, cy + py * h / 2, z); uvs.push(u, v) }
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
+  }
+  const brandPos = [], brandUv = [], brandIdx = []
+  quad(PANEL.x, PANEL.y, wallZ + 0.19, PANEL.w, PANEL.h, VIS2B_BRAND.wallTile, brandPos, brandUv, brandIdx)
+  quad(FASCIA.x, FASCIA.y, FASCIA.z, FASCIA.s, FASCIA.s, VIS2B_BRAND.fasciaTile, brandPos, brandUv, brandIdx)
+  track('showcase', PANEL.x - PANEL.w / 2, PANEL.x + PANEL.w / 2, wallZ + 0.18, wallZ + 0.2); track('reception', FASCIA.x - FASCIA.s / 2, FASCIA.x + FASCIA.s / 2, FASCIA.z - 0.01, FASCIA.z + 0.01)
+  for (const [fx, fy, w, h2] of [[0, FASCIA.s / 2 + 0.02, FASCIA.s + 0.08, 0.04], [0, -FASCIA.s / 2 - 0.02, FASCIA.s + 0.08, 0.04], [FASCIA.s / 2 + 0.02, 0, 0.04, FASCIA.s], [-FASCIA.s / 2 - 0.02, 0, 0.04, FASCIA.s]]) gold.add(FASCIA.x + fx, FASCIA.y + fy, FASCIA.z - 0.005, w, h2, 0.03, C.gold)
+  gold.finish(); group.add(gold.mesh)
+  let logoSource = logo?.full || logo?.mark ? 'asset' : 'placeholder'
+  const brandTexture = canvasTex(A.width, A.height, (ctx, w, h) => drawBrandAtlas(ctx, w, h, logo)), brandGeometry = new THREE.BufferGeometry()
+  brandGeometry.setAttribute('position', new THREE.Float32BufferAttribute(brandPos, 3)); brandGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(brandUv, 2)); brandGeometry.setIndex(brandIdx); brandGeometry.computeVertexNormals(); brandGeometry.computeBoundingSphere()
+  const brandMaterial = new THREE.MeshBasicMaterial({ map: brandTexture, toneMapped: false }), brand = new THREE.Mesh(brandGeometry, brandMaterial); brand.name = 'vis2b-brand'
+  const brandBounds = { panel: { x0: PANEL.x - PANEL.w / 2, x1: PANEL.x + PANEL.w / 2, y0: PANEL.y - PANEL.h / 2, y1: PANEL.y + PANEL.h / 2, z: wallZ + 0.19 }, fascia: { x0: FASCIA.x - FASCIA.s / 2, x1: FASCIA.x + FASCIA.s / 2, y0: FASCIA.y - FASCIA.s / 2, y1: FASCIA.y + FASCIA.s / 2, z: FASCIA.z },
+    niches: NICHE_X.map((dx) => ({ x0: sx + dx - 1.2, x1: sx + dx + 1.2, y0: 1.55, y1: 3.15 })), wall: { x0: sx - 9.25, x1: sx + 9.25, y0: 0, y1: wallH, z: wallZ }, desk: { z: deskRZ + 0.35 }, name: VIS2B_BRAND.name }
+  const setLogo = (next) => {
+    if (disposed) return false
+    logo = next ?? null; logoSource = logo?.full || logo?.mark ? 'asset' : 'placeholder'
+    const ctx = brandTexture.image?.getContext?.('2d'); if (!ctx) return false
+    drawBrandAtlas(ctx, A.width, A.height, logo); brandTexture.needsUpdate = true; return true
+  }
+  group.add(deskScreens, wallScreen, niches, plate, brand)
   root.add(group)
 
   let disposed = false, version = snapshot?.generatedAt ?? null, redraws = 0
@@ -315,16 +383,17 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
     if (nextVersion !== null && nextVersion === version) return false // 版本未变：不重绘、不上传纹理
     version = nextVersion; snapshot = next ?? null; redraw(snapshot); return true
   }
-  const triangleCount = () => [structure, round, foliage, glow, glass].reduce((t, b) => t + b.mesh.count * (b.mesh.geometry.index ? b.mesh.geometry.index.count : b.mesh.geometry.attributes.position.count) / 3, 0) + indices.length / 3 + nicheIdx.length / 3 + 4
+  const triangleCount = () => [structure, round, foliage, glow, glass, gold].reduce((t, b) => t + b.mesh.count * (b.mesh.geometry.index ? b.mesh.geometry.index.count : b.mesh.geometry.attributes.position.count) / 3, 0) + indices.length / 3 + nicheIdx.length / 3 + brandIdx.length / 3 + 4
   const summary = () => ({ module: 'vis2-dispatch-suite', preview: '组件预览，尚未正式接入', quality: low ? 'low' : 'high', hasSnapshot: !!snapshot, snapshotVersion: version, redraws,
     seats: D.seats, seatZ: seatZs.map((z) => +z.toFixed(3)), deskLength: D.desk.length, regions: JSON.parse(JSON.stringify(regions)), screen: { width: sc.width, height: sc.height, ratio: +(sc.width / sc.height).toFixed(3), canvas: sc.canvas }, label: VIS2B_LABELS.simulated,
-    instances: { structure: structure.mesh.count, round: round.mesh.count, foliage: foliage.mesh.count, glow: glow.mesh.count, glass: glass.mesh.count }, drawCalls: 9, triangles: Math.round(triangleCount()), replaces: VIS2B_REPLACES.map((item) => item.legacy) })
+    instances: { structure: structure.mesh.count, round: round.mesh.count, foliage: foliage.mesh.count, glow: glow.mesh.count, glass: glass.mesh.count, gold: gold.mesh.count }, brand: JSON.parse(JSON.stringify(brandBounds)), logo: { source: logoSource }, drawCalls: 11, triangles: Math.round(triangleCount()), replaces: VIS2B_REPLACES.map((item) => item.legacy) })
   const dispose = () => {
     if (disposed) return; disposed = true
     group.removeFromParent()
-    for (const batch of [structure, round, foliage, glow, glass]) { batch.mesh.geometry.dispose(); batch.mesh.material.dispose(); batch.mesh.dispose?.() }
+    brandGeometry.dispose(); brandMaterial.dispose(); brandTexture.dispose?.()
+    for (const batch of [structure, round, foliage, glow, glass, gold]) { batch.mesh.geometry.dispose(); batch.mesh.material.dispose(); batch.mesh.dispose?.() }
     deskGeometry.dispose(); deskMaterial.dispose(); deskTexture.dispose?.(); wallScreen.geometry.dispose(); wallMaterial.dispose(); wallTexture.dispose?.()
     nicheGeometry.dispose(); nicheMaterial.dispose(); nicheTexture.dispose?.(); plate.geometry.dispose(); plateMaterial.dispose(); plateTexture.dispose?.()
   }
-  return { group, summary, update, dispose }
+  return { group, summary, update, setLogo, dispose }
 }
