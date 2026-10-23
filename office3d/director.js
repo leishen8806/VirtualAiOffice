@@ -21,8 +21,8 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v))
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a))
 const isWalker = act => ['rise', 'walk'].includes(act.phase)
 
-export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout }) {
-  const navigation = createOfficeNavigation(layout)
+export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride }) {
+  const navigation = navigationOverride || createOfficeNavigation(layout)
   const { officeExit, officeTrip, boardTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
   const consumerAdvance = navigation.consumerAdvance || legacyConsumerAdvance, consumerDeparture = navigation.consumerDeparture || legacyConsumerDeparture
   const gInLounge = p => Math.abs(p.x - LOUNGE_AREA.x) < LOUNGE_AREA.width / 2 && Math.abs(p.z - LOUNGE_AREA.z) < LOUNGE_AREA.depth / 2
@@ -437,13 +437,24 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
 
   function moveVisit(visit, pts) {
     if (!visits.has(visit.agentId)) return false
-    setVisitPhase(visit, 'moving')
-    return travel(visit.v, pts, { ...visit.point, yaw: visit.plan.yaw ?? visit.v.char.group.rotation.y }, false, () => {
+    const current = visit.v.char.group.position
+    if (Math.hypot(current.x - visit.point.x, current.z - visit.point.z) <= 0.01) {
+      setVisitPhase(visit, 'queued')
+      return true
+    }
+    const started = travel(visit.v, pts, { ...visit.point, yaw: visit.plan.yaw ?? visit.v.char.group.rotation.y }, false, () => {
       if (!visits.has(visit.agentId)) return
       const p = visit.v.char.group.position
       if (Math.hypot(p.x - visit.point.x, p.z - visit.point.z) > 0.01) { setVisitPhase(visit, 'queued'); return }
       setVisitPhase(visit, 'queued')
     }, true)
+    if (!started) {
+      // 坏的消费者路线不能留在 queued 状态里逐帧重试。
+      returnVisit(visit, 'invalidRoute')
+      return false
+    }
+    setVisitPhase(visit, 'moving')
+    return true
   }
 
   function advanceQueue(result) {

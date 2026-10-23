@@ -630,7 +630,13 @@ function createOfficeV3Navigation(layout) {
   const lounge = (home, seat) => {
     if (!Number.isFinite(seat?.x) || !Number.isFinite(seat?.z) || !Number.isFinite(seat?.appX) || !Number.isFinite(seat?.appZ)) throw new Error('无效 V3 休息座位')
     const departure = exit(home), approach = { x: seat.appX, z: seat.appZ }
-    return dedupeRoute([...departure, ...publicPath(departure.at(-1), approach).slice(1), approach, routePoint(seat)])
+    const { center } = layout.ring
+    const east = seat.side === 'east'
+    // 休息座位在吧岛内侧，只能从对应一侧的吧台开口进入；公共路线不可直穿吧台。
+    const ringRoute = east
+      ? [{ x: center.x + 7, z: lanes.foyer.z }, { x: center.x + 7, z: center.z }, { x: center.x + layout.bar.radius + .25, z: center.z }]
+      : [{ x: center.x - 7, z: lanes.foyer.z }, { x: center.x - 7, z: center.z }, { x: center.x - layout.bar.radius - .25, z: center.z }]
+    return dedupeRoute([...departure, ...toHub(departure.at(-1)).slice(1), ...ringRoute, approach, routePoint(seat)])
   }
   const boardRoom = rooms.find(room => room.id === 'board')
   const boardDoor = roomDoor(boardRoom), boardOutside = doorExterior(boardRoom, boardDoor), boardInside = doorInterior(boardRoom, boardDoor)
@@ -639,9 +645,43 @@ function createOfficeV3Navigation(layout) {
     const departure = exit(home)
     return dedupeRoute([...departure, ...publicPath(departure.at(-1), boardOutside).slice(1), boardInside, { x: boardInside.x, z: stand.z }, routePoint(stand)])
   }
+  const consumerTargets = {
+    A1: { x: -3.2, z: 6.5 },
+    A2: { x: -5.2, z: 6.5 },
+    desk: { x: 2, z: 10.5 },
+    B0: { x: -8.5, z: 19 },
+    B1: { x: 11.5, z: 18 },
+    B2: { x: 11.5, z: 21 },
+    B3: { x: 11.5, z: 24 },
+    waiting: { x: 6.5, z: 6.4 },
+  }
+  const consumerQueues = {
+    A1: [-3.2, -4.2, -5.2, -6.2].map(x => ({ x, z: 6.5 })),
+    A2: [-5.2, -6.2, -7.2, -8.2].map(x => ({ x, z: 6.5 })),
+    desk: [10.5, 11.35, 12.2, 13.05].map(z => ({ x: 2, z })),
+    B0: [19, 20, 21, 22].map(z => ({ x: -8.5, z })),
+    B1: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 18 })),
+    B2: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 21 })),
+    B3: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 24 })),
+    waiting: [5.4, 6.2, 6.8, 7.6].map(x => ({ x, z: 6.4 })),
+  }
+  const consumer = (home, targetId, stand = consumerTargets[targetId]) => {
+    if (!consumerTargets[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error(`未知或无效 V3 访客目标: ${targetId}`)
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), stand).slice(1)])
+  }
+  const consumerAdvance = (targetId, from, to) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(from?.x) || !Number.isFinite(from?.z) || !Number.isFinite(to?.x) || !Number.isFinite(to?.z)) throw new Error(`无效 V3 队列移动: ${targetId}`)
+    // 即使前后槽位重合也返回一个有限路径；导演以当前位置判断“无需移动”。
+    return dedupeRoute([routePoint(from), routePoint(to)])
+  }
+  const consumerDeparture = (targetId, stand, back) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z) || !Array.isArray(back) || !back.every(point => Number.isFinite(point?.x) && Number.isFinite(point?.z))) throw new Error(`无效 V3 队列离开路径: ${targetId}`)
+    return dedupeRoute([routePoint(stand), ...back.slice(1)])
+  }
   return {
     roomAt: findRoom, standAt: home => ({ x: home.x, z: home.z }), officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
-    consumerTrip: () => { throw new Error('V3 未注册前厅访客路径') }, foyerTrip: () => { throw new Error('V3 未注册前厅访客路径') }, plazaTrip: () => { throw new Error('V3 未注册前厅访客路径') }, foyerReturnTrip: () => { throw new Error('V3 未注册前厅访客路径') }, consumerAdvance: () => [], consumerDeparture: (id, stand, back) => back.map(routePoint),
+    consumerTrip: consumer, foyerTrip: consumer, plazaTrip: consumer, foyerReturnTrip: (home, id, stand) => consumer(home, id, stand).toReversed().map(routePoint), consumerAdvance, consumerDeparture, consumerTargets, consumerQueues,
     ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: { x: boardDoor.side === 'west' ? boardRoom.x0 : boardRoom.x1, zOut: boardOutside.z, zIn: boardInside.z, outside: boardOutside, inside: boardInside, side: boardDoor.side }, FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
     LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: lanes.foyer.z },
     LOUNGE_SEATS: barLounges(layout),
