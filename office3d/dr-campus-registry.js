@@ -48,21 +48,27 @@ export function mergeCampusStatic(THREE, root) {
   root.updateMatrixWorld?.(true)
   const groups = new Map(), sources = new Set()
   root.traverse?.(mesh => {
-    if (!isMergeable(mesh) || mesh.name === 'campus-sign' || mesh.name === 'campus-rack-labels') return
-    const type = mesh.material.transparent ? 'transparent' : 'opaque', key = `${type}|${shape(mesh.geometry)}`
-    if (!groups.has(key)) groups.set(key, { type, items: [] })
+    if (!mesh.visible || !isMergeable(mesh) || mesh.name === 'campus-sign' || mesh.name === 'campus-rack-labels') return
+    const type = mesh.material.transparent ? 'transparent' : 'opaque'
+    const batchGroup = mesh.userData.batchGroup || type
+    const key = `${batchGroup}|${shape(mesh.geometry)}`
+    if (!groups.has(key)) groups.set(key, { type, batchGroup, items: [] })
     addItems(THREE, mesh, groups.get(key).items)
   })
   let removed = 0, added = 0
   const generated = []
-  for (const { type, items } of groups.values()) {
+  for (const { type, batchGroup, items } of groups.values()) {
     const material = type === 'opaque'
       ? new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: .72, metalness: .18 })
       : new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, opacity: .46, depthWrite: false, side: THREE.DoubleSide })
     const geometry = bake(THREE, root, items)
     if (!geometry) { material.dispose(); continue }
     const mesh = new THREE.Mesh(geometry, material)
-    mesh.name = `campus-${type}-batch-${added + 1}`; mesh.userData.qualityProxy = true; mesh.castShadow = false; mesh.receiveShadow = false
+    mesh.name = `campus-${batchGroup}-batch-${added + 1}`
+    mesh.userData.qualityProxy = true
+    mesh.userData.batchGroup = batchGroup
+    mesh.userData.sourceIds = Object.freeze([...new Set(items.flatMap(item => item.mesh.userData.sourceIds || [item.mesh.name]))])
+    mesh.castShadow = false; mesh.receiveShadow = false
     root.add(mesh); generated.push(mesh); added++
     items.forEach(item => sources.add(item.mesh))
   }

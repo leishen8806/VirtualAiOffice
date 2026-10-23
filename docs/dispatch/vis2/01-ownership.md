@@ -21,6 +21,10 @@ Exclusive ownership:
 - `office3d/campus-visual.json`
 - `office3d/index.html` and its import map
 - `office3d/warehouse-shell.js`
+- `office3d/dr-campus-shell.js`
+- `office3d/dr-campus-modules.js`
+- `office3d/dr-campus-registry.js`
+- `office3d/dr-campus-interior.js` for legacy-object retirement and replacement wiring only
 - global layout, navigation, camera, activation, disposal, and shared-entry wiring
 - `office3d/server.mjs` only for the isolated read-only `GET /visual-flags` bridge
 - `docs/dispatch/vis2/*`
@@ -38,11 +42,10 @@ Exclusive ownership:
 
 Exclusive ownership:
 
-- `office3d/dr-campus-interior.js`
-- Registered warehouse-private scene modules and warehouse-private visual assets.
+- Newly registered warehouse-private scene modules and warehouse-private visual assets.
 - `office3d/dr-console-*` data and view modules.
 
-`office3d/dr-campus-modules.js`, `office3d/dr-campus-registry.js`, and the warehouse total loader remain integration-owned. Claude submits a precise commit and file list for any private-module addition.
+Claude must not edit `office3d/dr-campus-interior.js`. The integrator retires its legacy placeholder objects and wires Claude's new private module into `office3d/dr-campus-modules.js`. Claude submits a precise commit and file list for every private-module addition.
 
 ## Harness
 

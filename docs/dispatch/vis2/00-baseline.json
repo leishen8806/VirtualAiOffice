@@ -84,6 +84,61 @@
     "default": "off",
     "failureMode": "off"
   },
+  "vis2TR1Receipt": {
+    "baseline": {
+      "status": "reproducible source baseline",
+      "commit": "9e8c4f99ea29166b173d40a762178b9933c972ca",
+      "candidateHeadBeforeR1": "f32b4aaabbfaf5252698accbb9f7a2056cec20dd",
+      "runtimeDifference": "The isolated worktree intentionally lacks local operational configuration, so source and Node-level contracts are reproducible but browser evidence is blocked."
+    },
+    "s217Files": [
+      "office3d/dr-campus-shell.js",
+      "office3d/dr-campus-registry.js",
+      "office3d/dr-campus-modules.js",
+      "office3d/dr-campus-interior.js",
+      "office3d/dr-campus-racks.js",
+      "office3d/dr-campus-motion.js",
+      "office3d/dr-campus-shuttle.js",
+      "office3d/office-layout.js"
+    ],
+    "coordinates": {
+      "unit": "Three.js world units; x/z are the ground plane and y is up",
+      "campusBounds": { "x0": -174, "x1": -72, "z0": -26, "z1": 42 },
+      "buildingBounds": { "x0": -168, "x1": -80, "z0": -18, "z1": 30 },
+      "stableZoneIds": [
+        "receiving", "inspection", "highRack", "picking", "packing", "shipping",
+        "dispatch", "visitor", "showcase", "officeMeeting", "maintenance",
+        "frontPlaza", "parking", "logisticsGate"
+      ],
+      "stableOperationalIds": ["W1", "W2", "W3", "frontApproach", "frontAxis", "frontBridge", "visitorHall", "showcaseHall"]
+    },
+    "contracts": {
+      "registry": "register(name, factory), buildAll(shared), onFrame(dt, context), activate(), deactivate(), dispose(); buildAll is idempotent and inactive or hidden roots do not receive frame updates.",
+      "canvasTexture": "canvasTex(width, height, draw, repeat?, srgb?) invokes draw(ctx2d, width, height) exactly when creating the texture.",
+      "resourceOwnership": "Each module disposes only its own textures, geometries, materials, timers, and listeners. Static batches retain semantic source IDs in userData.",
+      "outdoorIndoorBoundary": "frontPlaza, parking, and logisticsGate are outdoor; visitor, showcase, dispatch, and officeMeeting are inside CAMPUS_BUILDING. The visitor threshold is the z=30 building edge and visitorHall/frontBridge are the stable walkable handoff IDs."
+    },
+    "legacyReplacement": [
+      {
+        "legacy": "dr-campus-interior.js: campus-interior-static and campus-dispatch-simulation",
+        "action": "Not registered by dr-campus-modules.js in R1; Claude supplies a new private interior module before any replacement registration.",
+        "doubleBuildProtection": "The total loader has no interior entry, so it cannot create a second floor, threshold, console, screen, label, or hotspot."
+      },
+      {
+        "legacy": "dr-campus-shell.js: campus-zone-* volume placeholders",
+        "action": "Selection specifications remain for stable IDs and bounds but do not render in the normal overview.",
+        "doubleBuildProtection": "Private modules receive the same frozen layout and must use the stable zone IDs rather than add duplicate occupancy volumes."
+      }
+    ],
+    "usage": {
+      "preview": {
+        "default": "http://127.0.0.1:3200/",
+        "campus": "http://127.0.0.1:3200/?campus=1"
+      },
+      "flags": "Set office3d/campus-visual.json enabled=true and use ?campus=1. Missing, malformed, or non-boolean configuration remains off.",
+      "test": "node --max-old-space-size=2048 --test --test-timeout=60000 tests/*.test.mjs"
+    }
+  },
   "references": [
     "E:/VirtualAIOffice/knowledge/项目/参考/智序小镇·DR仓配服务中心概念图.png",
     "E:/VirtualAIOffice/knowledge/项目/参考/DR智慧仓配中心全景仪表盘6.0.png",
