@@ -14,11 +14,49 @@ import { mergeOfficeStatic } from '../office-v2-registry.js'
 import { buildOfficePreviewContext } from '../office-vis2/preview-context.js'
 import { buildOfficeCompletionVisual } from '../office-vis2/completion.js'
 import { buildOfficeFoyerFurniture } from '../office-vis2/foyer.js'
+import { buildOfficeTeaBarSample } from '../office-vis2/bar.js'
+import { createSampleBatch } from '../office-vis2/batch.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
+
+test('O-V1 equipment stays above the existing counter and leaves both circulation openings unchanged', () => {
+  const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 })
+  const mesh = value.root.getObjectByName('tea-bar-body-top-equipment'), c = LAYOUT_V3.bar.center
+  mesh.updateMatrixWorld(true)
+  const down = (x, z) => new THREE.Raycaster(new THREE.Vector3(c.x + x, 2, c.z + z), new THREE.Vector3(0, -1, 0)).intersectObject(mesh)
+  assert.deepEqual(value.colliders, barColliders(LAYOUT_V3))
+  assert.equal(down(2.8, 0).length, 0); assert.equal(down(-2.8, 0).length, 0)
+  assert.ok(down(1.6, 0)[0].point.y < .05)
+  assert.ok(down(-1.55, -2.52)[0].point.y > 1.25, 'storage canister has a separate lid above countertop')
+  const p = mesh.geometry.attributes.position
+  for (let i = 0; i < p.count; i++) if (p.getY(i) > 1.06) {
+    const r = Math.hypot(p.getX(i) - c.x, p.getZ(i) - c.z)
+    assert.ok(r > 2.1 && r < LAYOUT_V3.bar.radius, 'all raised equipment sits on original annulus')
+  }
+  value.dispose()
+})
+
+test('O-V1 reception waist trim has one exterior surface and explicit fabric survives batching', () => {
+  const value = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), f = LAYOUT_V3.frontDesk
+  const mesh = value.root.getObjectByName('foyer-reception-coffee-tables'); mesh.updateMatrixWorld(true)
+  for (const y of [.15, .195, .25]) {
+    const hits = new THREE.Raycaster(new THREE.Vector3(f.center.x + .23, y, f.z1 + 1), new THREE.Vector3(0, 0, -1)).intersectObject(mesh)
+    const frontHits = hits.filter(hit => hit.point.z > f.center.z)
+    assert.equal(frontHits.length, 1, `one exterior surface at y=${y}, no coplanar trim/body`)
+  }
+  const batch = createSampleBatch(THREE)
+  batch.add(new THREE.BoxGeometry(), '#687D68', [0, 0, 0], 0, .97, 0, 'fabric')
+  const built = batch.build(new THREE.Group(), 'fabric-probe'), surfaces = built.mesh.geometry.attributes.sampleSurface
+  for (let i = 0; i < surfaces.count; i++) { assert.equal(surfaces.getZ(i), 3); assert.ok(surfaces.getX(i) > .96) }
+  const shader = { uniforms: {}, vertexShader: '#include <begin_vertex>', fragmentShader: '#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>' }
+  built.mesh.material.onBeforeCompile(shader)
+  assert.equal(shader.uniforms.vis2Textured.value, false, 'missing textures retain untextured fallback')
+  assert.ok(shader.fragmentShader.includes('roughnessFactor = surfaceParams.x'))
+  built.dispose(); value.dispose()
+})
 
 test('VIS2 source hashing canonicalizes checkout newlines without hiding source changes', () => {
   const lf = 'export const example = 1\n// 中文\n', crlf = lf.replace(/\n/g, '\r\n')

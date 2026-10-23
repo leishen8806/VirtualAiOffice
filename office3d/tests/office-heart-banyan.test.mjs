@@ -42,3 +42,29 @@ test('fixed-seed leaves repeat exactly, remain instanced and dispose only owned 
   a.dispose(); b.dispose(); assert.equal(sharedDisposed, false); assert.equal(root.children.length, 1)
   shared.geometry.dispose(); shared.material.dispose()
 })
+
+test('O-V1 uses finer leaves, additional woody branches and a persistent canopy notch in both tiers', () => {
+  for (const low of [false, true]) {
+    const tree = buildHeartBanyan({ THREE, root: new THREE.Group(), low })
+    const leaf = tree.root.getObjectByName('heart-banyan-small-leaf-clusters'), p = leaf.geometry.attributes.position
+    assert.equal(leaf.count, low ? 500 : 1000)
+    assert.equal(p.count, 18, 'three fixed leaf planes per instance')
+    assert.equal(tree.summary().branches, 19)
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), m = new THREE.Matrix4(), peaks = [0, 0, 0]
+    for (let i = 0; i < p.count; i += 6) {
+      a.fromBufferAttribute(p, i); b.fromBufferAttribute(p, i + 1)
+      assert.ok(a.distanceTo(b) < .181, 'unscaled leaf length is at most 18 cm')
+    }
+    for (let i = 0; i < leaf.count; i++) {
+      leaf.getMatrixAt(i, m)
+      for (let j = 0; j < p.count; j++) {
+        a.fromBufferAttribute(p, j).applyMatrix4(m)
+        const bucket = a.x < -.55 ? 0 : a.x > .55 ? 2 : Math.abs(a.x) < .18 ? 1 : -1
+        if (bucket >= 0) peaks[bucket] = Math.max(peaks[bucket], a.y)
+      }
+    }
+    assert.ok(Math.min(peaks[0], peaks[2]) - peaks[1] > .28, JSON.stringify(peaks))
+    assert.ok(tree.summary().triangles <= 8000)
+    tree.dispose()
+  }
+})

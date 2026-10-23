@@ -30,6 +30,26 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   box(.62, .04, .47, '#B89B64', center.x - .8, 1.07, center.z - 2.75, .35, .65)
   box(.14, .22, .06, '#758E8B', center.x - .8, 1.3, center.z - 2.52, .4)
   box(.65, .018, .4, '#7C8789', center.x + .75, 1.056, center.z - 2.75, .3, .7)
+  box(.49, .02, .27, '#26333A', center.x + .75, 1.07, center.z - 2.75, .4)
+  const tap = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, .22, 0), new THREE.Vector3(0, .27, .12), new THREE.Vector3(0, .19, .19),
+  ]), 8, .018, 6, false)
+  batch.add(tap, '#9A968E', [center.x + .75, 1.06, center.z - 2.93], 0, .28, .75)
+  // 设备全部落在原有台面内，不在操作通道增加落地柜。
+  for (const dx of [-.16, .16]) {
+    box(.07, .09, .09, '#9A968E', center.x - .8 + dx, 1.23, center.z - 2.5, .25, .75)
+    box(.15, .012, .09, '#26333A', center.x - .8 + dx, 1.2, center.z - 2.42, .4)
+  }
+  for (let i = 0; i < 3; i++) {
+    const x = center.x - 1.55 - i * .19, z = center.z - 2.52
+    batch.add(new THREE.CylinderGeometry(.065, .065, .18, 10), '#D9D3C6', [x, 1.145, z], 0, .46)
+    batch.add(new THREE.CylinderGeometry(.073, .073, .025, 10), '#C9A57A', [x, 1.2475, z], 0, .65, 0, 'wood')
+  }
+  // 柜门缝收在内弧立面之内；合入原批次，不增加 draw call。
+  for (const arc of barArcs(barLayout)) for (let i = 1; i < 6; i++) {
+    const a = arc.start + (arc.end - arc.start) * i / 6
+    batch.add(new THREE.BoxGeometry(.014, .63, .008), '#756857', [center.x + Math.cos(a) * 2.096, .49, center.z + Math.sin(a) * 2.096], Math.PI / 2 - a, .85)
+  }
   for (const offset of [-.15, .15]) {
     const cup = new THREE.CylinderGeometry(.075, .06, .15, 10)
     batch.add(cup, '#F4F1EA', [center.x + 1.7 + offset, 1.13, center.z - 2.1], 0, .35)
@@ -37,7 +57,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   const fixed = batch.build(group, 'tea-bar-body-top-equipment')
   const seats = barSeats(barLayout, low).map(seat => ({ ...seat, sitOffset: { forward: 0, lift: 0 }, decorative: true }))
   const stool = createSampleBatch(THREE, assets)
-  stool.add(new THREE.CylinderGeometry(.28, .28, .1, low ? 10 : 16), '#2F4A5C', [0, .82, 0], 0, .95)
+  stool.add(new THREE.CylinderGeometry(.28, .28, .1, low ? 10 : 16), '#687D68', [0, .82, 0], 0, .95, 0, 'fabric')
   stool.add(new THREE.CylinderGeometry(.04, .055, .72, 8), '#9B8B6D', [0, .42, 0], 0, .35, .7)
   stool.add(new THREE.CylinderGeometry(.23, .25, .04, 12), '#9B8B6D', [0, .06, 0], 0, .35, .7)
   const stoolFoot = new THREE.TorusGeometry(.17, .015, 4, 12); stoolFoot.rotateX(Math.PI / 2)
@@ -50,7 +70,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
     for (let i = 0; i <= 12; i++) { const x = -.675 + i * 1.35 / 12, z = radius - Math.sqrt(radius * radius - x * x) + z0; if (i) shape.lineTo(x, -z); else shape.moveTo(x, -z) }
     for (let i = 12; i >= 0; i--) { const x = -.675 + i * 1.35 / 12, z = radius - Math.sqrt(radius * radius - x * x) + z1; shape.lineTo(x, -z) }
     shape.closePath(); const g = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false }); g.rotateX(-Math.PI / 2)
-    sofa.add(g, '#3E5A4E', [0, y, 0], 0, .97)
+    sofa.add(g, '#687D68', [0, y, 0], 0, .97, 0, 'fabric')
   }
   curvedCushion(-LOUNGE_SIT.seatDepth / 2, LOUNGE_SIT.seatDepth / 2, LOUNGE_SIT.seatTop - .22, .22)
   curvedCushion(.14, .27, .5, .45)

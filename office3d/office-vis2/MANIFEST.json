@@ -81,21 +81,21 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "197059F5F94249B0BA8BD2E7A6D62587EBBAB6F35E64771C9E7465F61319676C",
-      "source": "Existing B0 procedural asset, reused unchanged",
+      "sha256": "5B46A5DF127E77265285FDFCD0D7847039B3D2DD7FD4750D22EC73BA920415C3",
+      "source": "Existing procedural banyan refined in O-V1: smaller leaves, deeper canopy notch and branching; no photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "5FE2AAA1F012A5C381CF5BD79C2636E59EEB1B178613DBECB2B9D523F1DF3476",
+      "sha256": "E926DAAD6F9EDF4C565A1FA3B8E7F1118CE411E784BF1DFDD86615A13D771925",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "E5FC06CBF24FA071C8F448CE442C7F8143C1200B768B9601F725C1137CA9DC36",
+      "sha256": "C52A3ADDF8BE085957351319E3C65D6A61D44FE214E824FAC924617DEBC16D19",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -134,6 +134,13 @@
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/batch.js",
+      "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "CDF040F4D99719600C5C054CFC8EEB680FB70F47388DEA8E646ED0735F776271"
     }
   ],
   "excluded": {
