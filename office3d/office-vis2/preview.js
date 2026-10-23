@@ -27,7 +27,8 @@ function draw() {
   const s = enabled ? controller.summary() : legacy.summary()
   document.querySelector('#metrics').textContent = `${enabled ? 'VIS2-O 样板' : 'B0 原岛台'} · ${tier} · 模块 ${s.calls} calls / ${Math.round(s.triangles)} 三角形 · 整页 ${renderer.info.render.calls} calls（含当前阴影）`
 }
-function setView(name) { view = name; if (officeContext) officeContext.root.visible = name === 'officeOverview'; const pose = name === 'officeOverview' ? [[2, 42, 45], [2, 0, -4]] : poses[name]; camera.position.set(...pose[0]); camera.lookAt(...pose[1]); draw() }
+const contextPoses = { officeOverview: [[2, 42, 45], [2, 0, -4]], reference: [[2, 48, 60], [2, 0, 4]], plaza: [[-17, 11, 36], [2, .5, 21]] }
+function setView(name) { view = name; if (officeContext) officeContext.root.visible = !!contextPoses[name]; const pose = contextPoses[name] || poses[name]; camera.position.set(...pose[0]); camera.lookAt(...pose[1]); draw() }
 function clearContext() { contextEpoch++; officeContext?.dispose(); officeContext = null; if (previewAssets) disposePreviewAssets(previewAssets.A); previewAssets = null }
 function mountContext() { officeContext = buildOfficePreviewContext({ THREE, root, layout, low, ...previewAssets, canvasTex }) }
 async function showOffice() {
@@ -52,7 +53,7 @@ async function enter() {
   document.querySelector('#status').textContent = ok ? '样板已开启 · 模拟展示，无业务操作' : '样板未开启 · 已恢复原办公室'
   draw()
 }
-async function exit() { enabled = false; probeEpoch++; clearContext(); await controller.setConfig(null); legacy.root.visible = true; document.querySelector('#status').textContent = '关闭 · 原办公室样板'; if (view === 'officeOverview') setView('overview'); else draw() }
+async function exit() { enabled = false; probeEpoch++; clearContext(); await controller.setConfig(null); legacy.root.visible = true; document.querySelector('#status').textContent = '关闭 · 原办公室样板'; if (contextPoses[view]) setView('overview'); else draw() }
 async function rebuild() {
   const reopen = enabled; controller?.dispose(); legacy?.dispose()
   const contextOpen = !!officeContext; officeContext?.dispose(); officeContext = null
@@ -63,7 +64,7 @@ async function rebuild() {
   legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex })
   enabled = false; if (reopen) await enter(); else draw()
   if (contextOpen && previewAssets && enabled) { mountContext(); setView(view) }
-  else if (!enabled && previewAssets) { clearContext(); if (view === 'officeOverview') setView('overview') }
+  else if (!enabled && previewAssets) { clearContext(); if (contextPoses[view]) setView('overview') }
 }
 function resize() { renderer.setPixelRatio(cappedDpr(tier, devicePixelRatio, innerWidth, innerHeight)); renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); draw() }
 async function probe() {
@@ -83,11 +84,11 @@ async function probe() {
     window.__vis2.lastProbe = result; return result
   } finally { probing = false }
 }
-const click = event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) setView(b.dataset.view); if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe() }
+const click = async event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) { if (contextPoses[b.dataset.view]) await showOffice(); if (!contextPoses[b.dataset.view] || officeContext) setView(b.dataset.view) } if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe() }
 const visibility = () => { probeEpoch++; if (!document.hidden) draw() }
 const dispose = () => { if (disposed) return; disposed = true; probeEpoch++; clearContext(); controller.dispose(); legacy.dispose(); groundGeometry.dispose(); groundMaterial.dispose(); key.shadow.map?.dispose(); renderer.dispose(); removeEventListener('resize', resize); document.removeEventListener('click', click); document.removeEventListener('visibilitychange', visibility) }
 await rebuild(); setView(view); resize(); addEventListener('resize', resize); document.addEventListener('click', click); document.addEventListener('visibilitychange', visibility)
 document.querySelector('#tier').textContent = '循环画质档位'
 addEventListener('pagehide', e => { if (!e.persisted) dispose() })
-window.__vis2 = { renderer, scene, root, camera, poses, setView, enter, exit, showOffice, probe, summary: () => controller.summary(), mapping: () => controller.mapping, contextSeats: () => officeContext?.seats || [], mode: () => enabled ? 'open' : 'closed' }
+window.__vis2 = { renderer, scene, root, camera, poses, contextPoses, setView, enter, exit, showOffice, probe, summary: () => controller.summary(), mapping: () => controller.mapping, contextSeats: () => officeContext?.seats || [], contextPlacements: () => officeContext?.completion || [], mode: () => enabled ? 'open' : 'closed' }
 const query = new URLSearchParams(location.search); if (query.getAll('vis2').length === 1 && query.get('vis2') === '1') await enter()

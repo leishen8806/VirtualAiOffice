@@ -1,4 +1,5 @@
 import { createSampleBatch } from './batch.js'
+import { appendOfficePlaza } from './plaza.js'
 
 // Preview-owned decoration. Functional seats, colliders and navigation remain in the host.
 export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, low = false }) {
@@ -64,14 +65,14 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
   disk.rotateX(-Math.PI / 2); batch.add(disk, '#D9D3C6', [c.x, .09, c.z], 0, .9, 0, 'stone')
   for (const radius of [3.1, 5.8, 8.3]) {
     const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
-    ring.rotateX(-Math.PI / 2); batch.add(ring, '#B89B64', [c.x, .104, c.z], 0, .7)
+    ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)
+  }
+  for (let i = 0; i < plaza.radialSeams; i++) {
+    const a = i * Math.PI * 2 / plaza.radialSeams, length = plaza.radius - .25 - 3.2
+    batch.add(new THREE.BoxGeometry(.018, .006, length), '#B8AF9F', [c.x + Math.sin(a) * (3.2 + length / 2), .103, c.z + Math.cos(a) * (3.2 + length / 2)], a, .9)
   }
   box(c.x, .105, 12.9, 3.8, .02, 1.8, '#D9D3C6', 'stone')
-  for (const side of [-1, 1]) for (const z of [15.5, 21, 26]) {
-    const x = c.x + side * 10
-    box(x, .18, z, 2.2, .36, 1.1, '#F4F1EA', 'stone')
-    for (const dx of [-.65, 0, .65]) plant(x + dx, z, .65)
-  }
+  placements.push(...appendOfficePlaza({ THREE, batch, layout }))
   for (const { x, z } of [{ x: -13, z: 16 }, { x: -13, z: 25 }, { x: 17, z: 16 }, { x: 17, z: 25 }]) {
     cylinder(x, 1.05, z, .13, 2.1, '#6A6253')
     for (let i = 0; i < (low ? 4 : 7); i++) {

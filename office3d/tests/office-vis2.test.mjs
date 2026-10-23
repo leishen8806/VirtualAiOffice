@@ -16,11 +16,48 @@ import { buildOfficeCompletionVisual } from '../office-vis2/completion.js'
 import { buildOfficeFoyerFurniture } from '../office-vis2/foyer.js'
 import { buildOfficeTeaBarSample } from '../office-vis2/bar.js'
 import { createSampleBatch } from '../office-vis2/batch.js'
+import { appendOfficePlaza } from '../office-vis2/plaza.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
+
+test('O-V2 plaza reuses props, keeps source anchors and exports nonoverlapping integration footprints', () => {
+  const before = JSON.stringify(LAYOUT_V3), batch = createSampleBatch(THREE), root = new THREE.Group()
+  const placements = appendOfficePlaza({ THREE, batch, layout: LAYOUT_V3 }), built = batch.build(root, 'plaza-test')
+  const intersects = (a, b) => Math.min(a.x1, b.x1) > Math.max(a.x0, b.x0) && Math.min(a.z1, b.z1) > Math.max(a.z0, b.z0)
+  assert.equal(placements.filter(p => p.kind === 'vendors').length, 4)
+  assert.equal(placements.filter(p => p.kind === 'cafe').length, 4)
+  assert.equal(placements.filter(p => p.kind === 'benches').length, 6)
+  assert.equal(placements.filter(p => p.kind === 'flowers').length, 2)
+  assert.equal(placements.filter(p => p.kind === 'lamps').length, 2)
+  for (const [i, p] of placements.entries()) {
+    assert.equal(p.interaction, 'preview-only')
+    assert.ok(!intersects(p.bounds, { x0: 0, x1: 4, z0: 12, z1: 32.5 }), p.id + ' clears the 4m entrance axis')
+    for (const other of placements.slice(i + 1)) assert.ok(!intersects(p.bounds, other.bounds), p.id + ' / ' + other.id)
+    if (p.kind === 'vendors' || p.kind === 'cafe') assert.deepEqual({ x: p.x, z: p.z }, p.source)
+  }
+  const positions = built.mesh.geometry.attributes.position
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i)
+    assert.ok(placements.some(p => x >= p.bounds.x0 - .001 && x <= p.bounds.x1 + .001 && z >= p.bounds.z0 - .001 && z <= p.bounds.z1 + .001 && y >= p.bounds.y0 - .001 && y <= p.bounds.y1 + .001), 'every rendered vertex has an exported footprint')
+  }
+  assert.equal(root.children.length, 1, 'all props use one existing material batch')
+  assert.ok(built.triangles() <= 10000)
+  assert.equal(JSON.stringify(LAYOUT_V3), before)
+  let disposed = 0; built.mesh.geometry.addEventListener('dispose', () => disposed++)
+  built.dispose(); built.dispose(); assert.equal(disposed, 1); assert.equal(root.children.length, 0)
+})
+
+test('O-V2 plaza static geometry is deterministic and cleanup leaves no source props mounted', () => {
+  const a = createSampleBatch(THREE), b = createSampleBatch(THREE)
+  const pa = appendOfficePlaza({ THREE, batch: a, layout: LAYOUT_V3 }), pb = appendOfficePlaza({ THREE, batch: b, layout: LAYOUT_V3 })
+  const ma = a.build(new THREE.Group(), 'a'), mb = b.build(new THREE.Group(), 'b')
+  assert.deepEqual(pa, pb)
+  assert.equal(sha256(ma.mesh.geometry.attributes.position.array), sha256(mb.mesh.geometry.attributes.position.array))
+  ma.dispose(); mb.dispose()
+})
 
 test('O-V1 equipment stays above the existing counter and leaves both circulation openings unchanged', () => {
   const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 })

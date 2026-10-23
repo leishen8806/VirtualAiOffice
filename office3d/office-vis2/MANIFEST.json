@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "F4B058D7DE6403726ACCA61EC7162CC0A21902AFDECD32B7569D415FF4C79E0A",
+      "sha256": "CB1986F8CC089DA74EFBDC37CCDAC1A7AB8CF9739800AAAF49826BE0D9E90A37",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -141,6 +141,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "CDF040F4D99719600C5C054CFC8EEB680FB70F47388DEA8E646ED0735F776271"
+    },
+    {
+      "file": "office-vis2/plaza.js",
+      "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "10040793B28777B15393475A178FBA47804A032B986279B8C25EDE9552D94FAF"
     }
   ],
   "excluded": {
