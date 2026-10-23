@@ -62,6 +62,11 @@ const overview = adaptAuthorizedLive({
   `unavailable`，绝不把负 age 截断成新鲜。
 - demo 时间是由 `timeSlice` 推导的合成 ISO 时间，不是当前业务时间；demo 公司 ID 必须
   匹配 `demo-*`，不能把演示快照标记到真实公司。
+- `verifyLive` 必须是同步函数，返回 `{ ok, companyId, sourceName? }`。抛错返回
+  `VERIFIER_ERROR`；返回 Promise 或其他异步值返回 `ASYNC_VERIFIER_UNSUPPORTED`。
+  验证器返回的 `companyId` 必须和请求公司精确一致。
+- `maxAgeMs` 和 `maxFutureMs` 只在 `createDrOverviewAdapter()` 时配置，且都必须为有限、
+  非负数字。每次调用不能覆盖它们。
 
 现有 `dr-console-data.js` 兼容为 demo 输入。其数字和参考图
 `DR智慧仓配中心全景仪表盘6.0.png` 都是设计演示，不是业务记录。
@@ -76,10 +81,16 @@ facilities, inventory, activity, transport, work, equipment, alerts, utilization
 ```
 
 - `facilities` 固定包含且必须完整覆盖 `W1`、`W2`、`W3`；重复、未知、缺失 ID 或容量
-  不可能值会使全景总览整体为 `unavailable`。
+  不可能值会使全景总览整体为 `unavailable`。slot、库存、设备、告警与托盘计数都必须是
+  非负整数。
 - `inventory`、入库/出库活动、车辆/运单、工单、设备、告警与利用率都保留字段级来源。
-- live 事件 `at` 与运单 ETA 必须为 ISO 时间；演示事件与 ETA 生成合成时间。未知事件、
-  任务、运单状态不会以零计入 live 聚合。
+- verified live 的 `events`、`tasks`、`waybills`、`vehicles`、`alerts`、`devices` 是必填
+  数组。空数组表示已知零；缺失、`null`、对象、字符串等均为不可验证数据，整体返回
+  `unavailable`。
+- live 事件 `at`、运单 ETA 与 source `observedAt` 必须是带 `Z` 或 `+/-HH:MM` 时区的
+  严格 ISO 8601 时间。未知事件、任务、运单状态，非法车辆区域或非布尔 `inYard` 都不会
+  被静默忽略或以零计入 live 聚合。
+- 类别由 `(name, unit)` 唯一确定，重复类别会被拒绝。
 - `map` 始终是 `demo` 状态的静态示意，明确不代表实时车辆位置；周边数据 live 不会使其
   变成 live。
 
@@ -97,4 +108,6 @@ facilities, inventory, activity, transport, work, equipment, alerts, utilization
 4. 使用新来源前需独立确认字段口径、来源授权、时间戳、分页完整性与敏感字段脱敏。
 5. `createDrOverviewAdapter` 是信任边界的依赖注入点，不是认证系统。若不存在权威验证器，
    必须使用默认适配器并得到 `TRUST_CONTEXT_REQUIRED`，不能伪造 live。
-6. 本模块不改变 W1/W2/W3、模拟标签、场景行为或任何库存/设备操作。
+6. demo 只从内置确定性 `buildSnapshot(seed, timeSlice)` 生成，并忽略调用方提交的
+   `payload`；不能把任意运营载荷换成 `demo-*` 公司 ID 重新包装。
+7. 本模块不改变 W1/W2/W3、模拟标签、场景行为或任何库存/设备操作。

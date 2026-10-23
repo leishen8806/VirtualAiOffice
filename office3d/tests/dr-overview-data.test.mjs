@@ -6,11 +6,10 @@ import { buildSnapshot } from '../dr-console-data.js'
 
 const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures/dr-overview-live.json', import.meta.url), 'utf8'))
 const now = '2026-10-23T10:01:00.000Z'
-const adapter = createDrOverviewAdapter({
-  verifyLive: ({ companyId, source, payload }) => companyId === 'company-a' && source.companyId === 'company-a' && payload?.companyId === 'company-a'
+const adapterVerify = ({ companyId, source, payload }) => companyId === 'company-a' && source.companyId === 'company-a' && payload?.companyId === 'company-a'
     ? { ok: true, companyId: 'company-a', sourceName: 'authorized-read-only-fixture' }
-    : { ok: false },
-})
+    : { ok: false }
+const adapter = createDrOverviewAdapter({ verifyLive: adapterVerify })
 const live = (payload = fixture, extra = {}) => adapter({
   companyId: 'company-a', payload,
   source: { kind: 'live', name: 'caller-assertion-is-not-trust', companyId: 'company-a', observedAt: fixture.observedAt },
@@ -84,10 +83,12 @@ test('live time requires explicit clock and rejects future or stale observations
   assert.equal(invalid.provenance.reason, 'NOW_REQUIRED')
   const future = live(fixture, { source: { kind: 'live', companyId: 'company-a', observedAt: '2026-10-23T10:02:00.000Z' } })
   assert.equal(future.provenance.reason, 'FUTURE_OBSERVATION')
-  const data = live(fixture, { now: '2026-10-23T10:10:00.000Z', maxAgeMs: 120000 })
+  const strictAge = createDrOverviewAdapter({ maxAgeMs: 1000, maxFutureMs: 5000, verifyLive: adapterVerify })
+  const data = strictAge({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now: '2026-10-23T10:10:00.000Z' })
   assert.equal(data.mode, 'unavailable')
   assert.equal(data.provenance.reason, 'STALE')
-  const boundary = live(fixture, { now: '2026-10-23T10:02:00.000Z', maxAgeMs: 120000 })
+  const boundaryAdapter = createDrOverviewAdapter({ maxAgeMs: 120000, maxFutureMs: 0, verifyLive: adapterVerify })
+  const boundary = boundaryAdapter({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now: '2026-10-23T10:02:00.000Z' })
   assert.equal(boundary.mode, 'live')
   assert.equal(boundary.freshness.ageMs, 120000)
 })
@@ -95,6 +96,7 @@ test('live time requires explicit clock and rejects future or stale observations
 test('incomplete facilities, unknown vocabularies, invalid inventory and capacity fail closed', () => {
   assert.equal(live({ ...fixture, warehouses: fixture.warehouses.slice(0, 1) }).provenance.reason, 'FACILITY_COVERAGE_INCOMPLETE')
   assert.equal(live({ ...fixture, warehouses: [...fixture.warehouses, { ...fixture.warehouses[0], id: 'W9' }] }).provenance.reason, 'UNKNOWN_FACILITY_ID')
+  assert.equal(live({ ...fixture, warehouses: [fixture.warehouses[0], fixture.warehouses[0], fixture.warehouses[2]] }).provenance.reason, 'DUPLICATE_FACILITY_ID')
   assert.equal(live({ ...fixture, events: [{ ...fixture.events[0], kind: '未知事件' }] }).provenance.reason, 'INVALID_EVENT')
   assert.equal(live({ ...fixture, tasks: [{ ...fixture.tasks[0], status: '未知状态' }] }).provenance.reason, 'INVALID_TASK_STATUS')
   assert.equal(live({ ...fixture, pallets: 18 }).provenance.reason, 'INVENTORY_TOTAL_MISMATCH')
@@ -114,6 +116,69 @@ test('critical integrity mutations cannot preserve a live aggregate', () => {
     mutate(payload)
     assert.equal(live(payload).mode, 'unavailable')
   }
+})
+
+test('live requires every mandatory collection and accepts known empty collections only', () => {
+  for (const key of ['events', 'tasks', 'waybills', 'vehicles', 'alerts', 'devices']) {
+    const missing = structuredClone(fixture)
+    delete missing[key]
+    assert.equal(live(missing).mode, 'unavailable')
+    assert.equal(live({ ...fixture, [key]: null }).mode, 'unavailable')
+    assert.equal(live({ ...fixture, [key]: {} }).mode, 'unavailable')
+    assert.equal(live({ ...fixture, [key]: 'zero' }).mode, 'unavailable')
+  }
+  const empty = live({ ...fixture, events: [], tasks: [], waybills: [], vehicles: [], alerts: [], devices: [] })
+  assert.equal(empty.mode, 'live')
+  assert.equal(empty.transport.vehiclesInYard.value, 0)
+  assert.equal(empty.work.pending.value, 0)
+  assert.equal(empty.alerts.total.value, 0)
+})
+
+test('strict ISO timestamps require timezone and reject invalid calendar values', () => {
+  for (const bad of ['1', 'May 5', '2026-10-23T10:00:00', '2026-02-30T10:00:00Z', '2026-10-23T10:00:00+25:00']) {
+    assert.equal(live(fixture, { source: { kind: 'live', companyId: 'company-a', observedAt: bad } }).provenance.reason, 'OBSERVED_AT_REQUIRED')
+    assert.equal(live({ ...fixture, events: [{ ...fixture.events[0], at: bad }] }).provenance.reason, 'INVALID_EVENT_TIME')
+    assert.equal(live({ ...fixture, waybills: [{ ...fixture.waybills[0], eta: bad }] }).provenance.reason, 'INVALID_SHIPMENT')
+  }
+  const offset = live(fixture, { source: { kind: 'live', companyId: 'company-a', observedAt: '2026-10-23T17:00:00.000+07:00' } })
+  assert.equal(offset.mode, 'live')
+})
+
+test('adapter configuration rejects invalid thresholds and uses configured future tolerance', () => {
+  for (const config of [{ maxAgeMs: -1 }, { maxAgeMs: Infinity }, { maxAgeMs: NaN }, { maxFutureMs: -1 }, { maxFutureMs: '1000' }]) {
+    assert.throws(() => createDrOverviewAdapter({ ...config, verifyLive: adapterVerify }), /finite non-negative/)
+  }
+  const tolerance = createDrOverviewAdapter({ maxAgeMs: 120000, maxFutureMs: 61000, verifyLive: adapterVerify })
+  const data = tolerance({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: '2026-10-23T10:02:00.000Z' }, now })
+  assert.equal(data.mode, 'live')
+})
+
+test('vehicle, counts, category identity and aggregate vocabulary validation fail closed', () => {
+  assert.equal(live({ ...fixture, vehicles: [{ ...fixture.vehicles[0], zone: 'W9' }] }).provenance.reason, 'INVALID_VEHICLE')
+  assert.equal(live({ ...fixture, vehicles: [{ ...fixture.vehicles[0], inYard: 'true' }] }).provenance.reason, 'INVALID_VEHICLE')
+  assert.equal(live({ ...fixture, devices: [{ ...fixture.devices[0], normal: 1.5 }] }).provenance.reason, 'INVALID_EQUIPMENT')
+  assert.equal(live({ ...fixture, alerts: [{ ...fixture.alerts[0], count: -1 }] }).provenance.reason, 'INVALID_ALERT')
+  assert.equal(live({ ...fixture, inventoryByCategory: [...fixture.inventoryByCategory, { ...fixture.inventoryByCategory[0], pallets: 0, sku: 0 }], pallets: 17 }).provenance.reason, 'INVALID_INVENTORY')
+  const pending = live({ ...fixture, tasks: [{ ...fixture.tasks[0], status: '待处理' }] })
+  assert.equal(pending.work.pending.value, 1)
+  assert.equal(live({ ...fixture, waybills: [{ ...fixture.waybills[0], status: '未知状态' }] }).provenance.reason, 'INVALID_SHIPMENT')
+})
+
+test('demo ignores arbitrary payloads and verifier exceptions or promises fail closed', () => {
+  const arbitraryDemo = adaptDrOverview({ companyId: 'demo-company', payload: { companyId: 'company-b', warehouses: [] }, seed: 19, timeSlice: 5, source: { kind: 'demo' } })
+  const expectedDemo = createDemoDrOverview({ companyId: 'demo-company', seed: 19, timeSlice: 5 })
+  assert.equal(arbitraryDemo.mode, 'demo')
+  assert.equal(arbitraryDemo.generatedAt, expectedDemo.generatedAt)
+  assert.deepEqual(arbitraryDemo.inventory, expectedDemo.inventory)
+  assert.deepEqual(arbitraryDemo.transport, expectedDemo.transport)
+  const throws = createDrOverviewAdapter({ verifyLive: () => { throw new Error('nope') } })
+  assert.equal(throws({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now }).provenance.reason, 'VERIFIER_ERROR')
+  const async = createDrOverviewAdapter({ verifyLive: () => Promise.resolve({ ok: true, companyId: 'company-a' }) })
+  assert.equal(async({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now }).provenance.reason, 'ASYNC_VERIFIER_UNSUPPORTED')
+  const hostileThen = createDrOverviewAdapter({ verifyLive: () => Object.defineProperty({}, 'then', { get: () => { throw new Error('nope') } }) })
+  assert.equal(hostileThen({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now }).provenance.reason, 'VERIFIER_ERROR')
+  const wrongIdentity = createDrOverviewAdapter({ verifyLive: () => ({ ok: true, companyId: 'company-b' }) })
+  assert.equal(wrongIdentity({ companyId: 'company-a', payload: fixture, source: { kind: 'live', companyId: 'company-a', observedAt: fixture.observedAt }, now }).provenance.reason, 'LIVE_SOURCE_NOT_VERIFIED')
 })
 
 test('missing facility status remains explicitly unavailable without becoming known', () => {

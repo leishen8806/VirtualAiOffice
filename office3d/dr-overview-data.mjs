@@ -30,9 +30,30 @@ const DEMO_EPOCH_MS = Date.parse('2026-01-01T00:00:00.000Z')
 
 const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 const nonNegative = (value) => Number.isFinite(value) && value >= 0 ? value : null
+const nonNegativeInteger = (value) => Number.isInteger(value) && value >= 0 ? value : null
 const text = (value) => typeof value === 'string' && value.trim() ? value.trim() : null
-const iso = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : null
 const rows = (value) => Array.isArray(value) ? value : []
+const REQUIRED_COLLECTIONS = Object.freeze(['events', 'tasks', 'waybills', 'vehicles', 'alerts', 'devices'])
+const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:\d{2})$/
+
+function iso(value) {
+  if (typeof value !== 'string') return null
+  const match = value.match(ISO_RE)
+  if (!match || !Number.isFinite(Date.parse(value))) return null
+  const [, year, month, day, hour, minute, second, , zone] = match
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+  if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() !== Number(month) - 1 || date.getUTCDate() !== Number(day) ||
+    Number(hour) > 23 || Number(minute) > 59 || Number(second) > 59) return null
+  if (zone !== 'Z') {
+    const [, zoneHour, zoneMinute] = zone.match(/[+-](\d{2}):(\d{2})/)
+    if (Number(zoneHour) > 23 || Number(zoneMinute) > 59) return null
+  }
+  return value
+}
+
+function validDuration(value) {
+  return Number.isFinite(value) && value >= 0
+}
 
 function metric(value, state, source, observedAt, freshness, reason = null) {
   return Object.freeze({ value, state, source, observedAt, freshness, reason })
@@ -84,31 +105,38 @@ function validFacilityRows(payload) {
   if (new Set(ids).size !== ids.length) return 'DUPLICATE_FACILITY_ID'
   if (ids.length !== DR_FACILITY_IDS.length || DR_FACILITY_IDS.some((id) => !ids.includes(id))) return 'FACILITY_COVERAGE_INCOMPLETE'
   for (const row of list) {
-    if (nonNegative(row.usedSlots) === null || nonNegative(row.totalSlots) === null || row.totalSlots <= 0 || row.usedSlots > row.totalSlots) return 'INVALID_FACILITY_CAPACITY'
+    if (nonNegativeInteger(row.usedSlots) === null || nonNegativeInteger(row.totalSlots) === null || row.totalSlots <= 0 || row.usedSlots > row.totalSlots) return 'INVALID_FACILITY_CAPACITY'
   }
   return null
 }
 
 function validPayload(payload, state) {
   if (!isObject(payload)) return 'INVALID_PAYLOAD'
+  for (const key of REQUIRED_COLLECTIONS) if (!Array.isArray(payload[key])) return `INVALID_${key.toUpperCase()}_COLLECTION`
   const facilities = validFacilityRows(payload)
   if (facilities) return facilities
   const categories = rows(payload.inventoryByCategory)
-  if (!categories.length || categories.some((row) => !text(row?.name) || !text(row?.unit) || nonNegative(row?.pallets) === null || nonNegative(row?.sku) === null)) return 'INVALID_INVENTORY'
+  const categoryKeys = categories.map((row) => `${text(row?.name) || ''}\u0000${text(row?.unit) || ''}`)
+  if (!categories.length || new Set(categoryKeys).size !== categoryKeys.length ||
+    categories.some((row) => !text(row?.name) || !text(row?.unit) || nonNegativeInteger(row?.pallets) === null || nonNegativeInteger(row?.sku) === null)) return 'INVALID_INVENTORY'
   const categoryPallets = categories.reduce((sum, row) => sum + row.pallets, 0)
-  if (nonNegative(payload.pallets) === null || payload.pallets !== categoryPallets) return 'INVENTORY_TOTAL_MISMATCH'
+  if (nonNegativeInteger(payload.pallets) === null || payload.pallets !== categoryPallets) return 'INVENTORY_TOTAL_MISMATCH'
   for (const event of rows(payload.events)) {
-    if (!text(event?.id) || !DR_FACILITY_IDS.includes(event?.zone) || !DR_EVENT_KINDS.includes(event?.kind) || nonNegative(event?.pallets) === null) return 'INVALID_EVENT'
+    if (!text(event?.id) || !DR_FACILITY_IDS.includes(event?.zone) || !DR_EVENT_KINDS.includes(event?.kind) || nonNegativeInteger(event?.pallets) === null) return 'INVALID_EVENT'
     if (state === 'live' && !iso(event.at)) return 'INVALID_EVENT_TIME'
   }
   for (const task of rows(payload.tasks)) if (!text(task?.id) || !DR_FACILITY_IDS.includes(task?.zone) || !DR_TASK_STATUSES.includes(task?.status)) return 'INVALID_TASK_STATUS'
   for (const shipment of rows(payload.waybills)) {
     if (!text(shipment?.id) || !DR_FACILITY_IDS.includes(shipment?.zone) || !DR_SHIPMENT_STATUSES.includes(shipment?.status) ||
-      nonNegative(shipment?.pallets) === null || !Number.isFinite(shipment?.progress) || shipment.progress < 0 || shipment.progress > 100 ||
+      nonNegativeInteger(shipment?.pallets) === null || !Number.isFinite(shipment?.progress) || shipment.progress < 0 || shipment.progress > 100 ||
       (state === 'live' && !iso(shipment?.eta))) return 'INVALID_SHIPMENT'
   }
-  for (const device of rows(payload.devices)) if (!text(device?.name) || nonNegative(device?.total) === null || nonNegative(device?.normal) === null || device.normal > device.total) return 'INVALID_EQUIPMENT'
-  if (rows(payload.alerts).some((row) => !text(row?.type) || nonNegative(row?.count) === null)) return 'INVALID_ALERT'
+  for (const vehicle of rows(payload.vehicles)) {
+    const plannedDemoRoute = state === 'demo' && vehicle?.inYard === false && text(vehicle?.zone) === '计划路线'
+    if (!text(vehicle?.id) || (!plannedDemoRoute && !DR_FACILITY_IDS.includes(vehicle?.zone)) || typeof vehicle?.inYard !== 'boolean') return 'INVALID_VEHICLE'
+  }
+  for (const device of rows(payload.devices)) if (!text(device?.name) || nonNegativeInteger(device?.total) === null || nonNegativeInteger(device?.normal) === null || device.normal > device.total) return 'INVALID_EQUIPMENT'
+  if (rows(payload.alerts).some((row) => !text(row?.type) || nonNegativeInteger(row?.count) === null)) return 'INVALID_ALERT'
   return null
 }
 
@@ -156,6 +184,7 @@ function normalize(payload, { companyId, state, sourceName, assertedSource, obse
 }
 
 export function createDrOverviewAdapter({ verifyLive = null, maxAgeMs = 120000, maxFutureMs = 30000 } = {}) {
+  if (!validDuration(maxAgeMs) || !validDuration(maxFutureMs)) throw new TypeError('maxAgeMs and maxFutureMs must be finite non-negative numbers')
   return (input = {}) => {
     const companyId = text(input.companyId)
     const source = isObject(input.source) ? input.source : null
@@ -163,7 +192,8 @@ export function createDrOverviewAdapter({ verifyLive = null, maxAgeMs = 120000, 
     if (source.kind === 'demo') {
       if (!companyId || !DEMO_COMPANY_RE.test(companyId)) return unavailable(companyId, 'DEMO_COMPANY_REQUIRED', input.now)
       const observedAt = demoTime(input.timeSlice)
-      const payload = isObject(input.payload) ? input.payload : buildSnapshot({ seed: input.seed, timeSlice: input.timeSlice })
+      // Demo callers choose only the deterministic seed/timeSlice, never an operational payload.
+      const payload = buildSnapshot({ seed: input.seed, timeSlice: input.timeSlice })
       const invalid = validPayload(payload, 'demo')
       return invalid ? unavailable(companyId, invalid, observedAt) : normalize(payload, { companyId, state: 'demo', sourceName: source.name || 'dr-console-deterministic-demo', assertedSource: source.name, observedAt, now: observedAt, maxAgeMs, maxFutureMs })
     }
@@ -171,7 +201,17 @@ export function createDrOverviewAdapter({ verifyLive = null, maxAgeMs = 120000, 
     if (!iso(input.now)) return unavailable(companyId, 'NOW_REQUIRED', null)
     if (typeof verifyLive !== 'function') return unavailable(companyId, 'TRUST_CONTEXT_REQUIRED', input.now)
     if (!text(source.companyId) || !isObject(input.payload) || text(input.payload.companyId) !== companyId || source.companyId !== companyId) return unavailable(companyId, 'COMPANY_SCOPE_MISMATCH', input.now)
-    const trusted = verifyLive(Object.freeze({ companyId, source: Object.freeze({ companyId: text(source.companyId), name: text(source.name), observedAt: iso(source.observedAt) }), payload: input.payload }))
+    let trusted
+    try {
+      trusted = verifyLive(Object.freeze({ companyId, source: Object.freeze({ companyId: text(source.companyId), name: text(source.name), observedAt: iso(source.observedAt) }), payload: input.payload }))
+    } catch {
+      return unavailable(companyId, 'VERIFIER_ERROR', input.now)
+    }
+    try {
+      if (trusted && typeof trusted.then === 'function') return unavailable(companyId, 'ASYNC_VERIFIER_UNSUPPORTED', input.now)
+    } catch {
+      return unavailable(companyId, 'VERIFIER_ERROR', input.now)
+    }
     if (!isObject(trusted) || trusted.ok !== true || !text(trusted.companyId) || trusted.companyId !== companyId) return unavailable(companyId, 'LIVE_SOURCE_NOT_VERIFIED', input.now)
     const observedAt = iso(source.observedAt)
     if (!observedAt) return unavailable(companyId, 'OBSERVED_AT_REQUIRED', input.now)
