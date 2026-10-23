@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V2, LAYOUT_V3 } from '../office-layout.js'
 import { barSeats, barLounges, barColliders } from '../office-bar-geometry.js'
@@ -10,9 +12,36 @@ import { buildOfficeBrandMarks } from '../office-vis2/brand.js'
 import { createSceneQuality } from '../quality.js'
 import { mergeOfficeStatic } from '../office-v2-registry.js'
 import { buildOfficePreviewContext } from '../office-vis2/preview-context.js'
+import { buildOfficeCompletionVisual } from '../office-vis2/completion.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
+
+test('VIS2 manifest hashes match tracked geometry, textures and brand asset', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../office-vis2/MANIFEST.json', import.meta.url), 'utf8'))
+  for (const entry of [...manifest.geometry, ...manifest.textures, manifest.brandAsset]) {
+    const url = new URL(entry.file.startsWith('office-vis2/') || entry.file.startsWith('assets/') ? '../' + entry.file : '../' + entry.file, import.meta.url)
+    const actual = createHash('sha256').update(await readFile(url)).digest('hex').toUpperCase()
+    assert.equal(entry.sha256, actual, entry.file)
+  }
+})
+
+test('VIS2 completion places display furniture inside rooms and keeps the entrance axis clear', () => {
+  const root = new THREE.Group(), value = buildOfficeCompletionVisual({ THREE, root, layout: LAYOUT_V3, low: true })
+  const desks = value.placements.filter(p => p.kind === 'display-desk')
+  assert.equal(desks.length, 12)
+  for (const desk of desks) {
+    const seat = LAYOUT_V3.displaySeats.find(s => s.x === desk.x && s.z - .55 === desk.z)
+    assert.ok(seat, 'display desk uses existing nonfunctional display position')
+    const room = LAYOUT_V3.regions.find(r => r.id === seat.region)
+    assert.ok(desk.x - desk.width / 2 > room.x0 && desk.x + desk.width / 2 < room.x1)
+    assert.ok(desk.z - desk.depth / 2 > room.z0 && desk.z + desk.depth / 2 < room.z1)
+  }
+  const furniture = value.root.getObjectByName('office-completion-furniture-and-plaza')
+  assert.ok(furniture.geometry.attributes.position.count > 0)
+  assert.equal(value.root.getObjectByName('office-vis2-completion'), value.root)
+  value.dispose(); assert.equal(root.children.length, 0)
+})
 
 test('VIS2 defaults closed for missing or malformed config and requests no textures', async () => {
   const l = loader()
@@ -45,7 +74,7 @@ test('VIS2 logo loading is optional and absent logos use named replacement slots
   marks.dispose()
 })
 
-test('VIS2 brand marks preserve the approved logo ratio and avoid co-planar backing', () => {
+test('VIS2 brand marks follow the curved fascia without trim penetration and preserve the approved ratio', () => {
   const assets = { logo: new THREE.Texture() }, root = new THREE.Group()
   const marks = buildOfficeBrandMarks({ THREE, root, layout: LAYOUT_V3, assets, canvasTex })
   assert.equal(marks.placeholder, false); assert.equal(marks.marks.length, 3)
@@ -53,15 +82,19 @@ test('VIS2 brand marks preserve the approved logo ratio and avoid co-planar back
   assert.equal(marks.root.getObjectByName('office-vis2-approved-logo-marks').material.map, assets.logo)
   assert.equal(marks.root.getObjectByName('office-vis2-brushed-metal-brand-backing').userData.depthOffset, .026)
   const fascia = marks.marks.find(m => m.id === 'bar-fascia'), center = LAYOUT_V3.bar.center
-  const radial = new THREE.Vector3(fascia.x - center.x, 0, fascia.z - center.z)
-  assert.ok(Math.abs(radial.length() - LAYOUT_V3.bar.radius - .04) < 1e-10)
-  const actual = new THREE.Matrix4(); marks.root.getObjectByName('office-vis2-approved-logo-marks').getMatrixAt(0, actual)
-  const normal = new THREE.Vector3(0, 0, 1).transformDirection(actual)
-  assert.ok(normal.dot(radial.normalize()) > .999999)
-  assert.ok(normal.z > .9, 'logo still faces the entrance')
-  assert.ok(fascia.y + (fascia.height + .14) / 2 < .95, 'backing stays below the stone countertop')
+  const backing = marks.root.getObjectByName('office-vis2-brushed-metal-brand-backing'), logos = marks.root.getObjectByName('office-vis2-approved-logo-marks')
+  assert.ok(Math.hypot(fascia.x - center.x, fascia.z - center.z) > LAYOUT_V3.bar.radius + .05)
+  for (const mesh of [backing, logos]) {
+    const p = mesh.geometry.attributes.position, n = mesh.userData.barVertexCount, distances = []
+    for (let i = 0; i < n; i++) distances.push(Math.hypot(p.getX(i) - center.x, p.getZ(i) - center.z))
+    assert.ok(Math.min(...distances) > LAYOUT_V3.bar.radius + .025, 'center and edge vertices clear bar and metallic trim')
+    assert.ok(Math.max(...distances) - Math.min(...distances) < .021, 'curved surface keeps even stand-off')
+    assert.ok(Math.max(...Array.from({ length: n }, (_, i) => p.getY(i))) < .88, 'all plaque points below upper metal trim')
+  }
+  assert.equal(logos.material.map, assets.logo)
+  assert.equal(backing.userData.depthOffset, .026)
   let released = 0
-  marks.root.traverse(mesh => { if (mesh.isInstancedMesh) mesh.addEventListener('dispose', () => released++) })
+  marks.root.traverse(mesh => { if (mesh.isMesh) mesh.geometry.addEventListener('dispose', () => released++) })
   marks.dispose(); marks.dispose(); assert.equal(released, 2)
 })
 
@@ -69,7 +102,10 @@ test('VIS2 reception labels clear the brand wall and construction failure releas
   const root = new THREE.Group(), ctl = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: loader(), canvasTex })
   assert.equal(await ctl.setConfig({ enabled: true }), true)
   const wall = ctl.mapping.brandMarks.find(m => m.id === 'reception-wall'), label = ctl.root.getObjectByName('vis2-reception-wayfinding')
-  assert.ok(label.position.y - label.geometry.parameters.height / 2 > wall.y + wall.height / 2)
+  const backing = ctl.root.getObjectByName('office-vis2-brushed-metal-brand-backing').geometry.attributes.position
+  const wallTop = Math.max(...Array.from({ length: backing.count }, (_, i) => backing.getY(i)).filter(y => y > 1.5))
+  assert.ok(label.position.y - label.geometry.parameters.height / 2 > wallTop + .025, 'text clears actual background plate')
+  assert.ok(label.position.z > wall.z + .05, 'text remains in front of panel')
   ctl.dispose()
   const allocated = new Set(), released = new Set(), registered = new Set()
   const failing = createOfficeVis2Controller({ THREE, root, layout: LAYOUT_V3, textureLoader: loader(), collision: { add(v) { registered.add(v) }, remove(v) { registered.delete(v) } }, canvasTex() {
@@ -107,15 +143,28 @@ test('VIS2 preserves its owned shader surfaces through the actual host quality a
 test('office context reuses the 25 layout workstations and never disposes injected model assets', () => {
   const names = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'table', 'chairModernCushion', 'bookcaseOpen', 'books', 'pottedPlant']
   const A = { furn: Object.fromEntries(names.map(name => [name, new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial())])) }
+  const visible = A.furn.desk, hidden = new THREE.Mesh(new THREE.BoxGeometry(.2, .2, .2), new THREE.MeshStandardMaterial())
+  const second = new THREE.MeshStandardMaterial({ color: '#A07040' })
+  visible.material = [visible.material, second]; hidden.visible = false; visible.add(hidden)
   let sharedDisposed = 0
-  for (const mesh of Object.values(A.furn)) { mesh.geometry.addEventListener('dispose', () => sharedDisposed++); mesh.material.addEventListener('dispose', () => sharedDisposed++) }
+  for (const source of Object.values(A.furn)) source.traverse(mesh => { if (!mesh.isMesh) return; mesh.geometry.addEventListener('dispose', () => sharedDisposed++); for (const material of [mesh.material].flat()) material.addEventListener('dispose', () => sharedDisposed++) })
   const canvasTex = (w, h, draw) => { const ctx = { clearRect() {}, fillRect() {}, fillText() {}, drawImage() {}, canvas: {} }, image = { getContext: () => ctx }; draw(ctx, w, h); const texture = new THREE.Texture(); texture.image = image; return texture }
-  const placeFurniture = (assets, name, x, z, options) => { const group = new THREE.Group(); group.add(assets.furn[name].clone()); group.position.set(x, options.y, z); group.rotation.y = options.rotY; return { group, size: new THREE.Vector3(1, 1, 1) } }
+  const clones = []
+  const placeFurniture = (assets, name, x, z, options) => { const group = new THREE.Group(); group.add(assets.furn[name].clone()); group.position.set(x, options.y, z); group.rotation.y = options.rotY; clones.push(group); return { group, size: new THREE.Vector3(1, 1, 1) } }
   const root = new THREE.Group(), value = buildOfficePreviewContext({ THREE, root, layout: LAYOUT_V3, A, placeFurniture, canvasTex })
   assert.deepEqual(value.seats, Object.entries(LAYOUT_V3.seats).map(([name, [region, x, z]]) => ({ name, region, x, z })))
   assert.equal(value.seats.length, 25); value.onFrame(new THREE.PerspectiveCamera())
+  const clonedDesk = clones[0].children[0]
+  assert.equal(clonedDesk.material.length, 2, 'both source material slots are retained')
+  assert.notEqual(clonedDesk.material[0], visible.material[0]); assert.notEqual(clonedDesk.material[1], visible.material[1])
+  assert.equal(clonedDesk.children[0].visible, false)
+  const ownedMaterialDisposals = [0, 0]
+  clonedDesk.material.forEach((material, i) => material.addEventListener('dispose', () => ownedMaterialDisposals[i]++))
+  let hiddenDisposed = 0
+  value.root.traverse(mesh => { if (mesh.isMesh && !mesh.visible) mesh.geometry.addEventListener('dispose', () => hiddenDisposed++) })
   value.dispose(); value.dispose(); assert.equal(root.children.length, 0); assert.equal(sharedDisposed, 0)
-  for (const mesh of Object.values(A.furn)) { mesh.geometry.dispose(); mesh.material.dispose() }
+  assert.deepEqual(ownedMaterialDisposals, [1, 1]); assert.ok(hiddenDisposed > 0, 'preview-owned hidden collision proxies released')
+  for (const source of Object.values(A.furn)) source.traverse(mesh => { if (mesh.isMesh) { mesh.geometry.dispose(); for (const material of [mesh.material].flat()) material.dispose() } })
 })
 
 test('VIS2 repeated entry/exit preserves host objects and cleans collisions and textures', async () => {

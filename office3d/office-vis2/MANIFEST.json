@@ -109,14 +109,14 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "F4BFA7E6FA128A952CFE86ED5999E40C3E5E2EC4FCAF9B9D3A50F26D905108E2",
+      "sha256": "0D9FB61696D339CC51271A815D73E986E10023E4EAC612EDCE60D841B138DA27",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/brand.js",
-      "sha256": "EF5FA0C15036377336E81AFEB88A352DCBB10AAC0A380DD0811133FE6949BCC9",
+      "sha256": "D79B624C1CCA897D6350030343CE8DF9F19C36E207AC96CD034583FF83EC1F79",
       "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
       "license": "Repository MIT for the source code; logo provenance remains recorded separately",
       "photographicTexture": false
@@ -125,6 +125,13 @@
       "file": "office-vis2/floor.js",
       "sha256": "B5FE1477EFABFDC8539A8C7FC9E0234C7C6D68E6B51513DD895386A254547C10",
       "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/completion.js",
+      "sha256": "F4B058D7DE6403726ACCA61EC7162CC0A21902AFDECD32B7569D415FF4C79E0A",
+      "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     }
