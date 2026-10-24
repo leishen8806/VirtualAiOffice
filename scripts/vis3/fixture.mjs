@@ -17,6 +17,21 @@ process.on('exit', () => { for (const c of CHILDREN) { try { c.kill('SIGKILL') }
 
 const PROTECTED = /(^|\/)(lan\.json|wall\.json|config\.json|niuma\.config\.json|.*\.dpapi|\.env.*|.*ed25519.*|telegram[^/]*\.json|telegram[^/]*\.dpapi)$/i
 
+export function buildServerEnv({ emptyBin, mockPort, port, netLog }) {
+  // 显式白名单；不包含 VIS3_TEST_HOOKS（测试放行接口不得进入被测服务进程）
+  const env = {
+    PATH: emptyBin,
+    TMP: os.tmpdir(), TEMP: os.tmpdir(),
+    PAPERCLIP_API_URL: `http://127.0.0.1:${mockPort}`,
+    OFFICE3D_PORT: String(port),
+    VIS3_NET_LOG: netLog,
+    VIS3_ALLOWED_PORTS: `${mockPort},${port}`,
+    NODE_OPTIONS: '',
+  }
+  delete env.VIS3_TEST_HOOKS
+  return env
+}
+
 function assertSafeRepo(repo) {
   if (!repo || !path.isAbsolute(repo)) throw new InfraError('VIS3_REPO 必须是绝对路径')
   const office3d = path.join(repo, 'office3d')
@@ -75,15 +90,7 @@ export async function bootIsolated({ repo, office = false, campus = false, missi
     mock = await startMockPaperclip({ logFile: mockLog })
     const port = await new Promise((resolve) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)) }) })
     logFd = fs.openSync(path.join(outDir, 'logs', 'server.log'), 'w')
-    const env = {
-      PATH: emptyBin,
-      TMP: os.tmpdir(), TEMP: os.tmpdir(),
-      PAPERCLIP_API_URL: `http://127.0.0.1:${mock.port}`,
-      OFFICE3D_PORT: String(port),
-      VIS3_NET_LOG: netLog,
-      VIS3_ALLOWED_PORTS: `${mock.port},${port}`,
-      NODE_OPTIONS: '',
-    }
+    const env = buildServerEnv({ emptyBin, mockPort: mock.port, port, netLog })
     child = spawn(process.execPath, ['--max-old-space-size=1024', '--import', pathToFileURL(path.join(HERE, 'block-network.mjs')).href, path.join(tmpOffice, 'server.mjs')], {
       cwd: sandbox,
       env,

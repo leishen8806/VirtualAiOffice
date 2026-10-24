@@ -89,7 +89,7 @@ test('F2-05 允许端口 http.get 能拿到响应（子进程自 listen(0)）', 
       http.get('http://127.0.0.1:' + P + '/', (res) => { let b = ''; res.on('data', (d) => b += d); res.on('end', () => { console.log(b); process.exit(0) }) })
     })
   `)
-  const r = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_ALLOWED_PORTS: '' })
+  const r = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_ALLOWED_PORTS: '', VIS3_TEST_HOOKS: '1' })
   assert.equal(r.status, 0, r.stderr)
   assert.equal(r.stdout.trim(), 'ok')
 })
@@ -209,4 +209,41 @@ test('FIX5 工作树：被忽略的受保护文件 → 退出 2', (t) => {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-out-')); t.after(() => fs.rmSync(out, { recursive: true, force: true }))
   const r = runNode([RUN, '--repo', repo, '--scene', 'office', '--out', out], { VIS3_PLAYWRIGHT: '/nonexistent/pw' })
   assert.equal(r.status, 2, '被忽略受保护文件应退出 2（stderr=' + r.stderr + '）')
+})
+
+// ---- FIX6 自测 ----
+import { compareRepoClean } from '../tree-check.mjs'
+import { buildServerEnv } from '../fixture.mjs'
+
+test('FIX6 compareRepoClean：运行前后干净 → unchanged true / 外写文件 → unchanged false', (t) => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-repo-')); t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(repo, 'office3d'), { recursive: true })
+  fs.writeFileSync(path.join(repo, 'office3d', 'server.mjs'), 'export {}\n')
+  fs.writeFileSync(path.join(repo, 'office3d', 'index.html'), '<html></html>\n')
+  execSync('git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -q -m init', { cwd: repo })
+  const before = execSync('git -C ' + repo + ' status --porcelain', { encoding: 'utf8' }).trim()
+  // 不写文件 → unchanged true
+  assert.equal(compareRepoClean(repo, before).unchanged, true)
+  // office3d 外写文件 → unchanged false + after 列出该文件
+  fs.writeFileSync(path.join(repo, 'outside.txt'), 'x')
+  const r = compareRepoClean(repo, before)
+  assert.equal(r.unchanged, false, '写 office3d 外文件应 unchanged=false')
+  assert.ok(r.repoCleanAfter.includes('outside.txt'), 'repoCleanAfter 应列出 outside.txt')
+})
+
+test('FIX6 __vis3_allowPort 仅在 VIS3_TEST_HOOKS=1 时存在', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-t-')); t.after(() => fs.rmSync(tmp, { recursive: true, force: true }))
+  const script = path.join(tmp, 'p.mjs')
+  fs.writeFileSync(script, `console.log('ALLOWPORT=' + (typeof globalThis.__vis3_allowPort))`)
+  // 不设置 VIS3_TEST_HOOKS → undefined
+  const r1 = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_ALLOWED_PORTS: '' })
+  assert.equal(r1.stdout.trim(), 'ALLOWPORT=undefined', '未设置 VIS3_TEST_HOOKS 时 __vis3_allowPort 应为 undefined')
+  // 设置 VIS3_TEST_HOOKS=1 → function
+  const r2 = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_ALLOWED_PORTS: '', VIS3_TEST_HOOKS: '1' })
+  assert.equal(r2.stdout.trim(), 'ALLOWPORT=function', '设置 VIS3_TEST_HOOKS=1 时 __vis3_allowPort 应为 function')
+})
+
+test('FIX6 buildServerEnv 不包含 VIS3_TEST_HOOKS', () => {
+  const env = buildServerEnv({ emptyBin: '/tmp', mockPort: 1, port: 2, netLog: '/tmp/x.jsonl' })
+  assert.equal('VIS3_TEST_HOOKS' in env, false, '被测服务环境不得包含 VIS3_TEST_HOOKS')
 })

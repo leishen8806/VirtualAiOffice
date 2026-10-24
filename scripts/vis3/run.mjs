@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import { execFileSync } from 'node:child_process'
 import { bootIsolated, InfraError } from './fixture.mjs'
+import { compareRepoClean } from './tree-check.mjs'
 import { INSTRUMENT } from './instrument.mjs'
 
 const require = createRequire(import.meta.url)
@@ -290,8 +291,7 @@ for (const [name, sc] of Object.entries(report.scenes)) {
 }
 report.blockedNetwork = fs.existsSync(NETLOG) ? fs.readFileSync(NETLOG, 'utf8').trim().split('\n').filter(Boolean).length : 0
 report.mandatory = { pass: M.pass, fail: M.fail, total: M.total }
-const repoCleanAfter = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim()
-report.filesystemIsolation = { repoCleanBefore: repoCleanBefore, repoCleanAfter: repoCleanAfter, unchanged: repoCleanBefore === repoCleanAfter }
+report.filesystemIsolation = compareRepoClean(REPO, repoCleanBefore)
 for (const [name, scene] of Object.entries(report.scenes)) scene.pass = (scene.checks || []).filter((c) => c.mandatory).every((c) => c.ok)
 report.exit = (process.exitCode && process.exitCode !== 0) ? process.exitCode : (M.fail > 0 ? 1 : (M.total === 0 || SCENES.some((s) => !report.scenes[s]) ? 2 : 0))
 json('report.json', report)
