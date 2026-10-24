@@ -12,7 +12,7 @@ export const OFFICE_LAYOUT = resolveOfficeLayout(browser ? location.search : '')
 const [bar, departments, staff] = !browser || OFFICE_LAYOUT.version === 2 ? await Promise.all([
   import('./office-bar.js'), import('./display-departments.js'), import('./display-staff.js'),
 ]) : []
-export const officeSeats = layout => layout.version === 2 ? Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, layout.seats[name]])) : LEGACY_SEATS
+export const officeSeats = layout => [2, 3].includes(layout.version) ? Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, layout.seats[name]])) : LEGACY_SEATS
 export const SEATS = officeSeats(OFFICE_LAYOUT)
 const navigation = createOfficeNavigation(OFFICE_LAYOUT)
 export const { officeExit, corridorPath, loungeTrip, meetingTrip, LOUNGE_AREA, LOUNGE_SEATS } = navigation
@@ -20,10 +20,10 @@ export const officeStand = home => navigation.standAt?.(home) || { x: home.x + 1
 export const createDirector = context => directorFactory({ ...context, layout: OFFICE_LAYOUT })
 export const createFun = context => legacyFun.createFun({ ...context, layout: OFFICE_LAYOUT })
 export const holidayInfo = (...args) => legacyFun.holidayInfo(...args)
-export const createWaitingBoard = () => OFFICE_LAYOUT.version === 2 ? createQueueBoard({ queues: { waiting: [12, 13, 14, 15].map(x => ({ x, z: 15 })) }, compact: false }) : legacyWaitingBoard()
+export const createWaitingBoard = () => OFFICE_LAYOUT.version === 3 ? createQueueBoard({ queues: { waiting: [5.4, 6.2, 7, 7.8].map(x => ({ x, z: 10.5 })) }, compact: false }) : OFFICE_LAYOUT.version === 2 ? createQueueBoard({ queues: { waiting: [12, 13, 14, 15].map(x => ({ x, z: 15 })) }, compact: false }) : legacyWaitingBoard()
 export const waitingPlan = context => {
   const plan = legacyWaitingPlan(context)
-  if (!plan.ok || OFFICE_LAYOUT.version !== 2) return plan
+  if (!plan.ok || ![2, 3].includes(OFFICE_LAYOUT.version)) return plan
   const exit = navigation.officeExit(context.home), go = [...exit, ...navigation.corridorPath(exit.at(-1), plan.stand)]
   return { ...plan, go, back: go.toReversed().map(p => ({ ...p })) }
 }

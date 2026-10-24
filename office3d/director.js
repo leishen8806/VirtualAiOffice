@@ -148,6 +148,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
   }
 
   function pathTo(v, tgt) {
+    if (layout?.version === 3) return officeTrip(v.home, tgt.view.home, tgt.stand)
     if (!tgt.board) return officeTrip(v.home, tgt.view.home, tgt.stand)
     const pts = officeExit(v.home)
     if (tgt.board) {
@@ -204,7 +205,9 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       ev.toLabel = to.name
       tgt = { board: false, view: to, stand: to.stand, name: to.name }
     }
-    const pts = pathTo(from, tgt)
+    let pts
+    try { pts = furnitureRoute(from, pathTo(from, tgt)) }
+    catch (error) { console.warn('[director] 无安全事件路线', error.message); return false }
     const act = { ev, view: from, tgt, phase: 'rise', t: 0, total: 0, stall: 0, yields: 0, pts, i: 0, back: false, bubble: null, carry: ev.kind !== 'dispatch', origin: { x: from.char.group.position.x, z: from.char.group.position.z }, trail: [{ x: from.char.group.position.x, z: from.char.group.position.z }] }
     from.act = act
     active.add(act)
@@ -212,6 +215,10 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
   }
 
   function finish(act) {
+    if (act.phase === 'entry') {
+      act.view.away = false; act.view.arriving = false; act.view.char.group.visible = true
+      act.view.char.group.position.set(act.view.home.x, 0, act.view.home.z)
+    }
     if (loungeLane === act) loungeLane = null
     if (act.bubble) closeBubble(act.bubble)
     if (act.tgt && act.tgt.view.char) act.tgt.view.char.pose.yaw = 0
@@ -227,6 +234,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
   }
 
   function stepAct(act, dt) {
+    if (act.phase === 'entry') return
     const v = act.view
     const p = v.char.pose
     const g = v.char.group
@@ -396,9 +404,25 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
 
   // 上下班：按作息（金边时间）由真实的「暂停/恢复」状态触发，从正门进出
   const GATE = ENTRANCE.gate
+  function furnitureRoute(v, points, seat, start = v.home) {
+    if (layout?.version !== 3 || !furnitureCollision) return points
+    const ignore = new Set([v.chair]), result = []
+    let from = start
+    const departure = furnitureCollision.seatBody(start)
+    if (departure) ignore.add(departure)
+    for (let i = 0; i < points.length; i++) {
+      const point = points[i], last = i === points.length - 1
+      if (last && seat) ignore.add(furnitureCollision.seatBody(seat))
+      if (!last && furnitureCollision.hit(point.x, point.z, ignore)) continue
+      const path = furnitureCollision.route(from, point, ignore)
+      if (!path) throw new Error(`V3 furniture blocks route for ${v.name}`)
+      result.push(...path); from = point
+    }
+    return result
+  }
   function commutePath(v) {
     const exit = officeExit(v.home)
-    return [...exit, ...corridorPath(exit.at(-1), ENTRANCE.inner), ...GATE]
+    return furnitureRoute(v, [...exit, ...corridorPath(exit.at(-1), ENTRANCE.inner), ...GATE])
   }
 
   function validRoute(points) {
@@ -416,6 +440,8 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       console.warn('[director] 拒绝无效路径', v.name || v.id || '')
       return false
     }
+    try { pts = furnitureRoute(v, pts, seat, v.char.group.position) }
+    catch (error) { console.warn('[director] 无安全出行路线', error.message); return false }
     const fromLounge = gInLounge(v.char.group.position)
     const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'queued', t: 0, total: 0, yields: 0, pts, i: 0, back: true, carry: false, seat, lounge, onDone, standing, fromLounge, needsLane: lounge === true || fromLounge, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
     v.act = act
@@ -561,19 +587,23 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
     aisleZ,
     goHome(v, onDone) {
       if (v.act) return false
-      const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'rise', t: 0, total: 0, stall: 0, yields: 0, pts: commutePath(v), i: 0, back: false, carry: false, commute: 'leave', onDone, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
+      let pts
+      try { pts = commutePath(v) } catch (error) { console.warn('[director] 无安全下班路线', error.message); return false }
+      const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'rise', t: 0, total: 0, stall: 0, yields: 0, pts, i: 0, back: false, carry: false, commute: 'leave', onDone, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
       v.act = act
       active.add(act)
       return true
     },
     arrive(v) {
       if (v.act) return false
-      const pts = commutePath(v).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }])
+      let pts
+      try { pts = commutePath(v).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }]) } catch (error) { console.warn('[director] 无安全上班路线', error.message); return false }
       const g = v.char.group
       g.position.set(GATE[1].x, 0, GATE[1].z)
       g.rotation.y = 0
       v.char.pose.sit = 0
       const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'walk', t: 0, total: 0, stall: 0, yields: 0, pts, i: 0, back: true, carry: false, commute: 'arrive', origin: { x: GATE[1].x, z: GATE[1].z }, trail: [{ x: GATE[1].x, z: GATE[1].z }] }
+      if (layout?.version === 3) { act.phase = 'entry'; v.away = true; v.arriving = true; g.visible = false }
       v.act = act
       active.add(act)
       return true
@@ -592,6 +622,13 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       queue.length = 0
     },
     update(dt) {
+      // V3 arrivals wait outside the rendered scene until the doorway is clear.
+      for (const act of active) if (act.phase === 'entry') {
+        const gate = GATE[1], people = [...views.values(), ...Object.values(board)]
+        if ([...active].some(a => a.commute === 'leave') || [...active].filter(isWalker).length >= MAX_WALKERS) break
+        if (people.some(v => v !== act.view && !v.away && Math.hypot(v.char.group.position.x - gate.x, v.char.group.position.z - gate.z) < PERSON_GAP * 1.5)) break
+        act.view.away = false; act.view.arriving = false; act.view.char.group.visible = true; act.phase = 'walk'
+      }
       // 已在座位等候的出行先申请空位，不能被新事件持续插队。
       for (const act of active) if (act.phase === 'queued' && !act.yielding) {
         const moving = [...active].filter(isWalker).length

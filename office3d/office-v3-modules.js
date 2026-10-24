@@ -4,6 +4,7 @@ import { buildOfficeAlignedShell } from './office-vis2/shell-finish.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
 import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
 import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
+import { buildOfficePlazaHost } from './office-vis2/plaza-host.js'
 import { buildDisplayDepartments } from './display-departments.js'
 import { buildDisplayStaff } from './display-staff.js'
 
@@ -19,7 +20,20 @@ function buildOfficeFurnitureV3(context) {
     return pendingModule('office-furniture-v3')
   }
   const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
-  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3 }
+  let badges
+  if (officeSampleRequested(context.search)) {
+    const { THREE } = context, seats = Object.values(context.layout.seats)
+    const geometry = new THREE.CylinderGeometry(.06, .06, .012, 6), material = new THREE.MeshBasicMaterial({ toneMapped: false })
+    badges = new THREE.InstancedMesh(geometry, material, seats.length); badges.name = 'agent-model-badges'; badges.onBeforeRender = () => {}
+    const transform = new THREE.Object3D()
+    seats.forEach(([, x, z], i) => {
+      transform.position.set(x + .62, .8, z + .06); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
+      badges.setMatrixAt(i, transform.matrix); badges.setColorAt(i, new THREE.Color(0xffffff))
+      furniture.deskAt(x, z).setBadge = color => { badges.setColorAt(i, new THREE.Color(color)); badges.instanceColor.needsUpdate = true }
+    })
+    context.root.add(badges)
+  }
+  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3, dispose() { badges?.removeFromParent(); badges?.geometry.dispose(); badges?.material.dispose(); badges?.dispose(); furniture.dispose() } }
 }
 
 const displayLayout = layout => ({ ...layout, version: 2, corridors: {
@@ -41,6 +55,7 @@ export const officeV3Modules = Object.freeze([
   ['furniture3', buildOfficeFurnitureV3],
   ['island', buildOfficeSampleHost],
   ['zones', buildOfficeAlignedZones],
+  ['plaza', buildOfficePlazaHost],
   ['displayDepartments', buildDisplayDepartmentsV3],
   ['displayStaff', buildDisplayStaffV3],
 ])

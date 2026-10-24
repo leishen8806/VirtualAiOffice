@@ -15,6 +15,7 @@ import { campusModules } from './dr-campus-modules.js'
 import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
+import { officeSampleRequested } from './office-vis2/host.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3 } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -33,6 +34,7 @@ const PLACE_MODE = resolvePlaceMode(location.search)
 const DR_MODE = PLACE_MODE.place === 'dr'
 const CONTROL_ROOM_MODE = DR_MODE && PLACE_MODE.controlRoom === true
 const LAYOUT3_MODE = OFFICE_LAYOUT.version === 3
+const OFFICE_SAMPLE_MODE = LAYOUT3_MODE && !DR_MODE && officeSampleRequested(location.search)
 const CAMPUS_MODE = PLACE_MODE.campus
 if (DR_MODE) prepareDrPage(PLACE_MODE)
 if (WALL_MODE) document.addEventListener('DOMContentLoaded', () => document.body.classList.add('clean', 'wall'))
@@ -189,7 +191,7 @@ for (let i = 0; i < piers.length; i += 2) {
 }
 box(ROOM.w, 0.22, 0.34, M.graphite, 0, 0.11, BACK_Z + 0.02, false)
 const sceneBeforeEnvironment = new Set(scene.children)
-const env3d = buildEnvironment({ scene, renderer, camera, sun, hemi, rnd })
+const env3d = buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, officeWarm: OFFICE_SAMPLE_MODE })
 const environmentRoots = new Set(scene.children.filter((root) => !sceneBeforeEnvironment.has(root)))
 env3d.setQuality(qualityPolicy.tier)
 for (const x of winXs) {
@@ -765,7 +767,7 @@ function updateFoyerPanels() {
 updateFoyerPanels()
 
 // ───────────────────────── 董事会会议室 ─────────────────────────
-const board = officeFurnitureV2?.board || (() => {
+let board = officeFurnitureV2?.board || (() => {
   const t = new THREE.Group()
   t.position.set(BOARD_TABLE.x, 0, BOARD_TABLE.z)
   add(t, new THREE.BoxGeometry(5.2, 0.08, 1.7), new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 0.3 }), 0, 0.76, 0)
@@ -897,8 +899,9 @@ function placeSeated(ch, home) {
 }
 function createAgentView(a, index) {
   const [zone, sx, sz] = seatFor(a.name)
-  const desk = makeDesk(sx, sz, ZONES[zone].accent)
-  const chair = makeChair(sx, sz + 1)
+  const desk = LAYOUT3_MODE ? officeV3?.get('furniture3')?.deskAt(sx, sz) : makeDesk(sx, sz, ZONES[zone].accent)
+  if (!desk) return null
+  const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
   const gender = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1][index % 10] ? 'female' : 'male'
   const seatIdx = Object.keys(SEATS).indexOf(a.name)
   const ch = PEOPLE
@@ -921,10 +924,13 @@ function createAgentView(a, index) {
   ring.rotation.x = Math.PI / 2
   ring.visible = false
   ch.group.add(ring)
-  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.012, 6), new THREE.MeshBasicMaterial({ color: MODEL_BADGE[modelFamily(a)], toneMapped: false }))
-  badge.position.set(0.62, 0.8, 0.06)
-  badge.rotation.x = Math.PI / 2
-  desk.group.add(badge)
+  if (desk.setBadge) desk.setBadge(MODEL_BADGE[modelFamily(a)])
+  else {
+    const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.012, 6), new THREE.MeshBasicMaterial({ color: MODEL_BADGE[modelFamily(a)], toneMapped: false }))
+    badge.position.set(0.62, 0.8, 0.06)
+    badge.rotation.x = Math.PI / 2
+    desk.group.add(badge)
+  }
   const el = document.createElement('div')
   el.className = 'lab'
   el.innerHTML = '<span class="st" style="display:none"></span><span class="tk" style="display:none"></span><span class="nm"></span>'
@@ -958,6 +964,9 @@ if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   wing = officeV3.get('furniture3').wing
   MEET_SEATS = wing.seats
   for (const seat of MEET_SEATS) seat.pathFn = v => meetingTrip(v.home, seat)
+  board = officeV3.get('furniture3').board
+  const boss = officeV3.get('furniture3').spec.boss
+  if (OFFICE_SAMPLE_MODE) boardViews['苏晨'] = createBoardView('苏晨', boss.chair, boss.stand, [], 1)
 }
 
 // ───────────────────────── 区域标牌 ─────────────────────────
@@ -984,7 +993,7 @@ let selectedId = null
 let NAMES = {}
 function applyState(s) {
   latestState = s
-  if (LAYOUT3_MODE) { NAMES = s.names || {}; updateFoyerPanels(); ui.render(s); return }
+  if (LAYOUT3_MODE && (!OFFICE_SAMPLE_MODE || !officeV3?.get('furniture3')?.deskAt)) { NAMES = s.names || {}; updateFoyerPanels(); ui.render(s); return }
   NAMES = s.names || {}
   gossipThreads = s.gossip || []
   meetingsList = meetSeenInit(s.meetings || [])
@@ -994,9 +1003,10 @@ function applyState(s) {
   for (const bv of Object.values(boardViews)) { bv.name = NAMES[bv.id] || bv.baseName; const nm = bv.label.querySelector('.nm'); if (nm) nm.textContent = bv.name }
   const seen = new Set()
   s.agents.forEach((a, i) => {
+    if (LAYOUT3_MODE && !SEATS[a.name]) return // 未映射的新岗位仍显示在任务界面，不能凭空挤出一个工位。
     seen.add(a.id)
     let v = views.get(a.id)
-    if (!v) { v = createAgentView(a, views.size + i); views.set(a.id, v) }
+    if (!v) { v = createAgentView(a, views.size + i); if (!v) return; views.set(a.id, v) }
     v.data = a
     v.chat = s.chat?.agents?.[a.id] || null
     // 「在跑」要看有没有真实输出：状态是 running 但进程已退出 / 很久没有输出，不能算执行中
@@ -1847,6 +1857,13 @@ function pick(cx, cy, shift = false) {
     return
   }
   const hit = ray.intersectObjects(meshes, false)[0]
+  const plazaHit = !hit && officeV3?.get('plaza')?.pick(ray)
+  if (plazaHit) {
+    const labels = { vendors: '广场轻食亭', cafe: '户外休闲桌', benches: '广场长椅', lamps: '景观灯', flowers: '花箱' }
+    ui.toast(`${labels[plazaHit.kind] || '广场设施'} · 仅供参观`)
+    walkTo(plazaHit.x, plazaHit.z, false)
+    return
+  }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     const pt = new THREE.Vector3()

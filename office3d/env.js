@@ -28,7 +28,7 @@ const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 const hm = (s) => { if (!s) return null; const m = String(s).match(/T(\d\d):(\d\d)/); return m ? +m[1] * 60 + +m[2] : null }
 
-export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd }) {
+export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, officeWarm = false }) {
   // ── 天空 ──
   const sky = new Sky()
   sky.scale.setScalar(3000)
@@ -372,6 +372,11 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd }) {
       hemi.color.setHex(0xdfe9ff).lerp(new THREE.Color(0x9aa5b4), overcast)
     }
     scene.environmentIntensity = 0.08 + 0.4 * cur.day * (1 - 0.4 * overcast)
+    // 办公室样板仍保留天气反射；限制高亮天空对暖色材料的染色，不改变其它地点。
+    if (officeWarm) {
+      scene.environmentIntensity *= .12
+      if (hemi) hemi.color.setHex(0xf4f1ea)
+    }
     // 雾：夜里深色，阴雨更浓
     const fogDay = new THREE.Color(0xcdd6de).lerp(new THREE.Color(0x9ea6ae), overcast)
     scene.fog.color.copy(new THREE.Color(0x0e1320).lerp(fogDay, cur.day))
