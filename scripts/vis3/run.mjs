@@ -16,21 +16,25 @@ const A = parse()
 const REPO = A.repo ? path.resolve(A.repo) : process.cwd()
 const SCENES = String(A.scene || 'office,dashboard').split(',').map((s) => s.trim())
 const TMPDIR = fs.realpathSync(os.tmpdir())
-const TMP_ROOTS = [TMPDIR, fs.realpathSync('/tmp')].filter((d, i, a) => a.indexOf(d) === i)
-const rawOut = A.out ? path.resolve(A.out) : path.join(TMPDIR, `vis3-out-${process.pid}`)
-const OUT = path.join(fs.realpathSync(path.dirname(rawOut)), path.basename(rawOut))
+const TMP_ROOTS = [TMPDIR].concat((process.platform !== 'win32' && fs.existsSync('/tmp')) ? [fs.realpathSync('/tmp')] : [])
+let OUT
+try {
+  const rawOut = A.out ? path.resolve(A.out) : path.join(TMPDIR, `vis3-out-${process.pid}`)
+  OUT = path.join(fs.realpathSync(path.dirname(rawOut)), path.basename(rawOut))
+} catch (e) { console.error('INFRA_ERROR: --out 路径不可用（父目录不存在或不可解析）：' + (e?.message || e)); process.exit(2) }
 if (!TMP_ROOTS.some((d) => OUT === d || OUT.startsWith(d + path.sep))) { console.error('INFRA_ERROR: --out 必须位于系统临时目录内：' + OUT); process.exit(2) }
 if (OUT.startsWith(REPO + path.sep)) { console.error('INFRA_ERROR: --out 不得位于被测仓库内：' + OUT); process.exit(2) }
-if (fs.existsSync(OUT) && fs.readdirSync(OUT).length > 0) { console.error('INFRA_ERROR: --out 目录已存在且非空，拒绝覆盖：' + OUT); process.exit(2) }
+if (fs.existsSync(OUT)) { if (fs.statSync(OUT).isFile()) { console.error('INFRA_ERROR: --out 是文件，拒绝：' + OUT); process.exit(2) } if (fs.readdirSync(OUT).length > 0) { console.error('INFRA_ERROR: --out 目录已存在且非空，拒绝覆盖：' + OUT); process.exit(2) } }
 const DPR = Number(A.dpr || 1)
 const VIEWPORT = String(A.viewport || '1280x720').split('x').map(Number)
-const PW = A.playwright || process.env.VIS3_PLAYWRIGHT || require.resolve('playwright')
+let PW
+try { PW = A.playwright || process.env.VIS3_PLAYWRIGHT || require.resolve('playwright') } catch (e) { console.error('INFRA_ERROR: playwright 不可用（VIS3_PLAYWRIGHT 或 --playwright 需指向可加载的 playwright）：' + (e?.message || e)); process.exit(2) }
 const NETLOG = path.join(OUT, 'logs', 'blocked-network.jsonl')
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'screenshots'), { recursive: true }); fs.mkdirSync(path.join(OUT, 'logs'), { recursive: true }); fs.writeFileSync(NETLOG, '')
 let SHA, repoCleanBefore
 try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim() }
 catch (e) { console.error('INFRA_ERROR: 无法读取被测仓库（非 git 或不可访问）：' + (e?.message || e)); process.exit(2) }
-const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, scenes: {}, exit: null }
+const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
 const json = (n, v) => fs.writeFileSync(path.join(OUT, n), JSON.stringify(v, null, 2) + '\n')
@@ -74,6 +78,7 @@ async function openPage(browser, base, url, opts = {}) {
     const allowed = local && allowOrigins.has(u.origin)
     if (opts.abort && opts.abort.some((a) => u.pathname.includes(a))) { blocked.push({ blocked: u.origin + u.pathname, rule: 'abort-pattern' }); return route.abort() }
     if (!allowed) { blocked.push({ blocked: u.origin + u.pathname, rule: local ? 'unrelated-local-port' : 'external' }); fs.appendFileSync(NETLOG, JSON.stringify({ blockedBrowser: u.origin + u.pathname }) + '\n'); return route.abort() }
+    if (route.request().method() !== 'GET' && route.request().method() !== 'HEAD') { blocked.push({ blocked: u.origin + u.pathname, rule: 'non-get' }); return route.abort() }
     return route.continue()
   })
   const page = await context.newPage()
@@ -193,7 +198,11 @@ async function sceneDashboard(browser, base) {
   return { checks, perf: { loadMs, requests: requests.length } }
 }
 
-const browser = await require(PW).chromium.launch({ headless: true, channel: 'chrome' }).catch(async () => require(PW).chromium.launch({ headless: true }))
+let browser
+try {
+  const pw = require(PW)
+  browser = await pw.chromium.launch({ headless: true, channel: 'chrome' }).catch(() => pw.chromium.launch({ headless: true }))
+} catch (e) { console.error('INFRA_ERROR: 浏览器/playwright 启动失败（--playwright / VIS3_PLAYWRIGHT 需指向可加载的 playwright）：' + (e?.message || e)); process.exit(2) }
 report.browser = await browser.version()
 try {
 // ---- T-10 功能开关矩阵（针对带 /visual-flags 桥的集成分支，如 RC1） ----
@@ -222,7 +231,7 @@ async function sceneFlags(browser, repo) {
     const layout2Scene = await collect(layout2.page)
     const writes = [...root.requests, ...campus.requests, ...layout2.requests].filter((r) => r.method !== 'GET' && r.method !== 'HEAD').length
     matrix.push({ id: v.id, flag, root: { flags: rootScene.flags, officeV2: rootScene.officeV2, campus: rootScene.campus }, campus: { flags: campusScene.flags, campus: campusScene.campus }, layout2: { officeV2: layout2Scene.officeV2 }, writes })
-    await root.context.close(); await campus.context.close(); await layout2.context.close(); stop()
+    await root.context.close(); await campus.context.close(); await layout2.context.close(); await stop()
   }
   let ok = true
   for (const row of matrix) {
@@ -241,13 +250,18 @@ async function sceneFlags(browser, repo) {
 }
 
   for (const sceneName of SCENES) {
-    if (sceneName === 'dr') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: false, campus: true, outDir: OUT }); report.scenes.dr = await sceneDr(browser, base); report.scenes.dr.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
-    if (sceneName === 'office') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: true, campus: false, outDir: OUT }); report.scenes.office = await sceneOffice(browser, base); report.scenes.office.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
-    if (sceneName === 'dashboard') { const { base, mock, stop } = await bootIsolated({ repo: REPO, office: false, campus: false, outDir: OUT }); report.scenes.dashboard = await sceneDashboard(browser, base); report.scenes.dashboard.mockWrites = mock.requests.filter((r) => r.method !== 'GET').length; stop() }
+    if (sceneName === 'dr') { let boot; try { boot = await bootIsolated({ repo: REPO, office: false, campus: true, outDir: OUT }); report.scenes.dr = await sceneDr(browser, boot.base); report.scenes.dr.mockWrites = boot.mock.requests.filter((r) => r.method !== 'GET').length; report.scenes.dr.cleanupErrors = boot.cleanupErrors } finally { await boot?.stop() } }
+    if (sceneName === 'office') { let boot; try { boot = await bootIsolated({ repo: REPO, office: true, campus: false, outDir: OUT }); report.scenes.office = await sceneOffice(browser, boot.base); report.scenes.office.mockWrites = boot.mock.requests.filter((r) => r.method !== 'GET').length; report.scenes.office.cleanupErrors = boot.cleanupErrors } finally { await boot?.stop() } }
+    if (sceneName === 'dashboard') { let boot; try { boot = await bootIsolated({ repo: REPO, office: false, campus: false, outDir: OUT }); report.scenes.dashboard = await sceneDashboard(browser, boot.base); report.scenes.dashboard.mockWrites = boot.mock.requests.filter((r) => r.method !== 'GET').length; report.scenes.dashboard.cleanupErrors = boot.cleanupErrors } finally { await boot?.stop() } }
     if (sceneName === 'flags') { report.scenes.flags = await sceneFlags(browser, REPO) }
   }
 } catch (error) {
   if (error instanceof InfraError) { console.error('INFRA_ERROR ' + error.message); process.exitCode = 2 } else { console.error('RUN_ERROR ' + (error?.stack || error)); process.exitCode = 2 }
+}
+// P-08：所有场景强制 mockWrites===0
+for (const [name, sc] of Object.entries(report.scenes)) {
+  if (name === 'flags') continue
+  if (sc && typeof sc.mockWrites === 'number' && sc.mockWrites !== 0) { M.total++; M.fail++; (sc.checks || (sc.checks = [])).push({ id: name + '-mock-writes-zero', ok: false, detail: 'mockWrites=' + sc.mockWrites, mandatory: true }) }
 }
 report.blockedNetwork = fs.existsSync(NETLOG) ? fs.readFileSync(NETLOG, 'utf8').trim().split('\n').filter(Boolean).length : 0
 report.mandatory = { pass: M.pass, fail: M.fail, total: M.total }
