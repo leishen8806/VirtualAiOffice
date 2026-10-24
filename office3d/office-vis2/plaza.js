@@ -10,13 +10,14 @@ export function plazaFlowerArcs(layout) {
 }
 
 // 复用已登记构件并输出占地；宿主沿用既有注册口，不改共享碰撞或导航逻辑。
-export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
+export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low = false }) {
   const p = layout.plaza, placements = [], prototypes = new Map()
   const angle = 40 * Math.PI / 180
   const flank = (side, along, away = 0) => ({ x: p.center.x + side * (11.7 + Math.sin(angle) * along + Math.cos(angle) * away), z: 17.6 + Math.cos(angle) * along - Math.sin(angle) * away })
   let transform = null
   const emit = (geometry, color, position = [0, 0, 0], yaw = 0, ...surface) => {
-    if (!transform) return batch.add(geometry, color, position, yaw, ...surface)
+    const target = geometry.userData.officeLeafOutline ? leafBatch : batch
+    if (!transform) return target.add(geometry, color, position, yaw, ...surface)
     geometry.rotateY(yaw); geometry.translate(...position)
     geometry.computeBoundingBox(); transform.sourceBounds.union(geometry.boundingBox)
     // 条纹和木纹随摊位一起转，不能在旋转后的世界坐标上重新投影。
@@ -27,7 +28,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
     }
     geometry.translate(-transform.source.x, 0, -transform.source.z); geometry.rotateY(transform.delta); geometry.translate(transform.x, 0, transform.z)
     geometry.computeBoundingBox(); transform.bounds.union(geometry.boundingBox)
-    batch.add(geometry, color, [0, 0, 0], 0, ...surface)
+    target.add(geometry, color, [0, 0, 0], 0, ...surface)
   }
   const atPose = (point, pose, draw) => {
     transform = { source: point, ...pose, bounds: new THREE.Box3(), sourceBounds: new THREE.Box3() }
@@ -49,7 +50,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
   }
   const box = (x, y, z, w, h, d, color, grain = '') => emit(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
   const add = (category, kind, id, point, yaw = 0, scale = [1, 1, 1], offset = [0, 0]) => {
-    const triangleStart = batch.triangles()
+    const triangles = () => batch.triangles() + (leafBatch === batch ? 0 : leafBatch.triangles()), triangleStart = triangles()
     const key = category + kind
     if (!prototypes.has(key)) prototypes.set(key, buildOfficePlazaProps({ THREE, low, root: new THREE.Group(), placements: { [category]: [{ id: key, kind, x: 0, z: 0, yaw: 0 }] } }))
     const source = prototypes.get(key), bounds = new THREE.Box3()
@@ -75,7 +76,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
         const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?40:144
         for(let i=0;i<count;i++){
           const a=i*2.399,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v),length=Math.min(size.x,size.z)*.3
-          const leaf=officeLeafGeometry(THREE,a+Math.PI,length,3);leaf.scale(1,.6,1)
+          const leaf=officeLeafGeometry(THREE,a+Math.PI,length,3,leafBatch!==batch);leaf.scale(1,.6,1)
           emit(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.4,center.y+v*size.y*.32-.08,center.z+Math.cos(a)*r*size.z*.4],0,.88)
         }
         geometry.dispose();continue
@@ -83,7 +84,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       const treeTint = category === 'trees' ? (mesh.name.endsWith('-leaf') ? '#4F7043' : '#71614B') : null
       emit(geometry, treeTint, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
     }
-    placements.push({ id, kind: category, source: { x: point.x, z: point.z }, x: point.x + offset[0], z: point.z + offset[1], yaw, scale, triangles: batch.triangles() - triangleStart, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
+    placements.push({ id, kind: category, source: { x: point.x, z: point.z }, x: point.x + offset[0], z: point.z + offset[1], yaw, scale, triangles: triangles() - triangleStart, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
   }
   try {
     for (const point of p.carts) atVendor(point, () => {
@@ -111,7 +112,8 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
     if(layout.variant==='align')for(const side of [-1,1])for(const z of [17.5,24.5]){
       const x=p.center.x+side*22,id=`plaza-layered-garden-${side}-${z}`,w=4.2,d=1.8
       atPose({x,z},{...flank(side,z===17.5?1.8:8.2,6.5),delta:side*(angle-Math.PI/2)},()=>{
-        appendOfficeGardenBed({THREE,batch:{add:emit},low,bed:{x,z,w,d},seed:side+z,organic:true})
+        const gardenBatch = { add: emit }
+        appendOfficeGardenBed({THREE,batch:gardenBatch,leafBatch:leafBatch===batch?gardenBatch:{add:emit},low,bed:{x,z,w,d},seed:side+z,organic:true})
         placements.push({id,kind:'garden',x,z,source:{x,z},bounds:{x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:1.6},interaction:'preview-only'})
       })
     }

@@ -190,10 +190,10 @@ export function buildOfficeSamplePlants({ THREE, root, layout = LAYOUT_V3, asset
   return { root: group, placements: poses, summary: () => ({ calls: 1, triangles: plants.triangles(), pots: poses.length }), dispose() { plants.dispose(); group.removeFromParent() } }
 }
 
-export function officeLeafGeometry(THREE, angle, length, segments = 7) {
+export function officeLeafGeometry(THREE, angle, length, segments = 7, outline = false) {
   const vertices = [], indices = []
   // 独立正反顶点保留薄叶两面的法线；不叠透明贴片，也不把球体当叶片。
-  for (let side = 0; side < 2; side++) {
+  for (let side = 0; side < (outline ? 1 : 2); side++) {
     const offset = vertices.length / 3
     for (let row = 0; row <= segments; row++) {
       const t = row / segments, arch = Math.sin(Math.PI * t), width = row === 0 || row === segments ? 0 : .105 * arch ** .75, radius = length * t
@@ -205,12 +205,27 @@ export function officeLeafGeometry(THREE, angle, length, segments = 7) {
       if (row < segments - 1) indices.push(...(side ? [b, c, d] : [b, d, c]))
     }
   }
-  const leaf = new THREE.BufferGeometry(); leaf.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); leaf.setIndex(indices); leaf.computeVertexNormals()
+  const normalIndices = outline ? indices.slice() : indices
+  if (outline) {
+    // 保留原轮廓顶点和保守包络，只去掉内部分段及重复背面；宿主使用双面材质。
+    indices.length = 0
+    // 根部顶点0与1重合，但旧网格只给顶点1计算了有效法线。
+    indices.push(1, 3, 5)
+    for (let row = 1; row < segments - 1; row++) { const i = row * 3; indices.push(i, i + 3, i + 2, i + 2, i + 3, i + 5) }
+    indices.push(segments * 3, (segments - 1) * 3 + 2, (segments - 1) * 3)
+  }
+  const leaf = new THREE.BufferGeometry(); leaf.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); leaf.setIndex(normalIndices); leaf.computeVertexNormals()
+  if (outline) {
+    // 继承原曲面法线，避免减少分段后把柔和叶面照成硬折板。
+    leaf.setIndex(indices); const n = leaf.attributes.normal.array
+    for (let i = 0; i < n.length; i++) n[i] = -n[i]
+    leaf.userData.officeLeafOutline = true
+  }
   return leaf
 }
 
 // 同一占地内混植，所有叶端留在登记边界内；不生成独立材质或动画。
-export function appendOfficeGardenBed({ THREE, batch, bed, low = false, seed = 0, organic = false }) {
+export function appendOfficeGardenBed({ THREE, batch, leafBatch = batch, bed, low = false, seed = 0, organic = false }) {
   const { x, z, w, d } = bed, points = [], segments = low ? 20 : 32
   for (let i = 0; i < segments; i++) {
     const a = i * Math.PI * 2 / segments, wave = .94 + .06 * Math.sin(a * 3 + seed)
@@ -238,16 +253,18 @@ export function appendOfficeGardenBed({ THREE, batch, bed, low = false, seed = 0
     const pz = z + (organic ? Math.sin(a) * radius : fract(i * .414 + seed * .13) * 2 - 1) * (d / 2 - margin)
     const height = .2 + fract(i * .37 + seed * .21) * .34
     for (let j = 0; j < (low ? 3 : 5); j++) {
-      const leaf = officeLeafGeometry(THREE, a + j * 2.399, .23 + fract(i * .43 + j * .27) * .18, 2)
+      const leaf = officeLeafGeometry(THREE, a + j * 2.399, .23 + fract(i * .43 + j * .27) * .18, 2, leafBatch !== batch)
       leaf.scale(1, .65 + (i % 3) * .18, 1)
-      batch.add(leaf, ['#365A3D', '#547044', '#7A8D53', '#456A4C'][(i + j) % 4], [px, height + j * .025, pz], 0, .82)
+      leafBatch.add(leaf, ['#365A3D', '#547044', '#7A8D53', '#456A4C'][(i + j) % 4], [px, height + j * .025, pz], 0, .82)
     }
     if (i % 3 === 0) {
       const stem = new THREE.CylinderGeometry(.008, .012, height + .2, 4)
       batch.add(stem, '#5B7043', [px, .13 + (height + .2) / 2, pz], 0, .9)
       for (let petal = 0; petal < (low ? 3 : 5); petal++) {
         const angle = petal * Math.PI * 2 / (low ? 3 : 5), flower = new THREE.CircleGeometry(.045, 5)
-        flower.rotateX(-Math.PI / 2); flower.attributes.position.setY(0, .014); flower.computeVertexNormals()
+        flower.rotateX(-Math.PI / 2); flower.attributes.position.setY(0, .014)
+        if (leafBatch !== batch) flower.setIndex([1,2,3,1,3,4,1,4,5])
+        flower.computeVertexNormals()
         batch.add(flower, i % 2 ? '#D5B2AE' : '#E7D7AA', [px + Math.cos(angle) * .04, height + .34, pz + Math.sin(angle) * .04], 0, .8)
       }
     }

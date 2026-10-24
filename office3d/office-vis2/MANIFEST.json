@@ -102,7 +102,7 @@
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "9439A3487D4C26063DE676557CAC69FDDF74777D28782D8ECB48667A35B1A1D8",
+      "sha256": "ACA9B31692CF1A2D6E5BF0F0981C902013E87D2A94266C8C4758F42F119C5E2B",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -140,21 +140,21 @@
       "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "F216107996C9E8D0EB7D26872C36628D6ACDA72ADE3FD48677BD058778A25F25"
+      "sha256": "7B4C5F63C930E492FAD50CD81DCAAD0F25DAB6EE8081CE5F78A79D80A19A73F5"
     },
     {
       "file": "office-vis2/plaza.js",
       "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "8E1CAE13F9E433A8E1F4CA3AF47389D9429620C1A4BEC14F7012A9FDFEB46089"
+      "sha256": "4AEECDE376C8AC1E6FA3418E895C15950CE4B4035D6569D7BE643B308A74AB82"
     },
     {
       "file": "office-vis2/shell-finish.js",
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "38F200E6DB86DA806586D651D30121DEF84E74BF545F476B6CC03682A18768C1"
+      "sha256": "56449F2C6232472F1809F92E88E94F2DDAA02C29E6B6BD658CF076AC1CE54266"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "4931C8E7DB6C90A4B1E4852F03B504A400CBB1A35C801AAD1AED0336EF7F2CB6"
+      "sha256": "7CE9617125E1F00F4314A6809BAE4A39446584E19CC3706E7D64EE77FF135885"
     },
     {
       "file": "office-vis2/open-furnishing.js",
@@ -197,6 +197,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "EB62C9F9DC53673BFEC77CD22A0833FC3904CA2EF9922967530CA4A79B4F8E3A"
+    },
+    {
+      "file": "office-vis2/plaza-host.js",
+      "source": "Original office-only plaza wrapper and owned foliage lifecycle; no downloads or photographic textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "17227FE5D6CF7145ECE2BD123A177621AC52485EEE1CB5DA27939C077CDBB18F"
     }
   ],
   "excluded": {

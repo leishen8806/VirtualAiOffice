@@ -82,9 +82,9 @@ export function buildOfficeAlignedShell(context) {
   const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, oldFloorReceive = shell.ground.receiveShadow, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
-  let disposed = false, paving, backdrop, practicals
+  let disposed = false, paving, backdrop, practicals, foliage
   const restore = () => { hidden.forEach(mesh => { mesh.visible = true }); shell.ground.material = oldFloor; shell.ground.receiveShadow = oldFloorReceive; shell.green.material.color.copy(oldGreen) }
-  const release = () => { practicals?.dispose(); backdrop?.dispose(); paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
+  const release = () => { foliage?.dispose(); practicals?.dispose(); backdrop?.dispose(); paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
   try {
     const spec = officeShellFinishSpec(layout, shell.spec)
     const surfaces = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .7, metalness: .08 })
@@ -109,11 +109,17 @@ export function buildOfficeAlignedShell(context) {
     // 复用现有太阳阴影；低档与旧布局维持原开销，不新增灯光。
     if (layout.variant === 'align' && !low) frames.castShadow = frames.receiveShadow = shell.ground.receiveShadow = true
     if (!low) add('office-aligned-clear-glass', spec.panes, glass)
-    const batch = createSampleBatch(THREE)
+    const batch = createSampleBatch(THREE), leafBatch = layout.variant === 'align' && !low ? createSampleBatch(THREE) : batch
     appendOfficePlazaPaving({ THREE, batch, layout, low })
-    appendWholeFloorGarden({ THREE, batch, spec: spec.wholeFloor, low })
+    appendWholeFloorGarden({ THREE, batch, leafBatch, spec: spec.wholeFloor, low })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
     if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
+    if (leafBatch !== batch) {
+      foliage = leafBatch.build(root, 'office-whole-floor-foliage')
+      foliage.mesh.material.side = THREE.DoubleSide
+      // 旧合并器不按材质side区分；该私有批次不能与单面陈设误合并。
+      foliage.mesh.userData.dynamic = true
+    }
     if (layout.variant === 'align') {
       const lights = createSampleBatch(THREE)
       for (const p of spec.wholeFloor.practicals.globes) lights.add(new THREE.SphereGeometry(p.radius,low?8:12,low?6:8),'#F4F1EA',[p.x,p.y,p.z],0,.45)

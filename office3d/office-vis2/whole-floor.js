@@ -114,7 +114,7 @@ export function wholeFloorSpec(layout) {
   return { referenceFinish: layout.variant === 'align', details, ...(layout.variant==='align'?{practicals}:{}), beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
 }
 
-export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
+export function appendWholeFloorGarden({ THREE, batch, leafBatch = batch, spec, low = false }) {
   const leaf = (x, y, z, angle, length, color) => {
     const g = new THREE.BufferGeometry(), a = Math.sin(angle), b = Math.cos(angle), width = length * .22
     const points = [0,0,0, a*length*.5+b*width,length*.43,b*length*.5-a*width, a*length,length*.25,b*length, a*length*.5-b*width,length*.43,b*length*.5+a*width]
@@ -123,7 +123,7 @@ export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
     batch.add(g,color,[x,y,z],0,.86)
   }
   for (const [index, bed] of spec.beds.entries()) {
-    if (spec.referenceFinish) { appendOfficeGardenBed({ THREE, batch, bed, low, seed: index }); continue }
+    if (spec.referenceFinish) { appendOfficeGardenBed({ THREE, batch, leafBatch, bed, low, seed: index }); continue }
     batch.add(new THREE.BoxGeometry(bed.w,.11,bed.d),'#B8AE98',[bed.x,.065,bed.z],0,.94)
     batch.add(new THREE.BoxGeometry(bed.w-.12,.025,bed.d-.12),'#554E3C',[bed.x,.13,bed.z],0,1)
     const enhanced = spec.referenceFinish && !low, clumps = low ? 4 : enhanced ? 9 : 6, leaves = low ? 5 : enhanced ? 9 : 7

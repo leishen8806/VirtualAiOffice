@@ -74,7 +74,9 @@ export function createSampleBatch(THREE, assets) {
       }
       material.customProgramCacheKey = () => (material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3') + (material.userData.officeWarmReflection ? '-warm-ibl-v1' : '')
       material.userData.officeVis2 = true
-      const mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material)
+      let mesh
+      try { mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material) }
+      catch (error) { geometry.dispose(); material.dispose(); throw error }
       if (poses) {
         const transform = new THREE.Object3D()
         poses.forEach((p, i) => { transform.position.set(p.x, 0, p.z); transform.rotation.y = p.yaw || 0; transform.updateMatrix(); mesh.setMatrixAt(i, transform.matrix) })
