@@ -1,4 +1,5 @@
-// P-05/P-07：进程内网络守卫。同时拦截 fetch / http / https / net / tls；日志只记 origin（路径脱敏）。
+// 进程内网络守卫：拦截 fetch / http / https / net / tls；被拦时绝不调用原函数，一律抛错。
+// 日志只记 origin（路径脱敏）。
 import fs from 'node:fs'
 import http from 'node:http'
 import https from 'node:https'
@@ -9,12 +10,8 @@ const LOG = process.env.VIS3_NET_LOG || ''
 const ALLOWED = new Set(String(process.env.VIS3_ALLOWED_PORTS || '').split(',').filter(Boolean).map(Number))
 const LOCAL = new Set(['127.0.0.1', 'localhost', '::1'])
 
-function allowedPort(port) { return ALLOWED.has(Number(port)) }
-function logBlocked(origin) {
-  if (!LOG) return
-  try { fs.appendFileSync(LOG, JSON.stringify({ blocked: origin, at: new Date().toISOString() }) + '\n') } catch {}
-}
-function allowHostPort(host, port) { return LOCAL.has(host) && allowedPort(port) }
+function logBlocked(origin) { if (!LOG) return; try { fs.appendFileSync(LOG, JSON.stringify({ blocked: origin, at: new Date().toISOString() }) + '\n') } catch {} }
+function allowHostPort(host, port) { return LOCAL.has(host) && ALLOWED.has(Number(port)) }
 
 // fetch
 const origFetch = globalThis.fetch
@@ -25,31 +22,44 @@ globalThis.fetch = async function (input, init) {
   return origFetch(input, init)
 }
 
-// http/https
-function guardRequest(mod) {
-  const req = mod.request, get = mod.get
-  mod.request = function (options, cb) {
-    if (typeof options === 'string') { const u = new URL(options); if (!allowHostPort(u.hostname, u.port)) { logBlocked(u.origin); const e = new Error('VIS3_NETWORK_BLOCKED ' + u.origin); if (cb) process.nextTick(() => cb(e)); throw e } }
-    else if (options && typeof options === 'object') { const h = options.hostname || options.host || '127.0.0.1'; const p = options.port || (mod === https ? 443 : 80); if (!allowHostPort(h, p)) { logBlocked(`${mod === https ? 'https' : 'http'}://${h}:${p}`); const e = new Error('VIS3_NETWORK_BLOCKED ' + h + ':' + p); if (cb) process.nextTick(() => cb(e)); throw e } }
-    return req.call(mod, options, cb)
+function parseTarget(a0, a1) {
+  if (Array.isArray(a0)) { a0 = a0[0]; a1 = a0 && a0.length > 1 ? a0[1] : a1 }
+  if (a0 && typeof a0 === 'object') {
+    const host = a0.host || a0.hostname || '127.0.0.1'
+    const port = Number(a0.port) || 0
+    const isUnix = typeof a0.path === 'string' && !a0.port && !a0.host && !a0.hostname
+    return { host, port, isUnix }
   }
-  mod.get = function (options, cb) { return mod.request(options, cb) }
+  if (typeof a0 === 'number' || /^\d+$/.test(String(a0))) {
+    return { host: typeof a1 === 'string' ? a1 : '127.0.0.1', port: Number(a0) || 0 }
+  }
+  return null
 }
-guardRequest(http); guardRequest(https)
+function assertAllowed(...args) {
+  const t = parseTarget(args[0], args[1])
+  if (t && !t.isUnix && !allowHostPort(t.host, t.port)) {
+    logBlocked(t.host + ':' + t.port)
+    throw new Error('VIS3_NETWORK_BLOCKED ' + t.host + ':' + t.port)
+  }
+}
 
-// net/tls：处理 (options[, cb]) 与 (port[, host][, cb]) 两种形式
-const netConnect = net.connect, tlsConnect = tls.connect
-function blockNet(...args) {
-  let host = '127.0.0.1', port = 0, cb = null
-  const a0 = args[0]
-  if (a0 && typeof a0 === 'object') { host = a0.host || a0.hostname || '127.0.0.1'; port = a0.port || 0; cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null }
-  else { port = Number(a0) || 0; host = typeof args[1] === 'string' ? args[1] : '127.0.0.1'; cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null }
-  if (!allowHostPort(host, port)) { logBlocked(host + ':' + port); const e = new Error('VIS3_NETWORK_BLOCKED ' + host + ':' + port); if (cb) process.nextTick(() => cb(e)); else throw e }
+// http / https：只包 request；get 放行时走原生（原生 get 内部会调用被包住的 request，故仍受守卫）
+function guardHttp(mod) {
+  const origReq = mod.request, origGet = mod.get
+  mod.request = function (...args) { assertAllowed(...args); return origReq.apply(mod, args) }
+  mod.get = function (...args) { return origGet.apply(mod, args) }
 }
-function guardNet(orig) {
-  return function (...args) { blockNet(...args); return orig.apply(this, args) }
-}
-net.connect = guardNet(netConnect)
-tls.connect = guardNet(tlsConnect)
+guardHttp(http); guardHttp(https)
+
+// net / tls：拦截 connect / createConnection / Socket.prototype.connect
+function guardConnect(orig) { return function (...args) { assertAllowed(...args); return orig.apply(this, args) } }
+const origNetConnect = net.connect
+const origNetCreateConn = net.createConnection
+const origTlsConnect = tls.connect
+net.connect = guardConnect(origNetConnect)
+net.createConnection = guardConnect(origNetCreateConn)
+tls.connect = guardConnect(origTlsConnect)
+const origSocketConnect = net.Socket.prototype.connect
+net.Socket.prototype.connect = function (...args) { assertAllowed(...args); return origSocketConnect.apply(this, args) }
 
 export const __vis3_guard = true

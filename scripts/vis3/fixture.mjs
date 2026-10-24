@@ -84,7 +84,7 @@ export async function bootIsolated({ repo, office = false, campus = false, missi
       VIS3_ALLOWED_PORTS: `${mock.port},${port}`,
       NODE_OPTIONS: '',
     }
-    child = spawn(process.execPath, ['--import', pathToFileURL(path.join(HERE, 'block-network.mjs')).href, path.join(tmpOffice, 'server.mjs')], {
+    child = spawn(process.execPath, ['--max-old-space-size=1024', '--import', pathToFileURL(path.join(HERE, 'block-network.mjs')).href, path.join(tmpOffice, 'server.mjs')], {
       cwd: sandbox,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],

@@ -25,6 +25,11 @@ try {
 if (!TMP_ROOTS.some((d) => OUT === d || OUT.startsWith(d + path.sep))) { console.error('INFRA_ERROR: --out 必须位于系统临时目录内：' + OUT); process.exit(2) }
 if (OUT.startsWith(REPO + path.sep)) { console.error('INFRA_ERROR: --out 不得位于被测仓库内：' + OUT); process.exit(2) }
 if (fs.existsSync(OUT)) { if (fs.statSync(OUT).isFile()) { console.error('INFRA_ERROR: --out 是文件，拒绝：' + OUT); process.exit(2) } if (fs.readdirSync(OUT).length > 0) { console.error('INFRA_ERROR: --out 目录已存在且非空，拒绝覆盖：' + OUT); process.exit(2) } }
+const MIN_FREE_MB = Number(process.env.VIS3_MIN_FREE_MB || 3000)
+if (os.freemem() < MIN_FREE_MB * 1024 * 1024) { console.error('INFRA_ERROR: 空闲内存不足 ' + MIN_FREE_MB + 'MB（' + Math.round(os.freemem() / 1048576) + 'MB），NOT_RUN'); process.exit(2) }
+const WATCHDOG_MS = Number(process.env.VIS3_WATCHDOG_MS || (30 * 60 * 1000))
+const watchdog = setTimeout(() => { console.error('INFRA_ERROR: 看门狗超时，结束全部子进程'); process.exit(2) }, WATCHDOG_MS)
+watchdog.unref?.()
 const DPR = Number(A.dpr || 1)
 const VIEWPORT = String(A.viewport || '1280x720').split('x').map(Number)
 let PW
@@ -32,8 +37,9 @@ try { PW = A.playwright || process.env.VIS3_PLAYWRIGHT || require.resolve('playw
 const NETLOG = path.join(OUT, 'logs', 'blocked-network.jsonl')
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'screenshots'), { recursive: true }); fs.mkdirSync(path.join(OUT, 'logs'), { recursive: true }); fs.writeFileSync(NETLOG, '')
 let SHA, repoCleanBefore
-try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim() }
+try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', 'office3d'], { encoding: 'utf8' }).trim() }
 catch (e) { console.error('INFRA_ERROR: 无法读取被测仓库（非 git 或不可访问）：' + (e?.message || e)); process.exit(2) }
+if (repoCleanBefore) { console.error('INFRA_ERROR: --repo 工作树不干净，拒绝运行：\n' + repoCleanBefore); process.exit(2) }
 const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
@@ -178,6 +184,7 @@ async function sceneOffice(browser, base) {
   await waitReady(fb.page, () => Boolean(window.__vis2?.renderer)); await fb.page.click('#enter').catch(() => {}); await fb.page.waitForTimeout(1200)
   const fbSnap = await fb.page.evaluate(() => { const names = []; window.__vis2.scene.traverse((n) => { if (n.name) names.push(n.name) }); return { mode: window.__vis2.mode(), names } })
   addCheck(checks, 'office-logo-fallback', fbSnap.mode === 'open' && fbSnap.names.includes('office-vis2-brand-placeholder-slots'), '', true)
+  addCheck(checks, 'office-blocked-zero', [...blocked, ...fb.blocked].filter((b) => b.rule !== 'abort-pattern').length === 0, JSON.stringify([...blocked, ...fb.blocked].filter((b) => b.rule !== 'abort-pattern').slice(0, 5)), true)
   await shot(fb.page, 'office-overview-fallback'); await fb.context.close()
   return { checks, perf }
 }
@@ -201,7 +208,7 @@ async function sceneDashboard(browser, base) {
 let browser
 try {
   const pw = require(PW)
-  browser = await pw.chromium.launch({ headless: true, channel: 'chrome' }).catch(() => pw.chromium.launch({ headless: true }))
+  browser = await pw.chromium.launch({ headless: true, channel: 'chrome', args: ['--js-flags=--max-old-space-size=1024'] }).catch(() => pw.chromium.launch({ headless: true, args: ['--js-flags=--max-old-space-size=1024'] }))
 } catch (e) { console.error('INFRA_ERROR: 浏览器/playwright 启动失败（--playwright / VIS3_PLAYWRIGHT 需指向可加载的 playwright）：' + (e?.message || e)); process.exit(2) }
 report.browser = await browser.version()
 try {
@@ -265,7 +272,7 @@ for (const [name, sc] of Object.entries(report.scenes)) {
 }
 report.blockedNetwork = fs.existsSync(NETLOG) ? fs.readFileSync(NETLOG, 'utf8').trim().split('\n').filter(Boolean).length : 0
 report.mandatory = { pass: M.pass, fail: M.fail, total: M.total }
-const repoCleanAfter = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim()
+const repoCleanAfter = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', 'office3d'], { encoding: 'utf8' }).trim()
 report.filesystemIsolation = { repoCleanBefore: repoCleanBefore, repoCleanAfter: repoCleanAfter, unchanged: repoCleanBefore === repoCleanAfter }
 for (const [name, scene] of Object.entries(report.scenes)) scene.pass = (scene.checks || []).filter((c) => c.mandatory).every((c) => c.ok)
 report.exit = (process.exitCode && process.exitCode !== 0) ? process.exitCode : (M.fail > 0 ? 1 : (M.total === 0 || SCENES.some((s) => !report.scenes[s]) ? 2 : 0))
