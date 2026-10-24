@@ -6,6 +6,7 @@ import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
+const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
 
 // Only visual surfaces change: the host still owns all walls, door gaps and collision proxies.
 export function officeShellFinishSpec(layout, spec) {
@@ -105,9 +106,37 @@ export function buildOfficeAlignedShell(context) {
       mesh.instanceMatrix.needsUpdate = true; mesh.name = name; mesh.castShadow = false; mesh.receiveShadow = false
       mesh.userData.dynamic = true; root.add(mesh); return mesh
     }
-    const frames = add('office-aligned-frames-and-inlays', spec.solid, surfaces)
+    const shadowLod = layout.variant === 'align' && !low
+    const sourceIndices = spec.solid.map((_, i) => i)
+    if (shadowLod) sourceIndices.sort((a, b) => Number(contactShadowOnly.has(spec.solid[a].kind)) - Number(contactShadowOnly.has(spec.solid[b].kind)))
+    const frames = add('office-aligned-frames-and-inlays', sourceIndices.map(i => spec.solid[i]), surfaces)
     // 复用现有太阳阴影；低档与旧布局维持原开销，不新增灯光。
-    if (layout.variant === 'align' && !low) frames.castShadow = frames.receiveShadow = shell.ground.receiveShadow = true
+    if (shadowLod) {
+      frames.castShadow = frames.receiveShadow = shell.ground.receiveShadow = true
+      const total = frames.count, casters = sourceIndices.filter(i => !contactShadowOnly.has(spec.solid[i].kind)).length
+      const geometry = frames.geometry, fullIndices = Array.from(geometry.index.array), indices = fullIndices.slice(), fullCount = fullIndices.length
+      // BoxGeometry的六组面顺序由测试锁定；八个方向组合预存，阴影回调不分配GPU资源。
+      for (let mask = 0; mask < 8; mask++) for (let axis = 0; axis < 3; axis++) {
+        const face = axis * 2 + (mask & (1 << axis) ? 0 : 1)
+        indices.push(...fullIndices.slice(face * 6, face * 6 + 6))
+      }
+      geometry.setIndex(indices); geometry.setDrawRange(0, fullCount)
+      frames.computeBoundingSphere()
+      const direction = new THREE.Vector3(), inverse = new THREE.Matrix4()
+      const restoreDraw = () => { frames.count = total; geometry.setDrawRange(0, fullCount) }
+      frames.onBeforeShadow = (_renderer, _object, _camera, shadowCamera, _geometry, depthMaterial) => {
+        frames.count = casters; geometry.setDrawRange(0, fullCount)
+        if (shadowCamera.isOrthographicCamera && (depthMaterial.side === THREE.FrontSide || depthMaterial.side === THREE.BackSide)) {
+          shadowCamera.getWorldDirection(direction).transformDirection(inverse.copy(frames.matrixWorld).invert())
+          let mask = (direction.x >= 0 ? 1 : 0) | (direction.y >= 0 ? 2 : 0) | (direction.z >= 0 ? 4 : 0)
+          if (depthMaterial.side === THREE.FrontSide) mask ^= 7
+          geometry.setDrawRange(fullCount + mask * 18, 18)
+        }
+      }
+      // 普通材质、GTAO及被中断后的下一次可见绘制都必须恢复完整构件。
+      frames.onAfterShadow = restoreDraw; frames.onBeforeRender = restoreDraw
+      frames.userData.officeShadow = { sourceIndices, total, casters, fullIndexCount: fullCount, shadowIndexCount: 18 }
+    }
     if (!low) add('office-aligned-clear-glass', spec.panes, glass)
     const batch = createSampleBatch(THREE), leafBatch = layout.variant === 'align' && !low ? createSampleBatch(THREE) : batch
     appendOfficePlazaPaving({ THREE, batch, layout, low })

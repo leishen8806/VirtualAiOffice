@@ -19,7 +19,8 @@ test('actual room crowns reduce overhead coverage, retain original clearance and
         const originalCoverage = 2 * width * .42 + 2 * .42 * (depth - .84)
         assert.ok(crowns.reduce((area, p) => area + p.w * p.d, 0) < originalCoverage * .65)
         const measured = entries.map(p => {
-          const matrix = new THREE.Matrix4(); frames.getMatrixAt(spec.indexOf(p), matrix)
+          const sourceIndex = spec.indexOf(p), instanceIndex = frames.userData.officeShadow?.sourceIndices.indexOf(sourceIndex) ?? sourceIndex
+          const matrix = new THREE.Matrix4(); frames.getMatrixAt(instanceIndex, matrix)
           const box = new THREE.Box3(new THREE.Vector3(-.5, -.5, -.5), new THREE.Vector3(.5, .5, .5)).applyMatrix4(matrix)
           assert.ok(box.min.x >= room.x0 - 1e-5 && box.max.x <= room.x1 + 1e-5)
           assert.ok(box.min.z >= room.z0 - 1e-5 && box.max.z <= room.z1 + 1e-5)
