@@ -29,9 +29,30 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
   if (!includeEnclosure) { fixed.mesh.removeFromParent(); panels.removeFromParent() }
   try { if (canvasTex) {
     const surface = receptionBackdrop(layout.frontDesk).grille
-    texture = canvasTex(1024, 64, (ctx, width, height) => { ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '500 48px Microsoft YaHei, sans-serif'; ctx.fillText('前厅接待  ·  RECEPTION', width / 2, height / 2) })
-    labelMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }); label = new THREE.Mesh(new THREE.PlaneGeometry(2.4, .15), labelMaterial)
-    label.name = 'vis2-reception-wayfinding'; label.position.set(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002); group.add(label)
+    const welcome = layout.variant === 'align'
+    texture = canvasTex(1024, welcome ? 256 : 64, (ctx, width, height) => {
+      ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.font = `500 ${welcome ? 96 : 48}px Microsoft YaHei, sans-serif`; ctx.fillText('前厅接待  ·  RECEPTION', width / 2, welcome ? 64 : height / 2)
+      if (welcome) { ctx.fillStyle = '#806A46'; ctx.font = '500 112px Microsoft YaHei, sans-serif'; ctx.fillText('欢 迎 光 临', width / 2, 192) }
+    })
+    let geometry = new THREE.PlaneGeometry(2.4, .15)
+    if (welcome) {
+      // 两处文字共用同一图集与绘制；铺地字面比既有入口石板高2mm，不改变通行体积。
+      geometry.translate(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002)
+      const floor = new THREE.PlaneGeometry(3.2, .6); floor.rotateX(-Math.PI / 2); floor.translate(mid, .117, f.z1 + .9)
+      const merged = new THREE.BufferGeometry()
+      for (const key of ['position', 'normal', 'uv']) {
+        const a = geometry.attributes[key], b = floor.attributes[key], values = [...a.array, ...b.array]
+        if (key === 'uv') for (let i = 1; i < values.length; i += 2) values[i] = values[i] * .5 + (i < a.array.length ? .5 : 0)
+        merged.setAttribute(key, new THREE.Float32BufferAttribute(values, a.itemSize))
+      }
+      merged.setIndex([...geometry.index.array, ...Array.from(floor.index.array, i => i + 4)])
+      geometry.dispose(); floor.dispose(); geometry = merged
+    }
+    labelMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }); label = new THREE.Mesh(geometry, labelMaterial)
+    label.name = 'vis2-reception-wayfinding'
+    if (!welcome) label.position.set(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002)
+    group.add(label)
   } } catch (error) { dispose(); throw error }
-  return { root: group, mapping: { glass: includeEnclosure ? specs : [], gatePosts: includeEnclosure ? gatePosts : [], entrance: includeEnclosure ? { x: mid, z: f.z1, width: 4 } : null }, summary: () => ({ calls: (includeEnclosure ? 2 : 0) + (label ? 1 : 0), triangles: (includeEnclosure ? fixed.triangles() + 8 : 0) + (label ? 2 : 0) }), dispose }
+  return { root: group, mapping: { glass: includeEnclosure ? specs : [], gatePosts: includeEnclosure ? gatePosts : [], entrance: includeEnclosure ? { x: mid, z: f.z1, width: 4 } : null }, summary: () => ({ calls: (includeEnclosure ? 2 : 0) + (label ? 1 : 0), triangles: (includeEnclosure ? fixed.triangles() + 8 : 0) + (label ? label.geometry.index.count / 3 : 0) }), dispose }
 }

@@ -109,7 +109,7 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "B607E7EE2BAAC04EEA99142304830D465DA3641EA2C28770980301F69F835D03",
+      "sha256": "91CBCDD24EE0FA88E10CFFFA866823368BB05C090C4C2BDCCB47AA6BE1818A6A",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
