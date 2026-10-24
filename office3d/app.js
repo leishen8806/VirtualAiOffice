@@ -15,7 +15,7 @@ import { campusModules } from './dr-campus-modules.js'
 import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
-import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3 } from './office-layout.js'
+import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
 import { createReplay } from './replay.js' // T11 今日回放（真实事件账本）：回放入口 / 回放期间暂停实时事件的最小挂钩
@@ -39,7 +39,8 @@ if (WALL_MODE) document.addEventListener('DOMContentLoaded', () => document.body
 const ROOM = { w: ENVELOPE.x1 - MAIN_FLOOR_X0, d: ENVELOPE.z1 - ENVELOPE.z0 }
 const BACK_Z = -ROOM.d / 2
 const WALL_H = 4.2
-const ZONES = Object.fromEntries(Object.entries({ product: 0x8b6cff, eng: 0x28b4d6, quality: 0xe8963a, drlife: 0xb69a64, ops: 0x3fbf8f, kb: 0x6c8cff, meet: 0x8b6cff, board: 0xffb020 }).map(([id, accent]) => [id, { label: REGION_FOCUS[id].label, accent, focus: OFFICE_LAYOUT.version === 2 ? OFFICE_LAYOUT.regionFocus[id] || REGION_FOCUS[id] : REGION_FOCUS[id] }]))
+const focusOf = (id) => regionFocusOf(OFFICE_LAYOUT, id)
+const ZONES = Object.fromEntries(Object.entries({ product: 0x8b6cff, eng: 0x28b4d6, quality: 0xe8963a, drlife: 0xb69a64, ops: 0x3fbf8f, kb: 0x6c8cff, meet: 0x8b6cff, board: 0xffb020 }).map(([id, accent]) => [id, { label: focusOf(id).label, accent, focus: focusOf(id) }]))
 // 新同事的形象：Rocketbox 只下载了 22 位，运维两位暂时借用其他区同事的形象（要更多不同的脸需要再批准下载）
 const CAST_OVERRIDE = { OpsLead: 'Male_Adult_11', OpsEngineer: 'Female_Adult_07', KnowledgeKeeper: 'Female_Adult_09' }
 const FALLBACK = SEATS.Backend2
@@ -1701,7 +1702,7 @@ function drawMini() {
     rect(PARKING.x0, PARKING.z0, PARKING.x1, PARKING.z1, 'rgba(255,255,255,.04)', 'rgba(182,154,100,.38)')
     rect(ENTRANCE.x0, LOUNGE_AREA.entryZ, ENTRANCE.x1, ENVELOPE.z1, 'rgba(182,154,100,.15)', 'rgba(182,154,100,.6)')
     g.font = '600 15px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
-    { const [x, y] = miniXY(REGION_FOCUS.plaza.t[0], REGION_FOCUS.plaza.t[2]); g.fillStyle = 'rgba(244,241,235,.55)'; g.fillText(PLAZA.name, x, y) }
+    { const plazaFocus = focusOf('plaza'), [x, y] = miniXY(plazaFocus.t[0], plazaFocus.t[2]); g.fillStyle = 'rgba(244,241,235,.55)'; g.fillText(plazaFocus.label, x, y) }
     for (const z of Object.values(ZONES)) { const [x, y] = miniXY(z.focus.t[0], z.focus.t[2]); g.fillStyle = 'rgba(244,241,235,.55)'; g.fillText(z.label.replace(/ 工作室$/, ''), x, y) }
   }
   const dot = (x, z, c, r) => { const [a, b] = miniXY(x, z); g.beginPath(); g.arc(a, b, r, 0, 7); g.fillStyle = c; g.fill() }
@@ -1755,7 +1756,7 @@ zoneBtn('🌇 室外', () => setGoal({ az: 18, el: 24, r: 78, t: VIEW_CENTER }))
 zoneBtn('🛕 高棉地标', () => setGoal({ az: 0, el: 12, r: 110, t: [0, 0, -20] }))
 zoneBtn('✨ 形象墙', () => setGoal({ az: 4, el: 22, r: 13, t: [CORRIDOR_X, 0, BACK_Z + 4] }))
 for (const z of Object.values(ZONES)) zoneBtn(z.label, () => setGoal({ az: 6, el: 36, r: z.focus.r, t: z.focus.t }))
-zoneBtn('🏛️ DR广场', () => setGoal({ az: 8, el: 34, r: REGION_FOCUS.plaza.r, t: REGION_FOCUS.plaza.t }))
+zoneBtn('🏛️ DR广场', () => { const focus = focusOf('plaza'); setGoal({ az: 8, el: 34, r: focus.r, t: focus.t }) })
   zoneBtn('🛋️ 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }))
 }
 const qb = $('quality')
@@ -2154,7 +2155,7 @@ window.__office.quality={get tier(){return qualityPolicy.tier},get metrics(){ret
 window.__office.meetingSeats = MEET_SEATS
 window.__office.officePartitions = officePartitions
 if (WALL_MODE) {
-  const WALL_SPOTS = { overview: null, review: REGION_FOCUS.review, plan: REGION_FOCUS.plan, plaza: REGION_FOCUS.plaza }
+  const WALL_SPOTS = { overview: null, review: focusOf('review'), plan: focusOf('plan'), plaza: focusOf('plaza') }
   window.__office.wallGo = (key) => { // key：overview | tour | review | plan | ZONES 里的区域（product / eng / quality / drlife / ops / kb / meet / board）
     if (key === 'tour') { setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }); camMode.tour = true; return true }
     if (key === 'overview') { setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }); return true }

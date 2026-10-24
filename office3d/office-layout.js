@@ -442,6 +442,7 @@ const V3_LAYOUT = {
   },
   regionFocus: Object.fromEntries([
     ...V3_REGIONS.map((region) => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
+    ['meet', { label: '会议室', t: [-23, 0, -7.5], r: 18 }],
     ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
     ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
   ]),
@@ -477,6 +478,7 @@ const LAYOUT_V1_DATA = {
 export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
+export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
   const values = params.getAll('layout')
