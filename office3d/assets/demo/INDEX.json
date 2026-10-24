@@ -19,17 +19,17 @@
       "file": "dr-campus-hero.jpg",
       "source": "dr-campus-reference.jpg 裁剪",
       "crop": [
-        125,
+        0,
         150,
         1672,
         652
       ],
       "usage": "hero 主图（W1/W2/W3 园区鸟瞰，桌面与窄屏共用）",
       "size": [
-        1547,
+        1672,
         502
       ],
-      "sha256": "807947374d0e5a8e21d7c05540ff2501b9bbf80254b8552aa9a9efbe2f794d11"
+      "sha256": "874179493399781a5105e7f61d5804e5e9db789dbff3b463289744f67c87fd0f"
     },
     {
       "file": "dr-campus-reference.webp",
