@@ -3,6 +3,7 @@ import { officeSampleRequested } from './host.js'
 import { createSampleBatch, officeStoneGrain } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
 import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
+import { buildOfficeBackdropTrees } from './plants.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
 
@@ -81,9 +82,9 @@ export function buildOfficeAlignedShell(context) {
   const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, oldFloorReceive = shell.ground.receiveShadow, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
-  let disposed = false, paving
+  let disposed = false, paving, backdrop
   const restore = () => { hidden.forEach(mesh => { mesh.visible = true }); shell.ground.material = oldFloor; shell.ground.receiveShadow = oldFloorReceive; shell.green.material.color.copy(oldGreen) }
-  const release = () => { paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
+  const release = () => { backdrop?.dispose(); paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
   try {
     const spec = officeShellFinishSpec(layout, shell.spec)
     const surfaces = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .7, metalness: .08 })
@@ -115,7 +116,8 @@ export function buildOfficeAlignedShell(context) {
     if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
     shell.green.material.color.set('#4D6A46')
     hidden.forEach(mesh => { mesh.visible = false }); shell.ground.material = floor
-    return { ...shell, finishSpec: spec, dispose() { if (disposed) return; disposed = true; restore(); release(); shell.dispose() } }
+    if (layout.variant === 'align' && context.scene) backdrop = buildOfficeBackdropTrees(context)
+    return { ...shell, finishSpec: spec, ...(backdrop?.summary().enabled ? { backdrop, onFrame(dt,frame) { shell.onFrame(dt,frame); backdrop.sync() } } : {}), dispose() { if (disposed) return; disposed = true; restore(); release(); shell.dispose() } }
   } catch (error) {
     restore(); release(); console.warn('[office-shell-finish] 保留原外壳：', error.message)
     return shell

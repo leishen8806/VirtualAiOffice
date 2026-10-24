@@ -102,7 +102,7 @@
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "27B79FA9FBC62406EE9C2D563F25831D9B60ABE6EBD87791ED441D9457E12B75",
+      "sha256": "3915DF76A1960183D6EC8C7BA4EFF51D9943D80492A0FC8BEF3232195528A459",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E286C9331A441222DC58577FCC8F9844548EFECEC078C273257A24490B37B67C"
+      "sha256": "6B045F23212AD6E41B0BA5C240BA034AC1816927A387D35BA3F3446DC927648F"
     },
     {
       "file": "office-vis2/zone-finish.js",

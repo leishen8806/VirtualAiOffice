@@ -94,6 +94,7 @@ export function selectEnvironmentConflicts(environmentRoots, layout) {
     const p = worldPosition(object)
     if (!isInside(p, site, Number(layout.greenBuffer?.width) || 0)) return false
     if (object.isGroup) return true // 环境树 / 棕榈树等局部组
+    if (layout.variant === 'align' && !object.geometry?.boundingBox) object.geometry?.computeBoundingBox?.()
     const box = object.geometry?.boundingBox
     if (!box) return true
     const w = Math.abs((box.max.x - box.min.x) * (object.scale?.x || 1))

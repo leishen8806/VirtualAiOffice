@@ -1,5 +1,107 @@
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
+const backdropOwners = new WeakMap()
+
+// 小叶按固定三维方向铺在冠层内，使用真实几何轮廓，不依赖透明贴图或相机朝向。
+export function officeBackdropCanopy(THREE, low = false) {
+  const positions = [], colors = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
+  const fract = n => n - Math.floor(n)
+  let radius2 = 0
+  for (let i = 0; i < count; i++) {
+    const a = i * 2.39996323, y = 1 - 2 * (i + .5) / count, r = Math.sqrt(1 - y * y) * (.67 + .26 * fract(i * .618))
+    const center = new THREE.Vector3(Math.sin(a) * r, y * .78, Math.cos(a) * r)
+    const length = (low ? .45 : .30) * (.85 + .3 * fract(i * .37)), width = length * .43
+    const rim = [[0,.5],[.5,.22],[.5,-.22],[0,-.5],[-.5,-.22],[-.5,.22]]
+    rotation.set(a * .71, a, Math.sin(a * 1.3) * 1.4)
+    const shade = .75 + .25 * fract(i * .43)
+    for (let j = 0; j < 6; j++) for (const point of [[0,0,.022], [...rim[j],0], [...rim[(j+1)%6],0]]) {
+      vertex.set(point[0] * width, point[1] * length, point[2]).applyEuler(rotation).add(center)
+      positions.push(vertex.x, vertex.y, vertex.z); colors.push(shade, shade, shade); radius2 = Math.max(radius2, vertex.lengthSq())
+    }
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.scale(.98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2))
+  geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
+  return geometry
+}
+
+export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = false, quality } = {}) {
+  const oldColors = [0x4f8a3c, 0x5d9a44, 0x3f7a39, 0x6aa04f], palette = ['#46633F','#56734A','#3A593B','#67804D']
+  const sources = (scene?.children || []).filter(m => m.isInstancedMesh && m.geometry?.type === 'IcosahedronGeometry' &&
+    m.geometry.parameters?.radius === 1 && m.geometry.parameters?.detail === 1 && m.userData.dynamic === true &&
+    (m.material?.isMeshStandardMaterial || m.material?.isMeshLambertMaterial) &&
+    Array.isArray(m.userData.list) && m.count === m.userData.list.length && m.count > 0 && m.count <= 512 &&
+    m.userData.list.every(c => ['x','y','z','r','ph','m'].every(k => Number.isFinite(c[k])) && Number.isInteger(c.m) && c.m >= 0 && c.m < 4 && c.r > 0 && oldColors[c.m] === m.material.color.getHex()))
+  const records = [], geometries = new Map(), materials = new Map(), owner = {}, matrix = new THREE.Matrix4(), masked = new THREE.Matrix4(), tiny = new THREE.Vector3(1e-6,1e-6,1e-6)
+  const group = new THREE.Group(); group.name = 'office-owned-backdrop-trees'; group.userData.dynamic = true
+  let disposed = false, reason = '', tier, ownedMesh
+  const dispose = () => {
+    if (disposed) return; disposed = true
+    for (const r of records) {
+      if (r.source.instanceMatrix?.version === r.maskedVersion) { r.indices.forEach((index,i) => r.source.setMatrixAt(index,r.saved[i])); r.source.instanceMatrix.needsUpdate = true }
+      if (backdropOwners.get(r.source) === owner) backdropOwners.delete(r.source)
+    }
+    ownedMesh?.dispose(); ownedMesh = null
+    group.removeFromParent(); group.clear(); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose())
+    records.length = 0; geometries.clear(); materials.clear()
+  }
+  const chooseTier = () => {
+    const next = quality ? quality.tier === 'low' : low
+    if (next === tier) return
+    if (!geometries.has(next)) geometries.set(next,officeBackdropCanopy(THREE,next))
+    if (!materials.has(next)) {
+      const options = { color:'#ffffff', vertexColors:true, side:THREE.DoubleSide }
+      materials.set(next,next ? new THREE.MeshLambertMaterial(options) : new THREE.MeshStandardMaterial({...options,roughness:.88}))
+    }
+    if (ownedMesh) { ownedMesh.geometry = geometries.get(next); ownedMesh.material = materials.get(next); ownedMesh.boundingSphere = null }
+    tier = next
+  }
+  const sync = () => {
+    if (disposed || !records.length) return
+    try {
+      if (records.some(r => r.source.parent !== scene)) { reason = 'environment removed'; dispose(); return }
+      chooseTier(); root.updateWorldMatrix(true,false)
+      const inverse = root.matrixWorld.clone().invert(); let updated = false
+      for (const r of records) {
+        // RenderPass与GTAO同帧各调用一次；不能再次读取本模块已缩小的源矩阵。
+        if (r.source.instanceMatrix.version === r.maskedVersion) continue
+        r.source.updateWorldMatrix(true,false); const local = inverse.clone().multiply(r.source.matrixWorld)
+        r.indices.forEach((index,i) => {
+          r.source.getMatrixAt(index,r.saved[i]); ownedMesh.setMatrixAt(r.offset+i,matrix.multiplyMatrices(local,r.saved[i]))
+          r.source.setMatrixAt(index,masked.copy(r.saved[i]).scale(tiny))
+        })
+        r.source.instanceMatrix.needsUpdate = true; r.maskedVersion = r.source.instanceMatrix.version
+        updated = true
+      }
+      if (updated) ownedMesh.instanceMatrix.needsUpdate = true
+      if (!ownedMesh.boundingSphere) { ownedMesh.computeBoundingSphere(); ownedMesh.boundingSphere.radius += .3 }
+    } catch (error) { reason = String(error?.message || error); dispose() }
+  }
+  try {
+    if (!root || !layout?.envelope || sources.length !== 4 || new Set(sources.map(s=>s.geometry.uuid)).size !== 1 || sources.some(s=>backdropOwners.has(s))) reason = 'unrecognized or already owned environment'
+    else {
+      let count = 0
+      for (const source of sources) {
+        const indices = source.userData.list.map((_,i)=>i)
+        if (indices.length) { records.push({source,indices,saved:indices.map(()=>new THREE.Matrix4()),offset:count,color:source.userData.list[0].m}); count += indices.length }
+      }
+      if (records.length) {
+        chooseTier()
+        ownedMesh = new THREE.InstancedMesh(geometries.get(tier),materials.get(tier),count)
+        ownedMesh.name = 'office-backdrop-leaf-clusters'; ownedMesh.userData.qualityProxy = true
+        ownedMesh.castShadow = ownedMesh.receiveShadow = false; group.add(ownedMesh)
+        for (const r of records) {
+          const color = new THREE.Color(palette[r.color]); r.indices.forEach((_,i)=>ownedMesh.setColorAt(r.offset+i,color))
+          backdropOwners.set(r.source,owner)
+        }
+        ownedMesh.instanceColor.needsUpdate = true
+        root.add(group); sync()
+      } else reason = 'no office trees'
+    }
+  } catch (error) { reason = String(error?.message || error); dispose() }
+  return { root:group, sync, dispose, summary:()=>({ enabled:!disposed&&records.length>0, reason, calls:ownedMesh?1:0, clusters:records.reduce((n,r)=>n+r.indices.length,0), triangles:ownedMesh?ownedMesh.geometry.attributes.position.count/3*ownedMesh.count:0, low:!!tier }) }
+}
 export function buildOfficeSamplePlants({ THREE, root, layout = LAYOUT_V3, assets } = {}) {
   if (!THREE || !root) throw new TypeError('buildOfficeSamplePlants requires THREE and root')
   const c = layout.island.center, f = layout.foyer
