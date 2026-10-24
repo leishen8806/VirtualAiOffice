@@ -41,7 +41,8 @@ export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
   const leaf = (x, y, z, angle, length, color) => {
     const g = new THREE.BufferGeometry(), a = Math.sin(angle), b = Math.cos(angle), width = length * .22
     const points = [0,0,0, a*length*.5+b*width,length*.43,b*length*.5-a*width, a*length,length*.25,b*length, a*length*.5-b*width,length*.43,b*length*.5+a*width]
-    g.setAttribute('position',new THREE.Float32BufferAttribute(points,3));g.setIndex([0,1,2,0,2,3,2,1,0,3,2,0]);g.computeVertexNormals()
+    // 正反面独立顶点，避免相反法线相消导致叶片发黑。
+    g.setAttribute('position',new THREE.Float32BufferAttribute([...points,...points],3));g.setIndex([0,1,2,0,2,3,6,5,4,7,6,4]);g.computeVertexNormals()
     batch.add(g,color,[x,y,z],0,.86)
   }
   for (const [index, bed] of spec.beds.entries()) {

@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3 } from '../office-layout.js'
-import { wholeFloorSpec } from '../office-vis2/whole-floor.js'
+import { wholeFloorSpec, appendWholeFloorGarden } from '../office-vis2/whole-floor.js'
+import { createSampleBatch } from '../office-vis2/batch.js'
 import { buildOfficeAlignedShell } from '../office-vis2/shell-finish.js'
 import { buildOfficeAlignedZones } from '../office-vis2/zone-finish.js'
 
@@ -43,6 +44,8 @@ test('whole-floor shares existing batches and repeatedly releases owned garden a
     }
     const garden=root.getObjectByName('office-aligned-plaza-paving')
     assert.ok(garden.geometry.attributes.position.count/3<(low?16000:28000))
+    const normals=garden.geometry.attributes.normal
+    for(let i=0;i<normals.count;i++)assert.ok(Math.hypot(normals.getX(i),normals.getY(i),normals.getZ(i))>.99,'double-sided leaves retain valid non-cancelling normals')
     shell.dispose();shell.dispose();assert.equal(root.children.length,0)
     for(const id of resources)assert.ok(released.has(id))
   }
@@ -63,4 +66,14 @@ test('discussion and dining tables have actual clearance from fixed seats and on
   assert.equal(dining.length,2)
   assert.ok(Math.hypot(dining[0].x-dining[1].x,dining[0].z-dining[1].z)>dining[0].radius+dining[1].radius+.1)
   zones.dispose();assert.equal(root.children.length,0)
+})
+
+test('each leaf has opposing front and back normals instead of shared ambiguous normals',()=>{
+  const root=new THREE.Group(),batch=createSampleBatch(THREE)
+  appendWholeFloorGarden({THREE,batch,spec:{beds:[{x:0,z:0,w:2,d:2}],details:[]},low:true})
+  const built=batch.build(root,'leaf-normal-probe'),n=built.mesh.geometry.attributes.normal
+  // Two boxes precede the first leaf; front vertex 0 and its reversed copy must face opposite ways.
+  const front=new THREE.Vector3().fromBufferAttribute(n,72),back=new THREE.Vector3().fromBufferAttribute(n,80)
+  assert.ok(front.dot(back)<-.99,'leaf front/back normal directions are opposite')
+  built.dispose()
 })
