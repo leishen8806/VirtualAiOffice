@@ -1,15 +1,22 @@
 import { buildOfficePlazaProps } from '../office-plaza-props.js'
 
 // 复用已登记构件，只给预览提供占地映射；宿主碰撞与热点仍由集成人接线。
-export function appendOfficePlaza({ THREE, batch, layout }) {
+export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
   const p = layout.plaza, placements = [], prototypes = new Map()
   const box = (x, y, z, w, h, d, color, grain = '') => batch.add(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
   const add = (category, kind, id, point, yaw = 0, scale = [1, 1, 1], offset = [0, 0]) => {
     const key = category + kind
-    if (!prototypes.has(key)) prototypes.set(key, buildOfficePlazaProps({ THREE, root: new THREE.Group(), placements: { [category]: [{ id: key, kind, x: 0, z: 0, yaw: 0 }] } }))
+    if (!prototypes.has(key)) prototypes.set(key, buildOfficePlazaProps({ THREE, low, root: new THREE.Group(), placements: { [category]: [{ id: key, kind, x: 0, z: 0, yaw: 0 }] } }))
     const source = prototypes.get(key), bounds = new THREE.Box3()
-    for (const mesh of source.root.children) {
+    for (const mesh of source.root.children) for (let instance = 0; instance < (mesh.isInstancedMesh ? mesh.count : 1); instance++) {
       const geometry = mesh.geometry.clone()
+      if (mesh.isInstancedMesh) {
+        const matrix = new THREE.Matrix4(), color = new THREE.Color()
+        mesh.getMatrixAt(instance, matrix); mesh.getColorAt(instance, color); geometry.applyMatrix4(matrix)
+        const colors = new Float32Array(geometry.attributes.position.count * 3)
+        for (let i = 0; i < colors.length; i += 3) colors.set([color.r, color.g, color.b], i)
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+      }
       // 原共享伞盖为向上开口的锥面，私有副本翻正，保持原杆、桌与椅不变。
       if (category === 'cafe' && mesh.name.endsWith('-accent')) geometry.translate(0, -3.15, 0).rotateX(Math.PI).translate(0, 3.15, 0)
       geometry.scale(...scale); geometry.rotateY(yaw); geometry.translate(point.x + offset[0], .11, point.z + offset[1])
@@ -44,9 +51,9 @@ export function appendOfficePlaza({ THREE, batch, layout }) {
     p.flowerBands.filter(point => point.z > p.center.z).forEach((point, i) => {
       box(point.x, .28, point.z, 3.02, .34, .82, '#D9D3C6', 'stone')
       box(point.x, .46, point.z, 2.88, .025, .68, '#534A3C')
-      for (let j = 0; j < 24; j++) {
-        const x = point.x - 1.25 + (j % 8) * .35, z = point.z - .23 + Math.floor(j / 8) * .23
-        for (let k = 0; k < 5; k++) {
+      for (let j = 0; j < (low ? 12 : 24); j++) {
+        const x = point.x - 1.25 + (j % (low ? 4 : 8)) * (low ? .83 : .35), z = point.z - .23 + Math.floor(j / (low ? 4 : 8)) * .23
+        for (let k = 0; k < (low ? 3 : 5); k++) {
           const leaf = new THREE.IcosahedronGeometry(.14, 0); leaf.scale(.4, 1.6, .25); leaf.rotateZ(.65); leaf.rotateY(k * 2.399)
           batch.add(leaf, k % 3 ? '#3E5A4E' : '#648B50', [x, .62, z], 0, .9)
         }

@@ -2,6 +2,7 @@
 import { createOfficeNavigation } from './office-layout.js'
 import { createPedestrianTraffic, PERSON_GAP } from './pedestrian-traffic.js'
 import { consumerAdvance as legacyConsumerAdvance, consumerDeparture as legacyConsumerDeparture } from './foyer-paths.js'
+class FurnitureBlockedError extends Error {}
 const SPEED = 1.4 // 米/秒：正常办公室步速
 const MAX_WALKERS = 3
 const MAX_EVENT_WALKERS = 4
@@ -21,9 +22,9 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v))
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a))
 const isWalker = act => ['rise', 'walk'].includes(act.phase)
 
-export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout }) {
-  const navigation = createOfficeNavigation(layout)
-  const { officeExit, officeTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
+export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride }) {
+  const navigation = navigationOverride || createOfficeNavigation(layout)
+  const { officeExit, officeTrip, boardTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
   const consumerAdvance = navigation.consumerAdvance || legacyConsumerAdvance, consumerDeparture = navigation.consumerDeparture || legacyConsumerDeparture
   const gInLounge = p => Math.abs(p.x - LOUNGE_AREA.x) < LOUNGE_AREA.width / 2 && Math.abs(p.z - LOUNGE_AREA.z) < LOUNGE_AREA.depth / 2
   // views: Map(agentId -> view)；board: { 名字 -> view }；layer: 气泡容器；project(vec3, el): 把世界坐标投到屏幕
@@ -148,8 +149,8 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
   }
 
   function pathTo(v, tgt) {
-    if (layout?.version === 3) return officeTrip(v.home, tgt.view.home, tgt.stand)
     if (!tgt.board) return officeTrip(v.home, tgt.view.home, tgt.stand)
+    if (typeof boardTrip === 'function') return boardTrip(v.home, tgt.stand)
     const pts = officeExit(v.home)
     if (tgt.board) {
       pts.push(...corridorPath(pts.at(-1), { x: CORRIDOR_X, z: DOOR.zOut }), { x: DOOR.x, z: DOOR.zOut }, { x: DOOR.x, z: DOOR.zIn })
@@ -207,7 +208,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
     }
     let pts
     try { pts = furnitureRoute(from, pathTo(from, tgt)) }
-    catch (error) { console.warn('[director] 无安全事件路线', error.message); return false }
+    catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全事件路线', error.message); return false }
     const act = { ev, view: from, tgt, phase: 'rise', t: 0, total: 0, stall: 0, yields: 0, pts, i: 0, back: false, bubble: null, carry: ev.kind !== 'dispatch', origin: { x: from.char.group.position.x, z: from.char.group.position.z }, trail: [{ x: from.char.group.position.x, z: from.char.group.position.z }] }
     from.act = act
     active.add(act)
@@ -415,7 +416,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       if (last && seat) ignore.add(furnitureCollision.seatBody(seat))
       if (!last && furnitureCollision.hit(point.x, point.z, ignore)) continue
       const path = furnitureCollision.route(from, point, ignore)
-      if (!path) throw new Error(`V3 furniture blocks route for ${v.name}`)
+      if (!path) throw new FurnitureBlockedError(`V3 furniture blocks route for ${v.name}`)
       result.push(...path); from = point
     }
     return result
@@ -441,7 +442,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       return false
     }
     try { pts = furnitureRoute(v, pts, seat, v.char.group.position) }
-    catch (error) { console.warn('[director] 无安全出行路线', error.message); return false }
+    catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全出行路线', error.message); return false }
     const fromLounge = gInLounge(v.char.group.position)
     const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'queued', t: 0, total: 0, yields: 0, pts, i: 0, back: true, carry: false, seat, lounge, onDone, standing, fromLounge, needsLane: lounge === true || fromLounge, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
     v.act = act
@@ -462,13 +463,24 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
 
   function moveVisit(visit, pts) {
     if (!visits.has(visit.agentId)) return false
-    setVisitPhase(visit, 'moving')
-    return travel(visit.v, pts, { ...visit.point, yaw: visit.plan.yaw ?? visit.v.char.group.rotation.y }, false, () => {
+    const current = visit.v.char.group.position
+    if (Math.hypot(current.x - visit.point.x, current.z - visit.point.z) <= 0.01) {
+      setVisitPhase(visit, 'queued')
+      return true
+    }
+    const started = travel(visit.v, pts, { ...visit.point, yaw: visit.plan.yaw ?? visit.v.char.group.rotation.y }, false, () => {
       if (!visits.has(visit.agentId)) return
       const p = visit.v.char.group.position
       if (Math.hypot(p.x - visit.point.x, p.z - visit.point.z) > 0.01) { setVisitPhase(visit, 'queued'); return }
       setVisitPhase(visit, 'queued')
     }, true)
+    if (!started) {
+      // 坏的消费者路线不能留在 queued 状态里逐帧重试。
+      returnVisit(visit, 'invalidRoute')
+      return false
+    }
+    setVisitPhase(visit, 'moving')
+    return true
   }
 
   function advanceQueue(result) {
@@ -588,7 +600,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
     goHome(v, onDone) {
       if (v.act) return false
       let pts
-      try { pts = commutePath(v) } catch (error) { console.warn('[director] 无安全下班路线', error.message); return false }
+      try { pts = commutePath(v) } catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全下班路线', error.message); return false }
       const act = { ev: { kind: 'commute', text: '' }, view: v, phase: 'rise', t: 0, total: 0, stall: 0, yields: 0, pts, i: 0, back: false, carry: false, commute: 'leave', onDone, origin: { x: v.char.group.position.x, z: v.char.group.position.z }, trail: [{ x: v.char.group.position.x, z: v.char.group.position.z }] }
       v.act = act
       active.add(act)
@@ -597,7 +609,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
     arrive(v) {
       if (v.act) return false
       let pts
-      try { pts = commutePath(v).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }]) } catch (error) { console.warn('[director] 无安全上班路线', error.message); return false }
+      try { pts = commutePath(v).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }]) } catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全上班路线', error.message); return false }
       const g = v.char.group
       g.position.set(GATE[1].x, 0, GATE[1].z)
       g.rotation.y = 0

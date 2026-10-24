@@ -554,15 +554,15 @@ const dedupeRoute = (points) => points.filter((point, index, all) => !index || M
 
 function createOfficeV3Navigation(layout) {
   const rooms = layout.regions, access = layout.meetingAccess
-  const insidePath = createV3PublicPath(layout)
-  const publicPath = (from, to) => {
-    const inner = { x: layout.axis.x, z: layout.doors.south.z - .8 }
-    const outside = p => p.z > layout.doors.south.z - .28
-    for (const p of [from, to]) if (outside(p) && (p.x < layout.doors.south.x0 + .28 || p.x > layout.doors.south.x1 - .28 || p.z > layout.doors.south.z + 2)) throw new Error('V3 outside route must use the south entrance')
-    return dedupeRoute([...(outside(from) ? [routePoint(from)] : []), ...insidePath(outside(from) ? inner : from, outside(to) ? inner : to), ...(outside(to) ? [routePoint(to)] : [])])
-  }
   if (!access || !Object.values(access).every(Number.isFinite)) throw new Error('缺少 V3 会议通行合同')
   const findRoom = point => rooms.find(room => point.x > room.x0 && point.x < room.x1 && point.z > room.z0 && point.z < room.z1)
+  const entrance = {
+    x0: layout.doors.south.x0,
+    x1: layout.doors.south.x1,
+    inner: { x: layout.axis.x, z: layout.doors.south.z - .75 },
+    gate: [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: layout.axis.x, z: layout.doors.south.z + 1.75 }],
+  }
+  const foyerHub = { x: -2, z: 4.75 }
   const exit = (home) => {
     const room = findRoom(home)
     if (!room) return [routePoint(home)]
@@ -579,21 +579,20 @@ function createOfficeV3Navigation(layout) {
     const aisleX = home.x < door.at ? room.x0 + .7 : room.x1 - .7
     return dedupeRoute([routePoint(home), { x: home.x, z: inside.z }, { x: aisleX, z: inside.z }, { x: door.at, z: inside.z }, outside])
   }
-  const northAccess = (room, from) => {
-    if (room.x1 <= -8.5) {
-      const laneX = room.z1 <= -10.5 ? from.x : access.westSpineX
-      const middle = room.z1 <= -10.5 ? [] : [{ x: access.westSpineX, z: access.westMiddleZ }]
-      return dedupeRoute([...middle, { x: laneX, z: access.northZ }, { x: access.westSpineX, z: access.northZ }])
+  const insidePath = createV3PublicPath(layout)
+  const publicPath = (from, to, plaza = false) => {
+    const outside = p => p.z > layout.doors.south.z - .28
+    if (!plaza) for (const p of [from, to]) if (outside(p) && (p.x < layout.doors.south.x0 + .28 || p.x > layout.doors.south.x1 - .28 || p.z > layout.doors.south.z + 2)) throw new Error('V3 outside route must use the south entrance')
+    const boundary = p => {
+      if (outside(p)) return entrance.inner
+      const dx = p.x - layout.bar.center.x, dz = p.z - layout.bar.center.z, distance = Math.hypot(dx, dz)
+      // 岛内最后一段由调用方负责；休息路线单独选取真实吧台开口。
+      if (distance < layout.island.radius + .28) return foyerHub
+      return p
     }
-    const south = room.z0 >= 5 ? [{ x: from.x, z: access.eastSouthZ }, { x: access.eastSpineX, z: access.eastSouthZ }] : []
-    const middle = room.z0 >= 5 ? [{ x: access.eastSpineX, z: access.eastMiddleZ }] : []
-    return dedupeRoute([...south, ...middle, { x: access.eastSpineX, z: access.northZ }])
-  }
-  const publicToMeetingDoor = (home, room) => {
-    const origin = findRoom(home), departure = exit(home), from = departure.at(-1)
-    if (!origin) throw new Error('V3 会议出发点不在已注册房间内')
-    const source = northAccess(origin, from)
-    return dedupeRoute([...departure, ...source, { x: access.westSpineX, z: access.northZ }, { x: access.westSpineX, z: roomDoor(room).at }])
+    const a = boundary(from), b = boundary(to)
+    const exterior = p => [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: p.x, z: layout.doors.south.z + .75 }, routePoint(p)]
+    return dedupeRoute([...(outside(from) ? exterior(from).toReversed() : [routePoint(from)]), ...insidePath(a, b), ...(outside(to) ? exterior(to) : [routePoint(to)])])
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
@@ -603,29 +602,70 @@ function createOfficeV3Navigation(layout) {
   const meetings = (home, seat) => {
     const room = rooms.find(item => item.id === (seat?.room === 'A' ? 'review' : seat?.room === 'B' ? 'plan' : ''))
     if (!room || !Number.isFinite(seat?.x) || !Number.isFinite(seat?.z)) throw new Error('无效 V3 会议座位')
-    return dedupeRoute([...publicToMeetingDoor(home, room), ...meetingInterior(room, seat)])
+    const departure = exit(home), outside = doorExterior(room)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), outside).slice(1), ...meetingInterior(room, seat)])
   }
-  const trip = (home, targetHome, stand) => {
-    const a = exit(home), b = exit(targetHome).reverse()
+  const trip = (home, targetHome, stand = targetHome) => {
+    const a = exit(home), b = exit(targetHome).toReversed()
     return dedupeRoute([...a, ...publicPath(a.at(-1), b[0]), ...b.slice(1, -1), routePoint(stand)])
   }
-  const entrance = { ...layout.doors.south, inner: { x: layout.axis.x, z: layout.doors.south.z - .8 }, gate: [ .5, 2 ].map(dz => ({ x: layout.axis.x, z: layout.doors.south.z + dz })) }
   const lounge = (home, seat) => {
-    const a = exit(home), angle = Math.atan2(seat.z - layout.bar.center.z, seat.x - layout.axis.x)
-    const approach = { x: layout.axis.x + Math.cos(angle) * 8, z: layout.bar.center.z + Math.sin(angle) * 8 }
-    return dedupeRoute([...a, ...publicPath(a.at(-1), approach), routePoint(seat)])
+    if (!Number.isFinite(seat?.x) || !Number.isFinite(seat?.z) || !Number.isFinite(seat?.appX) || !Number.isFinite(seat?.appZ)) throw new Error('无效 V3 休息座位')
+    const departure = exit(home), approach = { x: seat.appX, z: seat.appZ }
+    const { center } = layout.ring
+    const east = seat.side === 'east'
+    // 休息座位在吧岛内侧，只能从对应一侧的吧台开口进入；公共路线不可直穿吧台。
+    const ringRoute = east
+      ? [{ x: center.x + 7, z: foyerHub.z }, { x: center.x + 7, z: center.z }, { x: center.x + layout.bar.radius + .25, z: center.z }]
+      : [{ x: center.x - 7, z: foyerHub.z }, { x: center.x - 7, z: center.z }, { x: center.x - layout.bar.radius - .25, z: center.z }]
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), ringRoute[0]).slice(1), ...ringRoute.slice(1), approach, routePoint(seat)])
   }
-  const consumer = (home, target) => {
-    if (!target || !Number.isFinite(target.x) || !Number.isFinite(target.z)) throw new Error('V3 consumer requires a registered coordinate target')
-    const a = exit(home)
-    return dedupeRoute([...a, ...publicPath(a.at(-1), target)])
+  const boardRoom = rooms.find(room => room.id === 'board')
+  const boardDoor = roomDoor(boardRoom), boardOutside = doorExterior(boardRoom, boardDoor), boardInside = doorInterior(boardRoom, boardDoor)
+  const boardTrip = (home, stand) => {
+    if (!Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error('无效 V3 董事会目标')
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), boardOutside).slice(1), boardInside, { x: boardInside.x, z: stand.z }, routePoint(stand)])
+  }
+  const consumerTargets = {
+    A1: { x: -3.2, z: 6.5 },
+    A2: { x: -5.2, z: 6.5 },
+    desk: { x: 2, z: 10.5 },
+    B0: { x: -8.5, z: 19 },
+    B1: { x: 11.5, z: 18 },
+    B2: { x: 11.5, z: 21 },
+    B3: { x: 11.5, z: 24 },
+    waiting: { x: 6.5, z: 6.4 },
+  }
+  const consumerQueues = {
+    A1: [-3.2, -4.2, -5.2, -6.2].map(x => ({ x, z: 6.5 })),
+    A2: [-5.2, -6.2, -7.2, -8.2].map(x => ({ x, z: 6.5 })),
+    desk: [10.5, 11.35, 12.2, 13.05].map(z => ({ x: 2, z })),
+    B0: [19, 20, 21, 22].map(z => ({ x: -8.5, z })),
+    B1: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 18 })),
+    B2: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 21 })),
+    B3: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 24 })),
+    waiting: [5.4, 6.2, 6.8, 7.6].map(x => ({ x, z: 6.4 })),
+  }
+  const consumer = (home, targetId, stand = consumerTargets[targetId]) => {
+    if (!consumerTargets[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error(`未知或无效 V3 访客目标: ${targetId}`)
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), stand, true).slice(1)])
+  }
+  const consumerAdvance = (targetId, from, to) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(from?.x) || !Number.isFinite(from?.z) || !Number.isFinite(to?.x) || !Number.isFinite(to?.z)) throw new Error(`无效 V3 队列移动: ${targetId}`)
+    // 即使前后槽位重合也返回一个有限路径；导演以当前位置判断“无需移动”。
+    return dedupeRoute([routePoint(from), routePoint(to)])
+  }
+  const consumerDeparture = (targetId, stand, back) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z) || !Array.isArray(back) || !back.every(point => Number.isFinite(point?.x) && Number.isFinite(point?.z))) throw new Error(`无效 V3 队列离开路径: ${targetId}`)
+    return dedupeRoute([routePoint(stand), ...back.slice(1)])
   }
   return {
-    roomAt: findRoom, standAt: home => ({ x: home.x + (home.x > (findRoom(home)?.x1 ?? Infinity) - 1.6 ? -1 : 1), z: home.z }), officeExit: exit, meetingTrip: meetings,
-    officeTrip: trip, corridorPath: publicPath, loungeTrip: lounge, consumerTrip: consumer, foyerTrip: consumer, plazaTrip: consumer,
-    foyerReturnTrip: (home, target) => consumer(home, target).reverse(), consumerAdvance: (id, from, to) => publicPath(from, to), consumerDeparture: (id, stand, back) => back.map(routePoint),
-    ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: doorExterior(rooms.find(room => room.id === 'board')), FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
-    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: access.eastMiddleZ },
+    roomAt: findRoom, standAt: home => ({ x: home.x + (home.x > (findRoom(home)?.x1 ?? Infinity) - 1.6 ? -1 : 1), z: home.z }), officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
+    consumerTrip: consumer, foyerTrip: consumer, plazaTrip: consumer, foyerReturnTrip: (home, id, stand) => consumer(home, id, stand).toReversed().map(routePoint), consumerAdvance, consumerDeparture, consumerTargets, consumerQueues,
+    ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: { x: boardDoor.side === 'west' ? boardRoom.x0 : boardRoom.x1, zOut: boardOutside.z, zIn: boardInside.z, outside: boardOutside, inside: boardInside, side: boardDoor.side }, FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
+    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: foyerHub.z },
     LOUNGE_SEATS: barLounges(layout),
     COFFEE_SEATS: layout.bar.seats.map(seat => ({ ...seat, yaw: Math.atan2(seat.x - layout.axis.x, seat.z - layout.bar.center.z), appX: seat.x })),
   }

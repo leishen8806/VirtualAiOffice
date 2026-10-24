@@ -2,7 +2,7 @@ import { createSampleBatch } from './batch.js'
 import { appendOfficePlaza } from './plaza.js'
 import { officeSampleRequested } from './host.js'
 
-export function buildOfficePlazaHost({ THREE, root, layout, search, collision }) {
+export function buildOfficePlazaHost({ THREE, root, layout, search, collision, low = false }) {
   if (layout.version !== 3 || !officeSampleRequested(search)) return { dispose() {} }
   if (!collision?.add || !collision?.remove) throw new Error('Plaza needs removable collision registration')
   root.userData.dynamic = true
@@ -15,7 +15,7 @@ export function buildOfficePlazaHost({ THREE, root, layout, search, collision })
     visual?.dispose()
   }
   try {
-    const placements = appendOfficePlaza({ THREE, batch, layout }).map(p => ({ ...p, interaction: 'inspect-only' }))
+    const placements = appendOfficePlaza({ THREE, batch, layout, low }).map(p => ({ ...p, interaction: 'inspect-only' }))
     visual = batch.build(root, 'office-plaza-props')
     for (const placement of placements) {
       const b = placement.bounds, height = Math.min(2, b.y1 - b.y0)

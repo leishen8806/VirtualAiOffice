@@ -77,7 +77,7 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
   }
   const plaza = layout.plaza, c = plaza.center
   if (includePaving) appendOfficePlazaPaving({ THREE, batch, layout, low })
-  placements.push(...appendOfficePlaza({ THREE, batch, layout }))
+  placements.push(...appendOfficePlaza({ THREE, batch, layout, low }))
   for (const { x, z } of [{ x: -13, z: 16 }, { x: -13, z: 25 }, { x: 17, z: 16 }, { x: 17, z: 25 }]) {
     cylinder(x, 1.05, z, .13, 2.1, '#6A6253')
     for (let i = 0; i < (low ? 4 : 7); i++) {
