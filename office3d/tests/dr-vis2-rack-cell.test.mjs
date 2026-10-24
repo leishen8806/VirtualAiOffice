@@ -10,7 +10,7 @@ import { createDemoShuttleEventSource, initialShuttleState, shuttleFrame, shuttl
 import { buildCampusShell, CAMPUS_FINISHED_FLOOR_Y } from '../dr-campus-shell.js'
 import { buildCampusRacks } from '../dr-campus-racks.js'
 import { buildCampusShuttle } from '../dr-campus-shuttle.js'
-import { VIS2_COLORS, VIS2_DIMENSIONS, buildVis2RackCell } from '../dr-vis2-rack-cell.js'
+import { VIS2_COLORS, VIS2_DIMENSIONS, VIS2_REPLACES, buildVis2RackCell } from '../dr-vis2-rack-cell.js'
 
 const layout = { campus: CAMPUS, building: CAMPUS_BUILDING, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }
 const highRack = CAMPUS_ZONES.find((zone) => zone.id === 'highRack')
@@ -33,6 +33,17 @@ const instanceWorldBox = (parent, mesh, index) => {
   mesh.getMatrixAt(index, matrix)
   mesh.geometry.computeBoundingBox()
   return mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld.clone().multiply(matrix))
+}
+const partBox = (mesh, name) => {
+  const part = mesh.geometry.userData.parts.find(item => item.name === name)
+  assert.ok(part, `part exists: ${name}`)
+  mesh.updateWorldMatrix(true, false)
+  const position = mesh.geometry.attributes.position, point = new THREE.Vector3(), result = new THREE.Box3()
+  result.makeEmpty()
+  for (let index = part.vertexStart; index < part.vertexStart + part.vertexCount; index++) {
+    result.expandByPoint(point.fromBufferAttribute(position, index).applyMatrix4(mesh.matrixWorld))
+  }
+  return result
 }
 const sourceIds = root => {
   const ids = new Set()
@@ -104,7 +115,15 @@ test('slot pallets clear the shuttle body at every occupied slot and all cartons
   }
   const slotCartons = instances(slots).filter(item => near(item.sy, .348))
   assert.equal(slotCartons.length, 12)
-  for (const carton of slotCartons) assert.ok(near(box(carton).y0, D.palletHeight, 1e-4), 'slot carton rests on its pallet deck')
+  const slotDecks = instances(slots).filter(item => near(item.sy, .03) && near(item.sx, D.palletZ))
+  for (const slot of plan.slots) {
+    const deck = slotDecks.find(item => near(item.z, slot.z))
+    assert.ok(deck, `slot ${slot.id} has a measured deck`)
+    const deckTop = box(deck).y1
+    for (const carton of slotCartons.filter(item => Math.abs(item.z - slot.z) < .4)) {
+      assert.ok(near(box(carton).y0, deckTop, 1e-4), `slot ${slot.id} carton rests on its measured deck`)
+    }
+  }
   for (const pallet of rackData(cell).decks) {
     const cartons = rackData(cell).cartons.filter(carton =>
       Math.abs(pallet.x - carton.x) < .5 &&
@@ -113,8 +132,22 @@ test('slot pallets clear the shuttle body at every occupied slot and all cartons
       carton.y < pallet.y + 1,
     )
     assert.ok(cartons.length >= 4)
-    const firstLayerBottom = Math.min(...cartons.map(carton => box(carton).y0))
-    assert.ok(near(firstLayerBottom, pallet.y + pallet.sy / 2, 1e-4), 'first-layer carton rests on its pallet deck')
+    const deckTop = box(pallet).y1
+    const firstLayer = cartons.filter(carton => box(carton).y0 < deckTop + .01)
+    assert.equal(firstLayer.length, 4, 'each pallet has four first-layer cartons')
+    for (const carton of firstLayer) assert.ok(near(box(carton).y0, deckTop, 1e-4), 'every first-layer carton rests on its pallet deck')
+    const columns = new Map()
+    for (const carton of cartons) {
+      const key = `${carton.x.toFixed(4)}|${carton.z.toFixed(4)}`
+      if (!columns.has(key)) columns.set(key, [])
+      columns.get(key).push(carton)
+    }
+    for (const column of columns.values()) {
+      column.sort((a, b) => a.y - b.y)
+      for (let index = 1; index < column.length; index++) {
+        assert.ok(near(box(column[index]).y0, box(column[index - 1]).y1 + .012, 1e-4), 'upper carton clears the lower carton by 12 mm')
+      }
+    }
   }
 })
 
@@ -159,6 +192,16 @@ test('lift moves only the platform and its cargo; cargo never floats or intersec
   cell.setShuttle({ carrying: false }); assert.equal(load.visible, false); cell.setShuttle({ carrying: true }); assert.equal(load.visible, true)
   const liftGroup = named(cell, 'vis2-shuttle-lift')
   cell.setShuttle({ lift: 99 }); assert.ok(near(liftGroup.position.y, D.shuttle.maxLift, 1e-9), 'lift is clamped to the maximum'); cell.setShuttle({ lift: -5 }); assert.ok(near(liftGroup.position.y, 0, 1e-9), 'negative lift is clamped to 0')
+})
+
+test('shuttle load cartons rest on the measured pallet deck and preserve the upper-layer gap', () => {
+  const { cell } = build()
+  const load = named(cell, 'vis2-shuttle-load')
+  const deckTop = partBox(load, 'pallet-deck').max.y
+  for (const suffix of ['-1-1', '-11', '1-1', '11']) {
+    assert.ok(near(partBox(load, `carton0${suffix}`).min.y, deckTop, 1e-4), `first-layer shuttle carton ${suffix} rests on its deck`)
+    assert.ok(near(partBox(load, `carton1${suffix}`).min.y, partBox(load, `carton0${suffix}`).max.y + .012, 1e-4), `upper shuttle carton ${suffix} clears lower carton by 12 mm`)
+  }
 })
 
 test('host state: carrying, occupied and status are accepted from the host only, invalid values are ignored', () => {
@@ -327,6 +370,11 @@ test('rack and shuttle replacement paths build real legacy or VIS2 support objec
   const legacyShuttle = buildCampusShuttle({ THREE, root: legacyRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: null })
   assert.ok(legacyRoot.getObjectByName('campus-shuttle-static'))
   assert.ok(legacyRoot.getObjectByName('campus-shuttle-vehicle'))
+  const legacyNames = []
+  legacyRoot.traverse(node => { if (node.name) legacyNames.push(node.name) })
+  for (const { legacy } of VIS2_REPLACES) {
+    assert.ok(legacyNames.some(name => name === legacy || name.startsWith(`${legacy}-`)), `replacement list names a legacy object: ${legacy}`)
+  }
 
   const replacementShuttle = buildCampusShuttle({ THREE, root: replacementRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: { setShuttle() {} } })
   assert.equal(replacementRoot.getObjectByName('campus-shuttle-static'), undefined)

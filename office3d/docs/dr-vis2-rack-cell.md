@@ -56,7 +56,7 @@
 `buildCampusShuttle` 检测到 `root.userData.vis2RackCell` 后，不构建旧车体或轨道，并在每次 `draw()` 中把 `shuttleFrame(state, time)` 的完整 `{ z, lift, carrying, occupied, status }` 传给 `setShuttle()`。这样空车、货位占用和 `delivery` 状态不会丢失；状态灯的 `delivery` 与 `put` 使用同一作业色。
 
 ## 九、自测与变异验证（源码级；**未做浏览器 / GPU 验证**）
-`node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=1 tests/dr-vis2-rack-cell.test.mjs`：**20 / 20 通过**。
+`node --max-old-space-size=1024 --test --test-timeout=60000 --test-concurrency=1 tests/dr-vis2-rack-cell.test.mjs`：**21 / 21 通过**。
 | 审查问题 | 对应测试 | 变异验证（改坏模块，测试必须变红） |
 |---|---|---|
 | P2-2 托盘悬空（横梁移到托盘外） | `every pallet rests on both beams…`（用**真实横梁实例位置**，不再用常量自证） | M1 横梁外移 → **KILLED** |
@@ -72,8 +72,11 @@
 | 真实注册路径 | `real campus module wiring…`（直接构建 `campusModules` 后再运行完整 registry） | `status` 不转发、删 `delivery` 灯映射、support 偏移为 0、`put()` 忽略 support 偏移均失败 |
 | 货位互穿与纸箱贴合 | `slot pallets clear…`、纸箱/托盘几何断言 | 货架或货位纸箱整体上移 5 cm 均失败 |
 | 引导面高度 | `shuttle reserve guide stays 2 mm…` | 改回完成面 +0.03 m 失败 |
-R2 对审查列出的 **7 个变异均执行并被抓住**：M5、M7、M8、M13、M10、M11、M9。守卫直接观察实例世界包围盒、逐帧宿主状态、状态灯材质色、纸箱底面和引导面高度；不再使用替换对象名称的源码正则。
-**全量套件：** 结果以本轮执行记录为准；隔离 worktree 的历史备份、本地 JSON 和 fixture 缺失会造成既有环境失败，报告按名称与 `ba1e9e2` 对比，确认不引入新增失败。
+复审 R2 对审查列出的 **7 个变异均执行并被抓住**：R2-M5（宿主不转发 status）、R2-M7（删除 delivery 灯映射）、R2-M8（supportOffset 归零）、R2-M13（实例 put 忽略偏移）、R2-M10（货架纸箱上移）、R2-M11（货位纸箱上移）、R2-M9（引导面回到 +0.03m）。守卫直接观察实例世界包围盒、逐帧宿主状态、状态灯材质色、纸箱底面和引导面高度；不再使用替换对象名称的源码正则。
+
+复审 R3 再补 6 个变异，均已被实测守卫捕获：R3-M15（车载纸箱 +5cm）、R3-M18（车载纸箱回退旧公式）、R3-M23（车载托盘面 +5cm）均命中 `shuttle load cartons rest…`；R3-M21（货架 `ix > 0` 纸箱 +5cm）、R3-M22（货位托盘面 +5cm）、R3-M24（货架上层纸箱 −5cm）均命中 `slot pallets clear…` 的纸箱/托盘或层间断言。
+
+**定向套件（R3）：** `tests/dr-vis2-rack-cell.test.mjs tests/dr-campus-*.test.mjs` 为 52 项：50 通过、2 个既有环境失败（隐藏 root 回调契约、缺失 `office3d-backup-s2-4/app.js`）。**全量串行套件（R3）：** 1053 项：1035 通过、17 失败、1 跳过；相对于 `656f473` 的 1048 项：1030 通过、17 失败、1 跳过，仅增加本轮 5 项通过断言，未引入失败。隔离 worktree 的历史备份、本地 JSON 和 fixture 缺失会造成既有环境失败。
 
 ## 十、仍未验证（如实）
 - **没有任何浏览器 / WebGL / GPU 验证**：车轮与车体法线是在几何层核对的；本修订版**未重新截图**（预览截图是修订前的）。

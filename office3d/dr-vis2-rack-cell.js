@@ -28,9 +28,9 @@ export const VIS2_DIMENSIONS = Object.freeze({
 // 本构件登记的「旧对象替换清单」：接线时这些旧对象必须停用，否则会和新模型叠在一起形成重复物体。
 export const VIS2_REPLACES = Object.freeze([
   Object.freeze({ legacy: 'campus-racks-static', part: '其中的货架立柱 / 横梁 / 货物箱体，以及穿梭机展示带的旧底座板（y 0.06…0.18）', note: '该实例化网格还混入了工位与月台门（dr-campus-racks.js 的 inside()）；Trae 应让旧模块跳过货架、货物与穿梭机底座，保留其余。' }),
-  Object.freeze({ legacy: 'campus-shuttle', part: '整个穿梭机车体与动态组', note: '由本构件的 vis2-shuttle 替换；运动状态由宿主经 setShuttle 传入（位置 = frame.position，见交付文档）。' }),
+  Object.freeze({ legacy: 'campus-shuttle', part: '旧穿梭机车体与动态组', note: '替换模式保留 campus-shuttle 作为宿主状态容器，但不再创建旧车体；运动状态由宿主经 setShuttle 传入（位置 = frame.position，见交付文档）。' }),
   Object.freeze({ legacy: 'campus-shuttle-static', part: '轨道与枕木', note: '由本构件的 vis2-rails 替换。' }),
-  Object.freeze({ legacy: 'campus-rack-labels', part: '货架行标签 A1 / R2 / C2 / B2', note: '保留；但标签上「穿梭机展示位（预留）」的文字在接入真实穿梭机后已过时，需 Trae 改标签文案。' }),
+  Object.freeze({ legacy: 'campus-rack-labels', part: '货架行标签 A1 / R2 / C2 / B2', note: '保留；但标签上「穿梭机展示位（模拟）」的文字在接入真实穿梭机后已过时，需 Trae 改标签文案。' }),
 ])
 
 const seeded = (value) => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
@@ -204,7 +204,7 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const slotB = plan.slots[1]; shuttle.position.set(plan.centerX, 0, slotB.z)
   group.add(shuttle)
 
-  // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.25），不压钢轨
+  // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.4），不压钢轨
   const slotBatch = createBoxBatch(THREE, 'vis2-slot-pallets', materials.slot, 3 * 8); slotBatch.mesh.userData.dynamic = true
   const slotX = plan.centerX + 1.4
   const drawSlots = (occupied) => {
