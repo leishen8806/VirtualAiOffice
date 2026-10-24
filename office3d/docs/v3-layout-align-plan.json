@@ -1,34 +1,46 @@
 {
   "version": 3,
   "variant": "align",
-  "westOpen": { "id": "west-open", "x0": -28, "x1": -8.5, "z0": -3, "z1": 7 },
-  "regions": [
-    ["market", -28, -20, -18, -12, "east", -15],
-    ["board", -18.5, -8.5, -18, -12, "east", -15],
-    ["kb", 12.5, 20.5, -18, -12, "south", 16.5],
-    ["service", 24, 32, -18, -12, "west", -15],
-    ["plan", -28, -20, -10.5, -4.5, "east", -7.5],
-    ["review", -18.5, -8.5, -10.5, -4.5, "south", -13.5],
-    ["west-open", -28, -8.5, -3, 7, "east", 2],
-    ["product", 12.5, 21.5, -10.5, -1.5, "east", -6],
-    ["eng", 23, 32, -10.5, -1.5, "west", -6],
-    ["creative", 12.5, 22.5, -1.5, 3.5, "west", 1],
-    ["dining", 23, 30.5, -1.5, 3.5, "east", 1],
-    ["aftersales", -28, -20, 8.5, 11.5, "east", 10],
-    ["leisure", -18.5, -10.5, 8.5, 11.5, "east", 10],
-    ["drlife", 12.5, 23, 5, 12, "north", 17.75],
-    ["marketing", 24, 30.5, 5.5, 11.5, "east", 8.5]
-  ],
-  "seats": {
-    "Lead": ["product", 14.5, -8.5], "PM": ["product", 18, -8.5], "Architect": ["product", 14.5, -5.5], "UIUX": ["product", 18, -5.5],
-    "FrontendSenior": ["eng", 23.5, -8.5], "Frontend1": ["eng", 26.5, -8.5], "Frontend2": ["eng", 29.5, -8.5], "BackendSenior": ["eng", 23.5, -5.5], "Backend1": ["eng", 26.5, -5.5], "Backend2": ["eng", 29.5, -5.5],
-    "KnowledgeKeeper": ["kb", 14.5, -15],
-    "QAAutomation": ["west-open", -15, -1], "Reviewer1": ["west-open", -12, -1], "Reviewer2": ["west-open", -15, 2], "SecurityReviewer": ["west-open", -12, 2], "OpsLead": ["west-open", -25, -1], "OpsEngineer": ["west-open", -21.5, -1],
-    "GoSenior": ["drlife", 14.5, 6.5], "Go1": ["drlife", 17, 6.5], "Go2": ["drlife", 19.5, 6.5], "DBEngineer": ["drlife", 22, 6.5], "LedgerAuditor": ["drlife", 14.5, 9.5], "ReactSenior": ["drlife", 17, 9.5], "React1": ["drlife", 19.5, 9.5], "Localizer": ["drlife", 22, 9.5]
+  "site": { "x0": -28, "x1": 32, "z0": -18, "z1": 30 },
+  "island": {
+    "center": { "x": 2, "z": -6 },
+    "barOuter": 3.5,
+    "collisionRadius": 6,
+    "stoolRadius": 4.2,
+    "sofaOuter": 5.8,
+    "ring": { "inner": 6, "outer": 10, "width": 4 }
   },
-  "meetingSeats": { "A": 8, "B": 6 },
-  "displaySeatCount": 12,
-  "publicPathNodes": [[-19.25, -10.9], [-7.75, -10.9], [-19.25, 7.75], [-10.2, 7.75]],
-  "ring": { "inner": 6, "outer": 10 },
-  "barRadius": 3.5
+  "meetingRooms": [
+    { "id": "board", "seats": 0 }, { "id": "review", "seats": 8 }, { "id": "plan", "seats": 6 }
+  ],
+  "regions": [
+    { "id": "market", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": -18, "z1": -12, "doors": [{ "side": "east", "at": -15, "width": 1.5 }] },
+    { "id": "board", "kind": "room", "walled": true, "x0": -18.5, "x1": -8.5, "z0": -18, "z1": -12, "doors": [{ "side": "east", "at": -15, "width": 1.5 }] },
+    { "id": "kb", "kind": "open", "walled": false, "x0": 12.5, "x1": 20.5, "z0": -18, "z1": -12, "doors": [] },
+    { "id": "service", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": -18, "z1": -12, "doors": [{ "side": "west", "at": -15, "width": 1.5 }] },
+    { "id": "plan", "kind": "room", "walled": true, "x0": -28, "x1": -20, "z0": -11.5, "z1": -5.5, "doors": [{ "side": "south", "at": -24, "width": 1.5 }] },
+    { "id": "review", "kind": "room", "walled": true, "x0": -18.5, "x1": -8.5, "z0": -11.5, "z1": -5.5, "doors": [{ "side": "south", "at": -13.5, "width": 1.5 }] },
+    { "id": "west-open", "kind": "open", "walled": false, "x0": -28, "x1": -8.5, "z0": -4.5, "z1": 5.5, "doors": [] },
+    { "id": "product", "kind": "open", "walled": false, "x0": 12.5, "x1": 21.5, "z0": -10.5, "z1": -1.5, "doors": [] },
+    { "id": "eng", "kind": "open", "walled": false, "x0": 23, "x1": 32, "z0": -10.5, "z1": -1.5, "doors": [] },
+    { "id": "creative", "kind": "display", "walled": false, "x0": 12.5, "x1": 22.5, "z0": -1.5, "z1": 3.5, "doors": [] },
+    { "id": "dining", "kind": "display", "walled": false, "x0": 23, "x1": 32, "z0": -1.5, "z1": 3.5, "doors": [] },
+    { "id": "aftersales", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": 5.5, "z1": 11.5, "doors": [{ "side": "east", "at": 8.5, "width": 1.5 }] },
+    { "id": "leisure", "kind": "display", "walled": false, "x0": -18.5, "x1": -10.5, "z0": 5.5, "z1": 11.5, "doors": [] },
+    { "id": "drlife", "kind": "open", "walled": false, "x0": 12.5, "x1": 23, "z0": 5, "z1": 12, "doors": [] },
+    { "id": "marketing", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": 5.5, "z1": 11.5, "doors": [{ "side": "north", "at": 28, "width": 1.5 }] }
+  ],
+  "workstations": [
+    { "name": "Lead", "region": "product", "x": 14.5, "z": -8.5 }, { "name": "PM", "region": "product", "x": 18, "z": -8.5 }, { "name": "Architect", "region": "product", "x": 14.5, "z": -5.5 }, { "name": "UIUX", "region": "product", "x": 18, "z": -5.5 },
+    { "name": "FrontendSenior", "region": "eng", "x": 23.5, "z": -8.5 }, { "name": "Frontend1", "region": "eng", "x": 26.5, "z": -8.5 }, { "name": "Frontend2", "region": "eng", "x": 29.5, "z": -8.5 }, { "name": "BackendSenior", "region": "eng", "x": 23.5, "z": -5.5 }, { "name": "Backend1", "region": "eng", "x": 26.5, "z": -5.5 }, { "name": "Backend2", "region": "eng", "x": 29.5, "z": -5.5 },
+    { "name": "KnowledgeKeeper", "region": "kb", "x": 14.5, "z": -15 }, { "name": "QAAutomation", "region": "west-open", "x": -15, "z": -1 }, { "name": "Reviewer1", "region": "west-open", "x": -12, "z": -1 }, { "name": "Reviewer2", "region": "west-open", "x": -15, "z": 2 }, { "name": "SecurityReviewer", "region": "west-open", "x": -12, "z": 2 }, { "name": "OpsLead", "region": "west-open", "x": -25, "z": -1 }, { "name": "OpsEngineer", "region": "west-open", "x": -21.5, "z": -1 },
+    { "name": "GoSenior", "region": "drlife", "x": 14.5, "z": 6.5 }, { "name": "Go1", "region": "drlife", "x": 17, "z": 6.5 }, { "name": "Go2", "region": "drlife", "x": 19.5, "z": 6.5 }, { "name": "DBEngineer", "region": "drlife", "x": 22, "z": 6.5 }, { "name": "LedgerAuditor", "region": "drlife", "x": 14.5, "z": 9.5 }, { "name": "ReactSenior", "region": "drlife", "x": 17, "z": 9.5 }, { "name": "React1", "region": "drlife", "x": 19.5, "z": 9.5 }, { "name": "Localizer", "region": "drlife", "x": 22, "z": 9.5 }
+  ],
+  "displaySeats": [
+    { "id": "market-1", "region": "market", "x": -26.5, "z": -15 }, { "id": "market-2", "region": "market", "x": -24, "z": -15 }, { "id": "market-3", "region": "market", "x": -21.5, "z": -15 },
+    { "id": "service-1", "region": "service", "x": 25.5, "z": -15 }, { "id": "service-2", "region": "service", "x": 28, "z": -15 }, { "id": "service-3", "region": "service", "x": 30.5, "z": -15 },
+    { "id": "aftersales-1", "region": "aftersales", "x": -26.5, "z": 8 }, { "id": "aftersales-2", "region": "aftersales", "x": -24, "z": 8 }, { "id": "aftersales-3", "region": "aftersales", "x": -21.5, "z": 8 },
+    { "id": "marketing-1", "region": "marketing", "x": 25.5, "z": 8 }, { "id": "marketing-2", "region": "marketing", "x": 28, "z": 8 }, { "id": "marketing-3", "region": "marketing", "x": 30.5, "z": 8 }
+  ],
+  "publicPathNodes": [[-19.25, -10.9], [-7.75, -10.9], [-19.25, 7.75], [-10.2, 7.75]]
 }

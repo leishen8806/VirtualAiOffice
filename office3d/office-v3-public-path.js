@@ -1,10 +1,14 @@
 // Public circulation only: room interiors and final seat approach remain owned by the director.
 export function createV3PublicPath(layout) {
   const pad = .28, center = layout.bar.center, radius = layout.island.radius + pad
-  const boxes = [...layout.regions, layout.frontDesk, layout.serviceBar, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
+  const align = Boolean(layout.publicPathNodes)
+  const regionBoxes = align ? layout.regions.filter(region => region.walled) : layout.regions
+  const desks = align ? Object.values(layout.seats).map(([, x, z]) => ({ x0: x - .8, x1: x + .8, z0: z - .8, z1: z + .8 })) : []
+  const boxes = [...regionBoxes, layout.frontDesk, layout.serviceBar, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
+  const blockers = [...boxes, ...desks]
   const finite = p => Number.isFinite(p?.x) && Number.isFinite(p?.z)
   const inside = (p, b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1
-  const valid = p => finite(p) && p.x >= layout.envelope.x0 + pad && p.x <= layout.envelope.x1 - pad && p.z >= layout.envelope.z0 + pad && p.z <= layout.doors.south.z - pad && !boxes.some(b => inside(p, b)) && Math.hypot(p.x - center.x, p.z - center.z) >= radius
+  const valid = p => finite(p) && p.x >= layout.envelope.x0 + pad && p.x <= layout.envelope.x1 - pad && p.z >= layout.envelope.z0 + pad && p.z <= layout.doors.south.z - pad && !blockers.some(b => inside(p, b)) && Math.hypot(p.x - center.x, p.z - center.z) >= radius
   const hitsBox = (a, b, box) => {
     let lo = 0, hi = 1
     for (const axis of ['x', 'z']) {
@@ -17,15 +21,15 @@ export function createV3PublicPath(layout) {
     return hi > 0 && lo < 1
   }
   const clear = (a, b) => {
-    if (boxes.some(box => hitsBox(a, b, box))) return false
+    if (blockers.some(box => hitsBox(a, b, box))) return false
     const dx = b.x - a.x, dz = b.z - a.z, length2 = dx * dx + dz * dz
     const t = length2 ? Math.max(0, Math.min(1, ((center.x - a.x) * dx + (center.z - a.z) * dz) / length2)) : 0
     return Math.hypot(a.x + t * dx - center.x, a.z + t * dz - center.z) >= radius
   }
-  const corners = boxes.flatMap(b => [b.x0 - .02, b.x1 + .02].flatMap(x => [b.z0 - .02, b.z1 + .02].map(z => ({ x, z }))))
+  const corners = blockers.flatMap(b => [b.x0 - .02, b.x1 + .02].flatMap(x => [b.z0 - .02, b.z1 + .02].map(z => ({ x, z }))))
   const ringRadius = (layout.ring.inner + layout.ring.outer) / 2
   const ring = Array.from({ length: 48 }, (_, i) => ({ x: center.x + ringRadius * Math.cos(i * Math.PI / 24), z: center.z + ringRadius * Math.sin(i * Math.PI / 24) }))
-  const doors = layout.regions.flatMap(room => room.doors.map(door => {
+  const doors = regionBoxes.flatMap(room => room.doors.map(door => {
     if (door.side === 'east') return { x: room.x1 + .75, z: door.at }
     if (door.side === 'west') return { x: room.x0 - .75, z: door.at }
     if (door.side === 'north') return { x: door.at, z: room.z0 - .75 }

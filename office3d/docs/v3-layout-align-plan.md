@@ -1,27 +1,50 @@
-# V3 Align Layout
+# V3 Align Layout R1
 
-`LAYOUT_V3_ALIGN` is an opt-in V3 layout variant. It is selected only by
-`?layout=3&align=1`; `LAYOUT_V3` remains the default V3 contract.
+`LAYOUT_V3_ALIGN` remains an opt-in V3 variant selected only by
+`?layout=3&align=1`. The default `?layout=3` contract remains `LAYOUT_V3`.
 
-## Geometry contract
+## Approved Geometry
 
-- Fifteen rooms form the interior program, including four display rooms.
-- `west-open` is a 19.5m x 10m (195m2) shared operations, quality, and safety island.
-- Board uses its east door. The north and south transfer bands are at least 1.5m wide.
-- Four display rooms use doors facing an interior circulation lane; their display seating is non-functional.
-- Review A and Plan B have 8 and 6 meeting seats respectively.
+R1 restores every program-region outer frame to plan A from `83ecc1b`.
+`west-open` is 19.5m x 10m (195m2). The 25 real workstations, 12 display seats,
+and 14 meeting seats retain their approved coordinates.
 
-## Navigation contract
+| Type | Regions | Walls / doors |
+| --- | --- | --- |
+| `room` | board, plan, review | walled; one 1.5m door each |
+| walled `display` | market, service, aftersales, marketing | walled; one 1.5m door each |
+| open | kb, product, eng, west-open, drlife | no walls and no doors |
+| display-only | creative, dining, leisure | no walls and no doors |
 
-The public circulation graph is derived from the selected layout's room geometry,
-ring dimensions, door exteriors, and `publicPathNodes`. The four explicit
-junctions preserve access through the north and south west-side transfer bands.
-Tests prove that the entrance reaches every room door, workstation exit, meeting
-seat, and lounge seat.
+| Walled region | Door |
+| --- | --- |
+| market | east at z=-15 |
+| board | east at z=-15 |
+| service | west at z=-15 |
+| plan B | south at x=-24 |
+| review A | south at x=-13.5 |
+| aftersales | east at z=8.5 |
+| marketing | north at x=28 |
 
-## Source of truth
+## Island And Circulation
 
-The machine-readable coordinates are in
-[`v3-layout-align-plan.json`](./v3-layout-align-plan.json). The checker compares
-that document with the frozen runtime layout, including regions, employee seats,
-meeting capacity, ring values, and public-path junctions.
+The island has three concentric contracts: service counter outer radius `3.5m`
+(`island.barOuter`), collision outer radius `6m` (`bar.radius`), and public ring
+outer radius `10m`. Stool and sofa outer radii remain `4.2m` and `5.8m`.
+
+ALIGN pathfinding uses only walled regions, front-of-house fixtures, the island,
+and `±0.8m` real-workstation footprints as obstacles. Non-walled regions are
+traversable. The restored west transfer declarations are all at least `1.2m`
+wide; `westNorthCross` and `northMeetingBuffer` use the legal `-4.5..-3`
+band, while `westOpenLink` uses the east edge of the open island.
+
+`meetingAccess` is retained as a data contract for V3 consumers: `northZ=-3.75`,
+`westSpineX=-7.55`, `eastSpineX=22.25`, `westMiddleZ=.5`,
+`eastMiddleZ=1`, and `eastSouthZ=4.25`. Every value is outside a walled room.
+
+## Source Of Truth
+
+[`v3-layout-align-plan.json`](./v3-layout-align-plan.json) contains the
+machine-readable plan. Its checker verifies JSON-to-runtime equality and compares
+all approved coordinates, kinds, workers, display seats, and island geometry to
+`83ecc1b`; only R1 door and `walled` fields are intentionally different.

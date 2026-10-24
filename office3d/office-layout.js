@@ -464,22 +464,27 @@ const V3_LAYOUT = {
   },
 }
 
+const alignRect = (id, name, x0, x1, z0, z1, kind, walled, door) => ({
+  ...layoutRect(id, name, x0, x1, z0, z1, door),
+  kind,
+  walled,
+})
 const V3_ALIGN_REGIONS = [
-  layoutRect('market', '市场部（展示）', -28, -20, -18, -12, { side: 'east', at: -15 }),
-  layoutRect('board', '会议与决策', -18.5, -8.5, -18, -12, { side: 'east', at: -15 }),
-  layoutRect('kb', '知识', 12.5, 20.5, -18, -12, { side: 'south', at: 16.5 }),
-  layoutRect('service', '客服部（展示）', 24, 32, -18, -12, { side: 'west', at: -15 }),
-  layoutRect('plan', '计划室 B', -28, -20, -10.5, -4.5, { side: 'east', at: -7.5 }),
-  layoutRect('review', '评审室 A', -18.5, -8.5, -10.5, -4.5, { side: 'south', at: -13.5 }),
-  layoutRect('west-open', '运营、质量与安全开放岛', -28, -8.5, -3, 7, { side: 'east', at: 2 }),
-  layoutRect('product', '产品', 12.5, 21.5, -10.5, -1.5, { side: 'east', at: -6 }),
-  layoutRect('eng', '工程', 23, 32, -10.5, -1.5, { side: 'west', at: -6 }),
-  layoutRect('creative', '创意讨论区', 12.5, 22.5, -1.5, 3.5, { side: 'west', at: 1 }),
-  layoutRect('dining', '餐饮休憩角', 23, 30.5, -1.5, 3.5, { side: 'east', at: 1 }),
-  layoutRect('aftersales', '售后部（展示）', -28, -20, 8.5, 11.5, { side: 'east', at: 10 }),
-  layoutRect('leisure', '休闲展示区', -18.5, -10.5, 8.5, 11.5, { side: 'east', at: 10 }),
-  layoutRect('drlife', 'D.life 工坊', 12.5, 23, 5, 12, { side: 'north', at: 17.75 }),
-  layoutRect('marketing', '营销部（展示）', 24, 30.5, 5.5, 11.5, { side: 'east', at: 8.5 }),
+  alignRect('market', '市场部（展示）', -28, -20, -18, -12, 'display', true, { side: 'east', at: -15 }),
+  alignRect('board', '会议与决策', -18.5, -8.5, -18, -12, 'room', true, { side: 'east', at: -15 }),
+  alignRect('kb', '知识', 12.5, 20.5, -18, -12, 'open', false),
+  alignRect('service', '客服部（展示）', 24, 32, -18, -12, 'display', true, { side: 'west', at: -15 }),
+  alignRect('plan', '计划室 B', -28, -20, -11.5, -5.5, 'room', true, { side: 'south', at: -24 }),
+  alignRect('review', '评审室 A', -18.5, -8.5, -11.5, -5.5, 'room', true, { side: 'south', at: -13.5 }),
+  alignRect('west-open', '运营、质量与安全开放岛', -28, -8.5, -4.5, 5.5, 'open', false),
+  alignRect('product', '产品', 12.5, 21.5, -10.5, -1.5, 'open', false),
+  alignRect('eng', '工程', 23, 32, -10.5, -1.5, 'open', false),
+  alignRect('creative', '创意讨论区', 12.5, 22.5, -1.5, 3.5, 'display', false),
+  alignRect('dining', '餐饮休憩角', 23, 32, -1.5, 3.5, 'display', false),
+  alignRect('aftersales', '售后部（展示）', -28, -20, 5.5, 11.5, 'display', true, { side: 'east', at: 8.5 }),
+  alignRect('leisure', '休闲展示区', -18.5, -10.5, 5.5, 11.5, 'display', false),
+  alignRect('drlife', 'D.life 工坊', 12.5, 23, 5, 12, 'open', false),
+  alignRect('marketing', '营销部（展示）', 24, 32, 5.5, 11.5, 'display', true, { side: 'north', at: 28 }),
 ]
 
 const V3_ALIGN_SEATS = {
@@ -495,9 +500,9 @@ const V3_ALIGN_SEATS = {
 
 const V3_ALIGN_DISPLAY_SEATS = [
   ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
-  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 27.25, -15], ['service-3', 'service', 29.25, -15],
-  ['aftersales-1', 'aftersales', -26.5, 10], ['aftersales-2', 'aftersales', -24, 10], ['aftersales-3', 'aftersales', -21.5, 10],
-  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30, 8],
+  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 28, -15], ['service-3', 'service', 30.5, -15],
+  ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
+  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
 ].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
 const V3_ALIGN_MEETING_SEATS = {
   A: [-16.5, -14.5, -12.5, -10.5].flatMap(x => [{ room: 'A', x, z: -9.75 }, { room: 'A', x, z: -7.25 }]),
@@ -517,7 +522,7 @@ const V3_ALIGN_LAYOUT = {
   version: 3,
   variant: 'align',
   regions: V3_ALIGN_REGIONS,
-  rooms: V3_ALIGN_REGIONS,
+  rooms: V3_ALIGN_REGIONS.filter(region => region.walled),
   seats: V3_ALIGN_SEATS,
   displaySeats: V3_ALIGN_DISPLAY_SEATS,
   meetingSeats: { A: 8, B: 6 },
@@ -525,23 +530,26 @@ const V3_ALIGN_LAYOUT = {
   deskGroups: { ops: ['OpsLead', 'OpsEngineer'], quality: ['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer'] },
   corridors: {
     ...cloneLayoutData(V3_LAYOUT.corridors),
-    westNorthCross: { x0: -28, x1: -8.5, z0: -12, z1: -11.5, width: .5 },
-    westMiddleCross: { x0: -28, x1: -8.5, z0: -5.5, z1: -4.5, width: 1 },
-    westSouthCross: { x0: -28, x1: -8.5, z0: 5.5, z1: 6.5, width: 1 },
+    westNorthCross: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westMiddleCross: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
+    westSouthCross: { x0: -19.5, x1: -9, z0: 5.8, z1: 7.3, width: 1.5 },
+    eastNorthCross: { x0: 20.5, x1: 24, z0: -12, z1: -10.5, width: 1.5 },
+    eastMiddleCross: { x0: 20.5, x1: 23, z0: -1.5, z1: 3.5, width: 2.5 },
+    eastSouthCross: { x0: 10.5, x1: 12, z0: 5, z1: 12, width: 1.5 },
   },
   passages: {
     ...cloneLayoutData(V3_LAYOUT.passages),
-    northMeetingBuffer: { x0: -28, x1: -8.5, z0: -5.5, z1: -4.5, width: 1 },
-    westOpenLink: { x0: -28, x1: -8.5, z0: -4.5, z1: 5.5, width: 10 },
+    northMeetingBuffer: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westOpenLink: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
   },
   island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
   ring: { ...cloneLayoutData(V3_LAYOUT.ring), inner: 6, outer: 10, width: 4 },
-  bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 3.5 },
+  bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 6 },
   publicPathNodes: [
     { x: -19.25, z: -10.9 }, { x: -7.75, z: -10.9 },
     { x: -19.25, z: 7.75 }, { x: -10.2, z: 7.75 },
   ],
-  meetingAccess: { northZ: -5, westSpineX: -8, eastSpineX: 22.25, westMiddleZ: .5, eastMiddleZ: -1.5, eastSouthZ: 4.25 },
+  meetingAccess: { northZ: -3.75, westSpineX: -7.55, eastSpineX: 22.25, westMiddleZ: .5, eastMiddleZ: 1, eastSouthZ: 4.25 },
   regionFocus: alignFocus(V3_ALIGN_REGIONS),
   miniBounds: { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
 }
@@ -648,9 +656,13 @@ function createOfficeV3Navigation(layout) {
     gate: [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: layout.axis.x, z: layout.doors.south.z + 1.75 }],
   }
   const foyerHub = { x: -2, z: 4.75 }
+  const walledRoomAt = point => {
+    const room = findRoom(point)
+    return room?.walled === false ? undefined : room
+  }
   const exit = (home) => {
     const room = findRoom(home)
-    if (!room) return [routePoint(home)]
+    if (!room || room.walled === false) return [routePoint(home)]
     const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
     if (door.side === 'east' || door.side === 'west') {
       const inward = door.side === 'west' ? 1 : -1
@@ -747,7 +759,11 @@ function createOfficeV3Navigation(layout) {
     return dedupeRoute([routePoint(stand), ...back.slice(1)])
   }
   return {
-    roomAt: findRoom, standAt: home => ({ x: home.x + (home.x > (findRoom(home)?.x1 ?? Infinity) - 1.6 ? -1 : 1), z: home.z }), officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
+    roomAt: walledRoomAt, standAt: home => {
+      const room = walledRoomAt(home)
+      if (!room) return routePoint(home)
+      return { x: home.x + (home.x > room.x1 - 1.6 ? -1 : 1), z: home.z }
+    }, officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
     consumerTrip: consumer, foyerTrip: consumer, plazaTrip: consumer, foyerReturnTrip: (home, id, stand) => consumer(home, id, stand).toReversed().map(routePoint), consumerAdvance, consumerDeparture, consumerTargets, consumerQueues,
     ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: { x: boardDoor.side === 'west' ? boardRoom.x0 : boardRoom.x1, zOut: boardOutside.z, zIn: boardInside.z, outside: boardOutside, inside: boardInside, side: boardDoor.side }, FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
     LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: foyerHub.z },
