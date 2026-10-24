@@ -175,14 +175,14 @@
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7B0638562A347125F71B6AB9CE532708F2AD8D37CA6346C9951BCA62BDCD2093"
+      "sha256": "3ADAF66307818F06F03321EF1448666E399188929B3E222848581052C447C173"
     },
     {
       "file": "office-vis2/align-zones.js",
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "47F24A55DB10DABC0CAD8BA15D3C0B45CA2F66D5F160299BAF76B2EA63F5F5E0"
+      "sha256": "CBC2E7FF4F0C45B0ECA68AA5C8E58FCE4F7ACA1A31D3E23C010C48C75237E17E"
     },
     {
       "file": "office-vis2/display-finish.js",

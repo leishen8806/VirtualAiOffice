@@ -54,7 +54,7 @@ test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of 
 for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision registration and cleanup ${low?'low':'high'}`,()=>{
   const root=new THREE.Group(),collision=createFurnitureCollision(),v=buildOfficeAlignedZones({THREE,root,layout:ALIGN,low,collision})
   try{
-    assert.equal(v.furnishings.length,8);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
+    assert.equal(v.furnishings.length,9);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
     const forbidden=[...alignPassages(ALIGN),...alignDoorAprons(ALIGN)],pos=new THREE.Vector3()
     for(const f of v.furnishings)for(const p of f.placements){
       const box=new THREE.Box3(),a=f.root.geometry.attributes.position

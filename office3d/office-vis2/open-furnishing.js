@@ -18,17 +18,21 @@ export function planOpenFurnishing({ area, workstations, corridors, reserved = [
     { id: 'green-edge', template: 'plant-edge', count: 4, members: [['plant', 0, 0, 1, 1, 1.5]] },
   ]
   if (zoneKind) {
+    const nook = zoneKind === 'north-nook', reach = nook ? .9 : 1.1
     const seats = zoneKind === 'leisure'
       ? [['bench', -1, 0, .8, 1.8, .9], ['bench', 1, 0, .8, 1.8, .9], ['round-table', 0, 0, .7, .7, .55]]
-      : [['round-table', 0, 0, 1.2, 1.2, .8], ...[[-1.1,0],[1.1,0],[0,-1.1],[0,1.1]].map(([x,z]) => ['chair',x,z,.6,.6,.9])]
-    templates = [{ id: zoneKind, template: `${zoneKind}-seating`, count: 1, members: seats }, templates[1]]
+      : [['round-table', 0, 0, nook ? 1 : 1.2, nook ? 1 : 1.2, .8], ...[[-reach,0],[reach,0],[0,-reach],[0,reach]].map(([x,z]) => ['chair',x,z,.6,.6,.9])]
+    templates = [{ id: zoneKind, template: `${zoneKind}-seating`, count: nook ? 2 : 1, members: seats }, ...(nook ? [] : [templates[1]])]
   }
   for (const t of templates) for (let n = 0; n < t.count; n++) {
     const id = `${t.id}-${n + 1}`, candidates = []
     if (t.template === 'plant-edge') {
       for (const z of [area.z0 + .8, area.z1 - .8]) for (const x of [area.x0 + .8, area.x1 - .8]) candidates.push([x, z])
       for (const c of corridors) for (const z of [c.z0 - .8, c.z1 + .8]) for (const x of [c.x0 - .8, c.x1 + .8]) candidates.push([x, z])
-    } else for (let z = area.z0; z <= area.z1; z += .25) for (let x = area.x0; x <= area.x1; x += .25) candidates.push([x, z])
+    } else {
+      const step = zoneKind === 'north-nook' ? .1 : .25
+      for (let z = area.z0; z <= area.z1; z += step) for (let x = area.x0; x <= area.x1; x += step) candidates.push([x, z])
+    }
     let placed = false
     for (const [cx, cz] of candidates) {
       const members = t.members.map(([kind, dx, dz, w, d, height], i) => {
@@ -42,7 +46,8 @@ export function planOpenFurnishing({ area, workstations, corridors, reserved = [
       // 长桌前侧 .6m 使用空间随整组避让；不是新增业务席位。
       if (t.template === 'shared-table-island') bounds.z1 += .61
       if (bounds.x0 < area.x0 + .3 || bounds.x1 > area.x1 - .3 || bounds.z0 < area.z0 + .3 || bounds.z1 > area.z1 - .3 ||
-        corridors.some(c => overlaps(bounds, c)) || reserved.some(c => overlaps(bounds, c)) ||
+        corridors.some(c => overlaps(bounds, c)) || reserved.some(c => zoneKind === 'north-nook'
+          ? members.some(p => overlaps(p.bounds, c, .02)) : overlaps(bounds, c)) ||
         (ring && Math.hypot(Math.max(bounds.x0 - ring.center.x, 0, ring.center.x - bounds.x1), Math.max(bounds.z0 - ring.center.z, 0, ring.center.z - bounds.z1)) < ring.outer) ||
         groups.some(g => overlaps(bounds, g.groupBounds, 1.2)) || workstations.some(p => {
           const dx = Math.max(bounds.x0 - p.x, 0, p.x - bounds.x1), dz = Math.max(bounds.z0 - p.z, 0, p.z - bounds.z1)
@@ -59,6 +64,7 @@ export function planOpenFurnishing({ area, workstations, corridors, reserved = [
 
 export function buildOpenFurnishing({ THREE, root, area, workstations, corridors, reserved, ring, zoneKind, plan: suppliedPlan, low = false, assets }) {
   const plan = structuredClone(suppliedPlan ?? planOpenFurnishing({ area, workstations, corridors, reserved, ring, zoneKind })), batch = createSampleBatch(THREE, assets)
+  const curveSegments = plan.groups.some(g => g.template === 'north-nook-seating') ? 2 : 3
   let measured
   const put = (g, color, position, roughness = .75, grain = '') => {
     g.computeBoundingBox(); measured.union(g.boundingBox.clone().translate(new THREE.Vector3(...position)))
@@ -74,7 +80,7 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
     s.lineTo(a, b - r); s.quadraticCurveTo(a, b, a - r, b)
     s.lineTo(-a + r, b); s.quadraticCurveTo(-a, b, -a, b - r)
     s.lineTo(-a, -b + r); s.quadraticCurveTo(-a, -b, -a + r, -b)
-    const g = new THREE.ExtrudeGeometry(s, {depth:h - 2 * bevel, steps:1, bevelEnabled:true, bevelSize:bevel, bevelThickness:bevel, bevelSegments:1, curveSegments:3})
+    const g = new THREE.ExtrudeGeometry(s, {depth:h - 2 * bevel, steps:1, bevelEnabled:true, bevelSize:bevel, bevelThickness:bevel, bevelSegments:1, curveSegments})
     g.rotateX(-Math.PI / 2); put(g, color, [x, y - h / 2 + bevel, z], .96, 'fabric')
   }
   for (const p of plan.placements) {

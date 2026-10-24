@@ -14,7 +14,7 @@ test('furnishing finish retains every group and measured collider from 2dbd13c a
     const records = []
     for (const e of alignZoneObstaclePlan(layout)) {
       const root = new THREE.Group(), value = buildOpenFurnishing({THREE, root, plan:e.plan, low})
-      records.push({id:e.id, colliders:value.colliders, groups:value.groups})
+      if (e.id !== 'north-nook') records.push({id:e.id, colliders:value.colliders, groups:value.groups})
       assert.equal(root.children.length, 1); assert.equal(value.summary().calls, 1)
       assert.ok(value.summary().triangles <= 8000, e.id + ' existing per-area budget')
       const g = value.root.geometry, released = new Set()
@@ -22,6 +22,7 @@ test('furnishing finish retains every group and measured collider from 2dbd13c a
       value.dispose(); value.dispose(); assert.equal(released.size, 2); assert.equal(root.children.length, 0)
     }
     const json = JSON.stringify(records, (_, v) => typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)
+    assert.equal(records.length,8,'all eight original furnishing zones remain in the frozen comparison')
     assert.equal(createHash('sha256').update(json).digest('hex'), baseline[Number(low)])
   }
   assert.equal(JSON.stringify(layout), before); assert.equal(Object.keys(layout.seats).length, 25)
