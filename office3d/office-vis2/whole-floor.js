@@ -3,6 +3,29 @@ import { planWorkstationIslands } from './align-zones.js'
 import { appendOfficeGardenBed } from './plants.js'
 import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
 
+export function officePracticalSpec(layout) {
+  const supports = [], globes = []
+  if (layout.variant !== 'align') return { supports, globes }
+  const furniture = officeFurnitureV2Spec(layout), tables = [furniture.board, ...furniture.meetings]
+  for (const room of layout.regions.filter(r => r.walled === true)) {
+    const table = room.id === 'board' ? furniture.board : tables.find(t => t.region === room.id)
+    const x = table?.x ?? (room.x0 + room.x1) / 2, z = table?.z ?? (room.z0 + room.z1) / 2
+    const alongZ = !!table && !table.round && table.d > table.w
+    // 横梁两端搭在既有顶部边带上；保留剖开屋顶的视线，不让吊线悬空。
+    supports.push({kind:'pendant-beam',owner:room.id,x:alongZ?x:(room.x0+room.x1)/2,y:2.76,z:alongZ?(room.z0+room.z1)/2:z,
+      w:alongZ?.06:room.x1-room.x0-.24,h:.06,d:alongZ?room.z1-room.z0-.24:.06,color:'#B89B64'})
+    const offsets = table && !table.round ? [-.27,0,.27].map(v=>v*Math.max(table.w,table.d)) : [0]
+    for (const offset of offsets) {
+      const px=x+(alongZ?0:offset),pz=z+(alongZ?offset:0)
+      supports.push({kind:'pendant-cord',owner:room.id,x:px,y:2.57,z:pz,w:.012,h:.26,d:.012,color:'#746A59'},
+        {kind:'pendant-canopy',owner:room.id,x:px,y:2.71,z:pz,w:.10,h:.045,d:.10,color:'#B89B64'},
+        {kind:'pendant-socket',owner:room.id,x:px,y:2.445,z:pz,w:.08,h:.04,d:.08,color:'#B89B64'})
+      globes.push({owner:room.id,x:px,y:2.30,z:pz,radius:.14})
+    }
+  }
+  return { supports, globes }
+}
+
 // 装饰只占既有桌面、墙面或绿化保留带；不增加席位或改变通行占地。
 export function wholeFloorSpec(layout) {
   const details = [], beds = []
@@ -86,7 +109,9 @@ export function wholeFloorSpec(layout) {
   }
   // 弧形花境替代同位置的矩形绿化格，避免两套花槽穿插。
   const arcs = plazaFlowerArcs(layout)
-  return { referenceFinish: layout.variant === 'align', details, beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
+  const practicals = officePracticalSpec(layout)
+  details.push(...practicals.supports)
+  return { referenceFinish: layout.variant === 'align', details, ...(layout.variant==='align'?{practicals}:{}), beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
 }
 
 export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {

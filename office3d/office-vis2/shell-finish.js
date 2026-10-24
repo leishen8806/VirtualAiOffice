@@ -82,9 +82,9 @@ export function buildOfficeAlignedShell(context) {
   const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, oldFloorReceive = shell.ground.receiveShadow, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
-  let disposed = false, paving, backdrop
+  let disposed = false, paving, backdrop, practicals
   const restore = () => { hidden.forEach(mesh => { mesh.visible = true }); shell.ground.material = oldFloor; shell.ground.receiveShadow = oldFloorReceive; shell.green.material.color.copy(oldGreen) }
-  const release = () => { backdrop?.dispose(); paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
+  const release = () => { practicals?.dispose(); backdrop?.dispose(); paving?.dispose(); for (const mesh of meshes) { mesh.removeFromParent(); mesh.dispose() } geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()) }
   try {
     const spec = officeShellFinishSpec(layout, shell.spec)
     const surfaces = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .7, metalness: .08 })
@@ -114,6 +114,16 @@ export function buildOfficeAlignedShell(context) {
     appendWholeFloorGarden({ THREE, batch, spec: spec.wholeFloor, low })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
     if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
+    if (layout.variant === 'align') {
+      const lights = createSampleBatch(THREE)
+      for (const p of spec.wholeFloor.practicals.globes) lights.add(new THREE.SphereGeometry(p.radius,low?8:12,low?6:8),'#F4F1EA',[p.x,p.y,p.z],0,.45)
+      // 发光面仅表现灯罩与灯槽，不伪称增加了照明，也不添加场景灯光或泛光。
+      for (const p of spec.solid.filter(p=>p.kind==='light-recess')) lights.add(new THREE.BoxGeometry(p.w,.004,p.d),'#F4F1EA',[p.x,p.y-p.h/2-.007,p.z],0,.45)
+      practicals = lights.build(root,'office-warm-practical-diffusers')
+      practicals.mesh.material.emissive.set('#FFE8C4'); practicals.mesh.material.emissiveIntensity = .45
+      practicals.mesh.castShadow = practicals.mesh.receiveShadow = false
+      practicals.mesh.userData.dynamic = true
+    }
     shell.green.material.color.set('#4D6A46')
     hidden.forEach(mesh => { mesh.visible = false }); shell.ground.material = floor
     if (layout.variant === 'align' && context.scene) backdrop = buildOfficeBackdropTrees(context)
