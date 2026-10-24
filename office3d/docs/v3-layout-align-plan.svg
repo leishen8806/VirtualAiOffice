@@ -39,8 +39,8 @@
     <line x1="96" y1="225" x2="117" y2="225"/><line x1="242" y1="225" x2="263" y2="225"/><line x1="162" y1="411" x2="162" y2="432"/><line x1="824" y1="379" x2="845" y2="379"/>
   </g>
   <g>
-    <circle class="ring" cx="470" cy="218" r="140" stroke-width="56"/><circle class="ring" cx="470" cy="218" r="84" stroke-width="2"/><circle cx="470" cy="218" r="49" fill="#cfa77a" stroke="#704820" stroke-width="2"/>
-    <text x="470" y="218">3.5 / 6 / 10m</text>
+    <circle class="ring" cx="470" cy="218" r="140" stroke-width="56"/><circle class="ring" cx="470" cy="218" r="84" stroke-width="2"/><circle class="ring" cx="470" cy="218" r="76.3" stroke="#80558f" stroke-width="2" stroke-dasharray="4 3"/><circle cx="470" cy="218" r="49" fill="#cfa77a" stroke="#704820" stroke-width="2"/>
+    <text x="470" y="218">3.5 / 5.45 / 6 / 10m</text>
   </g>
   <g class="worker">
     <circle cx="645" cy="183" r="4"/><circle cx="694" cy="183" r="4"/><circle cx="645" cy="225" r="4"/><circle cx="694" cy="225" r="4"/>

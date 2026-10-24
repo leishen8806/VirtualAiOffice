@@ -30,7 +30,10 @@ and 14 meeting seats retain their approved coordinates.
 
 The island has three concentric contracts: service counter outer radius `3.5m`
 (`island.barOuter`), collision outer radius `6m` (`bar.radius`), and public ring
-outer radius `10m`. Stool and sofa outer radii remain `4.2m` and `5.8m`.
+outer radius `10m`. Stool and sofa center radii are `4.2m` and `5.45m`.
+Difference from plan A: sofa center `5.8m -> 5.45m` (Board ruling
+2026-10-24), because its `0.35m` backrest outer edge otherwise exceeded the
+`6m` collision boundary.
 
 ALIGN pathfinding uses only walled regions, front-of-house fixtures, the island,
 and `±0.8m` real-workstation footprints as obstacles. Non-walled regions are
@@ -47,4 +50,5 @@ band, while `westOpenLink` uses the east edge of the open island.
 [`v3-layout-align-plan.json`](./v3-layout-align-plan.json) contains the
 machine-readable plan. Its checker verifies JSON-to-runtime equality and compares
 all approved coordinates, kinds, workers, display seats, and island geometry to
-`83ecc1b`; only R1 door and `walled` fields are intentionally different.
+`83ecc1b`; only R1 door / `walled` fields and the Board-approved sofa center
+radius are intentionally different.
