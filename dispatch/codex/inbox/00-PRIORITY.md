@@ -1,13 +1,13 @@
 # Codex 当前执行顺序（董事会 2026-10-24 指定）
 
-本文件只规定**顺序**，各卡内容以对应卡片为准。新指定会覆盖本文件。
+本文件只规定**顺序**，各卡内容以对应卡片为准。新指定会覆盖本文件。**请先读本文件，再按顺序执行。**
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `OF-R3-restore-files-dropped-by-merge.md`（恢复 `66bca48` 合并时丢失的 43 个 main 文件；阻断合并 main） | `integration/office-evidence-20261023`，从 `345cd39` 继续；并合入 `feat/v3-align-sample` | **立即开始，暂停 V3-A2** |
-| 2 | `V3-A2-align-shell-open-islands-bar.md` + `V3-A2-ADDENDUM-sample-base-and-island-rules.md`（格局对齐第 2 步） | `feat/v3-align-scene` | OF-R3 推送后继续；新建该分支时须包含 OF-R3 的恢复提交 |
+| **1** | `V3-A2-R1-ops-screen-and-sofa-merge.md`（运维屏 / 书架位置；合入沙发 5.45 `fb1e899`） | `feat/v3-align-scene`，从 `befaa45` 继续 | **立即开始** |
 
 说明：
 
-- 若 V3-A2 已有进行中的修改，先在其分支提交到一个可编译、可测试的停点，**不要与 OF-R3 混在同一提交**。
-- inbox 中其余卡片（OF-R1、OF-R2、V3-A2P、V3-A2P-R1）均已交付并完成复审，无需再做。
+- 已交付且复审通过、无需再做：OF-R1、OF-R2、OF-R3（`ba92f46` / `ee5ae15` / `befaa45`）、V3-A2P、V3-A2P-R1、V3-A2（`c44047d`）及其补充说明。
+- 格局对齐第 4 步（样板接线、机位、性能、开放区陈设密度）要等第 3 步（Trae）交付后再发卡。开放区陈设改为"工位桌自己组成桌岛"的方向，待董事会确认。
+- 第 3 步由 Trae 在新分支 `feat/v3-align-routes` 上进行。它会改导航、展示部门与展示人员，**请不要改这些文件**，以免冲突。
