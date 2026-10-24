@@ -4,7 +4,8 @@
 
 | 顺序 | 卡片 / 事项 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `W-V1-R4-forklift-mast-front.md`（叉车门架移到车头，约 30 分钟） | `integration/vis2-dr-rc1`，从 `a1df093` 继续 | **立即开始** |
+| **0** | `CAMPUS-PREFIX-FIX.md`（修 campus-layout 源码前缀守护，**阻断合并 main**，约 30 分钟） | 新建 `fix/campus-layout-prefix`，从 `befaa45` | **最优先，立即开始** |
+| 1 | `W-V1-R4-forklift-mast-front.md`（叉车门架移到车头） | `integration/vis2-dr-rc1`，从 `a1df093` 继续 | 已推送 `fb652f0`，待复审 |
 | 2 | `W-RC-R4-pallet-height-guard.md`（补回托盘高度守护、清单精确匹配、文档同步，约 45 分钟） | `integration/vis2-dr-rc1`，接在 W-V1-R4 之后，另起一个提交 | 其后 |
 | 3 | **把 OF-R3 恢复提交合入 `feat/v3-align`**（见下） | `feat/v3-align`，从 `fb1e899` 继续 | 其后（OF-R3 已通过） |
 | 4 | `V3-A3-align-routes-and-display.md`（格局对齐第 3 步：新格局真人路线、展示部门与展示人员） | 新建 `feat/v3-align-routes`，从 `feat/v3-align-scene` @ `befaa45` | 1–3 完成后开始 |
