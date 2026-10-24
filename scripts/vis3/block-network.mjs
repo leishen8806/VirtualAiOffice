@@ -14,6 +14,7 @@ function logBlocked(origin) { if (!LOG) return; try { fs.appendFileSync(LOG, JSO
 function allowHostPort(host, port) { return LOCAL.has(host) && ALLOWED.has(Number(port)) }
 
 // fetch
+// @@VIS3_FETCH_GUARD_BEGIN
 const origFetch = globalThis.fetch
 globalThis.fetch = async function (input, init) {
   let url
@@ -21,9 +22,10 @@ globalThis.fetch = async function (input, init) {
   if (!allowHostPort(url.hostname, url.port)) { logBlocked(url.origin); throw new Error('VIS3_NETWORK_BLOCKED ' + url.origin) }
   return origFetch(input, init)
 }
+// @@VIS3_FETCH_GUARD_END
 
 function parseTarget(a0, a1) {
-  if (Array.isArray(a0)) { a0 = a0[0]; a1 = a0 && a0.length > 1 ? a0[1] : a1 }
+  if (Array.isArray(a0)) { const arr = a0; a0 = arr[0]; a1 = arr.length > 1 ? arr[1] : a1 }
   if (a0 && typeof a0 === 'object') {
     const host = a0.host || a0.hostname || '127.0.0.1'
     const port = Number(a0.port) || 0

@@ -26,7 +26,7 @@ if (!TMP_ROOTS.some((d) => OUT === d || OUT.startsWith(d + path.sep))) { console
 if (OUT.startsWith(REPO + path.sep)) { console.error('INFRA_ERROR: --out 不得位于被测仓库内：' + OUT); process.exit(2) }
 if (fs.existsSync(OUT)) { if (fs.statSync(OUT).isFile()) { console.error('INFRA_ERROR: --out 是文件，拒绝：' + OUT); process.exit(2) } if (fs.readdirSync(OUT).length > 0) { console.error('INFRA_ERROR: --out 目录已存在且非空，拒绝覆盖：' + OUT); process.exit(2) } }
 const MIN_FREE_MB = Number(process.env.VIS3_MIN_FREE_MB || 3000)
-if (os.freemem() < MIN_FREE_MB * 1024 * 1024) { console.error('INFRA_ERROR: 空闲内存不足 ' + MIN_FREE_MB + 'MB（' + Math.round(os.freemem() / 1048576) + 'MB），NOT_RUN'); process.exit(2) }
+if (os.freemem() < MIN_FREE_MB * 1024 * 1024) { const freeMB = Math.round(os.freemem() / 1048576); console.error('INFRA_ERROR: 空闲内存不足 ' + MIN_FREE_MB + 'MB（' + freeMB + 'MB），NOT_RUN'); try { fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ status: 'NOT_RUN', reason: '空闲内存不足', freeMB, thresholdMB: MIN_FREE_MB }) + '\n') } catch {} ; process.exit(2) }
 const WATCHDOG_MS = Number(process.env.VIS3_WATCHDOG_MS || (30 * 60 * 1000))
 const watchdog = setTimeout(() => { console.error('INFRA_ERROR: 看门狗超时，结束全部子进程'); process.exit(2) }, WATCHDOG_MS)
 watchdog.unref?.()
@@ -37,9 +37,13 @@ try { PW = A.playwright || process.env.VIS3_PLAYWRIGHT || require.resolve('playw
 const NETLOG = path.join(OUT, 'logs', 'blocked-network.jsonl')
 fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(path.join(OUT, 'screenshots'), { recursive: true }); fs.mkdirSync(path.join(OUT, 'logs'), { recursive: true }); fs.writeFileSync(NETLOG, '')
 let SHA, repoCleanBefore
-try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', 'office3d'], { encoding: 'utf8' }).trim() }
+try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim() }
 catch (e) { console.error('INFRA_ERROR: 无法读取被测仓库（非 git 或不可访问）：' + (e?.message || e)); process.exit(2) }
 if (repoCleanBefore) { console.error('INFRA_ERROR: --repo 工作树不干净，拒绝运行：\n' + repoCleanBefore); process.exit(2) }
+const PROTECTED_RE = /(lan\.json|wall\.json|telegram[^/]*\.(json|dpapi)|[^/]*\.dpapi|\.env[^/]*|[^/]*ed25519[^/]*|config\.json)$/i
+let ignoredProtected = ''
+try { ignoredProtected = execFileSync('git', ['-C', REPO, 'ls-files', '--others', '--ignored', '--exclude-standard'], { encoding: 'utf8' }).split('\n').filter((f) => f && PROTECTED_RE.test(f)).join('\n') } catch {}
+if (ignoredProtected) { console.error('INFRA_ERROR: 存在被忽略的受保护文件，拒绝运行（仅列名，不读内容）：\n' + ignoredProtected); process.exit(2) }
 const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
@@ -71,7 +75,7 @@ const shot = (page, f) => page.screenshot({ path: path.join(OUT, 'screenshots', 
 const MUTATIONS = {
   'dup-loop': `setInterval(() => requestAnimationFrame(() => {}), 0)`,
   'runtime-error': `setTimeout(() => { throw new Error('VIS3_MUT_RUNTIME') }, 400)`,
-  'unauthorized-port': `setTimeout(() => fetch('http://127.0.0.1:3199/probe', { method: 'POST', body: 'x' }).catch(() => {}), 300)`,
+  'unauthorized-port': `setTimeout(() => fetch('http://127.0.0.1:' + globalThis.__VIS3_PROBE_PORT + '/probe', { method: 'POST', body: 'x' }).catch(() => {}), 300)`,
 }
 async function openPage(browser, base, url, opts = {}) {
   const allowOrigins = new Set([`http://127.0.0.1:${base.split(':')[2]}`, `http://localhost:${base.split(':')[2]}`])
@@ -89,7 +93,7 @@ async function openPage(browser, base, url, opts = {}) {
   })
   const page = await context.newPage()
   await page.addInitScript(INSTRUMENT)
-  if (A.mutate && MUTATIONS[A.mutate]) await page.addInitScript(MUTATIONS[A.mutate])
+  if (A.mutate && MUTATIONS[A.mutate]) { if (A.mutate === 'unauthorized-port') await page.addInitScript(`globalThis.__VIS3_PROBE_PORT = ${JSON.stringify(process.env.VIS3_PROBE_PORT)}`); await page.addInitScript(MUTATIONS[A.mutate]) }
   page.on('pageerror', (e) => errors.push({ type: 'pageerror', text: String(e.message).slice(0, 300) }))
   page.on('console', (m) => { if (m.type() === 'error') errors.push({ type: 'console', text: m.text().slice(0, 300) }) })
   page.on('request', (r) => { const u = new URL(r.url()); if (['127.0.0.1', 'localhost'].includes(u.hostname)) requests.push({ method: r.method(), path: u.pathname + u.search }) })
@@ -272,7 +276,7 @@ for (const [name, sc] of Object.entries(report.scenes)) {
 }
 report.blockedNetwork = fs.existsSync(NETLOG) ? fs.readFileSync(NETLOG, 'utf8').trim().split('\n').filter(Boolean).length : 0
 report.mandatory = { pass: M.pass, fail: M.fail, total: M.total }
-const repoCleanAfter = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', 'office3d'], { encoding: 'utf8' }).trim()
+const repoCleanAfter = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim()
 report.filesystemIsolation = { repoCleanBefore: repoCleanBefore, repoCleanAfter: repoCleanAfter, unchanged: repoCleanBefore === repoCleanAfter }
 for (const [name, scene] of Object.entries(report.scenes)) scene.pass = (scene.checks || []).filter((c) => c.mandatory).every((c) => c.ok)
 report.exit = (process.exitCode && process.exitCode !== 0) ? process.exitCode : (M.fail > 0 ? 1 : (M.total === 0 || SCENES.some((s) => !report.scenes[s]) ? 2 : 0))
