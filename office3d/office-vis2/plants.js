@@ -57,25 +57,28 @@ export function createOfficePottedFoliage(THREE, source, low = false) {
   }catch{dispose();return fallback()}
 }
 
-// 小叶按固定三维方向铺在冠层内，使用真实几何轮廓，不依赖透明贴图或相机朝向。
+// 独立小叶固定三维朝向，复用榕树的解析裁边；不加载贴图，也不让整树朝向相机。
 export function officeBackdropCanopy(THREE, low = false) {
-  const positions = [], colors = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
+  const positions = [], colors = [], uvs = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
   const fract = n => n - Math.floor(n)
   let radius2 = 0
   for (let i = 0; i < count; i++) {
     const a = i * 2.39996323, y = 1 - 2 * (i + .5) / count, r = Math.sqrt(1 - y * y) * (.67 + .26 * fract(i * .618))
     const center = new THREE.Vector3(Math.sin(a) * r, y * .78, Math.cos(a) * r)
     const length = (low ? .45 : .30) * (.85 + .3 * fract(i * .37)), width = length * .43
-    const rim = [[0,.5],[.5,.22],[.5,-.22],[0,-.5],[-.5,-.22],[-.5,.22]]
+    const rim = [[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]]
     rotation.set(a * .71, a, Math.sin(a * 1.3) * 1.4)
     const shade = .75 + .25 * fract(i * .43)
-    for (let j = 0; j < 6; j++) for (const point of [[0,0,.022], [...rim[j],0], [...rim[(j+1)%6],0]]) {
-      vertex.set(point[0] * width, point[1] * length, point[2]).applyEuler(rotation).add(center)
+    for (const j of [0,1,2,0,2,3]) {
+      const point = rim[j]
+      vertex.set(point[0] * width, point[1] * length, 0).applyEuler(rotation).add(center)
       positions.push(vertex.x, vertex.y, vertex.z); colors.push(shade, shade, shade); radius2 = Math.max(radius2, vertex.lengthSq())
+      uvs.push(point[0] + .5, point[1] + .5)
     }
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
   geometry.scale(.98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2))
   geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
   return geometry
@@ -107,7 +110,13 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
     if (!geometries.has(next)) geometries.set(next,officeBackdropCanopy(THREE,next))
     if (!materials.has(next)) {
       const options = { color:'#ffffff', vertexColors:true, side:THREE.DoubleSide }
-      materials.set(next,next ? new THREE.MeshLambertMaterial(options) : new THREE.MeshStandardMaterial({...options,roughness:.88}))
+      const material = next ? new THREE.MeshLambertMaterial(options) : new THREE.MeshStandardMaterial({...options,roughness:.88})
+      material.onBeforeCompile = shader => {
+        shader.vertexShader = 'varying vec2 officeBackdropLeafUv;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nofficeBackdropLeafUv = uv;')
+        shader.fragmentShader = 'varying vec2 officeBackdropLeafUv;\n' + shader.fragmentShader.replace('#include <alphatest_fragment>', '#include <alphatest_fragment>\nvec2 officeLeafPoint = officeBackdropLeafUv * 2.0 - 1.0;\nif (dot(officeLeafPoint, officeLeafPoint) > 1.0) discard;\ndiffuseColor.rgb *= 0.94 + 0.06 * smoothstep(0.0, 0.035, abs(officeLeafPoint.x));')
+      }
+      material.customProgramCacheKey = () => 'office-backdrop-oval-leaf-v1'
+      materials.set(next,material)
     }
     if (ownedMesh) { ownedMesh.geometry = geometries.get(next); ownedMesh.material = materials.get(next); ownedMesh.boundingSphere = null }
     tier = next

@@ -22,7 +22,7 @@ test('three-dimensional leaf canopy is deterministic, finite, two-sided by mater
   for(const low of[false,true]){
     const a=officeBackdropCanopy(THREE,low),b=officeBackdropCanopy(THREE,low)
     try{
-      assert.equal(a.attributes.position.count/3,low?192:768)
+      assert.equal(a.attributes.position.count/3,low?64:256)
       const hash=g=>createHash('sha256').update(Buffer.from(g.attributes.position.array.buffer)).digest('hex')
       assert.equal(hash(a),hash(b))
       const p=a.attributes.position,n=a.attributes.normal,size=a.boundingBox.getSize(new THREE.Vector3())
@@ -31,7 +31,10 @@ test('three-dimensional leaf canopy is deterministic, finite, two-sided by mater
         assert.ok(Math.hypot(p.getX(i),p.getY(i),p.getZ(i))<=.980001)
         assert.ok(Math.abs(Math.hypot(n.getX(i),n.getY(i),n.getZ(i))-1)<1e-5)
       }
-      assert.equal(a.attributes.uv,undefined,'actual leaf silhouettes, no alpha billboard atlas')
+      assert.equal(a.attributes.uv.count,p.count)
+      for(let i=0;i<a.attributes.uv.count;i++)assert.ok([0,1].includes(a.attributes.uv.getX(i))&&[0,1].includes(a.attributes.uv.getY(i)))
+      const normals=new Set(Array.from({length:p.count/6},(_,i)=>[n.getX(i*6),n.getY(i*6),n.getZ(i*6)].map(v=>v.toFixed(3)).join(',')))
+      assert.ok(normals.size>= (low?28:110),'individual leaves retain independent fixed 3D directions')
     }finally{a.dispose();b.dispose()}
   }
 })
@@ -66,6 +69,25 @@ test('owned canopy follows existing wind once per matrix version and restores la
   }finally{value.dispose();f.dispose()}
 })
 
+test('leaf cutout compiles into both owned material contracts without texture, blending or shared shader mutation',()=>{
+  const f=fixture(),quality={tier:'high'},value=buildOfficeBackdropTrees({...f,THREE,layout,quality})
+  try{
+    for(const tier of['high','low']){
+      quality.tier=tier;value.sync()
+      const mesh=value.root.children[0],material=mesh.material,source=THREE.ShaderLib[tier==='low'?'lambert':'standard']
+      const shader={vertexShader:source.vertexShader,fragmentShader:source.fragmentShader},original={...shader}
+      material.onBeforeCompile(shader)
+      assert.ok(shader.vertexShader.includes('officeBackdropLeafUv = uv;'))
+      assert.match(shader.fragmentShader,/if \(dot\(officeLeafPoint, officeLeafPoint\) > 1\.0\) discard;/)
+      assert.equal(source.vertexShader,original.vertexShader);assert.equal(source.fragmentShader,original.fragmentShader)
+      assert.equal(material.transparent,false);assert.equal(material.depthWrite,true);assert.equal(material.map,null)
+      assert.equal(mesh.castShadow,false);assert.equal(mesh.receiveShadow,false)
+      assert.equal(material.customProgramCacheKey(),'office-backdrop-oval-leaf-v1')
+      assert.ok(mesh.geometry.attributes.position.count/3*162 <= (tier==='low'?10400:41500),'bound the real 162-cluster geometry cost without reducing leaf count')
+    }
+  }finally{value.dispose();f.dispose()}
+})
+
 test('quality changes reuse at most two owned canopy geometries and release only owned resources',()=>{
   const f=fixture(),quality={tier:'high'},value=buildOfficeBackdropTrees({...f,THREE,layout,quality}),geometries=new Set(),materials=new Set(),released=new Set()
   try{
@@ -74,7 +96,7 @@ test('quality changes reuse at most two owned canopy geometries and release only
       for(const mesh of value.root.children){
         geometries.add(mesh.geometry);materials.add(mesh.material)
         assert.equal(mesh.material.type,tier==='low'?'MeshLambertMaterial':'MeshStandardMaterial')
-        assert.equal(mesh.geometry.attributes.position.count/3,tier==='low'?192:768)
+        assert.equal(mesh.geometry.attributes.position.count/3,tier==='low'?64:256)
         assert.equal(mesh.userData.qualityProxy,true)
       }
     }

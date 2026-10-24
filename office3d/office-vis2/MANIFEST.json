@@ -102,7 +102,7 @@
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "7970BFC10B01116A9D65EF3E2DB12ED50A5EA78A63B62362E47EE21AFEB8DB76",
+      "sha256": "9439A3487D4C26063DE676557CAC69FDDF74777D28782D8ECB48667A35B1A1D8",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
