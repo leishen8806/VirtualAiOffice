@@ -2,6 +2,7 @@
 export function createSampleBatch(THREE, assets) {
   const values = { position: [], normal: [], color: [], sampleSurface: [], sampleUv: [] }
   return {
+    triangles: () => values.position.length / 9,
     add(geometry, tint, position = [0, 0, 0], yaw = 0, roughness = .8, metalness = 0, grain = '') {
       const g = geometry.index ? geometry.toNonIndexed() : geometry.clone()
       const c = new THREE.Color(tint || '#ffffff'), p = g.attributes.position, sourceColor = !tint && g.attributes.color, surface = g.attributes.sampleSurface, uv = g.attributes.sampleUv
@@ -29,6 +30,8 @@ export function createSampleBatch(THREE, assets) {
         shader.vertexShader = 'attribute vec3 sampleSurface; attribute vec2 sampleUv; varying vec3 surfaceParams; varying vec2 materialUv;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nsurfaceParams = sampleSurface; materialUv = sampleUv;')
         // 已有贴图仅作材料细节，保留基色；避免每个石面都被同一张纹理染成深米黄。
         shader.fragmentShader = 'uniform sampler2D vis2oak; uniform sampler2D vis2stone; uniform sampler2D vis2fabric; uniform bool vis2Textured; varying vec3 surfaceParams; varying vec2 materialUv;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (vis2Textured) { if (surfaceParams.z > 2.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2fabric, materialUv * 3.0).rgb, 0.45); else if (surfaceParams.z > 1.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2stone, materialUv).rgb, 0.28); else if (surfaceParams.z > .5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2oak, materialUv).rgb, 0.55); }').replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = surfaceParams.x;').replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = surfaceParams.y;')
+        // 无贴图的广场批次也保留细石纹；只调本材质，不增加纹理请求或绘制批次。
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > 1.5 && surfaceParams.z < 2.5) { float vein = sin(materialUv.x * 24.0 + sin(materialUv.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein); }')
       }
       material.customProgramCacheKey = () => 'office-vis2-pbr-v2'
       material.userData.officeVis2 = true

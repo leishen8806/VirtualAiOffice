@@ -14,7 +14,7 @@ export function officeShellFinishSpec(layout, spec) {
     const vertical = side === 'west' || side === 'east', span = hi - lo
     const at = (along, y, w, h, d, color, kind) => box(vertical ? fixed : along, y, vertical ? along : fixed, vertical ? d : w, h, vertical ? w : d, color, kind)
     const middle = (lo + hi) / 2
-    at(middle, .18, span, .2, outer ? .18 : .14, '#D9D3C6', 'plinth')
+    at(middle, .18, span, .2, outer ? .18 : .14, '#D8BC94', 'plinth')
     at(middle, .3, span, .045, .07, '#B89B64', 'sill')
     at(middle, height - .045, span, .09, .07, '#AA9472', 'header')
     const divisions = Math.max(1, Math.ceil(span / (outer ? 3 : 2.4)))
@@ -47,7 +47,7 @@ export function officeShellFinishSpec(layout, spec) {
   for (const room of layout.regions) {
     const wood = ['board', 'review', 'plan', 'creative', 'dining'].includes(room.id)
     const width = room.x1 - room.x0 - .4, depth = room.z1 - room.z0 - .4
-    box((room.x0 + room.x1) / 2, .086, (room.z0 + room.z1) / 2, width, .002, depth, wood ? '#C3AA87' : '#DDD7CA', 'room-floor')
+    box((room.x0 + room.x1) / 2, .086, (room.z0 + room.z1) / 2, width, .002, depth, wood ? '#C3AA87' : '#DEC69F', 'room-floor')
     if (wood) for (let x = room.x0 + .8; x < room.x1 - .2; x += .8) box(x, .088, (room.z0 + room.z1) / 2, .008, .001, depth, '#AD9473', 'wood-joint')
   }
   // These details stay inside existing desk collision volumes, never in chair or walkway space.
@@ -77,7 +77,11 @@ export function buildOfficeAlignedShell(context) {
     const spec = officeShellFinishSpec(layout, shell.spec)
     const surfaces = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .7, metalness: .08 })
     const glass = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: .085, roughness: .12, depthWrite: false, side: THREE.FrontSide })
-    const floor = new THREE.MeshStandardMaterial({ color: '#D9D3C6', roughness: .74 })
+    const floor = new THREE.MeshStandardMaterial({ color: '#E1C399', roughness: .74 })
+    floor.onBeforeCompile = shader => {
+      shader.vertexShader = 'varying vec2 officeStone;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nofficeStone = position.xz / 1.2;')
+      shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat vein = sin(officeStone.x * 24.0 + sin(officeStone.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);')
+    }
     materials.push(surfaces, glass, floor)
     const add = (name, entries, material) => {
       const geometry = new THREE.BoxGeometry(1, 1, 1); geometries.push(geometry)

@@ -120,7 +120,8 @@ test('O-V2 plaza reuses props, keeps source anchors and exports nonoverlapping i
     assert.ok(placements.some(p => x >= p.bounds.x0 - .001 && x <= p.bounds.x1 + .001 && z >= p.bounds.z0 - .001 && z <= p.bounds.z1 + .001 && y >= p.bounds.y0 - .001 && y <= p.bounds.y1 + .001), 'every rendered vertex has an exported footprint')
   }
   assert.equal(root.children.length, 1, 'all props use one existing material batch')
-  assert.ok(built.triangles() <= 10000)
+  const addedGreenery = placements.filter(p => p.kind === 'trees' || p.kind === 'flower-arc').reduce((sum, p) => sum + p.triangles, 0)
+  assert.ok(built.triangles() - addedGreenery <= 10000, 'original 18 facilities retain their original triangle budget')
   assert.equal(JSON.stringify(LAYOUT_V3), before)
   let disposed = 0; built.mesh.geometry.addEventListener('dispose', () => disposed++)
   built.dispose(); built.dispose(); assert.equal(disposed, 1); assert.equal(root.children.length, 0)

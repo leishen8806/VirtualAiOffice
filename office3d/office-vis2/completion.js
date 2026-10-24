@@ -4,7 +4,7 @@ import { appendOfficePlaza } from './plaza.js'
 export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
   const plaza = layout.plaza, c = plaza.center
   const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
-  disk.rotateX(-Math.PI / 2); batch.add(disk, '#D9D3C6', [c.x, .09, c.z], 0, .9, 0, 'stone')
+  disk.rotateX(-Math.PI / 2); batch.add(disk, '#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
   for (const radius of [3.1, 5.8, 8.3]) {
     const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
     ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)
@@ -77,15 +77,9 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
   }
   const plaza = layout.plaza, c = plaza.center
   if (includePaving) appendOfficePlazaPaving({ THREE, batch, layout, low })
+  const plazaStart = batch.triangles()
   placements.push(...appendOfficePlaza({ THREE, batch, layout, low }))
-  for (const { x, z } of [{ x: -13, z: 16 }, { x: -13, z: 25 }, { x: 17, z: 16 }, { x: 17, z: 25 }]) {
-    cylinder(x, 1.05, z, .13, 2.1, '#6A6253')
-    for (let i = 0; i < (low ? 4 : 7); i++) {
-      const a = i * 2.399, crown = new THREE.IcosahedronGeometry(.68, low ? 0 : 1)
-      crown.scale(1.05, .83, .75)
-      batch.add(crown, i % 3 ? '#3E5A4E' : '#648B50', [x + Math.sin(a) * .38, 2.2 + (i % 3) * .22, z + Math.cos(a) * .3], 0, .95)
-    }
-  }
+  const plazaTriangles = batch.triangles() - plazaStart
   const fixed = batch.build(group, 'office-completion-furniture-and-plaza')
   let sign, signTexture, signMaterial, disposed = false
   try {
@@ -115,7 +109,7 @@ export function buildOfficeCompletionVisual({ THREE, root, layout, canvasTex, lo
       sign = new THREE.Mesh(geometry, signMaterial); sign.name = 'office-completion-room-signs'; group.add(sign)
     }
   } catch (error) { fixed.dispose(); sign?.geometry.dispose(); signMaterial?.dispose(); signTexture?.dispose(); group.removeFromParent(); throw error }
-  return { root: group, placements, summary: () => ({ calls: sign ? 2 : 1, triangles: fixed.triangles() + (sign ? sign.geometry.index.count / 3 : 0), signs: !!sign }), dispose() {
+  return { root: group, placements, summary: () => ({ calls: sign ? 2 : 1, triangles: fixed.triangles() + (sign ? sign.geometry.index.count / 3 : 0), plazaTriangles, signs: !!sign }), dispose() {
     if (disposed) return; disposed = true
     fixed.dispose(); sign?.geometry.dispose(); signMaterial?.dispose(); signTexture?.dispose(); group.removeFromParent()
   } }

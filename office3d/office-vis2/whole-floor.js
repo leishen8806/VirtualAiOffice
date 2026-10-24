@@ -1,3 +1,5 @@
+import { plazaFlowerArcs } from './plaza.js'
+
 // 装饰只占既有桌面、墙面或绿化保留带；不增加席位或改变通行占地。
 export function wholeFloorSpec(layout) {
   const details = [], beds = []
@@ -17,9 +19,9 @@ export function wholeFloorSpec(layout) {
       box('desk-group-rug', (x0+x1)/2, .094, (z0+z1)/2, x1-x0-.09, .002, z1-z0-.09, '#D0C9B7', room.id)
     }
     // 顶部仅保留边带，俯视下不盖住工位；全部高于人物通行体积。
-    box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#C8B89F', room.id)
+    box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#CDB18A', room.id)
     box('light-recess', middle, 2.955, room.z0 + .21, width - .65, .035, .12, '#F3D8A1', room.id)
-    box('ceiling-edge', room.x0 + .2, 3.05, (room.z0 + room.z1) / 2, .4, .16, room.z1 - room.z0 - .45, '#D9D3C6', room.id)
+    box('ceiling-edge', room.x0 + .2, 3.05, (room.z0 + room.z1) / 2, .4, .16, room.z1 - room.z0 - .45, '#D8BC94', room.id)
     // 竖向木饰面在原墙体厚度内，不把书柜放进椅后路线。
     const panelWidth = Math.min(2.4, width * .28)
     for (let x = room.x0 + .35; x < room.x0 + .35 + panelWidth; x += .13) {
@@ -34,7 +36,9 @@ export function wholeFloorSpec(layout) {
   for (let z = b.z0 + w + 1.2; z < b.z1 - w - .5; z += 2.4) {
     beds.push({ x: b.x0 + w / 2, z, w: 1.8, d: 2.37, side: 'west' }, { x: b.x1 - w / 2, z, w: 1.8, d: 2.37, side: 'east' })
   }
-  return { details, beds }
+  // 弧形花境替代同位置的矩形绿化格，避免两套花槽穿插。
+  const arcs = plazaFlowerArcs(layout)
+  return { details, beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
 }
 
 export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {

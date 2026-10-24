@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "4790768033BA76DCAFB7A30BE0E8EBD87B528AD205DD5EBE6A25F080150B4703",
+      "sha256": "35E6E10DEA46E50F22D7D574132BF4EB1BB1A4B288E95AD73D11DB1F0B6F689E",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -140,21 +140,21 @@
       "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "CDF040F4D99719600C5C054CFC8EEB680FB70F47388DEA8E646ED0735F776271"
+      "sha256": "06D79454ED65C6FAB44241AF509A79AB554F1661FC11509C050E1F2763011692"
     },
     {
       "file": "office-vis2/plaza.js",
       "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "380093B6AC8ABC9BE5B5A2029EBCF5A457FF0ACCD2DD791AB3F2335E0CFD9F8E"
+      "sha256": "55490DFE878D16A3CE16D037180F7D65C967330E07B79F61331F9BC1FA00EF7B"
     },
     {
       "file": "office-vis2/shell-finish.js",
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "549F005D17AA5E00166136F691621975C0FD34F92B6F015E971A894807CD3A8A"
+      "sha256": "47A933AEE30353B73A54761BAD5811F3D130094B54112EC4DFF50221D33DCA4C"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "33311C46932E913ADF51A98D58C037BFDA1899E8D47D052D161B9D495206FB95"
+      "sha256": "2F28A1EF114397304CFB3DDAD69E25F1F18975862C2FE831B6B1A2BA1517FA3B"
     }
   ],
   "excluded": {

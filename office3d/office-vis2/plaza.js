@@ -1,10 +1,19 @@
 import { buildOfficePlazaProps } from '../office-plaza-props.js'
 
-// 复用已登记构件，只给预览提供占地映射；宿主碰撞与热点仍由集成人接线。
+export function plazaFlowerArcs(layout) {
+  return [-1, 1].flatMap(side => [[17, 24], [27, 35]].map((range, index) => {
+    const start = (side < 0 ? -range[1] : range[0]) * Math.PI / 180, span = (range[1] - range[0]) * Math.PI / 180
+    const corners = [start, start + span].flatMap(a => [11.05, 11.55].map(r => ({ x: layout.plaza.center.x + Math.sin(a) * r, z: layout.plaza.center.z + Math.cos(a) * r })))
+    return { id: `plaza-arc-${side}-${index}`, side, start, span, bounds: { x0: Math.min(...corners.map(p => p.x)), x1: Math.max(...corners.map(p => p.x)), z0: Math.min(...corners.map(p => p.z)), z1: Math.max(...corners.map(p => p.z)) } }
+  }))
+}
+
+// 复用已登记构件并输出占地；宿主沿用既有注册口，不改共享碰撞或导航逻辑。
 export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
   const p = layout.plaza, placements = [], prototypes = new Map()
   const box = (x, y, z, w, h, d, color, grain = '') => batch.add(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
   const add = (category, kind, id, point, yaw = 0, scale = [1, 1, 1], offset = [0, 0]) => {
+    const triangleStart = batch.triangles()
     const key = category + kind
     if (!prototypes.has(key)) prototypes.set(key, buildOfficePlazaProps({ THREE, low, root: new THREE.Group(), placements: { [category]: [{ id: key, kind, x: 0, z: 0, yaw: 0 }] } }))
     const source = prototypes.get(key), bounds = new THREE.Box3()
@@ -21,9 +30,10 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       if (category === 'cafe' && mesh.name.endsWith('-accent')) geometry.translate(0, -3.15, 0).rotateX(Math.PI).translate(0, 3.15, 0)
       geometry.scale(...scale); geometry.rotateY(yaw); geometry.translate(point.x + offset[0], .11, point.z + offset[1])
       geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
-      batch.add(geometry, null, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
+      const treeTint = category === 'trees' ? (mesh.name.endsWith('-leaf') ? '#4F7043' : '#71614B') : null
+      batch.add(geometry, treeTint, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
     }
-    placements.push({ id, kind: category, source: { x: point.x, z: point.z }, x: point.x + offset[0], z: point.z + offset[1], yaw, scale, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
+    placements.push({ id, kind: category, source: { x: point.x, z: point.z }, x: point.x + offset[0], z: point.z + offset[1], yaw, scale, triangles: batch.triangles() - triangleStart, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
   }
   try {
     for (const point of p.carts) {
@@ -61,6 +71,36 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       }
       placements.push({ id: `plaza-flowers-${i + 1}`, kind: 'flowers', source: { ...point }, ...point, bounds: { x0: point.x - 1.51, x1: point.x + 1.51, z0: point.z - .41, z1: point.z + .41, y0: .11, y1: .84 }, interaction: 'preview-only' })
     })
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 4; i++) add('trees', 'broadleaf-layered', `plaza-tree-${side}-${i}`, { x: p.center.x + side * 16, z: p.center.z - 6 + i * 4 }, 0, [.65, .85, .65])
+      for (const arc of plazaFlowerArcs(layout).filter(arc => arc.side === side)) {
+        const bounds = new THREE.Box3(), triangleStart = batch.triangles()
+        const put = (geometry, color, position, grain = '') => {
+          geometry.translate(...position); geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
+          batch.add(geometry, color, [0, 0, 0], 0, .9, 0, grain)
+        }
+        const { start, span } = arc
+        // 前沿四段花境留出原有 4m 中轴，以及花箱和杆灯之间的通道。
+        const shape = new THREE.Shape(), segments = low ? 4 : 8
+        for (let i = 0; i <= segments; i++) { const a = start + span * i / segments; const x = Math.sin(a) * 11.55, z = Math.cos(a) * 11.55; if (!i) shape.moveTo(x, -z); else shape.lineTo(x, -z) }
+        for (let i = segments; i >= 0; i--) { const a = start + span * i / segments; shape.lineTo(Math.sin(a) * 11.05, -Math.cos(a) * 11.05) }
+        shape.closePath()
+        const rim = new THREE.ExtrudeGeometry(shape, { depth: .24, bevelEnabled: false, steps: 1 }); rim.rotateX(-Math.PI / 2)
+        put(rim, '#CDB78F', [p.center.x, .11, p.center.z], 'stone')
+        const count = low ? 6 : 12
+        for (let i = 0; i < count; i++) {
+          const a = start + span * (.1 + .8 * (i % (count / 2)) / (count / 2 - 1)), r = i < count / 2 ? 11.22 : 11.39
+          const x = p.center.x + Math.sin(a) * r, z = p.center.z + Math.cos(a) * r
+          for (let j = 0; j < (low ? 3 : 5); j++) {
+            const leaf = new THREE.IcosahedronGeometry(.10, 0); leaf.scale(.45, 1.7, .25); leaf.rotateZ(.7); leaf.rotateY(j * 2.399)
+            put(leaf, j % 2 ? '#3E5A4E' : '#648B50', [x, .48, z])
+          }
+          put(new THREE.IcosahedronGeometry(.045, 0), i % 3 ? '#BD8C94' : '#E6CD92', [x, .63, z])
+        }
+        placements.push({ id: arc.id, kind: 'flower-arc', x: (bounds.min.x + bounds.max.x) / 2, z: (bounds.min.z + bounds.max.z) / 2,
+          triangles: batch.triangles() - triangleStart, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
+      }
+    }
   } finally { prototypes.forEach(source => source.dispose()) }
   return placements
 }
