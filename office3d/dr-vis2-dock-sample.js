@@ -149,10 +149,15 @@ export function buildVis2DockSample({ THREE, root, layout, baseY = 0, quality = 
   }
   const fork = plan.forklift
   forklift.add(fork.x, .325, fork.z, 1.35, .65, 1.55)
-  forklift.add(fork.x, 1.22, fork.z + .35, .12, 1.12, .12)
-  forklift.add(fork.x, .5, fork.z - 1.2, .72, .07, .85)
-  for (const x of [-.85, .85]) for (const z of [-.52, .52]) wheels.add(fork.x + x, .16, fork.z + z, .16, .3, .16, 0, 0, Math.PI / 2)
-  steel.add(fork.x, 1.58, fork.z + .35, .95, .08, .08)
+  // 门架与叉齿都在车头：叉齿后端贴门架前表面，不再与车身分离。
+  const mastZ = fork.z - .82
+  forklift.add(fork.x - .3, 1.1, mastZ, .08, 2, .08)
+  forklift.add(fork.x - .22, .12, mastZ - .49, .12, .05, .9)
+  forklift.add(fork.x + .3, 1.1, mastZ, .08, 2, .08)
+  forklift.add(fork.x + .22, .12, mastZ - .49, .12, .05, .9)
+  forklift.add(fork.x, .22, mastZ, .72, .1, .08)
+  for (const x of [-.825, .825]) for (const z of [-.52, .52]) wheels.add(fork.x + x, .16, fork.z + z, .16, .3, .16, 0, 0, Math.PI / 2)
+  steel.add(fork.x, 2.06, mastZ, .76, .08, .08)
 
   for (const batch of [concrete, wall, doors, white, dark, wheels, steel, yellow, timber, forklift]) {
     batch.finish()

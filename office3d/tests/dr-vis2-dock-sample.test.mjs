@@ -106,6 +106,29 @@ test('W-V1-R3 forklift forks clear the body', () => {
   assert.equal(overlap(forkliftBody, instanceBox(sample.group, forklift, 2)), false, 'forks end at the forklift front without entering its body')
 })
 
+test('W-V1-R4 forklift mast is at the front and forks attach to it', () => {
+  const { sample } = dockScene()
+  const forklift = sample.group.getObjectByName('vis2-dock-forklift')
+  const body = instanceBox(sample.group, forklift, 0)
+  const masts = [1, 3].map(index => instanceBox(sample.group, forklift, index))
+  for (const mast of masts) {
+    assert.ok((mast.min.z + mast.max.z) / 2 < body.min.z + .05, 'mast column sits at the vehicle front')
+    assert.equal(overlap(mast, body), false, 'mast column does not enter the forklift body')
+  }
+})
+
+test('W-V1-R4 forklift forks attach to the front mast', () => {
+  const { sample } = dockScene()
+  const forklift = sample.group.getObjectByName('vis2-dock-forklift')
+  const body = instanceBox(sample.group, forklift, 0)
+  const masts = [1, 3].map(index => instanceBox(sample.group, forklift, index))
+  const forks = [2, 4].map(index => instanceBox(sample.group, forklift, index))
+  for (let index = 0; index < forks.length; index++) {
+    assert.ok(Math.abs(forks[index].max.z - masts[index].min.z) <= .02, 'fork rear attaches to mast front')
+    assert.equal(overlap(forks[index], body), false, 'fork does not enter the forklift body')
+  }
+})
+
 test('W-V1-R3 forklift wheels project outward from the body', () => {
   const { sample } = dockScene()
   const forklift = sample.group.getObjectByName('vis2-dock-forklift')
@@ -115,6 +138,8 @@ test('W-V1-R3 forklift wheels project outward from the body', () => {
     const box = instanceBox(sample.group, wheels, wheel)
     const insideX = Math.max(0, Math.min(box.max.x, forkliftBody.max.x) - Math.max(box.min.x, forkliftBody.min.x))
     assert.ok(insideX <= (box.max.x - box.min.x) / 2, 'at least half of each forklift wheel projects outside the body')
+    const gap = (box.min.x + box.max.x) / 2 > 0 ? box.min.x - forkliftBody.max.x : forkliftBody.min.x - box.max.x
+    assert.ok(gap <= .01, 'forklift wheel inner face stays within 1cm of the body side')
   }
 })
 
@@ -135,8 +160,9 @@ test('W-V1 月台样板遵守地坪基准、阴影、资源预算和可释放生
   assert.equal(summary.resources.animationLoops, 0)
   assert.equal(summary.resources.businessRequests, 0)
   assert.equal(summary.resources.textures, 0)
-  assert.ok(summary.calls <= 10)
+  assert.equal(summary.calls, 10)
   assert.ok(summary.triangles > 0 && summary.triangles <= 6000)
+  assert.ok(summary.batches['vis2-dock-forklift'].count <= 8)
   for (const node of sample.group.children.filter(node => node.isMesh)) assert.equal(node.castShadow && node.receiveShadow, true, `${node.name} participates in shadows`)
   assert.equal(root.getObjectByName('vis2-dock-sample'), sample.group)
   sample.dispose()
