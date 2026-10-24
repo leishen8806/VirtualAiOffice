@@ -5,8 +5,10 @@ import { createSampleBatch } from './batch.js'
 
 export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low = false, collision, assets } = {}) {
   if (!THREE || !root) throw new TypeError('buildOfficeTeaBarSample requires THREE and root')
-  const original = barSpec(layout), spec = { center: original.center, barOuter: original.radius, diameter: layout.island?.diameter || 12 }, center = spec.center, group = new THREE.Group(); group.name = 'office-vis2-bar'
+  const original = barSpec(layout), spec = { center: original.center, barOuter: original.counterRadius, diameter: layout.island?.diameter || 12 }, center = spec.center, group = new THREE.Group(); group.name = 'office-vis2-bar'
   const batch = createSampleBatch(THREE, assets), detail = low ? 12 : 24, barLayout = { bar: { ...layout.bar, center, radius: spec.barOuter } }
+  // 旧 V3 实际陈设为 4.4/5.25m；只在碰撞与台身解耦的新布局采用新座位合同。
+  const separateRings = original.collisionRadius !== original.counterRadius
   const ring = (inner, outer, bottom, height, tint, roughness, metalness = 0) => {
     for (const arc of barArcs(barLayout)) {
       const shape = new THREE.Shape()
@@ -55,7 +57,12 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
     batch.add(cup, '#F4F1EA', [center.x + 1.7 + offset, 1.13, center.z - 2.1], 0, .35)
   }
   const fixed = batch.build(group, 'tea-bar-body-top-equipment')
-  const seats = barSeats(barLayout, low).map(seat => ({ ...seat, sitOffset: { forward: 0, lift: 0 }, decorative: true }))
+  const stoolRadius = layout.island?.stoolRadius ?? spec.barOuter + .9
+  const seatPoses = separateRings ? (layout.bar?.seats ?? barSeats(barLayout, low).map(seat => ({ ...seat, x: center.x + Math.cos(seat.angle) * stoolRadius, z: center.z + Math.sin(seat.angle) * stoolRadius }))) : barSeats(barLayout, low)
+  const seats = seatPoses.map(seat => {
+    const angle = seat.angle ?? Math.atan2(seat.z - center.z, seat.x - center.x)
+    return { ...seat, angle, yaw: seat.yaw ?? -angle - Math.PI / 2, sitOffset: { forward: 0, lift: 0 }, decorative: true }
+  })
   const stool = createSampleBatch(THREE, assets)
   stool.add(new THREE.CylinderGeometry(.28, .28, .1, low ? 10 : 16), '#687D68', [0, .82, 0], 0, .95, 0, 'fabric')
   stool.add(new THREE.CylinderGeometry(.04, .055, .72, 8), '#9B8B6D', [0, .42, 0], 0, .35, .7)
@@ -63,10 +70,11 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   const stoolFoot = new THREE.TorusGeometry(.17, .015, 4, 12); stoolFoot.rotateX(Math.PI / 2)
   stool.add(stoolFoot, '#B89B64', [0, .3, 0], 0, .35, .7)
   const stools = stool.build(group, 'tea-bar-instanced-stools', seats)
-  const lounges = barLounges(barLayout).map(seat => ({ ...seat, sitOffset: { forward: LOUNGE_SIT.hipForward, lift: LOUNGE_SIT.hipLift } }))
+  const sofaRadius = separateRings ? layout.island?.sofaOuter ?? 5.25 : 5.25
+  const lounges = barLounges(barLayout).map(seat => ({ ...seat, ...(separateRings ? { x: center.x + Math.cos(seat.angle) * sofaRadius, z: center.z + Math.sin(seat.angle) * sofaRadius, appX: center.x + Math.cos(seat.angle) * (sofaRadius - .55), appZ: center.z + Math.sin(seat.angle) * (sofaRadius - .55) } : {}), sitOffset: { forward: LOUNGE_SIT.hipForward, lift: LOUNGE_SIT.hipLift } }))
   const sofa = createSampleBatch(THREE, assets)
   const curvedCushion = (z0, z1, y, height) => {
-    const shape = new THREE.Shape(), radius = 5.25
+    const shape = new THREE.Shape(), radius = sofaRadius
     for (let i = 0; i <= 12; i++) { const x = -.675 + i * 1.35 / 12, z = radius - Math.sqrt(radius * radius - x * x) + z0; if (i) shape.lineTo(x, -z); else shape.moveTo(x, -z) }
     for (let i = 12; i >= 0; i--) { const x = -.675 + i * 1.35 / 12, z = radius - Math.sqrt(radius * radius - x * x) + z1; shape.lineTo(x, -z) }
     shape.closePath(); const g = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false }); g.rotateX(-Math.PI / 2)
@@ -78,7 +86,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   for (const x of [-.62, .62]) sofa.add(new THREE.BoxGeometry(.1, .26, .52), '#C9A57A', [x, .55, 0], 0, .7, 0, 'wood')
   const sofas = sofa.build(group, 'tea-bar-instanced-lounges', lounges)
   const tree = buildHeartBanyan({ THREE, root: group, center, low })
-  const bounds = barColliders(barLayout), proxies = []
+  const bounds = barColliders(layout), proxies = []
   if (collision) for (const b of bounds) {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, 1.1, b.z1 - b.z0), new THREE.MeshBasicMaterial({ visible: false }))
     proxy.visible = false; proxy.name = b.id; proxy.position.set((b.x0 + b.x1) / 2, .55, (b.z0 + b.z1) / 2); group.add(proxy); proxies.push(proxy); collision.add(proxy, 'officeBar')

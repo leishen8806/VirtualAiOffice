@@ -11,11 +11,13 @@ export const LOUNGE_SIT = Object.freeze({
 })
 export function barSpec(layout = {}) {
   const bar = layout.bar || layout
+  const collisionRadius = bar.radius ?? 3.5
   return { center: { x: bar.center?.x ?? 2, z: bar.center?.z ?? -1 }, radius: bar.radius ?? 3.5,
+    counterRadius: layout.island?.barOuter ?? collisionRadius, collisionRadius,
     innerRadius: 2.1, gapWidth: bar.gaps?.[0]?.width ?? 1.5, ring: { r0: 6, r1: 8 } }
 }
 export function barGaps(layout) {
-  const { center, radius, gapWidth } = barSpec(layout)
+  const { center, collisionRadius: radius, gapWidth } = barSpec(layout)
   return ['east', 'west'].map(side => ({ side, width: gapWidth, x: center.x + (side === 'east' ? 1 : -1) * radius,
     z0: center.z - gapWidth / 2, z1: center.z + gapWidth / 2 }))
 }
@@ -33,7 +35,7 @@ export function barSeats(layout, low = false) {
   }))
 }
 export function barColliders(layout) {
-  const { center, radius, innerRadius, gapWidth } = barSpec(layout)
+  const { center, collisionRadius: radius, innerRadius, gapWidth } = barSpec(layout)
   return barArcs(layout).flatMap((arc, side) => Array.from({ length: 6 }, (_, index) => {
     const a = arc.start + (arc.end - arc.start) * index / 6
     const b = arc.start + (arc.end - arc.start) * (index + 1) / 6
