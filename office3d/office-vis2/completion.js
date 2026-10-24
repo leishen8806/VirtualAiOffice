@@ -4,7 +4,7 @@ import { appendOfficePlaza } from './plaza.js'
 export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
   const plaza = layout.plaza, c = plaza.center
   const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
-  disk.rotateX(-Math.PI / 2); batch.add(disk, '#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
+  disk.rotateX(-Math.PI / 2); batch.add(disk, layout.variant==='align'?'#DED6C7':'#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
   for (const radius of [3.1, 5.8, 8.3]) {
     const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
     ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)

@@ -61,7 +61,12 @@ for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision 
       const b={x0:box.min.x,x1:box.max.x,z0:box.min.z,z1:box.max.z}
       for(const k of Object.keys(b))close(b[k],p.bounds[k])
       for(const c of forbidden)assert.equal(overlaps(b,c),false,`${p.id} intersects passage/door`)
-      for(const [,x,z]of Object.values(ALIGN.seats))assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' workstation')
+      for(const [id,[,x,z]]of Object.entries(ALIGN.seats)){
+        if(p.workstationIds?.includes(id)){
+          assert.equal(overlaps(b,{x0:x-.7,x1:x+.7,z0:z-.35,z1:z+.35}),false,p.id+' existing desktop')
+          assert.equal(overlaps(b,{x0:x-.4,x1:x+.4,z0:z+.35,z1:z+1.3}),false,p.id+' seat access')
+        }else assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' unrelated workstation')
+      }
       assert.ok(distance(b,ALIGN.ring.center.x,ALIGN.ring.center.z)>=10-1e-6,p.id+' ring')
       assert.ok(v.obstacles().some(o=>o.id===p.id))
     }

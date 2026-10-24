@@ -79,7 +79,7 @@ export function buildOfficeAlignedShell(context) {
     const spec = officeShellFinishSpec(layout, shell.spec)
     const surfaces = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .7, metalness: .08 })
     const glass = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: .085, roughness: .12, depthWrite: false, side: THREE.FrontSide })
-    const floor = new THREE.MeshStandardMaterial({ color: '#E1C399', roughness: .74 })
+    const floor = new THREE.MeshStandardMaterial({ color: layout.variant==='align'?'#E9E2D5':'#E1C399', roughness: .74 })
     floor.onBeforeCompile = shader => {
       shader.vertexShader = 'varying vec2 officeStone;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nofficeStone = position.xz / 1.2;')
       shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat vein = sin(officeStone.x * 24.0 + sin(officeStone.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);')

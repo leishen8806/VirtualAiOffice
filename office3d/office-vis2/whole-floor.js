@@ -1,4 +1,5 @@
 import { plazaFlowerArcs } from './plaza.js'
+import { planWorkstationIslands } from './align-zones.js'
 
 // 装饰只占既有桌面、墙面或绿化保留带；不增加席位或改变通行占地。
 export function wholeFloorSpec(layout) {
@@ -12,7 +13,13 @@ export function wholeFloorSpec(layout) {
   for (const room of layout.regions) {
     const middle = (room.x0 + room.x1) / 2, width = room.x1 - room.x0
     const seats = Object.values(layout.seats).filter(([region]) => region === room.id)
-    if (seats.length > 1) {
+    if (layout.variant==='align' && seats.length) {
+      for(const group of planWorkstationIslands(layout,room).groups){
+        const b=group.groupBounds
+        box('desk-group-inlay',(b.x0+b.x1)/2,.145,(b.z0+b.z1)/2,b.x1-b.x0,.003,b.z1-b.z0,'#A99D87',group.id)
+        box('desk-group-rug',(b.x0+b.x1)/2,.148,(b.z0+b.z1)/2,b.x1-b.x0-.08,.002,b.z1-b.z0-.08,'#C9CABD',group.id)
+      }
+    } else if (seats.length > 1) {
       const xs = seats.map(([,x])=>x), zs = seats.map(([,,z])=>z)
       const x0 = Math.min(...xs)-.82, x1 = Math.max(...xs)+.82, z0 = Math.min(...zs)-.5, z1 = Math.max(...zs)+.9
       box('desk-group-inlay', (x0+x1)/2, .091, (z0+z1)/2, x1-x0, .003, z1-z0, '#BEB6A3', room.id)
@@ -39,7 +46,7 @@ export function wholeFloorSpec(layout) {
   }
   // 弧形花境替代同位置的矩形绿化格，避免两套花槽穿插。
   const arcs = plazaFlowerArcs(layout)
-  return { details, beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
+  return { referenceFinish: layout.variant === 'align', details, beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
 }
 
 export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
@@ -53,10 +60,10 @@ export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
   for (const [index, bed] of spec.beds.entries()) {
     batch.add(new THREE.BoxGeometry(bed.w,.11,bed.d),'#B8AE98',[bed.x,.065,bed.z],0,.94)
     batch.add(new THREE.BoxGeometry(bed.w-.12,.025,bed.d-.12),'#554E3C',[bed.x,.13,bed.z],0,1)
-    const clumps = low ? 4 : 6, leaves = low ? 5 : 7
+    const enhanced = spec.referenceFinish && !low, clumps = low ? 4 : enhanced ? 9 : 6, leaves = low ? 5 : enhanced ? 9 : 7
     for (let i=0;i<clumps;i++) {
-      const x=bed.x+((i%3)-1)*bed.w*.24,z=bed.z+(Math.floor(i/3)-.5)*bed.d*.4
-      for(let j=0;j<leaves;j++) leaf(x,.15+(i%3)*.035,z,j*2.399+index,.31+(j%3)*.085,['#36573C','#527046','#6E8553'][j%3])
+      const x=bed.x+((i%3)-1)*bed.w*(enhanced?.2:.24),z=bed.z+(Math.floor(i/3)-(enhanced?1:.5))*bed.d*(enhanced?.2:.4)
+      for(let j=0;j<leaves;j++) leaf(x,.15+(i%3)*(enhanced?.06:.035),z,j*2.399+index,(enhanced?.34:.31)+(j%3)*(enhanced?.08:.085),['#36573C','#527046','#6E8553'][j%3])
     }
     // 独立细叶有真实侧厚度与双面法线；不使用透明球冠或整树广告牌。
     if(index%3===0) {

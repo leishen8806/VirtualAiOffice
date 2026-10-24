@@ -88,7 +88,7 @@
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "4C56BBAF42F4458E0A929FF99E632E56D16A1512BA23FABCA3ECE211F841E3CA",
+      "sha256": "A0433CD5413876F52B29CBB19D563D76699D9A6494AF4599DC6F826A4DD121A0",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "35E6E10DEA46E50F22D7D574132BF4EB1BB1A4B288E95AD73D11DB1F0B6F689E",
+      "sha256": "1629F3305353BD1AC482DF644F93C4AA8DA10441FDFD9D31AD3F1FA169132BD7",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -147,14 +147,14 @@
       "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "55490DFE878D16A3CE16D037180F7D65C967330E07B79F61331F9BC1FA00EF7B"
+      "sha256": "2590F10A1B74B57CA720B3C9AD312CA71A03660022298A61A20DD54785E49DAA"
     },
     {
       "file": "office-vis2/shell-finish.js",
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "10A133374F40D2BE0CEA2C411C0285266B7204055C102BD41BFD35A650CDE9E0"
+      "sha256": "A1C2A4440ED41891D08A175C6887F428E2F64798F37EA238B24883491A033184"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -168,21 +168,21 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E8E06191BBBA4E0B2C6E0E424C3292632DF56C928CF9D7C923CB9DF6EBA90F85"
+      "sha256": "C5E1D2F584B46C18A47E6FB404F98D2764F7B6ACE8C95812F01039E568AB6872"
     },
     {
       "file": "office-vis2/open-furnishing.js",
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "D775A9F461DE8C0E105100F54396E24183F3E54372A2B36A45753C2ABF5E6897"
+      "sha256": "51C31ED9036A89999A28F430D7A056FF6C13D30FDFCCA33CC5A87A24B9CB85F3"
     },
     {
       "file": "office-vis2/align-zones.js",
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "450BD035E8183D2B33F70AB1A5D98BB510BA724CE31B7284464409B9A78980A4"
+      "sha256": "417072E971E118F674745C00C51963A815BACEC27CD04DDEC8B4ACEF5AF4F569"
     }
   ],
   "excluded": {

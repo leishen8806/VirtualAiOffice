@@ -15,6 +15,35 @@ export function alignDoorAprons(layout) {
   }))
 }
 
+// 围绕既有真实桌位生成端柜与背屏；不增加桌面、业务席位，也不改变 workHome 朝向。
+export function planWorkstationIslands(layout, area) {
+  const seats=Object.entries(layout.seats).filter(([,s])=>s[0]===area.id).map(([id,[,x,z]])=>({id,x,z}))
+  const rows=[]
+  for(const seat of seats.sort((a,b)=>a.z-b.z||a.x-b.x)) {
+    let row=rows.at(-1)
+    if(!row||row[0].z!==seat.z||seat.x-row.at(-1).x>4)rows.push(row=[])
+    row.push(seat)
+  }
+  const placements=[],groups=[],skipped=[],forbidden=[...alignPassages(layout),...alignDoorAprons(layout)]
+  const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
+  for(const [i,row]of rows.entries()) {
+    const id=`real-desks-${i+1}`,z=row[0].z,left=row[0].x-.7,right=row.at(-1).x+.7,members=[]
+    const add=(kind,x,z,w,d,height)=>{
+      const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
+      if(bounds.x0<area.x0||bounds.x1>area.x1||bounds.z0<area.z0||bounds.z1>area.z1||forbidden.some(b=>overlap(bounds,b))) {skipped.push(`${id}-${kind}-${x}`);return}
+      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:row.map(s=>s.id)})
+    }
+    const screenLeft=Math.max(left,area.x0),screenRight=Math.min(right,area.x1)
+    add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,.08,1.135)
+    for(const x of [left-.245,right+.245])add('planter-cabinet',x,z,.45,.7,1.25)
+    placements.push(...members)
+    groups.push({id,template:'real-workstation-island',workstationIds:row.map(s=>s.id),memberIds:members.map(p=>p.id),
+      groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:z-.47,z1:z+1.3},
+      useSpace:{x0:left,x1:right,z0:z+.35,z1:z+1.3}})
+  }
+  return{placements,groups,skipped,corridors:alignPassages(layout)}
+}
+
 // Shared by the renderer and route planner: keep navigation obstacles identical
 // to the deterministic furnishing plan without importing THREE into routing.
 export function alignZoneObstaclePlan(layout) {
@@ -25,7 +54,7 @@ export function alignZoneObstaclePlan(layout) {
   for (const id of ['west-open', 'kb', 'product', 'eng', 'drlife', 'creative', 'dining', 'leisure']) {
     const area = layout.regions.find(region => region.id === id)
     const zoneKind = ['creative', 'dining', 'leisure'].includes(id) ? id : undefined
-    const plan = planOpenFurnishing({ area, workstations, corridors, reserved, ring: layout.ring, zoneKind })
+    const plan = zoneKind ? planOpenFurnishing({ area, workstations, corridors, reserved, ring: layout.ring, zoneKind }) : planWorkstationIslands(layout,area)
     for (const group of plan.groups) reserved.push({ x0: group.groupBounds.x0 - 1.2, x1: group.groupBounds.x1 + 1.2, z0: group.groupBounds.z0 - 1.2, z1: group.groupBounds.z1 + 1.2 })
     entries.push({ id, plan })
   }
@@ -33,7 +62,7 @@ export function alignZoneObstaclePlan(layout) {
 }
 
 export function alignFloorSpec(layout) {
-  const palette = { open:'#DEC69F', display:'#D9D3C6', room:'#C3AA87' }, e=layout.envelope
+  const palette = { open:'#E7DECF', display:'#D9D3C6', room:'#C3AA87' }, e=layout.envelope
   const regions=layout.regions.map(r=>({...r,color:palette[r.kind]}))
   const paths=alignPassages(layout).map(b=>({x0:Math.max(b.x0,e.x0),x1:Math.min(b.x1,e.x1),z0:Math.max(b.z0,e.z0),z1:Math.min(b.z1,e.z1)})).filter(b=>b.x1>b.x0&&b.z1>b.z0)
   // Rectangular union: duplicate paths and crossing strips must not create coplanar layers.
@@ -46,8 +75,7 @@ export function alignFloorSpec(layout) {
 }
 
 export function buildAlignZones({THREE,root,layout,collision,low=false}) {
-  const batch=createSampleBatch(THREE), floor=alignFloorSpec(layout), furnishings=[], proxies=[], registered=[], reserved=alignDoorAprons(layout)
-  const corridors=alignPassages(layout), workstations=Object.values(layout.seats).map(([,x,z])=>({x,z,radius:1}))
+  const batch=createSampleBatch(THREE), floor=alignFloorSpec(layout), furnishings=[], proxies=[], registered=[]
   let paving,disposed=false
   const dispose=()=>{
     if(disposed)return;disposed=true
@@ -56,19 +84,23 @@ export function buildAlignZones({THREE,root,layout,collision,low=false}) {
     furnishings.forEach(f=>f.dispose());paving?.dispose()
   }
   try {
-    const slab=(b,y,color)=>{const g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);batch.add(g,color,[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2],0,.88)}
-    for(const b of floor.regions)slab(b,.126,b.color)
+    const slab=(b,y,color,grain='stone')=>{const g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);batch.add(g,color,[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2],0,.78,0,grain)}
+    for(const b of floor.regions){
+      slab(b,.126,b.color,b.kind==='room'?'wood':'stone')
+      const step=b.kind==='room'?.6:1.5
+      for(let x=b.x0+step;x<b.x1;x+=step)slab({x0:x-.007,x1:x+.007,z0:b.z0,z1:b.z1},.128,b.kind==='room'?'#AB9477':'#C8BEAC','')
+      if(b.kind!=='room')for(let z=b.z0+1.5;z<b.z1;z+=1.5)slab({x0:b.x0,x1:b.x1,z0:z-.007,z1:z+.007},.128,'#C8BEAC','')
+    }
     for(const b of floor.corridors)slab(b,.132,'#F4F1EA')
     const r=floor.ring
     for(const [inner,outer,y,color] of [[r.inner,r.outer,.138,'#EEE5D5'],[r.inner,r.inner+.08,.141,'#9B886B'],[r.outer-.08,r.outer,.141,'#9B886B']]){
       const g=new THREE.RingGeometry(inner,outer,low?96:192);g.rotateX(-Math.PI/2);batch.add(g,color,[r.center.x,y,r.center.z],0,.88)
     }
     paving=batch.build(root,'align-floor-and-ring')
-    for(const id of ['west-open','kb','product','eng','drlife','creative','dining','leisure']) {
-      const area=layout.regions.find(r=>r.id===id)
-      const f=buildOpenFurnishing({THREE,root,area,workstations,corridors,reserved,ring:layout.ring,low,zoneKind:['creative','dining','leisure'].includes(id)?id:undefined})
+    for(const {id,plan} of alignZoneObstaclePlan(layout)) {
+      const f=buildOpenFurnishing({THREE,root,plan,low})
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`
-      for(const g of f.groups){g.id=`${id}-${g.id}`;g.memberIds=g.memberIds.map(s=>`${id}-${s}`);const b=g.groupBounds;reserved.push({x0:b.x0-1.2,x1:b.x1+1.2,z0:b.z0-1.2,z1:b.z1+1.2})}
+      for(const g of f.groups){g.id=`${id}-${g.id}`;g.memberIds=g.memberIds.map(s=>`${id}-${s}`)}
       for(const p of f.placements){p.id=`${id}-${p.id}`;p.groupId=`${id}-${p.groupId}`}
       f.colliders.forEach(b=>{b.id=`${id}-${b.id}`})
     }

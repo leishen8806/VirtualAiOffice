@@ -1,4 +1,6 @@
 import { buildOfficePlazaProps } from '../office-plaza-props.js'
+import { officeLeafGeometry } from './plants.js'
+import { appendWholeFloorGarden } from './whole-floor.js'
 
 export function plazaFlowerArcs(layout) {
   return [-1, 1].flatMap(side => [[17, 24], [27, 35]].map((range, index) => {
@@ -30,6 +32,15 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       if (category === 'cafe' && mesh.name.endsWith('-accent')) geometry.translate(0, -3.15, 0).rotateX(Math.PI).translate(0, 3.15, 0)
       geometry.scale(...scale); geometry.rotateY(yaw); geometry.translate(point.x + offset[0], .11, point.z + offset[1])
       geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
+      if(layout.variant==='align' && category==='trees' && mesh.name.endsWith('-leaf')) {
+        const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?40:144
+        for(let i=0;i<count;i++){
+          const a=i*2.399,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v),length=Math.min(size.x,size.z)*.3
+          const leaf=officeLeafGeometry(THREE,a+Math.PI,length,3);leaf.scale(1,.6,1)
+          batch.add(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.4,center.y+v*size.y*.32-.08,center.z+Math.cos(a)*r*size.z*.4],0,.88)
+        }
+        geometry.dispose();continue
+      }
       const treeTint = category === 'trees' ? (mesh.name.endsWith('-leaf') ? '#4F7043' : '#71614B') : null
       batch.add(geometry, treeTint, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
     }
@@ -49,6 +60,14 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       box(point.x - .96, 2.08, point.z, .035, .035, 1.55, '#B89B64')
     }
     p.umbrellaTables.forEach((point, i) => add('cafe', '', `plaza-cafe-${i + 1}`, point, 0, [.85, 1, .85]))
+    if(layout.variant==='align')for(const side of [-1,1])for(const z of [17.5,24.5]){
+      const x=p.center.x+side*22,id=`plaza-layered-garden-${side}-${z}`,w=5.2,d=4.8
+      box(x,.06,z,w,.1,d,'#D9D3C6','stone')
+      const beds=[]
+      for(const dx of [-1.6,0,1.6])for(const dz of [-1.45,0,1.45])beds.push({x:x+dx,z:z+dz,w:1.58,d:1.43})
+      appendWholeFloorGarden({THREE,batch,low,spec:{beds,details:[],referenceFinish:true}})
+      placements.push({id,kind:'garden',x,z,source:{x,z},bounds:{x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:1.6},interaction:'preview-only'})
+    }
     // 既定点位的长椅会穿入伞桌、花箱或亭体，预览移至边缘；明确输出原/新坐标供 Trae 审核。
     p.benches.forEach((point, i) => {
       const side = point.x < p.center.x ? -1 : 1
