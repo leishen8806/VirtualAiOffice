@@ -31,11 +31,25 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   // O5 经董事会授权仅替换吧台碰撞段；仍逐字守住其余旧源码。
   const barBlock = /(?:\/\/ 复用吧台模块[^\n]*\n)?const V2_BAR_SEGMENTS = [\s\S]*?(?=\r?\n\r?\nconst V2_BAR_SEATS)/
   // R3-2 仅追加独立 V3 数据与选择分支；还原后继续逐字守住旧布局源码。
-  const v3Block = /\r?\nconst V3_REGIONS = [\s\S]*?(?=\r?\nconst LAYOUT_V1_DATA)/
+  const v3Block = /\r?\nconst V3_REGIONS = [\s\S]*?(?=\r?\n(?:const alignRect|const LAYOUT_V1_DATA))/
+  // V3-F1 仅为 V3 焦点加入会议室，不能放宽其他 V3 源码。
+  const v3FocusMeet = /\r?\n    \['meet', \{ label: '会议室', t: \[-23, 0, -7\.5\], r: 18 \}\],/
+  // V3-A1/R2 仅追加独立 ALIGN 数据（包含经批准的 5.45m 沙发半径）。
+  const alignBlock = /\r?\nconst alignRect = [\s\S]*?(?=\r?\nconst LAYOUT_V1_DATA)/
+  const alignExport = /^export const LAYOUT_V3_ALIGN = .*\r?\n/m
+  const regionFocusExport = /^export const regionFocusOf = .*\r?\n/m
   const resolverBlock = /export const resolveOfficeLayout = \(search = ''\) => \{[\s\S]*?\r?\n\}/
+  assert.match(currentSource, v3FocusMeet)
+  assert.match(currentSource, alignBlock)
+  assert.match(currentSource, alignExport)
+  assert.match(currentSource, regionFocusExport)
   const restored = currentSource
+    .replace(v3FocusMeet, '')
     .replace(v3Block, '')
+    .replace(alignBlock, '')
     .replace(/^export const LAYOUT_V3 = .*\r?\n/m, '')
+    .replace(alignExport, '')
+    .replace(regionFocusExport, '')
     .replace(resolverBlock, baselineSource.match(resolverBlock)[0])
     .replace(barBlock, baselineSource.match(barBlock)[0])
   assert.equal(restored.replace(revisedDoor, revisedDoor.replace('at: 24', 'at: 18')).startsWith(baselineSource), true)
