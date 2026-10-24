@@ -19,6 +19,7 @@ export function wholeFloorSpec(layout) {
       box('desk-group-rug', (x0+x1)/2, .094, (z0+z1)/2, x1-x0-.09, .002, z1-z0-.09, '#D0C9B7', room.id)
     }
     // 顶部仅保留边带，俯视下不盖住工位；全部高于人物通行体积。
+    if (layout.variant === 'align' && room.walled !== true) continue
     box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#CDB18A', room.id)
     box('light-recess', middle, 2.955, room.z0 + .21, width - .65, .035, .12, '#F3D8A1', room.id)
     box('ceiling-edge', room.x0 + .2, 3.05, (room.z0 + room.z1) / 2, .4, .16, room.z1 - room.z0 - .45, '#D8BC94', room.id)

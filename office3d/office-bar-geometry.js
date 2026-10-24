@@ -79,8 +79,8 @@ export function validateIslandRings(layout = {}) {
   const errors = []
   if (!Number.isFinite(sofaOuterEdge) || !Number.isFinite(spec.radius) || !Number.isFinite(counter) || radii.some(r => !Number.isFinite(r))) errors.push('INVALID_RING')
   if (sofaOuterEdge > spec.radius) errors.push('SOFA_BEYOND_COLLISION')
-  // 董事会裁决按实际边缘净距：坐垫半径 .28、台面比台身外挑 .045。
-  if (radii.some(r => r - .28 - (counter + .045) < .45 - 1e-9)) errors.push('STOOL_COUNTER_CLEARANCE')
+  // 董事会裁决：坐垫到台面边缘净距 .30m；不是通道宽度。坐垫半径 .28，台面外挑 .045。
+  if (radii.some(r => r - .28 - (counter + .045) < .30 - 1e-9)) errors.push('STOOL_COUNTER_CLEARANCE')
   if (radii.some(r => r + .28 >= sofa - LOUNGE_SIT.seatDepth / 2)) errors.push('SEAT_RINGS_INTERSECT')
   if (!Number.isFinite(spec.gapWidth) || spec.gapWidth < 1.5 || spec.gapWidth >= spec.innerRadius * 2) errors.push('GAP_WIDTH')
   return { ok: errors.length === 0, errors, sofaOuterEdge }

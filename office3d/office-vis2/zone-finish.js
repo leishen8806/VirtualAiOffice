@@ -1,9 +1,11 @@
 import { buildOfficeZones } from '../office-zones.js'
 import { officeSampleRequested } from './host.js'
 import { createSampleBatch } from './batch.js'
+import { buildAlignZones } from './align-zones.js'
 
 // Keep the original zone boundaries and labels; replace only the existing block-seat silhouettes.
 export function buildOfficeAlignedZones(context) {
+  if (context.layout.variant === 'align') return buildAlignZones(context)
   const legacy = buildOfficeZones(context)
   if (!officeSampleRequested(context.search)) return legacy
   const { THREE, root } = context, batch = createSampleBatch(THREE), hidden = [], bounds = [], tableBounds = []

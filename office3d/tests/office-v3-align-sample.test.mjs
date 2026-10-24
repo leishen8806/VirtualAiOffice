@@ -71,7 +71,7 @@ test('R1 shared seats/obstacles and original island collisions follow the fixtur
 test('R1 sofa validation matches actual transformed vertices and rejects invalid ring variants',()=>{
   for(const radius of [5.8,5.45]) {
     const layout=islandAlignFixture(radius), before=JSON.stringify(layout), result=validateIslandRings(layout)
-    assert.equal(result.ok,false);assert.deepEqual(result.errors,radius===5.8?['SOFA_BEYOND_COLLISION','STOOL_COUNTER_CLEARANCE']:['STOOL_COUNTER_CLEARANCE'])
+    assert.equal(result.ok,radius===5.45);assert.deepEqual(result.errors,radius===5.8?['SOFA_BEYOND_COLLISION']:[])
     const value=buildOfficeTeaBarSample({THREE,root:new THREE.Group(),layout})
     try {
       const mesh=value.root.getObjectByName('tea-bar-instanced-lounges'), v=new THREE.Vector3(), m=new THREE.Matrix4();let edge=0
@@ -97,13 +97,13 @@ test('R1 sofa validation matches actual transformed vertices and rejects invalid
   layout.island.sofaOuter=NaN;assert.ok(validateIslandRings(layout).errors.includes('INVALID_RING'))
   assert.equal(validateIslandRings(null).ok,false)
   assert.equal(validateIslandRings({bar:{seats:[null]}}).ok,false)
-  // 只验证 .45m 数学边界；不把合成席位数据写回预览或批准布局。
-  const boundary=islandAlignFixture(5.45);delete boundary.bar.seats;boundary.island.stoolRadius=3.545+.28+.45
+  // 董事会新裁决 .30m 边缘净距；合成席位仅用于阈值测试。
+  const boundary=islandAlignFixture(5.45);delete boundary.bar.seats;boundary.island.stoolRadius=3.545+.28+.30
   assert.equal(validateIslandRings(boundary).ok,true)
   boundary.island.stoolRadius-=.001;assert.ok(validateIslandRings(boundary).errors.includes('STOOL_COUNTER_CLEARANCE'))
   const actual=islandAlignFixture(), clearance=Math.min(...barSeats(actual).map(p=>Math.hypot(p.x-2,p.z+6)))-.28-3.545
-  assert.ok(clearance<.45);close(clearance,.375)
-  console.log('R1 approved fixture edge clearance (unresolved)',clearance)
+  assert.ok(clearance>=.30);close(clearance,.375)
+  console.log('A2 approved fixture edge clearance',clearance)
 })
 test('R1 leaves reuse independent front/back normals without cancellation at either quality',()=>{
   for(const segments of [3,7])for(const angle of [0,2.399,4.798]) {

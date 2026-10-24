@@ -154,28 +154,35 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "47A933AEE30353B73A54761BAD5811F3D130094B54112EC4DFF50221D33DCA4C"
+      "sha256": "10A133374F40D2BE0CEA2C411C0285266B7204055C102BD41BFD35A650CDE9E0"
     },
     {
       "file": "office-vis2/zone-finish.js",
       "source": "Private visual refinement of existing zone seats, tables and stools within their existing floor footprints",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "86CFC75A7D86A8C16BDC79DCB27F214A5C0417589FCC75E127CF2E13CFE4E5A4"
+      "sha256": "502D1433DCF7B3246A07B14B58A46A20BF28C25EC1D30BB1CA072248B82130A2"
     },
     {
       "file": "office-vis2/whole-floor.js",
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2F28A1EF114397304CFB3DDAD69E25F1F18975862C2FE831B6B1A2BA1517FA3B"
+      "sha256": "E8E06191BBBA4E0B2C6E0E424C3292632DF56C928CF9D7C923CB9DF6EBA90F85"
     },
     {
       "file": "office-vis2/open-furnishing.js",
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "DBB0351579706B3CB909F837CFB52B6996EAF749ADF141B4CA0969746EF4C02B"
+      "sha256": "D775A9F461DE8C0E105100F54396E24183F3E54372A2B36A45753C2ABF5E6897"
+    },
+    {
+      "file": "office-vis2/align-zones.js",
+      "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "AAD59F3097E2C9A2B607666AE225E9186189FA01A43BA1D32792AD8299AE23CD"
     }
   ],
   "excluded": {

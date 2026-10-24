@@ -5,18 +5,24 @@ const overlaps = (a, b, gap = 0) => a.x1 + gap > b.x0 && a.x0 - gap < b.x1 && a.
 const rect = b => ['x0', 'x1', 'z0', 'z1'].every(k => Number.isFinite(b?.[k])) && b.x1 > b.x0 && b.z1 > b.z0
 
 // 只生成陈设占地，不注册工位、热点或碰撞；空间不足时跳过并报告，不挤占通道。
-export function planOpenFurnishing({ area, workstations, corridors }) {
+export function planOpenFurnishing({ area, workstations, corridors, reserved = [], ring, zoneKind }) {
   if (!rect(area) || !Array.isArray(workstations) || !Array.isArray(corridors) || !corridors.length ||
     workstations.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.z) || !Number.isFinite(p.radius) || p.radius < .6) ||
     corridors.some(b => !rect(b) || Math.min(b.x1 - b.x0, b.z1 - b.z0) < 1.2 - 1e-9)) throw new TypeError('Invalid open area, workstation clearance or 1.2m corridor')
   const placements = [], skipped = [], groups = []
-  const templates = [
+  let templates = [
     { id: 'shared-table', template: 'shared-table-island', count: 2, members: [
       ['table', 0, .225, 3.2, 1.2, .83], ['partition', 0, -.64, 1.6, .22, 1.15],
       ['cabinet', -1.95, .225, .5, 1.2, .78], ['cabinet', 1.95, .225, .5, 1.2, .78],
     ] },
     { id: 'green-edge', template: 'plant-edge', count: 4, members: [['plant', 0, 0, 1, 1, 1.5]] },
   ]
+  if (zoneKind) {
+    const seats = zoneKind === 'leisure'
+      ? [['bench', -1, 0, .8, 1.8, .9], ['bench', 1, 0, .8, 1.8, .9], ['round-table', 0, 0, .7, .7, .55]]
+      : [['round-table', 0, 0, 1.2, 1.2, .8], ...[[-1.1,0],[1.1,0],[0,-1.1],[0,1.1]].map(([x,z]) => ['chair',x,z,.6,.6,.9])]
+    templates = [{ id: zoneKind, template: `${zoneKind}-seating`, count: 1, members: seats }, templates[1]]
+  }
   for (const t of templates) for (let n = 0; n < t.count; n++) {
     const id = `${t.id}-${n + 1}`, candidates = []
     if (t.template === 'plant-edge') {
@@ -35,7 +41,9 @@ export function planOpenFurnishing({ area, workstations, corridors }) {
       // 长桌前侧 .6m 使用空间随整组避让；不是新增业务席位。
       if (t.template === 'shared-table-island') bounds.z1 += .61
       if (bounds.x0 < area.x0 + .3 || bounds.x1 > area.x1 - .3 || bounds.z0 < area.z0 + .3 || bounds.z1 > area.z1 - .3 ||
-        corridors.some(c => overlaps(bounds, c)) || groups.some(g => overlaps(bounds, g.groupBounds, 1.2)) || workstations.some(p => {
+        corridors.some(c => overlaps(bounds, c)) || reserved.some(c => overlaps(bounds, c)) ||
+        (ring && Math.hypot(Math.max(bounds.x0 - ring.center.x, 0, ring.center.x - bounds.x1), Math.max(bounds.z0 - ring.center.z, 0, ring.center.z - bounds.z1)) < ring.outer) ||
+        groups.some(g => overlaps(bounds, g.groupBounds, 1.2)) || workstations.some(p => {
           const dx = Math.max(bounds.x0 - p.x, 0, p.x - bounds.x1), dz = Math.max(bounds.z0 - p.z, 0, p.z - bounds.z1)
           return Math.hypot(dx, dz) < p.radius + .6
         })) continue
@@ -48,8 +56,8 @@ export function planOpenFurnishing({ area, workstations, corridors }) {
   return { placements, skipped, groups, corridors: corridors.map(c => ({ ...c })) }
 }
 
-export function buildOpenFurnishing({ THREE, root, area, workstations, corridors, low = false, assets }) {
-  const plan = planOpenFurnishing({ area, workstations, corridors }), batch = createSampleBatch(THREE, assets)
+export function buildOpenFurnishing({ THREE, root, area, workstations, corridors, reserved, ring, zoneKind, low = false, assets }) {
+  const plan = planOpenFurnishing({ area, workstations, corridors, reserved, ring, zoneKind }), batch = createSampleBatch(THREE, assets)
   let measured
   const put = (g, color, position, roughness = .75, grain = '') => {
     g.computeBoundingBox(); measured.union(g.boundingBox.clone().translate(new THREE.Vector3(...position)))
@@ -73,6 +81,14 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
     } else if (p.kind === 'partition') {
       box(w, 1.05, .08, '#B7C2B4', x, .625, z, 'fabric')
       for (const dx of [-.65, .65]) { box(.045, 1.15, .045, '#B89B64', x + dx, .575, z); box(.12, .025, d, '#756857', x + dx, .0125, z) }
+    } else if (p.kind === 'round-table') {
+      const r = w / 2, top = p.height
+      put(new THREE.CylinderGeometry(r,r,.065,low ? 12 : 24),'#C9A57A',[x,top-.0325,z],.7,'wood')
+      put(new THREE.CylinderGeometry(.08,.12,top-.065,8),'#B89B64',[x,(top-.065)/2,z],.55)
+    } else if (p.kind === 'bench' || p.kind === 'chair') {
+      box(w,.16,d,'#506A5A',x,.4,z,'fabric')
+      box(w,.42,.09,'#B7C2B4',x,.69,z-d/2+.045,'fabric')
+      for (const dx of [-w/2+.08,w/2-.08]) for (const dz of [-d/2+.08,d/2-.08]) box(.045,.32,.045,'#B89B64',x+dx,.16,z+dz)
     } else {
       box(.86, .38, .86, '#D9D3C6', x, .19, z, 'stone')
       box(.76, .025, .76, '#554B3E', x, .395, z)

@@ -43,10 +43,12 @@ const displayLayout = layout => ({ ...layout, version: 2, corridors: {
 }, displayAdapter: 'v3' })
 
 function buildDisplayDepartmentsV3(context) {
+  if (context.layout.variant === 'align') return pendingModule('align-display-departments-door-adapter')
   return buildDisplayDepartments({ ...context, layout: displayLayout(context.layout) })
 }
 
 function buildDisplayStaffV3(context) {
+  if (context.layout.variant === 'align') return pendingModule('align-display-staff-door-adapter')
   return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
 }
 
@@ -61,8 +63,8 @@ export const officeV3Modules = Object.freeze([
 ])
 
 export function startOfficeV3(shared) {
-  if (shared.layout?.version !== 3) return null
-  const registry = createOfficeV2Registry({ THREE: shared.THREE, scene: shared.scene, quality: shared.quality, layout: LAYOUT_V3, rootName: 'office3-root', batchPrefix: 'office3' })
+  if ((shared.layout || LAYOUT_V3).version !== 3) return null
+  const registry = createOfficeV2Registry({ THREE: shared.THREE, scene: shared.scene, quality: shared.quality, layout: shared.layout || LAYOUT_V3, rootName: 'office3-root', batchPrefix: 'office3' })
   officeV3Modules.forEach(([name, factory]) => registry.register(name, factory))
   registry.buildAll(shared)
   if (!registry.get('shell3')) { registry.dispose(); return null }

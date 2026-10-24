@@ -28,6 +28,7 @@ export function officeShellFinishSpec(layout, spec) {
   for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
   for (const segment of spec.inner) {
     const { room, side } = segment
+    if (layout.variant === 'align' && room.walled !== true) continue
     const boundary = side === 'west' ? room.x0 : side === 'east' ? room.x1 : side === 'north' ? room.z0 : room.z1
     const outerBoundary = side === 'west' ? layout.envelope.x0 : side === 'east' ? layout.envelope.x1 : side === 'north' ? layout.envelope.z0 : layout.envelope.z1
     if (Math.abs(boundary - outerBoundary) < .001) continue // No coincident inner/outer glass.
@@ -35,7 +36,7 @@ export function officeShellFinishSpec(layout, spec) {
     panel(side, segment.lo, segment.hi, fixed, enclosed.has(room.id) ? 2.7 : 1.1)
   }
   // Door headers stay above the walking volume; jambs are already within the wall segments.
-  for (const room of layout.regions.filter(room => enclosed.has(room.id))) for (const door of room.doors || []) {
+  for (const room of layout.regions.filter(room => layout.variant === 'align' ? room.walled === true : enclosed.has(room.id))) for (const door of room.doors || []) {
     const vertical = door.side === 'west' || door.side === 'east'
     const fixed = door.side === 'west' ? room.x0 + .07 : door.side === 'east' ? room.x1 - .07 : door.side === 'north' ? room.z0 + .07 : room.z1 - .07
     box(vertical ? fixed : door.at, 2.655, vertical ? door.at : fixed, vertical ? .07 : door.width, .09, vertical ? door.width : .07, '#AA9472', 'door-header')
@@ -45,6 +46,7 @@ export function officeShellFinishSpec(layout, spec) {
   for (let x = e.x0 + 2; x < e.x1; x += 2) box(x, .082, (e.z0 + e.z1) / 2, .014, .002, e.z1 - e.z0, '#BFB5A5', 'floor-joint')
   for (let z = e.z0 + 2; z < e.z1; z += 2) box((e.x0 + e.x1) / 2, .082, z, e.x1 - e.x0, .002, .014, '#BFB5A5', 'floor-joint')
   for (const room of layout.regions) {
+    if (layout.variant === 'align') continue // ALIGN floors are owned by zone-finish.
     const wood = ['board', 'review', 'plan', 'creative', 'dining'].includes(room.id)
     const width = room.x1 - room.x0 - .4, depth = room.z1 - room.z0 - .4
     box((room.x0 + room.x1) / 2, .086, (room.z0 + room.z1) / 2, width, .002, depth, wood ? '#C3AA87' : '#DEC69F', 'room-floor')
