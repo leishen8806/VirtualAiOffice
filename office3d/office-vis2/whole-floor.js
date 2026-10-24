@@ -1,5 +1,7 @@
 import { plazaFlowerArcs } from './plaza.js'
 import { planWorkstationIslands } from './align-zones.js'
+import { appendOfficeGardenBed } from './plants.js'
+import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
 
 // 装饰只占既有桌面、墙面或绿化保留带；不增加席位或改变通行占地。
 export function wholeFloorSpec(layout) {
@@ -9,6 +11,27 @@ export function wholeFloorSpec(layout) {
     // 物品留在桌沿，避开中部显示器和键鼠。
     box('desk-tray', x + .51, .795, z - .2, .22, .06, .2, '#596455', id)
     for (let i = 0; i < 3; i++) box('desk-book', x - .51 + i * .045, .88, z - .23, .035, .22 - i * .025, .14, ['#C0AA82', '#71826C', '#E4DDCE'][i], id)
+  }
+  if (layout.variant === 'align') {
+    const furniture = officeFurnitureV2Spec(layout)
+    for (const shelf of furniture.shelves) {
+      // 原 bookcaseOpen.glb 缩放至1.85m后的层板上表面；避开既有中层书组。
+      for (const base of [.277, .781, 1.286]) for (let i = 0; i < Math.floor((shelf.w - .24) / .11); i++) {
+        const dx = -shelf.w / 2 + .17 + i * .11, height = .25 + (i % 4) * .025
+        if (base === .781 && Math.abs(dx) < shelf.w * .36) continue
+        box('shelf-book', shelf.x + dx, base + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
+          ['#B7C2B4', '#CCB58C', '#E9E1D4', '#826E56', '#58705C'][i % 5], 'kb')
+      }
+    }
+    for (const table of [...furniture.meetings, { ...furniture.board, region: 'board' }]) {
+      const y = table.round ? .824 : .767, w = table.round ? 1.2 : table.w, d = table.round ? 1.2 : table.d
+      box('meeting-runner', table.x, y, table.z, w * .72, .01, d * .32, '#A6B39E', table.region)
+      box('meeting-console', table.x, y + .026, table.z, .19, .04, .13, '#566257', table.region)
+      for (const side of [-1, 1]) {
+        box('meeting-paper', table.x + side * w * .32, y + .012, table.z + d * .26, .22, .008, .28, '#F4F1EA', table.region)
+        box('meeting-folder', table.x + side * w * .32, y + .005, table.z + d * .26, .24, .006, .30, '#C6AF87', table.region)
+      }
+    }
   }
   for (const room of layout.regions) {
     const middle = (room.x0 + room.x1) / 2, width = room.x1 - room.x0
@@ -58,6 +81,7 @@ export function appendWholeFloorGarden({ THREE, batch, spec, low = false }) {
     batch.add(g,color,[x,y,z],0,.86)
   }
   for (const [index, bed] of spec.beds.entries()) {
+    if (spec.referenceFinish) { appendOfficeGardenBed({ THREE, batch, bed, low, seed: index }); continue }
     batch.add(new THREE.BoxGeometry(bed.w,.11,bed.d),'#B8AE98',[bed.x,.065,bed.z],0,.94)
     batch.add(new THREE.BoxGeometry(bed.w-.12,.025,bed.d-.12),'#554E3C',[bed.x,.13,bed.z],0,1)
     const enhanced = spec.referenceFinish && !low, clumps = low ? 4 : enhanced ? 9 : 6, leaves = low ? 5 : enhanced ? 9 : 7

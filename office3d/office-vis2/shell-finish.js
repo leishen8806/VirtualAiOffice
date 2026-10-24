@@ -26,6 +26,10 @@ export function officeShellFinishSpec(layout, spec) {
       w: vertical ? .018 : span - .05, h: height - .41, d: vertical ? span - .05 : .018, side, lo, hi, outer })
   }
   for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
+  // 概念图的北侧背墙保留暖色实体基底；仅在原墙厚内补面，不跨门洞。
+  if (layout.variant === 'align') for (const s of spec.outer.filter(s => s.side === 'north')) {
+    box((s.lo + s.hi) / 2, 1.3, (s.fixed0 + s.fixed1) / 2, s.hi - s.lo, 2.2, .1, '#E7DFD0', 'north-wall-panel')
+  }
   for (const segment of spec.inner) {
     const { room, side } = segment
     if (layout.variant === 'align' && room.walled !== true) continue

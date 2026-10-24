@@ -36,6 +36,10 @@ export function planWorkstationIslands(layout, area) {
     const screenLeft=Math.max(left,area.x0),screenRight=Math.min(right,area.x1)
     add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,.08,1.135)
     for(const x of [left-.245,right+.245])add('planter-cabinet',x,z,.45,.7,1.25)
+    for(let j=1;j<row.length;j++) {
+      const gap=row[j].x-row[j-1].x-1.4
+      if(gap>=1.8)add('planter-cabinet',(row[j].x+row[j-1].x)/2,z,Math.min(1.1,gap-.6),.7,1.25)
+    }
     placements.push(...members)
     groups.push({id,template:'real-workstation-island',workstationIds:row.map(s=>s.id),memberIds:members.map(p=>p.id),
       groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:z-.47,z1:z+1.3},

@@ -1,6 +1,5 @@
 import { buildOfficePlazaProps } from '../office-plaza-props.js'
-import { officeLeafGeometry } from './plants.js'
-import { appendWholeFloorGarden } from './whole-floor.js'
+import { officeLeafGeometry, appendOfficeGardenBed } from './plants.js'
 
 export function plazaFlowerArcs(layout) {
   return [-1, 1].flatMap(side => [[17, 24], [27, 35]].map((range, index) => {
@@ -62,10 +61,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
     p.umbrellaTables.forEach((point, i) => add('cafe', '', `plaza-cafe-${i + 1}`, point, 0, [.85, 1, .85]))
     if(layout.variant==='align')for(const side of [-1,1])for(const z of [17.5,24.5]){
       const x=p.center.x+side*22,id=`plaza-layered-garden-${side}-${z}`,w=5.2,d=4.8
-      box(x,.06,z,w,.1,d,'#D9D3C6','stone')
-      const beds=[]
-      for(const dx of [-1.6,0,1.6])for(const dz of [-1.45,0,1.45])beds.push({x:x+dx,z:z+dz,w:1.58,d:1.43})
-      appendWholeFloorGarden({THREE,batch,low,spec:{beds,details:[],referenceFinish:true}})
+      appendOfficeGardenBed({THREE,batch,low,bed:{x,z,w,d},seed:side+z,organic:true})
       placements.push({id,kind:'garden',x,z,source:{x,z},bounds:{x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:1.6},interaction:'preview-only'})
     }
     // 既定点位的长椅会穿入伞桌、花箱或亭体，预览移至边缘；明确输出原/新坐标供 Trae 审核。
