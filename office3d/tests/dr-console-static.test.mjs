@@ -121,3 +121,10 @@ test('D-V1-R5 layout: sidebar opaque, narrow offset, network panel moved to KPI 
   assert.match(html, /grid-template-columns:minmax\(0,1fr\) 24%/)
   assert.match(html, /\.networkPanel\{position:relative;grid-column:2;grid-row:2\/span 2;/)
 })
+
+test('D-V2-C1-R1 无旧百分比 background-size（监控窗不再放大）', () => {
+  const html = read('dr-console.html')
+  assert.doesNotMatch(html, /\.sitePanel \.sceneThumb\{[^}]*background-size:\d+(\.\d+)?%/, 'sitePanel 不应再有百分比 background-size')
+  assert.doesNotMatch(html, /\.videoGrid \.sceneThumb:nth-child\([^)]*\)\{[^}]*background-size:\d+(\.\d+)?%/, 'videoGrid nth-child 不应再有百分比 background-size')
+  assert.doesNotMatch(html, /619\.26%|760%|648\.97%|696\.67%|627\.33%|1147\.56%/, '不应残留整图百分比抠图值')
+})

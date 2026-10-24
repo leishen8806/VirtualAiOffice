@@ -171,22 +171,27 @@ test('D-V2-C1 像素比对 + 五窗口尺寸/背景', { skip: chromium ? false :
     }
     // 五窗口非零尺寸 + 正确背景（5 视口）
     const views = [[1920, 1080], [1366, 768], [1024, 768], [600, 900], [390, 844]]
-    const camMap = { overview: 'dr-cam-site.jpg', d1: 'dr-cam-d1.jpg', d3: 'dr-cam-d3.jpg', entry: 'dr-cam-entry.jpg', w1: 'dr-cam-w1.jpg' }
+    const camMap = { overview: ['dr-cam-site.jpg', 244, 109], d1: ['dr-cam-d1.jpg', 124, 60], d3: ['dr-cam-d3.jpg', 124, 60], entry: ['dr-cam-entry.jpg', 124, 70], w1: ['dr-cam-w1.jpg', 124, 70] }
     for (const [w, h] of views) {
       await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(200)
       const cams = await page.evaluate((map) => {
         const r = []
-        for (const [cls, file] of Object.entries(map)) {
+        for (const [cls, [file, iw, ih]] of Object.entries(map)) {
           const el = document.querySelector('.camera-' + cls)
-          if (!el) { r.push({ cls, size: 0, bg: '' }); continue }
+          if (!el) { r.push({ cls, size: 0, bg: '', bs: '', ratio: 0 }); continue }
           const rect = el.getBoundingClientRect()
-          r.push({ cls, size: rect.width * rect.height, bg: getComputedStyle(el).backgroundImage })
+          const cs = getComputedStyle(el)
+          const s = Math.max(rect.width / iw, rect.height / ih)
+          const ratio = (rect.width * rect.height) / (iw * s * ih * s)
+          r.push({ cls, size: rect.width * rect.height, bg: cs.backgroundImage, bs: cs.backgroundSize, ratio })
         }
         return r
       }, camMap)
       for (const c of cams) {
         assert.ok(c.size > 0, `${w}x${h} ${c.cls} 窗口应有非零尺寸`)
-        assert.ok(c.bg.includes(camMap[c.cls]), `${w}x${h} ${c.cls} 背景应为 ${camMap[c.cls]}（实测 ${c.bg.slice(0, 60)}）`)
+        assert.ok(c.bg.includes(camMap[c.cls][0]), `${w}x${h} ${c.cls} 背景应为 ${camMap[c.cls][0]}（实测 ${c.bg.slice(0, 60)}）`)
+        assert.ok(c.bs.includes('cover'), `${w}x${h} ${c.cls} background-size 应为 cover（实测 ${c.bs}）`)
+        assert.ok(c.ratio >= 0.5, `${w}x${h} ${c.cls} 可见图像比例应 ≥0.5（实测 ${c.ratio.toFixed(3)}）`)
       }
     }
     await ctx.close()
