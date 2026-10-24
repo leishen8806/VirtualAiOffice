@@ -4,13 +4,13 @@
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `VIS3-TEST-FIX5-windows-econnreset-tree-tests.md`（Windows ECONNRESET、工作树三种自测、守卫改坏时的真实连接、P3 收尾） | `qa/vis3-test-infra`，从 `bc43d72` 继续 | **立即开始** |
+| **1** | `VIS3-TEST-FIX6-tree-isolation-test-and-hook-gate.md`（第三种工作树自测；测试放行接口只在自测中可用，约 1 小时） | `qa/vis3-test-infra`，从 `95dab74` 继续 | **立即开始** |
 
 说明：
 
 - 已交付且复审完成、无需再做：
+  - `VIS3-TEST-FIX2`～`FIX5`：FIX5 有条件通过，本卡收尾；
   - `D-V2-C1` / `D-V2-C1-R1`：中控台于 `2d300ae` 验收通过；
-  - `D-V1-R2`～`D-V1-R6`；
-  - `VIS3-TEST-FIX2`～`VIS3-TEST-FIX4`：已出 FIX5。
+  - `D-V1-R2`～`D-V1-R6`。
 - `DS-1`～`DS-8` 由其他派发人跟进，不在本文件范围内。
 - 所有测试与浏览器运行带资源上限；空闲内存不足时把全量测试 / 端到端记为 NOT_RUN 并说明，不要硬跑。
