@@ -4,12 +4,12 @@
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `D-V2-C1-site-and-camera-crops.md`（中控台园区实景窗与 4 个监控窗，从参考整图裁局部） | `vis-align/console-v1`，从 `9b783e6` 继续 | **立即开始** |
-| 2 | `VIS3-TEST-FIX3-net-guard-windows.md`（测试框架：net 层守卫、Windows 自测、守卫有效性、资源上限） | `qa/vis3-test-infra`，从 `9d577f5` 继续 | D-V2-C1 推送后再做 |
+| **1** | `D-V2-C1-R1-narrow-camera-scaling.md`（窄屏监控窗被旧百分比规则放大：删除旧规则 + 补测试，约 1 小时） | `vis-align/console-v1`，从 `16c8364` 继续 | **立即开始** |
+| 2 | `VIS3-TEST-FIX3-net-guard-windows.md`（测试框架：net 层守卫、Windows 自测、守卫有效性、资源上限） | `qa/vis3-test-infra`，从 `9d577f5` 继续 | D-V2-C1-R1 推送后再做 |
 
 说明：
 
-- D-V2-C1 卡里写的"排在 FIX3 之后"以本文件为准，改为先做 D-V2-C1。两卡没有文件交叉，分别在各自分支提交。
-- 已交付且复审完成、无需再做：`D-V1-R2`～`D-V1-R6`（D-V1 首屏已于 `9b783e6` 验收通过）、`VIS3-TEST-FIX2`（已出 FIX3）。
+- 两卡没有文件交叉，分别在各自分支提交。
+- 已交付且复审完成、无需再做：`D-V2-C1`（已出 R1）、`D-V1-R2`～`D-V1-R6`（D-V1 首屏已于 `9b783e6` 验收通过）、`VIS3-TEST-FIX2`（已出 FIX3）。
 - `DS-1`～`DS-8` 由其他派发人跟进，不在本文件范围内。
 - 所有测试与浏览器运行带资源上限；空闲内存不足时把全量测试 / 端到端记为 NOT_RUN 并说明，不要硬跑。
