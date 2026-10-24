@@ -77,3 +77,55 @@ test('D-V1-R5 几何验收（1920/1366/1024）', { skip: chromium ? false : 'pla
     await browser.close(); server.close()
   }
 })
+
+test('D-V1-R6 窄屏无空洞 + 1366 KPI 副标题不截断', { skip: chromium ? false : 'playwright 不可用，NOT_RUN' }, async () => {
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x'); const f = path.normalize(path.join(ROOT, decodeURIComponent(u.pathname)))
+    if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end() }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res)
+  })
+  await new Promise((r) => server.listen(0, '127.0.0.1', r))
+  const BASE = `http://127.0.0.1:${server.address().port}`
+  const browser = await chromium.launch({ headless: true, channel: 'chrome' }).catch(() => chromium.launch({ headless: true }))
+  try {
+    // 窄屏无空洞
+    for (const vp of [{ w: 600, h: 900 }, { w: 390, h: 844 }]) {
+      const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 1 })
+      const page = await ctx.newPage()
+      await page.goto(BASE + '/dr-console.html', { waitUntil: 'load', timeout: 45000 })
+      await page.waitForFunction(() => document.querySelectorAll('#kpis .card').length === 8, null, { timeout: 45000 })
+      await page.waitForTimeout(300)
+      const m = await page.evaluate(() => {
+        const hero = document.querySelector('.hero').getBoundingClientRect()
+        const pan = document.querySelector('.panorama').getBoundingClientRect()
+        const mode = document.querySelector('.modeStrip').getBoundingClientRect()
+        const site = document.querySelector('.sitePanel').getBoundingClientRect()
+        const deepest = Math.max(pan.bottom, mode.bottom, site.bottom)
+        const gap = site.top - Math.max(pan.bottom, mode.bottom)
+        return {
+          heroBottomGap: hero.bottom - deepest,
+          siteFullWidth: site.left <= hero.left + 1 && site.right >= hero.right - 1,
+          siteTopGap: gap,
+        }
+      })
+      const label = `${vp.w}x${vp.h}`
+      assert.ok(m.heroBottomGap <= 16, label + ' hero 底边应不超过最底可见元素 +16px（实测 ' + m.heroBottomGap.toFixed(1) + '）')
+      assert.ok(m.siteFullWidth, label + ' 园区实景面板应覆盖整行（无空洞）')
+      assert.ok(m.siteTopGap <= 50, label + ' 主图底到面板顶间距应 <50px（实测 ' + m.siteTopGap.toFixed(1) + '）')
+      await ctx.close()
+    }
+    // 1366 KPI 副标题不截断
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 })
+      const page = await ctx.newPage()
+      await page.goto(BASE + '/dr-console.html', { waitUntil: 'load', timeout: 45000 })
+      await page.waitForFunction(() => document.querySelectorAll('#kpis .card').length === 8, null, { timeout: 45000 })
+      await page.waitForTimeout(300)
+      const subs = await page.evaluate(() => [...document.querySelectorAll('#kpis .card .sub')].map((el) => ({ text: el.textContent, clipped: el.scrollWidth > el.clientWidth + 1, sw: el.scrollWidth, cw: el.clientWidth })))
+      for (const s of subs) assert.ok(!s.clipped, `KPI 副标题不应截断："${s.text}"（scrollWidth ${s.sw} > clientWidth ${s.cw}）`)
+      await ctx.close()
+    }
+  } finally {
+    await browser.close(); server.close()
+  }
+})
