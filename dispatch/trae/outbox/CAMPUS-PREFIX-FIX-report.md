@@ -19,10 +19,11 @@
 
 | 变异 | 结果 |
 | --- | --- |
-| `ENVELOPE.x0` 从 `-44` 改为 `-43` | 失败：`all pre-S2-3 exports keep values and source prefix`，`false !== true`。 |
+| `LAYOUT_V1_DATA` 内 `ENVELOPE, MAIN_FLOOR_X0` 改为 `ENVELOPE,  MAIN_FLOOR_X0` | 失败：`all pre-S2-3 exports keep values and source prefix`，`false !== true`。 |
+| V2 `market` 的 x0 从 `-34` 改为 `-33` | 失败：`all pre-S2-3 exports keep values and source prefix`，`false !== true`。 |
 | 在 `regionFocusOf` 导出行尾添加临时注释 | 通过：`8/8`。 |
 
-这证明旧 `LAYOUT_V1` 源码仍逐字守护，而已授权的 `regionFocusOf` 行被正确放行。
+这证明 `LAYOUT_V1_DATA` 与 V2 的旧源码仍逐字守护，而已授权的 `regionFocusOf` 行被正确放行。
 
 ## 测试
 
