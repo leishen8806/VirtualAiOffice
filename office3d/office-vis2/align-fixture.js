@@ -1,7 +1,7 @@
 import { LAYOUT_V3 } from '../office-layout.js'
 
-export function islandAlignFixture() {
-  return { ...LAYOUT_V3, island: { ...LAYOUT_V3.island, barOuter: 3.5 }, bar: { ...LAYOUT_V3.bar, radius: 6 } }
+export function islandAlignFixture(sofaOuter = 5.8) {
+  return { ...LAYOUT_V3, island: { ...LAYOUT_V3.island, barOuter: 3.5, sofaOuter }, bar: { ...LAYOUT_V3.bar, radius: 6 } }
 }
 
 // 方案甲 83ecc1b；仅用于独立预览，不登记真实工位或替换主场景布局。

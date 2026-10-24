@@ -4,11 +4,12 @@ import { buildOfficeIsland } from '../office-island.js'
 import { createOfficeVis2Controller } from './sample.js'
 import { initialQuality, cappedDpr, renderLimit } from '../quality.js'
 import { buildOfficePreviewContext, disposePreviewAssets } from './preview-context.js'
+import { validateIslandRings } from '../office-bar-geometry.js'
 import { islandAlignFixture } from './align-fixture.js'
 import { buildAlignOpenPreview } from './align-preview.js'
 
 const query = new URLSearchParams(location.search), alignFixture = query.getAll('islandFixture').length === 1 && query.get('islandFixture') === 'align'
-const layout = alignFixture ? islandAlignFixture() : LAYOUT_V3
+let layout = alignFixture ? islandAlignFixture() : LAYOUT_V3
 
 const scene = new THREE.Scene(), root = new THREE.Group(), renderer = new THREE.WebGLRenderer({ antialias: true })
 scene.background = new THREE.Color('#F4F1EA'); scene.add(root)
@@ -30,6 +31,7 @@ function draw() {
   if (disposed || document.hidden) return
   officeContext?.onFrame(camera)
   renderer.render(scene, camera)
+  if (alignFixture) { const check = validateIslandRings(layout); document.querySelector('#ring-check').textContent = `沙发中心 ${layout.island.sofaOuter}m · 外沿 ${check.sofaOuterEdge.toFixed(3)}m · ${check.ok ? 'PASS（路线待接线验收）' : check.errors.join(' / ')}` }
   const s = enabled ? controller.summary() : legacy.summary()
   document.querySelector('#metrics').textContent = `${enabled ? 'VIS2-O 样板' : 'B0 原岛台'} · ${tier} · 模块 ${s.calls} calls / ${Math.round(s.triangles)} 三角形 · 整页 ${renderer.info.render.calls} calls（含当前阴影）`
 }
@@ -69,7 +71,7 @@ async function rebuild() {
   key.castShadow = !low
   const shadowSize = tier === 'high' ? 2048 : 1024
   if (key.shadow.mapSize.x !== shadowSize) { key.shadow.map?.dispose(); key.shadow.map = null; key.shadow.mapSize.set(shadowSize, shadowSize) }
-  legacy = buildOfficeIsland({ THREE, root, layout: LAYOUT_V3, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex, floorY: .092 })
+  legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex, floorY: .092 })
   if (alignFixture) { openPreview = buildAlignOpenPreview({ THREE, root, low }); openPreview.root.visible = view === 'open' }
   enabled = false; if (reopen) await enter(); else draw()
   if (contextOpen && previewAssets && enabled) { mountContext(); setView(view) }
@@ -93,7 +95,7 @@ async function probe() {
     window.__vis2.lastProbe = result; return result
   } finally { probing = false }
 }
-const click = async event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) { if (contextPoses[b.dataset.view]) await showOffice(); if (!contextPoses[b.dataset.view] || officeContext) setView(b.dataset.view) } if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe() }
+const click = async event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) { if (contextPoses[b.dataset.view]) await showOffice(); if (!contextPoses[b.dataset.view] || officeContext) setView(b.dataset.view) } if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe(); if (b.id === 'sofa-fixture') { layout = islandAlignFixture(layout.island.sofaOuter === 5.8 ? 5.45 : 5.8); await rebuild(); setView(view) } }
 const visibility = () => { probeEpoch++; if (!document.hidden) draw() }
 const dispose = () => { if (disposed) return; disposed = true; probeEpoch++; clearContext(); openPreview?.dispose(); controller.dispose(); legacy.dispose(); groundGeometry.dispose(); groundMaterial.dispose(); key.shadow.map?.dispose(); renderer.dispose(); removeEventListener('resize', resize); document.removeEventListener('click', click); document.removeEventListener('visibilitychange', visibility) }
 await rebuild(); setView(view); resize(); addEventListener('resize', resize); document.addEventListener('click', click); document.addEventListener('visibilitychange', visibility)
@@ -103,6 +105,7 @@ window.__vis2 = { renderer, scene, root, camera, poses, contextPoses, setView, e
 if (alignFixture) {
   document.querySelector('#fixture-note').textContent = 'V3-A2P 独立夹具 · 台身 3.5m / 碰撞 6m · 开放区灰桌仅为 6 个工位占位，非新增工位；绿色为 1.4m 通道'
   document.querySelector('#open-fixture').hidden = false
+  document.querySelector('#sofa-fixture').hidden = false
   for (const selector of ['#office', '[data-view="reference"]', '[data-view="plaza"]']) document.querySelector(selector).hidden = true
   await enter()
 } else if (query.getAll('vis2').length === 1 && query.get('vis2') === '1') await enter()

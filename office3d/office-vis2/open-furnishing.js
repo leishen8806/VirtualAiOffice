@@ -1,4 +1,5 @@
 import { createSampleBatch } from './batch.js'
+import { officeLeafGeometry } from './plants.js'
 
 const overlaps = (a, b, gap = 0) => a.x1 + gap > b.x0 && a.x0 - gap < b.x1 && a.z1 + gap > b.z0 && a.z0 - gap < b.z1
 const rect = b => ['x0', 'x1', 'z0', 'z1'].every(k => Number.isFinite(b?.[k])) && b.x1 > b.x0 && b.z1 > b.z0
@@ -8,23 +9,43 @@ export function planOpenFurnishing({ area, workstations, corridors }) {
   if (!rect(area) || !Array.isArray(workstations) || !Array.isArray(corridors) || !corridors.length ||
     workstations.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.z) || !Number.isFinite(p.radius) || p.radius < .6) ||
     corridors.some(b => !rect(b) || Math.min(b.x1 - b.x0, b.z1 - b.z0) < 1.2 - 1e-9)) throw new TypeError('Invalid open area, workstation clearance or 1.2m corridor')
-  const placements = [], skipped = []
-  const specs = [['table', 2, 3.2, 1.2, .83], ['cabinet', 3, 1.6, .5, .78], ['plant', 4, 1, 1, 1.15], ['partition', 3, 1.6, .22, 1.15]]
-  for (const [kind, count, w, d, height] of specs) for (let n = 0; n < count; n++) {
+  const placements = [], skipped = [], groups = []
+  const templates = [
+    { id: 'shared-table', template: 'shared-table-island', count: 2, members: [
+      ['table', 0, .225, 3.2, 1.2, .83], ['partition', 0, -.64, 1.6, .22, 1.15],
+      ['cabinet', -1.95, .225, .5, 1.2, .78], ['cabinet', 1.95, .225, .5, 1.2, .78],
+    ] },
+    { id: 'green-edge', template: 'plant-edge', count: 4, members: [['plant', 0, 0, 1, 1, 1.5]] },
+  ]
+  for (const t of templates) for (let n = 0; n < t.count; n++) {
+    const id = `${t.id}-${n + 1}`, candidates = []
+    if (t.template === 'plant-edge') {
+      for (const z of [area.z0 + .8, area.z1 - .8]) for (const x of [area.x0 + .8, area.x1 - .8]) candidates.push([x, z])
+      for (const c of corridors) for (const z of [c.z0 - .8, c.z1 + .8]) for (const x of [c.x0 - .8, c.x1 + .8]) candidates.push([x, z])
+    } else for (let z = area.z0; z <= area.z1; z += .25) for (let x = area.x0; x <= area.x1; x += .25) candidates.push([x, z])
     let placed = false
-    for (let z = area.z0 + .3 + d / 2; !placed && z <= area.z1 - .3 - d / 2; z += .5) {
-      for (let x = area.x0 + .3 + w / 2; x <= area.x1 - .3 - w / 2; x += .5) {
-        const bounds = { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: height }
-        if (corridors.some(c => overlaps(bounds, c)) || placements.some(p => overlaps(bounds, p.bounds, 1.2)) || workstations.some(p => {
+    for (const [cx, cz] of candidates) {
+      const members = t.members.map(([kind, dx, dz, w, d, height], i) => {
+        const x = cx + dx, z = cz + dz
+        return { id: `${id}-${kind}-${i + 1}`, groupId: id, kind, x, z, w, d, height,
+          bounds: { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: height } }
+      })
+      const bounds = { x0: Math.min(...members.map(p => p.bounds.x0)), x1: Math.max(...members.map(p => p.bounds.x1)),
+        z0: Math.min(...members.map(p => p.bounds.z0)), z1: Math.max(...members.map(p => p.bounds.z1)) }
+      // 长桌前侧 .6m 使用空间随整组避让；不是新增业务席位。
+      if (t.template === 'shared-table-island') bounds.z1 += .61
+      if (bounds.x0 < area.x0 + .3 || bounds.x1 > area.x1 - .3 || bounds.z0 < area.z0 + .3 || bounds.z1 > area.z1 - .3 ||
+        corridors.some(c => overlaps(bounds, c)) || groups.some(g => overlaps(bounds, g.groupBounds, 1.2)) || workstations.some(p => {
           const dx = Math.max(bounds.x0 - p.x, 0, p.x - bounds.x1), dz = Math.max(bounds.z0 - p.z, 0, p.z - bounds.z1)
           return Math.hypot(dx, dz) < p.radius + .6
         })) continue
-        placements.push({ id: `open-${kind}-${n + 1}`, kind, x, z, w, d, height, bounds }); placed = true; break
-      }
+      placements.push(...members); groups.push({ id, template: t.template, memberIds: members.map(p => p.id), groupBounds: bounds,
+        ...(t.template === 'shared-table-island' ? { useSpace: { x0: cx - 1.6, x1: cx + 1.6, z0: cz + .835, z1: cz + 1.435 } } : {}) })
+      placed = true; break
     }
-    if (!placed) skipped.push(`open-${kind}-${n + 1}`)
+    if (!placed) skipped.push(id)
   }
-  return { placements, skipped, corridors: corridors.map(c => ({ ...c })) }
+  return { placements, skipped, groups, corridors: corridors.map(c => ({ ...c })) }
 }
 
 export function buildOpenFurnishing({ THREE, root, area, workstations, corridors, low = false, assets }) {
@@ -48,7 +69,7 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
       box(w, .68, d - .03, '#F4F1EA', x, .4, z, 'wood')
       box(w, .04, d, '#C9A57A', x, .76, z, 'wood')
       box(w - .16, .06, d - .12, '#756857', x, .03, z)
-      for (const dx of [-.4, .4]) box(low ? .025 : .035, .2, .015, '#B89B64', x + dx, .46, z + d / 2 - .0075)
+      for (const dx of [-w / 4, w / 4]) box(low ? .025 : .035, .2, .015, '#B89B64', x + dx, .46, z + d / 2 - .0075)
     } else if (p.kind === 'partition') {
       box(w, 1.05, .08, '#B7C2B4', x, .625, z, 'fabric')
       for (const dx of [-.65, .65]) { box(.045, 1.15, .045, '#B89B64', x + dx, .575, z); box(.12, .025, d, '#756857', x + dx, .0125, z) }
@@ -58,8 +79,7 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
       for (let i = 0; i < (low ? 6 : 12); i++) {
         const a = i * 2.399, h = .55 + (i % 4) * .13
         put(new THREE.CylinderGeometry(.008, .012, h - .4, low ? 3 : 5), '#526448', [x, (.4 + h) / 2, z])
-        const g = new THREE.BufferGeometry(), points = [0,0,0, .12,.12,.18, 0,.2,.4, -.12,.12,.18], indices = [0,1,2,0,2,3,2,1,0,3,2,0]
-        g.setAttribute('position', new THREE.Float32BufferAttribute(points, 3)); g.setIndex(indices); g.computeVertexNormals(); g.rotateY(a)
+        const g = officeLeafGeometry(THREE, a, .32, low ? 3 : 7)
         put(g, i % 4 ? '#4D6A46' : '#708650', [x, h, z], .76)
       }
     }
@@ -68,7 +88,7 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
   }
   const built = batch.build(root, 'open-furnishing-static')
   // 包围盒覆盖全部细节；宿主以后注册这些盒，本卡没有 collision.add。
-  return { root: built.mesh, placements: plan.placements, skipped: plan.skipped, corridors: plan.corridors,
+  return { root: built.mesh, placements: plan.placements, groups: plan.groups, skipped: plan.skipped, corridors: plan.corridors,
     colliders: plan.placements.map(p => ({ id: p.id, ...p.bounds })),
     summary: () => ({ calls: plan.placements.length ? 1 : 0, triangles: built.triangles(), components: plan.placements.length, low }), dispose: built.dispose }
 }

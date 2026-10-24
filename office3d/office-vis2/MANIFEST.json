@@ -88,7 +88,7 @@
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "7BE2A42E12E8FA537FFFDC4C8A6BDA7ADC4A6653B4D7B9119819DD57F0F597CE",
+      "sha256": "4C56BBAF42F4458E0A929FF99E632E56D16A1512BA23FABCA3ECE211F841E3CA",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -102,7 +102,7 @@
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "5F31779E2EA8F13B633C8F8BBD87AC68BE30EF3E73A125EA2B273F1BE241BA7A",
+      "sha256": "3B85D47E03C27B77694A54C984D9C54BFD6105F41A795821B4C04F8EBA881536",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -116,7 +116,7 @@
     },
     {
       "file": "office-vis2/brand.js",
-      "sha256": "3B762B372500740910A61BC9FB1B8DA96937332FDB263C9D085C6C59A7FA3D63",
+      "sha256": "964268740E5E2DF0B610E15F6D70967EA3CCB93A5B50ABC5852F0FCC7F406127",
       "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
       "license": "Repository MIT for the source code; logo provenance remains recorded separately",
       "photographicTexture": false
@@ -175,7 +175,7 @@
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "724A4B9BC91B9F538D35F6B923986B1D27080686037B927691312775C792A70F"
+      "sha256": "DBB0351579706B3CB909F837CFB52B6996EAF749ADF141B4CA0969746EF4C02B"
     }
   ],
   "excluded": {
