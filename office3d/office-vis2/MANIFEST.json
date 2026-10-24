@@ -183,6 +183,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "594F1FE34EE6841E38CE26D53F689C26FEE0875E943A3F4FA0EA55FEA932346B"
+    },
+    {
+      "file": "office-vis2/display-finish.js",
+      "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "39FB4ED31F38436DEC7753AE96CDB5875337822B1940452E60EF4474A21C7892"
     }
   ],
   "excluded": {

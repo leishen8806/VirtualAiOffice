@@ -5,7 +5,7 @@ import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
 import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
 import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
 import { buildOfficePlazaHost } from './office-vis2/plaza-host.js'
-import { buildDisplayDepartments } from './display-departments.js'
+import { buildOfficeDisplayFinish as buildDisplayDepartments } from './office-vis2/display-finish.js'
 import { buildDisplayStaff } from './display-staff.js'
 
 const pendingModule = name => ({
