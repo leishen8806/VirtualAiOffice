@@ -65,6 +65,18 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
     batch.add(g, color, position, 0, roughness, 0, grain)
   }
   const box = (w, h, d, color, x, y, z, grain = '') => put(new THREE.BoxGeometry(w, h, d), color, [x, y, z], .75, grain)
+  const cushion = (w, h, d, color, x, y, z) => {
+    if (low) { box(w, h, d, color, x, y, z, 'fabric'); return }
+    // 倒角向内预留尺寸，软包仍落在原占地与坐高内。
+    const bevel = Math.min(.018, w / 8, h / 8, d / 8), a = w / 2 - bevel, b = d / 2 - bevel, r = Math.min(.09, w / 4, d / 4) - bevel
+    const s = new THREE.Shape()
+    s.moveTo(-a + r, -b); s.lineTo(a - r, -b); s.quadraticCurveTo(a, -b, a, -b + r)
+    s.lineTo(a, b - r); s.quadraticCurveTo(a, b, a - r, b)
+    s.lineTo(-a + r, b); s.quadraticCurveTo(-a, b, -a, b - r)
+    s.lineTo(-a, -b + r); s.quadraticCurveTo(-a, -b, -a + r, -b)
+    const g = new THREE.ExtrudeGeometry(s, {depth:h - 2 * bevel, steps:1, bevelEnabled:true, bevelSize:bevel, bevelThickness:bevel, bevelSegments:1, curveSegments:3})
+    g.rotateX(-Math.PI / 2); put(g, color, [x, y - h / 2 + bevel, z], .96, 'fabric')
+  }
   for (const p of plan.placements) {
     measured = new THREE.Box3()
     const firstVertex = batch.triangles() * 3
@@ -78,12 +90,14 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
       box(w, .68, d - .03, '#F4F1EA', x, .4, z, 'wood')
       box(w, .04, d, '#C9A57A', x, .76, z, 'wood')
       box(w - .16, .06, d - .12, '#756857', x, .03, z)
+      for (const dx of [-w / 4, w / 4]) box(w / 2 - .022, .59, .015, '#D9C9AE', x + dx, .405, z + d / 2 - .0165, 'wood')
       for (const dx of [-w / 4, w / 4]) box(low ? .025 : .035, .2, .015, '#B89B64', x + dx, .46, z + d / 2 - .0075)
       if (p.kind === 'planter-cabinet') {
         box(w-.06,.12,d-.06,'#D9D3C6',x,.86,z,'stone')
+        box(w-.12,.015,d-.12,'#554B3E',x,.9275,z)
         for (let i=0;i<(low?6:12);i++) {
           const leaf=officeLeafGeometry(THREE,i*2.399,.16,low?3:7)
-          put(leaf,i%3?'#426344':'#718651',[x,.94+(i%3)*.07,z+(i%2?-.12:.12)])
+          put(leaf,i%3?'#426344':'#718651',[x + (w > .8 ? (i % 3 - 1) * (w / 2 - .19) : 0),.94+(i%3)*.07,z+(i%2?-.12:.12)])
         }
       }
     } else if (p.kind === 'desk-divider') {
@@ -98,9 +112,16 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
       put(new THREE.CylinderGeometry(r,r,.065,low ? 12 : 24),'#C9A57A',[x,top-.0325,z],.7,'wood')
       put(new THREE.CylinderGeometry(.08,.12,top-.065,8),'#B89B64',[x,(top-.065)/2,z],.55)
     } else if (p.kind === 'bench' || p.kind === 'chair') {
-      box(w,.16,d,'#506A5A',x,.4,z,'fabric')
-      if(p.facing==='east'||p.facing==='west')box(.09,.42,d,'#B7C2B4',x+(p.facing==='east'?-1:1)*(w/2-.045),.69,z,'fabric')
-      else box(w,.42,.09,'#B7C2B4',x,.69,z+(p.facing==='north'?1:-1)*(d/2-.045),'fabric')
+      box(w,.05,d,'#596455',x,.345,z)
+      const sideways = p.facing === 'east' || p.facing === 'west'
+      if (p.kind === 'bench') for (const side of [-1, 1]) cushion(w-.08,.11,d/2-.024,'#506A5A',x,.425,z+side*d/4)
+      else cushion(w-.08,.11,d-.08,'#506A5A',x,.425,z)
+      if(sideways)cushion(.09,.42,d,'#B7C2B4',x+(p.facing==='east'?-1:1)*(w/2-.045),.69,z)
+      else cushion(w,.42,.09,'#B7C2B4',x,.69,z+(p.facing==='north'?1:-1)*(d/2-.045))
+      for (const side of [-1, 1]) {
+        if (sideways) cushion(w-.09,.18,.09,'#7F937E',x,.55,z+side*(d/2-.045))
+        else cushion(.09,.18,d-.09,'#7F937E',x+side*(w/2-.045),.55,z)
+      }
       for (const dx of [-w/2+.08,w/2-.08]) for (const dz of [-d/2+.08,d/2-.08]) box(.045,.32,.045,'#B89B64',x+dx,.16,z+dz)
     } else {
       box(.86, .38, .86, '#D9D3C6', x, .19, z, 'stone')

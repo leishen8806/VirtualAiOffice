@@ -175,7 +175,7 @@
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "51C31ED9036A89999A28F430D7A056FF6C13D30FDFCCA33CC5A87A24B9CB85F3"
+      "sha256": "7B0638562A347125F71B6AB9CE532708F2AD8D37CA6346C9951BCA62BDCD2093"
     },
     {
       "file": "office-vis2/align-zones.js",
