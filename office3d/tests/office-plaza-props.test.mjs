@@ -96,6 +96,20 @@ test('low tier creates exactly two instanced calls and does not request canvas t
   module.dispose()
 })
 
+test('cafe umbrella opens downward: its highest point is centered over the pole', () => {
+  const root = new THREE.Group(), module = buildPlazaCafeSets({ THREE, root, low: false })
+  const mesh = visibleMeshes(module).find(item => item.name === 'office3-plaza-props-accent')
+  const positions = mesh.geometry.attributes.position
+  let top = -Infinity, radiusAtTop = Infinity
+  for (let index = 0; index < positions.count; index++) {
+    const x = positions.getX(index), y = positions.getY(index), z = positions.getZ(index)
+    if (y > top + 1e-4) { top = y; radiusAtTop = Math.hypot(x + 7, z - 5) }
+    else if (Math.abs(y - top) <= 1e-4) radiusAtTop = Math.min(radiusAtTop, Math.hypot(x + 7, z - 5))
+  }
+  assert.ok(radiusAtTop < .1, 'umbrella vertex is above the center, not the rim')
+  module.dispose()
+})
+
 test('each category factory builds only its declared instances and disposes independently', () => {
   const cases = [
     [buildPlazaVendors, 'vendors', 3],

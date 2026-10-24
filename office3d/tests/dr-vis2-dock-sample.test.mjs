@@ -55,6 +55,19 @@ test('W-V1 月台样板没有实例越界、NaN 包围盒或托盘纸箱/车辆�
   for (let body = 0; body < vehicle.count; body++) for (let wheel = 0; wheel < wheels.count; wheel++) {
     assert.equal(overlap(instanceBox(sample.group, vehicle, body), instanceBox(sample.group, wheels, wheel)), false, `vehicle body ${body} does not intersect wheel ${wheel}`)
   }
+  for (let wheel = 0; wheel < 4; wheel++) {
+    const box = instanceBox(sample.group, wheels, wheel)
+    assert.ok(box.max.x - box.min.x < box.max.y - box.min.y, 'vehicle wheel width is narrower than its diameter')
+  }
+  const forklift = sample.group.getObjectByName('vis2-dock-forklift')
+  assert.ok(instanceBox(sample.group, forklift, 0).min.y <= .001, 'forklift body rests on the finished floor')
+  for (let wheel = 4; wheel < wheels.count; wheel++) assert.ok(instanceBox(sample.group, wheels, wheel).min.y <= .001, 'forklift wheels rest on the finished floor')
+  const number = sample.group.getObjectByName('vis2-dock-markings')
+  const wall = sample.group.getObjectByName('vis2-dock-wall')
+  const wallFront = instanceBox(sample.group, wall, 3).min.z
+  const labels = Array.from({ length: number.count }, (_, index) => instanceBox(sample.group, number, index)).filter(box => box.min.y > 3)
+  assert.ok(labels.length >= 15, 'door labels contain readable seven-segment geometry')
+  assert.ok(labels.every(box => wallFront - box.max.z <= .005 && wallFront - box.max.z >= 0), 'door number backs sit against the wall')
   assert.equal(summary.batches['vis2-dock-dark-details'].count, 3)
   assert.equal(summary.batches['vis2-dock-dark-details'].capacity, 9)
 })
@@ -68,7 +81,7 @@ test('W-V1 月台样板遵守地坪基准、阴影、资源预算和可释放生
   assert.equal(summary.resources.animationLoops, 0)
   assert.equal(summary.resources.businessRequests, 0)
   assert.equal(summary.resources.textures, 0)
-  assert.ok(summary.calls <= 12)
+  assert.ok(summary.calls <= 10)
   assert.ok(summary.triangles > 0 && summary.triangles <= 6000)
   for (const node of sample.group.children.filter(node => node.isMesh)) assert.equal(node.castShadow && node.receiveShadow, true, `${node.name} participates in shadows`)
   assert.equal(root.getObjectByName('vis2-dock-sample'), sample.group)

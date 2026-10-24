@@ -173,7 +173,7 @@ function buildSelection({ THREE, root, canvasTex, low = false, placements = PLAZ
     put(p, cylinder(.76, .76, .09, low ? 10 : 20), 'solid', palette.wood, 0, .78, 0)
     put(p, cylinder(.06, .08, .75, 8), 'metal', palette.dark, 0, .38, 0)
     put(p, cylinder(.055, .07, 2.5, 8), 'metal', palette.dark, 0, 2, 0)
-    put(p, cone(1.85, .52, low ? 10 : 24), 'accent', palette.white, 0, 3.15, 0, 1, 1, 1, Math.PI, 0, 0)
+    put(p, cone(1.85, .52, low ? 10 : 24), 'accent', palette.white, 0, 3.15, 0)
     const seats = low ? 3 : 4
     for (let i = 0; i < seats; i++) {
       const a = i * Math.PI * 2 / seats, x = Math.cos(a) * 1.35, z = Math.sin(a) * 1.35
