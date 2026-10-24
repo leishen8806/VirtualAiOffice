@@ -103,3 +103,17 @@ test('hero campus image content matches INDEX and is not the section image', () 
   assert.match(html, /dr-campus-hero\.jpg/)
   assert.doesNotMatch(html, /\.panorama\{[^}]*dr-cam-overview\.webp/)
 })
+
+test('D-V1-R4 layout: sidebar opaque, narrow panorama offset, KPI 76%, network panel 30%', () => {
+  const html = read('dr-console.html')
+  // 桌面侧栏完全不透明（隐藏参考图自带侧栏菜单）
+  assert.doesNotMatch(html, /#063758ed|#05192bee/, 'aside background must be opaque (no alpha)')
+  // 窄屏主图从参考图 x≈125 开始（偏移非 0）
+  assert.match(html, /\.panorama\{top:45px;height:250px;background-size:cover;background-position:-62px center\}/)
+  // KPI 行 ≥1600 收窄 76%
+  assert.match(html, /\.kpis\{width:76%\}/)
+  // 物流网络面板高度 30%
+  assert.match(html, /\.networkPanel\{position:absolute;right:0;top:0;width:24%;height:30%;z-index:3;/)
+  // 1024 段左对齐使 W1 标题牌可见
+  assert.match(html, /@media\(min-width:768px\) and \(max-width:1024px\)\{\.panorama\{background-position:left center\}\}/)
+})
