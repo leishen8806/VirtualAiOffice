@@ -1,6 +1,6 @@
 # W-RC-R1 货架单元接线修复报告
 
-基线：`integration/vis2-dr-rc1 @ b0d4c74f3632c6d8b2c0a19c97e2d528110c4fa3`  
+基线：`integration/vis2-dr-rc1 @ b0d4c74f3632c6d8b2c0a19c97e2d528110c4fa3`
 范围：货架生产接线、穿梭状态、完成面、专项回归与文档；未修改月台样板、办公室、中控台、共享布局或服务。
 
 ## 做到
