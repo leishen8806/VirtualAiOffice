@@ -147,7 +147,7 @@
       "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "A51F2567BDCC0B521EA79E61896D3B26496BE7FA9DA44D99028F68D19C60F14F"
+      "sha256": "8E1CAE13F9E433A8E1F4CA3AF47389D9429620C1A4BEC14F7012A9FDFEB46089"
     },
     {
       "file": "office-vis2/shell-finish.js",

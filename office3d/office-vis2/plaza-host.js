@@ -19,8 +19,10 @@ export function buildOfficePlazaHost({ THREE, root, layout, search, collision, l
     visual = batch.build(root, 'office-plaza-props')
     for (const placement of placements) {
       const b = placement.bounds, height = layout.variant === 'align' && placement.kind === 'vendors' ? b.y1 - b.y0 : Math.min(2, b.y1 - b.y0)
-      const proxy = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, height, b.z1 - b.z0), new THREE.MeshBasicMaterial())
-      proxy.position.set((b.x0 + b.x1) / 2, b.y0 + height / 2, (b.z0 + b.z1) / 2)
+      const corners = placement.footprint, edge = (a,c) => Math.hypot(c.x-a.x,c.z-a.z)
+      const proxy = new THREE.Mesh(new THREE.BoxGeometry(corners ? edge(corners[0],corners[1]) : b.x1-b.x0, height, corners ? edge(corners[1],corners[2]) : b.z1-b.z0), new THREE.MeshBasicMaterial())
+      proxy.position.set(corners ? corners.reduce((s,p)=>s+p.x,0)/4 : (b.x0+b.x1)/2, b.y0+height/2, corners ? corners.reduce((s,p)=>s+p.z,0)/4 : (b.z0+b.z1)/2)
+      if (corners) proxy.rotation.y = -Math.atan2(corners[1].z-corners[0].z,corners[1].x-corners[0].x)
       proxy.name = placement.id; proxy.visible = false; proxy.userData.placement = placement
       root.add(proxy); proxies.push(proxy); collision.add(proxy, `plaza-${placement.kind}`)
     }
