@@ -1,39 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760" viewBox="0 0 1000 760" role="img" aria-labelledby="title desc">
-  <title id="title">办公室 V3 对齐方案俯视图</title>
-  <desc id="desc">四个角部展示办公室、中央直径十二米吧岛、四米环路、三片开放办公岛、前厅和广场。</desc>
-  <style>
-    .site{fill:#f8f4ec;stroke:#7d6950;stroke-width:3}.room{fill:#f1e5cf;stroke:#6f5d46;stroke-width:2}.open{fill:#dbe9df;stroke:#42785d;stroke-width:2;stroke-dasharray:6 4}.life{fill:#d9e8ef;stroke:#39738c;stroke-width:2;stroke-dasharray:6 4}.shared{fill:#e9e0ee;stroke:#765d82;stroke-width:2}.label{font:600 14px sans-serif;fill:#302b25;text-anchor:middle}.small{font:12px sans-serif;fill:#403a34;text-anchor:middle}.desk{fill:#3d6d86;stroke:#fff;stroke-width:1}.path{fill:none;stroke:#c79c53;stroke-width:18;stroke-linecap:round;opacity:.55}.ring{fill:none;stroke:#e1bd7a;stroke-width:42;opacity:.7}.island{fill:#b47a45;stroke:#66401f;stroke-width:2}.counter{fill:#d6b287;stroke:#745335;stroke-width:2}.plaza{fill:#e4d7bf;stroke:#967c59;stroke-width:3}.legend{font:13px sans-serif;fill:#302b25}
-  </style>
-  <rect width="1000" height="760" fill="#fffdf8"/>
-  <text x="500" y="28" class="label" font-size="20">V3 格局对齐方案（仅坐标方案，未实施）</text>
-  <g transform="translate(120 80) scale(12)">
-    <rect class="site" x="-28" y="-18" width="60" height="48"/>
-    <rect class="room" x="-28" y="-18" width="8" height="6"/><text class="small" x="-24" y="-15">市场</text>
-    <rect class="shared" x="-18.5" y="-18" width="10" height="7.5"/><text class="small" x="-13.5" y="-14">会议/决策</text>
-    <rect class="room" x="24" y="-18" width="8" height="6"/><text class="small" x="28" y="-15">客服</text>
-    <rect class="open" x="-28" y="-10.5" width="17.5" height="14.5"/><text class="small" x="-19.25" y="-3.5">运营·质量与安全</text>
-    <rect class="open" x="12.5" y="-10.5" width="19.5" height="14.5"/><text class="small" x="22.25" y="-3.5">产品·工程·知识</text>
-    <circle class="ring" cx="2" cy="-6" r="8"/>
-    <circle class="island" cx="2" cy="-6" r="6"/><circle class="counter" cx="2" cy="-6" r="3.5"/>
-    <text class="small" x="2" y="-6">Ø12 吧岛</text>
-    <rect class="room" x="-28" y="5.5" width="8" height="6"/><text class="small" x="-24" y="8.5">售后</text>
-    <rect class="shared" x="-18.5" y="5.5" width="8" height="6"/><text class="small" x="-14.5" y="8.5">休闲展示</text>
-    <rect class="life" x="12.5" y="5" width="10.5" height="7"/><text class="small" x="17.75" y="8.5">D.life 工坊</text>
-    <rect class="room" x="24" y="5.5" width="8" height="6"/><text class="small" x="28" y="8.5">营销</text>
-    <rect class="shared" x="-6" y="4" width="16" height="8"/><text class="small" x="2" y="8">前厅 16×8</text>
-    <circle class="plaza" cx="2" cy="21" r="9"/><text class="small" x="2" y="21">DR 广场 Ø18</text>
-    <path class="path" d="M2,30 L2,12"/>
-    <g class="desk">
-      <circle cx="14.5" cy="-8.5" r=".35"/><circle cx="18" cy="-8.5" r=".35"/><circle cx="14.5" cy="-5.5" r=".35"/><circle cx="18" cy="-5.5" r=".35"/>
-      <circle cx="23.5" cy="-8.5" r=".35"/><circle cx="26.5" cy="-8.5" r=".35"/><circle cx="29.5" cy="-8.5" r=".35"/><circle cx="23.5" cy="-5.5" r=".35"/><circle cx="26.5" cy="-5.5" r=".35"/><circle cx="29.5" cy="-5.5" r=".35"/><circle cx="14.5" cy="-1" r=".35"/>
-      <circle cx="-25" cy="-7.5" r=".35"/><circle cx="-21.5" cy="-7.5" r=".35"/><circle cx="-25" cy="-1" r=".35"/><circle cx="-21.5" cy="-1" r=".35"/><circle cx="-25" cy="2" r=".35"/><circle cx="-21.5" cy="2" r=".35"/>
-      <circle cx="14.5" cy="6.5" r=".35"/><circle cx="17" cy="6.5" r=".35"/><circle cx="19.5" cy="6.5" r=".35"/><circle cx="22" cy="6.5" r=".35"/><circle cx="14.5" cy="9.5" r=".35"/><circle cx="17" cy="9.5" r=".35"/><circle cx="19.5" cy="9.5" r=".35"/><circle cx="22" cy="9.5" r=".35"/>
-    </g>
+  <title id="title">V3 Layout Alignment Plan R2</title>
+  <desc id="desc">Coordinate mapping: px = 120 + (x + 28) * 12; py = 80 + (z + 18) * 12.</desc>
+  <style>.site{fill:#fbf7ee;stroke:#705f49;stroke-width:3}.open{fill:#d9ebe0;stroke:#3b7659;stroke-width:2}.room{fill:#eee0cb;stroke:#705b42;stroke-width:2}.display{fill:#e8dcec;stroke:#765583;stroke-width:2}.public{fill:#e7d7b9;stroke:#917453;stroke-width:2}.ring{fill:none;stroke:#ead19b;stroke-width:48;opacity:.65}.island{fill:none;stroke:#a26b3e;stroke-width:2}.counter{fill:#cfa77a;stroke:#694525;stroke-width:2}.label{font:600 12px Arial,sans-serif;fill:#29231d;text-anchor:middle}.small{font:11px Arial,sans-serif;fill:#342d25;text-anchor:middle}.work{fill:#237093;stroke:#fff;stroke-width:1}.seat{fill:#8d5f9b;stroke:#fff;stroke-width:1}.legend{font:13px Arial,sans-serif;fill:#322a22}</style>
+  <rect width="1000" height="760" fill="#fffdf8"/><text x="500" y="30" class="legend" text-anchor="middle" font-size="20">V3 Layout Alignment Plan R2</text>
+  <rect class="site" x="120" y="80" width="720" height="576"/>
+  <g class="label">
+    <rect class="display" x="120" y="80" width="96" height="72"/><text x="168" y="118">market</text><rect class="room" x="234" y="80" width="120" height="72"/><text x="294" y="118">board</text><rect class="open" x="606" y="80" width="96" height="72"/><text x="654" y="118">kb</text><rect class="display" x="744" y="80" width="96" height="72"/><text x="792" y="118">service</text>
+    <rect class="room" x="120" y="170" width="120" height="72"/><text x="180" y="208">review</text><rect class="room" x="258" y="170" width="96" height="72"/><text x="306" y="208">plan</text><rect class="open" x="606" y="170" width="108" height="108"/><text x="660" y="220">product</text><rect class="open" x="732" y="170" width="108" height="108"/><text x="786" y="220">eng</text>
+    <rect class="open" x="120" y="260" width="120" height="84"/><text x="180" y="302">ops</text><rect class="open" x="258" y="260" width="72" height="84"/><text x="294" y="302">quality</text><rect class="display" x="606" y="278" width="120" height="60"/><text x="666" y="312">creative</text><rect class="display" x="732" y="278" width="108" height="60"/><text x="786" y="312">dining</text>
+    <rect class="public" x="408" y="344" width="192" height="96"/><text x="504" y="394">foyer</text><rect class="display" x="120" y="362" width="96" height="72"/><text x="168" y="400">aftersales</text><rect class="display" x="234" y="362" width="96" height="72"/><text x="282" y="400">leisure</text><rect class="open" x="606" y="356" width="126" height="84"/><text x="669" y="400">drlife</text><rect class="display" x="744" y="362" width="96" height="72"/><text x="792" y="400">marketing</text>
   </g>
-  <g transform="translate(70 700)">
-    <rect x="0" y="-12" width="18" height="12" class="open"/><text x="26" y="-2" class="legend">开放办公岛</text>
-    <rect x="135" y="-12" width="18" height="12" class="room"/><text x="162" y="-2" class="legend">独立展示办公室</text>
-    <circle cx="330" cy="-6" r="7" class="desk"/><text x="344" y="-2" class="legend">真实工位（25）</text>
-    <line x1="500" x2="530" y1="-6" y2="-6" class="path"/><text x="545" y="-2" class="legend">4m 主入口轴</text>
-  </g>
+  <circle class="ring" cx="480" cy="224" r="96"/><circle class="island" cx="480" cy="224" r="72"/><circle class="counter" cx="480" cy="224" r="42"/><text class="small" x="480" y="224">r 3.5 / 6 / 10</text><circle class="public" cx="480" cy="548" r="108"/><text class="label" x="480" y="548">plaza</text>
+  <g class="work"><circle cx="654" cy="182" r="4"/><circle cx="696" cy="182" r="4"/><circle cx="654" cy="218" r="4"/><circle cx="696" cy="218" r="4"/><circle cx="762" cy="182" r="4"/><circle cx="798" cy="182" r="4"/><circle cx="834" cy="182" r="4"/><circle cx="762" cy="218" r="4"/><circle cx="798" cy="218" r="4"/><circle cx="834" cy="218" r="4"/><circle cx="654" cy="116" r="4"/><circle cx="156" cy="284" r="4"/><circle cx="198" cy="284" r="4"/><circle cx="276" cy="284" r="4"/><circle cx="312" cy="284" r="4"/><circle cx="276" cy="320" r="4"/><circle cx="312" cy="320" r="4"/><circle cx="654" cy="374" r="4"/><circle cx="684" cy="374" r="4"/><circle cx="714" cy="374" r="4"/><circle cx="744" cy="374" r="4"/><circle cx="654" cy="410" r="4"/><circle cx="684" cy="410" r="4"/><circle cx="714" cy="410" r="4"/><circle cx="744" cy="410" r="4"/></g>
+  <g class="seat"><circle cx="138" cy="116" r="4"/><circle cx="168" cy="116" r="4"/><circle cx="198" cy="116" r="4"/><circle cx="762" cy="116" r="4"/><circle cx="792" cy="116" r="4"/><circle cx="822" cy="116" r="4"/><circle cx="138" cy="392" r="4"/><circle cx="168" cy="392" r="4"/><circle cx="198" cy="392" r="4"/><circle cx="762" cy="392" r="4"/><circle cx="792" cy="392" r="4"/><circle cx="822" cy="392" r="4"/></g>
+  <text x="120" y="700" class="legend">green open; purple display; blue 25 workstations; purple dots 12 display seats</text>
 </svg>
