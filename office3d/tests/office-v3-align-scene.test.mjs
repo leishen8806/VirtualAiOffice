@@ -9,7 +9,7 @@ import {officeShellFinishSpec} from '../office-vis2/shell-finish.js'
 import {buildOfficeAlignedZones} from '../office-vis2/zone-finish.js'
 import {alignDoorAprons,alignPassages,alignFloorSpec} from '../office-vis2/align-zones.js'
 import {buildOfficeSampleHost} from '../office-vis2/host.js'
-import {barSpec,barGaps,barColliders,validateIslandRings} from '../office-bar-geometry.js'
+import {barSpec,barGaps,barArcs,barColliders,validateIslandRings} from '../office-bar-geometry.js'
 import {startOfficeV3} from '../office-v3-modules.js'
 import {createFurnitureCollision} from '../furniture-collision.js'
 
@@ -77,6 +77,21 @@ test('ALIGN host on/off uses the same 6m collision boundary, unchanged 3.5m coun
     finally{host.dispose()}
   }
   assert.deepEqual(validateIslandRings(ALIGN).errors,['SOFA_BEYOND_COLLISION'])
+})
+
+test('ALIGN collision corners stay within 6.3m without gaps in the annular sectors or closing the doors',()=>{
+  const boxes=barColliders(ALIGN),{center,radius,innerRadius,gapWidth}=barSpec(ALIGN)
+  const contains=(x,z)=>boxes.some(b=>x>=b.x0-1e-9&&x<=b.x1+1e-9&&z>=b.z0-1e-9&&z<=b.z1+1e-9)
+  assert.equal(boxes.length,64);assert.equal(new Set(boxes.map(b=>b.id)).size,64)
+  for(const b of boxes)for(const x of [b.x0,b.x1])for(const z of [b.z0,b.z1])assert.ok(Math.hypot(x-center.x,z-center.z)<=6.3)
+  for(const arc of barArcs(ALIGN))for(let i=0;i<=512;i++)for(const r of [innerRadius,3.5,4.2,5.8,radius]){
+    const a=arc.start+(arc.end-arc.start)*i/512
+    assert.ok(contains(center.x+Math.cos(a)*r,center.z+Math.sin(a)*r),'sector must retain coverage')
+  }
+  for(let x=-6.3;x<=6.3;x+=.1)for(const z of [-gapWidth/2+.001,0,gapWidth/2-.001])assert.equal(contains(center.x+x,center.z+z),false,'east/west opening retained')
+  const old=barColliders({...ALIGN,variant:undefined})
+  assert.equal(old.length,12)
+  assert.ok(Math.max(...old.flatMap(b=>[b.x0,b.x1].flatMap(x=>[b.z0,b.z1].map(z=>Math.hypot(x-center.x,z-center.z)))))>6.3,'old approximation is a failing control')
 })
 
 test('ALIGN real registry consumes resolved layout, exposes obstacles and marks display modules pending',async()=>{

@@ -41,9 +41,11 @@ export function barSeats(layout, low = false) {
 }
 export function barColliders(layout) {
   const { center, radius, innerRadius, gapWidth } = barSpec(layout)
-  return barArcs(layout).flatMap((arc, side) => Array.from({ length: 6 }, (_, index) => {
-    const a = arc.start + (arc.end - arc.start) * index / 6
-    const b = arc.start + (arc.end - arc.start) * (index + 1) / 6
+  // ALIGN r=6: <=π/32 angular steps keep AABB corners below 6.3m; stable V3 retains its exact boxes.
+  const segments = layout?.variant === 'align' ? 32 : 6
+  return barArcs(layout).flatMap((arc, side) => Array.from({ length: segments }, (_, index) => {
+    const a = arc.start + (arc.end - arc.start) * index / segments
+    const b = arc.start + (arc.end - arc.start) * (index + 1) / segments
     const angles = [a, b, ...[Math.PI / 2, Math.PI * 1.5].filter(v => v > a && v < b)]
     const points = angles.flatMap(angle => [innerRadius, radius].map(r => ({ x: center.x + Math.cos(angle) * r, z: center.z + Math.sin(angle) * r })))
     return { id: `office2-bar-collision-${side}-${index}`, x0: Math.min(...points.map(p => p.x)),

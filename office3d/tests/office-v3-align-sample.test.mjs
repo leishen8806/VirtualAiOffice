@@ -101,6 +101,8 @@ test('R1 sofa validation matches actual transformed vertices and rejects invalid
   const boundary=islandAlignFixture(5.45);delete boundary.bar.seats;boundary.island.stoolRadius=3.545+.28+.30
   assert.equal(validateIslandRings(boundary).ok,true)
   boundary.island.stoolRadius-=.001;assert.ok(validateIslandRings(boundary).errors.includes('STOOL_COUNTER_CLEARANCE'))
+  boundary.island.stoolRadius=3.545+.28+.25
+  assert.ok(validateIslandRings(boundary).errors.includes('STOOL_COUNTER_CLEARANCE'),'explicit .25m edge clearance must fail')
   const actual=islandAlignFixture(), clearance=Math.min(...barSeats(actual).map(p=>Math.hypot(p.x-2,p.z+6)))-.28-3.545
   assert.ok(clearance>=.30);close(clearance,.375)
   console.log('A2 approved fixture edge clearance',clearance)
