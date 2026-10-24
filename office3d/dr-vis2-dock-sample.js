@@ -35,7 +35,7 @@ export function createVis2DockSamplePlan(layout) {
       Object.freeze({ id: '02', x: centerX + 4.1, z: dockZ + 2.25, width: 4.8, height: 3.05 }),
     ]),
     truck: Object.freeze({ x: centerX - 4.1, z: dockZ - 3.25, width: 2.45, length: 5.6, height: 2.9, wheelRadius: .34 }),
-    rail: Object.freeze({ x0: centerX + 5.1, x1: centerX + 7.5, z: dockZ + .25, height: 1.05 }),
+    rail: Object.freeze({ x0: centerX + 6.5, x1: centerX + 7.7, z: dockZ + .25, height: 1.05 }),
     marking: Object.freeze({ x0: centerX - 7, x1: centerX + 6.6, z0: dockZ - 6.15, z1: dockZ - .25 }),
     cargo: Object.freeze({ x: centerX + 2.4, z: dockZ + 1.15 }),
     forklift: Object.freeze({ x: centerX + 5.2, z: dockZ - 2.35 }),
@@ -116,13 +116,13 @@ export function buildVis2DockSample({ THREE, root, layout, baseY = 0, quality = 
   const segment = (x, y, z, horizontal) => yellow.add(x, y, z, horizontal ? .18 : .05, horizontal ? .05 : .18, .01)
   const digit = (value, cx, y, z) => {
     const parts = { 0: 'abcedf', 1: 'bc', 2: 'abged', }
-    const points = { a: [0, .14, true], b: [.11, .07, false], c: [.11, -.07, false], d: [0, -.14, true], e: [-.11, -.07, false], f: [-.11, .07, false], g: [0, 0, true] }
+    const points = { a: [0, .14, true], b: [-.11, .07, false], c: [-.11, -.07, false], d: [0, -.14, true], e: [.11, -.07, false], f: [.11, .07, false], g: [0, 0, true] }
     for (const key of parts[value]) segment(cx + points[key][0], y + points[key][1], z, points[key][2])
   }
   for (const door of plan.doors) {
     const labelZ = wallZ - .14
-    digit(0, door.x - .13, door.height + top + .23, labelZ)
-    digit(door.id === '01' ? 1 : 2, door.x + .13, door.height + top + .23, labelZ)
+    digit(0, door.x + .13, door.height + top + .23, labelZ)
+    digit(door.id === '01' ? 1 : 2, door.x - .13, door.height + top + .23, labelZ)
   }
   // 白色厢式车：货箱与驾驶室分界明确，四个圆柱轮胎与车体不互穿。
   white.add(truck.x, 1.8, truck.z + .48, truck.width, 2.2, 3.82)
@@ -150,8 +150,8 @@ export function buildVis2DockSample({ THREE, root, layout, baseY = 0, quality = 
   const fork = plan.forklift
   forklift.add(fork.x, .325, fork.z, 1.35, .65, 1.55)
   forklift.add(fork.x, 1.22, fork.z + .35, .12, 1.12, .12)
-  forklift.add(fork.x, .5, fork.z - 1.02, .72, .07, .85)
-  for (const x of [-.5, .5]) for (const z of [-.52, .52]) wheels.add(fork.x + x, .16, fork.z + z, .16, .3, .16, 0, 0, Math.PI / 2)
+  forklift.add(fork.x, .5, fork.z - 1.2, .72, .07, .85)
+  for (const x of [-.85, .85]) for (const z of [-.52, .52]) wheels.add(fork.x + x, .16, fork.z + z, .16, .3, .16, 0, 0, Math.PI / 2)
   steel.add(fork.x, 1.58, fork.z + .35, .95, .08, .08)
 
   for (const batch of [concrete, wall, doors, white, dark, wheels, steel, yellow, timber, forklift]) {
