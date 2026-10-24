@@ -521,6 +521,7 @@ const V3_ALIGN_LAYOUT = {
   ...cloneLayoutData(V3_LAYOUT),
   version: 3,
   variant: 'align',
+  doors: { ...cloneLayoutData(V3_LAYOUT.doors), south: { x0: -1, x1: 5, z: 12, width: 6, height: 3.5 } },
   regions: V3_ALIGN_REGIONS,
   rooms: V3_ALIGN_REGIONS.filter(region => region.walled),
   seats: V3_ALIGN_SEATS,

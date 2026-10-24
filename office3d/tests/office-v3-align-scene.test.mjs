@@ -35,7 +35,8 @@ test('ALIGN walls have exactly one data-owned 1.5m opening in each of seven encl
     }
   }
   assert.equal(finish.solid.filter(p=>p.kind==='door-header').length,7)
-  assert.deepEqual(spec.outer,buildOfficeShellV3Spec(LAYOUT_V3).outer)
+  const originalOuter=buildOfficeShellV3Spec(LAYOUT_V3).outer.map(p=>p.side!=='south'?p:{...p,...(p.lo===LAYOUT_V3.envelope.x0?{hi:-1}:{lo:5})})
+  assert.deepEqual(spec.outer,originalOuter) // 仅南门按本次授权从4m加宽到6m，其余外墙保持不变。
 })
 
 test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of every rectangular path',()=>{

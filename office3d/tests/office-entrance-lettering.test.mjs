@@ -33,7 +33,7 @@ test('ALIGN wall and entrance lettering share one atlas and one draw without cha
       const surface = ray.intersectObject(paving.mesh)[0]; assert.ok(surface)
       for (let i = 4; i < 8; i++) {
         assert.ok(p.getY(i) - surface.point.y > .001 && p.getY(i) - surface.point.y < .003, 'actual paving clearance is 1–3mm')
-        assert.ok(p.getX(i) > layout.doors.south.x0 && p.getX(i) < layout.doors.south.x1, 'stays within the 4m entrance')
+        assert.ok(p.getX(i) > layout.doors.south.x0 && p.getX(i) < layout.doors.south.x1, 'stays within the data-owned entrance')
         assert.ok(p.getZ(i) >= layout.foyer.z1 + .59 && p.getZ(i) <= layout.foyer.z1 + 1.21)
         assert.ok(n.getY(i) > .999 && uv.getY(i) <= .5, 'floor is upward-facing with its own atlas cell')
       }

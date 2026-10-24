@@ -109,7 +109,7 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "91CBCDD24EE0FA88E10CFFFA866823368BB05C090C4C2BDCCB47AA6BE1818A6A",
+      "sha256": "82E7DDA911931BED188F0E1D4B97AB848A7D2CC70D62075274FB08823BAE1EEE",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "1629F3305353BD1AC482DF644F93C4AA8DA10441FDFD9D31AD3F1FA169132BD7",
+      "sha256": "64971DB8F4D1B922FA1FF06F4DBDCF03BACEF6D99335ED48B40F8F3F4277D6D5",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "1BFA0A5EDECD83F25A6953F852CD76E36051FD509DF22FA40A6F521BACAD991B"
+      "sha256": "45C9BBA99C78D604382AEADBCEEAE8DF895E1812F19E0A3B4674330E9F805E61"
     },
     {
       "file": "office-vis2/zone-finish.js",
