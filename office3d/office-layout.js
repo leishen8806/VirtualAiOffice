@@ -542,7 +542,7 @@ const V3_ALIGN_LAYOUT = {
     northMeetingBuffer: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
     westOpenLink: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
   },
-  island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
+  island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.45 },
   ring: { ...cloneLayoutData(V3_LAYOUT.ring), inner: 6, outer: 10, width: 4 },
   bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 6 },
   publicPathNodes: [

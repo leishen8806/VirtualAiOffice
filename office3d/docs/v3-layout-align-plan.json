@@ -7,7 +7,7 @@
     "barOuter": 3.5,
     "collisionRadius": 6,
     "stoolRadius": 4.2,
-    "sofaOuter": 5.8,
+    "sofaOuter": 5.45,
     "ring": { "inner": 6, "outer": 10, "width": 4 }
   },
   "meetingRooms": [

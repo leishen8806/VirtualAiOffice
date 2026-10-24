@@ -82,7 +82,9 @@ test('align collision fields and circulation declarations match the restored ope
   assert.equal(layout.bar.radius, 6)
   assert.equal(layout.island.barOuter, 3.5)
   assert.equal(layout.island.stoolRadius, 4.2)
-  assert.equal(layout.island.sofaOuter, 5.8)
+  assert.equal(layout.island.sofaOuter, 5.45)
+  assert.equal(LAYOUT_V3.island.sofaOuter, 5.8)
+  assert.ok(layout.island.sofaOuter + .35 <= layout.bar.radius)
   assert.deepEqual({ inner: layout.ring.inner, outer: layout.ring.outer }, { inner: 6, outer: 10 })
   const declared = [...Object.entries(layout.corridors), ...Object.entries(layout.passages)]
     .filter(([, value]) => Number.isFinite(value.x0) && Number.isFinite(value.x1) && Number.isFinite(value.z0) && Number.isFinite(value.z1))

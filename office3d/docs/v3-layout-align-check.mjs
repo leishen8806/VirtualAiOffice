@@ -42,9 +42,12 @@ for (const item of plan.regions) {
 compare(plan.workstations.map(({ name, region, x, z }) => ({ name, region, x, z })), baseline.workstations.map(({ name, region, x, z }) => ({ name, region, x, z })), 'approved workstations')
 compare(plan.displaySeats, baseline.displaySeats, 'approved display seats')
 compare(
-  { center: plan.island.center, barOuter: plan.island.barOuter, collisionRadius: plan.island.collisionRadius, stoolRadius: plan.island.stoolRadius, sofaOuter: plan.island.sofaOuter, ring: plan.island.ring },
-  { center: baseline.island.center, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, sofaOuter: baseline.island.sofaRadius, ring: baseline.island.ring },
+  { center: plan.island.center, barOuter: plan.island.barOuter, collisionRadius: plan.island.collisionRadius, stoolRadius: plan.island.stoolRadius, ring: plan.island.ring },
+  { center: baseline.island.center, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, ring: baseline.island.ring },
   'approved island geometry',
 )
+assert.equal(baseline.island.sofaRadius, 5.8, 'approved sofa baseline')
+assert.equal(plan.island.sofaOuter, 5.45, 'Board-approved sofa radius')
 
+console.log('允许差异：island.sofaOuter 5.8 → 5.45（董事会裁决）')
 console.log('V3 align plan matches runtime and approved 83ecc1b coordinates')
