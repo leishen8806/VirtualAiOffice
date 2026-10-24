@@ -35,7 +35,7 @@ node --max-old-space-size=2048 --test --test-name-pattern="real campus module wi
 | 命令 | 结果 |
 | --- | --- |
 | `node --max-old-space-size=2048 --test --test-timeout=60000 office3d/tests/dr-vis2-rack-cell.test.mjs` | 18/18 通过 |
-| 六个 `dr-campus-*` 专项串行回归 | 49 项中 47 通过；2 个既有失败 |
+| 五个 `dr-campus-*` 专项串行回归 | 49 项中 47 通过；2 个既有失败 |
 | 全量串行回归 | 1045 项：1027 通过、17 失败、1 跳过 |
 
 全量失败集与基线已知环境限制一致，未出现本卡新增失败。失败包含缺少历史备份/本地 JSON 的断言，以及范围外的 `dr-campus-motion` 隐藏 root 回调契约冲突；后者建议由 registry 负责人决定是否恢复“隐藏时仍回调”的旧语义。
@@ -59,6 +59,14 @@ node --max-old-space-size=2048 --test --test-name-pattern="real campus module wi
 | `office3d/dr-vis2-rack-cell.js` | +2 / -2 |
 | `office3d/tests/dr-vis2-rack-cell.test.mjs` | +55 / -13 |
 | `office3d/docs/dr-vis2-rack-cell.md` | +9 / -9 |
+
+## R2 复审补记
+
+- 同一循环推进 6,000 帧时，接线前的 fixture 只有 `idle` 1 种状态；生产 `shuttleFrame` 接线后观察到 12 个不同状态组合，并覆盖 `delivery`。
+- `dr-campus-racks.js`：引入完成面常量、替换模式只保留 support、support 实例整体使用 `baseY` 偏移并写入元数据。
+- `dr-campus-shell.js`：将 `campus-shuttle-reserve` 从旧偏移改为完成面 `+0.002m`。
+- `dr-campus-shuttle.js`：外部 VIS2 构件存在时转发完整 `{ z, lift, carrying, occupied, status }`。
+- 其余两个 `dr-campus-*` 文件是 `dr-campus-modules.js`（注册生产构件并传完成面）与 `dr-campus-registry.js`（现有合并路径）；R1 未修改 `dr-campus-interior.js`。后者不在 `campusModules` 是有意为之：它包含独立动态屏刷新生命周期，不应被本卡的静态货架替换接线带入。
 
 ## 没做到
 

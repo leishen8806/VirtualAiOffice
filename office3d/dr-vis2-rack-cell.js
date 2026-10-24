@@ -110,7 +110,7 @@ function placeLoad(batches, rng, x, base, z, { film = true, layersMax = 3 } = {}
   const layers = 2 + Math.floor(rng() * (layersMax - 1)), layerHeight = Math.min(0.38, D.loadMaxHeight / layers)
   for (let layer = 0; layer < layers; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) {
     rng() // 保持与旧版相同的随机序列消耗（旧版这里用于位置抖动），使货位占用与层数的分布不变
-    batches.carton.add(x + ix * 0.2925, palletTop + layerHeight * (layer + 0.5), z + iz * 0.2425, D.cartonX, layerHeight - 0.012, D.cartonZ, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
+    batches.carton.add(x + ix * 0.2925, palletTop + layerHeight * layer + (layerHeight - 0.012) / 2, z + iz * 0.2425, D.cartonX, layerHeight - 0.012, D.cartonZ, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
   }
   const loadHeight = layers * layerHeight
   if (film && rng() < 0.72) batches.film.add(x, palletTop + loadHeight / 2 + 0.01, z, D.palletX + 0.04, loadHeight + 0.03, D.palletZ + 0.04, VIS2_COLORS.film)
@@ -191,7 +191,7 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const loadBuilder = createMeshBuilder(THREE), platformTop = platformY + 0.02, loadTop = platformTop + D.palletHeight
   loadBuilder.addBox('pallet-deck', 0, loadTop - 0.015, 0, D.palletZ, 0.03, D.palletX, VIS2_COLORS.pallet)
   for (const dx of [-0.4, 0, 0.4]) loadBuilder.addBox(`pallet-bearer${dx}`, dx, platformTop + 0.045, 0, 0.1, 0.09, D.palletX, VIS2_COLORS.pallet)
-  for (let layer = 0; layer < 2; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) loadBuilder.addBox(`carton${layer}${ix}${iz}`, ix * 0.2425, loadTop + 0.18 * (2 * layer + 1), iz * 0.2925, D.cartonZ, 0.348, D.cartonX, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
+  for (let layer = 0; layer < 2; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) loadBuilder.addBox(`carton${layer}${ix}${iz}`, ix * 0.2425, loadTop + .36 * layer + (.36 - .012) / 2, iz * 0.2925, D.cartonZ, .348, D.cartonX, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
   const chassisGeometry = chassisBuilder.build(), platformGeometry = platformBuilder.build(), loadGeometry = loadBuilder.build()
   const shuttle = new THREE.Group(); shuttle.name = 'vis2-shuttle'; shuttle.userData.dynamic = true
   const chassis = new THREE.Mesh(chassisGeometry, materials.shuttle); chassis.name = 'vis2-shuttle-chassis'
@@ -211,7 +211,7 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
     slotBatch.clear()
     plan.slots.forEach((slot, i) => { if (!occupied[i]) return
       slotBatch.add(slotX, D.palletHeight - 0.015, slot.z, D.palletZ, 0.03, D.palletX, VIS2_COLORS.pallet); for (const dz of [-0.4, 0, 0.4]) slotBatch.add(slotX, 0.045, slot.z + dz, D.palletZ, 0.09, 0.1, VIS2_COLORS.pallet)
-      for (const [ix, iz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) slotBatch.add(slotX + ix * 0.2425, D.palletHeight + 0.18, slot.z + iz * 0.2925, D.cartonZ, 0.348, D.cartonX, TONES[(i + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3]) })
+      for (const [ix, iz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) slotBatch.add(slotX + ix * 0.2425, D.palletHeight + (.36 - .012) / 2, slot.z + iz * 0.2925, D.cartonZ, .348, D.cartonX, TONES[(i + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3]) })
     slotBatch.finish(); slotBatch.mesh.visible = slotBatch.mesh.count > 0
   }
   group.add(slotBatch.mesh)

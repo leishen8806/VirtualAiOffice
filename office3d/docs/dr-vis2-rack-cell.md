@@ -56,7 +56,7 @@
 `buildCampusShuttle` 检测到 `root.userData.vis2RackCell` 后，不构建旧车体或轨道，并在每次 `draw()` 中把 `shuttleFrame(state, time)` 的完整 `{ z, lift, carrying, occupied, status }` 传给 `setShuttle()`。这样空车、货位占用和 `delivery` 状态不会丢失；状态灯的 `delivery` 与 `put` 使用同一作业色。
 
 ## 九、自测与变异验证（源码级；**未做浏览器 / GPU 验证**）
-`node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=2 tests/dr-vis2-rack-cell.test.mjs`：**18 / 18 通过**。
+`node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=1 tests/dr-vis2-rack-cell.test.mjs`：**20 / 20 通过**。
 | 审查问题 | 对应测试 | 变异验证（改坏模块，测试必须变红） |
 |---|---|---|
 | P2-2 托盘悬空（横梁移到托盘外） | `every pallet rests on both beams…`（用**真实横梁实例位置**，不再用常量自证） | M1 横梁外移 → **KILLED** |
@@ -69,10 +69,11 @@
 | P3 横梁与立柱 1 cm 缝 | `beams are attached to the uprights…` | M10 → **KILLED** |
 | P2-3 `qualityProxy` | `quality contract…`（并确认 `quality.js` 仍跳过该标记） | M9 → **KILLED** |
 | dispose 重复释放 | `dispose releases every owned resource exactly once…`（按对象计数，必须恰好 1 次） | M8 → **KILLED** |
-| 真实注册路径 | `real campus module wiring…`（只注册 `campusModules`） | baseY 改为 `0`、恢复旧 rack/rail/vehicle、删除 `setShuttle` 完整转发均会失败 |
-| 货位互穿与纸箱贴合 | `slot pallets clear…`、纸箱/托盘几何断言 | slotX 回退到 `+1.25` 或纸箱整体上移会失败 |
-14 项变异**全部被抓住**；其中 M13 一开始**漏网**（只测了车体不动，没测 lift 夹紧），已补断言后复测被抓。脚本与结果见交付报告。
-**全量套件（干净克隆，复现）：** 基线 `cbddb9f`：1166 个用例 / 20 个失败；本分支：1184 个用例 / 17 个失败；**本分支新增失败 0 个**（失败集合是基线的子集）。3 个用例（钩子 / 扫描器 / 换行配置夹具）的结果依赖克隆所在路径，所以失败数在 17–20 之间浮动；**旧文档写的「基线 20 个」是在某个路径下的一次测量，审查员测得 19，均为同一批因缺本机运行数据而失败的既有用例。**
+| 真实注册路径 | `real campus module wiring…`（直接构建 `campusModules` 后再运行完整 registry） | `status` 不转发、删 `delivery` 灯映射、support 偏移为 0、`put()` 忽略 support 偏移均失败 |
+| 货位互穿与纸箱贴合 | `slot pallets clear…`、纸箱/托盘几何断言 | 货架或货位纸箱整体上移 5 cm 均失败 |
+| 引导面高度 | `shuttle reserve guide stays 2 mm…` | 改回完成面 +0.03 m 失败 |
+R2 对审查列出的 **7 个变异均执行并被抓住**：M5、M7、M8、M13、M10、M11、M9。守卫直接观察实例世界包围盒、逐帧宿主状态、状态灯材质色、纸箱底面和引导面高度；不再使用替换对象名称的源码正则。
+**全量套件：** 结果以本轮执行记录为准；隔离 worktree 的历史备份、本地 JSON 和 fixture 缺失会造成既有环境失败，报告按名称与 `ba1e9e2` 对比，确认不引入新增失败。
 
 ## 十、仍未验证（如实）
 - **没有任何浏览器 / WebGL / GPU 验证**：车轮与车体法线是在几何层核对的；本修订版**未重新截图**（预览截图是修订前的）。

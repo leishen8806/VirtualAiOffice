@@ -50,8 +50,7 @@ export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, base
   const low = quality?.tier === 'low', solids = inside(plan, low, replaceRackCell)
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .68, metalness: .24 })
   const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, solids.length)
-  mesh.name = 'campus-racks-static'
-  if (replaceRackCell) mesh.name = 'campus-racks-support'
+  mesh.name = replaceRackCell ? 'campus-racks-support' : 'campus-racks-static'
   mesh.userData.qualityProxy = true; mesh.receiveShadow = true
   const supportOffset = replaceRackCell ? baseY : 0
   solids.forEach((item, index) => put(mesh, index, THREE, { ...item, y: item.y + supportOffset }, item.color))
