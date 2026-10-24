@@ -104,16 +104,22 @@ test('hero campus image content matches INDEX and is not the section image', () 
   assert.doesNotMatch(html, /\.panorama\{[^}]*dr-cam-overview\.webp/)
 })
 
-test('D-V1-R4 layout: sidebar opaque, narrow panorama offset, KPI 76%, network panel 30%', () => {
+test('D-V1-R5 layout: sidebar opaque, narrow offset, network panel moved to KPI row right', () => {
   const html = read('dr-console.html')
-  // 桌面侧栏完全不透明（隐藏参考图自带侧栏菜单）
+  // 桌面侧栏完全不透明
   assert.doesNotMatch(html, /#063758ed|#05192bee/, 'aside background must be opaque (no alpha)')
-  // 窄屏主图从参考图 x≈125 开始（偏移非 0）
+  // 窄屏主图偏移
   assert.match(html, /\.panorama\{top:45px;height:250px;background-size:cover;background-position:-62px center\}/)
-  // KPI 行 ≥1600 收窄 76%
-  assert.match(html, /\.kpis\{width:76%\}/)
-  // 物流网络面板高度 30%
-  assert.match(html, /\.networkPanel\{position:absolute;right:0;top:0;width:24%;height:30%;z-index:3;/)
-  // 1024 段左对齐使 W1 标题牌可见
-  assert.match(html, /@media\(min-width:768px\) and \(max-width:1024px\)\{\.panorama\{background-position:left center\}\}/)
+  // networkPanel 不再是 .hero 的后代：hero 的 </section> 必须出现在 networkPanel 之前
+  const heroClose = html.indexOf('</article></section>')
+  const netStart = html.indexOf('<article class="panel networkPanel">')
+  assert.ok(heroClose !== -1 && netStart !== -1 && heroClose < netStart, 'networkPanel must be outside .hero')
+  // 1024 段规则位于覆盖它的 min-width:768px 块之后
+  const m1024 = html.indexOf('@media(min-width:768px) and (max-width:1024px)')
+  const m768panorama = html.indexOf('@media(min-width:768px){')
+  const centerPos = html.indexOf('.panorama{background-image:url(\'/assets/demo/dr-campus-hero.jpg\');background-size:cover;background-position:center}')
+  assert.ok(m1024 > centerPos, '1024 rule must come after the min-width:768px .panorama rule')
+  // 网格两列 + networkPanel 跨行
+  assert.match(html, /grid-template-columns:minmax\(0,1fr\) 24%/)
+  assert.match(html, /\.networkPanel\{position:relative;grid-column:2;grid-row:2\/span 2;/)
 })
