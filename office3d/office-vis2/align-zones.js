@@ -101,6 +101,7 @@ export function buildAlignZones({THREE,root,layout,collision,low=false}) {
       const g=new THREE.RingGeometry(inner,outer,low?96:192);g.rotateX(-Math.PI/2);batch.add(g,color,[r.center.x,y,r.center.z],0,.88)
     }
     paving=batch.build(root,'align-floor-and-ring')
+    paving.mesh.material.userData.officeFineStone = true
     for(const {id,plan} of alignZoneObstaclePlan(layout)) {
       const f=buildOpenFurnishing({THREE,root,plan,low})
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`

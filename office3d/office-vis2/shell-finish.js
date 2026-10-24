@@ -1,6 +1,6 @@
 import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
 import { officeSampleRequested } from './host.js'
-import { createSampleBatch } from './batch.js'
+import { createSampleBatch, officeStoneGrain } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
 import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
 
@@ -91,8 +91,10 @@ export function buildOfficeAlignedShell(context) {
     const floor = new THREE.MeshStandardMaterial({ color: layout.variant==='align'?'#E9E2D5':'#E1C399', roughness: .74 })
     floor.onBeforeCompile = shader => {
       shader.vertexShader = 'varying vec2 officeStone;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nofficeStone = position.xz / 1.2;')
-      shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nfloat vein = sin(officeStone.x * 24.0 + sin(officeStone.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);')
+      const stone = layout.variant === 'align' ? officeStoneGrain('officeStone') : 'float vein = sin(officeStone.x * 24.0 + sin(officeStone.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);'
+      shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n' + stone)
     }
+    if (layout.variant === 'align') floor.customProgramCacheKey = () => 'office-vis2-ground-fine-stone-v1'
     materials.push(surfaces, glass, floor)
     const add = (name, entries, material) => {
       const geometry = new THREE.BoxGeometry(1, 1, 1); geometries.push(geometry)
@@ -110,6 +112,7 @@ export function buildOfficeAlignedShell(context) {
     appendOfficePlazaPaving({ THREE, batch, layout, low })
     appendWholeFloorGarden({ THREE, batch, spec: spec.wholeFloor, low })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
+    if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
     shell.green.material.color.set('#4D6A46')
     hidden.forEach(mesh => { mesh.visible = false }); shell.ground.material = floor
     return { ...shell, finishSpec: spec, dispose() { if (disposed) return; disposed = true; restore(); release(); shell.dispose() } }

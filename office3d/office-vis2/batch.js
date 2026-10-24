@@ -1,3 +1,6 @@
+// 细石粒在远景淡出，避免规则正弦条纹把石材画成木纹，或细噪点产生闪烁。
+export const officeStoneGrain = uv => `vec2 stoneCell = floor(${uv} * 180.0); float stoneGrain = fract(sin(dot(stoneCell, vec2(127.1, 311.7))) * 43758.5453); float stoneFade = 1.0 - smoothstep(0.002, 0.006, max(fwidth(${uv}.x), fwidth(${uv}.y))); diffuseColor.rgb *= mix(0.99, 0.982 + 0.018 * stoneGrain, stoneFade);`
+
 // 合并颜色和表面参数，避免把木材、织物与金属合并成同一种粗糙度。
 export function createSampleBatch(THREE, assets) {
   const values = { position: [], normal: [], color: [], sampleSurface: [], sampleUv: [] }
@@ -31,13 +34,14 @@ export function createSampleBatch(THREE, assets) {
         // 已有贴图仅作材料细节，保留基色；避免每个石面都被同一张纹理染成深米黄。
         shader.fragmentShader = 'uniform sampler2D vis2oak; uniform sampler2D vis2stone; uniform sampler2D vis2fabric; uniform bool vis2Textured; varying vec3 surfaceParams; varying vec2 materialUv;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (vis2Textured) { if (surfaceParams.z > 2.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2fabric, materialUv * 3.0).rgb, 0.45); else if (surfaceParams.z > 1.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2stone, materialUv).rgb, 0.28); else if (surfaceParams.z > .5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2oak, materialUv).rgb, 0.55); }').replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = surfaceParams.x;').replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = surfaceParams.y;')
         // 无贴图的广场批次也保留细石纹；只调本材质，不增加纹理请求或绘制批次。
-        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > 1.5 && surfaceParams.z < 2.5) { float vein = sin(materialUv.x * 24.0 + sin(materialUv.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein); }')
+        const stone = material.userData.officeFineStone ? officeStoneGrain('materialUv') : 'float vein = sin(materialUv.x * 24.0 + sin(materialUv.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);'
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > 1.5 && surfaceParams.z < 2.5) { ${stone} }`)
         // 大面木材逐片元计算细纹，避免只有四个平面顶点的色差。
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > .5 && surfaceParams.z < 1.5) { float grain = sin(materialUv.x * 165.0 + sin(materialUv.y * 3.0) * 1.7 + sin(materialUv.x * 13.0) * 2.0); diffuseColor.rgb *= .93 + .07 * smoothstep(-.9, .55, grain); }')
         // 棚布仅在既有棚顶标记，和柜体分开；无额外图像、透明层或绘制批次。
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (surfaceParams.z > 3.5) { float stripe = step(.5, fract(materialUv.y * 4.0)); diffuseColor.rgb = mix(vec3(.48, .55, .43), vec3(.90, .86, .76), stripe); }')
       }
-      material.customProgramCacheKey = () => 'office-vis2-pbr-v3'
+      material.customProgramCacheKey = () => material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3'
       material.userData.officeVis2 = true
       const mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material)
       if (poses) {
