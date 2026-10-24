@@ -2,6 +2,7 @@ import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
 import { officeSampleRequested } from './host.js'
 import { createSampleBatch } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
+import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
 
@@ -57,14 +58,16 @@ export function officeShellFinishSpec(layout, spec) {
     for (const y of [.29, .48]) box(x - .5, y, z + .255, .13, .015, .018, '#B89B64', 'desk-handle')
     solid.slice(start).forEach(p => { p.workstation = id })
   }
-  return { solid, panes }
+  const wholeFloor = wholeFloorSpec(layout)
+  solid.push(...wholeFloor.details)
+  return { solid, panes, wholeFloor }
 }
 
 export function buildOfficeAlignedShell(context) {
   const shell = buildOfficeShellV3(context)
   if (!officeSampleRequested(context.search)) return shell
   const { THREE, root, layout, low } = context
-  const hidden = [shell.walls, shell.innerGlass, shell.windows].filter(Boolean)
+  const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
   let disposed = false, paving
@@ -88,6 +91,7 @@ export function buildOfficeAlignedShell(context) {
     if (!low) add('office-aligned-clear-glass', spec.panes, glass)
     const batch = createSampleBatch(THREE)
     appendOfficePlazaPaving({ THREE, batch, layout, low })
+    appendWholeFloorGarden({ THREE, batch, spec: spec.wholeFloor, low })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
     shell.green.material.color.set('#4D6A46')
     hidden.forEach(mesh => { mesh.visible = false }); shell.ground.material = floor

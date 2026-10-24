@@ -154,14 +154,21 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "8F860139B8B465F224A662DD11ACA3A4B9E1F9AF261B8337CDA14E94CD305CAC"
+      "sha256": "549F005D17AA5E00166136F691621975C0FD34F92B6F015E971A894807CD3A8A"
     },
     {
       "file": "office-vis2/zone-finish.js",
       "source": "Private visual refinement of existing zone seats, tables and stools within their existing floor footprints",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "EF45E5901AD5191CCF1D54F092971FC22077F1C4E2EEB9ACC3CB72EFE8F9ECA9"
+      "sha256": "86CFC75A7D86A8C16BDC79DCB27F214A5C0417589FCC75E127CF2E13CFE4E5A4"
+    },
+    {
+      "file": "office-vis2/whole-floor.js",
+      "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "3B87D7F076E0C16A2163AA5AF811F57CEDB97E1AA8B770B333110A2E2F5EAA63"
     }
   ],
   "excluded": {

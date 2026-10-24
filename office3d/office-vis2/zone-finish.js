@@ -6,7 +6,7 @@ import { createSampleBatch } from './batch.js'
 export function buildOfficeAlignedZones(context) {
   const legacy = buildOfficeZones(context)
   if (!officeSampleRequested(context.search)) return legacy
-  const { THREE, root } = context, batch = createSampleBatch(THREE), hidden = [], bounds = []
+  const { THREE, root } = context, batch = createSampleBatch(THREE), hidden = [], bounds = [], tableBounds = []
   let fixed, disposed = false
   const box = (x, y, z, w, h, d, color, surface = '') => batch.add(new THREE.BoxGeometry(w, h, d), color, [x,y,z], 0, surface === 'fabric' ? .97 : .75, 0, surface)
   const cylinder = (x,y,z,r,h,color) => batch.add(new THREE.CylinderGeometry(r,r,h,context.low ? 10 : 20),color,[x,y,z],0,.65)
@@ -27,17 +27,20 @@ export function buildOfficeAlignedZones(context) {
         cylinder(x,.37,z,.035,.58,'#756D60')
         cylinder(x,.09,z,.15,.03,'#756D60')
       } else {
-        const r = p.radiusTop, top = y + p.height / 2
-        cylinder(x,top-.04,z,r,.08,'#C49A6C')
-        cylinder(x,(top+.08)/2,z,mesh.name.endsWith('small-bar') ? r*.62 : .1,top-.16,'#D9D3C6')
-        cylinder(x,.1,z,Math.min(r*.7,.42),.04,'#756D60')
+        // 旧圆桌压到固定凳位；只缩小桌面并在旧桌占地内偏移，保留所有席位/碰撞契约。
+        const diningRound = mesh.name === 'dining-round-table'
+        const r = diningRound ? .4 : Math.min(p.radiusTop, mesh.name.endsWith('small-bar') ? .86 : .83), tz = z + (diningRound ? .4 : 0), top = y + p.height / 2
+        tableBounds.push({ name: mesh.name, x, z: tz, radius: r })
+        cylinder(x,top-.04,tz,r,.08,'#C49A6C')
+        cylinder(x,(top+.08)/2,tz,mesh.name.endsWith('small-bar') ? r*.62 : .1,top-.16,'#D9D3C6')
+        cylinder(x,.1,tz,Math.min(r*.7,.42),.04,'#756D60')
       }
       hidden.push(mesh)
     }
     fixed = batch.build(root, 'office-aligned-zone-seating')
     fixed.mesh.userData.dynamic = true; fixed.mesh.userData.qualityProxy = true
     hidden.forEach(mesh => { mesh.visible = false })
-    return { ...legacy, visualBounds: bounds, dispose() {
+    return { ...legacy, visualBounds: bounds, tableBounds, dispose() {
       if (disposed) return; disposed = true
       fixed.dispose(); hidden.forEach(mesh => { mesh.visible = true }); legacy.dispose()
     } }
