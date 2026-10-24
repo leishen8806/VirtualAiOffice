@@ -9,7 +9,7 @@ import { createTenancy } from '../tenancy/index.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const serverPath = path.join(root, 'server.mjs')
-const backupServerPath = path.resolve(root, '..', 'office3d-backup-m5-1', 'server.mjs')
+const backupServerPath = path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-m5-1', 'server.mjs')
 const tenancyDir = path.join(root, 'tenancy')
 
 function tempDir(t) {

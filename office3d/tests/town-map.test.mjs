@@ -5,7 +5,7 @@ import test from 'node:test'
 import mapData from '../town-map-data.js'
 import { HIDDEN_LANDMARKS, MAX_SCALE, MIN_SCALE, avoidLabelCollisions, fitView, hitTest, mapBounds, screenToWorld, worldToScreen, zoomAt } from '../town-map-core.js'
 
-const root=path.resolve(import.meta.dirname,'..'), source=JSON.parse(fs.readFileSync(path.resolve(root,'../town-map-data/m0/derived/town-map-v0.json'),'utf8'))
+const root=path.resolve(import.meta.dirname,'..'), source=JSON.parse(fs.readFileSync(path.resolve(root,'tests/fixtures/historical/town-map-data/m0/derived/town-map-v0.json'),'utf8'))
 const width=1200,height=800,bounds=mapBounds(mapData.layers.khans),fit=fitView(bounds,width,height)
 
 test('generated data matches the reviewed source field for field',()=>{

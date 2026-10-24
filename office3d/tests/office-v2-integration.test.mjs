@@ -112,8 +112,8 @@ test('O6O7 onFrame isolates errors, skips hidden/culled scenes, freezes clock an
 
 test('O6O7 production wiring contains no business, network, warehouse or wall-clock reads', { timeout: 60_000 }, () => {
   for (const file of ['office-v2-registry.js', 'office-v2-modules.js']) assert.doesNotMatch(source(file), /fetch\s*\(|innerHTML|Math\.random|Date\.now|dr-campus|dr-console|display-staff\.json|#(?:0d2942|24d7df|d6f8ff)/i)
-  const before = fs.readFileSync(new URL('../../office3d-backup-o6o7/resume-20261022/app.js', import.meta.url), 'utf8').split(/\r?\n/)
-  const after = fs.readFileSync(new URL('../../office3d-backup-nav-1d/app.js', import.meta.url), 'utf8').split(/\r?\n/), previous = new Set(before)
+  const before = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-o6o7/resume-20261022/app.js', import.meta.url), 'utf8').split(/\r?\n/)
+  const after = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-nav-1d/app.js', import.meta.url), 'utf8').split(/\r?\n/), previous = new Set(before)
   assert.ok(after.filter(line => !previous.has(line)).length <= 3)
   assert.ok(after.length - before.length <= 3)
 })

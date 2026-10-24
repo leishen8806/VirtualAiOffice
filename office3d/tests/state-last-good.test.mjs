@@ -10,7 +10,7 @@ import { redactState } from '../wall.mjs'
 import { coarsenGeo } from '../office-geo.mjs'
 
 const source = fs.readFileSync(new URL('../server.mjs', import.meta.url), 'utf8')
-const backup = fs.readFileSync(new URL('../../office3d-backup-h2/server.mjs', import.meta.url), 'utf8')
+const backup = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-h2/server.mjs', import.meta.url), 'utf8')
 const start = Date.parse('2026-10-22T02:00:00Z')
 const extract = (text, from, to) => text.slice(text.indexOf(from), text.indexOf(to, text.indexOf(from)))
 const fixedDate = class extends Date { constructor(value = start) { super(value) } static now() { return start } }

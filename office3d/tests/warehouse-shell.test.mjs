@@ -52,14 +52,17 @@ test('warehouse wall decals and ground lines keep a stable depth offset', () => 
 
 test('app wiring stays minimal and does not add unsafe APIs', async () => {
   const current = await readFile(path.join(root, 'app.js'), 'utf8')
-  const beforeNav = await readFile(path.resolve(root, '..', 'office3d-backup-nav-1d', 'app.js'), 'utf8')
-  const backup = await readFile(path.resolve(root, '..', 'office3d-backup-s2-2', 'app.js'), 'utf8')
+  const beforeNav = await readFile(path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-nav-1d', 'app.js'), 'utf8')
+  const backup = await readFile(path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-s2-2', 'app.js'), 'utf8')
   const old = new Set(backup.split(/\r?\n/)), priorAdded = beforeNav.split(/\r?\n/).filter(line => !old.has(line))
   const h2b = priorAdded.filter(line => line.includes("latestState?.stale?.active"))
   assert.equal(h2b.length, 2, 'H2b 仅允许两行降级态派发禁用接线')
   const added = priorAdded.filter(line => !h2b.includes(line))
   assert.ok(added.length <= 30, `新增 ${added.length} 行`)
-  const navOld = new Set(beforeNav.split(/\r?\n/)), navAdded = current.split(/\r?\n/).filter(line => !navOld.has(line))
+  // NAV-1d 行预算绑定其真实合入快照，不累计后续已验收的 O6 / rev3 接线。
+  const navAfter = await readFile(path.resolve(root, 'tests/fixtures/historical/office3d-backup-nav-1d/app.after-merge-before-control-room-camera-fix.js'), 'utf8')
+  const navOld = new Set(beforeNav.split(/\r?\n/)), navAdded = navAfter.split(/\r?\n/).filter(line => !navOld.has(line))
+  assert.match(current, /CAMPUS_MODE/)
   const controlRoom = navAdded.filter(line => /controlRoom|CONTROL_ROOM|buildDrControlRoom|keepRoots/.test(line))
   assert.ok(controlRoom.length <= 10, `调度中控室接线新增 ${controlRoom.length} 行`)
   assert.ok(navAdded.filter(line => !controlRoom.includes(line)).length <= 80, `NAV-1d 新增 ${navAdded.length - controlRoom.length} 行`)

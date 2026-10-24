@@ -117,7 +117,7 @@ test('town navigation switch fails closed and emits only a boolean client config
   assert.equal(townNavEnabled({ enabled: true }), true)
   assert.equal(townNavClientScript(false), 'globalThis.__TOWN_NAV__=Object.freeze({enabled:false})\n')
   assert.equal(townNavClientScript(true), 'globalThis.__TOWN_NAV__=Object.freeze({enabled:true})\n')
-  assert.deepEqual(JSON.parse(read('town-nav.json')), { enabled: false })
+  assert.deepEqual(JSON.parse(read('tests/fixtures/disabled-features/town-nav.json')), { enabled: false })
 })
 
 test('disabled place bar performs zero DOM work', () => {
@@ -159,7 +159,7 @@ test('town markers stay visible and navigable independently of town-nav switch',
   const source = read('town.js')
   const html = read('town.html')
   const map = read('town-map.mjs')
-  assert.deepEqual(JSON.parse(read('town-nav.json')), { enabled: false })
+  assert.deepEqual(JSON.parse(read('tests/fixtures/disabled-features/town-nav.json')), { enabled: false })
   assert.doesNotMatch(html, /town-nav-config|__TOWN_NAV__/)
   assert.doesNotMatch(source, /town-nav-config|__TOWN_NAV__|townNavEnabled/)
   assert.match(map, /id: 'office-zixu-workshop'/)
