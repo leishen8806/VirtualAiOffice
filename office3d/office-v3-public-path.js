@@ -1,11 +1,15 @@
+import { alignZoneObstaclePlan } from './office-vis2/align-zones.js'
+
 // Public circulation only: room interiors and final seat approach remain owned by the director.
 export function createV3PublicPath(layout) {
   const pad = .28, center = layout.bar.center, radius = layout.island.radius + pad
   const align = Boolean(layout.publicPathNodes)
   const regionBoxes = align ? layout.regions.filter(region => region.walled) : layout.regions
   const desks = align ? Object.values(layout.seats).map(([, x, z]) => ({ x0: x - .8, x1: x + .8, z0: z - .8, z1: z + .8 })) : []
+  const furnishings = align ? alignZoneObstaclePlan(layout).flatMap(({ id, plan }) =>
+    plan.placements.map(item => ({ id: `${id}-${item.id}`, ...item.bounds }))) : []
   const boxes = [...regionBoxes, layout.frontDesk, layout.serviceBar, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
-  const blockers = [...boxes, ...desks]
+  const blockers = [...boxes, ...desks, ...furnishings.map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
   const finite = p => Number.isFinite(p?.x) && Number.isFinite(p?.z)
   const inside = (p, b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1
   const valid = p => finite(p) && p.x >= layout.envelope.x0 + pad && p.x <= layout.envelope.x1 - pad && p.z >= layout.envelope.z0 + pad && p.z <= layout.doors.south.z - pad && !blockers.some(b => inside(p, b)) && Math.hypot(p.x - center.x, p.z - center.z) >= radius
@@ -45,9 +49,20 @@ export function createV3PublicPath(layout) {
   const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
   const links = nodes.map((a, i) => nodes.flatMap((b, j) => i !== j && clear(a, b) ? [[j, distance(a, b)]] : []))
   return (from, to) => {
-    if (!valid(from) || !valid(to)) throw new Error(`V3 public route endpoint blocked: ${JSON.stringify({ from, to })}`)
-    if (clear(from, to)) return [{ ...from }, { ...to }]
-    const all = [...nodes, from, to], start = nodes.length, end = start + 1
+    // Desk and furnishing endpoints are valid actor targets, but the graph must
+    // leave them from a nearby clear point before it traverses public space.
+    const anchor = (point) => {
+      if (valid(point)) return { ...point }
+      if (!align) throw new Error(`V3 public route endpoint blocked: ${JSON.stringify({ from, to })}`)
+      for (let radius = .25; radius <= 3; radius += .25) for (const [x, z] of [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]]) {
+        const candidate = { x: point.x + x * radius, z: point.z + z * radius }
+        if (valid(candidate)) return candidate
+      }
+      throw new Error(`V3 public route endpoint blocked: ${JSON.stringify({ from, to })}`)
+    }
+    const startPoint = anchor(from), endPoint = anchor(to)
+    if (clear(startPoint, endPoint)) return dedupe([{ ...from }, startPoint, endPoint, { ...to }])
+    const all = [...nodes, startPoint, endPoint], start = nodes.length, end = start + 1
     const edges = [...links.map(list => [...list]), [], []]
     for (const index of [start, end]) for (let i = 0; i < index; i++) if (clear(all[index], all[i])) { const d = distance(all[index], all[i]); edges[index].push([i, d]); edges[i].push([index, d]) }
     const costs = all.map(() => Infinity), previous = [], visited = new Set(); costs[start] = 0
@@ -55,10 +70,16 @@ export function createV3PublicPath(layout) {
       let current = -1
       for (let i = 0; i < all.length; i++) if (!visited.has(i) && (current < 0 || costs[i] < costs[current])) current = i
       if (current < 0 || !Number.isFinite(costs[current])) break
-      if (current === end) { const route = []; for (let i = end; i !== undefined; i = previous[i]) route.unshift({ ...all[i] }); return route }
+      if (current === end) {
+        const route = []
+        for (let i = end; i !== undefined; i = previous[i]) route.unshift({ ...all[i] })
+        return dedupe([{ ...from }, ...route, { ...to }])
+      }
       visited.add(current)
       for (const [next, length] of edges[current]) if (costs[current] + length < costs[next]) { costs[next] = costs[current] + length; previous[next] = current }
     }
     throw new Error('V3 public circulation has no safe route')
   }
 }
+
+const dedupe = points => points.filter((point, index) => !index || Math.hypot(point.x - points[index - 1].x, point.z - points[index - 1].z) > 1e-6)

@@ -21,11 +21,29 @@ export function buildDisplayDepartments({ THREE, root, layout, low = false, canv
   const rooms = departments.map(id => layout.regions.find(r => r.id === id))
   rooms.forEach((room, index) => {
     box((room.x0 + room.x1) / 2, .025, (room.z0 + room.z1) / 2, room.x1 - room.x0 - .2, .03, room.z1 - room.z0 - .2, new THREE.Color(T.exteriorWall))
-    const door = room.doors[0], north = door.side === 'south', z = north ? room.z1 - .25 : room.z0 + .25
-    box(door.at, 2.25, z, 3.8, .7, .08, wood)
-    const g = new THREE.PlaneGeometry(3.7, .64)
-    if (!north) g.rotateY(Math.PI)
-    g.translate(door.at, 2.25, z + (north ? .05 : -.05))
+    const door = room.doors[0]
+    let g
+    if (layout.variant !== 'align') {
+      const north = door.side === 'south', z = north ? room.z1 - .25 : room.z0 + .25
+      box(door.at, 2.25, z, 3.8, .7, .08, wood)
+      g = new THREE.PlaneGeometry(3.7, .64)
+      if (!north) g.rotateY(Math.PI)
+      g.translate(door.at, 2.25, z + (north ? .05 : -.05))
+    } else {
+      const side = door.side, horizontal = side === 'north' || side === 'south'
+      const x = horizontal ? door.at : (side === 'west' ? room.x0 + .25 : room.x1 - .25)
+      const z = horizontal ? (side === 'south' ? room.z1 - .25 : room.z0 + .25) : door.at
+      box(x, 2.25, z, horizontal ? 3.8 : .08, .7, horizontal ? .08 : 3.8, wood)
+      g = new THREE.PlaneGeometry(3.7, .64)
+      if (side === 'north') g.rotateY(Math.PI)
+      if (side === 'west') g.rotateY(Math.PI / 2)
+      if (side === 'east') g.rotateY(-Math.PI / 2)
+      g.translate(
+        x + (horizontal ? 0 : side === 'west' ? .05 : -.05),
+        2.25,
+        z + (horizontal ? side === 'south' ? .05 : -.05 : 0),
+      )
+    }
     const uv = g.attributes.uv
     for (let i = 0; i < uv.count; i++) uv.setY(i, (uv.getY(i) + rooms.length - index - 1) / rooms.length)
     g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(1), 3))

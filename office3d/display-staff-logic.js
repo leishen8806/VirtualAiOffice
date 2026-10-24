@@ -78,6 +78,20 @@ export function displayBarObstacles(layout) {
 }
 export function displayRoute(layout, person) {
   const room = layout.regions.find(r => r.id === person.department), door = room.doors[0]
+  if (layout.displayAdapter === 'v3' && layout.variant === 'align') {
+    const normal = door.side === 'south' ? { x: 0, z: 1 } : door.side === 'north' ? { x: 0, z: -1 }
+      : door.side === 'west' ? { x: -1, z: 0 } : { x: 1, z: 0 }
+    const inside = {
+      x: door.side === 'east' ? room.x1 - .6 : door.side === 'west' ? room.x0 + .6 : door.at,
+      z: door.side === 'south' ? room.z1 - .6 : door.side === 'north' ? room.z0 + .6 : door.at,
+    }
+    const outside = { x: inside.x + normal.x * 1.5, z: inside.z + normal.z * 1.5 }
+    const boxes = displayFurnitureBounds(layout).filter(b => b.id !== `${person.id}-chair`)
+    const inRoom = p => p.x >= room.x0 + .25 && p.x <= room.x1 - .25 && p.z >= room.z0 + .25 && p.z <= room.z1 - .25
+    const go = [...route(person.home, inside, room, boxes, inRoom), outside]
+    const length = go.reduce((sum, p, i) => sum + (i ? distance(p, go[i - 1]) : 0), 0)
+    return Object.freeze({ go, back: go.toReversed(), length, side: normal.x < 0 ? 'west' : normal.x > 0 ? 'east' : person.home.x < 2 ? 'west' : 'east', gapAccess: false, reason: 'V3_DISPLAY_ROUTE', durationMs: (length * 2 / 1.4 + 20) * 1000 })
+  }
   const north = door.side === 'south', hallway = layout.corridors[north ? 'north' : 'south']
   const z = (hallway.z0 + hallway.z1) / 2, edge = north ? room.z1 : room.z0
   const inside = { x: door.at, z: edge + (north ? -.6 : .6) }, outside = { x: door.at, z }

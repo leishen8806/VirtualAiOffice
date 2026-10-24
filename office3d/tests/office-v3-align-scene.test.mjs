@@ -95,13 +95,17 @@ test('ALIGN collision corners stay within 6.3m without gaps in the annular secto
   assert.ok(Math.max(...old.flatMap(b=>[b.x0,b.x1].flatMap(x=>[b.z0,b.z1].map(z=>Math.hypot(x-center.x,z-center.z)))))>6.3,'old approximation is a failing control')
 })
 
-test('ALIGN real registry consumes resolved layout, exposes obstacles and marks display modules pending',async()=>{
+test('ALIGN real registry consumes resolved layout, exposes obstacles and builds display modules',async()=>{
   const scene=new THREE.Scene(),layout=resolveOfficeLayout('?layout=3&align=1'),registered=[]
   const r=startOfficeV3({THREE,scene,layout,quality:{tier:'high'},collision:{add:(p,kind)=>registered.push({p,kind}),remove:()=>{}},canvasTex})
   try{
     assert.equal(r.get('shell3').spec.inner[0].room,layout.regions.find(r=>r.id==='market'))
     assert.equal(r.get('zones').floor.regions.length,15);assert.ok(r.get('zones').obstacles().length>0)
-    assert.equal(r.get('displayDepartments').pending,true);assert.equal(r.get('displayStaff').pending,true)
+    assert.equal(r.get('displayDepartments').pending,undefined)
+    assert.equal(r.get('displayDepartments').regions.length,4)
+    assert.equal(r.get('displayDepartments').summary().departments,4)
+    assert.equal(r.get('displayStaff').pending,undefined)
+    assert.equal(r.get('displayStaff').summary().synthetic,true)
     assert.deepEqual(r.summary().skipped,[])
     assert.equal(registered.filter(p=>p.kind==='office3-align-furnishing').length,r.get('zones').obstacles().length)
   }finally{r.dispose()}

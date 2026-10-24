@@ -43,12 +43,10 @@ const displayLayout = layout => ({ ...layout, version: 2, corridors: {
 }, displayAdapter: 'v3' })
 
 function buildDisplayDepartmentsV3(context) {
-  if (context.layout.variant === 'align') return pendingModule('align-display-departments-door-adapter')
   return buildDisplayDepartments({ ...context, layout: displayLayout(context.layout) })
 }
 
 function buildDisplayStaffV3(context) {
-  if (context.layout.variant === 'align') return pendingModule('align-display-staff-door-adapter')
   return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
 }
 

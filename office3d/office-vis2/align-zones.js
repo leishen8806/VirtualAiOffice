@@ -1,5 +1,5 @@
 import { createSampleBatch } from './batch.js'
-import { buildOpenFurnishing } from './open-furnishing.js'
+import { buildOpenFurnishing, planOpenFurnishing } from './open-furnishing.js'
 
 const isRect = b => ['x0','x1','z0','z1'].every(k => Number.isFinite(b?.[k]))
 export const alignPassages = layout => Object.values({ ...layout.corridors, ...layout.passages }).filter(isRect)
@@ -13,6 +13,23 @@ export function alignDoorAprons(layout) {
     }
     return b
   }))
+}
+
+// Shared by the renderer and route planner: keep navigation obstacles identical
+// to the deterministic furnishing plan without importing THREE into routing.
+export function alignZoneObstaclePlan(layout) {
+  const reserved = alignDoorAprons(layout)
+  const corridors = alignPassages(layout)
+  const workstations = Object.values(layout.seats).map(([, x, z]) => ({ x, z, radius: 1 }))
+  const entries = []
+  for (const id of ['west-open', 'kb', 'product', 'eng', 'drlife', 'creative', 'dining', 'leisure']) {
+    const area = layout.regions.find(region => region.id === id)
+    const zoneKind = ['creative', 'dining', 'leisure'].includes(id) ? id : undefined
+    const plan = planOpenFurnishing({ area, workstations, corridors, reserved, ring: layout.ring, zoneKind })
+    for (const group of plan.groups) reserved.push({ x0: group.groupBounds.x0 - 1.2, x1: group.groupBounds.x1 + 1.2, z0: group.groupBounds.z0 - 1.2, z1: group.groupBounds.z1 + 1.2 })
+    entries.push({ id, plan })
+  }
+  return entries
 }
 
 export function alignFloorSpec(layout) {
