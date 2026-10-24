@@ -1,10 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { LAYOUT_V3_ALIGN as layout } from '../office-layout.js'
+import { LAYOUT_V3, LAYOUT_V3_ALIGN as layout } from '../office-layout.js'
 import { wholeFloorSpec } from '../office-vis2/whole-floor.js'
 import { createSampleBatch } from '../office-vis2/batch.js'
 import { appendOfficePlaza } from '../office-vis2/plaza.js'
+import { buildOfficeAlignedShell } from '../office-vis2/shell-finish.js'
 
 test('cutaway room crowns retain an open centre and at least 2.68m walking clearance', () => {
   const before = JSON.stringify(layout), details = wholeFloorSpec(layout).details
@@ -24,6 +25,26 @@ test('cutaway room crowns retain an open centre and at least 2.68m walking clear
     }
   }
   assert.equal(JSON.stringify(layout), before)
+})
+
+test('only high-quality ALIGN adds one existing shadow caster, with no lights or low-tier change', () => {
+  for (const activeLayout of [LAYOUT_V3, layout]) for (const low of [false, true]) {
+    const root = new THREE.Group(), shell = buildOfficeAlignedShell({THREE, root, layout:activeLayout, low, search:'?officeSample=1'})
+    const frames = root.getObjectByName('office-aligned-frames-and-inlays'), enabled = activeLayout === layout && !low
+    assert.equal(frames.castShadow, enabled); assert.equal(frames.receiveShadow, enabled)
+    assert.equal(shell.ground.receiveShadow, enabled)
+    const lights = [], casters = []
+    root.traverse(o => { if (o.isLight) lights.push(o.uuid); if (o.castShadow) casters.push(o.name) })
+    assert.deepEqual(lights, []); assert.deepEqual(casters, enabled ? [frames.name] : [])
+    shell.dispose(); assert.equal(shell.ground.receiveShadow, false); assert.equal(root.children.length, 0)
+  }
+  const root = new THREE.Group(), injected = {...THREE, InstancedMesh: class extends THREE.InstancedMesh {
+    constructor(g, m, count) { if (m.opacity === .085) throw Error('injected after shadow flag'); super(g, m, count) }
+  }}
+  const fallback = buildOfficeAlignedShell({THREE:injected, root, layout, low:false, search:'?officeSample=1'})
+  assert.equal(fallback.finishSpec, undefined); assert.equal(fallback.ground.receiveShadow, false)
+  assert.equal(root.getObjectByName('office-aligned-frames-and-inlays'), undefined)
+  fallback.dispose(); assert.equal(root.children.length, 0)
 })
 
 test('untextured wood retains its own surface class, UVs and fragment grain without another material', () => {

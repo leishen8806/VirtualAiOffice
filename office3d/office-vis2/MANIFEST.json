@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "809D9A58973D800B9C59035A593E20FCCEB86B0DDA59A479E1F60A2E05131ED5"
+      "sha256": "1BFA0A5EDECD83F25A6953F852CD76E36051FD509DF22FA40A6F521BACAD991B"
     },
     {
       "file": "office-vis2/zone-finish.js",
