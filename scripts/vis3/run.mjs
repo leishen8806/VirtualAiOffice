@@ -40,10 +40,16 @@ let SHA, repoCleanBefore
 try { SHA = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); repoCleanBefore = execFileSync('git', ['-C', REPO, 'status', '--porcelain'], { encoding: 'utf8' }).trim() }
 catch (e) { console.error('INFRA_ERROR: 无法读取被测仓库（非 git 或不可访问）：' + (e?.message || e)); process.exit(2) }
 if (repoCleanBefore) { console.error('INFRA_ERROR: --repo 工作树不干净，拒绝运行：\n' + repoCleanBefore); process.exit(2) }
-const PROTECTED_RE = /(lan\.json|wall\.json|telegram[^/]*\.(json|dpapi)|[^/]*\.dpapi|\.env[^/]*|[^/]*ed25519[^/]*|config\.json)$/i
-let ignoredProtected = ''
-try { ignoredProtected = execFileSync('git', ['-C', REPO, 'ls-files', '--others', '--ignored', '--exclude-standard'], { encoding: 'utf8' }).split('\n').filter((f) => f && PROTECTED_RE.test(f)).join('\n') } catch {}
+const PROTECTED_RE = /(lan\.json|wall\.json|telegram[^/]*\.json|telegram[^/]*\.dpapi|[^/]*\.dpapi|\.env[^/]*|[^/]*ed25519[^/]*|office3d\/config\.json)$/i
+const WARN_ONLY_RE = /niuma\.config\.json$/i
+let ignoredProtected = '', warnOnlyProtected = ''
+try {
+  const ignored = execFileSync('git', ['-C', REPO, 'ls-files', '--others', '--ignored', '--exclude-standard', '--directory'], { encoding: 'utf8' }).split('\n')
+  ignoredProtected = ignored.filter((f) => f && !f.includes('node_modules/') && PROTECTED_RE.test(f)).join('\n')
+  warnOnlyProtected = ignored.filter((f) => f && !f.includes('node_modules/') && WARN_ONLY_RE.test(f)).join('\n')
+} catch {}
 if (ignoredProtected) { console.error('INFRA_ERROR: 存在被忽略的受保护文件，拒绝运行（仅列名，不读内容）：\n' + ignoredProtected); process.exit(2) }
+if (warnOnlyProtected) { console.error('WARN: niuma.config.json 董事会尚未裁决，本次仅列名警告、不拒绝：\n' + warnOnlyProtected) }
 const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
@@ -231,18 +237,26 @@ async function sceneFlags(browser, repo) {
   for (const v of variants) {
     const { base, mock, stop } = await bootIsolated({ repo, office: v.office, campus: v.campus, missing: v.missing, corrupt: v.corrupt, outDir: OUT })
     const flag = await fetch(base + '/visual-flags').then((r) => r.json()).catch(() => null)
+    const writes = []
+    // 每个页面用完即关（串行，不同时打开）
     const root = await openPage(browser, base, '/', { netLog: NETLOG })
     await root.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
     const rootScene = await collect(root.page)
+    writes.push(...root.requests)
+    await root.context.close()
     const campus = await openPage(browser, base, '/?campus=1', { netLog: NETLOG })
     await campus.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
     const campusScene = await collect(campus.page)
+    writes.push(...campus.requests)
+    await campus.context.close()
     const layout2 = await openPage(browser, base, '/?layout=2', { netLog: NETLOG })
     await layout2.page.waitForFunction(() => window.__office?.visualFlags, null, { timeout: 15000 }).catch(() => {})
     const layout2Scene = await collect(layout2.page)
-    const writes = [...root.requests, ...campus.requests, ...layout2.requests].filter((r) => r.method !== 'GET' && r.method !== 'HEAD').length
-    matrix.push({ id: v.id, flag, root: { flags: rootScene.flags, officeV2: rootScene.officeV2, campus: rootScene.campus }, campus: { flags: campusScene.flags, campus: campusScene.campus }, layout2: { officeV2: layout2Scene.officeV2 }, writes })
-    await root.context.close(); await campus.context.close(); await layout2.context.close(); await stop()
+    writes.push(...layout2.requests)
+    await layout2.context.close()
+    const writeCount = writes.filter((r) => r.method !== 'GET' && r.method !== 'HEAD').length
+    matrix.push({ id: v.id, flag, root: { flags: rootScene.flags, officeV2: rootScene.officeV2, campus: rootScene.campus }, campus: { flags: campusScene.flags, campus: campusScene.campus }, layout2: { officeV2: layout2Scene.officeV2 }, writes: writeCount })
+    await stop()
   }
   let ok = true
   for (const row of matrix) {

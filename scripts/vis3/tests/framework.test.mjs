@@ -33,7 +33,7 @@ async function startCounter() {
   const net = await import('node:net')
   const state = { conn: 0, req: 0 }
   const srv = net.createServer()
-  srv.on('connection', (sock) => { state.conn++; sock.end('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n') })
+  srv.on('connection', (sock) => { state.conn++; sock.on('error', () => {}); sock.end('HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n') })
   await new Promise((r) => srv.listen(0, '127.0.0.1', r))
   return { port: srv.address().port, state, close: () => srv.close() }
 }
@@ -77,21 +77,37 @@ test('F2-01/F2-03 网络守卫：未授权端口连接数=0 且逐项 BLOCKED', 
   }
 })
 
-test('F2-05 允许端口 http.get 能拿到响应', async (t) => {
-  const net = await import('node:net')
-  const port = await new Promise((res) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)) }) })
+test('F2-05 允许端口 http.get 能拿到响应（子进程自 listen(0)）', (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-t-')); t.after(() => fs.rmSync(tmp, { recursive: true, force: true }))
   const script = path.join(tmp, 'probe.mjs')
   fs.writeFileSync(script, `
     import http from 'node:http'
-    const P = Number(process.env.VIS3_PROBE_PORT)
-    http.createServer((req, res) => res.end('ok')).listen(P, '127.0.0.1', () => {
+    const srv = http.createServer((req, res) => res.end('ok'))
+    srv.listen(0, '127.0.0.1', () => {
+      const P = srv.address().port
+      globalThis.__vis3_allowPort(P)
       http.get('http://127.0.0.1:' + P + '/', (res) => { let b = ''; res.on('data', (d) => b += d); res.on('end', () => { console.log(b); process.exit(0) }) })
     })
   `)
-  const r = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_PROBE_PORT: String(port), VIS3_ALLOWED_PORTS: String(port) })
+  const r = runNode(['--import', pathToFileURL(GUARD).href, script], { VIS3_ALLOWED_PORTS: '' })
   assert.equal(r.status, 0, r.stderr)
   assert.equal(r.stdout.trim(), 'ok')
+})
+
+test('FIX5 客户端连接后立即 destroy，服务器无未捕获异常（ECONNRESET）', async (t) => {
+  const net = await import('node:net')
+  const state = { conn: 0, errors: 0 }
+  const srv = net.createServer()
+  srv.on('connection', (sock) => { state.conn++; sock.on('error', () => { state.errors++ }) })
+  process.on('uncaughtException', (e) => { state.uncaught = String(e.message) })
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r))
+  t.after(() => srv.close())
+  const P = srv.address().port
+  const c = new net.Socket()
+  c.connect(P, '127.0.0.1', () => { c.destroy() })
+  await new Promise((r) => setTimeout(r, 200))
+  assert.equal(state.conn, 1, '连接应被接受')
+  assert.ok(!state.uncaught, '不得有未捕获异常（ECONNRESET）')
 })
 
 test('FIX4 变异自测：逐个去掉守卫 API，连接数>0 且探针失败', async (t) => {
@@ -163,4 +179,34 @@ test('P-07 阻断日志只记 origin，路径脱敏', (t) => {
     assert.ok(obj.blocked.startsWith('http://127.0.0.1:12345'), 'log origin should match probe origin, got ' + obj.blocked)
     assert.ok(!obj.blocked.includes('bot123456'), 'token must not appear in log')
   }
+})
+
+// ---- FIX5 工作树检查三种自测（临时 git 仓库，不需要浏览器）----
+import { execSync } from 'node:child_process'
+
+function makeRepo(t) {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-repo-'))
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
+  fs.mkdirSync(path.join(repo, 'office3d'), { recursive: true })
+  fs.writeFileSync(path.join(repo, 'office3d', 'server.mjs'), 'export {}\n')
+  fs.writeFileSync(path.join(repo, 'office3d', 'index.html'), '<html></html>\n')
+  execSync('git init -q && git add -A && git -c user.name=t -c user.email=t@t commit -q -m init', { cwd: repo })
+  return repo
+}
+
+test('FIX5 工作树：office3d 外有未提交改动 → 退出 2', (t) => {
+  const repo = makeRepo(t)
+  fs.writeFileSync(path.join(repo, 'scratch.txt'), 'x')
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-out-')); t.after(() => fs.rmSync(out, { recursive: true, force: true }))
+  const r = runNode([RUN, '--repo', repo, '--scene', 'office', '--out', out], { VIS3_PLAYWRIGHT: '/nonexistent/pw' })
+  assert.equal(r.status, 2, 'office3d 外改动应退出 2（stderr=' + r.stderr + '）')
+})
+
+test('FIX5 工作树：被忽略的受保护文件 → 退出 2', (t) => {
+  const repo = makeRepo(t)
+  fs.writeFileSync(path.join(repo, '.gitignore'), 'office3d/lan.json\n')
+  fs.writeFileSync(path.join(repo, 'office3d', 'lan.json'), '{"enabled":false}')
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-out-')); t.after(() => fs.rmSync(out, { recursive: true, force: true }))
+  const r = runNode([RUN, '--repo', repo, '--scene', 'office', '--out', out], { VIS3_PLAYWRIGHT: '/nonexistent/pw' })
+  assert.equal(r.status, 2, '被忽略受保护文件应退出 2（stderr=' + r.stderr + '）')
 })

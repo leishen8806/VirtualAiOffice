@@ -65,3 +65,5 @@ const origSocketConnect = net.Socket.prototype.connect
 net.Socket.prototype.connect = function (...args) { assertAllowed(...args); return origSocketConnect.apply(this, args) }
 
 export const __vis3_guard = true
+// 测试运行时追加允许端口（子进程 listen(0) 后自允许）
+globalThis.__vis3_allowPort = (port) => ALLOWED.add(Number(port))

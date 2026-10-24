@@ -15,7 +15,7 @@ export class InfraError extends Error {}
 const CHILDREN = new Set()
 process.on('exit', () => { for (const c of CHILDREN) { try { c.kill('SIGKILL') } catch {} } })
 
-const PROTECTED = /(^|\/)(lan\.json|wall\.json|config\.json|.*\.dpapi|\.env.*|.*ed25519.*|telegram[^/]*\.json|telegram[^/]*\.dpapi)$/i
+const PROTECTED = /(^|\/)(lan\.json|wall\.json|config\.json|niuma\.config\.json|.*\.dpapi|\.env.*|.*ed25519.*|telegram[^/]*\.json|telegram[^/]*\.dpapi)$/i
 
 function assertSafeRepo(repo) {
   if (!repo || !path.isAbsolute(repo)) throw new InfraError('VIS3_REPO 必须是绝对路径')
