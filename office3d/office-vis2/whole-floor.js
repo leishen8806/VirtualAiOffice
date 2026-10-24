@@ -50,9 +50,21 @@ export function wholeFloorSpec(layout) {
     }
     // 顶部仅保留边带，俯视下不盖住工位；全部高于人物通行体积。
     if (layout.variant === 'align' && room.walled !== true) continue
-    box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#CDB18A', room.id)
-    box('light-recess', middle, 2.955, room.z0 + .21, width - .65, .035, .12, '#F3D8A1', room.id)
-    box('ceiling-edge', room.x0 + .2, 3.05, (room.z0 + room.z1) / 2, .4, .16, room.z1 - room.z0 - .45, '#D8BC94', room.id)
+    if (layout.variant === 'align') {
+      // 顶部保留真实厚度的剖切边带；中心敞开，俯视仍能看见桌椅。
+      for (const z of [room.z0 + .21, room.z1 - .21]) {
+        box('ceiling-edge', middle, 2.79, z, width, .18, .42, '#F4F1EA', room.id)
+        box('light-recess', middle, 2.693, z, width - .8, .014, .12, '#F3DFB3', room.id)
+      }
+      for (const x of [room.x0 + .21, room.x1 - .21]) {
+        box('ceiling-edge', x, 2.79, (room.z0 + room.z1) / 2, .42, .18, room.z1 - room.z0 - .84, '#F4F1EA', room.id)
+        box('light-recess', x, 2.693, (room.z0 + room.z1) / 2, .12, .014, room.z1 - room.z0 - 1.2, '#F3DFB3', room.id)
+      }
+    } else {
+      box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#CDB18A', room.id)
+      box('light-recess', middle, 2.955, room.z0 + .21, width - .65, .035, .12, '#F3D8A1', room.id)
+      box('ceiling-edge', room.x0 + .2, 3.05, (room.z0 + room.z1) / 2, .4, .16, room.z1 - room.z0 - .45, '#D8BC94', room.id)
+    }
     // 竖向木饰面在原墙体厚度内，不把书柜放进椅后路线。
     const panelWidth = Math.min(2.4, width * .28)
     for (let x = room.x0 + .35; x < room.x0 + .35 + panelWidth; x += .13) {

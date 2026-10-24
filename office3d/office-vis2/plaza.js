@@ -31,6 +31,11 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       if (category === 'cafe' && mesh.name.endsWith('-accent')) geometry.translate(0, -3.15, 0).rotateX(Math.PI).translate(0, 3.15, 0)
       geometry.scale(...scale); geometry.rotateY(yaw); geometry.translate(point.x + offset[0], .11, point.z + offset[1])
       geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
+      if (layout.variant === 'align' && category === 'vendors' && kind === 'awning-cart') {
+        const p = geometry.attributes.position, n = geometry.attributes.normal, surface = new Float32Array(p.count * 3)
+        for (let i = 0; i < p.count; i++) surface.set([.78, 0, p.getY(i) > 2.2 && n.getY(i) > .5 ? 4 : 0], i * 3)
+        geometry.setAttribute('sampleSurface', new THREE.BufferAttribute(surface, 3))
+      }
       if(layout.variant==='align' && category==='trees' && mesh.name.endsWith('-leaf')) {
         const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?40:144
         for(let i=0;i<count;i++){
@@ -50,6 +55,11 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       add('vendors', 'awning-cart', point.id, point, Math.PI / 2, [.72, 1, .72])
       box(point.x + .565, 1, point.z, .02, .86, 2.14, '#C9A57A', 'wood')
       for (let i = 0; i < 12; i++) box(point.x + .581, 1, point.z - .99 + i * .18, .015, .78, .022, '#B89B64')
+      if (layout.variant === 'align') {
+        box(point.x, 1.95, point.z - .5, .34, .4, .42, '#26333A')
+        box(point.x + .173, 1.95, point.z - .5, .006, .16, .21, '#9A968E')
+        for (const z of [.42, .68]) batch.add(new THREE.CylinderGeometry(.065, .055, .14, low ? 6 : 10), '#F4F1EA', [point.x + .12, 1.82, point.z + z], 0, .4)
+      }
     }
     for (const point of p.kiosks) {
       add('vendors', 'square-kiosk', point.id, point, Math.PI / 2, [.72, 1, .72])
@@ -57,6 +67,10 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       for (const y of [1.16, 1.69]) box(point.x - .96, y, point.z, .035, .05, 1.51, '#C9A57A', 'wood')
       for (let i = 0; i < 5; i++) box(point.x - .95, 1.83, point.z - .53 + i * .26, .045, .23, .15, i % 2 ? '#B7C2B4' : '#D9D3C6')
       box(point.x - .96, 2.08, point.z, .035, .035, 1.55, '#B89B64')
+      if (layout.variant === 'align') {
+        box(point.x - 1.05, 1.35, point.z, .25, .36, .32, '#26333A')
+        for (const z of [-.5, .5]) batch.add(new THREE.CylinderGeometry(.055, .05, .14, low ? 6 : 10), '#F4F1EA', [point.x - 1.08, 1.24, point.z + z], 0, .4)
+      }
     }
     p.umbrellaTables.forEach((point, i) => add('cafe', '', `plaza-cafe-${i + 1}`, point, 0, [.85, 1, .85]))
     if(layout.variant==='align')for(const side of [-1,1])for(const z of [17.5,24.5]){

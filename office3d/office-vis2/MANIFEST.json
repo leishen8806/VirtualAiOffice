@@ -140,14 +140,14 @@
       "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "06D79454ED65C6FAB44241AF509A79AB554F1661FC11509C050E1F2763011692"
+      "sha256": "0267985CA58369C8FEFEDEC31F48156773AA72F1BA7A86E2407D8E199B4C78D3"
     },
     {
       "file": "office-vis2/plaza.js",
       "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2F9860EC8A886F71445C1305D6D4E3FF2E1BDA16BEA36740C596D2B6F4BE1454"
+      "sha256": "E3C8F0EA71A4F984BA35028508E559C17D8F661B06383ED639C8966EE826025E"
     },
     {
       "file": "office-vis2/shell-finish.js",
@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "30892CF27BA674E8A9A9F761F042B9D772317689F4B773B6AB95FFC3A5D0436B"
+      "sha256": "3502B27127B8D8D5F03658D6475E4F7B120CB87F26643A07F7559AF7CB4198AB"
     },
     {
       "file": "office-vis2/open-furnishing.js",
