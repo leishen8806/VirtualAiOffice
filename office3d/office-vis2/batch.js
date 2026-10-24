@@ -1,6 +1,35 @@
 // 细石粒在远景淡出，避免规则正弦条纹把石材画成木纹，或细噪点产生闪烁。
 export const officeStoneGrain = uv => `vec2 stoneCell = floor(${uv} * 180.0); float stoneGrain = fract(sin(dot(stoneCell, vec2(127.1, 311.7))) * 43758.5453); float stoneFade = 1.0 - smoothstep(0.002, 0.006, max(fwidth(${uv}.x), fwidth(${uv}.y))); diffuseColor.rgb *= mix(0.99, 0.982 + 0.018 * stoneGrain, stoneFade);`
 
+// 家具仍用原 atlas 和合批；只给明确的暖木/织物顶点色补纹理，屏幕白色顶点不受影响。
+const furnitureSurfaceOwners = new WeakSet()
+export function bindOfficeFurnitureSurfaces(THREE, targets, assets) {
+  const records = []
+  if (assets?.oak?.isTexture && assets?.fabric?.isTexture) for (const material of new Set(targets || [])) {
+    if (!material?.isMeshStandardMaterial || !material.vertexColors || !material.map?.isCanvasTexture || furnitureSurfaceOwners.has(material)) continue
+    const previous = material.onBeforeCompile, previousKey = material.customProgramCacheKey, key = previousKey.call(material)
+    material.onBeforeCompile = function(shader,renderer) {
+      previous.call(this,shader,renderer)
+      Object.assign(shader.uniforms,{officeFurnitureOak:{value:assets.oak},officeFurnitureFabric:{value:assets.fabric},officeFurnitureWoodColor:{value:new THREE.Color('#C49A6C')},officeFurnitureFabricColor:{value:new THREE.Color('#506A5A')}})
+      shader.vertexShader = 'varying vec3 officeFurniturePosition; varying vec3 officeFurnitureNormal;\n' + shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nofficeFurniturePosition = position; officeFurnitureNormal = normal;')
+      shader.fragmentShader = 'uniform sampler2D officeFurnitureOak; uniform sampler2D officeFurnitureFabric; uniform vec3 officeFurnitureWoodColor; uniform vec3 officeFurnitureFabricColor; varying vec3 officeFurniturePosition; varying vec3 officeFurnitureNormal;\n' + shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+        float officeWood = 0.0; float officeFabric = 0.0;
+        #ifdef USE_COLOR
+        officeWood = 1.0 - step(.01,length(vColor.rgb-officeFurnitureWoodColor)); officeFabric = 1.0 - step(.01,length(vColor.rgb-officeFurnitureFabricColor));
+        #endif
+        vec3 officeN = abs(normalize(officeFurnitureNormal)); vec2 officeUv = officeN.y > max(officeN.x,officeN.z) ? officeFurniturePosition.xz : (officeN.x > officeN.z ? officeFurniturePosition.zy : officeFurniturePosition.xy);
+        if (officeWood > .5) diffuseColor.rgb *= mix(vec3(1.0),texture2D(officeFurnitureOak,officeUv/1.2).rgb,.45);
+        else if (officeFabric > .5) diffuseColor.rgb *= mix(vec3(1.0),texture2D(officeFurnitureFabric,officeUv*3.0).rgb,.35);
+      `).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nif (officeWood > .5) roughnessFactor = .64; else if (officeFabric > .5) roughnessFactor = .96;')
+    }
+    material.customProgramCacheKey = () => key+'-office-owned-furniture-surfaces-v1'; material.needsUpdate = true
+    records.push({material,previous,previousKey,installed:material.onBeforeCompile})
+    furnitureSurfaceOwners.add(material)
+  }
+  let disposed = false
+  return {count:records.length,dispose(){if(disposed)return;disposed=true;for(const r of records){furnitureSurfaceOwners.delete(r.material);if(r.material.onBeforeCompile===r.installed){r.material.onBeforeCompile=r.previous;r.material.customProgramCacheKey=r.previousKey;r.material.needsUpdate=true}}records.length=0}}
+}
+
 // 合并颜色和表面参数，避免把木材、织物与金属合并成同一种粗糙度。
 export function createSampleBatch(THREE, assets) {
   const values = { position: [], normal: [], color: [], sampleSurface: [], sampleUv: [] }

@@ -140,7 +140,7 @@
       "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E86A2155F3C207ECCD121D1E81C20400F5559FB6730149DCD4E1AE579CD1C93D"
+      "sha256": "F216107996C9E8D0EB7D26872C36628D6ACDA72ADE3FD48677BD058778A25F25"
     },
     {
       "file": "office-vis2/plaza.js",
@@ -196,7 +196,7 @@
       "source": "Original office-only private sample assembly; reuses registered assets and weather reflection, no downloads or photographic textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "47B62D3165C2BFC1F955B636FAA479F7BE83B83E01CC39CB2A63C3966AE4C234"
+      "sha256": "EB62C9F9DC53673BFEC77CD22A0833FC3904CA2EF9922967530CA4A79B4F8E3A"
     }
   ],
   "excluded": {

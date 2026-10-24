@@ -20,6 +20,8 @@ function buildOfficeFurnitureV3(context) {
     return pendingModule('office-furniture-v3')
   }
   const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
+  const surfaceMaterials = new Set()
+  if (context.layout.variant==='align' && officeSampleRequested(context.search)) furniture.root.traverse(m=>{if(m.isMesh&&m.name.startsWith('office2-furniture-part-'))surfaceMaterials.add(m.material)})
   let badges
   if (officeSampleRequested(context.search)) {
     const { THREE } = context, seats = Object.values(context.layout.seats)
@@ -33,7 +35,7 @@ function buildOfficeFurnitureV3(context) {
     })
     context.root.add(badges)
   }
-  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3, dispose() { badges?.removeFromParent(); badges?.geometry.dispose(); badges?.material.dispose(); badges?.dispose(); furniture.dispose() } }
+  return { ...furniture, surfaceMaterials:[...surfaceMaterials], displaySeats: context.layout.displaySeats, version: 3, dispose() { badges?.removeFromParent(); badges?.geometry.dispose(); badges?.material.dispose(); badges?.dispose(); furniture.dispose() } }
 }
 
 const displayLayout = layout => ({ ...layout, version: 2, corridors: {
