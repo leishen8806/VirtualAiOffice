@@ -204,6 +204,23 @@ test('shuttle load cartons rest on the measured pallet deck and preserve the upp
   }
 })
 
+test('slot and shuttle pallet decks rest on their measured bearer tops', () => {
+  const { cell } = build(), slots = named(cell, 'vis2-slot-pallets'), slotParts = instances(slots)
+  const slotDecks = slotParts.filter(item => near(item.sy, .03) && near(item.sx, D.palletZ))
+  const slotBearers = slotParts.filter(item => near(item.sy, .09) && near(item.sx, D.palletZ))
+  assert.equal(slotDecks.length, 2)
+  for (const deck of slotDecks) {
+    const bearers = slotBearers.filter(bearer => near(bearer.x, deck.x) && Math.abs(bearer.z - deck.z) <= .4001)
+    assert.equal(bearers.length, 3, `slot pallet at z=${deck.z.toFixed(2)} has three bearer legs`)
+    for (const bearer of bearers) assert.ok(near(box(deck).y0, box(bearer).y1, 1e-4), 'slot pallet deck rests on every bearer top')
+  }
+  const load = named(cell, 'vis2-shuttle-load'), deck = partBox(load, 'pallet-deck')
+  for (const name of ['pallet-bearer-0.4', 'pallet-bearer0', 'pallet-bearer0.4']) {
+    const bearer = partBox(load, name)
+    assert.ok(near(deck.min.y, bearer.max.y, 1e-4), `shuttle pallet deck rests on ${bearer.min.x.toFixed(1)} bearer top`)
+  }
+})
+
 test('host state: carrying, occupied and status are accepted from the host only, invalid values are ignored', () => {
   const { cell } = build(), summary0 = cell.summary()
   assert.equal(summary0.state.source, 'fixture')
@@ -370,10 +387,8 @@ test('rack and shuttle replacement paths build real legacy or VIS2 support objec
   const legacyShuttle = buildCampusShuttle({ THREE, root: legacyRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: null })
   assert.ok(legacyRoot.getObjectByName('campus-shuttle-static'))
   assert.ok(legacyRoot.getObjectByName('campus-shuttle-vehicle'))
-  const legacyNames = []
-  legacyRoot.traverse(node => { if (node.name) legacyNames.push(node.name) })
   for (const { legacy } of VIS2_REPLACES) {
-    assert.ok(legacyNames.some(name => name === legacy || name.startsWith(`${legacy}-`)), `replacement list names a legacy object: ${legacy}`)
+    assert.ok(legacyRoot.getObjectByName(legacy), `replacement list names an exact legacy object: ${legacy}`)
   }
 
   const replacementShuttle = buildCampusShuttle({ THREE, root: replacementRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: { setShuttle() {} } })

@@ -36,9 +36,10 @@
 | 旧对象 | 决定 |
 |---|---|
 | `campus-racks-static`（`dr-campus-racks.js` 的 `buildCampusRacks`） | 停用其中的货架立柱 / 横梁 / 货物箱体，**以及穿梭机展示带的旧底座板（y 0.06…0.18，会把新钢轨与枕木整根埋住）**；该实例化网格还混有工位与月台门，需让旧模块**跳过货架、货物与穿梭机底座并保留其余**，不要整体删除 |
-| `campus-shuttle`、`campus-shuttle-static` | 由本构件的 `vis2-shuttle` 与 `vis2-rails` 替换 |
+| `campus-shuttle` | 替换模式下保留为宿主状态容器，不再创建旧车体；状态由宿主转发给 `vis2-shuttle` |
+| `campus-shuttle-static` | 旧轨道与枕木由本构件的 `vis2-rails` 替换 |
 | 货架区功能区体块（`dr-campus-shell.js` 的 `campus-zone-highRack`，y 0.06…0.78；低画质下是**不透明**材质，会遮住车体、轨道、第 1 层横梁与托盘下部） | **改为地面标线 / 贴地标记**，不再用不透明体块；真实地坪保留（不由本构件另铺一层） |
-| `campus-rack-labels` | 保留；但上面「穿梭机展示位（预留）」的文案接入后已过时，需改文案 |
+| `campus-rack-labels` | 保留；当前文字已是「穿梭机展示位（模拟）」，与代码一致，原“需改标签文案”待办不再成立 |
 | 仍共享 | `CAMPUS_ZONES`、`CAMPUS_SHUTTLE_STRIP`、`createCampusRackPlan`、`shuttlePlan`（只读导入） |
 **当前生产接线：** `dr-campus-modules.js` 显式以 `CAMPUS_FINISHED_FLOOR_Y = -0.54` 创建本构件；`dr-campus-racks.js` 在替换模式下仅保留 3 个工位、4 个收货门和 3 个发货门，并同样落在完成面。旧货架、旧轨道与旧车体不会进入合并批次。
 
@@ -70,13 +71,14 @@
 | P2-3 `qualityProxy` | `quality contract…`（并确认 `quality.js` 仍跳过该标记） | M9 → **KILLED** |
 | dispose 重复释放 | `dispose releases every owned resource exactly once…`（按对象计数，必须恰好 1 次） | M8 → **KILLED** |
 | 真实注册路径 | `real campus module wiring…`（直接构建 `campusModules` 后再运行完整 registry） | `status` 不转发、删 `delivery` 灯映射、support 偏移为 0、`put()` 忽略 support 偏移均失败 |
+| P2-1 托盘悬空 | `slot and shuttle pallet decks rest…`（实测托盘面底与每个托盘腿/承托板顶面） | X1 货位托盘面与纸箱整体 +5 cm、X2 车载 `loadTop` +5 cm 均失败 |
 | 货位互穿与纸箱贴合 | `slot pallets clear…`、纸箱/托盘几何断言 | 货架或货位纸箱整体上移 5 cm 均失败 |
 | 引导面高度 | `shuttle reserve guide stays 2 mm…` | 改回完成面 +0.03 m 失败 |
 复审 R2 对审查列出的 **7 个变异均执行并被抓住**：R2-M5（宿主不转发 status）、R2-M7（删除 delivery 灯映射）、R2-M8（supportOffset 归零）、R2-M13（实例 put 忽略偏移）、R2-M10（货架纸箱上移）、R2-M11（货位纸箱上移）、R2-M9（引导面回到 +0.03m）。守卫直接观察实例世界包围盒、逐帧宿主状态、状态灯材质色、纸箱底面和引导面高度；不再使用替换对象名称的源码正则。
 
-复审 R3 再补 6 个变异，均已被实测守卫捕获：R3-M15（车载纸箱 +5cm）、R3-M18（车载纸箱回退旧公式）、R3-M23（车载托盘面 +5cm）均命中 `shuttle load cartons rest…`；R3-M21（货架 `ix > 0` 纸箱 +5cm）、R3-M22（货位托盘面 +5cm）、R3-M24（货架上层纸箱 −5cm）均命中 `slot pallets clear…` 的纸箱/托盘或层间断言。
+复审 R3 再补 6 个变异，均已被实测守卫捕获：R3-M15（车载纸箱 +5cm）、R3-M18（车载纸箱回退旧公式）、R3-M23（车载托盘面 +5cm）均命中 `shuttle load cartons rest…`；R3-M21（货架 `ix > 0` 纸箱 +5cm）、R3-M22（货位托盘面 +5cm）、R3-M24（货架上层纸箱 −5cm）均命中 `slot pallets clear…` 的纸箱/托盘或层间断言。R4 的 P2-1 再新增 1 项高度守卫；W-V1-R4 的 4 项叉车守卫归月台卡，不计入本卡。
 
-**定向套件（R3）：** `tests/dr-vis2-rack-cell.test.mjs tests/dr-campus-*.test.mjs` 为 52 项：50 通过、2 个既有环境失败（隐藏 root 回调契约、缺失 `office3d-backup-s2-4/app.js`）。**全量串行套件（R3）：** 1053 项：1035 通过、17 失败、1 跳过；相对于 `656f473` 的 1048 项：1030 通过、17 失败、1 跳过，仅增加本轮 5 项通过断言，未引入失败。隔离 worktree 的历史备份、本地 JSON 和 fixture 缺失会造成既有环境失败。
+**定向套件（R4）：** `tests/dr-vis2-rack-cell.test.mjs` 为 22 项，全部通过。R3 所述“新增 5 项”按归属拆分为：本卡新增 1 项托盘高度守卫，月台卡 W-V1-R4 新增 4 项叉车守卫。隔离 worktree 的历史备份、本地 JSON 和 fixture 缺失会造成既有环境失败。
 
 ## 十、仍未验证（如实）
 - **没有任何浏览器 / WebGL / GPU 验证**：车轮与车体法线是在几何层核对的；本修订版**未重新截图**（预览截图是修订前的）。
