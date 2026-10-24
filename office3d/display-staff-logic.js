@@ -81,6 +81,11 @@ export function displayRoute(layout, person) {
   const north = door.side === 'south', hallway = layout.corridors[north ? 'north' : 'south']
   const z = (hallway.z0 + hallway.z1) / 2, edge = north ? room.z1 : room.z0
   const inside = { x: door.at, z: edge + (north ? -.6 : .6) }, outside = { x: door.at, z }
+  if (layout.displayAdapter === 'v3') {
+    const go = [person.home, inside, outside]
+    const length = go.reduce((sum, p, i) => sum + (i ? distance(p, go[i - 1]) : 0), 0)
+    return Object.freeze({ go, back: go.toReversed(), length, side: person.home.x < 2 ? 'west' : 'east', gapAccess: false, reason: 'V3_DISPLAY_ROUTE', durationMs: (length * 2 / 1.4 + 20) * 1000 })
+  }
   const boxes = displayFurnitureBounds(layout).filter(b => b.id !== `${person.id}-chair`)
   const inRoom = p => p.x >= room.x0 + .3 && p.x <= room.x1 - .3 && p.z >= room.z0 + .3 && p.z <= room.z1 - .3
   const exit = route(person.home, inside, room, boxes, inRoom)

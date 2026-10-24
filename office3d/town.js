@@ -12,9 +12,11 @@ import {
   mapBounds,
   nextLabelFrame,
   PLACE_LANDMARK_IDS,
+  placeIdForLandmark,
   resolveLabelPlacement,
   safeReadLabelMode,
   safeWriteLabelMode,
+  schedulePlaceTransitionFallback,
   typeText,
   validateMapData,
   worldToScreen,
@@ -58,6 +60,8 @@ let cssHeight = 1
 let dpr = 1
 let selected = null
 let hoveredPlaceId = ''
+let placeTransitionTimer = 0
+let pageLeaving = false
 let labelMode = safeReadLabelMode()
 let staticDirty = true
 let scheduled = false
@@ -427,6 +431,16 @@ function hidePlaceTooltip() {
   }
 }
 
+function clearPlaceTransition(redraw = true) {
+  if (placeTransitionTimer) {
+    clearTimeout(placeTransitionTimer)
+    placeTransitionTimer = 0
+  }
+  delete document.body.dataset.placeTransition
+  hidePlaceTooltip()
+  if (redraw && data && view) invalidate(true)
+}
+
 function updatePlaceTooltip(event) {
   if (!data || !view || pointers.size) {
     hidePlaceTooltip()
@@ -451,12 +465,18 @@ function updatePlaceTooltip(event) {
 }
 
 function navigateToPlace(item) {
-  const target = placeNavigation(item.id)
+  const target = placeNavigation(placeIdForLandmark(item.id))
+  pageLeaving = false
+  clearPlaceTransition(false)
   document.body.dataset.placeTransition = 'true'
   placeTooltipEl.textContent = `正在进入${target.name}…`
   placeTooltipEl.hidden = false
   const wait = reducedMotion.matches ? 0 : 160
   setTimeout(() => location.assign(target.placeHref), wait)
+  placeTransitionTimer = schedulePlaceTransitionFallback({
+    isPageLeaving: () => pageLeaving,
+    clear: () => clearPlaceTransition(true),
+  })
 }
 
 canvas.addEventListener('wheel', (event) => {
@@ -535,6 +555,17 @@ document.getElementById('resetMap').addEventListener('click', resetView)
 document.getElementById('reloadMap').addEventListener('click', () => location.reload())
 for (const button of modeButtons) button.addEventListener('click', () => setLabelMode(button.dataset.labelMode))
 addEventListener('resize', resize)
+addEventListener('pagehide', () => {
+  pageLeaving = true
+  if (placeTransitionTimer) {
+    clearTimeout(placeTransitionTimer)
+    placeTransitionTimer = 0
+  }
+})
+addEventListener('pageshow', () => {
+  pageLeaving = false
+  clearPlaceTransition(true)
+})
 document.addEventListener('visibilitychange', () => { if (!document.hidden) invalidate(true) })
 darkQuery.addEventListener('change', () => invalidate(true))
 reducedMotion.addEventListener('change', () => invalidate(false))

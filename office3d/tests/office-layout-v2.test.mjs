@@ -59,10 +59,10 @@ test('v2 rooms, seats, corridors and plaza obey the rev2 geometry contract', () 
   assert.deepEqual(v2.regions.find((r) => r.id === 'drlife').doors, [{ side: 'north', at: 24, width: 1.5 }])
 })
 
-test('resolver accepts only layout=2 and returns frozen data', () => {
+test('resolver preserves layout=2 and rejects unsupported values', () => {
   assert.equal(layout.resolveOfficeLayout('?layout=2'), layout.LAYOUT_V2)
   assert.equal(layout.resolveOfficeLayout('layout=2'), layout.LAYOUT_V2)
-  for (const search of ['', '?layout=1', '?layout=3', '?layout=2&layout=1', '?layout=%32x']) assert.equal(layout.resolveOfficeLayout(search), layout.LAYOUT_V1)
+  for (const search of ['', '?layout=1', '?layout=4', '?layout=2&layout=1', '?layout=%32x']) assert.equal(layout.resolveOfficeLayout(search), layout.LAYOUT_V1)
   assert.equal(Object.isFrozen(layout.LAYOUT_V2), true)
   assert.equal(Object.isFrozen(layout.LAYOUT_V2.regions[0]), true)
   assert.throws(() => { layout.LAYOUT_V2.envelope.x0 = 0 }, TypeError)

@@ -1,0 +1,213 @@
+{
+  "generatedAt": "2026-10-23T04:48:56.165Z",
+  "summary": {
+    "module": "vis2-rack-cell",
+    "preview": "组件预览，尚未正式接入",
+    "quality": "high",
+    "seed": 4207,
+    "rows": [
+      "A1",
+      "R2",
+      "C2",
+      "B2"
+    ],
+    "uprights": 56,
+    "braces": 84,
+    "beams": 192,
+    "loads": 109,
+    "empty": 35,
+    "rails": 2,
+    "sleepers": 17,
+    "instances": {
+      "frame": 444,
+      "pallet": 436,
+      "carton": 1084,
+      "film": 77,
+      "rail": 23
+    },
+    "drawCalls": 6,
+    "triangles": 25144,
+    "replaces": [
+      "campus-racks-static",
+      "campus-shuttle",
+      "campus-shuttle-static",
+      "campus-rack-labels"
+    ]
+  },
+  "lowSummary": {
+    "module": "vis2-rack-cell",
+    "preview": "组件预览，尚未正式接入",
+    "quality": "low",
+    "seed": 4207,
+    "rows": [
+      "A1",
+      "R2"
+    ],
+    "uprights": 28,
+    "braces": 0,
+    "beams": 72,
+    "loads": 51,
+    "empty": 21,
+    "rails": 2,
+    "sleepers": 17,
+    "instances": {
+      "frame": 100,
+      "pallet": 204,
+      "carton": 408,
+      "film": 0,
+      "rail": 23
+    },
+    "drawCalls": 6,
+    "triangles": 9132,
+    "replaces": [
+      "campus-racks-static",
+      "campus-shuttle",
+      "campus-shuttle-static",
+      "campus-rack-labels"
+    ]
+  },
+  "pass": true,
+  "failed": [],
+  "checks": [
+    {
+      "id": "approved-colors",
+      "ok": true,
+      "detail": "frame colors=#e8832a,#2f6fa8"
+    },
+    {
+      "id": "upright-blue-hex",
+      "ok": true,
+      "detail": "立柱 #2F6FA8"
+    },
+    {
+      "id": "beam-orange-hex",
+      "ok": true,
+      "detail": "横梁 #E8832A"
+    },
+    {
+      "id": "triangle-count-matches",
+      "ok": true,
+      "detail": "summary=25144 geometry=25144"
+    },
+    {
+      "id": "drawcall-count-matches",
+      "ok": true,
+      "detail": "summary drawCalls=6 (5 instanced batches + 1 merged shuttle)"
+    },
+    {
+      "id": "claimed-25144-high",
+      "ok": true,
+      "detail": "high triangles=25144"
+    },
+    {
+      "id": "claimed-low-9132",
+      "ok": true,
+      "detail": "low triangles=9132"
+    },
+    {
+      "id": "rack-contained",
+      "ok": true,
+      "detail": "outOfRack=0"
+    },
+    {
+      "id": "pallet-on-beam",
+      "ok": true,
+      "detail": "decks=109 bad=0"
+    },
+    {
+      "id": "pallet-overhang",
+      "ok": true,
+      "detail": "托盘两侧悬出 0.125m"
+    },
+    {
+      "id": "carton-clearance",
+      "ok": true,
+      "detail": "bad=0"
+    },
+    {
+      "id": "top-beam-empty",
+      "ok": true,
+      "detail": "max deck y=2.965 < 4.1"
+    },
+    {
+      "id": "two-rails",
+      "ok": true,
+      "detail": "rail xs=-146.700,-145.300"
+    },
+    {
+      "id": "wheels-on-railtop",
+      "ok": true,
+      "detail": "shuttle minY=0.1050 railTop=0.1050"
+    },
+    {
+      "id": "wheel-x-on-rails",
+      "ok": true,
+      "detail": "wheel pairs=[{\"mid\":-0.7,\"width\":0.07},{\"mid\":0.7,\"width\":0.07}] rail local x=-0.7,0.7"
+    },
+    {
+      "id": "shuttle-default-slot",
+      "ok": true,
+      "detail": "pos=-146.00,0.00,-1.00"
+    },
+    {
+      "id": "shuttle-clamp",
+      "ok": true,
+      "detail": "low=-6.85,0.12 high=4.85,0"
+    },
+    {
+      "id": "deterministic-same-seed",
+      "ok": true,
+      "detail": "same seed instance hash equal"
+    },
+    {
+      "id": "different-seed-differs",
+      "ok": true,
+      "detail": "seed 4207 vs 999 carton hash differs"
+    },
+    {
+      "id": "dispose-idempotent",
+      "ok": true,
+      "detail": "holder children=0"
+    },
+    {
+      "id": "dispose-own-resources",
+      "ok": true,
+      "detail": "geometry 6/6, material 6/6"
+    },
+    {
+      "id": "build-dispose-50",
+      "ok": true,
+      "detail": "scene children=1 root children=0"
+    },
+    {
+      "id": "registry-factory-contract",
+      "ok": true,
+      "detail": "modules=vis2Rack skipped="
+    },
+    {
+      "id": "registry-merge-film-opacity",
+      "ok": true,
+      "detail": "film opacity=0.28"
+    },
+    {
+      "id": "registry-merge-static",
+      "ok": true,
+      "detail": "静态实例被合并，穿梭机保留"
+    },
+    {
+      "id": "module-no-unsafe-apis",
+      "ok": true,
+      "detail": "hits=[]"
+    },
+    {
+      "id": "module-no-dom-renderer",
+      "ok": true,
+      "detail": "不创建渲染器/场景"
+    },
+    {
+      "id": "replace-list-real",
+      "ok": true,
+      "detail": "missing="
+    }
+  ]
+}

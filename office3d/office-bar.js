@@ -1,10 +1,22 @@
 import { OFFICE_THEME_V2 as THEME } from './office-theme-v2.js'
 import { LOUNGE_SIT, barArcs, barColliders, barLounges, barSeats, barSpec, validateBarGeometry } from './office-bar-geometry.js'
+import { officeVis2Enabled } from './office-vis2/assets.js'
+import { buildOfficeTeaBarSample } from './office-vis2/bar.js'
 
 const finitePeriod = (value, fallback) => Number.isFinite(value) && value > 0 ? value : fallback
 
-export function buildOfficeBar({ THREE, root, layout, materials, collision, canvasTex, low = false, materialOverrides = {}, uvScale = {} }) {
+export function buildOfficeBar({ THREE, root, layout, materials, collision, canvasTex, low = false, materialOverrides = {}, uvScale = {}, visualSample }) {
   if (!validateBarGeometry(layout).ok) throw new Error('Invalid office bar geometry')
+  if (officeVis2Enabled(visualSample) && ['oak', 'stone', 'fabric'].every(key => visualSample.assets?.[key]?.isTexture)) {
+    const mount = new THREE.Group(); root.add(mount)
+    const pending = [], deferred = collision && { add: (...args) => pending.push(args), remove: item => collision.remove?.(item) }
+    let value
+    try {
+      value = buildOfficeTeaBarSample({ THREE, root: mount, layout, low, collision: deferred, assets: visualSample.assets })
+      pending.forEach(args => collision.add(...args))
+      const dispose = value.dispose; return { ...value, dispose() { dispose(); mount.removeFromParent() } }
+    } catch { if (value) value.dispose(); else mount.traverse(m => { if (m.isMesh) { m.geometry.dispose(); m.material.dispose() } }); mount.removeFromParent() }
+  }
   const spec = barSpec(layout), group = new THREE.Group()
   group.name = 'office2-bar'
   const scales = {

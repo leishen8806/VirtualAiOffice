@@ -2,7 +2,7 @@ import { OFFICE_THEME_V2 as T } from './office-theme-v2.js'
 import { displayConfig, displayRoster, displayRoute, displaySchedule, displayFrame } from './display-staff-logic.js'
 import { displayAtlas } from './display-staff-mesh.js'
 
-export function buildDisplayStaff({ THREE, root, layout, config, search = '', now = () => 0, low = false, seed = 2707, canvasTex }) {
+export function buildDisplayStaff({ THREE, root, layout, config, search = '', now = () => 0, low = false, seed = 2707, canvasTex, compact = false }) {
   const group = new THREE.Group(); group.name = 'office2-display-staff'; group.userData.dynamic = true
   const roster = displayRoster(layout), routes = new Map()
   let enabled = displayConfig(config, search).enabled, disposed = false, meshes = [], texture = null
@@ -21,11 +21,11 @@ export function buildDisplayStaff({ THREE, root, layout, config, search = '', no
     const body = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: T.wallRoughness }), roster.length * parts)
     meshes = [body]; group.add(body)
     texture = displayAtlas(THREE, [['模拟']], canvasTex)
-    const labels = new THREE.InstancedMesh(new THREE.PlaneGeometry(.8, .3), new THREE.MeshBasicMaterial({ map: texture, color: texture ? 0xffffff : T.nameplate, side: THREE.DoubleSide }), roster.length)
-    body.name = 'display-simulated-body'; labels.name = 'display-simulated-badges'
-    for (const mesh of [body, labels]) { mesh.frustumCulled = false; mesh.castShadow = false; mesh.receiveShadow = false }
-    group.add(labels)
-    meshes = [body, labels]
+    const labels = compact ? null : new THREE.InstancedMesh(new THREE.PlaneGeometry(.8, .3), new THREE.MeshBasicMaterial({ map: texture, color: texture ? 0xffffff : T.nameplate, side: THREE.DoubleSide }), roster.length)
+    body.name = 'display-simulated-body'; if (labels) labels.name = 'display-simulated-badges'
+    for (const mesh of [body, labels].filter(Boolean)) { mesh.frustumCulled = false; mesh.castShadow = false; mesh.receiveShadow = false }
+    if (labels) group.add(labels)
+    meshes = labels ? [body, labels] : [body]
     for (let i = 0; i < roster.length * parts; i++) body.setColorAt(i, color.set(colors[i % parts]))
     body.instanceColor.needsUpdate = true
   }
@@ -53,10 +53,9 @@ export function buildDisplayStaff({ THREE, root, layout, config, search = '', no
         dummy.rotation.set(0, p.yaw, 0); dummy.scale.set(w, h, d); dummy.updateMatrix()
         body.setMatrixAt(index * parts + j, dummy.matrix)
       })
-      dummy.position.set(p.x, hip + 1.24, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1)
-      dummy.updateMatrix(); labels.setMatrixAt(index, dummy.matrix)
+      if (labels) { dummy.position.set(p.x, hip + 1.24, p.z); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); labels.setMatrixAt(index, dummy.matrix) }
     })
-    body.instanceMatrix.needsUpdate = true; labels.instanceMatrix.needsUpdate = true
+    body.instanceMatrix.needsUpdate = true; if (labels) labels.instanceMatrix.needsUpdate = true
   }
   function update() {
     if (disposed || !enabled || low || !group.visible || failure) return

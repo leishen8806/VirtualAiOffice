@@ -488,6 +488,20 @@ node E:\VirtualAIOffice\paperclip-ops\office3d\server.mjs
 - **接线**（`server.mjs`）：新增只读 `GET /evidence-version?issue=CMP-xxx`（单个）与 `GET /evidence-version`（批量，最多 20 个，取当前「待验收」），放在访问控制之后，大屏令牌设备经 `API_PATHS` 直接 403；`/state` 不加字段；无 `act()` 改动。
 - **总开关**：`evidence-version.json` 的 `enabled:false` 为总开关，**默认关闭**（缺省 / 损坏也按关闭）；关闭时接口返回 `{disabled:true}`、页面不显示徽标、超时验收过滤不生效。`roots` 在这里配置，由董事会调整。
 
+## 完成策略（completion-policy.mjs，DS-7 R1，2026-10-23；默认关闭，重启后生效）
+
+把任务写成 `done` 的三处入口统一过一道「完成策略」：**本机董事会点「验收通过」**（`server.mjs` 的 `act()`）、**Telegram 验收**（`tgActions.review`）、**超时验收委员会批次**（`acceptance.mjs`）。判定复用既有 `done-rules.mjs` / `command-view-validate.mjs`，不另造规则；**默认 `off`，行为与改前完全一致**。
+
+- **三种模式**（`completion-policy.json`，运行数据、**不入库**；仓库只提供 `completion-policy.json.example`，内容 `{ "mode": "off" }`）：
+  - `off`：一律放行，不读证据（默认；缺文件 / 坏文件 / 未知字段 / 非法值都按 `off`，失败关闭）。
+  - `warn`：一律放行，但把证据问题写进 `reasons` / `audit`，并在验收评论里附一行「完成策略（warn）提示」。
+  - `enforce`：证据无效时**拒绝完成**——不发 `PATCH status:done`；`review` 返回中文错误并列原因码，自动验收批次跳过该项、记 `POLICY_BLOCKED`、不影响其它项。
+- **判定口径**：证据缺失 → `NO_EVIDENCE`；版本不一致 / 无法核对 → `VERSION_MISMATCH`；受保护测试不符 → `PROTECTED_TEST_MISMATCH`；执行者自评 → `REVIEW_NOT_INDEPENDENT`；验收者不在 `boardActors` → `BOARD_ACCEPTANCE_REQUIRED`；任务创建早于 `enforcedSince` → `LEGACY_BASELINE`（按旧任务放行）。原因码只来自 `REASON_CODES` 与本模块新增并导出的 `NO_EVIDENCE`、`OVERRIDE_NOT_ALLOWED`。
+- **人工特批**：仅 `enforce` 下、仅**本机完整权限**（`localFullAccess`，局域网 / 大屏恒为 false）、理由去空白后 **≥10 字**时放行，并在 `audit` 记 `override:true`、理由、时间；LAN / 大屏永远不能特批（尝试会得到 `OVERRIDE_NOT_ALLOWED`）。特批不掩盖原问题，`reasons` 仍保留。
+- **开关读取**：启动时读一次 `completion-policy.json`（与其它默认关闭开关一致）；`warn` / `enforce` 要求合法 ISO `enforcedSince` 与字符串数组 `boardActors`，否则回退 `off`。
+- **覆盖范围**（与 `done-rules.mjs` 的 `enforcementBoundary` 同口径）：覆盖的是「办公室 3D 的任务验收流程 / 完成判定调用」；**未覆盖**：Agent 绕过办公室 3D 直接改 Paperclip 完成状态、Paperclip 原生领取 / 执行锁和其它入口、未接入本规则引擎的历史或外部工作流——这些必须单独授权和验证。
+- **安全边界不变**：局域网访问码、只读、Host 校验、`act()` 鉴权段保持原样；特批复用现有「本机完整权限」判定，不新增身份机制；不联网、不装依赖。自检：`node --test tests/completion-policy.test.mjs tests/completion-policy-wiring.test.mjs`。
+
 ## 前厅访客登记与公告（foyer.mjs，S1-2，2026-10-20；默认关闭，重启后生效）
 
 前厅的两项新数据：匿名访客登记 + 董事会手写公告。**默认关闭**：`foyer.json` 的 `visitors.enabled:false` / `announcement.enabled:false`；文件缺失按全部关闭、损坏视为关闭并在 `/state.foyer.corrupt:true` 提示，不崩溃。状态文件 `foyer.json` **原子写入**（`.tmp` 改名），且不在静态文件白名单里（`/foyer.json` 404，谁都读不到 salt 和摘要）。

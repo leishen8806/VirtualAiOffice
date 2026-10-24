@@ -1,0 +1,4 @@
+5f9feef56315633f5188f078249fde45285d095431454330d90a1333414853b2  office3d/dr-vis2-rack-cell.js
+5a6e1bced258fb6236712f8d2b172c87de07eb4d51c8a299fda64825467852cf  office3d/dr-vis2-rack-cell-preview.html
+d8fc663ed619177ca96a1a09bf29d8a5f1ee284364bcb49cc2f14daf9693400b  office3d/tests/dr-vis2-rack-cell.test.mjs
+4327a9269b203f72592d2311d42dcb18452cd20bbd4b9d428838839a4cf5cec9  office3d/docs/dr-vis2-rack-cell.md

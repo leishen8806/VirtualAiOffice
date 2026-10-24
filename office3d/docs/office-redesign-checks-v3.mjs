@@ -1,68 +1,29 @@
-const AXIS_X = 2
+import { LAYOUT_V3 } from '../office-layout.js'
+
+const data = structuredClone(LAYOUT_V3)
+const AXIS_X = data.axis.x
 const PERSON_GAP = .52
-const site = { x0: -28, x1: 32, z0: -18, z1: 30 }
-const building = { x0: -28, x1: 32, z0: -18, z1: 12 }
-const landscape = { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5, buffer: 2.5 }
-const foyer = { id: 'foyer', x0: -6, x1: 10, z0: 4, z1: 12, width: 16, depth: 8 }
-const plaza = { cx: 2, cz: 21, radius: 9, diameter: 18 }
-const island = { cx: 2, cz: -6, radius: 6, diameter: 12, treeRadius: 1.2, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 }
-const ring = { inner: 6, outer: 10, width: 4 }
-const walls = { standard: 4.5, atrium: 6, windowBandBottom: 3.3 }
-const monitorFit = { source: 'MONITOR_GLASS_SOURCE', helper: 'monitorScreenFit', offsetMin: .001, offsetMax: .002, handWrittenTransform: false, extraCalls: 0 }
-
-const region = (id, name, x0, x1, z0, z1, side, at) => ({ id, name, x0, x1, z0, z1, doors: [{ side, at, width: 1.5 }] })
-const regions = [
-  region('market', '市场部（展示）', -28, -20, -18, -12, 'east', -15),
-  region('board', '会议与决策', -18.5, -8.5, -18, -12, 'west', -15),
-  region('review', '评审室 A', -28, -18, -10.5, -4.5, 'east', -7.5),
-  region('plan', '计划室 B', -16.5, -8.5, -10.5, -4.5, 'west', -7.5),
-  region('ops', '运营', -28, -18, -3, 4, 'east', .5),
-  region('quality', '质量与安全', -16.5, -8.5, -3, 4, 'west', .5),
-  region('aftersales', '售后部（展示）', -28, -20, 5.5, 11.5, 'east', 8.5),
-  region('leisure', '休闲展示区', -18.5, -10.5, 5.5, 11.5, 'west', 8.5),
-  region('kb', '知识', 12.5, 20.5, -18, -12, 'east', -15),
-  region('service', '客服部（展示）', 24, 32, -18, -12, 'west', -15),
-  region('product', '产品', 12.5, 21.5, -10.5, -3, 'east', -6.75),
-  region('eng', '工程', 23, 32, -10.5, -3, 'west', -6.75),
-  region('creative', '创意讨论区', 12.5, 21.5, -1.5, 3.5, 'east', 1),
-  region('dining', '餐饮休憩角', 23, 32, -1.5, 3.5, 'west', 1),
-  region('drlife', 'D.life 工坊', 12.5, 22.5, 5, 12, 'east', 8.5),
-  region('marketing', '营销部（展示）', 24, 32, 5, 12, 'west', 8.5),
-]
-
-const seats = {
-  Lead: ['product', 14.2, -8], PM: ['product', 17.5, -8], Architect: ['product', 14.2, -4.5], UIUX: ['product', 17.5, -4.5],
-  FrontendSenior: ['eng', 24.2, -8], Frontend1: ['eng', 27, -8], Frontend2: ['eng', 29.8, -8],
-  BackendSenior: ['eng', 24.2, -4.5], Backend1: ['eng', 27, -4.5], Backend2: ['eng', 29.8, -4.5],
-  KnowledgeKeeper: ['kb', 16.5, -15],
-  QAAutomation: ['quality', -15.5, -1.5], Reviewer1: ['quality', -12.5, -1.5], Reviewer2: ['quality', -15.5, 1.5], SecurityReviewer: ['quality', -12.5, 1.5],
-  OpsLead: ['ops', -25, 0], OpsEngineer: ['ops', -21, 0],
-  GoSenior: ['drlife', 14, 6], Go1: ['drlife', 16.5, 6], Go2: ['drlife', 19, 6], DBEngineer: ['drlife', 21, 6],
-  LedgerAuditor: ['drlife', 14, 9.5], ReactSenior: ['drlife', 16.5, 9.5], React1: ['drlife', 19, 9.5], Localizer: ['drlife', 21, 9.5],
-}
-const displaySeats = [
-  ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
-  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 28, -15], ['service-3', 'service', 30.5, -15],
-  ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
-  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
-].map(([id, regionId, x, z]) => ({ id, region: regionId, x, z }))
-
-const cameras = {
-  overview: { az: 0, el: 58, r: 78, target: [2, 0, 2], wallMode: 'full' },
-  orbit: { az: 35, el: 50, r: 72, target: [2, 0, -1], wallMode: 'camera-side-below-40' },
-  top: { az: 0, el: 82, r: 68, target: [2, 0, 1], wallMode: 'full' },
-  isometric: { az: -38, el: 48, r: 62, target: [2, 0, -1], wallMode: 'full' },
-  low: { az: -20, el: 28, r: 44, target: [2, 0, -1], wallMode: 'camera-side-lowered' },
-  follow: { az: 0, el: 34, r: 14, target: ['agent', 0, 'agent'], wallMode: 'camera-side-lowered' },
-}
-const occlusion = { triggerElevation: 40, loweredHeight: .9, glassOpacity: .08, transitionMs: 250 }
+const site = data.site
+const building = data.envelope
+const landscape = { ...data.greenBuffer, buffer: data.greenBuffer.width }
+const foyer = data.foyer
+const plaza = { cx: data.plaza.center.x, cz: data.plaza.center.z, radius: data.plaza.radius, diameter: data.plaza.diameter }
+const island = { cx: data.island.center.x, cz: data.island.center.z, ...data.island }
+const ring = data.ring
+const walls = data.wallHeight
+const monitorFit = data.monitorFit
+const regions = data.regions
+const seats = data.seats
+const displaySeats = data.displaySeats
+const cameras = data.cameraDefaults
+const occlusion = data.wallHeight.occlusion
 const foyerDetails = {
-  reception: { cx: 2, cz: 8.8, width: 6, depth: 1.4 },
-  service: { cx: -3.8, cz: 8.3, width: 3, depth: 2 },
-  waiting: { cx: 6.5, cz: 8.3, width: 5, depth: 3 },
-  axis: { x0: 0, x1: 4 }, sideClearance: 2,
+  reception: { cx: data.frontDesk.center.x, cz: data.frontDesk.center.z, width: data.frontDesk.x1 - data.frontDesk.x0, depth: data.frontDesk.z1 - data.frontDesk.z0 },
+  service: { cx: data.serviceBar.center.x, cz: data.serviceBar.center.z, width: data.serviceBar.x1 - data.serviceBar.x0, depth: data.serviceBar.z1 - data.serviceBar.z0 },
+  waiting: { cx: data.waitingArc.center.x, cz: data.waitingArc.center.z, width: data.waitingArc.x1 - data.waitingArc.x0, depth: data.waitingArc.z1 - data.waitingArc.z0 },
+  axis: data.passages.entranceAxis, sideClearance: 2,
 }
-const plazaDetails = { rings: 3, carts: 1, kiosks: 3, umbrellaTables: 4, lamps: 8, benches: 6, flowerBands: 4, radialSeams: 8 }
+const plazaDetails = { rings: data.plaza.rings, carts: data.plaza.carts.length, kiosks: data.plaza.kiosks.length, umbrellaTables: data.plaza.umbrellaTables.length, lamps: data.plaza.lamps.length, benches: data.plaza.benches.length, flowerBands: data.plaza.flowerBands.length, radialSeams: data.plaza.radialSeams }
 const stageBudgets = {
   R3_2: { highCalls: 0, highTriangles: 0, lowCalls: 0, lowTriangles: 0 },
   R3_3: { highCalls: 3, highTriangles: 24000, lowCalls: 1, lowTriangles: 7000 },
@@ -71,15 +32,7 @@ const stageBudgets = {
   R3_6B: { highCalls: 5, highTriangles: 32000, lowCalls: 2, lowTriangles: 11000 },
   R3_7: { highCalls: 0, highTriangles: 0, lowCalls: 0, lowTriangles: 0 },
 }
-const corridors = [
-  { id: 'west-north-cross', x0: -28, x1: -8.5, z0: -12, z1: -10.5 },
-  { id: 'west-middle-cross', x0: -28, x1: -8.5, z0: -4.5, z1: -3 },
-  { id: 'west-south-cross', x0: -28, x1: -10.5, z0: 4, z1: 5.5 },
-  { id: 'east-north-cross', x0: 12.5, x1: 32, z0: -12, z1: -10.5 },
-  { id: 'east-middle-cross', x0: 12.5, x1: 32, z0: -3, z1: -1.5 },
-  { id: 'east-south-cross', x0: 12.5, x1: 32, z0: 3.5, z1: 5 },
-  { id: 'entrance-axis', x0: 0, x1: 4, z0: 4, z1: 12 },
-]
+const corridors = Object.entries(data.corridors).filter(([, corridor]) => 'x0' in corridor).map(([id, corridor]) => ({ id, ...corridor }))
 
 const graphEdges = [
   ...regions.filter(r => r.x1 < AXIS_X).map(r => [r.id, 'westLoop']),
@@ -94,6 +47,7 @@ if (mutation === 'delete-door') regions.find(r => r.id === 'plan').doors.length 
 if (mutation === 'seat-outside') seats.Lead[1] = 40
 if (mutation === 'blocked-route') graphEdges.splice(graphEdges.findIndex(([a, b]) => a === 'ring' && b === 'foyer'), 1)
 if (mutation === 'plaza-overlap') foyer.z1 = 13
+if (mutation === 'structural-grid') regions.find(r => r.id === 'board').doors[0].at = 14.2
 
 const failures = []
 const check = (ok, message) => ok ? console.log(`PASS ${message}`) : (failures.push(message), console.error(`FAIL ${message}`))
@@ -102,6 +56,33 @@ const contains = (box, x, z, margin = 0) => x >= box.x0 + margin && x <= box.x1 
 const distanceRectToPoint = (box, x, z) => Math.hypot(Math.max(box.x0 - x, 0, x - box.x1), Math.max(box.z0 - z, 0, z - box.z1))
 const regionById = id => regions.find(r => r.id === id)
 const deskBounds = (x, z) => ({ x0: x - .8, x1: x + .8, z0: z - .45, z1: z + 1.25 })
+const onGrid = (value, step) => Math.abs(value / step - Math.round(value / step)) < 1e-9
+const boxValues = box => [box.x0, box.x1, box.z0, box.z1]
+const structuralValues = [
+  ...boxValues(site), ...boxValues(building), ...boxValues(foyer),
+  data.greenBuffer.width, ...boxValues(data.greenBuffer),
+  ...regions.flatMap(region => [...boxValues(region), ...region.doors.flatMap(door => [door.at, door.width])]),
+  ...Object.values(data.corridors).flatMap(corridor => 'center' in corridor
+    ? [corridor.center.x, corridor.center.z, corridor.r0, corridor.r1, corridor.width]
+    : [...boxValues(corridor), corridor.width]),
+  ...Object.values(data.passages).flatMap(passage => 'center' in passage
+    ? [passage.center.x, passage.center.z, passage.r0, passage.r1, passage.width]
+    : [...boxValues(passage), passage.width]),
+  ...Object.values(data.doors).flatMap(door => [door.x0, door.x1, door.z, door.width]),
+  ring.center.x, ring.center.z, ring.inner, ring.outer, ring.width,
+  island.center.x, island.center.z, island.radius, island.diameter,
+  data.plaza.center.x, data.plaza.center.z, data.plaza.radius, data.plaza.diameter,
+  walls.standard, walls.atrium, walls.windowBandBottom,
+]
+const furnitureValues = [
+  ...Object.values(seats).flatMap(([, x, z]) => [x, z]),
+  ...displaySeats.flatMap(seat => [seat.x, seat.z]),
+  ...data.bar.seats.flatMap(seat => [seat.x, seat.z]),
+  ...[data.frontDesk, data.serviceBar, data.waitingArc].flatMap(item => [...boxValues(item), item.center.x, item.center.z]),
+  data.boss.desk.x, data.boss.desk.z, data.boss.stand.x, data.boss.stand.z, data.boardTable.x, data.boardTable.z,
+  data.island.treeRadius, data.island.barOuter, data.island.stoolRadius, data.island.sofaOuter,
+  ...['carts', 'kiosks', 'umbrellaTables', 'lamps', 'benches', 'flowerBands'].flatMap(key => data.plaza[key].flatMap(item => [item.x, item.z])),
+]
 
 check(site.x1 - site.x0 === 60 && site.z1 - site.z0 === 48, 'design core is exactly 60 m × 48 m')
 check(building.x1 - building.x0 === 60 && building.z1 - building.z0 === 30, 'office plus foyer occupies the northern 60 m × 30 m')
@@ -112,6 +93,8 @@ check(island.diameter === 12 && island.radius === 6 && ring.outer - ring.inner >
 check(island.cx === AXIS_X && foyer.x0 + foyer.width / 2 === AXIS_X && plaza.cx === AXIS_X, 'island, foyer and plaza share the x=2 axis')
 check(walls.standard === 4.5 && walls.atrium === 6 && walls.windowBandBottom < walls.standard, 'wall and atrium heights follow 4.5 m / 6 m decision')
 check(landscape.x0 === site.x0 - landscape.buffer && landscape.x1 === site.x1 + landscape.buffer && landscape.z0 === site.z0 - landscape.buffer && landscape.z1 === site.z1 + landscape.buffer, 'landscape apron is 2.5 m outside the design core')
+check(structuralValues.every(value => onGrid(value, .5)), 'all structural coordinates follow the 0.5 m grid')
+check(furnitureValues.every(value => onGrid(value, .1)), 'all furniture, seat and prop coordinates follow the 0.1 m grid')
 
 const requiredRegions = ['market', 'board', 'review', 'plan', 'ops', 'quality', 'aftersales', 'kb', 'service', 'product', 'eng', 'drlife', 'marketing', 'leisure', 'creative', 'dining']
 check(requiredRegions.length === 16 && requiredRegions.every(id => regionById(id)) && new Set(regions.map(r => r.id)).size === 16, '13 retained regions and 3 new regions are present once')
@@ -134,7 +117,13 @@ const badRealSeats = seatEntries.filter(([, [id, x, z]]) => {
 }).map(([name]) => name)
 check(badRealSeats.length === 0, `all real desk/chair envelopes stay in their regions${badRealSeats.length ? `: ${badRealSeats.join(', ')}` : ''}`)
 check(displaySeats.length === 12 && displaySeats.every(s => contains(regionById(s.region), s.x, s.z, .5)), '12 display seats stay in their display departments')
-check(PERSON_GAP === .52, 'current 0.52 m person-gap contract is retained')
+const personPoints = [
+  ...seatEntries.map(([id, [, x, z]]) => ({ id, x, z })),
+  ...displaySeats.map(({ id, x, z }) => ({ id, x, z })),
+]
+let minimumSeatGap = Infinity
+for (let i = 0; i < personPoints.length; i++) for (let j = i + 1; j < personPoints.length; j++) minimumSeatGap = Math.min(minimumSeatGap, Math.hypot(personPoints[i].x - personPoints[j].x, personPoints[i].z - personPoints[j].z))
+check(PERSON_GAP === .52 && minimumSeatGap >= PERSON_GAP, `current 0.52 m person-gap contract is retained (planned minimum ${minimumSeatGap.toFixed(2)} m)`)
 check(monitorFit.source === 'MONITOR_GLASS_SOURCE' && monitorFit.helper === 'monitorScreenFit' && monitorFit.offsetMin === .001 && monitorFit.offsetMax === .002 && !monitorFit.handWrittenTransform && monitorFit.extraCalls === 0, 'rev3 monitor planes reuse measured glass geometry at 1–2 mm offset without extra calls')
 
 const adjacency = new Map()

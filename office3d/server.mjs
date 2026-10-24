@@ -31,6 +31,7 @@ import { createAcceptance } from './acceptance.mjs'
 import { createBlockedPatrol, blockedReason } from './blocked.mjs'
 import { createRework } from './rework.mjs'
 import { createEvidenceVersion } from './evidence-version.mjs'
+import { loadCompletionPolicy, createCompletionGate, completionMessage } from './completion-policy.mjs'
 import { createHandoff } from './handoff.mjs'
 import { createFoyer } from './foyer.mjs'
 import { createMemory, scanMemoryText } from './memory.mjs'
@@ -332,7 +333,13 @@ const readNames = () => { try { return JSON.parse(fs.readFileSync(NAMES_FILE, 'u
 // 真实事件账本（「今日回放」的数据源）：订阅 state() 已生成的 events，脱敏存档。本模块出错只记日志，不影响 /state。
 const ledger = createEventsLedger({ redactText, dir: HERE, now: Date.now, tz: PNH.tz, names: readNames })
 
-async function act(a) {
+// 完成策略（DS-7 R1）：默认关闭。completion-policy.json 是运行数据（不入库），启动时只读一次。
+const completionPolicy = (() => {
+  try { return loadCompletionPolicy(fs.readFileSync(path.join(HERE, 'completion-policy.json'), 'utf8')) } catch { return loadCompletionPolicy(null) }
+})()
+let completionGateFn = async () => ({ allow: true, mode: 'off', reasons: [], audit: null, skipped: true })
+
+async function act(a, options = {}) {
   const need = (cond, msg) => { if (!cond) throw Object.assign(new Error(msg), { status: 400 }) }
   if (a.type === 'rename') {
     const key = str(a.agentId, 80)
@@ -372,8 +379,16 @@ async function act(a) {
   }
   if (a.type === 'review') {
     need(UUID.test(a.issueId || '') && ['accept', 'changes'].includes(a.decision), '参数不对')
-    const note = str(a.note, 8000)
+    let note = str(a.note, 8000)
     need(a.decision === 'accept' || note, '要求修改时请写明要改什么')
+    if (a.decision === 'accept') {
+      const override = a.override === true || a.overrideReason ? { reason: str(a.overrideReason, 500) } : null
+      const decision = await completionGateFn(a.issueId, { override, localFullAccess: options.localFullAccess === true })
+      if (!decision.allow) throw Object.assign(new Error(completionMessage(decision)), { status: 409 })
+      if (decision.mode === 'warn' && decision.reasons.length > 0) {
+        note = `${note ? `${note}\n\n` : ''}**完成策略（warn）提示：** ${decision.reasons.join('、')}`
+      }
+    }
     if (note) await send('POST', `/api/issues/${a.issueId}/comments`, { body: (a.decision === 'accept' ? '**董事会验收通过。**\n\n' : '**董事会要求修改：**\n\n') + note })
     return send('PATCH', `/api/issues/${a.issueId}`, { status: a.decision === 'accept' ? 'done' : 'in_progress' })
   }
@@ -755,7 +770,10 @@ ${i.description || ''}`
   },
   async wake(issueId, who) { return send('POST', `/api/issues/${issueId}/comments`, { body: `董事会（${who}，经 Telegram）：上面的回答已经提交，请读取后继续。` }) },
   async review(issueId, who) {
-    await send('POST', `/api/issues/${issueId}/comments`, { body: `**董事会验收通过（${who}，经 Telegram）。**` })
+    const decision = await completionGateFn(issueId, { localFullAccess: false })
+    if (!decision.allow) throw new Error(completionMessage(decision))
+    const hint = decision.mode === 'warn' && decision.reasons.length ? `\n\n**完成策略（warn）提示：** ${decision.reasons.join('、')}` : ''
+    await send('POST', `/api/issues/${issueId}/comments`, { body: `**董事会验收通过（${who}，经 Telegram）。**${hint}` })
     return send('PATCH', `/api/issues/${issueId}`, { status: 'done' })
   },
 }
@@ -779,7 +797,8 @@ standup.start()
 //   版本已变 → 不进入委员会批次（等同交董事会）；证据缺版本 / 核对失败 → 进批次但标记 version:false，投票规则里加版本核对警告
 const evidenceVersion = createEvidenceVersion({ dir: HERE, company: COMPANY, get, redactText })
 const versionCheck = async (id) => { const r = await evidenceVersion.checkByIdent(id); return r && !r.disabled ? r : null }
-const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck })
+completionGateFn = createCompletionGate({ policy: completionPolicy, get, versionCheck })
+const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck, completionGate: (id) => completionGateFn(id, { localFullAccess: false }) })
 acceptance.start()
 const patrol = createBlockedPatrol({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, healthReport })
 // 断点交接包（见 handoff.mjs）：被打断 / 转阻塞 / 换人 / 长停留时识别【交接包】模板提醒补写、新负责人上岗时转交前任交接包；只发标记评论不碰状态
@@ -1142,7 +1161,7 @@ http
         let body
         try { body = JSON.parse(raw) } catch { return json(400, { error: 'JSON 格式不对' }) }
         try {
-          const result = await act(body)
+          const result = await act(body, { localFullAccess: !lanUser && !wallScope })
           console.log(`[act] ${body.type} ${body.decision || ''} ${body.issueId || body.id || ''}`)
           const exposeResult = body.type.startsWith('tg_') || body.type.startsWith('committee_') || body.type.startsWith('standup_') || body.type.startsWith('acceptance_') || body.type.startsWith('blocked_') || body.type.startsWith('rework_') || body.type.startsWith('handoff_') || body.type.startsWith('memory_') || body.type.startsWith('workload_') || body.type.startsWith('chat_') || body.type.startsWith('foyer_') || (body.type === 'create_issue' && CONTRACT_VIEW_ENABLED)
           return json(200, { ok: true, result: result && exposeResult ? result : undefined })

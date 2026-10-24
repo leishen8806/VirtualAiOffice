@@ -1,0 +1,277 @@
+{
+  "task": "VIS3-M1-FIX2",
+  "createdAt": "2026-10-23T08:37:01.073Z",
+  "baselineSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1",
+  "candidateCodeSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+  "artifactLocation": "E:/VirtualAIOffice/review-artifacts/VIS3-M1-FIX2/",
+  "archiveLocation": "E:/VirtualAIOffice/review-artifacts/VIS3-M1-FIX2.zip",
+  "access": "Persistent local reviewer folder, outside Git; original evidence stays tracked unchanged. Remote reviewers need this archive transferred before reviewing images.",
+  "runtime": "Real Chromium WebGL preview; existing same-origin URL with static GETs fulfilled from the assigned worktree; not deployed",
+  "browser": {
+    "os": "Windows 10 x64",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+    "resolution": [
+      1920,
+      1080
+    ],
+    "dpr": 1,
+    "quality": "medium",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti, ANGLE Direct3D11"
+  },
+  "lighting": "Unchanged office-vis2/preview.js: exposure 1.2, hemisphere 1.1, directional 2.4",
+  "geometry": {
+    "grilleFaceZ": 7.8725,
+    "labelZ": 7.8745,
+    "labelY": [
+      2.14,
+      2.29
+    ],
+    "grilleTop": 2.3,
+    "wallTop": 2.35,
+    "backingRearZ": 7.8745,
+    "backingFrontZ": 7.9095,
+    "logoZ": 7.9105
+  },
+  "files": [
+    {
+      "file": "after-bar.png",
+      "bytes": 1624202,
+      "sha256": "3336f6f197236bf50d318efaaec7f58bc21b56dcd02e052759d0c629bb7f9c3c",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          11,
+          7,
+          3
+        ],
+        "lookAt": [
+          2,
+          1.15,
+          -6
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-barBrand.png",
+      "bytes": 1705103,
+      "sha256": "5d6fa9298a627058ac14c659cb99249d8df782bf95ba1fa7de0ddda3146ae1a5",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          2,
+          1.7,
+          2.8
+        ],
+        "lookAt": [
+          2,
+          0.56,
+          -2.47
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-eye.png",
+      "bytes": 1443672,
+      "sha256": "b3a8bb0ba44d97dd23661d0b4a96b0a672dbd579b360cf0d96378a9c90941eb8",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          2,
+          1.65,
+          14
+        ],
+        "lookAt": [
+          2,
+          1.7,
+          -6
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-front.png",
+      "bytes": 1777558,
+      "sha256": "1ac8507a74db4601c7af92ffbcf1b0fc9f560211766442c784c5b08639eaf22c",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          2,
+          2.1,
+          13.5
+        ],
+        "lookAt": [
+          2,
+          1.35,
+          8.1
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-oblique.png",
+      "bytes": 1722321,
+      "sha256": "8b98e6a4d605cbfb07aa4d902fba3da6cd96df5b50700fad6c86a7bc0ffbcf98",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          7,
+          3,
+          12
+        ],
+        "lookAt": [
+          2,
+          1.5,
+          8
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-overview.png",
+      "bytes": 682116,
+      "sha256": "007c1744b3df1c47e43dfd54b7aec81ca8e9e1d15b4a992adb9d9fc8a47c1d62",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          2,
+          25,
+          31
+        ],
+        "lookAt": [
+          2,
+          0.3,
+          -2
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "after-side.png",
+      "bytes": 1085728,
+      "sha256": "1f2120dd1a76244bd2a79ed1119293afcc3ca6daf448b78a62ddfb5089b22c8a",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+      "camera": {
+        "position": [
+          7,
+          2.3,
+          8.25
+        ],
+        "lookAt": [
+          2,
+          1.95,
+          7.86
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "baseline-tests.log",
+      "bytes": 147921,
+      "sha256": "a5e8b2587b82d65b36c0cadc81aef753311d89d7ff5cc4ac3059e8e3b5cea945",
+      "sourceSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1"
+    },
+    {
+      "file": "before-front.png",
+      "bytes": 1776532,
+      "sha256": "0024f9421a78a5369c98d150e137ff070d034e824dd6a0897b9de70d720cafaf",
+      "sourceSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1",
+      "camera": {
+        "position": [
+          2,
+          2.1,
+          13.5
+        ],
+        "lookAt": [
+          2,
+          1.35,
+          8.1
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "before-oblique.png",
+      "bytes": 1723067,
+      "sha256": "124e4f76702c16c1884cc829eda0576ce1d64406ca45485d3680da8c109e34fa",
+      "sourceSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1",
+      "camera": {
+        "position": [
+          7,
+          3,
+          12
+        ],
+        "lookAt": [
+          2,
+          1.5,
+          8
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "before-side.png",
+      "bytes": 1086606,
+      "sha256": "5e4d767da205caf58855d7d4e534ee2943ab9a21b3265217c4a44c209f59a2d6",
+      "sourceSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1",
+      "camera": {
+        "position": [
+          7,
+          2.3,
+          8.25
+        ],
+        "lookAt": [
+          2,
+          1.95,
+          7.86
+        ],
+        "fov": 42,
+        "near": 0.1,
+        "far": 150
+      }
+    },
+    {
+      "file": "candidate-tests.log",
+      "bytes": 148068,
+      "sha256": "a241e47783bac7cfa0bc2a98c2825d575fec1fcde106aebd2824b71fe67be03b",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf"
+    },
+    {
+      "file": "failure-comparison.json",
+      "bytes": 5434,
+      "sha256": "77043a528e26201387c7b31de70be0af91c1e163f29a06628bb4435aabdbb74f",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf"
+    },
+    {
+      "file": "focused-tests.log",
+      "bytes": 1875,
+      "sha256": "19f9246e77a4cbc71eba650285c903f44bba4f9ef485876d75ac1f9b0a5a631f",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf"
+    },
+    {
+      "file": "git-blob-check.json",
+      "bytes": 1076,
+      "sha256": "bae3527584bba5c2508fa582cee430cf91245b1808ce7d6e43f8a02bd4854ae0",
+      "sourceSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf"
+    }
+  ]
+}

@@ -337,6 +337,223 @@ const V2_LAYOUT = {
   plaza: PLAZA,
 }
 
+const V3_REGIONS = [
+  layoutRect('market', '市场部（展示）', -28, -20, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('board', '会议与决策', -18.5, -8.5, -18, -12, { side: 'west', at: -15 }),
+  layoutRect('review', '评审室 A', -28, -18, -10.5, -4.5, { side: 'east', at: -7.5 }),
+  layoutRect('plan', '计划室 B', -16.5, -8.5, -10.5, -4.5, { side: 'west', at: -7.5 }),
+  layoutRect('ops', '运营', -28, -18, -3, 4, { side: 'east', at: .5 }),
+  layoutRect('quality', '质量与安全', -16.5, -8.5, -3, 4, { side: 'west', at: .5 }),
+  layoutRect('aftersales', '售后部（展示）', -28, -20, 5.5, 11.5, { side: 'east', at: 8.5 }),
+  layoutRect('leisure', '休闲展示区', -18.5, -10.5, 5.5, 11.5, { side: 'west', at: 8.5 }),
+  layoutRect('kb', '知识', 12.5, 20.5, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('service', '客服部（展示）', 24, 32, -18, -12, { side: 'west', at: -15 }),
+  layoutRect('product', '产品', 12.5, 21.5, -10.5, -3, { side: 'east', at: -7 }),
+  layoutRect('eng', '工程', 23, 32, -10.5, -3, { side: 'west', at: -7 }),
+  layoutRect('creative', '创意讨论区', 12.5, 21.5, -1.5, 3.5, { side: 'east', at: 1 }),
+  layoutRect('dining', '餐饮休憩角', 23, 32, -1.5, 3.5, { side: 'west', at: 1 }),
+  layoutRect('drlife', 'D.life 工坊', 12.5, 22.5, 5, 12, { side: 'east', at: 8.5 }),
+  layoutRect('marketing', '营销部（展示）', 24, 32, 5, 12, { side: 'west', at: 8.5 }),
+]
+
+const V3_SEATS = {
+  Lead: ['product', 14.2, -8], PM: ['product', 17.5, -8], Architect: ['product', 14.2, -4.5], UIUX: ['product', 17.5, -4.5],
+  FrontendSenior: ['eng', 24.2, -8], Frontend1: ['eng', 27, -8], Frontend2: ['eng', 29.8, -8],
+  BackendSenior: ['eng', 24.2, -4.5], Backend1: ['eng', 27, -4.5], Backend2: ['eng', 29.8, -4.5],
+  KnowledgeKeeper: ['kb', 16.5, -15],
+  QAAutomation: ['quality', -15.5, -1.5], Reviewer1: ['quality', -12.5, -1.5], Reviewer2: ['quality', -15.5, 1.5], SecurityReviewer: ['quality', -12.5, 1.5],
+  OpsLead: ['ops', -25, 0], OpsEngineer: ['ops', -21, 0],
+  GoSenior: ['drlife', 14, 6], Go1: ['drlife', 16.5, 6], Go2: ['drlife', 19, 6], DBEngineer: ['drlife', 21, 6],
+  LedgerAuditor: ['drlife', 14, 9.5], ReactSenior: ['drlife', 16.5, 9.5], React1: ['drlife', 19, 9.5], Localizer: ['drlife', 21, 9.5],
+}
+
+const V3_DISPLAY_SEATS = [
+  ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
+  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 28, -15], ['service-3', 'service', 30.5, -15],
+  ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
+  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
+].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
+
+const V3_CENTER = Object.freeze({ x: 2, z: -6 })
+const V3_BAR_SEATS = Array.from({ length: 10 }, (_, index) => {
+  const angle = (index * 36 + 18) * Math.PI / 180
+  const tenth = (value) => Math.round(value * 10) / 10
+  return { id: `bar-seat-${index + 1}`, x: tenth(V3_CENTER.x + Math.cos(angle) * 4.2), z: tenth(V3_CENTER.z + Math.sin(angle) * 4.2) }
+})
+
+const V3_PLAZA = {
+  center: { x: 2, z: 21 }, radius: 9, diameter: 18, rings: 3, radialSeams: 8,
+  steps: { x0: -2, x1: 6, z0: 11, z1: 12 },
+  carts: [{ id: 'food-cart-1', x: -9, z: 21 }],
+  kiosks: [{ id: 'kiosk-1', x: 13, z: 18 }, { id: 'kiosk-2', x: 13, z: 21 }, { id: 'kiosk-3', x: 13, z: 24 }],
+  umbrellaTables: [{ x: -8, z: 15 }, { x: -8, z: 27 }, { x: 12, z: 15 }, { x: 12, z: 27 }],
+  lamps: [{ x: -8.5, z: 16 }, { x: -9, z: 20 }, { x: -8.5, z: 25 }, { x: -5, z: 30 }, { x: 9, z: 30 }, { x: 12.5, z: 25 }, { x: 13, z: 20 }, { x: 12.5, z: 16 }],
+  benches: [{ x: -7, z: 13.5 }, { x: -10, z: 23 }, { x: -6, z: 29.5 }, { x: 10, z: 29.5 }, { x: 14, z: 23 }, { x: 11, z: 13.5 }],
+  flowerBands: [{ x: -8.5, z: 21 }, { x: 12.5, z: 21 }, { x: -4, z: 29 }, { x: 8, z: 29 }],
+}
+
+const V3_LAYOUT = {
+  version: 3,
+  envelope: { x0: -28, x1: 32, z0: -18, z1: 12, width: 60, depth: 30, area: 1800 },
+  site: { x0: -28, x1: 32, z0: -18, z1: 30, width: 60, depth: 48, area: 2880 },
+  foyer: { id: 'foyer', x0: -6, x1: 10, z0: 4, z1: 12, width: 16, depth: 8 },
+  axis: { x: 2 },
+  regions: V3_REGIONS,
+  rooms: V3_REGIONS,
+  seats: V3_SEATS,
+  displaySeats: V3_DISPLAY_SEATS,
+  corridors: {
+    westNorthCross: { x0: -28, x1: -8.5, z0: -12, z1: -10.5, width: 1.5 },
+    westMiddleCross: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westSouthCross: { x0: -28, x1: -10.5, z0: 4, z1: 5.5, width: 1.5 },
+    eastNorthCross: { x0: 12.5, x1: 32, z0: -12, z1: -10.5, width: 1.5 },
+    eastMiddleCross: { x0: 12.5, x1: 32, z0: -3, z1: -1.5, width: 1.5 },
+    eastSouthCross: { x0: 12.5, x1: 32, z0: 3.5, z1: 5, width: 1.5 },
+    entranceAxis: { x0: 0, x1: 4, z0: 4, z1: 12, width: 4 },
+    centralRing: { center: V3_CENTER, r0: 6, r1: 10, width: 4 },
+  },
+  passages: {
+    entranceAxis: { x0: 0, x1: 4, z0: 4, z1: 12, width: 4 },
+    entranceSpine: { x0: 0, x1: 4, z0: -18, z1: 30, width: 4 },
+    westLoop: { center: V3_CENTER, side: 'west', r0: 6, r1: 10, width: 4 },
+    eastLoop: { center: V3_CENTER, side: 'east', r0: 6, r1: 10, width: 4 },
+  },
+  ring: { center: V3_CENTER, inner: 6, outer: 10, width: 4 },
+  island: { center: V3_CENTER, radius: 6, diameter: 12, treeRadius: 1.2, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
+  bar: { center: V3_CENTER, radius: 3.5, seats: V3_BAR_SEATS, gaps: [{ side: 'east', width: 1.5 }, { side: 'west', width: 1.5 }] },
+  frontDesk: { x0: -1, x1: 5, z0: 8.1, z1: 9.5, center: { x: 2, z: 8.8 } },
+  serviceBar: { x0: -5.3, x1: -2.3, z0: 7.3, z1: 9.3, center: { x: -3.8, z: 8.3 } },
+  waitingArc: { x0: 4, x1: 9, z0: 6.8, z1: 9.8, center: { x: 6.5, z: 8.3 } },
+  doors: {
+    south: { x0: 0, x1: 4, z: 12, width: 4 },
+    north: { x0: 0, x1: 4, z: -18, width: 4, locked: true },
+  },
+  boss: { desk: { x: -16.5, z: -15 }, stand: { x: -16.5, z: -13 }, region: 'board' },
+  boardTable: { x: -13.5, z: -15 },
+  meetingSeats: { A: 8, B: 6 },
+  // V3 会议动线使用真实门洞之间的空隙和北侧公共转接带；不复用 V1 西翼入口。
+  meetingAccess: {
+    northZ: -11.25,
+    westSpineX: -17.25,
+    eastSpineX: 22.25,
+    westMiddleZ: -3.75,
+    eastMiddleZ: -2.25,
+    eastSouthZ: 4.25,
+  },
+  regionFocus: Object.fromEntries([
+    ...V3_REGIONS.map((region) => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
+    ['meet', { label: '会议室', t: [-23, 0, -7.5], r: 18 }],
+    ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
+    ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
+  ]),
+  miniBounds: { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+  plaza: V3_PLAZA,
+  greenBuffer: { width: 2.5, x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+  wallHeight: {
+    standard: 4.5, atrium: 6, windowBandBottom: 3.5,
+    occlusion: { triggerElevation: 40, loweredHeight: .9, glassOpacity: .08, transitionMs: 250 },
+  },
+  monitorFit: { source: 'MONITOR_GLASS_SOURCE', helper: 'monitorScreenFit', offsetMin: .001, offsetMax: .002, handWrittenTransform: false, extraCalls: 0 },
+  cameraDefaults: {
+    overview: { az: 0, el: 58, r: 78, target: [2, 0, 2], wallMode: 'full' },
+    orbit: { az: 35, el: 50, r: 72, target: [2, 0, -1], wallMode: 'camera-side-below-40' },
+    top: { az: 0, el: 82, r: 68, target: [2, 0, 1], wallMode: 'full' },
+    isometric: { az: -38, el: 48, r: 62, target: [2, 0, -1], wallMode: 'full' },
+    low: { az: -20, el: 28, r: 44, target: [2, 0, -1], wallMode: 'camera-side-lowered' },
+    follow: { az: 0, el: 34, r: 14, target: ['agent', 0, 'agent'], wallMode: 'camera-side-lowered' },
+  },
+}
+
+const alignRect = (id, name, x0, x1, z0, z1, kind, walled, door) => ({
+  ...layoutRect(id, name, x0, x1, z0, z1, door),
+  kind,
+  walled,
+})
+const V3_ALIGN_REGIONS = [
+  alignRect('market', '市场部（展示）', -28, -20, -18, -12, 'display', true, { side: 'east', at: -15 }),
+  alignRect('board', '会议与决策', -18.5, -8.5, -18, -12, 'room', true, { side: 'east', at: -15 }),
+  alignRect('kb', '知识', 12.5, 20.5, -18, -12, 'open', false),
+  alignRect('service', '客服部（展示）', 24, 32, -18, -12, 'display', true, { side: 'west', at: -15 }),
+  alignRect('plan', '计划室 B', -28, -20, -11.5, -5.5, 'room', true, { side: 'south', at: -24 }),
+  alignRect('review', '评审室 A', -18.5, -8.5, -11.5, -5.5, 'room', true, { side: 'south', at: -13.5 }),
+  alignRect('west-open', '运营、质量与安全开放岛', -28, -8.5, -4.5, 5.5, 'open', false),
+  alignRect('product', '产品', 12.5, 21.5, -10.5, -1.5, 'open', false),
+  alignRect('eng', '工程', 23, 32, -10.5, -1.5, 'open', false),
+  alignRect('creative', '创意讨论区', 12.5, 22.5, -1.5, 3.5, 'display', false),
+  alignRect('dining', '餐饮休憩角', 23, 32, -1.5, 3.5, 'display', false),
+  alignRect('aftersales', '售后部（展示）', -28, -20, 5.5, 11.5, 'display', true, { side: 'east', at: 8.5 }),
+  alignRect('leisure', '休闲展示区', -18.5, -10.5, 5.5, 11.5, 'display', false),
+  alignRect('drlife', 'D.life 工坊', 12.5, 23, 5, 12, 'open', false),
+  alignRect('marketing', '营销部（展示）', 24, 32, 5.5, 11.5, 'display', true, { side: 'north', at: 28 }),
+]
+
+const V3_ALIGN_SEATS = {
+  Lead: ['product', 14.5, -8.5, Math.PI], PM: ['product', 18, -8.5, Math.PI], Architect: ['product', 14.5, -5.5, Math.PI], UIUX: ['product', 18, -5.5, Math.PI],
+  FrontendSenior: ['eng', 23.5, -8.5, Math.PI], Frontend1: ['eng', 26.5, -8.5, Math.PI], Frontend2: ['eng', 29.5, -8.5, Math.PI],
+  BackendSenior: ['eng', 23.5, -5.5, Math.PI], Backend1: ['eng', 26.5, -5.5, Math.PI], Backend2: ['eng', 29.5, -5.5, Math.PI],
+  KnowledgeKeeper: ['kb', 14.5, -15, Math.PI / 2],
+  QAAutomation: ['west-open', -15, -1, 0], Reviewer1: ['west-open', -12, -1, 0], Reviewer2: ['west-open', -15, 2, 0], SecurityReviewer: ['west-open', -12, 2, 0],
+  OpsLead: ['west-open', -25, -1, 0], OpsEngineer: ['west-open', -21.5, -1, 0],
+  GoSenior: ['drlife', 14.5, 6.5, 0], Go1: ['drlife', 17, 6.5, 0], Go2: ['drlife', 19.5, 6.5, 0], DBEngineer: ['drlife', 22, 6.5, 0],
+  LedgerAuditor: ['drlife', 14.5, 9.5, 0], ReactSenior: ['drlife', 17, 9.5, 0], React1: ['drlife', 19.5, 9.5, 0], Localizer: ['drlife', 22, 9.5, 0],
+}
+
+const V3_ALIGN_DISPLAY_SEATS = [
+  ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
+  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 28, -15], ['service-3', 'service', 30.5, -15],
+  ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
+  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
+].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
+const V3_ALIGN_MEETING_SEATS = {
+  A: [-16.5, -14.5, -12.5, -10.5].flatMap(x => [{ room: 'A', x, z: -9.75 }, { room: 'A', x, z: -7.25 }]),
+  B: [-26.5, -24.5, -22.5].flatMap(x => [{ room: 'B', x, z: -9.75 }, { room: 'B', x, z: -7.25 }]),
+}
+const alignFocus = (regions) => Object.fromEntries([
+  ...regions.map(region => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
+  ['ops', { label: '运营', t: [-24, 0, .5], r: 18 }],
+  ['quality', { label: '质量与安全', t: [-14, 0, .5], r: 18 }],
+  ['meet', { label: '会议室', t: [-18.5, 0, -8.5], r: 22 }],
+  ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
+  ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
+])
+
+const V3_ALIGN_LAYOUT = {
+  ...cloneLayoutData(V3_LAYOUT),
+  version: 3,
+  variant: 'align',
+  regions: V3_ALIGN_REGIONS,
+  rooms: V3_ALIGN_REGIONS.filter(region => region.walled),
+  seats: V3_ALIGN_SEATS,
+  displaySeats: V3_ALIGN_DISPLAY_SEATS,
+  meetingSeats: { A: 8, B: 6 },
+  meetingSeatPoints: V3_ALIGN_MEETING_SEATS,
+  deskGroups: { ops: ['OpsLead', 'OpsEngineer'], quality: ['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer'] },
+  corridors: {
+    ...cloneLayoutData(V3_LAYOUT.corridors),
+    westNorthCross: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westMiddleCross: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
+    westSouthCross: { x0: -19.5, x1: -9, z0: 5.8, z1: 7.3, width: 1.5 },
+    eastNorthCross: { x0: 20.5, x1: 24, z0: -12, z1: -10.5, width: 1.5 },
+    eastMiddleCross: { x0: 20.5, x1: 23, z0: -1.5, z1: 3.5, width: 2.5 },
+    eastSouthCross: { x0: 10.5, x1: 12, z0: 5, z1: 12, width: 1.5 },
+  },
+  passages: {
+    ...cloneLayoutData(V3_LAYOUT.passages),
+    northMeetingBuffer: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
+    westOpenLink: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
+  },
+  island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
+  ring: { ...cloneLayoutData(V3_LAYOUT.ring), inner: 6, outer: 10, width: 4 },
+  bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 6 },
+  publicPathNodes: [
+    { x: -19.25, z: -10.9 }, { x: -7.75, z: -10.9 },
+    { x: -19.25, z: 7.75 }, { x: -10.2, z: 7.75 },
+  ],
+  meetingAccess: { northZ: -3.75, westSpineX: -7.55, eastSpineX: 22.25, westMiddleZ: .5, eastMiddleZ: 1, eastSouthZ: 4.25 },
+  regionFocus: alignFocus(V3_ALIGN_REGIONS),
+  miniBounds: { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+}
+
 const LAYOUT_V1_DATA = {
   ENVELOPE, MAIN_FLOOR_X0, CORRIDORS, CORRIDOR_X, LOGO_AREA, CROSS_Z, FOYER_Z, AISLE_OFFSET,
   ENTRANCE, FOYER_RECEPTION, RECEPTION, OFFICE_ROOMS, SEATS, BOSS, BOARD_TABLE, BOARD_DOOR,
@@ -350,9 +567,16 @@ const LAYOUT_V1_DATA = {
 
 export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
+export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
+export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
+export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
-  return params.getAll('layout').length === 1 && params.get('layout') === '2' ? LAYOUT_V2 : LAYOUT_V1
+  const values = params.getAll('layout')
+  if (values.length !== 1) return LAYOUT_V1
+  if (values[0] === '2') return LAYOUT_V2
+  if (values[0] === '3') return params.getAll('align').length === 1 && params.get('align') === '1' ? LAYOUT_V3_ALIGN : LAYOUT_V3
+  return LAYOUT_V1
 }
 
 const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }
@@ -398,9 +622,159 @@ export const CAMPUS_FLOWS = freezeDeep(CAMPUS_FLOWS_DATA)
 export const CAMPUS_FOCUS = freezeDeep({ label: 'DR 仓配服务中心（示意）', t: [-124, 0, 6], r: 68 })
 export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: 24, z0: -28, z1: 44 })
 import { barColliders, barLounges } from './office-bar-geometry.js'
+import { createV3PublicPath } from './office-v3-public-path.js'
+
+const routePoint = (point) => ({ x: point.x, z: point.z })
+const roomCenter = (room) => ({ x: (room.x0 + room.x1) / 2, z: (room.z0 + room.z1) / 2 })
+const roomDoor = (room) => {
+  const door = room?.doors?.[0]
+  if (!door || !Number.isFinite(door.at) || !Number.isFinite(door.width) || door.width <= 0) throw new Error(`房间没有可用门洞: ${room?.id || 'unknown'}`)
+  return door
+}
+const doorInterior = (room, door = roomDoor(room)) => {
+  if (door.side === 'east') return { x: room.x1 - .6, z: door.at }
+  if (door.side === 'west') return { x: room.x0 + .6, z: door.at }
+  if (door.side === 'south') return { x: door.at, z: room.z1 - .6 }
+  return { x: door.at, z: room.z0 + .6 }
+}
+const doorExterior = (room, door = roomDoor(room)) => {
+  if (door.side === 'east') return { x: room.x1 + .75, z: door.at }
+  if (door.side === 'west') return { x: room.x0 - .75, z: door.at }
+  if (door.side === 'south') return { x: door.at, z: room.z1 + .75 }
+  return { x: door.at, z: room.z0 - .75 }
+}
+const dedupeRoute = (points) => points.filter((point, index, all) => !index || Math.hypot(point.x - all[index - 1].x, point.z - all[index - 1].z) > .001)
+
+function createOfficeV3Navigation(layout) {
+  const rooms = layout.regions, access = layout.meetingAccess
+  if (!access || !Object.values(access).every(Number.isFinite)) throw new Error('缺少 V3 会议通行合同')
+  const findRoom = point => rooms.find(room => point.x > room.x0 && point.x < room.x1 && point.z > room.z0 && point.z < room.z1)
+  const entrance = {
+    x0: layout.doors.south.x0,
+    x1: layout.doors.south.x1,
+    inner: { x: layout.axis.x, z: layout.doors.south.z - .75 },
+    gate: [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: layout.axis.x, z: layout.doors.south.z + 1.75 }],
+  }
+  const foyerHub = { x: -2, z: 4.75 }
+  const walledRoomAt = point => {
+    const room = findRoom(point)
+    return room?.walled === false ? undefined : room
+  }
+  const exit = (home) => {
+    const room = findRoom(home)
+    if (!room || room.walled === false) return [routePoint(home)]
+    const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
+    if (door.side === 'east' || door.side === 'west') {
+      const inward = door.side === 'west' ? 1 : -1
+      const rear = home.z + .75 <= room.z1 - .28
+      const aisleZ = rear ? home.z + .75 : home.z - 1.8
+      const sideX = home.x + (home.x - room.x0 < 1.6 ? 1 : home.x > room.x1 - 1.6 ? -1 : inward) * 1.05
+      const departure = rear ? [{ x: home.x, z: aisleZ }] : [{ x: sideX, z: home.z }, { x: sideX, z: aisleZ }]
+      const approach = { x: inside.x + inward * .75, z: door.at + .75 }
+      return dedupeRoute([routePoint(home), ...departure, { x: approach.x, z: aisleZ }, approach, inside, outside])
+    }
+    const aisleX = home.x < door.at ? room.x0 + .7 : room.x1 - .7
+    return dedupeRoute([routePoint(home), { x: home.x, z: inside.z }, { x: aisleX, z: inside.z }, { x: door.at, z: inside.z }, outside])
+  }
+  const insidePath = createV3PublicPath(layout)
+  const publicPath = (from, to, plaza = false) => {
+    const outside = p => p.z > layout.doors.south.z - .28
+    if (!plaza) for (const p of [from, to]) if (outside(p) && (p.x < layout.doors.south.x0 + .28 || p.x > layout.doors.south.x1 - .28 || p.z > layout.doors.south.z + 2)) throw new Error('V3 outside route must use the south entrance')
+    const boundary = p => {
+      if (outside(p)) return entrance.inner
+      const dx = p.x - layout.bar.center.x, dz = p.z - layout.bar.center.z, distance = Math.hypot(dx, dz)
+      // 岛内最后一段由调用方负责；休息路线单独选取真实吧台开口。
+      if (distance < layout.island.radius + .28) return foyerHub
+      return p
+    }
+    const a = boundary(from), b = boundary(to)
+    const exterior = p => [{ x: layout.axis.x, z: layout.doors.south.z + .75 }, { x: p.x, z: layout.doors.south.z + .75 }, routePoint(p)]
+    return dedupeRoute([...(outside(from) ? exterior(from).toReversed() : [routePoint(from)]), ...insidePath(a, b), ...(outside(to) ? exterior(to) : [routePoint(to)])])
+  }
+  const meetingInterior = (room, seat) => {
+    const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
+    const aisleZ = seat.z < center.z - .2 ? room.z0 + .65 : room.z1 - .65
+    return dedupeRoute([inside, { x: inside.x, z: aisleZ }, { x: seat.x, z: aisleZ }, routePoint(seat)])
+  }
+  const meetings = (home, seat) => {
+    const room = rooms.find(item => item.id === (seat?.room === 'A' ? 'review' : seat?.room === 'B' ? 'plan' : ''))
+    if (!room || !Number.isFinite(seat?.x) || !Number.isFinite(seat?.z)) throw new Error('无效 V3 会议座位')
+    const departure = exit(home), outside = doorExterior(room)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), outside).slice(1), ...meetingInterior(room, seat)])
+  }
+  const trip = (home, targetHome, stand = targetHome) => {
+    const a = exit(home), b = exit(targetHome).toReversed()
+    return dedupeRoute([...a, ...publicPath(a.at(-1), b[0]), ...b.slice(1, -1), routePoint(stand)])
+  }
+  const lounge = (home, seat) => {
+    if (!Number.isFinite(seat?.x) || !Number.isFinite(seat?.z) || !Number.isFinite(seat?.appX) || !Number.isFinite(seat?.appZ)) throw new Error('无效 V3 休息座位')
+    const departure = exit(home), approach = { x: seat.appX, z: seat.appZ }
+    const { center } = layout.ring
+    const east = seat.side === 'east'
+    // 休息座位在吧岛内侧，只能从对应一侧的吧台开口进入；公共路线不可直穿吧台。
+    const ringRoute = east
+      ? [{ x: center.x + 7, z: foyerHub.z }, { x: center.x + 7, z: center.z }, { x: center.x + layout.bar.radius + .25, z: center.z }]
+      : [{ x: center.x - 7, z: foyerHub.z }, { x: center.x - 7, z: center.z }, { x: center.x - layout.bar.radius - .25, z: center.z }]
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), ringRoute[0]).slice(1), ...ringRoute.slice(1), approach, routePoint(seat)])
+  }
+  const boardRoom = rooms.find(room => room.id === 'board')
+  const boardDoor = roomDoor(boardRoom), boardOutside = doorExterior(boardRoom, boardDoor), boardInside = doorInterior(boardRoom, boardDoor)
+  const boardTrip = (home, stand) => {
+    if (!Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error('无效 V3 董事会目标')
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), boardOutside).slice(1), boardInside, { x: boardInside.x, z: stand.z }, routePoint(stand)])
+  }
+  const consumerTargets = {
+    A1: { x: -3.2, z: 6.5 },
+    A2: { x: -5.2, z: 6.5 },
+    desk: { x: 2, z: 10.5 },
+    B0: { x: -8.5, z: 19 },
+    B1: { x: 11.5, z: 18 },
+    B2: { x: 11.5, z: 21 },
+    B3: { x: 11.5, z: 24 },
+    waiting: { x: 6.5, z: 6.4 },
+  }
+  const consumerQueues = {
+    A1: [-3.2, -4.2, -5.2, -6.2].map(x => ({ x, z: 6.5 })),
+    A2: [-5.2, -6.2, -7.2, -8.2].map(x => ({ x, z: 6.5 })),
+    desk: [10.5, 11.35, 12.2, 13.05].map(z => ({ x: 2, z })),
+    B0: [19, 20, 21, 22].map(z => ({ x: -8.5, z })),
+    B1: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 18 })),
+    B2: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 21 })),
+    B3: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 24 })),
+    waiting: [5.4, 6.2, 6.8, 7.6].map(x => ({ x, z: 6.4 })),
+  }
+  const consumer = (home, targetId, stand = consumerTargets[targetId]) => {
+    if (!consumerTargets[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error(`未知或无效 V3 访客目标: ${targetId}`)
+    const departure = exit(home)
+    return dedupeRoute([...departure, ...publicPath(departure.at(-1), stand, true).slice(1)])
+  }
+  const consumerAdvance = (targetId, from, to) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(from?.x) || !Number.isFinite(from?.z) || !Number.isFinite(to?.x) || !Number.isFinite(to?.z)) throw new Error(`无效 V3 队列移动: ${targetId}`)
+    // 即使前后槽位重合也返回一个有限路径；导演以当前位置判断“无需移动”。
+    return dedupeRoute([routePoint(from), routePoint(to)])
+  }
+  const consumerDeparture = (targetId, stand, back) => {
+    if (!consumerQueues[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z) || !Array.isArray(back) || !back.every(point => Number.isFinite(point?.x) && Number.isFinite(point?.z))) throw new Error(`无效 V3 队列离开路径: ${targetId}`)
+    return dedupeRoute([routePoint(stand), ...back.slice(1)])
+  }
+  return {
+    roomAt: walledRoomAt, standAt: home => {
+      const room = walledRoomAt(home)
+      if (!room) return routePoint(home)
+      return { x: home.x + (home.x > room.x1 - 1.6 ? -1 : 1), z: home.z }
+    }, officeExit: exit, meetingTrip: meetings, officeTrip: trip, boardTrip, corridorPath: publicPath, loungeTrip: lounge,
+    consumerTrip: consumer, foyerTrip: consumer, plazaTrip: consumer, foyerReturnTrip: (home, id, stand) => consumer(home, id, stand).toReversed().map(routePoint), consumerAdvance, consumerDeparture, consumerTargets, consumerQueues,
+    ENTRANCE: entrance, CORRIDOR_X: layout.axis.x, BOARD_DOOR: { x: boardDoor.side === 'west' ? boardRoom.x0 : boardRoom.x1, zOut: boardOutside.z, zIn: boardInside.z, outside: boardOutside, inside: boardInside, side: boardDoor.side }, FOYER_Z: layout.foyer.z1, AISLE_OFFSET: 1.5,
+    LOUNGE_AREA: { x: layout.bar.center.x, z: layout.bar.center.z, width: 12, depth: 6, entryZ: foyerHub.z },
+    LOUNGE_SEATS: barLounges(layout),
+    COFFEE_SEATS: layout.bar.seats.map(seat => ({ ...seat, yaw: Math.atan2(seat.x - layout.axis.x, seat.z - layout.bar.center.z), appX: seat.x })),
+  }
+}
 
 // 调用方持有选定版本；旧版导出和数据不参与重写。
 export function createOfficeNavigation(layout = LAYOUT_V1) {
+  if (layout.version === 3) return createOfficeV3Navigation(layout)
   if (layout.version !== 2) return LAYOUT_V1
   const rooms = layout.regions, center = layout.bar.center, corridors = layout.corridors
   const northZ = (corridors.north.z0 + corridors.north.z1) / 2, southZ = (corridors.south.z0 + corridors.south.z1) / 2

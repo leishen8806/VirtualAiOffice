@@ -218,10 +218,17 @@ test('concurrent state reads share build and return isolated copies, gaps determ
 })
 
 test('act auth and body are unchanged; fake unavailable upstream never returns successful write', async () => {
-  const act = extract(source, 'async function act(a)', '// 任务详情（只读）')
-  assert.equal(act, extract(backup, 'async function act(a)', '// 任务详情（只读）'))
-  const route = extract(source, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')")
-  assert.equal(route, extract(backup, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')"))
+  // DS-7 / R1（2026-10-23，规划者批准）：完成策略只改 act 的签名与 review 分支；其余部分（含鉴权与其它所有分支）仍须与 H2 备份逐字一致。
+  const sigRe = /async function act\(a(?:, options = \{\})?\)/
+  const reviewRe = /  if \(a\.type === 'review'\) \{[\s\S]*?\n  \}\n/
+  const actBody = (text) => text.replace(sigRe, 'async function act(a)').replace(/\r\n/g, '\n').replace(reviewRe, '  /* review */\n')
+  const actNow = extract(source, 'async function act(a', '// 任务详情（只读）')
+  assert.match(actNow, /^async function act\(a, options = \{\}\)/)
+  assert.equal(actBody(actNow), actBody(extract(backup, 'async function act(a)', '// 任务详情（只读）')))
+  const normalizeActCall = (text) => text.replace(/await act\(body, \{ localFullAccess: !lanUser && !wallScope \}\)/, 'await act(body)') // DS-7：仅此一处调用点改动
+  const route = normalizeActCall(extract(source, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')"))
+  assert.equal(route, normalizeActCall(extract(backup, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')")))
+  const act = actNow
   let calls = 0
   const run = vm.runInNewContext(act + '\nact', { need: (ok, message) => { if (!ok) throw new Error(message) },
     UUID: /^[a-z0-9-]+$/, str: s => String(s || ''), send: async () => { calls++; throw new Error('fixture upstream unavailable') } })

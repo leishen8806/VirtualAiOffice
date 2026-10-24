@@ -1,33 +1,44 @@
+import {
+  latestSearch,
+  resolvePlaceMode,
+} from './place-mode.js'
+
 export const PLACE_NAVIGATION = Object.freeze({
   office: Object.freeze({
     id: 'office',
+    placeId: 'drlife-office',
     markerId: 'office-zixu-workshop',
     name: '智序工场·办公室',
-    placeHref: '/?place=office',
+    placeHref: `/${latestSearch('drlife-office')}`,
     workbenchName: 'AI 团队指挥中心',
     workbenchHref: '/command-view.html',
   }),
   dr: Object.freeze({
     id: 'dr',
+    placeId: 'drlife-warehouse',
     markerId: 'dr-logistics-campus',
     name: 'DR 仓配服务中心',
-    placeHref: '/?campus=1&place=dr',
+    placeHref: `/${latestSearch('drlife-warehouse')}`,
     workbenchName: '仓配调度中心',
     workbenchHref: '/dr-console.html',
   }),
 })
 
 export function placeNavigation(value) {
-  if (value === 'dr' || value === 'dr-logistics-campus') return PLACE_NAVIGATION.dr
+  if (
+    value === 'dr' ||
+    value === 'drlife-warehouse' ||
+    value === 'dr-logistics-campus'
+  ) {
+    return PLACE_NAVIGATION.dr
+  }
   return PLACE_NAVIGATION.office
 }
 
 export function currentPlace(locationRef = globalThis.location) {
-  const params = new URLSearchParams(locationRef?.search || '')
   if (
     locationRef?.pathname === '/dr-console.html' ||
-    params.get('place') === 'dr' ||
-    params.get('campus') === '1'
+    resolvePlaceMode(locationRef?.search).place === 'dr'
   ) {
     return PLACE_NAVIGATION.dr
   }
@@ -56,6 +67,9 @@ export function mountPlaceBar({
   if (existing) return existing
 
   const place = currentPlace(locationRef)
+  const otherPlace = place.id === 'dr'
+    ? PLACE_NAVIGATION.office
+    : PLACE_NAVIGATION.dr
   const company = documentRef.body.dataset.company || '–'
   const style = documentRef.createElement('style')
   style.id = 'placeBarStyle'
@@ -82,6 +96,12 @@ export function mountPlaceBar({
     placeLabel,
     textNode(documentRef, 'span', '｜'),
     linkNode(documentRef, '返回小镇', '/town.html'),
+    textNode(documentRef, 'span', '｜'),
+    linkNode(
+      documentRef,
+      `前往${otherPlace.name}`,
+      otherPlace.placeHref,
+    ),
     textNode(documentRef, 'span', '｜'),
     linkNode(documentRef, place.workbenchName, place.workbenchHref),
   )

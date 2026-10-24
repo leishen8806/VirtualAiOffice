@@ -1,0 +1,146 @@
+{
+  "baselineSha": "7de80d7166fed430bc5a2b3f7bc3346f46408eb1",
+  "candidateCodeSha": "b0c19b7e05dd37bdf79ca2ba42c80e9cb75244bf",
+  "baselineFailures": [
+    {
+      "location": "tests\\command-view-routes.test.mjs:13:1",
+      "name": "only literal boolean true enables config; missing, damaged and other types fail closed"
+    },
+    {
+      "location": "tests\\display-staff.test.mjs:103:1",
+      "name": "display flag requires literal true, invalid/missing JSON stays off, URL opt-in is explicit"
+    },
+    {
+      "location": "tests\\dr-campus-shell.test.mjs:48:1",
+      "name": "campus app wiring remains limited and local-only"
+    },
+    {
+      "location": "tests\\dr-control-room.test.mjs:23:1",
+      "name": "control room implementation stays local, simulated and disposable"
+    },
+    {
+      "location": "tests\\office-furniture-v2.test.mjs:175:1",
+      "name": "O4 app wiring stays within its own 20-line budget and layout1 data is identical"
+    },
+    {
+      "location": "tests\\office-layout-v2.test.mjs:1:1",
+      "name": "tests\\office-layout-v2.test.mjs"
+    },
+    {
+      "location": "tests\\office-v2-integration.test.mjs:113:1",
+      "name": "O6O7 production wiring contains no business, network, warehouse or wall-clock reads"
+    },
+    {
+      "location": "tests\\office-v2-registry.test.mjs:105:1",
+      "name": "O4b retains the original budgets without O4 line exemptions and adds at most 10 app lines"
+    },
+    {
+      "location": "tests\\state-last-good.test.mjs:1:1",
+      "name": "tests\\state-last-good.test.mjs"
+    },
+    {
+      "location": "tests\\tenancy-server.test.mjs:51:1",
+      "name": "server wiring exposes platform tenancy only to local users and keeps static whitelist unchanged"
+    },
+    {
+      "location": "tests\\town-map-api.test.mjs:180:1",
+      "name": "server wiring adds town api after access control without changing static whitelist"
+    },
+    {
+      "location": "tests\\town-map.test.mjs:1:1",
+      "name": "tests\\town-map.test.mjs"
+    },
+    {
+      "location": "tests\\town-nav.test.mjs:111:1",
+      "name": "town navigation switch fails closed and emits only a boolean client config"
+    },
+    {
+      "location": "tests\\town-nav.test.mjs:158:1",
+      "name": "town markers stay visible and navigable independently of town-nav switch"
+    },
+    {
+      "location": "tests\\warehouse-env.test.mjs:1:1",
+      "name": "tests\\warehouse-env.test.mjs"
+    },
+    {
+      "location": "tests\\warehouse-layout.test.mjs:94:1",
+      "name": "all pre-S2-1 data exports except the intentional minimap change are byte-equivalent"
+    },
+    {
+      "location": "tests\\warehouse-shell.test.mjs:53:1",
+      "name": "app wiring stays minimal and does not add unsafe APIs"
+    }
+  ],
+  "candidateFailures": [
+    {
+      "location": "tests\\command-view-routes.test.mjs:13:1",
+      "name": "only literal boolean true enables config; missing, damaged and other types fail closed"
+    },
+    {
+      "location": "tests\\display-staff.test.mjs:103:1",
+      "name": "display flag requires literal true, invalid/missing JSON stays off, URL opt-in is explicit"
+    },
+    {
+      "location": "tests\\dr-campus-shell.test.mjs:48:1",
+      "name": "campus app wiring remains limited and local-only"
+    },
+    {
+      "location": "tests\\dr-control-room.test.mjs:23:1",
+      "name": "control room implementation stays local, simulated and disposable"
+    },
+    {
+      "location": "tests\\office-furniture-v2.test.mjs:175:1",
+      "name": "O4 app wiring stays within its own 20-line budget and layout1 data is identical"
+    },
+    {
+      "location": "tests\\office-layout-v2.test.mjs:1:1",
+      "name": "tests\\office-layout-v2.test.mjs"
+    },
+    {
+      "location": "tests\\office-v2-integration.test.mjs:113:1",
+      "name": "O6O7 production wiring contains no business, network, warehouse or wall-clock reads"
+    },
+    {
+      "location": "tests\\office-v2-registry.test.mjs:105:1",
+      "name": "O4b retains the original budgets without O4 line exemptions and adds at most 10 app lines"
+    },
+    {
+      "location": "tests\\state-last-good.test.mjs:1:1",
+      "name": "tests\\state-last-good.test.mjs"
+    },
+    {
+      "location": "tests\\tenancy-server.test.mjs:51:1",
+      "name": "server wiring exposes platform tenancy only to local users and keeps static whitelist unchanged"
+    },
+    {
+      "location": "tests\\town-map-api.test.mjs:180:1",
+      "name": "server wiring adds town api after access control without changing static whitelist"
+    },
+    {
+      "location": "tests\\town-map.test.mjs:1:1",
+      "name": "tests\\town-map.test.mjs"
+    },
+    {
+      "location": "tests\\town-nav.test.mjs:111:1",
+      "name": "town navigation switch fails closed and emits only a boolean client config"
+    },
+    {
+      "location": "tests\\town-nav.test.mjs:158:1",
+      "name": "town markers stay visible and navigable independently of town-nav switch"
+    },
+    {
+      "location": "tests\\warehouse-env.test.mjs:1:1",
+      "name": "tests\\warehouse-env.test.mjs"
+    },
+    {
+      "location": "tests\\warehouse-layout.test.mjs:94:1",
+      "name": "all pre-S2-1 data exports except the intentional minimap change are byte-equivalent"
+    },
+    {
+      "location": "tests\\warehouse-shell.test.mjs:53:1",
+      "name": "app wiring stays minimal and does not add unsafe APIs"
+    }
+  ],
+  "newFailures": [],
+  "resolved": []
+}

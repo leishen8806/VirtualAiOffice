@@ -24,7 +24,7 @@ const angleOf = (name) => (MEMBERS.find((m) => m.name === name) || {}).accept ||
 // T15：批次里若有「版本未核对」的项（证据缺版本 / 无法核对），规则最前面加这一句，防止委员只凭自述就投过
 const VERSION_WARN = '【版本核对（必做）】本批有任务的验收证据版本未能与当前实际版本核对成功（证据缺版本或无法核对）。**缺失版本或版本无法核对的项，不得仅凭执行者自述投 APPROVE**——必须实际复核改动文件或说清原因。\n\n'
 
-export function createAcceptance({ dir, company, get, send, notify, rework = () => false, versionCheck = async () => null, log = console.log, staggerMs = 15000 }) {
+export function createAcceptance({ dir, company, get, send, notify, rework = () => false, versionCheck = async () => null, completionGate = null, log = console.log, staggerMs = 15000 }) {
   const FILE = path.join(dir, 'acceptance.json')
   let db = { batches: [], decided: {} } // decided: `${issueId}@${since}` -> 结果，避免同一次等待反复投票
   try { db = { ...db, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch {}
@@ -134,7 +134,21 @@ export function createAcceptance({ dir, company, get, send, notify, rework = () 
       db.decided[`${it.issueId}@${it.since}`] = { outcome: null, at: new Date().toISOString() }
       if (iss.status !== 'in_review') { it.outcome = 'SKIP'; it.note = `状态已变成 ${iss.status}（董事会或别人已经处理）`; out.skip.push(it); continue }
       if (it.tally.escalate === 0 && it.tally.approve >= 3) {
-        await send('POST', `/api/issues/${it.issueId}/comments`, { body: `**委员会验收通过**（${line}）。原因：待验收超过 1 小时没人处理，按董事会规则由委员会投票。\n${why(['APPROVE'])}` })
+        // DS-7：自动验收也必须过完成策略；enforce 拦下时跳过该项、记原因，不影响其它项。
+        let warnHint = ''
+        if (completionGate) {
+          let gate
+          try { gate = await completionGate(it.issueId) } catch (e) { gate = { allow: false, mode: 'enforce', reasons: ['NO_EVIDENCE'], note: String(e && e.message ? e.message : e).slice(0, 160) } }
+          if (!gate || gate.allow !== true) {
+            it.outcome = 'POLICY_BLOCKED'
+            it.note = `完成策略拦下：${(gate && gate.reasons && gate.reasons.length ? gate.reasons.join('、') : (gate && gate.note) || '证据不足')}`
+            out.board.push(it)
+            db.decided[`${it.issueId}@${it.since}`].outcome = 'POLICY_BLOCKED'
+            continue
+          }
+          if (gate.mode === 'warn' && Array.isArray(gate.reasons) && gate.reasons.length) warnHint = `\n\n**完成策略（warn）提示：** ${gate.reasons.join('、')}`
+        }
+        await send('POST', `/api/issues/${it.issueId}/comments`, { body: `**委员会验收通过**（${line}）。原因：待验收超过 1 小时没人处理，按董事会规则由委员会投票。\n${why(['APPROVE'])}${warnHint}` })
         await send('PATCH', `/api/issues/${it.issueId}`, { status: 'done' })
         it.outcome = 'ACCEPTED'; out.done.push(it)
       } else if (it.tally.escalate === 0 && it.tally.changes >= 3) {

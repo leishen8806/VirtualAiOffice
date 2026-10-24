@@ -8,6 +8,10 @@ export const LABEL_MODE_KEY = 'town.labelMode'
 export const LABEL_FADE_RATE = 0.22
 export const LABEL_GAP = 4
 export const PLACE_LANDMARK_IDS = Object.freeze(['office-zixu-workshop', 'dr-logistics-campus'])
+export const PLACE_ID_BY_LANDMARK = Object.freeze({
+  'office-zixu-workshop': 'drlife-office',
+  'dr-logistics-campus': 'drlife-warehouse',
+})
 export const MAJOR_LANDMARKS = Object.freeze([
   'Independence Monument',
   'Royal Palace',
@@ -45,9 +49,23 @@ const smooth = (a, b, value) => {
 
 export const clampScale = (scale) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
 
+export function placeIdForLandmark(landmarkId) {
+  return PLACE_ID_BY_LANDMARK[landmarkId] || 'drlife-office'
+}
+
+export function schedulePlaceTransitionFallback({
+  isPageLeaving,
+  clear,
+  schedule = setTimeout,
+} = {}) {
+  return schedule(() => {
+    if (!isPageLeaving()) clear()
+  }, 1500)
+}
+
 export function placeMarkerMetrics(scale, imageWidth = 0, imageHeight = 0) {
   const diameter = 28 + smooth(0.8, 3, clampScale(scale)) * 16
-  const maxLogoWidth = diameter * 0.72
+  const maxLogoWidth = diameter * 0.8
   const maxLogoHeight = diameter * 0.55
   const ratio = imageWidth > 0 && imageHeight > 0 ? imageWidth / imageHeight : 1
   const logoWidth = Math.min(maxLogoWidth, maxLogoHeight * ratio)
@@ -373,7 +391,7 @@ export function nextLabelFrame(layout, alphaState = new Map(), reducedMotion = f
   for (const label of targets) {
     const current = next.get(label.key) ?? 0
     const target = label.alpha
-    const alpha = reducedMotion ? target : current + (target - current) * LABEL_FADE_RATE
+    const alpha = reducedMotion || label.kind === 'place' ? target : current + (target - current) * LABEL_FADE_RATE
     next.set(label.key, alpha)
     if (Math.abs(alpha - target) > 0.02) animating = true
     if (alpha > 0.03) draw.push({ ...label, alpha })

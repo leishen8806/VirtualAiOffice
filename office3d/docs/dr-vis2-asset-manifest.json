@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "module": "dr-vis2-dispatch-suite",
+  "updatedFor": "VIS2-W-B1",
+  "note": "本清单只登记 VIS2-W（A/B/B1）用到的素材。没有新增、复制、修改或下载任何素材文件；已批准素材沿用原路径，由宿主（预览页或 Trae 的接线）加载后传入构件，构件自己不加载图片。",
+  "reusedApprovedAssets": [
+    {
+      "id": "dr-life-logo-full",
+      "path": "assets/logo.png",
+      "pixels": "979x544",
+      "bytes": 405899,
+      "sha256": "dc02c2ec81e1febc761660f44b5627c721d83408c89c0ae75dcc6dbc10ebc365",
+      "usedFor": "展示墙品牌大面板（等比放入 1200x470 区域，不拉伸）",
+      "approval": "董事会 2026-10-22：两个地点标记都使用完整 DR.LIFE+ logo（NAV-1c）；沿用同一素材，未改动文件"
+    },
+    {
+      "id": "dr-life-logo-mark",
+      "path": "assets/logo-mark.png",
+      "pixels": "313x390",
+      "bytes": 136846,
+      "sha256": "1f68243331ebd7e06cea9b1b9a673af11492712557dc211662e1f284d1602509",
+      "usedFor": "接待台立面标识牌（等比放入深石墨底牌内，金色细框）",
+      "approval": "与上同（项目内已有的品牌素材）；未改动文件"
+    }
+  ],
+  "originalProcedural": [
+    { "id": "logo-placeholder", "where": "dr-vis2-dispatch-suite.js · drawLogoPlaceholder", "description": "原创占位标识（金边切角方框 + 「DR」字样 + 小横线），仅在宿主没有传入素材时绘制；不模仿任何现有商标。素材到位后调用 setLogo({ full, mark }) 即替换，无需改代码。", "externalAssets": 0 },
+    { "id": "showcase-niche-pictograms", "where": "drawShowcaseAtlas", "description": "展龛里的线条图标（货架 / 货箱 / 货车 / 齿轮），程序化绘制。", "externalAssets": 0 },
+    { "id": "rack-cell-geometry", "where": "dr-vis2-rack-cell.js（A）", "description": "货架、托盘、纸箱、轨道、穿梭机全部程序化几何。", "externalAssets": 0 }
+  ],
+  "downloads": [],
+  "modifiedSharedFiles": []
+}

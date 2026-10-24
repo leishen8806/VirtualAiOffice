@@ -1,0 +1,3524 @@
+{
+  "sourceSHA": "345cd39f7dddebf4e4e61e146af7a283cd415088",
+  "functions": {
+    "barSpec": {
+      "center": {
+        "x": 2,
+        "z": -6
+      },
+      "radius": 3.5,
+      "innerRadius": 2.1,
+      "gapWidth": 1.5,
+      "ring": {
+        "r0": 6,
+        "r1": 8
+      }
+    },
+    "barGaps": [
+      {
+        "side": "east",
+        "width": 1.5,
+        "x": 5.5,
+        "z0": -6.75,
+        "z1": -5.25
+      },
+      {
+        "side": "west",
+        "width": 1.5,
+        "x": -1.5,
+        "z0": -6.75,
+        "z1": -5.25
+      }
+    ],
+    "barArcs": [
+      {
+        "start": 0.36520722129036676,
+        "end": 2.7763854322994264
+      },
+      {
+        "start": 3.50679987488016,
+        "end": 5.917978085889219
+      }
+    ],
+    "barSeats": [
+      {
+        "id": "bar-seat-north-1",
+        "x": 5.920428706428819,
+        "z": -4.002441801145994,
+        "yaw": -2.0420352248333655,
+        "angle": 0.47123889803846897
+      },
+      {
+        "id": "bar-seat-north-2",
+        "x": 4.298993684750176,
+        "z": -2.2483832768419947,
+        "yaw": -2.591813939211579,
+        "angle": 1.0210176124166825
+      },
+      {
+        "id": "bar-seat-north-3",
+        "x": 2.0000000000000004,
+        "z": -1.5999999999999996,
+        "yaw": -3.141592653589793,
+        "angle": 1.5707963267948966
+      },
+      {
+        "id": "bar-seat-north-4",
+        "x": -0.29899368475017507,
+        "z": -2.248383276841994,
+        "yaw": -3.691371367968007,
+        "angle": 2.1205750411731104
+      },
+      {
+        "id": "bar-seat-north-5",
+        "x": -1.9204287064288188,
+        "z": -4.002441801145993,
+        "yaw": -4.241150082346221,
+        "angle": 2.670353755551324
+      },
+      {
+        "id": "bar-seat-south-1",
+        "x": -1.9204287064288192,
+        "z": -7.997558198854006,
+        "yaw": -5.183627878423159,
+        "angle": 3.612831551628262
+      },
+      {
+        "id": "bar-seat-south-2",
+        "x": -0.2989936847501773,
+        "z": -9.751616723158005,
+        "yaw": -5.733406592801372,
+        "angle": 4.162610266006475
+      },
+      {
+        "id": "bar-seat-south-3",
+        "x": 1.9999999999999991,
+        "z": -10.4,
+        "yaw": -6.283185307179586,
+        "angle": 4.71238898038469
+      },
+      {
+        "id": "bar-seat-south-4",
+        "x": 4.298993684750172,
+        "z": -9.751616723158008,
+        "yaw": -6.8329640215578,
+        "angle": 5.262167694762903
+      },
+      {
+        "id": "bar-seat-south-5",
+        "x": 5.920428706428819,
+        "z": -7.997558198854007,
+        "yaw": -7.382742735936014,
+        "angle": 5.811946409141117
+      }
+    ],
+    "barColliders": [
+      {
+        "id": "office2-bar-collision-0-0",
+        "x0": 3.5118888750531405,
+        "x1": 5.269174207655505,
+        "z0": -5.25,
+        "z1": -3.5708986403915697
+      },
+      {
+        "id": "office2-bar-collision-0-1",
+        "x0": 2.8213806325003583,
+        "x1": 4.519814791755234,
+        "z0": -4.542539184234942,
+        "z1": -2.7788313643469778
+      },
+      {
+        "id": "office2-bar-collision-0-2",
+        "x0": 2,
+        "x1": 3.3689677208339304,
+        "z0": -4.067298818608187,
+        "z1": -2.5
+      },
+      {
+        "id": "office2-bar-collision-0-3",
+        "x0": 0.6310322791660692,
+        "x1": 2,
+        "z0": -4.067298818608187,
+        "z1": -2.5
+      },
+      {
+        "id": "office2-bar-collision-0-4",
+        "x0": -0.5198147917552332,
+        "x1": 1.1786193674996417,
+        "z0": -4.542539184234941,
+        "z1": -2.7788313643469778
+      },
+      {
+        "id": "office2-bar-collision-0-5",
+        "x0": -1.2691742076555053,
+        "x1": 0.48811112494685993,
+        "z0": -5.25,
+        "z1": -3.5708986403915683
+      },
+      {
+        "id": "office2-bar-collision-1-0",
+        "x0": -1.2691742076555053,
+        "x1": 0.48811112494685904,
+        "z0": -8.42910135960843,
+        "z1": -6.75
+      },
+      {
+        "id": "office2-bar-collision-1-1",
+        "x0": -0.5198147917552349,
+        "x1": 1.1786193674996417,
+        "z0": -9.221168635653022,
+        "z1": -7.457460815765058
+      },
+      {
+        "id": "office2-bar-collision-1-2",
+        "x0": 0.6310322791660692,
+        "x1": 1.9999999999999996,
+        "z0": -9.5,
+        "z1": -7.932701181391813
+      },
+      {
+        "id": "office2-bar-collision-1-3",
+        "x0": 1.9999999999999993,
+        "x1": 3.3689677208339295,
+        "z0": -9.5,
+        "z1": -7.932701181391813
+      },
+      {
+        "id": "office2-bar-collision-1-4",
+        "x0": 2.821380632500358,
+        "x1": 4.519814791755233,
+        "z0": -9.221168635653022,
+        "z1": -7.457460815765059
+      },
+      {
+        "id": "office2-bar-collision-1-5",
+        "x0": 3.51188887505314,
+        "x1": 5.269174207655505,
+        "z0": -8.429101359608431,
+        "z1": -6.750000000000002
+      }
+    ],
+    "barLounges": [
+      {
+        "id": "lounge-east-1",
+        "side": "east",
+        "x": 6.933386259126019,
+        "z": -7.79560575245976,
+        "yaw": 1.9198621771937625,
+        "appX": 6.41655531769377,
+        "appZ": -7.607494673630643,
+        "angle": -0.3490658503988659,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      },
+      {
+        "id": "lounge-east-2",
+        "side": "east",
+        "x": 7.25,
+        "z": -6,
+        "yaw": 1.5707963267948966,
+        "appX": 6.7,
+        "appZ": -6,
+        "angle": 0,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      },
+      {
+        "id": "lounge-east-3",
+        "side": "east",
+        "x": 6.933386259126019,
+        "z": -4.20439424754024,
+        "yaw": 1.2217304763960306,
+        "appX": 6.41655531769377,
+        "appZ": -4.392505326369357,
+        "angle": 0.3490658503988659,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      },
+      {
+        "id": "lounge-west-1",
+        "side": "west",
+        "x": -2.933386259126019,
+        "z": -4.204394247540238,
+        "yaw": -1.2217304763960306,
+        "appX": -2.416555317693769,
+        "appZ": -4.392505326369356,
+        "angle": 2.792526803190927,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      },
+      {
+        "id": "lounge-west-2",
+        "side": "west",
+        "x": -3.25,
+        "z": -5.999999999999999,
+        "yaw": -1.5707963267948966,
+        "appX": -2.7,
+        "appZ": -5.999999999999999,
+        "angle": 3.141592653589793,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      },
+      {
+        "id": "lounge-west-3",
+        "side": "west",
+        "x": -2.933386259126019,
+        "z": -7.79560575245976,
+        "yaw": -1.9198621771937625,
+        "appX": -2.4165553176937697,
+        "appZ": -7.607494673630643,
+        "angle": 3.490658503988659,
+        "sitOffset": {
+          "forward": 0.03,
+          "lift": 0
+        }
+      }
+    ],
+    "validateBarGeometry": {
+      "ok": false,
+      "errors": [
+        "BAR_CONTRACT"
+      ]
+    },
+    "barSeatsLow": [
+      {
+        "id": "bar-seat-north-1",
+        "x": 5.920428706428819,
+        "z": -4.002441801145994,
+        "yaw": -2.0420352248333655,
+        "angle": 0.47123889803846897
+      },
+      {
+        "id": "bar-seat-north-2",
+        "x": 2.0000000000000004,
+        "z": -1.5999999999999996,
+        "yaw": -3.141592653589793,
+        "angle": 1.5707963267948966
+      },
+      {
+        "id": "bar-seat-north-3",
+        "x": -1.9204287064288188,
+        "z": -4.002441801145993,
+        "yaw": -4.241150082346221,
+        "angle": 2.670353755551324
+      },
+      {
+        "id": "bar-seat-south-1",
+        "x": -1.9204287064288192,
+        "z": -7.997558198854006,
+        "yaw": -5.183627878423159,
+        "angle": 3.612831551628262
+      },
+      {
+        "id": "bar-seat-south-2",
+        "x": 1.9999999999999991,
+        "z": -10.4,
+        "yaw": -6.283185307179586,
+        "angle": 4.71238898038469
+      },
+      {
+        "id": "bar-seat-south-3",
+        "x": 5.920428706428819,
+        "z": -7.997558198854007,
+        "yaw": -7.382742735936014,
+        "angle": 5.811946409141117
+      }
+    ]
+  },
+  "tiers": {
+    "high": {
+      "island": [
+        {
+          "name": "office-island-static-batch",
+          "arrays": {
+            "position": "d37d51697d0d1f8b242928f23e35c83c8ff9e31c2dc6cd60255a520b2b5954dd",
+            "normal": "b8bbbf39fa3052cafffea2f775c559ccc5a26293ff668d329729b58664fbc727",
+            "color": "7df4cb910bab21d54428b136477be376385120bce95493d4692e2d1b7fcdee1a"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.82,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office-island-label",
+          "arrays": {
+            "position": "d3da564b327fbac1a2058f0e4918b4b10804ebed759df961d1c52211e7d61241",
+            "normal": "796f0b940d4268e7d9ccbd67f52dca773c768e372dae64d3c1b1caf59e6c8247",
+            "uv": "f3a0a46301c6859e5b64beadee234c4eeec1dec8c4735dc7bf40ea09e762e189",
+            "index": "e6681333c21d3bedc5c5d4ea4503e8acc5b95e8d8e2aabffd97d12425a145443"
+          },
+          "world": [
+            -1,
+            0,
+            -1.2246467991473532e-16,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1.2246467991473532e-16,
+            0,
+            -1,
+            0,
+            2,
+            1.2,
+            -9.53,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "map": "UUID",
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "transparent": true,
+            "blendColor": 0,
+            "textures": [
+              {
+                "uuid": "UUID",
+                "name": "",
+                "image": "UUID",
+                "mapping": 300,
+                "channel": 0,
+                "repeat": [
+                  1,
+                  1
+                ],
+                "offset": [
+                  0,
+                  0
+                ],
+                "center": [
+                  0,
+                  0
+                ],
+                "rotation": 0,
+                "wrap": [
+                  1001,
+                  1001
+                ],
+                "format": 1023,
+                "internalFormat": null,
+                "type": 1009,
+                "normalized": false,
+                "colorSpace": "",
+                "minFilter": 1008,
+                "magFilter": 1006,
+                "anisotropy": 1,
+                "flipY": true,
+                "generateMipmaps": true,
+                "premultiplyAlpha": false,
+                "unpackAlignment": 4
+              }
+            ],
+            "images": [
+              {
+                "uuid": "UUID",
+                "url": ""
+              }
+            ]
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-0",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            4.390531541354322,
+            0.55,
+            -4.410449320195784,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-1",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3.670597712127796,
+            0.55,
+            -3.6606852742909597,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-2",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2.6844838604169654,
+            0.55,
+            -3.2836494093040933,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-3",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1.3155161395830346,
+            0.55,
+            -3.2836494093040933,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-4",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0.32940228787220427,
+            0.55,
+            -3.6606852742909592,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-5",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            -0.39053154135432266,
+            0.55,
+            -4.410449320195784,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-0",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            -0.3905315413543231,
+            0.55,
+            -7.589550679804215,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-1",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0.3294022878722034,
+            0.55,
+            -8.339314725709041,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-2",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1.3155161395830344,
+            0.55,
+            -8.716350590695907,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-3",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2.6844838604169645,
+            0.55,
+            -8.716350590695907,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-4",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3.6705977121277957,
+            0.55,
+            -8.339314725709041,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-5",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            4.390531541354322,
+            0.55,
+            -7.5895506798042165,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "sample": [
+        {
+          "name": "tea-bar-body-top-equipment",
+          "arrays": {
+            "position": "a87a13a83ee9bf1eba1b74343076ac859c786580eec436c8b4848216d2a08d99",
+            "normal": "59b0ce9841393c6ebe0268c6cc3c6ff507cbbc1f5e36dbf5eae9ba87f4509a7f",
+            "color": "a1b8be88f62e2816eb505b51835941db8e443c6f0e1029d23eea4e0ee3c1276d",
+            "sampleSurface": "bcbb98495c8d1e8eb4c52e3c8b6a57d5f9e01ae769a2992c7f831acb4d37f215",
+            "sampleUv": "16622efa730f54d0782dcf83653541c0be7af0b22c1d166c5a7a31c1c91301f1"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "tea-bar-instanced-stools",
+          "arrays": {
+            "position": "1d63e26cee3b2a84279ee69077d40dba8afc813307673c8ff76df910184ab8f3",
+            "normal": "a154e49278028e92376a5a380427e0965616ef6cc77caa744ab48f1438ec8574",
+            "color": "594e43e270f80b987768eff90f09203c35acfad86645974a3bc54a753143cd93",
+            "sampleSurface": "54b0b519cda7b16cb6c0a55140ec9866bace6379aed5e274ae272bad0f07475a",
+            "sampleUv": "ddf3c2580b947833fda7b7ab3d8b3581b0a7f6c060e7190ed4c7ce212d1378dc",
+            "instanceMatrix": "8d840b8353f59aa2787ef348c1f25e333494d03da08dde1e77d50464785093e2"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 10,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "tea-bar-instanced-lounges",
+          "arrays": {
+            "position": "38631dfd84b2d98c487986f0a772ea39ed67ea659f562e407b52933be58b39e0",
+            "normal": "7056cadb4e2e430ebecbc75cd24596f1b9e06afd9051411332589bb833853be5",
+            "color": "3975fdd0015622f6744d567bfcfdbe81ade005d82e5e519b32140f8fe1a927c6",
+            "sampleSurface": "dd2fc7cbbc87cb693e2e433c88aee6c53448859b41993470718f6441aa46f4be",
+            "sampleUv": "ff9318af1e308698a4e820177da98e200d0d7ce02913c7f9c3e4d69d58c477d8",
+            "instanceMatrix": "816e1791031c8981a54d384449680fac47286d4f4886c2ea6d40246f09fe2b5a"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 6,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-pool",
+          "arrays": {
+            "position": "83d0f6764e2fe2ce778f6cdeba9c0af5874cd02e2b07f101b0280d33375e1e48",
+            "normal": "2e8c06f3d6e147ff22871b58a5990a6f1a8557d542437cc6ae9ce4614f240fbb",
+            "color": "0b410bb4958080a775b35ab106ba0670a90bc21166eae1f5a34449cbedad59a6"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.88,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-trunk-and-branches",
+          "arrays": {
+            "position": "fa52d4c0021bcc89e199022fd528b9765b827f5f8cc155a4c1637d364c19aa22",
+            "normal": "fd1cd1f6cf2b4027fa8ffe147b2b5e02c6870f5d961a6e29714d61ede9a7eb38",
+            "color": "51420b24ecb9bc961fba9503833de73c3af5d459cf4cd92a541406c330b5bb2c"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.98,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-small-leaf-clusters",
+          "arrays": {
+            "position": "5d3e6cdf9b3de435f9a8e8197ac83975d6d1b5f6ab276a6a7f17fdb8b13856f2",
+            "uv": "e1dc37aded76513ca2a399745b249dd818de30123e170abefe7e367ac1b8c1aa",
+            "normal": "6a5cdc292139e8a6a7c83ed516cd7e1a99489e5422ca194ab3f62686c8613cd7",
+            "instanceMatrix": "93410b884f5dff1d86f7c2b6b7fbc169a44b2b50ec006ade6ef28f01ebc8bccb"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 1000,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.87,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "side": 2,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "brand": [
+        {
+          "name": "office-vis2-brushed-metal-brand-backing",
+          "arrays": {
+            "position": "fe9169a3685faa82e91a45ad945189f14bceae68c1fb13375ffdaa9ef7c22591",
+            "normal": "7a249252d03e8055323b32fb8023363ec615294046f2493b103bc3b5b1fe39d5",
+            "uv": "a909d3a9387b6c602fb63d36f6b8f8552ce641c0de30c2f83f51fefe2885d611"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 12098404,
+            "roughness": 0.42,
+            "metalness": 0.72,
+            "emissive": 8017959,
+            "emissiveIntensity": 0.16,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office-vis2-approved-logo-marks",
+          "arrays": {
+            "position": "3f118c4177b2edcb894b075bb8857bf6ff3b40dad21ff44be872e3e6ee106861",
+            "normal": "c181a4dc677c672d2a51bff566694ec0b2ef132a297b2a60d4c757f97327b1dc",
+            "uv": "4ab936604f7099d4c4a2600476350f159e4459233a0065757616b875d9afae53"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "map": "UUID",
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "side": 2,
+            "transparent": true,
+            "blendColor": 0,
+            "depthWrite": false,
+            "alphaTest": 0.04,
+            "textures": [
+              {
+                "uuid": "UUID",
+                "name": "",
+                "image": "UUID",
+                "mapping": 300,
+                "channel": 0,
+                "repeat": [
+                  1,
+                  1
+                ],
+                "offset": [
+                  0,
+                  0
+                ],
+                "center": [
+                  0,
+                  0
+                ],
+                "rotation": 0,
+                "wrap": [
+                  1001,
+                  1001
+                ],
+                "format": 1023,
+                "internalFormat": null,
+                "type": 1009,
+                "normalized": false,
+                "colorSpace": "",
+                "minFilter": 1008,
+                "magFilter": 1006,
+                "anisotropy": 1,
+                "flipY": true,
+                "generateMipmaps": true,
+                "premultiplyAlpha": false,
+                "unpackAlignment": 4
+              }
+            ],
+            "images": [
+              {
+                "uuid": "UUID",
+                "url": ""
+              }
+            ]
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "plants": [
+        {
+          "name": "sample-instanced-potted-plants",
+          "arrays": {
+            "position": "63c2ab78bcf2b935bd3b99f7f2d5c31acc08fc0c987efee563b9f0c9c76ff78b",
+            "normal": "e504519350c34cbb54dca901c620819cefc499deb3d3dd0b1a7a9dcfcb13f108",
+            "color": "bb20c895fb977c885e08b9b2b16632818ba704e18edebf4913a1431e186b32ae",
+            "sampleSurface": "6eed0d54b2d5b800429f08eddb13b075e307c7213b5ccdb0c8dfbf9584233ea8",
+            "sampleUv": "baa1fbb67f228848fd2fc61854963cf8902c5a6b4afaf9c05d3b08469263274a",
+            "instanceMatrix": "ae85d9929dac4913610ac42fae368f3084ebfe09a81259aebdd184379bcf64d0"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 8,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        }
+      ],
+      "colliders": [
+        {
+          "id": "office2-bar-collision-0-0",
+          "x0": 3.5118888750531405,
+          "x1": 5.269174207655505,
+          "z0": -5.25,
+          "z1": -3.5708986403915697
+        },
+        {
+          "id": "office2-bar-collision-0-1",
+          "x0": 2.8213806325003583,
+          "x1": 4.519814791755234,
+          "z0": -4.542539184234942,
+          "z1": -2.7788313643469778
+        },
+        {
+          "id": "office2-bar-collision-0-2",
+          "x0": 2,
+          "x1": 3.3689677208339304,
+          "z0": -4.067298818608187,
+          "z1": -2.5
+        },
+        {
+          "id": "office2-bar-collision-0-3",
+          "x0": 0.6310322791660692,
+          "x1": 2,
+          "z0": -4.067298818608187,
+          "z1": -2.5
+        },
+        {
+          "id": "office2-bar-collision-0-4",
+          "x0": -0.5198147917552332,
+          "x1": 1.1786193674996417,
+          "z0": -4.542539184234941,
+          "z1": -2.7788313643469778
+        },
+        {
+          "id": "office2-bar-collision-0-5",
+          "x0": -1.2691742076555053,
+          "x1": 0.48811112494685993,
+          "z0": -5.25,
+          "z1": -3.5708986403915683
+        },
+        {
+          "id": "office2-bar-collision-1-0",
+          "x0": -1.2691742076555053,
+          "x1": 0.48811112494685904,
+          "z0": -8.42910135960843,
+          "z1": -6.75
+        },
+        {
+          "id": "office2-bar-collision-1-1",
+          "x0": -0.5198147917552349,
+          "x1": 1.1786193674996417,
+          "z0": -9.221168635653022,
+          "z1": -7.457460815765058
+        },
+        {
+          "id": "office2-bar-collision-1-2",
+          "x0": 0.6310322791660692,
+          "x1": 1.9999999999999996,
+          "z0": -9.5,
+          "z1": -7.932701181391813
+        },
+        {
+          "id": "office2-bar-collision-1-3",
+          "x0": 1.9999999999999993,
+          "x1": 3.3689677208339295,
+          "z0": -9.5,
+          "z1": -7.932701181391813
+        },
+        {
+          "id": "office2-bar-collision-1-4",
+          "x0": 2.821380632500358,
+          "x1": 4.519814791755233,
+          "z0": -9.221168635653022,
+          "z1": -7.457460815765059
+        },
+        {
+          "id": "office2-bar-collision-1-5",
+          "x0": 3.51188887505314,
+          "x1": 5.269174207655505,
+          "z0": -8.429101359608431,
+          "z1": -6.750000000000002
+        }
+      ],
+      "seats": [
+        {
+          "id": "bar-seat-1",
+          "x": 5.994343088669982,
+          "z": -4.701838496182256,
+          "yaw": 3.4558245526741316,
+          "angle": 0.3142318990843383,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-2",
+          "x": 4.488039892005576,
+          "z": -2.616265746872417,
+          "yaw": 4.078366260721268,
+          "angle": 0.9367736071314745,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-3",
+          "x": 2.0000000000000004,
+          "z": -1.7999999999999998,
+          "yaw": 4.71238898038469,
+          "angle": 1.5707963267948966,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-4",
+          "x": -0.4880398920055753,
+          "z": -2.6162657468724166,
+          "yaw": 5.346411700048112,
+          "angle": 2.2048190464583186,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-5",
+          "x": -1.9943430886699827,
+          "z": -4.701838496182257,
+          "yaw": 5.968953408095248,
+          "angle": 2.827360754505455,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-6",
+          "x": -1.9943430886699827,
+          "z": -7.298161503817743,
+          "yaw": 0.314231899084338,
+          "angle": -2.827360754505455,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-7",
+          "x": -0.4880398920055753,
+          "z": -9.383734253127583,
+          "yaw": 0.9367736071314745,
+          "angle": -2.2048190464583186,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-8",
+          "x": 2.0000000000000004,
+          "z": -10.2,
+          "yaw": 1.5707963267948966,
+          "angle": -1.5707963267948966,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-9",
+          "x": 4.488039892005576,
+          "z": -9.383734253127583,
+          "yaw": 2.2048190464583186,
+          "angle": -0.9367736071314745,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-10",
+          "x": 5.994343088669982,
+          "z": -7.298161503817744,
+          "yaw": 2.8273607545054547,
+          "angle": -0.3142318990843383,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        }
+      ],
+      "lounges": [
+        {
+          "id": "lounge-east-1",
+          "side": "east",
+          "x": 6.933386259126019,
+          "z": -7.79560575245976,
+          "yaw": 1.9198621771937625,
+          "appX": 6.41655531769377,
+          "appZ": -7.607494673630643,
+          "angle": -0.3490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-east-2",
+          "side": "east",
+          "x": 7.25,
+          "z": -6,
+          "yaw": 1.5707963267948966,
+          "appX": 6.7,
+          "appZ": -6,
+          "angle": 0,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-east-3",
+          "side": "east",
+          "x": 6.933386259126019,
+          "z": -4.20439424754024,
+          "yaw": 1.2217304763960306,
+          "appX": 6.41655531769377,
+          "appZ": -4.392505326369357,
+          "angle": 0.3490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-1",
+          "side": "west",
+          "x": -2.933386259126019,
+          "z": -4.204394247540238,
+          "yaw": -1.2217304763960306,
+          "appX": -2.416555317693769,
+          "appZ": -4.392505326369356,
+          "angle": 2.792526803190927,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-2",
+          "side": "west",
+          "x": -3.25,
+          "z": -5.999999999999999,
+          "yaw": -1.5707963267948966,
+          "appX": -2.7,
+          "appZ": -5.999999999999999,
+          "angle": 3.141592653589793,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-3",
+          "side": "west",
+          "x": -2.933386259126019,
+          "z": -7.79560575245976,
+          "yaw": -1.9198621771937625,
+          "appX": -2.4165553176937697,
+          "appZ": -7.607494673630643,
+          "angle": 3.490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        }
+      ]
+    },
+    "low": {
+      "island": [
+        {
+          "name": "office-island-static-batch",
+          "arrays": {
+            "position": "c42584180f2a7a1ad14a57988d6632f93d1978b8819e0802fe88177ce196ae88",
+            "normal": "4a301deb1cc52bcb82bdb83edf6bce562379b14052b89d39001b7431768289d3",
+            "color": "52911aa4154bb3b8c26be5f8695289d5cb696bab4c9af02f21c24370a262b74b"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.82,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office-island-label",
+          "arrays": {
+            "position": "d3da564b327fbac1a2058f0e4918b4b10804ebed759df961d1c52211e7d61241",
+            "normal": "796f0b940d4268e7d9ccbd67f52dca773c768e372dae64d3c1b1caf59e6c8247",
+            "uv": "f3a0a46301c6859e5b64beadee234c4eeec1dec8c4735dc7bf40ea09e762e189",
+            "index": "e6681333c21d3bedc5c5d4ea4503e8acc5b95e8d8e2aabffd97d12425a145443"
+          },
+          "world": [
+            -1,
+            0,
+            -1.2246467991473532e-16,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1.2246467991473532e-16,
+            0,
+            -1,
+            0,
+            2,
+            1.2,
+            -9.53,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "map": "UUID",
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "transparent": true,
+            "blendColor": 0,
+            "textures": [
+              {
+                "uuid": "UUID",
+                "name": "",
+                "image": "UUID",
+                "mapping": 300,
+                "channel": 0,
+                "repeat": [
+                  1,
+                  1
+                ],
+                "offset": [
+                  0,
+                  0
+                ],
+                "center": [
+                  0,
+                  0
+                ],
+                "rotation": 0,
+                "wrap": [
+                  1001,
+                  1001
+                ],
+                "format": 1023,
+                "internalFormat": null,
+                "type": 1009,
+                "normalized": false,
+                "colorSpace": "",
+                "minFilter": 1008,
+                "magFilter": 1006,
+                "anisotropy": 1,
+                "flipY": true,
+                "generateMipmaps": true,
+                "premultiplyAlpha": false,
+                "unpackAlignment": 4
+              }
+            ],
+            "images": [
+              {
+                "uuid": "UUID",
+                "url": ""
+              }
+            ]
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-0",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            4.390531541354322,
+            0.55,
+            -4.410449320195784,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-1",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3.670597712127796,
+            0.55,
+            -3.6606852742909597,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-2",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2.6844838604169654,
+            0.55,
+            -3.2836494093040933,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-3",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1.3155161395830346,
+            0.55,
+            -3.2836494093040933,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-4",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0.32940228787220427,
+            0.55,
+            -3.6606852742909592,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-0-5",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            -0.39053154135432266,
+            0.55,
+            -4.410449320195784,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-0",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            -0.3905315413543231,
+            0.55,
+            -7.589550679804215,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-1",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0.3294022878722034,
+            0.55,
+            -8.339314725709041,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-2",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1.3155161395830344,
+            0.55,
+            -8.716350590695907,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-3",
+          "arrays": {
+            "position": "3fc0db0c3da8d1751ddcbe82a9e9ac71819b58f2b3eafc7427cf458667fa8357",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2.6844838604169645,
+            0.55,
+            -8.716350590695907,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-4",
+          "arrays": {
+            "position": "7bc67563c1dea3b08fa6d26e709d6147ae05d8fb11503eca1fa5b758b3a3c1c9",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3.6705977121277957,
+            0.55,
+            -8.339314725709041,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office2-bar-collision-1-5",
+          "arrays": {
+            "position": "fcfb3a87b7d4e74bed5f60fc37c3e9c48610126566193a0aec709a4d16e51f59",
+            "normal": "cf38d80691f04d52b9686807b830aec77584c7ecdc0ceed56144923548dd5593",
+            "uv": "9acbda3fe508de1f96b8f061ef5888cfba15a3e6ae752467e73665e4dfe3182a",
+            "index": "7d2c65fffb490f18b89d5d949a36ac6fe37f052789bdc3ad49759abb3ecd0898"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            4.390531541354322,
+            0.55,
+            -7.5895506798042165,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "blendColor": 0,
+            "visible": false
+          },
+          "visible": false,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "sample": [
+        {
+          "name": "tea-bar-body-top-equipment",
+          "arrays": {
+            "position": "eff49d5354c68cb99676ea73a81a95353ea13718dbab400a1da7e6271d45da77",
+            "normal": "3f8163b370ce57c1b371cedce23c02a2f439e724e350f2f71339b0fd1962043a",
+            "color": "cf77dd4aadc23aaf2d85702c3831d3c17781846371cba43abdd96442d356da8e",
+            "sampleSurface": "d7882f497c290407b40968070a44c121f91e912929ad4d4a6e8254636b1803db",
+            "sampleUv": "a472f1a1628b815aeb99fc57b5eb7850dcf6368260485cc6e7a3437d0a13b388"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "tea-bar-instanced-stools",
+          "arrays": {
+            "position": "3d54078446dfd9926fecfebda1c398fc31daa61d5a9051cf9b84bbaae690144b",
+            "normal": "e5455a333b023914dd0021c328759df0819883825699b9277bd2616a57b6f8c0",
+            "color": "ccd1a57cde853ca70837365b0098065422ac25d61e6ea49a94a8135d40a8b656",
+            "sampleSurface": "c34ddf87b8c39e66012c81607d29b76d201ca77fe9beb4433d276b2daafb5a76",
+            "sampleUv": "2f9d2977c5bcb0ecbf3fd503e775871eca09e039c0112083c4c92a392c6b2fd2",
+            "instanceMatrix": "2e2710384c282f30715ada28e88c686b258a956f250c27a6cc3ee923cca5e71c"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 6,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "tea-bar-instanced-lounges",
+          "arrays": {
+            "position": "38631dfd84b2d98c487986f0a772ea39ed67ea659f562e407b52933be58b39e0",
+            "normal": "7056cadb4e2e430ebecbc75cd24596f1b9e06afd9051411332589bb833853be5",
+            "color": "3975fdd0015622f6744d567bfcfdbe81ade005d82e5e519b32140f8fe1a927c6",
+            "sampleSurface": "dd2fc7cbbc87cb693e2e433c88aee6c53448859b41993470718f6441aa46f4be",
+            "sampleUv": "ff9318af1e308698a4e820177da98e200d0d7ce02913c7f9c3e4d69d58c477d8",
+            "instanceMatrix": "816e1791031c8981a54d384449680fac47286d4f4886c2ea6d40246f09fe2b5a"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 6,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-pool",
+          "arrays": {
+            "position": "83d0f6764e2fe2ce778f6cdeba9c0af5874cd02e2b07f101b0280d33375e1e48",
+            "normal": "2e8c06f3d6e147ff22871b58a5990a6f1a8557d542437cc6ae9ce4614f240fbb",
+            "color": "0b410bb4958080a775b35ab106ba0670a90bc21166eae1f5a34449cbedad59a6"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.88,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-trunk-and-branches",
+          "arrays": {
+            "position": "fa52d4c0021bcc89e199022fd528b9765b827f5f8cc155a4c1637d364c19aa22",
+            "normal": "fd1cd1f6cf2b4027fa8ffe147b2b5e02c6870f5d961a6e29714d61ede9a7eb38",
+            "color": "51420b24ecb9bc961fba9503833de73c3af5d459cf4cd92a541406c330b5bb2c"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.98,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        },
+        {
+          "name": "heart-banyan-small-leaf-clusters",
+          "arrays": {
+            "position": "5d3e6cdf9b3de435f9a8e8197ac83975d6d1b5f6ab276a6a7f17fdb8b13856f2",
+            "uv": "e1dc37aded76513ca2a399745b249dd818de30123e170abefe7e367ac1b8c1aa",
+            "normal": "6a5cdc292139e8a6a7c83ed516cd7e1a99489e5422ca194ab3f62686c8613cd7",
+            "instanceMatrix": "df27ce8b741517bbdd1c69e5c5184b3f40779f428355543646d99e8d0db90ec8"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            2,
+            0,
+            -6,
+            1
+          ],
+          "count": 500,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 0.87,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "side": 2,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "brand": [
+        {
+          "name": "office-vis2-brushed-metal-brand-backing",
+          "arrays": {
+            "position": "fe9169a3685faa82e91a45ad945189f14bceae68c1fb13375ffdaa9ef7c22591",
+            "normal": "7a249252d03e8055323b32fb8023363ec615294046f2493b103bc3b5b1fe39d5",
+            "uv": "a909d3a9387b6c602fb63d36f6b8f8552ce641c0de30c2f83f51fefe2885d611"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 12098404,
+            "roughness": 0.42,
+            "metalness": 0.72,
+            "emissive": 8017959,
+            "emissiveIntensity": 0.16,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "blendColor": 0
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        },
+        {
+          "name": "office-vis2-approved-logo-marks",
+          "arrays": {
+            "position": "3f118c4177b2edcb894b075bb8857bf6ff3b40dad21ff44be872e3e6ee106861",
+            "normal": "c181a4dc677c672d2a51bff566694ec0b2ef132a297b2a60d4c757f97327b1dc",
+            "uv": "4ab936604f7099d4c4a2600476350f159e4459233a0065757616b875d9afae53"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 1,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshBasicMaterial",
+            "color": 16777215,
+            "map": "UUID",
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "reflectivity": 1,
+            "refractionRatio": 0.98,
+            "side": 2,
+            "transparent": true,
+            "blendColor": 0,
+            "depthWrite": false,
+            "alphaTest": 0.04,
+            "textures": [
+              {
+                "uuid": "UUID",
+                "name": "",
+                "image": "UUID",
+                "mapping": 300,
+                "channel": 0,
+                "repeat": [
+                  1,
+                  1
+                ],
+                "offset": [
+                  0,
+                  0
+                ],
+                "center": [
+                  0,
+                  0
+                ],
+                "rotation": 0,
+                "wrap": [
+                  1001,
+                  1001
+                ],
+                "format": 1023,
+                "internalFormat": null,
+                "type": 1009,
+                "normalized": false,
+                "colorSpace": "",
+                "minFilter": 1008,
+                "magFilter": 1006,
+                "anisotropy": 1,
+                "flipY": true,
+                "generateMipmaps": true,
+                "premultiplyAlpha": false,
+                "unpackAlignment": 4
+              }
+            ],
+            "images": [
+              {
+                "uuid": "UUID",
+                "url": ""
+              }
+            ]
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": false
+        }
+      ],
+      "plants": [
+        {
+          "name": "sample-instanced-potted-plants",
+          "arrays": {
+            "position": "63c2ab78bcf2b935bd3b99f7f2d5c31acc08fc0c987efee563b9f0c9c76ff78b",
+            "normal": "e504519350c34cbb54dca901c620819cefc499deb3d3dd0b1a7a9dcfcb13f108",
+            "color": "bb20c895fb977c885e08b9b2b16632818ba704e18edebf4913a1431e186b32ae",
+            "sampleSurface": "6eed0d54b2d5b800429f08eddb13b075e307c7213b5ccdb0c8dfbf9584233ea8",
+            "sampleUv": "baa1fbb67f228848fd2fc61854963cf8902c5a6b4afaf9c05d3b08469263274a",
+            "instanceMatrix": "ae85d9929dac4913610ac42fae368f3084ebfe09a81259aebdd184379bcf64d0"
+          },
+          "world": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "count": 8,
+          "material": {
+            "metadata": {
+              "version": 4.7,
+              "type": "Material",
+              "generator": "Material.toJSON"
+            },
+            "uuid": "UUID",
+            "type": "MeshStandardMaterial",
+            "color": 16777215,
+            "roughness": 1,
+            "metalness": 0,
+            "emissive": 0,
+            "envMapRotation": [
+              0,
+              0,
+              0,
+              "XYZ"
+            ],
+            "envMapIntensity": 1,
+            "vertexColors": true,
+            "blendColor": 0,
+            "userData": {
+              "officeVis2": true
+            }
+          },
+          "visible": true,
+          "castShadow": false,
+          "receiveShadow": true
+        }
+      ],
+      "colliders": [
+        {
+          "id": "office2-bar-collision-0-0",
+          "x0": 3.5118888750531405,
+          "x1": 5.269174207655505,
+          "z0": -5.25,
+          "z1": -3.5708986403915697
+        },
+        {
+          "id": "office2-bar-collision-0-1",
+          "x0": 2.8213806325003583,
+          "x1": 4.519814791755234,
+          "z0": -4.542539184234942,
+          "z1": -2.7788313643469778
+        },
+        {
+          "id": "office2-bar-collision-0-2",
+          "x0": 2,
+          "x1": 3.3689677208339304,
+          "z0": -4.067298818608187,
+          "z1": -2.5
+        },
+        {
+          "id": "office2-bar-collision-0-3",
+          "x0": 0.6310322791660692,
+          "x1": 2,
+          "z0": -4.067298818608187,
+          "z1": -2.5
+        },
+        {
+          "id": "office2-bar-collision-0-4",
+          "x0": -0.5198147917552332,
+          "x1": 1.1786193674996417,
+          "z0": -4.542539184234941,
+          "z1": -2.7788313643469778
+        },
+        {
+          "id": "office2-bar-collision-0-5",
+          "x0": -1.2691742076555053,
+          "x1": 0.48811112494685993,
+          "z0": -5.25,
+          "z1": -3.5708986403915683
+        },
+        {
+          "id": "office2-bar-collision-1-0",
+          "x0": -1.2691742076555053,
+          "x1": 0.48811112494685904,
+          "z0": -8.42910135960843,
+          "z1": -6.75
+        },
+        {
+          "id": "office2-bar-collision-1-1",
+          "x0": -0.5198147917552349,
+          "x1": 1.1786193674996417,
+          "z0": -9.221168635653022,
+          "z1": -7.457460815765058
+        },
+        {
+          "id": "office2-bar-collision-1-2",
+          "x0": 0.6310322791660692,
+          "x1": 1.9999999999999996,
+          "z0": -9.5,
+          "z1": -7.932701181391813
+        },
+        {
+          "id": "office2-bar-collision-1-3",
+          "x0": 1.9999999999999993,
+          "x1": 3.3689677208339295,
+          "z0": -9.5,
+          "z1": -7.932701181391813
+        },
+        {
+          "id": "office2-bar-collision-1-4",
+          "x0": 2.821380632500358,
+          "x1": 4.519814791755233,
+          "z0": -9.221168635653022,
+          "z1": -7.457460815765059
+        },
+        {
+          "id": "office2-bar-collision-1-5",
+          "x0": 3.51188887505314,
+          "x1": 5.269174207655505,
+          "z0": -8.429101359608431,
+          "z1": -6.750000000000002
+        }
+      ],
+      "seats": [
+        {
+          "id": "bar-seat-1",
+          "x": 5.994343088669982,
+          "z": -4.701838496182256,
+          "yaw": 3.4558245526741316,
+          "angle": 0.3142318990843383,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-2",
+          "x": 4.488039892005576,
+          "z": -2.616265746872417,
+          "yaw": 4.078366260721268,
+          "angle": 0.9367736071314745,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-3",
+          "x": 2.0000000000000004,
+          "z": -1.7999999999999998,
+          "yaw": 4.71238898038469,
+          "angle": 1.5707963267948966,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-4",
+          "x": -0.4880398920055753,
+          "z": -2.6162657468724166,
+          "yaw": 5.346411700048112,
+          "angle": 2.2048190464583186,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-5",
+          "x": -1.9943430886699827,
+          "z": -4.701838496182257,
+          "yaw": 5.968953408095248,
+          "angle": 2.827360754505455,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-6",
+          "x": -1.9943430886699827,
+          "z": -7.298161503817743,
+          "yaw": 0.314231899084338,
+          "angle": -2.827360754505455,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-7",
+          "x": -0.4880398920055753,
+          "z": -9.383734253127583,
+          "yaw": 0.9367736071314745,
+          "angle": -2.2048190464583186,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-8",
+          "x": 2.0000000000000004,
+          "z": -10.2,
+          "yaw": 1.5707963267948966,
+          "angle": -1.5707963267948966,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-9",
+          "x": 4.488039892005576,
+          "z": -9.383734253127583,
+          "yaw": 2.2048190464583186,
+          "angle": -0.9367736071314745,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        },
+        {
+          "id": "bar-seat-10",
+          "x": 5.994343088669982,
+          "z": -7.298161503817744,
+          "yaw": 2.8273607545054547,
+          "angle": -0.3142318990843383,
+          "sitOffset": {
+            "forward": 0,
+            "lift": 0
+          }
+        }
+      ],
+      "lounges": [
+        {
+          "id": "lounge-east-1",
+          "side": "east",
+          "x": 6.933386259126019,
+          "z": -7.79560575245976,
+          "yaw": 1.9198621771937625,
+          "appX": 6.41655531769377,
+          "appZ": -7.607494673630643,
+          "angle": -0.3490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-east-2",
+          "side": "east",
+          "x": 7.25,
+          "z": -6,
+          "yaw": 1.5707963267948966,
+          "appX": 6.7,
+          "appZ": -6,
+          "angle": 0,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-east-3",
+          "side": "east",
+          "x": 6.933386259126019,
+          "z": -4.20439424754024,
+          "yaw": 1.2217304763960306,
+          "appX": 6.41655531769377,
+          "appZ": -4.392505326369357,
+          "angle": 0.3490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-1",
+          "side": "west",
+          "x": -2.933386259126019,
+          "z": -4.204394247540238,
+          "yaw": -1.2217304763960306,
+          "appX": -2.416555317693769,
+          "appZ": -4.392505326369356,
+          "angle": 2.792526803190927,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-2",
+          "side": "west",
+          "x": -3.25,
+          "z": -5.999999999999999,
+          "yaw": -1.5707963267948966,
+          "appX": -2.7,
+          "appZ": -5.999999999999999,
+          "angle": 3.141592653589793,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        },
+        {
+          "id": "lounge-west-3",
+          "side": "west",
+          "x": -2.933386259126019,
+          "z": -7.79560575245976,
+          "yaw": -1.9198621771937625,
+          "appX": -2.4165553176937697,
+          "appZ": -7.607494673630643,
+          "angle": 3.490658503988659,
+          "sitOffset": {
+            "forward": 0.03,
+            "lift": 0
+          }
+        }
+      ]
+    }
+  }
+}
