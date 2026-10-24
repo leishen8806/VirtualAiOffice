@@ -51,14 +51,19 @@ export function wholeFloorSpec(layout) {
     // 顶部仅保留边带，俯视下不盖住工位；全部高于人物通行体积。
     if (layout.variant === 'align' && room.walled !== true) continue
     if (layout.variant === 'align') {
-      // 顶部保留真实厚度的剖切边带；中心敞开，俯视仍能看见桌椅。
-      for (const z of [room.z0 + .21, room.z1 - .21]) {
-        box('ceiling-edge', middle, 2.79, z, width, .18, .42, '#F4F1EA', room.id)
-        box('light-recess', middle, 2.693, z, width - .8, .014, .12, '#F3DFB3', room.id)
+      // 减薄原顶部投影，细木底面与金属内沿仍在旧边带占地内；不盖住中部桌椅。
+      for (const [z, sign] of [[room.z0 + .12, 1], [room.z1 - .12, -1]]) {
+        box('ceiling-edge', middle, 2.79, z, width, .12, .24, '#E5DCCE', room.id)
+        box('ceiling-soffit', middle, 2.721, z, width - .12, .014, .19, '#C6AD89', room.id)
+        box('ceiling-trim', middle, 2.76, z + sign * .129, width - .6, .038, .014, '#B89B64', room.id)
+        box('light-recess', middle, 2.701, z, width - .8, .012, .07, '#F3DFB3', room.id)
       }
-      for (const x of [room.x0 + .21, room.x1 - .21]) {
-        box('ceiling-edge', x, 2.79, (room.z0 + room.z1) / 2, .42, .18, room.z1 - room.z0 - .84, '#F4F1EA', room.id)
-        box('light-recess', x, 2.693, (room.z0 + room.z1) / 2, .12, .014, room.z1 - room.z0 - 1.2, '#F3DFB3', room.id)
+      for (const [x, sign] of [[room.x0 + .12, 1], [room.x1 - .12, -1]]) {
+        const z = (room.z0 + room.z1) / 2, depth = room.z1 - room.z0
+        box('ceiling-edge', x, 2.79, z, .24, .12, depth - .48, '#E5DCCE', room.id)
+        box('ceiling-soffit', x, 2.721, z, .19, .014, depth - .6, '#C6AD89', room.id)
+        box('ceiling-trim', x + sign * .129, 2.76, z, .014, .038, depth - .6, '#B89B64', room.id)
+        box('light-recess', x, 2.701, z, .07, .012, depth - 1.2, '#F3DFB3', room.id)
       }
     } else {
       box('ceiling-edge', middle, 3.05, room.z0 + .21, width - .4, .16, .42, '#CDB18A', room.id)
