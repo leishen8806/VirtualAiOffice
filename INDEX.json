@@ -1,7 +1,7 @@
 {
   "schema": "evidence-index-v1",
   "branch": "evidence/vis-align-console-v1",
-  "note": "D-V1-R6 证据；full/crop 对应代码 33ca2eb",
+  "note": "D-V2-C1 证据；full/crop 对应代码 05ff02e",
   "images": [
     {
       "file": "after-1024x768.png",
@@ -11,7 +11,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "6f92d5db386b787f332de6d7c10b40d63b9635ccdf68de150459081faee34586"
     },
     {
@@ -22,7 +22,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "c1c31d727c7ba2111fd9ef424d2a5f8cf2d4d566afc3c0fec0f1328aec657ace"
     },
     {
@@ -33,7 +33,7 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "a16f1a9060bf2426e4eb4d650fad9ddf30ac86943511317f0eebddeb64ac66f2"
     },
     {
@@ -44,7 +44,7 @@
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "df4676bf1ee7c822040e1df722a612dc937fa785bf4e275fb66c56c8a34dff4b"
     },
     {
@@ -55,7 +55,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "bec57633c8cfd5ef78339fad20ed2b311f53fe0f5744482bf4aad86f64140574"
     },
     {
@@ -66,7 +66,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "ef95568fb3d8a9d037b8aca2cd0c5cfe4b887aee7686320e6dea64e494147632"
     },
     {
@@ -77,7 +77,7 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "b7936150e24caaa3ce6e701f6262238e6bf8d02e0d7af4a5f61066d0e925ecff"
     },
     {
@@ -88,41 +88,63 @@
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "d612a29d964d25d569fc02494a25aac02bfc99e6babf26cffbc0db114b02a9b0"
     },
     {
-      "file": "crop-1366-kpi.png",
-      "sourceSha": "33ca2eb3dc915fecb79646894611fb94a5eb4df8",
+      "file": "crop-1920-sitepanel-dpr2.png",
+      "sourceSha": "05ff02e74e0c34e25bb8035a3bf50ae810d35584",
       "resolution": [
-        1014,
-        88
+        892,
+        306
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
-      "sha256": "c914abf222ef611303c626a339b3615b18d6d6bf26b0ab0335a7dba98e1dc374"
+      "time": "2026-10-24T14:46:23.898744+07:00",
+      "sha256": "e46415028c57b87c497d5c1db85be135f3d8df6d55f7770309b4798dd693f83d"
     },
     {
-      "file": "full-390x844.png",
-      "sourceSha": "33ca2eb3dc915fecb79646894611fb94a5eb4df8",
+      "file": "crop-1920-videogrid-dpr2.png",
+      "sourceSha": "05ff02e74e0c34e25bb8035a3bf50ae810d35584",
       "resolution": [
-        390,
-        844
+        624,
+        490
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
-      "sha256": "25929b1c1765a76f49d507b66f093ac1c124f62f19d3668a658a7c4436d45db7"
+      "time": "2026-10-24T14:46:23.898744+07:00",
+      "sha256": "4223c9222619745a3fee43993a91e6ddffb2ae893508fd0a27ca896428c1982c"
+    },
+    {
+      "file": "full-1366x768.png",
+      "sourceSha": "05ff02e74e0c34e25bb8035a3bf50ae810d35584",
+      "resolution": [
+        1366,
+        768
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T14:46:23.898744+07:00",
+      "sha256": "3dea50287757727abd89d993d5a09e33c07e3ee60dca7cf4da5e24cf1e17428b"
+    },
+    {
+      "file": "full-1920x1080.png",
+      "sourceSha": "05ff02e74e0c34e25bb8035a3bf50ae810d35584",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T14:46:23.898744+07:00",
+      "sha256": "e61649f86921d6ec9a6f00e38874d24e3df767b6a78e63e244bb88aedb8d8793"
     },
     {
       "file": "full-600x900.png",
-      "sourceSha": "33ca2eb3dc915fecb79646894611fb94a5eb4df8",
+      "sourceSha": "05ff02e74e0c34e25bb8035a3bf50ae810d35584",
       "resolution": [
         600,
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
-      "sha256": "f3cc2deadeb9dbff470304211431ec1c917bd402232984c380fce963056ca2d6"
+      "time": "2026-10-24T14:46:23.898744+07:00",
+      "sha256": "f8a021b752e3e7b91abb73784551b5b8a4f9323bdb0a2eaa60f3e26c3ff6874d"
     },
     {
       "file": "normal-1024x768.png",
@@ -132,7 +154,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "4821d87a3962cdec3a032c5cedb84aab830be513027008c7b4f8f985be502b87"
     },
     {
@@ -143,7 +165,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "663097df5ec70d1d0499190eef27c9632bd228646d0ef3751544936574e2b58b"
     },
     {
@@ -154,7 +176,7 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T12:05:46.940433+07:00",
+      "time": "2026-10-24T14:46:23.898744+07:00",
       "sha256": "6b374c32b0aee6f652efe5e322ab6fc41f809ff66c78013d79149b5aa5370536"
     }
   ]
