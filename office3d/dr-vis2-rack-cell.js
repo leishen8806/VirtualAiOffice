@@ -153,7 +153,7 @@ function buildRails(batches, plan, stats) {
 }
 
 const standard = (THREE, extra = {}) => new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62, metalness: 0.2, ...extra })
-const STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, moving: VIS2_COLORS.lampMoving, pickup: VIS2_COLORS.lampWork, put: VIS2_COLORS.lampWork })
+const STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, moving: VIS2_COLORS.lampMoving, pickup: VIS2_COLORS.lampWork, put: VIS2_COLORS.lampWork, delivery: VIS2_COLORS.lampWork })
 
 export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, rows = null, baseY = 0 } = {}) {
   if (!Number.isFinite(baseY)) throw new Error('baseY 必须是有限数值（完成面地坪标高）')
@@ -206,7 +206,7 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
 
   // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.25），不压钢轨
   const slotBatch = createBoxBatch(THREE, 'vis2-slot-pallets', materials.slot, 3 * 8); slotBatch.mesh.userData.dynamic = true
-  const slotX = plan.centerX + 1.25
+  const slotX = plan.centerX + 1.4
   const drawSlots = (occupied) => {
     slotBatch.clear()
     plan.slots.forEach((slot, i) => { if (!occupied[i]) return

@@ -11,7 +11,7 @@
 `buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, rows = null, baseY = 0 })` → `{ group, summary, setShuttle, dispose }`
 - `layout`：`{ campus, zones, shuttle }`（来自 `office-layout.js`，只读）。`quality`：`{ tier: 'high' | 'low' }`，**构建时**决定；运行时切换画质需要宿主 `dispose()` 后重建（见第七节）。
 - `seed`：确定性随机（货位占用 / 层数 / 缠绕膜）。`rows`：要建的货架行标签数组（如 `['A1','R2']`，默认全部 4 行；传 `[]` 或未知标签得到 0 行，不报错）。
-- **`baseY`：完成面地坪标高（米）。** 构件内部所有竖向尺寸（立柱、横梁、托盘、轨道、枕木、车轮、承托板）都以「地坪 = 0」计，整个 `group` 放在 `baseY` 上（`group.position.y = baseY`），**单一竖向基准**，不靠整体抬高来迁就旧几何。**默认 0 只是组件预览 / 测试夹具，不是生产值**（`summary().baseYSource` 会写明）；真实地坪标高尚未确认（现状里 `dr-campus-shell.js` 的建筑地面平面在 y = −0.54，而各旧模块的家具从 y = 0 起算，两者不一致需集成方与董事会确认），**我没有编造生产值**。非有限数值会抛错。
+- **`baseY`：完成面地坪标高（米）。** 构件内部所有竖向尺寸（立柱、横梁、托盘、轨道、枕木、车轮、承托板）都以「地坪 = 0」计，整个 `group` 放在 `baseY` 上（`group.position.y = baseY`）。默认 `0` 仅供组件预览/夹具；生产注册路径固定显式传入 `CAMPUS_FINISHED_FLOOR_Y = -0.54`，并在真实 registry 回归中验证。非有限数值会抛错。
 - `summary()`：含 `vertical`（`railTop 0.105 / wheelBottom / chassisTop 0.54 / maxLift 0.12 / rackTop 4.4 / topBeam 4.16`，**相对地坪**）、`state`（`source: 'fixture' | 'host'`）、**由真实场景图数出的** `componentPreviewDrawCalls` 与 `triangles`。
 
 ## 三、造型与尺寸（米，y 自地坪）
@@ -28,8 +28,8 @@
 | `lift` | 承托板与货物的抬升，0…0.12（= `SHUTTLE_MAX_LIFT`）；**车体与车轮不动** | 夹紧；非有限数忽略 |
 | `carrying` | 是否载货（决定货物是否可见） | 只接受布尔 |
 | `occupied` | 三个货位是否有托盘 | 只接受长度 3 的布尔数组 |
-| `status` | `idle / moving / pickup / put`（指示灯颜色）；其它字符串 → 灰色 | 只接受字符串 |
-返回 `true` 表示至少一项被采纳。未传的字段保持上一次的值；**从未收到宿主状态时显示夹具默认**（载货、`occupied = [true, false, true]`、`idle`，与旧模块初始状态一致），`summary().state.source` 为 `fixture`。`campusMotion=0` 仍由宿主控制：宿主不再调用 `setShuttle` 即静止，构件不读 URL 参数。
+| `status` | `idle / moving / pickup / put / delivery`（指示灯颜色）；其它字符串 → 灰色 | 只接受字符串 |
+返回 `true` 表示至少一项被采纳。未传的字段保持上一次的值；从未收到宿主状态时显示确定性夹具默认（载货、`occupied = [true, false, true]`、`idle`），`summary().state.source` 为 `fixture`。生产宿主每帧完整转发 `shuttleFrame` 的 `position/lift/carrying/occupied/status`；`campusMotion=0` 时宿主不再推进该状态。
 **修正旧文档的错误（P1-1）：** `shuttleFrame.position` 本来就是世界 z（−6.85 / −1 / 4.85），**不是 0…2 的货位序号**，不得再做 `slots[0].z + position × …` 的换算——那会把所有位置夹到两端。测试用真实 `shuttleFrame` 逐帧驱动并验证到达 −1。
 
 ## 五、旧对象替换清单与集成决定（属于 Trae 的集成范围，本构件不替代共享地面）
@@ -40,7 +40,7 @@
 | 货架区功能区体块（`dr-campus-shell.js` 的 `campus-zone-highRack`，y 0.06…0.78；低画质下是**不透明**材质，会遮住车体、轨道、第 1 层横梁与托盘下部） | **改为地面标线 / 贴地标记**，不再用不透明体块；真实地坪保留（不由本构件另铺一层） |
 | `campus-rack-labels` | 保留；但上面「穿梭机展示位（预留）」的文案接入后已过时，需改文案 |
 | 仍共享 | `CAMPUS_ZONES`、`CAMPUS_SHUTTLE_STRIP`、`createCampusRackPlan`、`shuttlePlan`（只读导入） |
-**集成前提：** ① 董事会 / 集成方先确认真实完成面标高并通过 `baseY` 传入；② 旧底座板与不透明区块体块按上表处理。**测试里的夹具（`legacy conflict fixture`）固定了「不拆旧底座板，轨道就被埋」这一事实。**
+**当前生产接线：** `dr-campus-modules.js` 显式以 `CAMPUS_FINISHED_FLOOR_Y = -0.54` 创建本构件；`dr-campus-racks.js` 在替换模式下仅保留 3 个工位、4 个收货门和 3 个发货门，并同样落在完成面。旧货架、旧轨道与旧车体不会进入合并批次。
 
 ## 六、拾取契约（修正 P1-4；本任务**不**新增拾取功能）
 - **实例化网格会被 `mergeCampusStatic` 合并并移出场景：** 合并后 `vis2-rack-frames / pallets / cartons / vis2-rails` 与旧的 `campus-racks-static` 都**不存在**（测试在真实 registry 里固定了这一点）；保留独立对象的只有 `vis2-rack-film`、`vis2-shuttle*`、`vis2-slot-pallets`。**因此「渲染对象名」不能当拾取目标，之前「改为指向 `vis2-rack-*`」的说法已撤销。**
@@ -52,8 +52,8 @@
 - **合并行为：** 接入 campus registry 后，不透明实例批次会被 `mergeCampusStatic` 展开成普通顶点并与整个园区的静态件合成**一个**网格，**材质统一为 roughness .72 / metalness .18、不投阴影**——预览里货架（metalness .45）与钢轨（.55）的金属质感在真实场景里会消失；视锥剔除也只能整块进行；约 1 987 个实例会变成约 4.8 万个顶点。缠绕膜与穿梭机相关网格标为 `dynamic`，保持独立材质（缠绕膜 0.28 透明度，否则会被压成统一的 0.46）。
 - **预算数字的含义：** `summary().componentPreviewDrawCalls` 与 `triangles` **只代表隔离预览**，不代表集成后的场景开销（合并后实例批次不复存在；还有 env.js 的 RenderPass / GTAO 倍增口径）。真实增量须由 Trae 在候选版本上成对测量。
 
-## 八、最小的「只读状态接口」需求（不修改 `dr-campus-shuttle.js`；若要接线需集成方在该文件做的最小增补）
-旧 `buildCampusShuttle` 的 `state` 是闭包里的私有变量，没有导出。要用 `setShuttle` 驱动，需要它**只读**地提供：① 每次状态更新后的 `shuttleFrame(state, time)` 结果（`{ position, lift, carrying, occupied, status }`）——例如暴露 `getFrame(time)` 或一个 `onFrame(frame)` 回调；② 一个「只算状态、不建网格」的选项（或在新构件存在时跳过车体与轨道的构建）。这是对**共享文件**的改动，需要集成方实施并经董事会批准；本构件、本次任务均未触碰该文件。
+## 八、生产状态接线
+`buildCampusShuttle` 检测到 `root.userData.vis2RackCell` 后，不构建旧车体或轨道，并在每次 `draw()` 中把 `shuttleFrame(state, time)` 的完整 `{ z, lift, carrying, occupied, status }` 传给 `setShuttle()`。这样空车、货位占用和 `delivery` 状态不会丢失；状态灯的 `delivery` 与 `put` 使用同一作业色。
 
 ## 九、自测与变异验证（源码级；**未做浏览器 / GPU 验证**）
 `node --max-old-space-size=2048 --test --test-timeout=60000 --test-concurrency=2 tests/dr-vis2-rack-cell.test.mjs`：**18 / 18 通过**。
@@ -69,13 +69,13 @@
 | P3 横梁与立柱 1 cm 缝 | `beams are attached to the uprights…` | M10 → **KILLED** |
 | P2-3 `qualityProxy` | `quality contract…`（并确认 `quality.js` 仍跳过该标记） | M9 → **KILLED** |
 | dispose 重复释放 | `dispose releases every owned resource exactly once…`（按对象计数，必须恰好 1 次） | M8 → **KILLED** |
-| P1-4 合并后对象名不可用 | `inside the real campus registry with the old modules…`（**与旧 shell / racks / shuttle 等全部旧模块一起**构建） | M14 缠绕膜被并入透明批次 → **KILLED** |
-| P1-2 旧底座板埋轨 | `legacy conflict fixture`（从真实源码读出旧底座板高度） | —（夹具，固定「必须拆旧底座」） |
+| 真实注册路径 | `real campus module wiring…`（只注册 `campusModules`） | baseY 改为 `0`、恢复旧 rack/rail/vehicle、删除 `setShuttle` 完整转发均会失败 |
+| 货位互穿与纸箱贴合 | `slot pallets clear…`、纸箱/托盘几何断言 | slotX 回退到 `+1.25` 或纸箱整体上移会失败 |
 14 项变异**全部被抓住**；其中 M13 一开始**漏网**（只测了车体不动，没测 lift 夹紧），已补断言后复测被抓。脚本与结果见交付报告。
 **全量套件（干净克隆，复现）：** 基线 `cbddb9f`：1166 个用例 / 20 个失败；本分支：1184 个用例 / 17 个失败；**本分支新增失败 0 个**（失败集合是基线的子集）。3 个用例（钩子 / 扫描器 / 换行配置夹具）的结果依赖克隆所在路径，所以失败数在 17–20 之间浮动；**旧文档写的「基线 20 个」是在某个路径下的一次测量，审查员测得 19，均为同一批因缺本机运行数据而失败的既有用例。**
 
 ## 十、仍未验证（如实）
 - **没有任何浏览器 / WebGL / GPU 验证**：车轮与车体法线是在几何层核对的；本修订版**未重新截图**（预览截图是修订前的）。
 - 没有真实仓配页面接线、没有同机位前后对比、没有真实 draw call / 帧时间 / 显存数据；没有运行时画质切换验证；没有与 Trae 的地面、屋面、外壳的视觉配合验证。
-- 真实完成面标高未确认；旧底座板与区块体块的处理（第五节）有待 Trae 集成后复测。
+- 浏览器主场景证据、GPU 预算和同机位视觉对比仍需由候选静态预览或获准的主场景验证通路采集。
 - 货位托盘 `vis2-slot-pallets` 是为承载 `occupied` 而新增的显示，位置（展示带东侧通道）是按展示带宽度推得的，需与旧模块的货位托盘位置对照。

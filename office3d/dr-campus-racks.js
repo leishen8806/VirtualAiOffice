@@ -1,4 +1,5 @@
 import { CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
+import { CAMPUS_FINISHED_FLOOR_Y } from './dr-campus-shell.js'
 
 const zone = (id, zones) => zones.find((item) => item.id === id)
 const seeded = (value) => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
@@ -38,12 +39,13 @@ const inside = (plan, low, replaceRackCell = false) => {
     }
     for (const item of plan.cargo.filter((_, index) => !low || index % 5 === 0)) solids.push({ x: (item.x0 + item.x1) / 2, y: item.height / 2, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: item.height, sz: item.z1 - item.z0, color: 0xc29b58 })
   }
-  for (const item of [...plan.stations, ...plan.receivingDoors, ...plan.shippingDoors]) solids.push({ x: (item.x0 + item.x1) / 2, y: .55, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: 1.1, sz: Math.max(.18, item.z1 - item.z0), color: 0x5b6c73 })
+  for (const item of [...plan.stations, ...plan.receivingDoors, ...plan.shippingDoors]) solids.push({ id: item.id, x: (item.x0 + item.x1) / 2, y: .55, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: 1.1, sz: Math.max(.18, item.z1 - item.z0), color: 0x5b6c73 })
   if (!replaceRackCell) solids.push({ x: (plan.shuttle.x0 + plan.shuttle.x1) / 2, y: .12, z: (plan.shuttle.z0 + plan.shuttle.z1) / 2, sx: plan.shuttle.x1 - plan.shuttle.x0, sy: .12, sz: plan.shuttle.z1 - plan.shuttle.z0, color: 0x718a96 })
   return solids
 }
 
-export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, replaceRackCell = false }) {
+export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, baseY = CAMPUS_FINISHED_FLOOR_Y, replaceRackCell = false }) {
+  if (!Number.isFinite(baseY)) throw new Error('baseY 必须是有限数值')
   const plan = createCampusRackPlan({ zones: layout.zones, shuttle: layout.shuttle })
   const low = quality?.tier === 'low', solids = inside(plan, low, replaceRackCell)
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .68, metalness: .24 })
@@ -51,12 +53,23 @@ export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, repl
   mesh.name = 'campus-racks-static'
   if (replaceRackCell) mesh.name = 'campus-racks-support'
   mesh.userData.qualityProxy = true; mesh.receiveShadow = true
-  solids.forEach((item, index) => put(mesh, index, THREE, item, item.color)); mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; root.add(mesh)
+  const supportOffset = replaceRackCell ? baseY : 0
+  solids.forEach((item, index) => put(mesh, index, THREE, { ...item, y: item.y + supportOffset }, item.color))
+  mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; root.add(mesh)
+  const support = replaceRackCell ? Object.freeze({ instances: solids.length, baseY, ids: Object.freeze(solids.map(item => item.id)) }) : null
+  if (support) root.userData.campusRackSupport = support
   let texture, labels
   if (!low) {
     texture = canvasTex(1024, 150, (ctx, width, height) => { ctx.fillStyle = '#18232b'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, width - 6, height - 6); ctx.fillStyle = '#f4f1eb'; ctx.font = '700 55px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('A1       R2       C2       B2', width / 2, 68); ctx.fillStyle = '#d5af62'; ctx.font = '500 30px sans-serif'; ctx.fillText('穿梭机展示位（模拟）', width / 2, 118) })
     labels = new THREE.Mesh(new THREE.PlaneGeometry(30, 2.1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }))
     labels.name = 'campus-rack-labels'; labels.position.set(-127.5, 2.1, 6.13); root.add(labels)
   }
-  return { instances: solids.length, triangles: solids.length * 12, dispose() { texture?.dispose(); material.dispose(); mesh.geometry.dispose(); labels?.geometry?.dispose?.(); labels?.material?.dispose?.() } }
+  return {
+    instances: solids.length,
+    triangles: solids.length * 12,
+    dispose() {
+      if (root.userData.campusRackSupport === support) delete root.userData.campusRackSupport
+      texture?.dispose(); material.dispose(); mesh.geometry.dispose(); labels?.geometry?.dispose?.(); labels?.material?.dispose?.()
+    },
+  }
 }

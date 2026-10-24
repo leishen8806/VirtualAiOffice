@@ -6,7 +6,8 @@ import * as THREE from '../vendor/three/three.module.js'
 import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { campusModules } from '../dr-campus-modules.js'
-import { initialShuttleState, shuttleFrame, shuttlePlan } from '../dr-campus-shuttle-logic.js'
+import { createDemoShuttleEventSource, initialShuttleState, shuttleFrame, shuttlePlan } from '../dr-campus-shuttle-logic.js'
+import { CAMPUS_FINISHED_FLOOR_Y } from '../dr-campus-shell.js'
 import { VIS2_COLORS, VIS2_DIMENSIONS, VIS2_REPLACES, buildVis2RackCell } from '../dr-vis2-rack-cell.js'
 
 const layout = { campus: CAMPUS, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }
@@ -24,6 +25,17 @@ const instances = (mesh) => {
 const box = (item) => ({ x0: item.x - item.sx / 2, x1: item.x + item.sx / 2, y0: item.y - item.sy / 2, y1: item.y + item.sy / 2, z0: item.z - item.sz / 2, z1: item.z + item.sz / 2 })
 const overlaps = (a, b, eps = 1e-6) => a.x0 < b.x1 - eps && a.x1 > b.x0 + eps && a.y0 < b.y1 - eps && a.y1 > b.y0 + eps && a.z0 < b.z1 - eps && a.z1 > b.z0 + eps
 const worldBox = (object) => { object.updateWorldMatrix(true, true); return new THREE.Box3().setFromObject(object) } // 先刷新父级矩阵，否则 lift 后读到的是旧位置
+const sourceIds = root => {
+  const ids = new Set()
+  root.traverse(node => node.userData?.sourceIds?.forEach(id => ids.add(id)))
+  return ids
+}
+const canvasTex = (width, height, draw) => {
+  draw({ fillRect() {}, strokeRect() {}, fillText() {}, save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, fill() {}, set fillStyle(value) {}, set strokeStyle(value) {}, set lineWidth(value) {}, set font(value) {}, set textAlign(value) {}, set textBaseline(value) {}, measureText: () => ({ width: 10 }) }, width, height)
+  const texture = new THREE.Texture()
+  texture.image = { width, height }
+  return texture
+}
 const rackData = (cell) => {
   const frame = instances(named(cell, 'vis2-rack-frames')), pallets = instances(named(cell, 'vis2-rack-pallets')), cartons = instances(named(cell, 'vis2-rack-cartons'))
   return { uprights: frame.filter((item) => item.hex === VIS2_COLORS.upright && near(item.sx, D.uprightSize) && near(item.sy, D.uprightHeight)), beams: frame.filter((item) => item.hex === VIS2_COLORS.beam),
@@ -69,6 +81,22 @@ test('every carton lies inside its pallet footprint, sits on the deck, and clear
     assert.ok(c.x0 >= d.x0 - 1e-4 && c.x1 <= d.x1 + 1e-4 && c.z0 >= d.z0 - 1e-4 && c.z1 <= d.z1 + 1e-4, 'carton inside pallet footprint')
     const above = beams.filter((beam) => beam.y - beam.sy / 2 > deck.y).map((beam) => beam.y - beam.sy / 2).sort((a, b) => a - b)[0]
     assert.ok(c.y1 <= above - 0.05, 'carton top clears the beam above')
+  }
+})
+
+test('slot pallets clear the shuttle body at every occupied slot and all cartons rest on their pallets', () => {
+  const { cell } = build(), plan = shuttlePlan(layout), slots = named(cell, 'vis2-slot-pallets')
+  for (const slot of plan.slots) {
+    cell.setShuttle({ z: slot.z, occupied: [true, true, true] })
+    const shuttleBox = worldBox(named(cell, 'vis2-shuttle-chassis'))
+    for (const item of instances(slots)) assert.equal(overlaps(box(item), {
+      x0: shuttleBox.min.x, x1: shuttleBox.max.x, y0: shuttleBox.min.y, y1: shuttleBox.max.y, z0: shuttleBox.min.z, z1: shuttleBox.max.z,
+    }), false, `slot cargo clears shuttle at ${slot.id}`)
+  }
+  for (const carton of rackData(cell).cartons) {
+    const pallet = rackData(cell).decks.find(deck => Math.abs(deck.x - carton.x) < .5 && Math.abs(deck.z - carton.z) < deck.sz / 2)
+    assert.ok(pallet)
+    assert.ok(near(box(carton).y0, pallet.y + pallet.sy / 2, 1e-4) || box(carton).y0 > pallet.y + pallet.sy / 2, 'carton does not float below or sink into its pallet')
   }
 })
 
@@ -166,14 +194,6 @@ test('one vertical reference: baseY moves every part by exactly the same amount 
   assert.ok(near(sa.vertical.wheelBottom, sa.vertical.railTop, 1e-3), 'wheel bottom = rail top')
 })
 
-test('legacy conflict fixture: at baseY = 0 the old shuttle base slab (y 0.06…0.18) would bury the new rails, so the old slab must be removed', () => {
-  const racks = fs.readFileSync(new URL('../dr-campus-racks.js', import.meta.url), 'utf8'), match = racks.match(/y:\s*\.12,[^}]*sy:\s*\.12/)
-  assert.ok(match, 'legacy slab (y .12, sy .12) still exists in dr-campus-racks.js; if it changes this fixture must be reviewed')
-  const slabTop = 0.12 + 0.12 / 2, railTop = D.railBase + D.railHeight, wheelBottom = railTop
-  assert.ok(slabTop > railTop && slabTop > wheelBottom, 'fixture: the legacy slab hides the rails and wheel bottoms')
-  assert.ok(VIS2_REPLACES.some((item) => item.legacy === 'campus-racks-static' && item.part.includes('底座板')), 'replacement list names the slab')
-})
-
 test('deterministic for a seed and different for another; low quality is lighter and creates no empty film mesh', () => {
   const a = build(), b = build(), c = build({ seed: 999 }), low = build({ quality: { tier: 'low' } })
   for (const name of ['vis2-rack-frames', 'vis2-rack-pallets', 'vis2-rack-cartons']) assert.equal(hash(named(a.cell, name)), hash(named(b.cell, name)))
@@ -191,17 +211,39 @@ test('quality contract: every mesh opts out of the global quality capture (quali
   assert.ok(/if\(!o\.isMesh\|\|o\.userData\.qualityProxy\)return/.test(quality), 'quality.js capture() still skips qualityProxy meshes (the contract this module relies on)')
 })
 
-test('inside the real campus registry with the old modules: static parts merge, film and shuttle stay, and merged object names are NOT available for picking', () => {
-  const canvasTex = (w, h, draw) => { draw({ fillRect() {}, strokeRect() {}, fillText() {}, save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, fill() {}, set fillStyle(v) {}, set strokeStyle(v) {}, set lineWidth(v) {}, set font(v) {}, set textAlign(v) {}, set textBaseline(v) {}, measureText: () => ({ width: 10 }) }, w, h); const t = new THREE.Texture(); t.image = { width: w, height: h }; return t }
+test('real campus module wiring keeps one finished-floor rack cell, removes legacy rack and shuttle parts, and forwards shuttle frames', () => {
   const scene = new THREE.Scene(), registry = createCampusRegistry({ THREE, scene, quality: { tier: 'high' }, layout })
   for (const [name, factory] of campusModules) registry.register(name, factory)
-  registry.register('vis2Rack', (context) => buildVis2RackCell(context))
-  registry.buildAll({ canvasTex, quality: { tier: 'high' } })
+  let time = 0
+  const source = createDemoShuttleEventSource({ now: () => time, seed: 1212, plan: shuttlePlan(layout) })
+  registry.buildAll({ canvasTex, quality: { tier: 'high' }, eventSource: source })
   const summary = registry.summary(), root = registry.root
   assert.ok(summary.modules.includes('vis2Rack') && !summary.skipped.some((item) => item.name === 'vis2Rack'))
+  const cell = root.userData.vis2RackCell
+  assert.ok(cell)
+  assert.equal(cell.group.position.y, CAMPUS_FINISHED_FLOOR_Y)
+  assert.deepEqual(root.userData.campusRackSupport, {
+    instances: 10,
+    baseY: CAMPUS_FINISHED_FLOOR_Y,
+    ids: ['station-inspection', 'station-picking', 'station-packing', 'receiving-door-1', 'receiving-door-2', 'receiving-door-3', 'receiving-door-4', 'shipping-door-1', 'shipping-door-2', 'shipping-door-3'],
+  })
+  const ids = sourceIds(root)
+  for (const removed of ['campus-racks-static', 'campus-shuttle-rail-1-lower', 'campus-shuttle-sleeper-1', 'campus-shuttle-vehicle']) assert.equal(ids.has(removed), false, `${removed} is absent from the production result`)
+  assert.equal(ids.has('campus-racks-support'), true)
+  assert.equal(root.getObjectByName('campus-shuttle-vehicle'), undefined)
   for (const merged of ['vis2-rack-frames', 'vis2-rack-pallets', 'vis2-rack-cartons', 'vis2-rails', 'campus-racks-static']) assert.equal(root.getObjectByName(merged), undefined, `${merged} is merged away: render-object names are not stable pick targets`)
   for (const kept of ['vis2-rack-film', 'vis2-shuttle', 'campus-rack-labels']) assert.ok(root.getObjectByName(kept), `${kept} stays as its own object`)
   assert.ok(root.getObjectByName('campus-opaque-batch-1'))
+  const before = cell.summary().state
+  for (const next of [0, 100, 3000, 3100, 5200, 5300, 11800, 11900]) {
+    time = next
+    registry.onFrame(.1)
+  }
+  const after = cell.summary().state
+  assert.notEqual(after.z, before.z, 'external shuttle frame advances the visual cell')
+  assert.ok(['pickup', 'delivery', 'idle'].includes(after.status))
+  assert.deepEqual(after.occupied, [false, true, true])
+  assert.equal(after.carrying, false)
   registry.dispose()
 })
 

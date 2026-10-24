@@ -221,7 +221,13 @@ export function buildCampusShuttle({ THREE, root, layout, quality, canvasTex, ev
   }
   function draw(time) {
     const frame = shuttleFrame(state, time)
-    if (externalVisual) activeVisualCell.setShuttle({ z: frame.position, lift: frame.lift })
+    if (externalVisual) activeVisualCell.setShuttle({
+      z: frame.position,
+      lift: frame.lift,
+      carrying: frame.carrying,
+      occupied: frame.occupied,
+      status: frame.status,
+    })
     else {
       const dz = frame.position - built.carZ
       translate('car', 0, 0, dz)

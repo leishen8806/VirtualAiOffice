@@ -76,7 +76,10 @@ export function buildCampusShell({ THREE, root, canvasTex, layout, quality }) {
     else if (part.name.startsWith('campus-roof-')) roofMeshes.push(cube(THREE, root, part, 4.68, .28, mats.roof))
     else if (part.kind === 'selection') continue
     else if (part.kind === 'water') plane(THREE, root, part, part.offset - .6, mats.water)
-    else if (part.name !== 'campus-sign') plane(THREE, root, part, part.offset - .6, mats.mark)
+    else if (part.name !== 'campus-sign') {
+      const guideY = part.name === 'campus-shuttle-reserve' ? CAMPUS_FINISHED_FLOOR_Y + .002 : part.offset - .6
+      plane(THREE, root, part, guideY, mats.mark)
+    }
   }
   // The default overview is a cutaway. Roof geometry remains available for future focused views.
   roofMeshes.forEach(mesh => { mesh.visible = false })
