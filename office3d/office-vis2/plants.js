@@ -2,6 +2,61 @@ import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
 const backdropOwners = new WeakMap()
 
+export function createOfficePottedFoliage(THREE, source, low = false) {
+  const leaves = [], geometries = [], materials = []
+  source?.traverse?.(m=>{if(m.isMesh&&m.material?.name==='plant')leaves.push(m)})
+  const original = leaves[0], fallback = () => ({source,enabled:false,dispose(){}})
+  if (leaves.length!==1 || original.geometry?.attributes.position?.count!==48 || original.geometry?.index?.count!==48 || original.isSkinnedMesh) return fallback()
+  const bounds = (original.geometry.boundingBox || new THREE.Box3().setFromBufferAttribute(original.geometry.attributes.position)).clone(), size = bounds.getSize(new THREE.Vector3())
+  if (![...bounds.min.toArray(),...bounds.max.toArray()].every(Number.isFinite) || size.toArray().some(v=>v<=0)) return fallback()
+  let disposed = false, clone
+  const dispose=()=>{if(disposed)return;disposed=true;geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());clone?.removeFromParent();clone?.clear()}
+  try {
+    const positions=[[],[],[]], branches=low?6:8, pairs=low?3:5, up=new THREE.Vector3(0,1,0)
+    const append=(index,g)=>{const flat=g.index?g.toNonIndexed():g;positions[index].push(...flat.attributes.position.array);if(flat!==g)flat.dispose();g.dispose()}
+    for(let i=0;i<branches;i++){
+      const a=i*2.399,reach=.45+(i%3)*.045,height=.72+(i%3)*.08
+      const point=t=>new THREE.Vector3(Math.sin(a)*reach*t,.05+height*t+.14*Math.sin(Math.PI*t),Math.cos(a)*reach*t)
+      let previous=point(0)
+      for(let s=1;s<=4;s++){
+        const next=point(s/4),v=next.clone().sub(previous),stem=new THREE.CylinderGeometry(.008,.011,v.length(),low?4:6,1,true)
+        stem.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up,v.clone().normalize()));stem.translate(...previous.clone().add(next).multiplyScalar(.5).toArray());append(0,stem);previous=next
+      }
+      for(let j=0;j<pairs;j++)for(const side of[-1,1]){
+        const t=.37+j*.53/(pairs-1),base=point(t),length=.11+.07*Math.sin(Math.PI*t),direction=new THREE.Vector3(Math.cos(a)*side*length+Math.sin(a)*.045,.025, -Math.sin(a)*side*length+Math.cos(a)*.045)
+        const width=new THREE.Vector3(-direction.z,0,direction.x).normalize().multiplyScalar(.032*(1-.35*t)),middle=base.clone().addScaledVector(direction,.45).add(new THREE.Vector3(0,.012,0))
+        const rim=[base,base.clone().addScaledVector(direction,.4).add(width),base.clone().add(direction),base.clone().addScaledVector(direction,.4).sub(width)]
+        const list=positions[(i+j)%3]
+        for(let k=0;k<4;k++)for(const triangle of[[middle,rim[k],rim[(k+1)%4]],[middle,rim[(k+1)%4],rim[k]]])for(const p of triangle)list.push(p.x,p.y,p.z)
+      }
+    }
+    const generated=new THREE.Box3()
+    for(const list of positions)for(let i=0;i<list.length;i+=3)generated.expandByPoint(new THREE.Vector3(list[i],list[i+1],list[i+2]))
+    const extent=generated.getSize(new THREE.Vector3())
+    clone=source.clone(true);let target
+    clone.traverse(m=>{if(m.isMesh&&m.material?.name==='plant')target=m})
+    const parent=target.parent;target.removeFromParent()
+    for(const [i,list]of positions.entries()){
+      for(let j=0;j<list.length;j+=3)for(let axis=0;axis<3;axis++){const k=['x','y','z'][axis];list[j+axis]=bounds.min[k]+(list[j+axis]-generated.min[k])/extent[k]*size[k]}
+      const g=new THREE.BufferGeometry();geometries.push(g);g.setAttribute('position',new THREE.Float32BufferAttribute(list,3));g.computeVertexNormals()
+      // GLTF的缓存边界来自accessor小数；重算Float32极值会改变宿主缩放与碰撞三角面。
+      g.boundingBox=bounds.clone()
+      const material=new THREE.MeshStandardMaterial({color:['#3F6341','#55764A','#748950'][i],roughness:.86});material.name='plant';materials.push(material)
+      const mesh=target.clone(false);mesh.name='office-owned-potted-foliage-'+i;mesh.geometry=g;mesh.material=material;parent.add(mesh)
+    }
+    const collisionProxy=group=>{
+      group.updateWorldMatrix(true,true)
+      const proxy=group.clone(true),parts=[]
+      proxy.matrix.copy(group.matrixWorld);proxy.matrixAutoUpdate=false
+      proxy.traverse(m=>{if(m.isMesh&&m.name.startsWith('office-owned-potted-foliage-'))parts.push(m)})
+      const parent=parts[0].parent,index=original.parent.children.indexOf(original),leaf=original.clone(false)
+      parts.forEach(p=>p.removeFromParent());parent.add(leaf);parent.children.splice(parent.children.indexOf(leaf),1);parent.children.splice(index,0,leaf)
+      return proxy
+    }
+    return{source:clone,enabled:true,collisionProxy,dispose}
+  }catch{dispose();return fallback()}
+}
+
 // 小叶按固定三维方向铺在冠层内，使用真实几何轮廓，不依赖透明贴图或相机朝向。
 export function officeBackdropCanopy(THREE, low = false) {
   const positions = [], colors = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
