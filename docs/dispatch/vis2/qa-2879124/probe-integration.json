@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-10-23T05:10:44.550Z",
+  "pass": true,
+  "checks": [
+    {
+      "id": "pallets-no-overlap-independent",
+      "ok": true,
+      "detail": "同层同排成对重叠=0, groups=12, decks=109"
+    },
+    {
+      "id": "integration-both-present-without-replacement",
+      "ok": true,
+      "detail": "合并后旧立柱顶点=1152，新立柱顶点=672（两者都>0：旧模块未跳过时货架会重复）"
+    },
+    {
+      "id": "integration-summary",
+      "ok": true,
+      "detail": "{\"modules\":[\"legacyRacks\",\"vis2Rack\"],\"skipped\":[],\"quality\":\"low\",\"merged\":{\"removed\":5,\"added\":1},\"motion\":null}"
+    },
+    {
+      "id": "legacy-no-skip-option",
+      "ok": true,
+      "detail": "旧 buildCampusRacks 无「跳过货架/货物」参数"
+    },
+    {
+      "id": "labels-inside-legacy-function",
+      "ok": true,
+      "detail": "campus-rack-labels 在旧 buildCampusRacks 内创建"
+    },
+    {
+      "id": "legacy-shuttle-static-exists",
+      "ok": true,
+      "detail": "旧轨道/车体名字存在"
+    },
+    {
+      "id": "integration-height-delta-note",
+      "ok": true,
+      "detail": "旧轨顶=0.5，新轨顶=0.105；旧立柱高=3.6，新立柱高=4.4（全场景未验证）"
+    }
+  ],
+  "mergedNames": [
+    "vis2-rack-film",
+    "vis2-shuttle",
+    "campus-opaque-batch-1"
+  ],
+  "summary": {
+    "modules": [
+      "legacyRacks",
+      "vis2Rack"
+    ],
+    "skipped": [],
+    "quality": "low",
+    "merged": {
+      "removed": 5,
+      "added": 1
+    },
+    "motion": null
+  }
+}
