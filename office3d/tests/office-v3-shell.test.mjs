@@ -29,7 +29,7 @@ test('R3-4 registry is opt-in, isolated and exposes the complete V3 module chain
   const registry = startOfficeV3({ THREE, scene, layout: LAYOUT_V3, quality: { tier: 'high' }, collision: { add: (...args) => collisions.push(args) } })
   assert.ok(registry)
   assert.equal(registry.root.name, 'office3-root')
-  assert.deepEqual(registry.summary().modules, ['shell3', 'furniture3', 'island', 'zones', 'displayDepartments', 'displayStaff'])
+  assert.deepEqual(registry.summary().modules, ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.equal(registry.get('island').pending, undefined)
   assert.equal(registry.get('zones').pending, undefined)
   assert.equal(registry.get('displayDepartments').pending, undefined)

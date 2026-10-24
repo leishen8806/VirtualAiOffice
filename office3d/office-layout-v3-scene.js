@@ -20,7 +20,7 @@ const wallSegments = (layout) => {
   }
   return parts
 }
-const roomSegments = layout => layout.regions.flatMap(room => {
+const roomSegments = layout => layout.regions.filter(room => layout.variant !== 'align' || room.walled === true).flatMap(room => {
   const result = []
   for (const side of ['north', 'south', 'west', 'east']) {
     const vertical = side === 'west' || side === 'east'

@@ -10,6 +10,7 @@ export function createFurnitureCollision() {
   const stats = { checks: 0, contacts: 0, triangles: 0 }
 
   function add(group, kind) {
+    remove(group)
     group.updateWorldMatrix(true, true)
     const triangles = []
     group.traverse((mesh) => {
@@ -26,6 +27,14 @@ export function createFurnitureCollision() {
     bodies.push({ group, kind, triangles, box })
     stats.triangles += triangles.length
     return group
+  }
+
+  function remove(group) {
+    const index = bodies.findIndex(body => body.group === group)
+    if (index < 0) return false
+    stats.triangles -= bodies[index].triangles.length
+    bodies.splice(index, 1)
+    return true
   }
 
   // 竖直胶囊轴与三角面相交，或轴与任意边/顶点的最近距离小于半径。
@@ -132,5 +141,5 @@ export function createFurnitureCollision() {
     a.set(x, low, z); b.set(x, high, z)
     return body.triangles.some(touches)
   }
-  return { add, hit, move, route, seatBody, overlaps, stats: () => ({ ...stats, bodies: bodies.length }) }
+  return { add, remove, hit, move, route, seatBody, overlaps, stats: () => ({ ...stats, bodies: bodies.length }) }
 }

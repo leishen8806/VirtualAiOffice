@@ -81,59 +81,108 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "197059F5F94249B0BA8BD2E7A6D62587EBBAB6F35E64771C9E7465F61319676C",
-      "source": "Existing B0 procedural asset, reused unchanged",
+      "sha256": "5B46A5DF127E77265285FDFCD0D7847039B3D2DD7FD4750D22EC73BA920415C3",
+      "source": "Existing procedural banyan refined in O-V1: smaller leaves, deeper canopy notch and branching; no photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "5FE2AAA1F012A5C381CF5BD79C2636E59EEB1B178613DBECB2B9D523F1DF3476",
+      "sha256": "4C56BBAF42F4458E0A929FF99E632E56D16A1512BA23FABCA3ECE211F841E3CA",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "E5FC06CBF24FA071C8F448CE442C7F8143C1200B768B9601F725C1137CA9DC36",
+      "sha256": "1ACE77DDCE8F07E7E4593DF9604ABD7AD778B70FF84225339580C0EB889A9C35",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "EACDA14F9B8F7D1C7E2665FC195D91E8757A7E8CD132257464A427F162271920",
+      "sha256": "3B85D47E03C27B77694A54C984D9C54BFD6105F41A795821B4C04F8EBA881536",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "345739376E375FB94B91A5E89FF01AA5249DA5708AAE0A953CB23CA7E57E0D37",
+      "sha256": "B607E7EE2BAAC04EEA99142304830D465DA3641EA2C28770980301F69F835D03",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/brand.js",
-      "sha256": "332226385FB9987C662A14FAC72F30204DE37C388830B6C51C3F591792FEC27E",
+      "sha256": "964268740E5E2DF0B610E15F6D70967EA3CCB93A5B50ABC5852F0FCC7F406127",
       "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
       "license": "Repository MIT for the source code; logo provenance remains recorded separately",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/floor.js",
-      "sha256": "1E1505E544A6E2BFB073A7DB37DD7EE164078A5AD23CE359960A28FF842052BA",
+      "sha256": "973E81952CA020FCBB6E6D308FD65B02F8ABB476ED448B4EFA41DEC9CF03937D",
       "source": "Existing private procedural floor rings; instance disposal completed in VIS2-O-R3",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "F4B058D7DE6403726ACCA61EC7162CC0A21902AFDECD32B7569D415FF4C79E0A",
+      "sha256": "35E6E10DEA46E50F22D7D574132BF4EB1BB1A4B288E95AD73D11DB1F0B6F689E",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/batch.js",
+      "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "06D79454ED65C6FAB44241AF509A79AB554F1661FC11509C050E1F2763011692"
+    },
+    {
+      "file": "office-vis2/plaza.js",
+      "source": "O-V2 reuses office-plaza-props geometry in the private preview, with explicit integration footprints; no new downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "55490DFE878D16A3CE16D037180F7D65C967330E07B79F61331F9BC1FA00EF7B"
+    },
+    {
+      "file": "office-vis2/shell-finish.js",
+      "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "10A133374F40D2BE0CEA2C411C0285266B7204055C102BD41BFD35A650CDE9E0"
+    },
+    {
+      "file": "office-vis2/zone-finish.js",
+      "source": "Private visual refinement of existing zone seats, tables and stools within their existing floor footprints",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "502D1433DCF7B3246A07B14B58A46A20BF28C25EC1D30BB1CA072248B82130A2"
+    },
+    {
+      "file": "office-vis2/whole-floor.js",
+      "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "E8E06191BBBA4E0B2C6E0E424C3292632DF56C928CF9D7C923CB9DF6EBA90F85"
+    },
+    {
+      "file": "office-vis2/open-furnishing.js",
+      "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "D775A9F461DE8C0E105100F54396E24183F3E54372A2B36A45753C2ABF5E6897"
+    },
+    {
+      "file": "office-vis2/align-zones.js",
+      "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "AAD59F3097E2C9A2B607666AE225E9186189FA01A43BA1D32792AD8299AE23CD"
     }
   ],
   "excluded": {

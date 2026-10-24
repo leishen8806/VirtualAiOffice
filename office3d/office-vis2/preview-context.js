@@ -1,13 +1,14 @@
-import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
+import { buildOfficeAlignedShell } from './shell-finish.js'
 import { placeOfficeFurnitureV2 } from '../office-furniture-v2.js'
 import { mergeOfficeStatic } from '../office-v2-registry.js'
 import { buildOfficeCompletionVisual } from './completion.js'
+import { buildOfficeAlignedZones } from './zone-finish.js'
 
 // 预览只借用既有外壳/工位，不注册业务热点、人物或第二套场景生命周期。
 export function buildOfficePreviewContext({ THREE, root, layout, A, placeFurniture, canvasTex, low = false }) {
   const group = new THREE.Group(); group.name = 'office-vis2-preview-context'; root.add(group)
   const collision = { add() {} }
-  let shell, furniture, completion, merged, floorMaterial, disposed = false
+  let shell, furniture, completion, merged, zones, disposed = false
   const instances = [], hiddenParts = [], furnitureMaterials = []
   const sharedGeometries = new Set(), sharedMaterials = new Set()
   for (const model of Object.values(A?.furn || {})) model?.traverse(mesh => {
@@ -21,41 +22,30 @@ export function buildOfficePreviewContext({ THREE, root, layout, A, placeFurnitu
       if (!sharedGeometries.has(mesh.geometry)) mesh.geometry.dispose()
       for (const material of [mesh.material].flat()) if (material && !sharedMaterials.has(material) && !furnitureMaterials.includes(material)) material.dispose()
     }
-    completion?.dispose(); merged?.dispose(); furniture?.dispose()
+    completion?.dispose(); zones?.dispose(); merged?.dispose(); furniture?.dispose()
     furnitureMaterials.forEach(material => material.dispose())
-    shell?.dispose(); floorMaterial?.dispose(); group.removeFromParent()
+    shell?.dispose(); group.removeFromParent()
   }
   try {
-    shell = buildOfficeShellV3({ THREE, root: group, layout, collision, low })
-    group.traverse(mesh => { if (mesh.isInstancedMesh) instances.push(mesh) })
-    // 既有工位和墙位完全照用；只让预览地面退到样板地面下面，避免两层地面闪烁。
-    shell.ground.position.y = -.15
-    floorMaterial = new THREE.MeshStandardMaterial({ color: '#E8DECD', roughness: .85 })
-    shell.ground.material = floorMaterial; shell.ground.receiveShadow = !low
-    // 共享外壳的实例色与材质色相乘会使独立预览呈深灰；这里仅调整本实例的材质。
-    shell.walls.material.vertexColors = false; shell.walls.material.color.set('#F4F1EA')
-    shell.walls.material.emissive.set('#000000'); shell.walls.material.emissiveIntensity = 0; shell.walls.material.toneMapped = true
-    if (shell.innerGlass) { shell.innerGlass.material.color.set('#ffffff'); shell.innerGlass.material.opacity = .085; shell.innerGlass.material.forceSinglePass = true }
-    const warmFurniture = (...args) => {
+    shell = buildOfficeAlignedShell({ THREE, root: group, layout, collision, low, search: '?officeSample=1' })
+    group.traverse(mesh => { if (mesh.isInstancedMesh && !mesh.userData.dynamic) instances.push(mesh) })
+    shell.ground.receiveShadow = !low
+    const privateFurniture = (...args) => {
       const value = placeFurniture(...args)
       value.group.traverse(mesh => { if (mesh.isMesh && mesh.material) {
-        const materials = [mesh.material].flat().map(source => {
-        const material = source.clone(), name = source.name || ''
-        const tint = /carpet|fabric|cushion/i.test(name) ? '#3E5A4E' : /wood/i.test(name) ? '#C9A57A' : /metalDark/i.test(name) ? '#596455' : null
-        if (tint) material.color.set(tint)
-        material.name = ''; furnitureMaterials.push(material); return material
-        })
+        const materials = [mesh.material].flat().map(source => { const material = source.clone(); furnitureMaterials.push(material); return material })
         mesh.material = Array.isArray(mesh.material) ? materials : materials[0]
       } })
       return value
     }
-    furniture = placeOfficeFurnitureV2({ THREE, scene: group, parent: group, layout, A, placeFurniture: warmFurniture, collision, canvasTex, makeScreenTexture() {
+    furniture = placeOfficeFurnitureV2({ THREE, scene: group, parent: group, layout, A, placeFurniture: privateFurniture, collision, canvasTex, warmPalette: true, makeScreenTexture() {
       const tex = canvasTex(256, 144, (ctx, w, h) => { ctx.clearRect(0, 0, w, h) })
       return { tex, ctx: tex.image.getContext('2d'), scroll: 0, last: '' }
     } })
     furniture.root.traverse(mesh => { if (mesh.isMesh && !mesh.visible) hiddenParts.push(mesh) })
     merged = mergeOfficeStatic(THREE, furniture.root, 'vis2-context')
-    completion = buildOfficeCompletionVisual({ THREE, root: group, layout, canvasTex, low })
+    zones = buildOfficeAlignedZones({ THREE, root: group, layout, canvasTex, low, search: '?officeSample=1' })
+    completion = buildOfficeCompletionVisual({ THREE, root: group, layout, canvasTex, low, includePaving: !shell.finishSpec, includeZones: false })
     furniture.root.traverse(mesh => { if (mesh.isMesh && mesh.name.startsWith('vis2-context-merged')) { mesh.castShadow = !low; mesh.receiveShadow = !low } })
     group.userData.dynamic = true
     group.traverse(mesh => { if (mesh.isMesh) mesh.userData.qualityProxy = true })

@@ -1,9 +1,10 @@
 import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
-import { buildOfficeShellV3 } from './office-layout-v3-scene.js'
+import { buildOfficeAlignedShell } from './office-vis2/shell-finish.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
-import { buildOfficeIsland } from './office-island.js'
-import { buildOfficeZones } from './office-zones.js'
+import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
+import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
+import { buildOfficePlazaHost } from './office-vis2/plaza-host.js'
 import { buildDisplayDepartments } from './display-departments.js'
 import { buildDisplayStaff } from './display-staff.js'
 
@@ -18,8 +19,21 @@ function buildOfficeFurnitureV3(context) {
   if (!context.A?.furn || typeof context.placeFurniture !== 'function' || typeof context.canvasTex !== 'function' || typeof context.makeScreenTexture !== 'function') {
     return pendingModule('office-furniture-v3')
   }
-  const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout })
-  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3 }
+  const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
+  let badges
+  if (officeSampleRequested(context.search)) {
+    const { THREE } = context, seats = Object.values(context.layout.seats)
+    const geometry = new THREE.CylinderGeometry(.06, .06, .012, 6), material = new THREE.MeshBasicMaterial({ toneMapped: false })
+    badges = new THREE.InstancedMesh(geometry, material, seats.length); badges.name = 'agent-model-badges'; badges.onBeforeRender = () => {}
+    const transform = new THREE.Object3D()
+    seats.forEach(([, x, z], i) => {
+      transform.position.set(x + .62, .8, z + .06); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
+      badges.setMatrixAt(i, transform.matrix); badges.setColorAt(i, new THREE.Color(0xffffff))
+      furniture.deskAt(x, z).setBadge = color => { badges.setColorAt(i, new THREE.Color(color)); badges.instanceColor.needsUpdate = true }
+    })
+    context.root.add(badges)
+  }
+  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3, dispose() { badges?.removeFromParent(); badges?.geometry.dispose(); badges?.material.dispose(); badges?.dispose(); furniture.dispose() } }
 }
 
 const displayLayout = layout => ({ ...layout, version: 2, corridors: {
@@ -29,25 +43,28 @@ const displayLayout = layout => ({ ...layout, version: 2, corridors: {
 }, displayAdapter: 'v3' })
 
 function buildDisplayDepartmentsV3(context) {
+  if (context.layout.variant === 'align') return pendingModule('align-display-departments-door-adapter')
   return buildDisplayDepartments({ ...context, layout: displayLayout(context.layout) })
 }
 
 function buildDisplayStaffV3(context) {
+  if (context.layout.variant === 'align') return pendingModule('align-display-staff-door-adapter')
   return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
 }
 
 export const officeV3Modules = Object.freeze([
-  ['shell3', context => buildOfficeShellV3(context)],
+  ['shell3', buildOfficeAlignedShell],
   ['furniture3', buildOfficeFurnitureV3],
-  ['island', buildOfficeIsland],
-  ['zones', buildOfficeZones],
+  ['island', buildOfficeSampleHost],
+  ['zones', buildOfficeAlignedZones],
+  ['plaza', buildOfficePlazaHost],
   ['displayDepartments', buildDisplayDepartmentsV3],
   ['displayStaff', buildDisplayStaffV3],
 ])
 
 export function startOfficeV3(shared) {
-  if (shared.layout?.version !== 3) return null
-  const registry = createOfficeV2Registry({ THREE: shared.THREE, scene: shared.scene, quality: shared.quality, layout: LAYOUT_V3, rootName: 'office3-root', batchPrefix: 'office3' })
+  if ((shared.layout || LAYOUT_V3).version !== 3) return null
+  const registry = createOfficeV2Registry({ THREE: shared.THREE, scene: shared.scene, quality: shared.quality, layout: shared.layout || LAYOUT_V3, rootName: 'office3-root', batchPrefix: 'office3' })
   officeV3Modules.forEach(([name, factory]) => registry.register(name, factory))
   registry.buildAll(shared)
   if (!registry.get('shell3')) { registry.dispose(); return null }

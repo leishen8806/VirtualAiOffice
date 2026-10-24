@@ -68,11 +68,18 @@ export function officeFurnitureV2Spec(layout) {
     : { ...roomScreen(boardRegion), y: 2.4, w: 2, h: 1.125 }
   const board = { ...layout.boardTable, w: 1.4, d: 3.6, screen: boardScreen }
   const boardSeats = [...[-1.2, 0, 1.2].flatMap(dz => [{ x: board.x - 1.15, z: board.z + dz, yaw: -Math.PI / 2 }, { x: board.x + 1.15, z: board.z + dz, yaw: Math.PI / 2 }]), { x: board.x, z: board.z - 2.35, yaw: Math.PI }, { x: board.x, z: board.z + 2.35, yaw: 0 }]
-  const shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
-  return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen: { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 } }
+  let shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
+  let opsScreen = { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 }
+  if (layout.variant === 'align') {
+    const kb = meetingRegion(layout, 'kb'), west = meetingRegion(layout, 'west-open')
+    const ops = layout.deskGroups.ops.map(name => layout.seats[name]), left = (kb.x0 + kb.x1 - 5.2) / 2
+    shelves = [{ x: left + 1.4, z: kb.z0 + .55, w: 2.8, d: .6, yaw: 0 }, { x: left + 4.2, z: kb.z0 + .55, w: 2, d: .6, yaw: 0 }]
+    opsScreen = { ...opsScreen, x: ops.reduce((sum, seat) => sum + seat[1], 0) / ops.length, z: Math.max(west.z0, layout.corridors.westNorthCross.z1) + .3 }
+  }
+  return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen }
 }
 
-export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A, placeFurniture, collision, canvasTex, makeScreenTexture }) {
+export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A, placeFurniture, collision, canvasTex, makeScreenTexture, warmPalette = false }) {
   const spec = officeFurnitureV2Spec(layout)
   const required = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'table', 'chairModernCushion', 'bookcaseOpen', 'books', 'pottedPlant']
   for (const name of required) if (!A?.furn?.[name]) throw new Error(`缺少办公家具 ${name}`)
@@ -87,17 +94,28 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   const root = new THREE.Group(); root.name = 'office2-furniture'
   const geometryParts = [], handles = new Map(), screenSlots = []
+  const detailBounds = new Map(), detailCollisions = []
+  let detailId = null
   const atlas = canvasTex(2048, 1024, (ctx, w, h) => { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h) })
   const atlasContext = atlas.image.getContext('2d')
-  const wood = new THREE.Color(THEME.trim).lerp(new THREE.Color(THEME.nameplate), .55)
+  const wood = warmPalette ? new THREE.Color('#C49A6C') : new THREE.Color(THEME.trim).lerp(new THREE.Color(THEME.nameplate), .55)
   const white = new THREE.Color(THEME.nameplate), trim = new THREE.Color(THEME.trim)
-  const colorFor = material => !material.name || /plant/i.test(material.name) ? material.color : /wood/i.test(material.name) ? wood : /metalDark/i.test(material.name) ? trim : white
+  const fabric = new THREE.Color('#506A5A'), metal = new THREE.Color('#756D60'), dark = new THREE.Color('#3D4541')
+  const colorFor = material => !material.name || /plant/i.test(material.name) ? material.color
+    : warmPalette && /carpet|fabric|cushion/i.test(material.name) ? fabric
+    : warmPalette && /metalDark/i.test(material.name) ? dark
+    : warmPalette && /metal/i.test(material.name) ? metal
+    : /wood/i.test(material.name) ? wood : /metalDark/i.test(material.name) ? trim : white
   function bake(group, screen = null) {
     group.updateWorldMatrix(true, true)
     group.traverse(mesh => {
       if (!mesh.isMesh) return
       const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone()
       geometry.applyMatrix4(mesh.matrixWorld)
+      if (layout.variant === 'align' && detailId) {
+        const b = detailBounds.get(detailId) || new THREE.Box3()
+        b.union(new THREE.Box3().setFromBufferAttribute(geometry.attributes.position)); detailBounds.set(detailId, b)
+      }
       const count = geometry.attributes.position.count, colors = new Float32Array(count * 3), uv = new Float32Array(count * 2)
       const sourceUv = geometry.attributes.uv
       const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
@@ -113,14 +131,14 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
     const f = placeFurniture(A, name, x, z, { scale: 1, y, rotY: yaw })
     f.group.scale.set(w / f.size.x, h / f.size.y, d / f.size.z)
     f.group.name = `office2-${name}`
-    if (solid) collision.add(f.group, name)
+    if (solid) { collision.add(f.group, name); if (layout.variant === 'align' && detailId) detailCollisions.push(f.group) }
     bake(f.group)
     return f.group
   }
   function box(x, y, z, w, h, d, color, solid = false, kind = 'desk') {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color }))
     mesh.position.set(x, y, z)
-    if (solid) collision.add(mesh, kind)
+    if (solid) { collision.add(mesh, kind); if (layout.variant === 'align' && detailId) detailCollisions.push(mesh) }
     bake(mesh); mesh.geometry.dispose(); mesh.material.dispose()
   }
   function chair(seat, name = 'chairDesk') { return asset(name, seat.x, seat.z, .62, 1.04, .6, 0, seat.yaw + Math.PI, true) }
@@ -156,13 +174,16 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   chair(spec.boss.chair)
   asset('table', spec.board.x, spec.board.z, spec.board.w, .76, spec.board.d, 0, 0, true)
   spec.boardSeats.forEach(seat => chair(seat, 'chairModernCushion'))
-  for (const shelf of spec.shelves) { asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, 1.85, shelf.d, 0, shelf.yaw, true); asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw) }
+  for (const [index, shelf] of spec.shelves.entries()) { detailId = `align-kb-shelf-${index}`; asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, 1.85, shelf.d, 0, shelf.yaw, true); asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw) }
+  detailId = null
   for (const [x, z] of [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
   const ops = spec.opsScreen
+  detailId = 'align-ops-screen'
   box(ops.x, ops.y + ops.h / 2, ops.z, ops.w + .08, ops.h + .08, .08, THEME.trim)
   screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
   // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
   for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
+  detailId = null
   const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.screen.x, room.screen.y, room.screen.z, room.screen.w, room.screen.h, `会议室 ${room.id}`, room.screen.yaw)]))
   const boardScr = screen(spec.board.screen.x, spec.board.screen.y, spec.board.screen.z, spec.board.screen.w, spec.board.screen.h, '董事会', spec.board.screen.yaw)
   // v2 独立浅金细线，旧布局材质保持原样。
@@ -183,5 +204,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   const wing = { seats: spec.meetings.flatMap(room => room.seats.map(seat => ({ ...seat, taken: null }))), drawSchedule(list) { write(meetingScreens.A, '日程', list.map(item => item.title)) }, drawRoom(id, data) { if (meetingScreens[id]) write(meetingScreens[id], `会议室 ${id}`, data ? [data.topic, ...(data.here || [])] : ['暂无会议']) } }
   const board = { scr: boardScr, amber: { intensity: 0 }, beacon: { userData: {}, material: { color: new THREE.Color() } } }
   parent.add(root)
-  return { root, spec, wing, board, legacyHidden, partitions: { visible: false }, deskAt: (x, z) => handles.get(`${x},${z}`), dispose() { root.removeFromParent(); handles.forEach(handle => handle.group.removeFromParent()); legacyHidden.forEach(mesh => { mesh.visible = true }); geometryParts.forEach(part => part.geometry.dispose()); material.dispose(); atlas.dispose() } }
+  // 与 zones.obstacles 同格式；边界来自烘焙后的真实顶点，供导航接线消费。
+  const obstacles = () => [...detailBounds].map(([id, b]) => ({ id, x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z }))
+  return { root, spec, wing, board, legacyHidden, partitions: { visible: false }, obstacles, deskAt: (x, z) => handles.get(`${x},${z}`), dispose() { detailCollisions.forEach(p => collision.remove?.(p)); root.removeFromParent(); handles.forEach(handle => handle.group.removeFromParent()); legacyHidden.forEach(mesh => { mesh.visible = true }); geometryParts.forEach(part => part.geometry.dispose()); material.dispose(); atlas.dispose() } }
 }

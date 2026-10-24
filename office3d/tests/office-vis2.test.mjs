@@ -14,11 +14,163 @@ import { mergeOfficeStatic } from '../office-v2-registry.js'
 import { buildOfficePreviewContext } from '../office-vis2/preview-context.js'
 import { buildOfficeCompletionVisual } from '../office-vis2/completion.js'
 import { buildOfficeFoyerFurniture } from '../office-vis2/foyer.js'
+import { buildOfficeTeaBarSample } from '../office-vis2/bar.js'
+import { createSampleBatch } from '../office-vis2/batch.js'
+import { appendOfficePlaza } from '../office-vis2/plaza.js'
+import { buildOfficeSamplePlants } from '../office-vis2/plants.js'
 
 const loader = () => { const state = { created: 0, disposed: 0 }; return { state, async loadAsync() { state.created++; const t = new THREE.Texture(); t.addEventListener('dispose', () => state.disposed++); return t } } }
 const canvasTex = (w, h, draw) => { assert.equal(draw.length, 3); draw({ clearRect() {}, fillText() {}, set fillStyle(v) {}, set textAlign(v) {}, set textBaseline(v) {}, set font(v) {} }, w, h); return new THREE.Texture() }
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex').toUpperCase()
 const sourceHash = text => sha256(text.replace(/\r\n/g, '\n'))
+
+test('O-V3 plants retain one instance batch and existing footprint with non-fabric two-sided foliage', () => {
+  const root = new THREE.Group(), a = buildOfficeSamplePlants({ THREE, root }), b = buildOfficeSamplePlants({ THREE, root: new THREE.Group() })
+  try {
+    const mesh = a.root.getObjectByName('sample-instanced-potted-plants'), g = mesh.geometry, p = g.attributes.position, normals = g.attributes.normal, surface = g.attributes.sampleSurface
+    assert.equal(mesh.count, 8); assert.equal(a.summary().calls, 1); assert.ok(a.summary().triangles <= 6528)
+    assert.deepEqual(a.placements, b.placements); assert.equal(sha256(p.array), sha256(b.root.children[0].geometry.attributes.position.array))
+    let leafVertices = 0; const leafNormals = new Map()
+    for (let i = 0; i < p.count; i++) {
+      assert.ok(Math.hypot(p.getX(i), p.getZ(i)) <= .5 && p.getY(i) >= -1e-6 && p.getY(i) <= 1.6, 'old collision envelope retained')
+      const normal = new THREE.Vector3().fromBufferAttribute(normals, i)
+      assert.ok(Math.abs(normal.length() - 1) < 1e-5, 'all rendered vertices have valid unit normals')
+      if (p.getY(i) > .6) { assert.equal(surface.getZ(i), 0, 'foliage must not inherit woven upholstery texture'); leafVertices++ }
+      if (Math.abs(surface.getX(i) - .76) < 1e-6) {
+        const key = [p.getX(i), p.getY(i), p.getZ(i)].map(v => v.toFixed(6)).join(',')
+        if (!leafNormals.has(key)) leafNormals.set(key, [])
+        leafNormals.get(key).push(normal)
+      }
+    }
+    assert.ok(leafVertices > 1000)
+    assert.ok(leafNormals.size > 100)
+    for (const values of leafNormals.values()) for (const normal of values) assert.ok(values.some(other => normal.dot(other) < -.999), 'each thin leaf surface has its own reversed back normal')
+    assert.equal(mesh.material.transparent, false, 'opaque geometry avoids transparent leaf overdraw')
+    let geometryDisposals = 0, materialDisposals = 0
+    g.addEventListener('dispose', () => geometryDisposals++); mesh.material.addEventListener('dispose', () => materialDisposals++)
+    a.dispose(); a.dispose(); assert.equal(geometryDisposals, 1); assert.equal(materialDisposals, 1); assert.equal(root.children.length, 0)
+  } finally { a.dispose(); b.dispose() }
+})
+
+test('Q-V1 reception curve has continuous outward normals while caps stay flat', () => {
+  const value = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), f = LAYOUT_V3.frontDesk
+  const g = value.root.getObjectByName('foyer-reception-coffee-tables').geometry, p = g.attributes.position, n = g.attributes.normal
+  let curved = 0, caps = 0
+  try {
+    for (let i = 0; i < p.count; i++) {
+      if (![.215, 1.1].some(y => Math.abs(p.getY(i) - y) < 1e-6) || p.getX(i) < f.x0 || p.getX(i) > f.x1 || p.getZ(i) < f.z0 || p.getZ(i) > f.z1) continue
+      const normal = new THREE.Vector3().fromBufferAttribute(n, i)
+      if (Math.abs(normal.y) > .9) { assert.ok(Math.abs(normal.y) > .99999); caps++; continue }
+      if (normal.z <= .001) continue
+      const x = p.getX(i) - f.center.x, t = Math.sqrt(Math.max(0, 1 - 2 * Math.abs(x) / (f.x1 - f.x0)))
+      const expected = new THREE.Vector3(Math.sign(x) * 2 * (f.z1 - f.z0) * (1 - t), 0, (f.x1 - f.x0) * t).normalize()
+      assert.ok(normal.distanceTo(expected) < .0001, 'each duplicated curve vertex uses the same analytic normal')
+      curved++
+    }
+    assert.ok(curved >= 200, 'actual reception curved sides sampled')
+    assert.ok(caps >= 100, 'top and bottom hard edges retained')
+  } finally { value.dispose() }
+})
+
+test('Q-V1 cabinet seams clear actual faceted inner-wall triangles in both quality tiers', () => {
+  for (const low of [false, true]) {
+    const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3, low })
+    const mesh = value.root.getObjectByName('tea-bar-body-top-equipment'), p = mesh.geometry.attributes.position, colors = mesh.geometry.attributes.color
+    const tint = new THREE.Color('#756857'), seams = [], walls = []
+    for (let i = 0; i < p.count; i += 3) {
+      const seam = Math.abs(colors.getX(i) - tint.r) < 1e-6 && Math.abs(colors.getY(i) - tint.g) < 1e-6 && Math.abs(colors.getZ(i) - tint.b) < 1e-6
+      for (let j = 0; j < 3; j++) {
+        if (seam) seams.push(new THREE.Vector3().fromBufferAttribute(p, i + j))
+        else walls.push(p.getX(i + j), p.getY(i + j), p.getZ(i + j))
+      }
+    }
+    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(walls, 3))
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }), body = new THREE.Mesh(geometry, material); body.updateMatrixWorld()
+    try {
+      assert.equal(seams.length, 360, 'all ten seam boxes are sampled, not an empty selection')
+      for (const vertex of seams) {
+        const origin = new THREE.Vector3(LAYOUT_V3.bar.center.x, vertex.y, LAYOUT_V3.bar.center.z), direction = vertex.clone().sub(origin).normalize()
+        const wall = new THREE.Raycaster(origin, direction).intersectObject(body)[0]
+        assert.ok(wall, 'actual inner-wall triangle exists behind each seam vertex')
+        const clearance = wall.distance - origin.distanceTo(vertex)
+        assert.ok(clearance > .0002 && clearance < .01, `${low ? 'low' : 'high'} clearance ${clearance}`)
+      }
+    } finally { geometry.dispose(); material.dispose(); value.dispose() }
+  }
+})
+
+test('O-V2 plaza reuses props, keeps source anchors and exports nonoverlapping integration footprints', () => {
+  const before = JSON.stringify(LAYOUT_V3), batch = createSampleBatch(THREE), root = new THREE.Group()
+  const placements = appendOfficePlaza({ THREE, batch, layout: LAYOUT_V3 }), built = batch.build(root, 'plaza-test')
+  const intersects = (a, b) => Math.min(a.x1, b.x1) > Math.max(a.x0, b.x0) && Math.min(a.z1, b.z1) > Math.max(a.z0, b.z0)
+  assert.equal(placements.filter(p => p.kind === 'vendors').length, 4)
+  assert.equal(placements.filter(p => p.kind === 'cafe').length, 4)
+  assert.equal(placements.filter(p => p.kind === 'benches').length, 6)
+  assert.equal(placements.filter(p => p.kind === 'flowers').length, 2)
+  assert.equal(placements.filter(p => p.kind === 'lamps').length, 2)
+  for (const [i, p] of placements.entries()) {
+    assert.equal(p.interaction, 'preview-only')
+    assert.ok(!intersects(p.bounds, { x0: 0, x1: 4, z0: 12, z1: 32.5 }), p.id + ' clears the 4m entrance axis')
+    for (const other of placements.slice(i + 1)) assert.ok(!intersects(p.bounds, other.bounds), p.id + ' / ' + other.id)
+    if (p.kind === 'vendors' || p.kind === 'cafe') assert.deepEqual({ x: p.x, z: p.z }, p.source)
+  }
+  const positions = built.mesh.geometry.attributes.position
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i), y = positions.getY(i), z = positions.getZ(i)
+    assert.ok(placements.some(p => x >= p.bounds.x0 - .001 && x <= p.bounds.x1 + .001 && z >= p.bounds.z0 - .001 && z <= p.bounds.z1 + .001 && y >= p.bounds.y0 - .001 && y <= p.bounds.y1 + .001), 'every rendered vertex has an exported footprint')
+  }
+  assert.equal(root.children.length, 1, 'all props use one existing material batch')
+  const addedGreenery = placements.filter(p => p.kind === 'trees' || p.kind === 'flower-arc').reduce((sum, p) => sum + p.triangles, 0)
+  assert.ok(built.triangles() - addedGreenery <= 10000, 'original 18 facilities retain their original triangle budget')
+  assert.equal(JSON.stringify(LAYOUT_V3), before)
+  let disposed = 0; built.mesh.geometry.addEventListener('dispose', () => disposed++)
+  built.dispose(); built.dispose(); assert.equal(disposed, 1); assert.equal(root.children.length, 0)
+})
+
+test('O-V2 plaza static geometry is deterministic and cleanup leaves no source props mounted', () => {
+  const a = createSampleBatch(THREE), b = createSampleBatch(THREE)
+  const pa = appendOfficePlaza({ THREE, batch: a, layout: LAYOUT_V3 }), pb = appendOfficePlaza({ THREE, batch: b, layout: LAYOUT_V3 })
+  const ma = a.build(new THREE.Group(), 'a'), mb = b.build(new THREE.Group(), 'b')
+  assert.deepEqual(pa, pb)
+  assert.equal(sha256(ma.mesh.geometry.attributes.position.array), sha256(mb.mesh.geometry.attributes.position.array))
+  ma.dispose(); mb.dispose()
+})
+
+test('O-V1 equipment stays above the existing counter and leaves both circulation openings unchanged', () => {
+  const value = buildOfficeTeaBarSample({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 })
+  const mesh = value.root.getObjectByName('tea-bar-body-top-equipment'), c = LAYOUT_V3.bar.center
+  mesh.updateMatrixWorld(true)
+  const down = (x, z) => new THREE.Raycaster(new THREE.Vector3(c.x + x, 2, c.z + z), new THREE.Vector3(0, -1, 0)).intersectObject(mesh)
+  assert.deepEqual(value.colliders, barColliders(LAYOUT_V3))
+  assert.equal(down(2.8, 0).length, 0); assert.equal(down(-2.8, 0).length, 0)
+  assert.ok(down(1.6, 0)[0].point.y < .05)
+  assert.ok(down(-1.55, -2.52)[0].point.y > 1.25, 'storage canister has a separate lid above countertop')
+  const p = mesh.geometry.attributes.position
+  for (let i = 0; i < p.count; i++) if (p.getY(i) > 1.06) {
+    const r = Math.hypot(p.getX(i) - c.x, p.getZ(i) - c.z)
+    assert.ok(r > 2.1 && r < LAYOUT_V3.bar.radius, 'all raised equipment sits on original annulus')
+  }
+  value.dispose()
+})
+
+test('O-V1 reception waist trim has one exterior surface and explicit fabric survives batching', () => {
+  const value = buildOfficeFoyerFurniture({ THREE, root: new THREE.Group(), layout: LAYOUT_V3 }), f = LAYOUT_V3.frontDesk
+  const mesh = value.root.getObjectByName('foyer-reception-coffee-tables'); mesh.updateMatrixWorld(true)
+  for (const y of [.15, .195, .25]) {
+    const hits = new THREE.Raycaster(new THREE.Vector3(f.center.x + .23, y, f.z1 + 1), new THREE.Vector3(0, 0, -1)).intersectObject(mesh)
+    const frontHits = hits.filter(hit => hit.point.z > f.center.z)
+    assert.equal(frontHits.length, 1, `one exterior surface at y=${y}, no coplanar trim/body`)
+  }
+  const batch = createSampleBatch(THREE)
+  batch.add(new THREE.BoxGeometry(), '#687D68', [0, 0, 0], 0, .97, 0, 'fabric')
+  const built = batch.build(new THREE.Group(), 'fabric-probe'), surfaces = built.mesh.geometry.attributes.sampleSurface
+  for (let i = 0; i < surfaces.count; i++) { assert.equal(surfaces.getZ(i), 3); assert.ok(surfaces.getX(i) > .96) }
+  const shader = { uniforms: {}, vertexShader: '#include <begin_vertex>', fragmentShader: '#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <metalnessmap_fragment>' }
+  built.mesh.material.onBeforeCompile(shader)
+  assert.equal(shader.uniforms.vis2Textured.value, false, 'missing textures retain untextured fallback')
+  assert.ok(shader.fragmentShader.includes('roughnessFactor = surfaceParams.x'))
+  built.dispose(); value.dispose()
+})
 
 test('VIS2 source hashing canonicalizes checkout newlines without hiding source changes', () => {
   const lf = 'export const example = 1\n// 中文\n', crlf = lf.replace(/\n/g, '\r\n')

@@ -1,9 +1,15 @@
 import * as THREE from '../vendor/three/three.module.js'
-import { LAYOUT_V3 as layout } from '../office-layout.js'
+import { LAYOUT_V3 } from '../office-layout.js'
 import { buildOfficeIsland } from '../office-island.js'
 import { createOfficeVis2Controller } from './sample.js'
 import { initialQuality, cappedDpr, renderLimit } from '../quality.js'
 import { buildOfficePreviewContext, disposePreviewAssets } from './preview-context.js'
+import { validateIslandRings } from '../office-bar-geometry.js'
+import { islandAlignFixture } from './align-fixture.js'
+import { buildAlignOpenPreview } from './align-preview.js'
+
+const query = new URLSearchParams(location.search), alignFixture = query.getAll('islandFixture').length === 1 && query.get('islandFixture') === 'align'
+let layout = alignFixture ? islandAlignFixture() : LAYOUT_V3
 
 const scene = new THREE.Scene(), root = new THREE.Group(), renderer = new THREE.WebGLRenderer({ antialias: true })
 scene.background = new THREE.Color('#F4F1EA'); scene.add(root)
@@ -18,19 +24,23 @@ ground.rotation.x = -Math.PI / 2; ground.position.set(2, -.04, -2); ground.recei
 let tier = initialQuality({ search: location.search }).tier
 let legacy, controller, low = tier === 'low', view = 'overview', disposed = false, enabled = false, probing = false, probeEpoch = 0
 let officeContext = null, previewAssets = null, contextLoading = false, contextEpoch = 0
+let openPreview = null
 const poses = Object.freeze({ overview: [[2, 25, 31], [2, .3, -2]], eye: [[2, 1.65, 14], [2, 1.7, -6]], reception: [[2, 2.1, 13.5], [2, 1.35, 8.1]], bar: [[11, 7, 3], [2, 1.15, -6]], barBrand: [[2, 1.7, 2.8], [2, .56, -2.47]], treeFront: [[2, 1.9, 2], [2, 2.1, -6]], treeSide: [[10, 3, -6], [2, 2, -6]] })
 function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t }
 function draw() {
   if (disposed || document.hidden) return
   officeContext?.onFrame(camera)
   renderer.render(scene, camera)
+  if (alignFixture) { const check = validateIslandRings(layout); document.querySelector('#ring-check').textContent = `沙发中心 ${layout.island.sofaOuter}m · 外沿 ${check.sofaOuterEdge.toFixed(3)}m · ${check.ok ? 'PASS（路线待接线验收）' : check.errors.join(' / ')}` }
   const s = enabled ? controller.summary() : legacy.summary()
   document.querySelector('#metrics').textContent = `${enabled ? 'VIS2-O 样板' : 'B0 原岛台'} · ${tier} · 模块 ${s.calls} calls / ${Math.round(s.triangles)} 三角形 · 整页 ${renderer.info.render.calls} calls（含当前阴影）`
 }
-function setView(name) { view = name; if (officeContext) officeContext.root.visible = name === 'officeOverview'; const pose = name === 'officeOverview' ? [[2, 42, 45], [2, 0, -4]] : poses[name]; camera.position.set(...pose[0]); camera.lookAt(...pose[1]); draw() }
+const contextPoses = { officeOverview: [[2, 42, 45], [2, 0, -4]], reference: [[2, 48, 60], [2, 0, 4]], plaza: [[-17, 11, 36], [2, .5, 21]] }
+function setView(name) { view = name; if (officeContext) officeContext.root.visible = !!contextPoses[name]; if (openPreview) openPreview.root.visible = name === 'open'; const pose = name === 'open' ? [[-18.25, 16, 18], [-18.25, 0, .5]] : contextPoses[name] || poses[name]; camera.position.set(...pose[0]); camera.lookAt(...pose[1]); draw() }
 function clearContext() { contextEpoch++; officeContext?.dispose(); officeContext = null; if (previewAssets) disposePreviewAssets(previewAssets.A); previewAssets = null }
 function mountContext() { officeContext = buildOfficePreviewContext({ THREE, root, layout, low, ...previewAssets, canvasTex }) }
 async function showOffice() {
+  if (alignFixture) return
   if (contextLoading || disposed) return
   if (officeContext) { setView('officeOverview'); return }
   if (!enabled) await enter()
@@ -52,18 +62,20 @@ async function enter() {
   document.querySelector('#status').textContent = ok ? '样板已开启 · 模拟展示，无业务操作' : '样板未开启 · 已恢复原办公室'
   draw()
 }
-async function exit() { enabled = false; probeEpoch++; clearContext(); await controller.setConfig(null); legacy.root.visible = true; document.querySelector('#status').textContent = '关闭 · 原办公室样板'; if (view === 'officeOverview') setView('overview'); else draw() }
+async function exit() { enabled = false; probeEpoch++; clearContext(); await controller.setConfig(null); legacy.root.visible = true; document.querySelector('#status').textContent = '关闭 · 原办公室样板'; if (contextPoses[view] || view === 'open') setView('overview'); else draw() }
 async function rebuild() {
   const reopen = enabled; controller?.dispose(); legacy?.dispose()
+  openPreview?.dispose(); openPreview = null
   const contextOpen = !!officeContext; officeContext?.dispose(); officeContext = null
   low = tier === 'low'; renderer.shadowMap.enabled = !low
   key.castShadow = !low
   const shadowSize = tier === 'high' ? 2048 : 1024
   if (key.shadow.mapSize.x !== shadowSize) { key.shadow.map?.dispose(); key.shadow.map = null; key.shadow.mapSize.set(shadowSize, shadowSize) }
-  legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex })
+  legacy = buildOfficeIsland({ THREE, root, layout, low }); controller = createOfficeVis2Controller({ THREE, root, layout, low, canvasTex, floorY: .092 })
+  if (alignFixture) { openPreview = buildAlignOpenPreview({ THREE, root, low }); openPreview.root.visible = view === 'open' }
   enabled = false; if (reopen) await enter(); else draw()
   if (contextOpen && previewAssets && enabled) { mountContext(); setView(view) }
-  else if (!enabled && previewAssets) { clearContext(); if (view === 'officeOverview') setView('overview') }
+  else if (!enabled && previewAssets) { clearContext(); if (contextPoses[view]) setView('overview') }
 }
 function resize() { renderer.setPixelRatio(cappedDpr(tier, devicePixelRatio, innerWidth, innerHeight)); renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); draw() }
 async function probe() {
@@ -83,11 +95,17 @@ async function probe() {
     window.__vis2.lastProbe = result; return result
   } finally { probing = false }
 }
-const click = event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) setView(b.dataset.view); if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe() }
+const click = async event => { const b = event.target.closest('button'); if (!b) return; if (b.dataset.view) { if (contextPoses[b.dataset.view]) await showOffice(); if (!contextPoses[b.dataset.view] || officeContext) setView(b.dataset.view) } if (b.id === 'office') showOffice(); if (b.id === 'enter') enter(); if (b.id === 'exit') exit(); if (b.id === 'tier') { tier = ({ high: 'medium', medium: 'low', low: 'high' })[tier]; probeEpoch++; rebuild().then(resize) } if (b.id === 'probe') probe(); if (b.id === 'sofa-fixture') { layout = islandAlignFixture(layout.island.sofaOuter === 5.8 ? 5.45 : 5.8); await rebuild(); setView(view) } }
 const visibility = () => { probeEpoch++; if (!document.hidden) draw() }
-const dispose = () => { if (disposed) return; disposed = true; probeEpoch++; clearContext(); controller.dispose(); legacy.dispose(); groundGeometry.dispose(); groundMaterial.dispose(); key.shadow.map?.dispose(); renderer.dispose(); removeEventListener('resize', resize); document.removeEventListener('click', click); document.removeEventListener('visibilitychange', visibility) }
+const dispose = () => { if (disposed) return; disposed = true; probeEpoch++; clearContext(); openPreview?.dispose(); controller.dispose(); legacy.dispose(); groundGeometry.dispose(); groundMaterial.dispose(); key.shadow.map?.dispose(); renderer.dispose(); removeEventListener('resize', resize); document.removeEventListener('click', click); document.removeEventListener('visibilitychange', visibility) }
 await rebuild(); setView(view); resize(); addEventListener('resize', resize); document.addEventListener('click', click); document.addEventListener('visibilitychange', visibility)
 document.querySelector('#tier').textContent = '循环画质档位'
 addEventListener('pagehide', e => { if (!e.persisted) dispose() })
-window.__vis2 = { renderer, scene, root, camera, poses, setView, enter, exit, showOffice, probe, summary: () => controller.summary(), mapping: () => controller.mapping, contextSeats: () => officeContext?.seats || [], mode: () => enabled ? 'open' : 'closed' }
-const query = new URLSearchParams(location.search); if (query.getAll('vis2').length === 1 && query.get('vis2') === '1') await enter()
+window.__vis2 = { renderer, scene, root, camera, poses, contextPoses, setView, enter, exit, showOffice, probe, summary: () => controller.summary(), mapping: () => controller.mapping, contextSeats: () => officeContext?.seats || [], contextPlacements: () => officeContext?.completion || [], mode: () => enabled ? 'open' : 'closed', alignFurnishing: () => openPreview?.furnishing }
+if (alignFixture) {
+  document.querySelector('#fixture-note').textContent = 'V3-A2P 独立夹具 · 台身 3.5m / 碰撞 6m · 开放区灰桌仅为 6 个工位占位，非新增工位；绿色为 1.4m 通道'
+  document.querySelector('#open-fixture').hidden = false
+  document.querySelector('#sofa-fixture').hidden = false
+  for (const selector of ['#office', '[data-view="reference"]', '[data-view="plaza"]']) document.querySelector(selector).hidden = true
+  await enter()
+} else if (query.getAll('vis2').length === 1 && query.get('vis2') === '1') await enter()

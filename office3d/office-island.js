@@ -82,7 +82,7 @@ export function buildOfficeIsland({ THREE, root, layout = LAYOUT_V3, materials =
     add(new THREE.CylinderGeometry(.28, .28, .11, low ? 8 : 12), fabric, [seat.x, .82, seat.z], 0, 'office-island-stool-seat')
     add(new THREE.CylinderGeometry(.045, .055, .72, 8), metal, [seat.x, .43, seat.z], 0, 'office-island-stool-leg')
   }
-  const lounges = barLounges({ bar: { center, radius: spec.sofaOuter || 5.8, gaps: [{ width: 1.5 }] } }).map(seat => ({ ...seat, sitOffset: { forward: LOUNGE_SIT.hipForward, lift: LOUNGE_SIT.hipLift } }))
+  const lounges = barLounges(layout).map(seat => ({ ...seat, sitOffset: { forward: LOUNGE_SIT.hipForward, lift: LOUNGE_SIT.hipLift } }))
   for (const seat of lounges) {
     add(new THREE.BoxGeometry(1.35, .12, LOUNGE_SIT.seatDepth), fabric, [seat.x, LOUNGE_SIT.seatTop - .06, seat.z], seat.yaw, 'office-island-sofa-seat')
     add(new THREE.BoxGeometry(1.35, .44, .12), fabric, [seat.x + Math.cos(seat.angle) * .18, .78, seat.z + Math.sin(seat.angle) * .18], seat.yaw, 'office-island-sofa-back')
@@ -103,14 +103,14 @@ export function buildOfficeIsland({ THREE, root, layout = LAYOUT_V3, materials =
   const sign = labelTexture(THREE, canvasTex, '中央茶水吧岛 · 演示空间')
   if (sign) { ownedTextures.push(sign); const signMat = new THREE.MeshBasicMaterial({ map: sign, transparent: true }); owned.push(signMat); add(new THREE.PlaneGeometry(3.2, .6), signMat, [center.x, 1.2, center.z - spec.barOuter - .03], Math.PI, 'office-island-label') }
   const proxies = []
-  for (const bounds of barColliders({ bar: { center, radius: spec.barOuter, gaps: [{ width: 1.5 }] } })) {
+  for (const bounds of barColliders(layout)) {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(bounds.x1 - bounds.x0, 1.1, bounds.z1 - bounds.z0), new THREE.MeshBasicMaterial({ visible: false }))
     proxy.name = bounds.id; proxy.visible = false; proxy.position.set((bounds.x0 + bounds.x1) / 2, .55, (bounds.z0 + bounds.z1) / 2); group.add(proxy); proxies.push(proxy); collision?.add?.(proxy, 'officeIsland')
   }
   root.add(group)
   let disposed = false
   return {
-    root: group, seats, lounges, treeProfile, colliders: barColliders({ bar: { center, radius: spec.barOuter, gaps: [{ width: 1.5 }] } }),
+    root: group, seats, lounges, treeProfile, colliders: barColliders(layout),
     summary: () => ({ calls: meshes.filter(m => m.visible).length, triangles: meshes.filter(m => m.visible).reduce((sum, m) => sum + (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3, 0), seats: seats.length, sofas: lounges.length, colliders: proxies.length, low }),
     dispose() { if (disposed) return; disposed = true; group.traverse(item => { if (item.isMesh) item.geometry.dispose() }); for (const m of owned) m.dispose(); for (const texture of ownedTextures) texture.dispose?.(); for (const proxy of proxies) collision?.remove?.(proxy); group.removeFromParent() },
   }

@@ -31,7 +31,7 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   const soil = new THREE.CircleGeometry(.82, 32); soil.rotateX(-Math.PI / 2); soil.translate(0, .29, 0)
   merge([[pool, '#e8decd'], [soil, '#554b3e']], 'heart-banyan-pool', { roughness: .88 })
 
-  const wood = []
+  const wood = []; let branchCount = 0
   const branch = (points, r0, r1, radial = 8) => {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)))
     const g = new THREE.TubeGeometry(curve, 7, 1, radial, false)
@@ -44,7 +44,7 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
         a.setXYZ(idx, origin.x + (a.getX(idx) - origin.x) * radius * ridge, origin.y + (a.getY(idx) - origin.y) * radius * ridge, origin.z + (a.getZ(idx) - origin.z) * radius * ridge)
       }
     }
-    g.computeVertexNormals(); wood.push([g, '#756857'])
+    g.computeVertexNormals(); wood.push([g, '#756857']); branchCount++
   }
   branch([[0, .27, 0], [-.08, .7, .04], [.03, 1.2, -.02], [-.02, 1.75, 0], [.12, 2.35, -.05]], .23, .07, 12)
   branch([[0, 1.25, 0], [-.3, 1.8, .04], [-.75, 2.4, .1], [-1.18, 3.1, .05]], .14, .025)
@@ -55,21 +55,26 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
     const z = (i - 1) * .7
     branch([[sign * .6, 2.35, 0], [sign * 1.05, 2.7, z * .6], [sign * 1.6, 2.95, z]], .035, .008, 5)
   }
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + .4, x = Math.cos(a), z = Math.sin(a)
+    branch([[0, .75, 0], [x * .18, .42, z * .18], [x * .55, .31, z * .55]], .065, .018, 4)
+    branch([[x * .65, 2.5, z * .55], [x * 1.1, 2.85, z * .8], [x * 1.35, 3.12, z * .88]], .022, .006, 4)
+  }
   merge(wood, 'heart-banyan-trunk-and-branches', { roughness: .98 })
 
   // 小叶用解析椭圆裁边，保留三维固定朝向；不加载照片，也不随相机转动。
   const vertices = [], uvs = []
-  for (let i = 0; i < 4; i++) {
-    const angle = i * 2.399, x = Math.cos(angle) * .08, z = Math.sin(angle) * .08, y = (i % 2) * .04
+  for (let i = 0; i < 3; i++) {
+    const angle = i * 2.399, x = Math.cos(angle) * .07, z = Math.sin(angle) * .07, y = (i % 2) * .035
     const rim = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b]) => {
-      const u = a * .115, v = b * .05
+      const u = a * .09, v = b * .038
       return [x + Math.cos(angle) * u - Math.sin(angle) * v, y + v * .2, z + Math.sin(angle) * u + Math.cos(angle) * v]
     })
     for (const j of [0,1,2,0,2,3]) vertices.push(...rim[j])
     uvs.push(0,0,1,0,1,1,0,0,1,1,0,1)
   }
   const leafGeometry = new THREE.BufferGeometry(); leafGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); leafGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); leafGeometry.computeVertexNormals(); geometries.push(leafGeometry)
-  const count = low ? 380 : 760
+  const count = low ? 500 : 1000
   const leafMaterial = material({ color: 0xffffff, roughness: .87, side: THREE.DoubleSide })
   leafMaterial.onBeforeCompile = shader => {
     shader.vertexShader = 'varying vec2 banyanUv;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nbanyanUv = uv;')
@@ -78,13 +83,14 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   leafMaterial.customProgramCacheKey = () => 'heart-banyan-oval-leaf-v1'
   const leaves = new THREE.InstancedMesh(leafGeometry, leafMaterial, count)
   leaves.name = 'heart-banyan-small-leaf-clusters'; const transform = new THREE.Object3D()
-  const colors = ['#294b32', '#355d3c', '#426d45', '#557a48', '#648b50'].map(c => new THREE.Color(c))
+  const colors = ['#355638', '#426640', '#4C7545', '#557A48', '#648B50'].map(c => new THREE.Color(c))
   const accepted = []
   const envelope = (x, y, z) => {
     const ellipsoid = (cx, cy, cz, rx, ry, rz) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + ((z - cz) / rz) ** 2
     const shape = Math.min(ellipsoid(-.83, 2.92, 0, .98, .68, 1.12), ellipsoid(.86, 3.00, -.05, .97, .65, 1.16), ellipsoid(0, 2.48, .02, 1.37, .59, 1.01))
-    const notch = 3.13 + Math.min(1, Math.abs(x) / .68) * .56
-    return shape < 1 + .065 * Math.sin(11 * x + 9 * y + 7 * z) && y < notch
+    const notch = 2.97 + Math.min(1, Math.abs(x) / .8) * .72
+    // 更多细叶覆盖冠层外缘，中央凹口贯穿冠深，斜俯视也可辨认双峰。
+    return shape > .55 && shape < 1 + .065 * Math.sin(11 * x + 9 * y + 7 * z) && y < notch
   }
   let attempts = 0
   while (accepted.length < count && attempts++ < count * 100) {
@@ -101,7 +107,7 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   const triangles = group.children.reduce((n, m) => n + (m.geometry.index?.count ?? m.geometry.attributes.position.count) / 3 * (m.isInstancedMesh ? m.count : 1), 0)
   return {
     root: group,
-    summary: () => ({ calls: 3, triangles, leafClusters: leaves.count, branches: 4, face: '+z', static: true, low }),
+    summary: () => ({ calls: 3, triangles, leafClusters: leaves.count, branches: branchCount, face: '+z', static: true, low }),
     dispose() { if (disposed) return; disposed = true; group.removeFromParent(); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); leaves.dispose() },
   }
 }

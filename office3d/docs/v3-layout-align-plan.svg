@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="760" viewBox="0 0 940 760" role="img">
+  <style>
+    text { font: 12px Arial, sans-serif; fill: #172033; text-anchor: middle; }
+    .site { fill: #fbfcff; stroke: #26364d; stroke-width: 3; }
+    .wall { fill: #f7e3c2; stroke: #9a5e22; stroke-width: 2; }
+    .open { fill: #dcefe2; stroke: #32785b; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .display { fill: #eee1f5; stroke: #80558f; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .public { fill: #dce9f7; stroke: #3f6d9b; stroke-width: 1.5; }
+    .door { stroke: #fff; stroke-width: 7; }
+    .ring { fill: none; stroke: #d8bd79; }
+    .worker { fill: #176d93; stroke: #fff; stroke-width: 1; }
+    .display-seat { fill: #8b559b; stroke: #fff; stroke-width: 1; }
+    .meeting { fill: #b74936; stroke: #fff; stroke-width: 1; }
+  </style>
+  <rect width="940" height="760" fill="#fffdf8"/>
+  <text x="470" y="26" style="font-size:20px;font-weight:bold">V3 Align R1 Plan A (1m = 14px)</text>
+  <rect class="site" x="50" y="50" width="840" height="672"/>
+  <g>
+    <rect class="wall" x="50" y="50" width="112" height="84"/><text x="106" y="71">market</text>
+    <rect class="wall" x="183" y="50" width="140" height="84"/><text x="253" y="71">board</text>
+    <rect class="open" x="617" y="50" width="112" height="84"/><text x="673" y="71">kb</text>
+    <rect class="wall" x="778" y="50" width="112" height="84"/><text x="834" y="71">service</text>
+    <rect class="wall" x="50" y="141" width="112" height="84"/><text x="106" y="160">plan B</text>
+    <rect class="wall" x="183" y="141" width="140" height="84"/><text x="253" y="160">review A</text>
+    <rect class="open" x="50" y="239" width="273" height="140"/><text x="187" y="258">west-open 195m2</text>
+    <rect class="open" x="617" y="155" width="126" height="126"/><text x="680" y="174">product</text>
+    <rect class="open" x="764" y="155" width="126" height="126"/><text x="827" y="174">eng</text>
+    <rect class="display" x="617" y="281" width="140" height="70"/><text x="687" y="300">creative</text>
+    <rect class="display" x="764" y="281" width="126" height="70"/><text x="827" y="300">dining</text>
+    <rect class="wall" x="50" y="379" width="112" height="84"/><text x="106" y="398">aftersales</text>
+    <rect class="display" x="183" y="379" width="112" height="84"/><text x="239" y="398">leisure</text>
+    <rect class="open" x="617" y="372" width="147" height="98"/><text x="690" y="391">D.life</text>
+    <rect class="wall" x="778" y="379" width="112" height="84"/><text x="834" y="398">marketing</text>
+    <rect class="public" x="358" y="358" width="224" height="112"/><text x="470" y="414">foyer</text>
+    <circle class="public" cx="470" cy="596" r="126"/><text x="470" y="596">plaza</text>
+  </g>
+  <g class="door">
+    <line x1="162" y1="82" x2="162" y2="103"/><line x1="323" y1="82" x2="323" y2="103"/><line x1="778" y1="82" x2="778" y2="103"/>
+    <line x1="96" y1="225" x2="117" y2="225"/><line x1="242" y1="225" x2="263" y2="225"/><line x1="162" y1="411" x2="162" y2="432"/><line x1="824" y1="379" x2="845" y2="379"/>
+  </g>
+  <g>
+    <circle class="ring" cx="470" cy="218" r="140" stroke-width="56"/><circle class="ring" cx="470" cy="218" r="84" stroke-width="2"/><circle class="ring" cx="470" cy="218" r="76.3" stroke="#80558f" stroke-width="2" stroke-dasharray="4 3"/><circle cx="470" cy="218" r="49" fill="#cfa77a" stroke="#704820" stroke-width="2"/>
+    <text x="470" y="218">3.5 / 5.45 / 6 / 10m</text>
+  </g>
+  <g class="worker">
+    <circle cx="645" cy="183" r="4"/><circle cx="694" cy="183" r="4"/><circle cx="645" cy="225" r="4"/><circle cx="694" cy="225" r="4"/>
+    <circle cx="771" cy="183" r="4"/><circle cx="813" cy="183" r="4"/><circle cx="855" cy="183" r="4"/><circle cx="771" cy="225" r="4"/><circle cx="813" cy="225" r="4"/><circle cx="855" cy="225" r="4"/>
+    <circle cx="645" cy="92" r="4"/><circle cx="232" cy="288" r="4"/><circle cx="274" cy="288" r="4"/><circle cx="232" cy="330" r="4"/><circle cx="274" cy="330" r="4"/><circle cx="92" cy="288" r="4"/><circle cx="141" cy="288" r="4"/>
+    <circle cx="645" cy="393" r="4"/><circle cx="680" cy="393" r="4"/><circle cx="715" cy="393" r="4"/><circle cx="750" cy="393" r="4"/><circle cx="645" cy="435" r="4"/><circle cx="680" cy="435" r="4"/><circle cx="715" cy="435" r="4"/><circle cx="750" cy="435" r="4"/>
+  </g>
+  <g class="display-seat">
+    <circle cx="71" cy="92" r="4"/><circle cx="106" cy="92" r="4"/><circle cx="141" cy="92" r="4"/><circle cx="799" cy="92" r="4"/><circle cx="834" cy="92" r="4"/><circle cx="869" cy="92" r="4"/>
+    <circle cx="71" cy="414" r="4"/><circle cx="106" cy="414" r="4"/><circle cx="141" cy="414" r="4"/><circle cx="799" cy="414" r="4"/><circle cx="834" cy="414" r="4"/><circle cx="869" cy="414" r="4"/>
+  </g>
+  <g class="meeting">
+    <path d="M211 161l-4 8h8z"/><path d="M239 161l-4 8h8z"/><path d="M267 161l-4 8h8z"/><path d="M295 161l-4 8h8z"/><path d="M211 196l-4 8h8z"/><path d="M239 196l-4 8h8z"/><path d="M267 196l-4 8h8z"/><path d="M295 196l-4 8h8z"/>
+    <path d="M71 161l-4 8h8z"/><path d="M99 161l-4 8h8z"/><path d="M127 161l-4 8h8z"/><path d="M71 196l-4 8h8z"/><path d="M99 196l-4 8h8z"/><path d="M127 196l-4 8h8z"/>
+  </g>
+  <g text-anchor="start"><text x="52" y="744" style="text-anchor:start">blue: 25 workstations; purple: 12 display seats; red triangles: 14 meeting seats; white: 1.5m doors</text></g>
+</svg>
