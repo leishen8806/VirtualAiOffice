@@ -1,0 +1,252 @@
+{
+  "generatedAt": "2026-10-23T05:00:24.061Z",
+  "url": "http://127.0.0.1:55142/dr-vis2-rack-cell-preview.html",
+  "consoleErrors": [],
+  "requests": [
+    "/dr-vis2-rack-cell-preview.html",
+    "/vendor/three/three.module.js",
+    "/office-layout.js",
+    "/dr-vis2-rack-cell.js",
+    "/office-bar-geometry.js",
+    "/dr-campus-racks.js",
+    "/dr-campus-shuttle-logic.js",
+    "/vendor/three/three.core.js"
+  ],
+  "blockedExternal": [],
+  "checks": [
+    {
+      "id": "preview-summary-high",
+      "ok": true,
+      "detail": "{\"drawCalls\":6,\"triangles\":25144,\"instances\":{\"frame\":444,\"pallet\":436,\"carton\":1084,\"film\":77,\"rail\":23}}"
+    },
+    {
+      "id": "preview-title-marked-component-only",
+      "ok": true,
+      "detail": "DR 仓配 · 货架与穿梭机样板（组件预览）"
+    },
+    {
+      "id": "preview-low-summary",
+      "ok": true,
+      "detail": "{\"quality\":\"low\",\"triangles\":9132,\"drawCalls\":6}"
+    },
+    {
+      "id": "component-high-6calls-25144tris",
+      "ok": true,
+      "detail": "{\"highCalls\":6,\"highTris\":25144,\"lowCalls\":5,\"lowTris\":9132}"
+    },
+    {
+      "id": "component-low-9132tris",
+      "ok": true,
+      "detail": "{\"highCalls\":6,\"highTris\":25144,\"lowCalls\":5,\"lowTris\":9132}"
+    },
+    {
+      "id": "low-drawcall-doc-mismatch",
+      "ok": false,
+      "detail": "summary 自报 drawCalls=6，但低画质 film count=0，实际渲染 draw calls=5"
+    },
+    {
+      "id": "preview-info-captured",
+      "ok": true,
+      "detail": "{\"calls\":8,\"triangles\":25522,\"memory\":{\"geometries\":7,\"textures\":3},\"shadow\":true}"
+    },
+    {
+      "id": "quality-toggle-20-stable",
+      "ok": true,
+      "detail": "before={\"geometries\":7,\"textures\":3,\"children\":6} unique=7/3/6/low | 7/3/6/high"
+    },
+    {
+      "id": "preview-dispose-covered-by-node-probe",
+      "ok": true,
+      "detail": "dispose 已在 node 探针覆盖（20 次构建/销毁 + 事件计数）"
+    }
+  ],
+  "readout": {
+    "module": "vis2-rack-cell",
+    "preview": "组件预览，尚未正式接入",
+    "quality": "high",
+    "seed": 4207,
+    "rows": [
+      "A1",
+      "R2",
+      "C2",
+      "B2"
+    ],
+    "uprights": 56,
+    "braces": 84,
+    "beams": 192,
+    "loads": 109,
+    "empty": 35,
+    "rails": 2,
+    "sleepers": 17,
+    "instances": {
+      "frame": 444,
+      "pallet": 436,
+      "carton": 1084,
+      "film": 77,
+      "rail": 23
+    },
+    "drawCalls": 6,
+    "triangles": 25144,
+    "replaces": [
+      "campus-racks-static",
+      "campus-shuttle",
+      "campus-shuttle-static",
+      "campus-rack-labels"
+    ]
+  },
+  "component": {
+    "highCalls": 6,
+    "highTris": 25144,
+    "lowCalls": 5,
+    "lowTris": 9132
+  },
+  "previewInfo": {
+    "calls": 8,
+    "triangles": 25522,
+    "memory": {
+      "geometries": 7,
+      "textures": 3
+    },
+    "shadow": true
+  },
+  "lifecycle": {
+    "before": {
+      "geometries": 7,
+      "textures": 3,
+      "children": 6
+    },
+    "series": [
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "low"
+      },
+      {
+        "geometries": 7,
+        "textures": 3,
+        "children": 6,
+        "tier": "high"
+      }
+    ],
+    "unique": [
+      "7/3/6/low",
+      "7/3/6/high"
+    ]
+  },
+  "canvasBox": {
+    "x": 0,
+    "y": 77.78125,
+    "width": 1280,
+    "height": 602
+  },
+  "pass": false
+}
