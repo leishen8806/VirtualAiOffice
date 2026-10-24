@@ -1,7 +1,7 @@
 {
   "schema": "evidence-index-v1",
   "branch": "evidence/vis-align-console-v1",
-  "note": "D-V1-R3 证据；full/hotspots/side-by-side-hotspot 对应代码 e387a86",
+  "note": "D-V1-R4 证据；full/crop/side-by-side 对应代码 77420f9",
   "images": [
     {
       "file": "after-1024x768.png",
@@ -11,7 +11,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "6f92d5db386b787f332de6d7c10b40d63b9635ccdf68de150459081faee34586"
     },
     {
@@ -22,7 +22,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "c1c31d727c7ba2111fd9ef424d2a5f8cf2d4d566afc3c0fec0f1328aec657ace"
     },
     {
@@ -33,7 +33,7 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "a16f1a9060bf2426e4eb4d650fad9ddf30ac86943511317f0eebddeb64ac66f2"
     },
     {
@@ -44,7 +44,7 @@
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "df4676bf1ee7c822040e1df722a612dc937fa785bf4e275fb66c56c8a34dff4b"
     },
     {
@@ -55,7 +55,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "bec57633c8cfd5ef78339fad20ed2b311f53fe0f5744482bf4aad86f64140574"
     },
     {
@@ -66,7 +66,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "ef95568fb3d8a9d037b8aca2cd0c5cfe4b887aee7686320e6dea64e494147632"
     },
     {
@@ -77,7 +77,7 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "b7936150e24caaa3ce6e701f6262238e6bf8d02e0d7af4a5f61066d0e925ecff"
     },
     {
@@ -88,96 +88,118 @@
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "d612a29d964d25d569fc02494a25aac02bfc99e6babf26cffbc0db114b02a9b0"
     },
     {
+      "file": "crop-1920-network-2x.png",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
+      "resolution": [
+        988,
+        348
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "53b98fcbff37a20e3392b43ff9952ba8ee5e9c4d0280d9d9e8cf98fd7b4e4300"
+    },
+    {
+      "file": "crop-1920-sidebar-2x.png",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
+      "resolution": [
+        290,
+        628
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "2bedc62d637b4f7a728d0034b6549ae70aee4027140d79ed6b05869aa61c984f"
+    },
+    {
+      "file": "crop-1920-w3sign-2x.png",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
+      "resolution": [
+        1020,
+        280
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "17bb2032eb7c0ca10db00f3d74fdefb3b715d50088f2a298c7bc2569721913f3"
+    },
+    {
+      "file": "crop-390-leftedge-2x.png",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
+      "resolution": [
+        260,
+        500
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "530e66b4206e1eebc3533ea620f15048fa657ac47a9197d0fba8442e2a57dc96"
+    },
+    {
+      "file": "crop-600-leftedge-2x.png",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
+      "resolution": [
+        320,
+        500
+      ],
+      "browser": "Chromium 156.0.8078.47",
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "24100ae40dfca33ec17d527631022a774d790ed46320496b5cfa4d1d2f800689"
+    },
+    {
       "file": "full-1024x768.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         1024,
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "65e8ebc3a468da2f86f27d74792a6ca08073ddaa63432b999988ef36ff942e2e"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "38838ca0b1b52284b9476df1bba7f206c864ef079b2b9f046c7417a5c8703eb6"
     },
     {
       "file": "full-1366x768.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         1366,
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "99e3d65192b300ade8bbb85ca39792d87b2502a3e3d210b85dd728c688200edf"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "094fc524dee41239a8e818bcd7ce445638b3f073cee5aafe6d90df7e190bd91a"
     },
     {
       "file": "full-1920x1080.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         1920,
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "1c14de0e1cf968af58e874a52b3cd8e4409e85d4e9b91b65fdfaefde1a65b14b"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "0b4d27f359dbd8ffc3ae2728ec15ff0ecf3da2543a57d521a55827c15b8874b6"
     },
     {
       "file": "full-390x844.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         390,
         844
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "7bcdfa345efa4d220b4293389d5f773ce37f16bc0f40651a8b78366b33d9978e"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "abfc8939fd5bac2cab63440bf68a185915ddd70c606832c0d439d654c557c517"
     },
     {
       "file": "full-600x900.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         600,
         900
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "225f4873c83251ba8b4eccb8b975edf3b61cccbbe217c27248990ce17b52dce9"
-    },
-    {
-      "file": "hotspots-1024x768.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
-      "resolution": [
-        1024,
-        768
-      ],
-      "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "a0b6cdde6352f5a08b0f29dd000bc33f7162ba8bd41fe02eeed86e0f1994f3ea"
-    },
-    {
-      "file": "hotspots-1366x768.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
-      "resolution": [
-        1366,
-        768
-      ],
-      "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "cf48fbd31325cbe864a4e619c558214575cafcf10dda54181188dbcc1ae91e1f"
-    },
-    {
-      "file": "hotspots-1920x1080.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
-      "resolution": [
-        1920,
-        1080
-      ],
-      "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "46ce6eab8b448b5eea534bccda1fade146838e2cecf44cdbec8ede765b066d5f"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "d438d7d4d7a730d9f8c54cd866e90fd778b159a5918ec480e937cfb2e5c6659c"
     },
     {
       "file": "normal-1024x768.png",
@@ -187,7 +209,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "4821d87a3962cdec3a032c5cedb84aab830be513027008c7b4f8f985be502b87"
     },
     {
@@ -198,7 +220,7 @@
         768
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "663097df5ec70d1d0499190eef27c9632bd228646d0ef3751544936574e2b58b"
     },
     {
@@ -209,41 +231,19 @@
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
+      "time": "2026-10-24T11:28:03.667695+07:00",
       "sha256": "6b374c32b0aee6f652efe5e322ab6fc41f809ff66c78013d79149b5aa5370536"
     },
     {
       "file": "side-by-side-1920-vs-reference.png",
-      "sourceSha": "79b3f1a814bc9151a8a52004d277438c5ba49169",
+      "sourceSha": "77420f947e4263f1e166f3082944957081323e47",
       "resolution": [
         3539,
         1080
       ],
       "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "bf848371eb2217c8f87c89fefb76cc6a50b2cdc7f3514260e282138a11e23e98"
-    },
-    {
-      "file": "side-by-side-hotspot-1920-vs-refcrop.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
-      "resolution": [
-        4938,
-        1080
-      ],
-      "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "cd928f98dc0c4969d247bb6893b1166dc9a35795f8ccfbc89b2ca8c2b6c958bc"
-    },
-    {
-      "file": "side-by-side-hotspot-1920-vs-reference.png",
-      "sourceSha": "e387a86dfe818a3c1d64282e96495e8f047ae103",
-      "resolution": [
-        3539,
-        1080
-      ],
-      "browser": "Chromium 156.0.8078.47",
-      "time": "2026-10-24T09:41:15.866785+07:00",
-      "sha256": "083fb2461f2b82a1ecdf885f6964d0112199ff46fa6f939de6f5d0e58d349c56"
+      "time": "2026-10-24T11:28:03.667695+07:00",
+      "sha256": "b06d2cf1ded3447d8f02a0daa9c175b5682a725a24d4c656908dd04f045e030f"
     }
   ]
 }
