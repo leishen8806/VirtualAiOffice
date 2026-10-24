@@ -1,5 +1,6 @@
 // Office-only brand plaques. The shared scene loader remains responsible for feature gating.
 import { receptionBackdrop } from './foyer.js'
+import { barSpec } from '../office-bar-geometry.js'
 
 function curvedPanel(THREE, center, radius, width, height, y, yaw, depth = 0) {
   const positions = [], uvs = [], indices = [], segments = 20, half = width / (2 * radius)
@@ -52,7 +53,7 @@ function joinGeometry(THREE, parts) {
 
 export function buildOfficeBrandMarks({ THREE, root, layout, assets, canvasTex } = {}) {
   if (!THREE || !root || !layout) throw new TypeError('buildOfficeBrandMarks requires THREE, root and layout')
-  const center = layout.bar.center, front = layout.frontDesk, barRadius = layout.bar.radius, angle = Math.asin(1.1 / barRadius)
+  const center = layout.bar.center, front = layout.frontDesk, barRadius = barSpec(layout).counterRadius ?? barSpec(layout).radius, angle = Math.asin(1.1 / barRadius)
   const grille = receptionBackdrop(front).grille
   const marks = [
     { id: 'bar-fascia', x: center.x + Math.sin(angle) * (barRadius + .06), y: .50, z: center.z + Math.cos(angle) * (barRadius + .06), width: .92, yaw: angle },
