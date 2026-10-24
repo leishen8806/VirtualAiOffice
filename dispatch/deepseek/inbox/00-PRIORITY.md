@@ -4,13 +4,13 @@
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `VIS3-TEST-FIX4-port0-connection-count.md`（自测改随机端口、按连接计数、补齐守卫有效性证明、工作树检查恢复整库） | `qa/vis3-test-infra`，从 `4e9964f` 继续 | **立即开始** |
+| **1** | `VIS3-TEST-FIX5-windows-econnreset-tree-tests.md`（Windows ECONNRESET、工作树三种自测、守卫改坏时的真实连接、P3 收尾） | `qa/vis3-test-infra`，从 `bc43d72` 继续 | **立即开始** |
 
 说明：
 
 - 已交付且复审完成、无需再做：
   - `D-V2-C1` / `D-V2-C1-R1`：中控台于 `2d300ae` 验收通过；
   - `D-V1-R2`～`D-V1-R6`；
-  - `VIS3-TEST-FIX2`、`VIS3-TEST-FIX3`：已出 FIX4。
+  - `VIS3-TEST-FIX2`～`VIS3-TEST-FIX4`：已出 FIX5。
 - `DS-1`～`DS-8` 由其他派发人跟进，不在本文件范围内。
 - 所有测试与浏览器运行带资源上限；空闲内存不足时把全量测试 / 端到端记为 NOT_RUN 并说明，不要硬跑。
