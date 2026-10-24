@@ -19,34 +19,32 @@ test('DR console is an offline demo-only static page', () => {
 
 test('reference dashboard uses high-quality independent image slots and identifies design imagery', () => {
   const imageFiles = [
-    'assets/demo/dr-campus-reference.webp',
-    'assets/demo/dr-cam-overview.webp',
-    'assets/demo/dr-cam-d1.webp',
-    'assets/demo/dr-cam-d3.webp',
-    'assets/demo/dr-cam-entry.webp',
-    'assets/demo/dr-cam-w1.webp',
+    'assets/demo/dr-cam-site.jpg',
+    'assets/demo/dr-cam-d1.jpg',
+    'assets/demo/dr-cam-d3.jpg',
+    'assets/demo/dr-cam-entry.jpg',
+    'assets/demo/dr-cam-w1.jpg',
   ]
-  const jpegBytes = fs.statSync(
-    new URL('assets/demo/dr-campus-reference.jpg', root),
-  ).size
   for (const file of imageFiles) {
     const bytes = fs.statSync(new URL(file, root)).size
-    assert.ok(bytes > jpegBytes, `${file} must preserve more source detail`)
-    assert.ok(bytes < 1000000, `${file} must remain below 1 MB`)
+    assert.ok(bytes > 0, `${file} must be non-empty`)
+    assert.ok(bytes < 500000, `${file} must remain below 500 KB`)
   }
   const html = read('dr-console.html')
   // D-V1：主图 = W1/W2/W3 园区鸟瞰裁剪图；剖面参考仅保留 .sceneThumb 兜底（jpg）。
   assert.match(html, /\.panorama\{[^}]*dr-campus-hero\.jpg/)
   assert.match(html, /dr-campus-reference\.jpg/)
-  assert.match(html, /\.sceneThumb\{background-repeat:no-repeat;background-size:contain/)
+  assert.match(html, /\.sceneThumb\{background-repeat:no-repeat;background-size:cover/)
   assert.ok(html.includes(
-    '.videoGrid .sceneThumb.camera-d1,.videoGrid .sceneThumb.camera-d3,.videoGrid .sceneThumb.camera-entry,.videoGrid .sceneThumb.camera-w1{background-size:contain',
+    '.videoGrid .sceneThumb.camera-d1,.videoGrid .sceneThumb.camera-d3,.videoGrid .sceneThumb.camera-entry,.videoGrid .sceneThumb.camera-w1{background-size:cover',
   ))
-  for (const slot of ['overview', 'd1', 'd3', 'entry', 'w1']) {
-    assert.match(html, new RegExp(`dr-cam-${slot}\\.webp`))
-    assert.match(html, new RegExp(`camera-${slot}`))
+  for (const slot of ['site', 'd1', 'd3', 'entry', 'w1']) {
+    assert.match(html, new RegExp(`dr-cam-${slot}\\.jpg`))
   }
-  assert.match(html, /模拟占位/)
+  for (const cls of ['overview', 'd1', 'd3', 'entry', 'w1']) {
+    assert.match(html, new RegExp(`camera-${cls}`))
+  }
+  assert.match(html, /设计参考 · 非实时/)
   assert.match(html, /设计参考图 · 非实景/)
   assert.match(html, /设计图 · 非直播/)
   assert.match(html, /aria-label="筛选 W1 智慧云仓"/)

@@ -8,7 +8,7 @@
       "file": "dr-campus-reference.jpg",
       "source": "《DR智慧仓配中心全景仪表盘6.0》整图",
       "crop": null,
-      "usage": ".sceneThumb 兜底 / 参考整图",
+      "usage": "参考整图 / 实景窗裁剪来源",
       "size": [
         1672,
         941
@@ -24,7 +24,7 @@
         1672,
         652
       ],
-      "usage": "hero 主图（W1/W2/W3 园区鸟瞰，桌面与窄屏共用）",
+      "usage": "hero 主图（W1/W2/W3 园区鸟瞰）",
       "size": [
         1672,
         502
@@ -35,7 +35,7 @@
       "file": "dr-campus-reference.webp",
       "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
       "crop": null,
-      "usage": "历史剖面 webp（与其余 webp 字节一致）",
+      "usage": "历史剖面 webp（未引用，保留）",
       "size": [
         1672,
         941
@@ -43,59 +43,84 @@
       "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
     },
     {
-      "file": "dr-cam-overview.webp",
-      "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
-      "crop": null,
-      "usage": "园区实景窗口占位（本轮不改）",
-      "size": [
-        1672,
-        941
+      "file": "dr-cam-site.jpg",
+      "source": "dr-campus-reference.jpg 裁剪",
+      "crop": [
+        1416,
+        534,
+        1660,
+        643
       ],
-      "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
+      "usage": "园区实景视角（.camera-overview）",
+      "size": [
+        244,
+        109
+      ],
+      "sha256": "1f4191d132ab4e2a39fefed8a34f9c6501899cf092342550c4a760151025c0d6"
     },
     {
-      "file": "dr-cam-entry.webp",
-      "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
-      "crop": null,
-      "usage": "监控小窗占位（本轮不改）",
-      "size": [
-        1672,
-        941
+      "file": "dr-cam-d1.jpg",
+      "source": "dr-campus-reference.jpg 裁剪",
+      "crop": [
+        1392,
+        708,
+        1516,
+        768
       ],
-      "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
+      "usage": "监控窗 D1 月台（.camera-d1）",
+      "size": [
+        124,
+        60
+      ],
+      "sha256": "29aa049b01af0d1486287f04401fae5dd3a49cfcc0e53ef56edc54dd15d72f2f"
     },
     {
-      "file": "dr-cam-d1.webp",
-      "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
-      "crop": null,
-      "usage": "监控小窗占位（本轮不改）",
-      "size": [
-        1672,
-        941
+      "file": "dr-cam-d3.jpg",
+      "source": "dr-campus-reference.jpg 裁剪",
+      "crop": [
+        1528,
+        708,
+        1652,
+        768
       ],
-      "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
+      "usage": "监控窗 D3 月台（.camera-d3）",
+      "size": [
+        124,
+        60
+      ],
+      "sha256": "4ba342cc9b8ac741e5c3980319b43900f1d5d57c433e2cbf9a42f2730688616f"
     },
     {
-      "file": "dr-cam-d3.webp",
-      "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
-      "crop": null,
-      "usage": "监控小窗占位（本轮不改）",
-      "size": [
-        1672,
-        941
+      "file": "dr-cam-entry.jpg",
+      "source": "dr-campus-reference.jpg 裁剪",
+      "crop": [
+        1392,
+        802,
+        1516,
+        872
       ],
-      "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
+      "usage": "监控窗 园区入口（.camera-entry）",
+      "size": [
+        124,
+        70
+      ],
+      "sha256": "907728692b4552f1f1c84831ce63f71f45c464a4b446d3fc296c35e2b39c9a2e"
     },
     {
-      "file": "dr-cam-w1.webp",
-      "source": "智序小镇·DR仓配服务中心概念图（仓配剖面）",
-      "crop": null,
-      "usage": "监控小窗占位（本轮不改）",
-      "size": [
-        1672,
-        941
+      "file": "dr-cam-w1.jpg",
+      "source": "dr-campus-reference.jpg 裁剪",
+      "crop": [
+        1528,
+        802,
+        1652,
+        872
       ],
-      "sha256": "41e5ecbb73c66fb62acb4ffd46adf9058f3e524318596f83a9cb736c000d5ae6"
+      "usage": "监控窗 W1 存储区（.camera-w1）",
+      "size": [
+        124,
+        70
+      ],
+      "sha256": "41afb17930c8a6fb62fcef86ce60be03baaebee76011c6721e89451cf82eeb59"
     }
   ]
 }

@@ -129,3 +129,68 @@ test('D-V1-R6 窄屏无空洞 + 1366 KPI 副标题不截断', { skip: chromium ?
     await browser.close(); server.close()
   }
 })
+
+test('D-V2-C1 像素比对 + 五窗口尺寸/背景', { skip: chromium ? false : 'playwright 不可用，NOT_RUN' }, async () => {
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url, 'http://x'); const f = path.normalize(path.join(ROOT, decodeURIComponent(u.pathname)))
+    if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end() }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res)
+  })
+  await new Promise((r) => server.listen(0, '127.0.0.1', r))
+  const BASE = `http://127.0.0.1:${server.address().port}`
+  const browser = await chromium.launch({ headless: true, channel: 'chrome' }).catch(() => chromium.launch({ headless: true }))
+  try {
+    const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })
+    const page = await ctx.newPage()
+    await page.goto(BASE + '/dr-console.html', { waitUntil: 'load', timeout: 45000 })
+    await page.waitForFunction(() => document.querySelectorAll('#kpis .card').length === 8, null, { timeout: 45000 })
+    await page.waitForTimeout(300)
+    // 像素比对（浏览器 canvas）
+    const pixels = await page.evaluate(async () => {
+      const load = (src) => new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error('load fail ' + src)); img.src = src })
+      const ref = await load('/assets/demo/dr-campus-reference.jpg')
+      const crops = [['site', 1416, 534, 1660, 643], ['d1', 1392, 708, 1516, 768], ['d3', 1528, 708, 1652, 768], ['entry', 1392, 802, 1516, 872], ['w1', 1528, 802, 1652, 872]]
+      const out = []
+      for (const [name, x0, y0, x1, y1] of crops) {
+        const w = x1 - x0, h = y1 - y0
+        const g = (src, sx, sy) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const gc = c.getContext('2d'); gc.drawImage(src, sx, sy, w, h, 0, 0, w, h); return gc.getImageData(0, 0, w, h).data }
+        const a = g(ref, x0, y0)
+        const img = await load('/assets/demo/dr-cam-' + name + '.jpg')
+        const b = g(img, 0, 0)
+        let s = 0, s4 = 0, n = a.length
+        for (let i = 0; i < n; i++) { s += Math.abs(a[i] - b[i]) }
+        const shifted = g(ref, x0 + 4, y0)
+        for (let i = 0; i < n; i++) { s4 += Math.abs(a[i] - shifted[i]) }
+        out.push({ name, mad: s / n, shiftedMad: s4 / n })
+      }
+      return out
+    })
+    for (const p of pixels) {
+      assert.ok(p.mad < 4, `dr-cam-${p.name}.jpg 平均绝对差应 <4（实测 ${p.mad.toFixed(2)}）`)
+      assert.ok(p.shiftedMad > p.mad, `dr-cam-${p.name}.jpg 平移4px后差值应明显变大（mad ${p.mad.toFixed(2)} vs shifted ${p.shiftedMad.toFixed(2)}）`)
+    }
+    // 五窗口非零尺寸 + 正确背景（5 视口）
+    const views = [[1920, 1080], [1366, 768], [1024, 768], [600, 900], [390, 844]]
+    const camMap = { overview: 'dr-cam-site.jpg', d1: 'dr-cam-d1.jpg', d3: 'dr-cam-d3.jpg', entry: 'dr-cam-entry.jpg', w1: 'dr-cam-w1.jpg' }
+    for (const [w, h] of views) {
+      await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(200)
+      const cams = await page.evaluate((map) => {
+        const r = []
+        for (const [cls, file] of Object.entries(map)) {
+          const el = document.querySelector('.camera-' + cls)
+          if (!el) { r.push({ cls, size: 0, bg: '' }); continue }
+          const rect = el.getBoundingClientRect()
+          r.push({ cls, size: rect.width * rect.height, bg: getComputedStyle(el).backgroundImage })
+        }
+        return r
+      }, camMap)
+      for (const c of cams) {
+        assert.ok(c.size > 0, `${w}x${h} ${c.cls} 窗口应有非零尺寸`)
+        assert.ok(c.bg.includes(camMap[c.cls]), `${w}x${h} ${c.cls} 背景应为 ${camMap[c.cls]}（实测 ${c.bg.slice(0, 60)}）`)
+      }
+    }
+    await ctx.close()
+  } finally {
+    await browser.close(); server.close()
+  }
+})
