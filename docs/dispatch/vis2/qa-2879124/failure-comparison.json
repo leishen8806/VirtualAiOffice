@@ -1,0 +1,346 @@
+{
+  "candidate_tests": 1180,
+  "candidate_pass": 1118,
+  "candidate_fail": 41,
+  "candidate_cancelled": 16,
+  "candidate_skipped": 1,
+  "baseline_tests": 1166,
+  "baseline_pass": 1108,
+  "baseline_fail": 41,
+  "baseline_cancelled": 16,
+  "baseline_skipped": 1,
+  "new_failures": [],
+  "removed_failures": [],
+  "candidate_only_entries_in_earlier_loaded_run": [
+    "200 fixed seeds ...（E:\\ 备份缺失，非候选）",
+    "静态边界：...（E:\\ 备份缺失，非候选）"
+  ],
+  "failure_files": {
+    "auth-accounts.test.mjs": [
+      {
+        "name": "account store creates, normalizes and lists accounts",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "account store protects the last owner and stays read-only on corrupt files",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "account store supports password replacement and version conflicts",
+        "error": "path resolves outside tenant root"
+      }
+    ],
+    "auth-routes.test.mjs": [
+      {
+        "name": "browser cookie jar reaches every session route and stops at company boundaries",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "change-password old-password failures share the login account limiter and recover",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "csrf checks reject missing origin, cross-site, wrong content type and oversized json with one response shape",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "local unlock clears one account limiter without touching anything else",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "login failures stay uniform, account and source limits lock then recover, and digests hide IPs",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "login issues contract cookies, rotates sid and persists only hashes",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "login rejects cross-site and non-json posts without consuming the account failure budget",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "must-change-password flow blocks whoami, rotates csrf and revokes other sessions",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "session returns the same csrf token for both tabs and rotates only on password change",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "sessions cap at five, expire on idle or company pause, and cross-company probes return 404",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "source digests are install scoped and cannot be derived from the data path or month",
+        "error": null
+      }
+    ],
+    "command-view-live.test.mjs": [
+      {
+        "name": "5s timeout is contained, rejects stale detail and does not exceed concurrency slots",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "advancing clock is sampled again after detail sources load so their ages stay known",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "captured runs map nested task identities but list only includes queue tasks",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "company isolation has separate caches even with equal project and task IDs",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "company recent run page filters three tasks and unmapped rows without rejecting the batch",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "completed list failures cannot leak foreign-company/project tasks or fake completeness",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "detail failure keeps UNKNOWN_TIME and successful loaded activity keeps known age",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "fixed clock keeps detail projection deterministic and source failures explicitly unknown",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "fixture contains only redacted shape fields and pure source contains no transport or file APIs",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "full 200-row company page stays partial after client task filtering",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "list freshness includes state time and the oldest loaded source with inclusive 120 second threshold",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "list freshness uses loaded sources at 19 seconds while page keeps honest gaps and unknown totals",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "malformed input and throwing clock fail without exposing errors",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "missing or invalid state time remains UNKNOWN_TIME even with known loaded-source times",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "partial selected runs cannot promote snapshot costs or running counts to complete",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      },
+      {
+        "name": "usageJson accepts object and string and task identity keeps declared fallback precedence",
+        "error": "Promise resolution is still pending but the event loop has already resolved"
+      }
+    ],
+    "command-view-routes.test.mjs": [
+      {
+        "name": "only literal boolean true enables config; missing, damaged and other types fail closed",
+        "error": null
+      }
+    ],
+    "display-staff.test.mjs": [
+      {
+        "name": "display flag requires literal true, invalid/missing JSON stays off, URL opt-in is explicit",
+        "error": null
+      }
+    ],
+    "dr-campus-shell.test.mjs": [
+      {
+        "name": "campus app wiring remains limited and local-only",
+        "error": null
+      }
+    ],
+    "dr-control-room.test.mjs": [
+      {
+        "name": "control room implementation stays local, simulated and disposable",
+        "error": "The input did not match the regular expression /demoSnapshotAt/. Input:"
+      }
+    ],
+    "evidence-version.test.mjs": [
+      {
+        "name": "sha256 一致 / 已变 / 缺失",
+        "error": "Expected values to be strictly equal:"
+      },
+      {
+        "name": "路径安全：insideRoots 拒绝 .. 逃逸 / 前缀混淆，盘符大小写不敏感",
+        "error": "Expected values to be strictly equal:"
+      }
+    ],
+    "foyer-visit.test.mjs": [
+      {
+        "name": "静态边界：新增代码无禁词且路径模块保持纯净",
+        "error": null
+      }
+    ],
+    "foyer-waiting.test.mjs": [
+      {
+        "name": "static boundary keeps the director delta narrow and app excludes visitors from lounge selection",
+        "error": null
+      }
+    ],
+    "memory.test.mjs": [
+      {
+        "name": "Claude 已接好的钩子先扫描后运行原守卫，本任务不修改钩子",
+        "error": null
+      },
+      {
+        "name": "临时克隆：同一扫描器读取暂存内容，拒绝假密钥，保留原缺口守卫",
+        "error": null
+      }
+    ],
+    "office-furniture-v2.test.mjs": [
+      {
+        "name": "O4 app wiring stays within its own 20-line budget and layout1 data is identical",
+        "error": null
+      }
+    ],
+    "office-layout-v2.test.mjs": [
+      {
+        "name": "tests/office-layout-v2.test.mjs",
+        "error": "test failed"
+      }
+    ],
+    "office-v2-integration.test.mjs": [
+      {
+        "name": "O6O7 production wiring contains no business, network, warehouse or wall-clock reads",
+        "error": null
+      }
+    ],
+    "office-v2-registry.test.mjs": [
+      {
+        "name": "O4b retains the original budgets without O4 line exemptions and adds at most 10 app lines",
+        "error": null
+      }
+    ],
+    "pedestrian-stress.test.mjs": [
+      {
+        "name": "200 fixed seeds complete without deadlock, watchdog, overlap or wall crossing",
+        "error": null
+      }
+    ],
+    "state-last-good.test.mjs": [
+      {
+        "name": "tests/state-last-good.test.mjs",
+        "error": "test failed"
+      }
+    ],
+    "tenancy-paths.test.mjs": [
+      {
+        "name": "tenant paths accept valid registered ids and keep results under tenant root",
+        "error": "path resolves outside tenant root"
+      },
+      {
+        "name": "tenant paths allow mixed-case normal segments on Windows-safe comparison",
+        "error": "path resolves outside tenant root"
+      }
+    ],
+    "tenancy-server.test.mjs": [
+      {
+        "name": "server wiring exposes platform tenancy only to local users and keeps static whitelist unchanged",
+        "error": null
+      },
+      {
+        "name": "tenancy flag and platform view handle missing, off, corrupt and non-loopback cases without writes",
+        "error": "path resolves outside tenant root"
+      }
+    ],
+    "town-map-api.test.mjs": [
+      {
+        "name": "server wiring adds town api after access control without changing static whitelist",
+        "error": null
+      }
+    ],
+    "town-map.test.mjs": [
+      {
+        "name": "tests/town-map.test.mjs",
+        "error": "test failed"
+      }
+    ],
+    "town-nav.test.mjs": [
+      {
+        "name": "town markers stay visible and navigable independently of town-nav switch",
+        "error": null
+      },
+      {
+        "name": "town navigation switch fails closed and emits only a boolean client config",
+        "error": null
+      }
+    ],
+    "warehouse-env.test.mjs": [
+      {
+        "name": "tests/warehouse-env.test.mjs",
+        "error": "test failed"
+      }
+    ],
+    "warehouse-layout.test.mjs": [
+      {
+        "name": "all pre-S2-1 data exports except the intentional minimap change are byte-equivalent",
+        "error": null
+      }
+    ],
+    "warehouse-shell.test.mjs": [
+      {
+        "name": "app wiring stays minimal and does not add unsafe APIs",
+        "error": null
+      }
+    ]
+  },
+  "evidence": {
+    "candidate_log": "evidence/candidate-full-suite.log",
+    "baseline_log": "evidence/baseline-full-suite.log"
+  },
+  "runs": {
+    "candidate_A": {
+      "file": "evidence/candidate-full-suite.log",
+      "tests": 1180,
+      "pass": 1118,
+      "fail": 41,
+      "cancelled": 16,
+      "skipped": 1,
+      "duration_ms": 60441
+    },
+    "baseline_A": {
+      "file": "evidence/baseline-full-suite.log",
+      "tests": 1166,
+      "pass": 1108,
+      "fail": 41,
+      "cancelled": 16,
+      "skipped": 1,
+      "duration_ms": 60519
+    },
+    "baseline_repeat": {
+      "file": "evidence/baseline-full-suite-repeat.log",
+      "tests": 1166,
+      "pass": 1108,
+      "fail": 41,
+      "cancelled": 16,
+      "skipped": 1,
+      "duration_ms": 59950
+    },
+    "candidate_B_anomaly": {
+      "file": "evidence/candidate-full-suite-quiet.log",
+      "tests": 1170,
+      "pass": 1111,
+      "fail": 41,
+      "cancelled": 17,
+      "skipped": 1,
+      "duration_ms": 668391,
+      "note": "pedestrian-v2.test.mjs 文件级 636156ms；单独运行 26.4s 7/7 通过，候选新增文件不参与该测试"
+    }
+  },
+  "claim_20_existing_failures": {
+    "claimed": "基线本来就有 20 个因缺本机运行数据而失败的用例",
+    "independent_observation": "41 fail + 16 cancelled = 57 条 not-ok（A 组候选/基线集合完全一致）",
+    "verdict": "数字不可复现；环境相关；“候选新增 0 失败”成立"
+  }
+}
