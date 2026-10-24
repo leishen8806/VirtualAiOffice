@@ -18,7 +18,7 @@ export function buildOfficePlazaHost({ THREE, root, layout, search, collision, l
     const placements = appendOfficePlaza({ THREE, batch, layout, low }).map(p => ({ ...p, interaction: 'inspect-only' }))
     visual = batch.build(root, 'office-plaza-props')
     for (const placement of placements) {
-      const b = placement.bounds, height = Math.min(2, b.y1 - b.y0)
+      const b = placement.bounds, height = layout.variant === 'align' && placement.kind === 'vendors' ? b.y1 - b.y0 : Math.min(2, b.y1 - b.y0)
       const proxy = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, height, b.z1 - b.z0), new THREE.MeshBasicMaterial())
       proxy.position.set((b.x0 + b.x1) / 2, b.y0 + height / 2, (b.z0 + b.z1) / 2)
       proxy.name = placement.id; proxy.visible = false; proxy.userData.placement = placement

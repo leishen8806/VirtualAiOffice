@@ -12,7 +12,31 @@ export function plazaFlowerArcs(layout) {
 // 复用已登记构件并输出占地；宿主沿用既有注册口，不改共享碰撞或导航逻辑。
 export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
   const p = layout.plaza, placements = [], prototypes = new Map()
-  const box = (x, y, z, w, h, d, color, grain = '') => batch.add(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
+  let vendor = null
+  const emit = (geometry, color, position = [0, 0, 0], yaw = 0, ...surface) => {
+    if (!vendor) return batch.add(geometry, color, position, yaw, ...surface)
+    geometry.rotateY(yaw); geometry.translate(...position)
+    // 条纹和木纹随摊位一起转，不能在旋转后的世界坐标上重新投影。
+    if (!geometry.attributes.sampleUv) {
+      const p = geometry.attributes.position, n = geometry.attributes.normal, uv = new Float32Array(p.count * 2)
+      for (let i = 0; i < p.count; i++) { const x = Math.abs(n.getX(i)), y = Math.abs(n.getY(i)), z = Math.abs(n.getZ(i)); uv.set([(x > y && x > z ? p.getZ(i) : p.getX(i)) / 1.2, (y > x && y > z ? p.getZ(i) : p.getY(i)) / 1.2], i * 2) }
+      geometry.setAttribute('sampleUv', new THREE.BufferAttribute(uv, 2))
+    }
+    geometry.translate(-vendor.source.x, 0, -vendor.source.z); geometry.rotateY(vendor.delta); geometry.translate(vendor.x, 0, vendor.z)
+    geometry.computeBoundingBox(); vendor.bounds.union(geometry.boundingBox)
+    batch.add(geometry, color, [0, 0, 0], 0, ...surface)
+  }
+  const atVendor = (point, draw) => {
+    if (layout.variant !== 'align') return draw()
+    const side = point.x < p.center.x ? -1 : 1, angle = Math.PI / 12
+    vendor = { source: point, delta: side * angle, x: point.x + side * (.6 + Math.sin(angle) * (point.z - p.center.z)), z: p.center.z + Math.cos(angle) * (point.z - p.center.z), bounds: new THREE.Box3() }
+    try {
+      draw()
+      const item = placements.at(-1), b = vendor.bounds
+      Object.assign(item, { x: vendor.x, z: vendor.z, yaw: item.yaw + vendor.delta, bounds: { x0: b.min.x, x1: b.max.x, z0: b.min.z, z1: b.max.z, y0: b.min.y, y1: b.max.y } })
+    } finally { vendor = null }
+  }
+  const box = (x, y, z, w, h, d, color, grain = '') => emit(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
   const add = (category, kind, id, point, yaw = 0, scale = [1, 1, 1], offset = [0, 0]) => {
     const triangleStart = batch.triangles()
     const key = category + kind
@@ -30,7 +54,7 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       // 原共享伞盖为向上开口的锥面，私有副本翻正，保持原杆、桌与椅不变。
       if (category === 'cafe' && mesh.name.endsWith('-accent')) geometry.translate(0, -3.15, 0).rotateX(Math.PI).translate(0, 3.15, 0)
       geometry.scale(...scale); geometry.rotateY(yaw); geometry.translate(point.x + offset[0], .11, point.z + offset[1])
-      geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
+      geometry.computeBoundingBox(); if (!vendor) bounds.union(geometry.boundingBox)
       if (layout.variant === 'align' && category === 'vendors' && kind === 'awning-cart') {
         const p = geometry.attributes.position, n = geometry.attributes.normal, surface = new Float32Array(p.count * 3)
         for (let i = 0; i < p.count; i++) surface.set([.78, 0, p.getY(i) > 2.2 && n.getY(i) > .5 ? 4 : 0], i * 3)
@@ -46,22 +70,22 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
         geometry.dispose();continue
       }
       const treeTint = category === 'trees' ? (mesh.name.endsWith('-leaf') ? '#4F7043' : '#71614B') : null
-      batch.add(geometry, treeTint, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
+      emit(geometry, treeTint, [0, 0, 0], 0, mesh.material.roughness, mesh.material.metalness)
     }
     placements.push({ id, kind: category, source: { x: point.x, z: point.z }, x: point.x + offset[0], z: point.z + offset[1], yaw, scale, triangles: batch.triangles() - triangleStart, bounds: { x0: bounds.min.x, x1: bounds.max.x, z0: bounds.min.z, z1: bounds.max.z, y0: bounds.min.y, y1: bounds.max.y }, interaction: 'preview-only' })
   }
   try {
-    for (const point of p.carts) {
+    for (const point of p.carts) atVendor(point, () => {
       add('vendors', 'awning-cart', point.id, point, Math.PI / 2, [.72, 1, .72])
       box(point.x + .565, 1, point.z, .02, .86, 2.14, '#C9A57A', 'wood')
       for (let i = 0; i < 12; i++) box(point.x + .581, 1, point.z - .99 + i * .18, .015, .78, .022, '#B89B64')
       if (layout.variant === 'align') {
         box(point.x, 1.95, point.z - .5, .34, .4, .42, '#26333A')
         box(point.x + .173, 1.95, point.z - .5, .006, .16, .21, '#9A968E')
-        for (const z of [.42, .68]) batch.add(new THREE.CylinderGeometry(.065, .055, .14, low ? 6 : 10), '#F4F1EA', [point.x + .12, 1.82, point.z + z], 0, .4)
+        for (const z of [.42, .68]) emit(new THREE.CylinderGeometry(.065, .055, .14, low ? 6 : 10), '#F4F1EA', [point.x + .12, 1.82, point.z + z], 0, .4)
       }
-    }
-    for (const point of p.kiosks) {
+    })
+    for (const point of p.kiosks) atVendor(point, () => {
       add('vendors', 'square-kiosk', point.id, point, Math.PI / 2, [.72, 1, .72])
       for (const dz of [-.8, .8]) box(point.x - .94, 1.43, point.z + dz, .07, 1.14, .07, '#C9A57A', 'wood')
       for (const y of [1.16, 1.69]) box(point.x - .96, y, point.z, .035, .05, 1.51, '#C9A57A', 'wood')
@@ -69,9 +93,9 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       box(point.x - .96, 2.08, point.z, .035, .035, 1.55, '#B89B64')
       if (layout.variant === 'align') {
         box(point.x - 1.05, 1.35, point.z, .25, .36, .32, '#26333A')
-        for (const z of [-.5, .5]) batch.add(new THREE.CylinderGeometry(.055, .05, .14, low ? 6 : 10), '#F4F1EA', [point.x - 1.08, 1.24, point.z + z], 0, .4)
+        for (const z of [-.5, .5]) emit(new THREE.CylinderGeometry(.055, .05, .14, low ? 6 : 10), '#F4F1EA', [point.x - 1.08, 1.24, point.z + z], 0, .4)
       }
-    }
+    })
     p.umbrellaTables.forEach((point, i) => add('cafe', '', `plaza-cafe-${i + 1}`, point, 0, [.85, 1, .85]))
     if(layout.variant==='align')for(const side of [-1,1])for(const z of [17.5,24.5]){
       const x=p.center.x+side*22,id=`plaza-layered-garden-${side}-${z}`,w=5.2,d=4.8
@@ -83,7 +107,8 @@ export function appendOfficePlaza({ THREE, batch, layout, low = false }) {
       const side = point.x < p.center.x ? -1 : 1
       const shift = point.z < p.center.z ? -side * 2.5 : side * 2
       const yaw = point.z > p.center.z && point.z < p.center.z + 5 ? -side * Math.PI / 2 : point.z > p.center.z ? Math.PI : 0
-      add('benches', '', `plaza-bench-${i + 1}`, point, yaw, [.72, 1, .72], [shift, 0])
+      const vendorClearance = layout.variant === 'align' && point.z > p.center.z && point.z < p.center.z + 5 ? side * .4 : 0
+      add('benches', '', `plaza-bench-${i + 1}`, point, yaw, [.72, 1, .72], [shift + vendorClearance, 0])
     })
     // 杆灯与伞面有冲突的点位暂不实例化，保留南侧两盏，避免穿过伞盖。
     p.lamps.filter(point => point.z >= p.center.z + p.radius).forEach((point, i) => add('lamps', '', `plaza-lamp-${i + 1}`, point, 0, [1, 1, 1], [0, .5]))
