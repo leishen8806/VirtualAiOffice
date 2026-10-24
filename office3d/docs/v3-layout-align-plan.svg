@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+  <style>
+    text { font: 13px Arial, sans-serif; fill: #1e293b; }
+    .room { fill: #dbeafe; stroke: #2563eb; stroke-width: 2; }
+    .display { fill: #fef3c7; stroke: #d97706; stroke-width: 2; }
+    .open { fill: #dcfce7; stroke: #16a34a; stroke-width: 2; }
+    .path { fill: none; stroke: #64748b; stroke-width: 4; stroke-dasharray: 9 6; }
+  </style>
+  <rect x="30" y="30" width="840" height="420" fill="#f8fafc" stroke="#0f172a" stroke-width="3"/>
+  <path class="path" d="M45 200H305 M45 335H305 M452 75H855 M452 270H855"/>
+  <g class="display">
+    <rect x="30" y="30" width="112" height="84"/><text x="48" y="76">Market</text>
+    <rect x="758" y="30" width="112" height="84"/><text x="772" y="76">Service</text>
+    <rect x="30" y="401" width="112" height="49"/><text x="42" y="430">Aftersales</text>
+    <rect x="758" y="366" width="91" height="84"/><text x="764" y="410">Marketing</text>
+  </g>
+  <g class="room">
+    <rect x="163" y="30" width="140" height="84"/><text x="190" y="76">Board (east door)</text>
+    <rect x="450" y="30" width="112" height="84"/><text x="482" y="76">Knowledge</text>
+    <rect x="30" y="135" width="112" height="84"/><text x="53" y="178">Plan B</text>
+    <rect x="163" y="135" width="140" height="84"/><text x="199" y="178">Review A</text>
+    <rect x="450" y="135" width="126" height="126"/><text x="486" y="201">Product</text>
+    <rect x="597" y="135" width="126" height="126"/><text x="641" y="201">Engineering</text>
+    <rect x="450" y="282" width="140" height="70"/><text x="474" y="321">Creative</text>
+    <rect x="611" y="282" width="105" height="70"/><text x="627" y="321">Dining</text>
+    <rect x="450" y="373" width="147" height="77"/><text x="481" y="414">D.life</text>
+    <rect x="163" y="401" width="112" height="49"/><text x="176" y="430">Leisure</text>
+  </g>
+  <g class="open">
+    <rect x="30" y="240" width="273" height="140"/><text x="95" y="312">West Open Island: 195m2</text>
+  </g>
+  <circle cx="405" cy="247" r="56" fill="#e2e8f0" stroke="#475569" stroke-width="3"/>
+  <text x="369" y="251">Bar / Ring</text>
+  <text x="350" y="485">V3 Align: ?layout=3&amp;align=1</text>
+</svg>

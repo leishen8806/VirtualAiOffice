@@ -23,8 +23,21 @@ export function createV3PublicPath(layout) {
     return Math.hypot(a.x + t * dx - center.x, a.z + t * dz - center.z) >= radius
   }
   const corners = boxes.flatMap(b => [b.x0 - .02, b.x1 + .02].flatMap(x => [b.z0 - .02, b.z1 + .02].map(z => ({ x, z }))))
-  const ring = Array.from({ length: 48 }, (_, i) => ({ x: center.x + 8 * Math.cos(i * Math.PI / 24), z: center.z + 8 * Math.sin(i * Math.PI / 24) }))
-  const nodes = [...corners, ...ring].filter(valid)
+  const ringRadius = (layout.ring.inner + layout.ring.outer) / 2
+  const ring = Array.from({ length: 48 }, (_, i) => ({ x: center.x + ringRadius * Math.cos(i * Math.PI / 24), z: center.z + ringRadius * Math.sin(i * Math.PI / 24) }))
+  const doors = layout.regions.flatMap(room => room.doors.map(door => {
+    if (door.side === 'east') return { x: room.x1 + .75, z: door.at }
+    if (door.side === 'west') return { x: room.x0 - .75, z: door.at }
+    if (door.side === 'north') return { x: door.at, z: room.z0 - .75 }
+    return { x: door.at, z: room.z1 + .75 }
+  }))
+  const edge = [
+    ...[-16, -8, 0, 8].flatMap(z => [{ x: layout.envelope.x0 + pad + .01, z }, { x: layout.envelope.x1 - pad - .01, z }]),
+    ...[-24, -16, -8, 0, 8, 11].flatMap(x => [{ x, z: layout.envelope.z0 + pad + .01 }, { x, z: layout.doors.south.z - pad - .01 }]),
+  ]
+  // Stable V3 retains its exact graph; variants opt into their own junctions.
+  const variantNodes = layout.publicPathNodes ? [...doors, ...edge, ...layout.publicPathNodes] : []
+  const nodes = [...corners, ...variantNodes, ...ring].filter(valid)
   const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
   const links = nodes.map((a, i) => nodes.flatMap((b, j) => i !== j && clear(a, b) ? [[j, distance(a, b)]] : []))
   return (from, to) => {

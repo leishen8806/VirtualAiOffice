@@ -464,6 +464,88 @@ const V3_LAYOUT = {
   },
 }
 
+const V3_ALIGN_REGIONS = [
+  layoutRect('market', '市场部（展示）', -28, -20, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('board', '会议与决策', -18.5, -8.5, -18, -12, { side: 'east', at: -15 }),
+  layoutRect('kb', '知识', 12.5, 20.5, -18, -12, { side: 'south', at: 16.5 }),
+  layoutRect('service', '客服部（展示）', 24, 32, -18, -12, { side: 'west', at: -15 }),
+  layoutRect('plan', '计划室 B', -28, -20, -10.5, -4.5, { side: 'east', at: -7.5 }),
+  layoutRect('review', '评审室 A', -18.5, -8.5, -10.5, -4.5, { side: 'south', at: -13.5 }),
+  layoutRect('west-open', '运营、质量与安全开放岛', -28, -8.5, -3, 7, { side: 'east', at: 2 }),
+  layoutRect('product', '产品', 12.5, 21.5, -10.5, -1.5, { side: 'east', at: -6 }),
+  layoutRect('eng', '工程', 23, 32, -10.5, -1.5, { side: 'west', at: -6 }),
+  layoutRect('creative', '创意讨论区', 12.5, 22.5, -1.5, 3.5, { side: 'west', at: 1 }),
+  layoutRect('dining', '餐饮休憩角', 23, 30.5, -1.5, 3.5, { side: 'east', at: 1 }),
+  layoutRect('aftersales', '售后部（展示）', -28, -20, 8.5, 11.5, { side: 'east', at: 10 }),
+  layoutRect('leisure', '休闲展示区', -18.5, -10.5, 8.5, 11.5, { side: 'east', at: 10 }),
+  layoutRect('drlife', 'D.life 工坊', 12.5, 23, 5, 12, { side: 'north', at: 17.75 }),
+  layoutRect('marketing', '营销部（展示）', 24, 30.5, 5.5, 11.5, { side: 'east', at: 8.5 }),
+]
+
+const V3_ALIGN_SEATS = {
+  Lead: ['product', 14.5, -8.5, Math.PI], PM: ['product', 18, -8.5, Math.PI], Architect: ['product', 14.5, -5.5, Math.PI], UIUX: ['product', 18, -5.5, Math.PI],
+  FrontendSenior: ['eng', 23.5, -8.5, Math.PI], Frontend1: ['eng', 26.5, -8.5, Math.PI], Frontend2: ['eng', 29.5, -8.5, Math.PI],
+  BackendSenior: ['eng', 23.5, -5.5, Math.PI], Backend1: ['eng', 26.5, -5.5, Math.PI], Backend2: ['eng', 29.5, -5.5, Math.PI],
+  KnowledgeKeeper: ['kb', 14.5, -15, Math.PI / 2],
+  QAAutomation: ['west-open', -15, -1, 0], Reviewer1: ['west-open', -12, -1, 0], Reviewer2: ['west-open', -15, 2, 0], SecurityReviewer: ['west-open', -12, 2, 0],
+  OpsLead: ['west-open', -25, -1, 0], OpsEngineer: ['west-open', -21.5, -1, 0],
+  GoSenior: ['drlife', 14.5, 6.5, 0], Go1: ['drlife', 17, 6.5, 0], Go2: ['drlife', 19.5, 6.5, 0], DBEngineer: ['drlife', 22, 6.5, 0],
+  LedgerAuditor: ['drlife', 14.5, 9.5, 0], ReactSenior: ['drlife', 17, 9.5, 0], React1: ['drlife', 19.5, 9.5, 0], Localizer: ['drlife', 22, 9.5, 0],
+}
+
+const V3_ALIGN_DISPLAY_SEATS = [
+  ['market-1', 'market', -26.5, -15], ['market-2', 'market', -24, -15], ['market-3', 'market', -21.5, -15],
+  ['service-1', 'service', 25.5, -15], ['service-2', 'service', 27.25, -15], ['service-3', 'service', 29.25, -15],
+  ['aftersales-1', 'aftersales', -26.5, 10], ['aftersales-2', 'aftersales', -24, 10], ['aftersales-3', 'aftersales', -21.5, 10],
+  ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30, 8],
+].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
+const V3_ALIGN_MEETING_SEATS = {
+  A: [-16.5, -14.5, -12.5, -10.5].flatMap(x => [{ room: 'A', x, z: -9.75 }, { room: 'A', x, z: -7.25 }]),
+  B: [-26.5, -24.5, -22.5].flatMap(x => [{ room: 'B', x, z: -9.75 }, { room: 'B', x, z: -7.25 }]),
+}
+const alignFocus = (regions) => Object.fromEntries([
+  ...regions.map(region => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
+  ['ops', { label: '运营', t: [-24, 0, .5], r: 18 }],
+  ['quality', { label: '质量与安全', t: [-14, 0, .5], r: 18 }],
+  ['meet', { label: '会议室', t: [-18.5, 0, -8.5], r: 22 }],
+  ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
+  ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
+])
+
+const V3_ALIGN_LAYOUT = {
+  ...cloneLayoutData(V3_LAYOUT),
+  version: 3,
+  variant: 'align',
+  regions: V3_ALIGN_REGIONS,
+  rooms: V3_ALIGN_REGIONS,
+  seats: V3_ALIGN_SEATS,
+  displaySeats: V3_ALIGN_DISPLAY_SEATS,
+  meetingSeats: { A: 8, B: 6 },
+  meetingSeatPoints: V3_ALIGN_MEETING_SEATS,
+  deskGroups: { ops: ['OpsLead', 'OpsEngineer'], quality: ['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer'] },
+  corridors: {
+    ...cloneLayoutData(V3_LAYOUT.corridors),
+    westNorthCross: { x0: -28, x1: -8.5, z0: -12, z1: -11.5, width: .5 },
+    westMiddleCross: { x0: -28, x1: -8.5, z0: -5.5, z1: -4.5, width: 1 },
+    westSouthCross: { x0: -28, x1: -8.5, z0: 5.5, z1: 6.5, width: 1 },
+  },
+  passages: {
+    ...cloneLayoutData(V3_LAYOUT.passages),
+    northMeetingBuffer: { x0: -28, x1: -8.5, z0: -5.5, z1: -4.5, width: 1 },
+    westOpenLink: { x0: -28, x1: -8.5, z0: -4.5, z1: 5.5, width: 10 },
+  },
+  island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
+  ring: { ...cloneLayoutData(V3_LAYOUT.ring), inner: 6, outer: 10, width: 4 },
+  bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 3.5 },
+  publicPathNodes: [
+    { x: -19.25, z: -10.9 }, { x: -7.75, z: -10.9 },
+    { x: -19.25, z: 7.75 }, { x: -10.2, z: 7.75 },
+  ],
+  meetingAccess: { northZ: -5, westSpineX: -8, eastSpineX: 22.25, westMiddleZ: .5, eastMiddleZ: -1.5, eastSouthZ: 4.25 },
+  regionFocus: alignFocus(V3_ALIGN_REGIONS),
+  miniBounds: { x0: -30.5, x1: 34.5, z0: -20.5, z1: 32.5 },
+}
+
 const LAYOUT_V1_DATA = {
   ENVELOPE, MAIN_FLOOR_X0, CORRIDORS, CORRIDOR_X, LOGO_AREA, CROSS_Z, FOYER_Z, AISLE_OFFSET,
   ENTRANCE, FOYER_RECEPTION, RECEPTION, OFFICE_ROOMS, SEATS, BOSS, BOARD_TABLE, BOARD_DOOR,
@@ -478,13 +560,14 @@ const LAYOUT_V1_DATA = {
 export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
+export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
   const values = params.getAll('layout')
   if (values.length !== 1) return LAYOUT_V1
   if (values[0] === '2') return LAYOUT_V2
-  if (values[0] === '3') return LAYOUT_V3
+  if (values[0] === '3') return params.getAll('align').length === 1 && params.get('align') === '1' ? LAYOUT_V3_ALIGN : LAYOUT_V3
   return LAYOUT_V1
 }
 

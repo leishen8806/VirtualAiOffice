@@ -1,0 +1,34 @@
+{
+  "version": 3,
+  "variant": "align",
+  "westOpen": { "id": "west-open", "x0": -28, "x1": -8.5, "z0": -3, "z1": 7 },
+  "regions": [
+    ["market", -28, -20, -18, -12, "east", -15],
+    ["board", -18.5, -8.5, -18, -12, "east", -15],
+    ["kb", 12.5, 20.5, -18, -12, "south", 16.5],
+    ["service", 24, 32, -18, -12, "west", -15],
+    ["plan", -28, -20, -10.5, -4.5, "east", -7.5],
+    ["review", -18.5, -8.5, -10.5, -4.5, "south", -13.5],
+    ["west-open", -28, -8.5, -3, 7, "east", 2],
+    ["product", 12.5, 21.5, -10.5, -1.5, "east", -6],
+    ["eng", 23, 32, -10.5, -1.5, "west", -6],
+    ["creative", 12.5, 22.5, -1.5, 3.5, "west", 1],
+    ["dining", 23, 30.5, -1.5, 3.5, "east", 1],
+    ["aftersales", -28, -20, 8.5, 11.5, "east", 10],
+    ["leisure", -18.5, -10.5, 8.5, 11.5, "east", 10],
+    ["drlife", 12.5, 23, 5, 12, "north", 17.75],
+    ["marketing", 24, 30.5, 5.5, 11.5, "east", 8.5]
+  ],
+  "seats": {
+    "Lead": ["product", 14.5, -8.5], "PM": ["product", 18, -8.5], "Architect": ["product", 14.5, -5.5], "UIUX": ["product", 18, -5.5],
+    "FrontendSenior": ["eng", 23.5, -8.5], "Frontend1": ["eng", 26.5, -8.5], "Frontend2": ["eng", 29.5, -8.5], "BackendSenior": ["eng", 23.5, -5.5], "Backend1": ["eng", 26.5, -5.5], "Backend2": ["eng", 29.5, -5.5],
+    "KnowledgeKeeper": ["kb", 14.5, -15],
+    "QAAutomation": ["west-open", -15, -1], "Reviewer1": ["west-open", -12, -1], "Reviewer2": ["west-open", -15, 2], "SecurityReviewer": ["west-open", -12, 2], "OpsLead": ["west-open", -25, -1], "OpsEngineer": ["west-open", -21.5, -1],
+    "GoSenior": ["drlife", 14.5, 6.5], "Go1": ["drlife", 17, 6.5], "Go2": ["drlife", 19.5, 6.5], "DBEngineer": ["drlife", 22, 6.5], "LedgerAuditor": ["drlife", 14.5, 9.5], "ReactSenior": ["drlife", 17, 9.5], "React1": ["drlife", 19.5, 9.5], "Localizer": ["drlife", 22, 9.5]
+  },
+  "meetingSeats": { "A": 8, "B": 6 },
+  "displaySeatCount": 12,
+  "publicPathNodes": [[-19.25, -10.9], [-7.75, -10.9], [-19.25, 7.75], [-10.2, 7.75]],
+  "ring": { "inner": 6, "outer": 10 },
+  "barRadius": 3.5
+}
