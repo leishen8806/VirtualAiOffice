@@ -35,6 +35,9 @@ export function buildOfficeSampleZone(context) {
     merged.mesh.castShadow = !context.low
     modules.push(brand = buildOfficeBrandMarks({ ...context, root: group }))
     modules.push(frontage = buildOfficeVis2Frontage({ ...context, root: group }))
+    if (context.layout.variant === 'align' && !context.low) group.traverse(mesh => {
+      if (mesh.isMesh && mesh.material.userData.officeVis2) mesh.material.userData.officeWarmReflection = true
+    })
   } catch (error) { dispose(); throw error }
   // 样板已自行合批；沿用宿主 qualityProxy 约定，避免通用降档抹去表面/小叶着色器。
   group.userData.dynamic = true

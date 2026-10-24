@@ -40,8 +40,10 @@ export function createSampleBatch(THREE, assets) {
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > .5 && surfaceParams.z < 1.5) { float grain = sin(materialUv.x * 165.0 + sin(materialUv.y * 3.0) * 1.7 + sin(materialUv.x * 13.0) * 2.0); diffuseColor.rgb *= .93 + .07 * smoothstep(-.9, .55, grain); }')
         // 棚布仅在既有棚顶标记，和柜体分开；无额外图像、透明层或绘制批次。
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (surfaceParams.z > 3.5) { float stripe = step(.5, fract(materialUv.y * 4.0)); diffuseColor.rgb = mix(vec3(.48, .55, .43), vec3(.90, .86, .76), stripe); }')
+        // 复用天气环境反射，仅中和室内饰面的天空蓝；不改直射光、叶片或全局曝光。
+        if (material.userData.officeWarmReflection) shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#ifdef USE_ENVMAP\niblIrradiance = mix(iblIrradiance, vec3(dot(iblIrradiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\nradiance = mix(radiance, vec3(dot(radiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\n#endif')
       }
-      material.customProgramCacheKey = () => material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3'
+      material.customProgramCacheKey = () => (material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3') + (material.userData.officeWarmReflection ? '-warm-ibl-v1' : '')
       material.userData.officeVis2 = true
       const mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material)
       if (poses) {
