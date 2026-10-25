@@ -92,11 +92,20 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
         geometry.setAttribute('sampleSurface', new THREE.BufferAttribute(surface, 3))
       }
       if(layout.variant==='align' && category==='trees' && mesh.name.endsWith('-leaf')) {
-        const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?40:144
+        const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?76:264
+        // 叶片错开倾角，去掉整齐向心的针叶层；用省下的叶面预算补真实分枝。
+        for(let i=0;i<(low?1:3);i++){
+          const a=i*2.399,end=new THREE.Vector3(center.x+Math.sin(a)*size.x*.18,center.y-.06,center.z+Math.cos(a)*size.z*.18)
+          const start=new THREE.Vector3(point.x+offset[0],.11+2.35*scale[1],point.z+offset[1]),direction=end.clone().sub(start)
+          const branch=new THREE.CylinderGeometry(.025,.045,direction.length(),low?3:4)
+          branch.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize()))
+          emit(branch,'#71614B',start.add(end).multiplyScalar(.5).toArray(),0,.88)
+        }
         for(let i=0;i<count;i++){
-          const a=i*2.399,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v),length=Math.min(size.x,size.z)*.3
-          const leaf=officeLeafGeometry(THREE,a+Math.PI,length,3,leafBatch!==batch);leaf.scale(1,.6,1)
-          emit(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.4,center.y+v*size.y*.32-.08,center.z+Math.cos(a)*r*size.z*.4],0,.88)
+          const a=i*2.399+point.x*.37,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v)
+          const leaf=officeLeafGeometry(THREE,0,.28,2,leafBatch!==batch)
+          leaf.scale(1,.25,1);leaf.rotateZ(Math.sin(i*1.7)*.6);leaf.rotateX(Math.sin(i*1.1)*.75+.2);leaf.rotateY(a+i*1.13)
+          emit(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.31,center.y+v*size.y*.32-.06,center.z+Math.cos(a)*r*size.z*.31],0,.88)
         }
         geometry.dispose();continue
       }
