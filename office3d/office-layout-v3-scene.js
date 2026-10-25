@@ -65,6 +65,7 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const inner = new THREE.MeshStandardMaterial({ color: THEME.interiorWall, roughness: THEME.wallRoughness })
   const glass = new THREE.MeshPhysicalMaterial({ color: THEME.glass, transparent: true, opacity: THEME.glassOpacity, roughness: THEME.glassRoughness, depthWrite: false })
   const proxies = []
+  let disposed = false
   const floorEntries = [matrixEntry(THREE, spec.site.x0, spec.site.x1, 0, .08, spec.site.z0, spec.site.z1)]
   const floorColors = [new THREE.Color(THEME.exteriorWall)]
   const buffer = spec.greenBuffer
@@ -139,5 +140,11 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   }
   // 初始外墙完整高度；只有相机低于阈值时按帧改变视觉代理。
   wallState.forEach(state => { state.height = state.base })
-  return { root, spec, ground, green, walls, innerGlass, windows, onFrame: update, dispose() { for (const material of [warm, floorMaterial, greenMaterial, inner, glass]) material.dispose(); for (const mesh of [ground, green, walls, innerGlass, windows]) { mesh?.geometry.dispose(); mesh?.removeFromParent() } for (const proxy of proxies) { proxy.geometry.dispose(); proxy.removeFromParent() } } }
+  return { root, spec, ground, green, walls, innerGlass, windows, onFrame: update, dispose() {
+    if (disposed) return
+    disposed = true
+    for (const proxy of proxies) { collision?.remove?.(proxy); proxy.geometry.dispose(); proxy.removeFromParent() }
+    for (const material of [warm, floorMaterial, greenMaterial, inner, glass]) material.dispose()
+    for (const mesh of [ground, green, walls, innerGlass, windows]) { mesh?.geometry.dispose(); mesh?.removeFromParent() }
+  } }
 }

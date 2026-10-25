@@ -72,12 +72,7 @@ export function officeShellFinishSpec(layout, spec) {
 }
 
 export function buildOfficeAlignedShell(context) {
-  const track = context.layout.variant === 'align' && officeSampleRequested(context.search), registered = []
-  const shell = buildOfficeShellV3(track ? { ...context, collision: { ...context.collision, add(proxy, kind) { registered.push(proxy); context.collision?.add?.(proxy, kind) } } } : context)
-  if (track) {
-    const dispose = shell.dispose; let cleared = false
-    shell.dispose = () => { if (cleared) return; cleared = true; for (const proxy of registered) context.collision?.remove?.(proxy); registered.length = 0; dispose() }
-  }
+  const shell = buildOfficeShellV3(context)
   if (!officeSampleRequested(context.search)) return shell
   const { THREE, root, layout, low } = context
   const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)

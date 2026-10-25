@@ -36,8 +36,7 @@ test('actual registry warms three rendered interior batches and all their owned 
     registry.register('shell3',buildOfficeAlignedShell);registry.register('zones',buildOfficeAlignedZones)
     const expected=layout===LAYOUT_V3_ALIGN&&!low&&search==='?officeSample=1',owned=new Map(),disposed=new Map()
     try{
-      // 这里只核对样板自有登记；旧外壳关闭路径的清理残留不由材质测试宣称修复。
-      registry.buildAll({layout,search,collision:layout===LAYOUT_V3_ALIGN&&search==='?officeSample=1'?world:undefined})
+      registry.buildAll({layout,search,collision:world})
       const found=[];registry.root.traverse(m=>{if(m.isMesh&&m.material?.userData.officeArchitectureWarmth){found.push(m);owned.set(m.material.uuid,m.material)}})
       assert.equal(owned.size,expected?3:0)
       for(const f of registry.get('zones').furnishings||[]){assert.equal(!!f.root.material.userData.officeArchitectureWarmth,expected);if(expected)owned.set(f.root.material.uuid,f.root.material)}
