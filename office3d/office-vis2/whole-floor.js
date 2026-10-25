@@ -38,13 +38,16 @@ export function wholeFloorSpec(layout) {
   if (layout.variant === 'align') {
     const furniture = officeFurnitureV2Spec(layout)
     for (const shelf of furniture.shelves) {
-      // 原 bookcaseOpen.glb 缩放至1.85m后的层板上表面；避开既有中层书组。
+      // 层板实测值随真实书柜高度缩放；书脊留在柜内，不靠新增业务桌填密度。
+      const scale = shelf.h / 1.85, floor = shelf.y
       for (const base of [.277, .781, 1.286]) for (let i = 0; i < Math.floor((shelf.w - .24) / .11); i++) {
-        const dx = -shelf.w / 2 + .17 + i * .11, height = .25 + (i % 4) * .025
-        if (base === .781 && Math.abs(dx) < shelf.w * .36) continue
-        box('shelf-book', shelf.x + dx, base + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
+        const dx = -shelf.w / 2 + .17 + i * .11, height = (.25 + (i % 4) * .025) * scale, y = floor + base * scale
+        box('shelf-book', shelf.x + dx, y + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
           ['#B7C2B4', '#CCB58C', '#E9E1D4', '#826E56', '#58705C'][i % 5], 'kb')
+        for (const band of [.18, .8]) box('shelf-spine', shelf.x + dx, y + height * band, shelf.z + .184, .057, .011, .004, '#D9D3C6', 'kb')
       }
+      box('shelf-toe', shelf.x, floor + .075, shelf.z + .27, shelf.w, .08, .04, '#B89B64', 'kb')
+      box('shelf-cornice', shelf.x, floor + shelf.h + .035, shelf.z, shelf.w, .07, shelf.d, '#C49A6C', 'kb')
     }
     for (const table of [...furniture.meetings, { ...furniture.board, region: 'board' }]) {
       const y = table.round ? .824 : .767, w = table.round ? 1.2 : table.w, d = table.round ? 1.2 : table.d

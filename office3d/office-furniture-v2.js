@@ -75,8 +75,8 @@ export function officeFurnitureV2Spec(layout) {
   let opsScreen = { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 }
   if (layout.variant === 'align') {
     const kb = meetingRegion(layout, 'kb'), west = meetingRegion(layout, 'west-open')
-    const ops = layout.deskGroups.ops.map(name => layout.seats[name]), left = (kb.x0 + kb.x1 - 5.2) / 2
-    shelves = [{ x: left + 1.4, z: kb.z0 + .55, w: 2.8, d: .6, yaw: 0 }, { x: left + 4.2, z: kb.z0 + .55, w: 2, d: .6, yaw: 0 }]
+    const ops = layout.deskGroups.ops.map(name => layout.seats[name]), middle = (kb.x0 + kb.x1) / 2, width = (kb.x1 - kb.x0 - 1) / 2
+    shelves = [-1, 1].map(side => ({ x: middle + side * (width / 2 + .05), z: kb.z0 + .55, w: width, h: 2.65, y: .126, d: .6, yaw: 0 }))
     opsScreen = { ...opsScreen, x: ops.reduce((sum, seat) => sum + seat[1], 0) / ops.length, z: Math.max(west.z0, layout.corridors.westNorthCross.z1) + .3 }
   }
   return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen }
@@ -177,7 +177,11 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   chair(spec.boss.chair)
   asset('table', spec.board.x, spec.board.z, spec.board.w, .76, spec.board.d, 0, 0, true)
   spec.boardSeats.forEach(seat => chair(seat, 'chairModernCushion'))
-  for (const [index, shelf] of spec.shelves.entries()) { detailId = `align-kb-shelf-${index}`; asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, 1.85, shelf.d, 0, shelf.yaw, true); asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw) }
+  for (const [index, shelf] of spec.shelves.entries()) {
+    detailId = `align-kb-shelf-${index}`
+    asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, shelf.h ?? 1.85, shelf.d, shelf.y ?? 0, shelf.yaw, true)
+    if (layout.variant !== 'align') asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw)
+  }
   detailId = null
   for (const [x, z] of [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
   const ops = spec.opsScreen

@@ -6,7 +6,7 @@ import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
-const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
+const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'shelf-spine', 'shelf-toe', 'shelf-cornice', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
 
 // Only visual surfaces change: the host still owns all walls, door gaps and collision proxies.
 export function officeShellFinishSpec(layout, spec) {

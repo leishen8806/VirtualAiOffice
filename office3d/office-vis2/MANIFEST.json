@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "FB568EA534E81DAEDDDFA0B899DF34CE97EB45A7047700115A50462FC659FBFE"
+      "sha256": "E15E9757F3E34C245AEBA11F884903BDBACCC69B1F52A1F01D7176463EE12D88"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7CE9617125E1F00F4314A6809BAE4A39446584E19CC3706E7D64EE77FF135885"
+      "sha256": "C63E4C5C51DAC645864A80FC95D90B1BF23468F2D57A364BCEC41AB088771CAF"
     },
     {
       "file": "office-vis2/open-furnishing.js",
@@ -232,6 +232,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "52441BE6A08B3CBBDE8F33AE751D5A0EB8882AA8CBE97BCA4776FE12B6A33104"
+    },
+    {
+      "file": "office-furniture-v2.js",
+      "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
+      "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
+      "photographicTexture": false,
+      "sha256": "EA212692B072AF936E7493EFE1AD23BA9B83E1F2F8562120E0E8514FC8F87E12"
     }
   ],
   "excluded": {
