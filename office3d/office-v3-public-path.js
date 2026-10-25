@@ -8,7 +8,9 @@ export function createV3PublicPath(layout) {
   const desks = align ? Object.values(layout.seats).map(([, x, z]) => ({ x0: x - .8, x1: x + .8, z0: z - .8, z1: z + .8 })) : []
   const furnishings = align ? alignZoneObstaclePlan(layout).flatMap(({ id, plan }) =>
     plan.placements.map(item => ({ id: `${id}-${item.id}`, ...item.bounds }))) : []
-  const boxes = [...regionBoxes, layout.frontDesk, layout.serviceBar, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
+  // 样板咖啡台前另有半径 .42m 的圆桌，通路边界须包含真实桌沿。
+  const serviceBounds = align ? { ...layout.serviceBar, z1: Math.max(layout.serviceBar.z1, layout.foyer.z1 - 1.4 + .42) } : layout.serviceBar
+  const boxes = [...regionBoxes, layout.frontDesk, serviceBounds, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
   const blockers = [...boxes, ...desks, ...furnishings.map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
   const finite = p => Number.isFinite(p?.x) && Number.isFinite(p?.z)
   const inside = (p, b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1

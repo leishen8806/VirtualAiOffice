@@ -30,7 +30,7 @@ compare(plan.publicPathNodes, LAYOUT_V3_ALIGN.publicPathNodes.map(({ x, z }) => 
 
 compare(plan.site, baseline.site, 'approved site')
 const baselineRegions = new Map(baseline.regions.map(item => [item.id, item]))
-const northRooms = { board: ['room', -20, -10, -18, -12], review: ['room', -10, -5, -18, -13], plan: ['room', -5, 0, -18, -13] }
+const northRooms = { board: ['room', -20, -11, -18, -12], review: ['room', -11, -6, -18, -13], plan: ['room', -11, -6, -13, -8] }
 for (const item of plan.regions) {
   const approved = baselineRegions.get(item.id)
   assert.ok(approved, `unknown approved region: ${item.id}`)
@@ -44,7 +44,7 @@ compare(plan.workstations.map(({ name, region, x, z }) => ({ name, region, x, z 
 compare(plan.displaySeats, baseline.displaySeats, 'approved display seats')
 compare(
   { center: plan.island.center, barOuter: plan.island.barOuter, collisionRadius: plan.island.collisionRadius, stoolRadius: plan.island.stoolRadius, ring: plan.island.ring },
-  { center: { x: 2, z: -3 }, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, ring: baseline.island.ring },
+  { center: { x: 2, z: -2 }, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, ring: baseline.island.ring },
   'approved island geometry',
 )
 assert.equal(baseline.island.sofaRadius, 5.8, 'approved sofa baseline')

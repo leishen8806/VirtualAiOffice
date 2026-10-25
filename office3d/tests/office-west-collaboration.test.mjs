@@ -24,14 +24,14 @@ test('two west conversation groups reuse released space without new business des
   assert.deepEqual(layout.seats,before.seats);assert.deepEqual(layout.displaySeats,before.displaySeats)
 })
 
-test('horizontal eight-seat decision table clears the unchanged boss desk and keeps warm-room furniture data-owned',()=>{
+test('horizontal eight-seat decision table clears the mapped boss desk and keeps warm-room furniture data-owned',()=>{
   const f=officeFurnitureV2Spec(layout),old=officeFurnitureV2Spec(LAYOUT_V3)
   assert.equal(f.board.w,3.6);assert.equal(f.board.d,1.4);assert.equal(f.board.x,layout.boardTable.x);assert.equal(f.board.z,layout.boardTable.z)
   assert.equal(f.boardSeats.length,8);assert.equal(new Set(f.boardSeats.map(s=>s.z)).size,2)
   for(const s of f.boardSeats){assert.ok(Math.abs(s.x*10-Math.round(s.x*10))<1e-8);assert.ok(Math.abs(s.z*10-Math.round(s.z*10))<1e-8);assert.equal(s.yaw,s.z<f.board.z?Math.PI:0)}
   const boss={x0:f.boss.desk.x-.7,x1:f.boss.desk.x+.7,z0:f.boss.desk.z-.35,z1:f.boss.desk.z+.35}
   const group={x0:Math.min(f.board.x-f.board.w/2,...f.boardSeats.map(s=>s.x-.31)),x1:Math.max(f.board.x+f.board.w/2,...f.boardSeats.map(s=>s.x+.31)),z0:Math.min(f.board.z-f.board.d/2,...f.boardSeats.map(s=>s.z-.3)),z1:Math.max(f.board.z+f.board.d/2,...f.boardSeats.map(s=>s.z+.3))}
-  assert.ok(gap(group,boss)>=1.2);assert.deepEqual(layout.boss,before.boss)
+  assert.ok(gap(group,boss)>=1.2);assert.deepEqual(layout.boss,{region:'board',desk:{x:-18,z:-15},stand:{x:-18,z:-13}});assert.deepEqual(LAYOUT_V3.boss,before.boss)
   assert.equal(old.board.w,1.4);assert.equal(old.board.d,3.6);assert.deepEqual(old.board,{...LAYOUT_V3.boardTable,w:1.4,d:3.6,screen:old.board.screen})
 })
 

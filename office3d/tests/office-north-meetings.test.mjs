@@ -32,10 +32,10 @@ test('north-room correction retains all business identities and real desk coordi
   assert.deepEqual(layout.seats,previous.seats);assert.deepEqual(layout.displaySeats,previous.displaySeats)
   assert.equal(Object.keys(layout.seats).length,25);assert.equal(layout.displaySeats.length,12)
   assert.deepEqual(layout.meetingSeats,{A:8,B:6});assert.equal(layout.rooms.length,7)
-  for(const[id,b]of Object.entries({board:[-20,-10,-18,-12],review:[-10,-5,-18,-13],plan:[-5,0,-18,-13]})){
+  for(const[id,b]of Object.entries({board:[-20,-11,-18,-12],review:[-11,-6,-18,-13],plan:[-11,-6,-13,-8]})){
     const r=layout.regions.find(r=>r.id===id);assert.deepEqual([r.x0,r.x1,r.z0,r.z1],b)
   }
-  assert.deepEqual(layout.island.center,{x:2,z:-3});assert.deepEqual(layout.bar.center,layout.island.center);assert.deepEqual(layout.ring.center,layout.island.center)
+  assert.deepEqual(layout.island.center,{x:2,z:-2});assert.deepEqual(layout.bar.center,layout.island.center);assert.deepEqual(layout.ring.center,layout.island.center)
   assert.equal(layout.ring.width,4);assert.equal(layout.island.diameter,12);assert.equal(layout.bar.radius,6)
   for(const r of layout.rooms){const c=layout.ring.center;assert.ok(Math.hypot(Math.max(r.x0-c.x,0,c.x-r.x1),Math.max(r.z0-c.z,0,c.z-r.z1))>=10)}
   const nook=alignZoneObstaclePlan(layout).find(e=>e.id==='north-nook');assert.equal(nook.plan.groups.length,2)
