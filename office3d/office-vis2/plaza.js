@@ -122,7 +122,8 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
       const side = point.x < p.center.x ? -1 : 1
       const shift = point.z < p.center.z ? -side * 2.5 : side * 2
       const yaw = point.z > p.center.z && point.z < p.center.z + 5 ? -side * Math.PI / 2 : point.z > p.center.z ? Math.PI : 0
-      const finalShift = layout.variant === 'align' && point.z > p.center.z && point.z < p.center.z + 5 ? -side : shift
+      // 侧椅向外让出B0第四排队位的胶囊净距，保留四个槽位和镜像布局。
+      const finalShift = layout.variant === 'align' && point.z > p.center.z && point.z < p.center.z + 5 ? -side * .65 : shift
       add('benches', '', `plaza-bench-${i + 1}`, point, yaw, [.72, 1, .72], [finalShift, 0])
     })
     // 杆灯与伞面有冲突的点位暂不实例化，保留南侧两盏，避免穿过伞盖。

@@ -3,6 +3,24 @@ import { planWorkstationIslands } from './align-zones.js'
 import { appendOfficeGardenBed } from './plants.js'
 import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
 
+const flatDetails = new Set(['floor-joint', 'desk-group-inlay', 'desk-group-rug', 'meeting-paper', 'meeting-folder'])
+export const officeSurfaceDetail = p => flatDetails.has(p.kind) || p.kind === 'shelf-book'
+
+export function appendOfficeSurfaceDetails({ THREE, batch, details }) {
+  for (const p of details.filter(officeSurfaceDetail)) {
+    const book = p.kind === 'shelf-book', g = book ? new THREE.BoxGeometry(p.w, p.h, p.d) : new THREE.PlaneGeometry(p.w, p.d)
+    if (book) {
+      const pos = g.attributes.position, normal = g.attributes.normal, uv = [], surface = []
+      for (let i = 0; i < pos.count; i++) {
+        uv.push(pos.getX(i), pos.getY(i) + p.h / 2)
+        surface.push(.7, .08, normal.getZ(i) > .99 ? 5 + p.h : 0)
+      }
+      g.setAttribute('sampleUv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('sampleSurface', new THREE.Float32BufferAttribute(surface, 3))
+    } else g.rotateX(-Math.PI / 2)
+    batch.add(g, p.color, [p.x, p.y + (book ? 0 : p.h / 2), p.z], 0, .7, .08)
+  }
+}
+
 export function officePracticalSpec(layout) {
   const supports = [], globes = []
   if (layout.variant !== 'align') return { supports, globes }
@@ -44,7 +62,6 @@ export function wholeFloorSpec(layout) {
         const dx = -shelf.w / 2 + .17 + i * .11, height = (.25 + (i % 4) * .025) * scale, y = floor + base * scale
         box('shelf-book', shelf.x + dx, y + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
           ['#B7C2B4', '#CCB58C', '#E9E1D4', '#826E56', '#58705C'][i % 5], 'kb')
-        for (const band of [.18, .8]) box('shelf-spine', shelf.x + dx, y + height * band, shelf.z + .184, .057, .011, .004, '#D9D3C6', 'kb')
       }
       box('shelf-toe', shelf.x, floor + .075, shelf.z + .27, shelf.w, .08, .04, '#B89B64', 'kb')
       box('shelf-cornice', shelf.x, floor + shelf.h + .035, shelf.z, shelf.w, .07, shelf.d, '#C49A6C', 'kb')

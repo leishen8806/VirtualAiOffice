@@ -2,7 +2,7 @@ import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
 import { officeSampleRequested } from './host.js'
 import { createSampleBatch, officeStoneGrain } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
-import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
+import { wholeFloorSpec, appendWholeFloorGarden, officeSurfaceDetail, appendOfficeSurfaceDetails } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
@@ -107,7 +107,7 @@ export function buildOfficeAlignedShell(context) {
       mesh.userData.dynamic = true; root.add(mesh); return mesh
     }
     const shadowLod = layout.variant === 'align' && !low
-    const sourceIndices = spec.solid.map((_, i) => i)
+    const sourceIndices = spec.solid.flatMap((p, i) => layout.variant === 'align' && officeSurfaceDetail(p) ? [] : [i])
     if (shadowLod) sourceIndices.sort((a, b) => Number(contactShadowOnly.has(spec.solid[a].kind)) - Number(contactShadowOnly.has(spec.solid[b].kind)))
     const frames = add('office-aligned-frames-and-inlays', sourceIndices.map(i => spec.solid[i]), surfaces)
     // 复用现有太阳阴影；低档与旧布局维持原开销，不新增灯光。
@@ -141,8 +141,9 @@ export function buildOfficeAlignedShell(context) {
     const batch = createSampleBatch(THREE), leafBatch = layout.variant === 'align' && !low ? createSampleBatch(THREE) : batch
     appendOfficePlazaPaving({ THREE, batch, layout, low })
     appendWholeFloorGarden({ THREE, batch, leafBatch, spec: spec.wholeFloor, low })
+    if (layout.variant === 'align') appendOfficeSurfaceDetails({ THREE, batch, details: spec.solid })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
-    if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
+    if (layout.variant === 'align') { paving.mesh.material.userData.officeFineStone = true; paving.mesh.material.userData.officeBookSpines = true }
     if (leafBatch !== batch) {
       foliage = leafBatch.build(root, 'office-whole-floor-foliage')
       foliage.mesh.material.side = THREE.DoubleSide

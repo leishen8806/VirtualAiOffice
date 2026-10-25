@@ -21,18 +21,12 @@ test('ALIGN knowledge wall fills its north frontage, rests on the local floor an
   assert.deepEqual(officeFurnitureV2Spec(LAYOUT_V3).shelves,[{x:30.5,z:-17.45,w:2.8,d:.6,yaw:0},{x:32.45,z:-15.7,w:2,d:.6,yaw:Math.PI/2}])
 })
 
-test('all three real shelf levels hold books with separate front spine bands and bounded crown/toe details',()=>{
+test('all three real shelf levels hold books with bounded crown/toe details; spine print has no duplicate geometry',()=>{
   const details=wholeFloorSpec(layout).details,shelves=officeFurnitureV2Spec(layout).shelves,books=details.filter(p=>p.kind==='shelf-book'),bands=details.filter(p=>p.kind==='shelf-spine')
-  assert.equal(books.length,174);assert.equal(bands.length,348)
+  assert.equal(books.length,174);assert.equal(bands.length,0)
   for(const shelf of shelves){
     const own=books.filter(p=>Math.abs(p.x-shelf.x)<shelf.w/2)
     for(const surface of [.277,.781,1.286])assert.equal(own.filter(p=>Math.abs(p.y-p.h/2-shelf.y-surface*shelf.h/1.85)<1e-9).length,29)
-  }
-  for(const band of bands){
-    const book=books.find(p=>p.x===band.x&&band.y>p.y-p.h/2&&band.y<p.y+p.h/2)
-    assert.ok(book);const clearance=band.z-band.d/2-(book.z+book.d/2)
-    assert.ok(clearance>=.0019&&clearance<=.0021,'bands clear the book face without a floating offset')
-    assert.ok(band.x-band.w/2>=book.x-book.w/2&&band.x+band.w/2<=book.x+book.w/2)
   }
   for(const kind of['shelf-cornice','shelf-toe']){
     const pieces=details.filter(p=>p.kind===kind);assert.equal(pieces.length,2)

@@ -1141,6 +1141,8 @@ function applyWorld(s) {
 // ── 休息区：上班时间里「空闲」（没有在跑、没有在等你）的同事，过一阵会去沙发坐坐；有活了就回工位 ──
 // 这是把真实的「空闲」状态画出来，不代表在干活。
 const LOUNGE = LOUNGE_SEATS.map(seat => ({ ...seat, taken: null }))
+// 加载期旧岛台仍整圈禁入；只延后可选休息与闲聊，不阻塞业务会议。
+const loungeReady = () => !OFFICE_SAMPLE_MODE || OFFICE_LAYOUT.variant !== 'align' || officeV3?.get('island')?.status === 'open'
 function loungePath(v, seat) {
   if (seat.pathFn) return seat.pathFn(v) // 会议室座位
   return loungeTrip(v.home, seat)
@@ -1164,7 +1166,7 @@ function lifeTick(onDuty) {
   if (!gossip) loungeChat(now)
 }
 function goLounge(v, now, stay, pick) {
-  if (v.visiting) return false
+  if (v.visiting || (!pick?.meeting && !loungeReady())) return false
   const seat = pick || LOUNGE.find((x) => !x.taken)
   if (!seat) return false
   seat.taken = v
@@ -1274,6 +1276,7 @@ function endMeeting() {
   meet = null
 }
 function gossipTick(now) {
+  if (!loungeReady()) return
   if (!gossip) {
     const t = gossipThreads.find((x) => !gossipPlayed.has(x.id) && now - Date.parse(x.at) < 20 * 60000)
     if (!t) return

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import {LAYOUT_V3} from '../office-layout.js'
 import {buildOfficeAlignedShell,officeShellFinishSpec} from '../office-vis2/shell-finish.js'
+import {officeSurfaceDetail} from '../office-vis2/whole-floor.js'
 
 function fixture(data=layout,low=false,search='?officeSample=1'){
   const root=new THREE.Group(),shell=buildOfficeAlignedShell({THREE,root,layout:data,low,search})
@@ -15,8 +16,8 @@ test('shadow LOD retains all visible box matrices, colours, source spec and orig
   const f=fixture(),box=new THREE.BoxGeometry(1,1,1)
   try{
     const m=f.frames,s=f.shell.finishSpec.solid,state=m.userData.officeShadow
-    assert.ok(state);assert.equal(state.total,1357);assert.equal(state.casters,383)
-    assert.equal(m.count,state.total);assert.equal(state.sourceIndices.length,s.length);assert.equal(new Set(state.sourceIndices).size,s.length)
+    assert.ok(state);assert.equal(state.total,760);assert.equal(state.casters,383)
+    assert.equal(m.count,state.total);assert.deepEqual(state.sourceIndices.toSorted((a,b)=>a-b),s.flatMap((p,i)=>officeSurfaceDetail(p)?[]:[i]));assert.equal(new Set(state.sourceIndices).size,state.total)
     assert.deepEqual(f.shell.finishSpec.solid,officeShellFinishSpec(layout,f.shell.spec).solid)
     for(const key of['position','normal','uv'])assert.deepEqual(Array.from(m.geometry.attributes[key].array),Array.from(box.attributes[key].array))
     assert.deepEqual(Array.from(m.geometry.index.array.slice(0,36)),Array.from(box.index.array))
@@ -71,7 +72,7 @@ test('directional shadow face selection preserves native full-box ray depths fro
           assert.equal(!!value,!!old)
           if(old){hits++;assert.ok(Math.abs(value.distance-old.distance)<1e-6);assert.ok(value.point.distanceTo(old.point)<1e-6)}
         }
-        f.frames.onAfterShadow();assert.equal(f.frames.count,1357);assert.deepEqual(f.frames.geometry.drawRange,{start:0,count:36})
+        f.frames.onAfterShadow();assert.equal(f.frames.count,760);assert.deepEqual(f.frames.geometry.drawRange,{start:0,count:36})
       }
     }
     assert.ok(hits>500,'actual front/back depth samples, not only callback counters')
@@ -87,8 +88,8 @@ test('perspective/double-sided shadows use full faces and interrupted shadow sta
       camera.position.set(4,6,5);camera.lookAt(0,0,0);camera.updateMatrixWorld(true)
       m.onBeforeShadow(null,m,null,camera,m.geometry,{side});assert.equal(m.geometry.drawRange.count,count);assert.equal(m.count,383)
       // Simulate a missing after-shadow callback: the next main/GTAO pass must still contain every instance.
-      m.onBeforeRender();assert.equal(m.count,1357);assert.deepEqual(m.geometry.drawRange,{start:0,count:36})
-      m.onAfterShadow();assert.equal(m.count,1357)
+      m.onBeforeRender();assert.equal(m.count,760);assert.deepEqual(m.geometry.drawRange,{start:0,count:36})
+      m.onAfterShadow();assert.equal(m.count,760)
     }
   }finally{f.dispose()}
 })
