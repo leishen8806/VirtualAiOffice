@@ -140,7 +140,7 @@
       "source": "Existing private material batching; O-V1 preserves base colors with restrained texture detail",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "8422F5B07E56A9D31AD4A61802EB76933D99A8E8B06A8A56259A07DDB45CEA1F"
+      "sha256": "F1D13B2658CBF7D1E7E4A9024D60C1F3D2833B2D25BE83D8B8145104B80DE32F"
     },
     {
       "file": "office-vis2/plaza.js",
@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "ED8E9D4E0A60F2761F13F8111F5FE8C29559C4199C81731ED13D9EF72CA32B5F"
+      "sha256": "283BAC4BF6DD98C710A1804827518CAF52B2CF82117BB529A74844F7DB7EBF91"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -182,7 +182,7 @@
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "F508A85267EF9325B731D32B4CD69889E4115D43A6893A06963EBC6968B2703C"
+      "sha256": "ACA16C1977C4B792A2F64EFA6CF6BD9D30E219E84C24E3D241FDED48114E8655"
     },
     {
       "file": "office-vis2/display-finish.js",

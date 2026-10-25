@@ -1,6 +1,6 @@
 import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
 import { officeSampleRequested } from './host.js'
-import { createSampleBatch, officeStoneGrain } from './batch.js'
+import { createSampleBatch, officeStoneGrain, warmOfficeArchitecture } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
 import { wholeFloorSpec, appendWholeFloorGarden, officeSurfaceDetail, appendOfficeSurfaceDetails } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
@@ -97,6 +97,7 @@ export function buildOfficeAlignedShell(context) {
       shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n' + stone)
     }
     if (layout.variant === 'align') floor.customProgramCacheKey = () => 'office-vis2-ground-fine-stone-v1'
+    if (layout.variant === 'align' && !low) [surfaces, floor].forEach(warmOfficeArchitecture)
     materials.push(surfaces, glass, floor)
     const add = (name, entries, material) => {
       const geometry = new THREE.BoxGeometry(1, 1, 1); geometries.push(geometry)

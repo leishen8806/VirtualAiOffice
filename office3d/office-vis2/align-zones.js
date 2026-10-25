@@ -1,4 +1,5 @@
-import { createSampleBatch } from './batch.js'
+import { createSampleBatch, warmOfficeArchitecture } from './batch.js'
+import { officeSampleRequested } from './host.js'
 import { buildOpenFurnishing, planOpenFurnishing } from './open-furnishing.js'
 
 const isRect = b => ['x0','x1','z0','z1'].every(k => Number.isFinite(b?.[k]))
@@ -89,8 +90,9 @@ export function alignFloorSpec(layout) {
   return {regions,corridors,ring:layout.ring}
 }
 
-export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
+export function buildAlignZones({THREE,root,layout,collision,low=false,get,search}) {
   const batch=createSampleBatch(THREE), floor=alignFloorSpec(layout), furnishings=[], proxies=[], registered=[]
+  const warm=layout.variant==='align'&&!low&&officeSampleRequested(search)
   let paving,disposed=false
   const dispose=()=>{
     if(disposed)return;disposed=true
@@ -113,9 +115,12 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
     }
     paving=batch.build(root,'align-floor-and-ring')
     paving.mesh.material.userData.officeFineStone = true
+    if (warm) warmOfficeArchitecture(paving.mesh.material)
     for(const {id,plan} of alignZoneObstaclePlan(layout)) {
       if (!plan.placements.length) continue
       const f=buildOpenFurnishing({THREE,root,plan,low})
+      // 宿主会把地面和这些自有陈设合批，不能让选中哪份材质决定冷暖。
+      if (warm) warmOfficeArchitecture(f.root.material)
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`
       if(id==='north-nook'){
         const ground=get?.('shell3')?.ground
