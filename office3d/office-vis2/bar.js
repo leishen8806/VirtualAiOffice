@@ -32,7 +32,8 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   }
   // 工作区是可见空腔，树池落地；东西两口沿用既有 1.5 m 通行口与碰撞段。
   const workFloor = new THREE.RingGeometry(1.08, 2.04, detail * 2); workFloor.rotateX(-Math.PI / 2)
-  batch.add(workFloor, '#D9D3C6', [center.x, .018, center.z], 0, .9)
+  // ALIGN 地面顶面为 0.08m，内圈铺面略抬高，避免被宿主地面盖住。
+  batch.add(workFloor, '#D9D3C6', [center.x, layout.variant === 'align' ? .082 : .018, center.z], 0, .9)
   const box = (w, h, d, tint, x, y, z, roughness = .6, metalness = 0) => batch.add(new THREE.BoxGeometry(w, h, d), tint, [x, y, z], 0, roughness, metalness)
   // 静态咖啡机、接水盘与水槽给出设备体量，不触发任何设备操作。
   box(.58, .43, .4, '#26333A', center.x - .8, 1.27, center.z - 2.75, .3, .5)
@@ -72,7 +73,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   const stool = createSampleBatch(THREE, assets)
   stool.add(new THREE.CylinderGeometry(.28, .28, .1, low ? 10 : 16), '#687D68', [0, .82, 0], 0, .95, 0, 'fabric')
   stool.add(new THREE.CylinderGeometry(.04, .055, .72, 8), '#9B8B6D', [0, .42, 0], 0, .35, .7)
-  stool.add(new THREE.CylinderGeometry(.23, .25, .04, 12), '#9B8B6D', [0, .06, 0], 0, .35, .7)
+  stool.add(new THREE.CylinderGeometry(.23, .25, .04, 12), '#9B8B6D', [0, layout.variant === 'align' ? .1 : .06, 0], 0, .35, .7)
   const stoolFoot = new THREE.TorusGeometry(.17, .015, 4, 12); stoolFoot.rotateX(Math.PI / 2)
   stool.add(stoolFoot, '#B89B64', [0, .3, 0], 0, .35, .7)
   const stools = stool.build(group, 'tea-bar-instanced-stools', seats)
@@ -89,6 +90,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   curvedCushion(-LOUNGE_SIT.seatDepth / 2, LOUNGE_SIT.seatDepth / 2, LOUNGE_SIT.seatTop - .22, .22)
   curvedCushion(.14, .27, .5, .45)
   sofa.add(new THREE.BoxGeometry(1.27, .08, .4), '#C9A57A', [0, .27, 0], 0, .7, 0, 'wood')
+  if (layout.variant === 'align') for (const x of [-.52, .52]) for (const z of [-.15, .15]) sofa.add(new THREE.BoxGeometry(.07, .15, .07), '#C9A57A', [x, .155, z], 0, .7, 0, 'wood')
   for (const x of [-.62, .62]) sofa.add(new THREE.BoxGeometry(.1, .26, .52), '#C9A57A', [x, .55, 0], 0, .7, 0, 'wood')
   const sofas = sofa.build(group, 'tea-bar-instanced-lounges', lounges)
   const tree = buildHeartBanyan({ THREE, root: group, center, low, leafTriangles: layout.variant === 'align' })
