@@ -103,8 +103,8 @@ test('O4b boots both real modules atomically and falls back without leaked scene
 })
 
 test('O4b retains the original budgets without O4 line exemptions and adds at most 10 app lines', () => {
-  const app = fs.readFileSync(new URL('../../office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
-  const before = fs.readFileSync(new URL('../../office3d-backup-o4b/app.js', import.meta.url), 'utf8')
+  const app = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
+  const before = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-o4b/app.js', import.meta.url), 'utf8')
   const lines = app.split(/\r?\n/), old = before.split(/\r?\n/), oldSet = new Set(old)
   const changed = lines.filter(line => !oldSet.has(line))
   assert.ok(changed.length <= 10, `${changed.length} new app lines`)

@@ -232,8 +232,8 @@ test('O4 only wires guarded furniture and never imports warehouse code, assets o
 })
 
 test('O4 app wiring stays within its own 20-line budget and layout1 data is identical', async () => {
-  const before = fs.readFileSync(new URL('../../office3d-backup-o4/resume-20261021/app.js', import.meta.url), 'utf8')
-  const after = fs.readFileSync(new URL('../../office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
+  const before = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-o4/resume-20261021/app.js', import.meta.url), 'utf8')
+  const after = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-nav-1d/app.js', import.meta.url), 'utf8')
   const oldLines = new Set(before.split(/\r?\n/))
   const added = after.split(/\r?\n/).filter(line => !oldLines.has(line))
   const oldSequence = before.split(/\r?\n/), newSequence = after.split(/\r?\n/)
@@ -246,7 +246,7 @@ test('O4 app wiring stays within its own 20-line budget and layout1 data is iden
   const changedLines = newSequence.length - previousRow[newSequence.length]
   assert.ok(changedLines <= 20, `O4 changed/added ${changedLines} lines`)
   assert.doesNotMatch(added.join('\n'), /fetch\s*\(|innerHTML|\beval\s*\(/)
-  const previous = await import('../../office3d-backup-o4/resume-20261021/office-layout.js')
+  const previous = await import('./fixtures/historical/office3d-backup-o4/resume-20261021/office-layout.js')
   const current = await import('../office-layout.js')
   const comparable = value => typeof value === 'function' ? String(value) : Array.isArray(value) ? value.map(comparable) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, comparable(item)])) : value
   assert.deepEqual(comparable(current.LAYOUT_V1), comparable(previous.LAYOUT_V1))

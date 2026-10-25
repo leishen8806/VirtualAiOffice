@@ -2,7 +2,7 @@ import { buildOfficeTeaBarSample } from './bar.js'
 import { buildOfficeFoyerFurniture } from './foyer.js'
 import { buildOfficeFloorPattern } from './floor.js'
 import { buildOfficeSamplePlants } from './plants.js'
-import { createSampleBatch } from './batch.js'
+import { createSampleBatch, bindOfficeFurnitureSurfaces } from './batch.js'
 import { officeVis2Enabled, loadOfficeVis2Assets } from './assets.js'
 import { buildOfficeVis2Frontage } from './frontage.js'
 import { buildOfficeBrandMarks } from './brand.js'
@@ -35,6 +35,9 @@ export function buildOfficeSampleZone(context) {
     merged.mesh.castShadow = !context.low
     modules.push(brand = buildOfficeBrandMarks({ ...context, root: group }))
     modules.push(frontage = buildOfficeVis2Frontage({ ...context, root: group }))
+    if (context.layout.variant === 'align' && !context.low) group.traverse(mesh => {
+      if (mesh.isMesh && mesh.material.userData.officeVis2) mesh.material.userData.officeWarmReflection = true
+    })
   } catch (error) { dispose(); throw error }
   // 样板已自行合批；沿用宿主 qualityProxy 约定，避免通用降档抹去表面/小叶着色器。
   group.userData.dynamic = true
@@ -48,8 +51,8 @@ export function buildOfficeSampleZone(context) {
 }
 
 export function createOfficeVis2Controller(context) {
-  let epoch = 0, sample = null, assets = null, destroyed = false, status = 'closed'
-  const clear = () => { sample?.dispose(); assets?.dispose(); sample = null; assets = null }
+  let epoch = 0, sample = null, assets = null, furnitureSurfaces = null, destroyed = false, status = 'closed'
+  const clear = () => { furnitureSurfaces?.dispose(); furnitureSurfaces = null; sample?.dispose(); assets?.dispose(); sample = null; assets = null }
   return {
     get root() { return sample?.root || null },
     get mapping() { return sample?.mapping || null },
@@ -62,7 +65,9 @@ export function createOfficeVis2Controller(context) {
       try {
         loaded = await loadOfficeVis2Assets(context.THREE, config, context.textureLoader)
         if (destroyed || version !== epoch) { loaded?.dispose(); return false }
-        assets = loaded; sample = buildOfficeSampleZone({ ...context, assets }); status = 'open'; return true
+        assets = loaded; sample = buildOfficeSampleZone({ ...context, assets })
+        if (context.layout.variant==='align' && !context.low) furnitureSurfaces = bindOfficeFurnitureSurfaces(context.THREE,context.get?.('furniture3')?.surfaceMaterials,assets)
+        status = 'open'; return true
       } catch { loaded?.dispose(); if (version === epoch) { clear(); status = 'fallback' } return false }
     },
     dispose() { if (destroyed) return; destroyed = true; epoch++; clear(); status = 'closed' },

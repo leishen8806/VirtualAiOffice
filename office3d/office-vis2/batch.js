@@ -1,3 +1,35 @@
+// 细石粒在远景淡出，避免规则正弦条纹把石材画成木纹，或细噪点产生闪烁。
+export const officeStoneGrain = uv => `vec2 stoneCell = floor(${uv} * 180.0); float stoneGrain = fract(sin(dot(stoneCell, vec2(127.1, 311.7))) * 43758.5453); float stoneFade = 1.0 - smoothstep(0.002, 0.006, max(fwidth(${uv}.x), fwidth(${uv}.y))); diffuseColor.rgb *= mix(0.99, 0.982 + 0.018 * stoneGrain, stoneFade);`
+
+// 家具仍用原 atlas 和合批；只给明确的暖木/织物顶点色补纹理，屏幕白色顶点不受影响。
+const furnitureSurfaceOwners = new WeakSet()
+export function bindOfficeFurnitureSurfaces(THREE, targets, assets) {
+  const records = []
+  if (assets?.oak?.isTexture && assets?.fabric?.isTexture) for (const material of new Set(targets || [])) {
+    if (!material?.isMeshStandardMaterial || !material.vertexColors || !material.map?.isCanvasTexture || furnitureSurfaceOwners.has(material)) continue
+    const previous = material.onBeforeCompile, previousKey = material.customProgramCacheKey, key = previousKey.call(material)
+    material.onBeforeCompile = function(shader,renderer) {
+      previous.call(this,shader,renderer)
+      Object.assign(shader.uniforms,{officeFurnitureOak:{value:assets.oak},officeFurnitureFabric:{value:assets.fabric},officeFurnitureWoodColor:{value:new THREE.Color('#C49A6C')},officeFurnitureFabricColor:{value:new THREE.Color('#506A5A')}})
+      shader.vertexShader = 'varying vec3 officeFurniturePosition; varying vec3 officeFurnitureNormal;\n' + shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nofficeFurniturePosition = position; officeFurnitureNormal = normal;')
+      shader.fragmentShader = 'uniform sampler2D officeFurnitureOak; uniform sampler2D officeFurnitureFabric; uniform vec3 officeFurnitureWoodColor; uniform vec3 officeFurnitureFabricColor; varying vec3 officeFurniturePosition; varying vec3 officeFurnitureNormal;\n' + shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+        float officeWood = 0.0; float officeFabric = 0.0;
+        #ifdef USE_COLOR
+        officeWood = 1.0 - step(.01,length(vColor.rgb-officeFurnitureWoodColor)); officeFabric = 1.0 - step(.01,length(vColor.rgb-officeFurnitureFabricColor));
+        #endif
+        vec3 officeN = abs(normalize(officeFurnitureNormal)); vec2 officeUv = officeN.y > max(officeN.x,officeN.z) ? officeFurniturePosition.xz : (officeN.x > officeN.z ? officeFurniturePosition.zy : officeFurniturePosition.xy);
+        if (officeWood > .5) diffuseColor.rgb *= mix(vec3(1.0),texture2D(officeFurnitureOak,officeUv/1.2).rgb,.45);
+        else if (officeFabric > .5) diffuseColor.rgb *= mix(vec3(1.0),texture2D(officeFurnitureFabric,officeUv*3.0).rgb,.35);
+      `).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nif (officeWood > .5) roughnessFactor = .64; else if (officeFabric > .5) roughnessFactor = .96;')
+    }
+    material.customProgramCacheKey = () => key+'-office-owned-furniture-surfaces-v1'; material.needsUpdate = true
+    records.push({material,previous,previousKey,installed:material.onBeforeCompile})
+    furnitureSurfaceOwners.add(material)
+  }
+  let disposed = false
+  return {count:records.length,dispose(){if(disposed)return;disposed=true;for(const r of records){furnitureSurfaceOwners.delete(r.material);if(r.material.onBeforeCompile===r.installed){r.material.onBeforeCompile=r.previous;r.material.customProgramCacheKey=r.previousKey;r.material.needsUpdate=true}}records.length=0}}
+}
+
 // 合并颜色和表面参数，避免把木材、织物与金属合并成同一种粗糙度。
 export function createSampleBatch(THREE, assets) {
   const values = { position: [], normal: [], color: [], sampleSurface: [], sampleUv: [] }
@@ -31,11 +63,20 @@ export function createSampleBatch(THREE, assets) {
         // 已有贴图仅作材料细节，保留基色；避免每个石面都被同一张纹理染成深米黄。
         shader.fragmentShader = 'uniform sampler2D vis2oak; uniform sampler2D vis2stone; uniform sampler2D vis2fabric; uniform bool vis2Textured; varying vec3 surfaceParams; varying vec2 materialUv;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (vis2Textured) { if (surfaceParams.z > 2.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2fabric, materialUv * 3.0).rgb, 0.45); else if (surfaceParams.z > 1.5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2stone, materialUv).rgb, 0.28); else if (surfaceParams.z > .5) diffuseColor.rgb *= mix(vec3(1.0), texture2D(vis2oak, materialUv).rgb, 0.55); }').replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = surfaceParams.x;').replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = surfaceParams.y;')
         // 无贴图的广场批次也保留细石纹；只调本材质，不增加纹理请求或绘制批次。
-        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > 1.5 && surfaceParams.z < 2.5) { float vein = sin(materialUv.x * 24.0 + sin(materialUv.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein); }')
+        const stone = material.userData.officeFineStone ? officeStoneGrain('materialUv') : 'float vein = sin(materialUv.x * 24.0 + sin(materialUv.y * 9.0) * 2.0); diffuseColor.rgb *= 0.965 + 0.035 * smoothstep(-0.95, -0.5, vein);'
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > 1.5 && surfaceParams.z < 2.5) { ${stone} }`)
+        // 大面木材逐片元计算细纹，避免只有四个平面顶点的色差。
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > .5 && surfaceParams.z < 1.5) { float grain = sin(materialUv.x * 165.0 + sin(materialUv.y * 3.0) * 1.7 + sin(materialUv.x * 13.0) * 2.0); diffuseColor.rgb *= .93 + .07 * smoothstep(-.9, .55, grain); }')
+        // 棚布仅在既有棚顶标记，和柜体分开；无额外图像、透明层或绘制批次。
+        shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (surfaceParams.z > 3.5) { float stripe = step(.5, fract(materialUv.y * 4.0)); diffuseColor.rgb = mix(vec3(.48, .55, .43), vec3(.90, .86, .76), stripe); }')
+        // 复用天气环境反射，仅中和室内饰面的天空蓝；不改直射光、叶片或全局曝光。
+        if (material.userData.officeWarmReflection) shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#ifdef USE_ENVMAP\niblIrradiance = mix(iblIrradiance, vec3(dot(iblIrradiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\nradiance = mix(radiance, vec3(dot(radiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\n#endif')
       }
-      material.customProgramCacheKey = () => 'office-vis2-pbr-v2'
+      material.customProgramCacheKey = () => (material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3') + (material.userData.officeWarmReflection ? '-warm-ibl-v1' : '')
       material.userData.officeVis2 = true
-      const mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material)
+      let mesh
+      try { mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material) }
+      catch (error) { geometry.dispose(); material.dispose(); throw error }
       if (poses) {
         const transform = new THREE.Object3D()
         poses.forEach((p, i) => { transform.position.set(p.x, 0, p.z); transform.rotation.y = p.yaw || 0; transform.updateMatrix(); mesh.setMatrixAt(i, transform.matrix) })

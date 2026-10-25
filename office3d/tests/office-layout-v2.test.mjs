@@ -6,10 +6,10 @@ import * as layout from '../office-layout.js'
 
 const rectOverlap = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.z0 < b.z1 && a.z1 > b.z0
 const hash = (value) => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex')
-const oldSource = fs.readFileSync(new URL('../office3d-backup-o2/office-layout.js', import.meta.url), 'utf8')
+const oldSource = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-o2/office-layout.js', import.meta.url), 'utf8')
 
 test('layout1 preserves every pre-O2 export value and order', async () => {
-  const old = await import('../office3d-backup-o2/office-layout.js')
+  const old = await import('./fixtures/historical/office3d-backup-o2/office-layout.js')
   const currentSource = fs.readFileSync(new URL('../office-layout.js', import.meta.url), 'utf8')
   assert.equal(currentSource.startsWith(oldSource), true)
   for (const name of Object.keys(old)) {

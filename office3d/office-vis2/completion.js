@@ -4,7 +4,7 @@ import { appendOfficePlaza } from './plaza.js'
 export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
   const plaza = layout.plaza, c = plaza.center
   const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
-  disk.rotateX(-Math.PI / 2); batch.add(disk, '#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
+  disk.rotateX(-Math.PI / 2); batch.add(disk, layout.variant==='align'?'#DED6C7':'#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
   for (const radius of [3.1, 5.8, 8.3]) {
     const ring = new THREE.RingGeometry(radius - .055, radius + .055, low ? 40 : 80)
     ring.rotateX(-Math.PI / 2); batch.add(ring, '#A59B88', [c.x, .104, c.z], 0, .85)
@@ -13,7 +13,7 @@ export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
     const a = i * Math.PI * 2 / plaza.radialSeams, length = plaza.radius - .25 - 3.2
     batch.add(new THREE.BoxGeometry(.018, .006, length), '#B8AF9F', [c.x + Math.sin(a) * (3.2 + length / 2), .103, c.z + Math.cos(a) * (3.2 + length / 2)], a, .9)
   }
-  batch.add(new THREE.BoxGeometry(3.8, .02, 1.8), '#D9D3C6', [c.x, .105, 12.9], 0, .78, 0, 'stone')
+  batch.add(new THREE.BoxGeometry(layout.variant === 'align' ? layout.doors.south.width : 3.8, .02, 1.8), '#D9D3C6', [c.x, .105, 12.9], 0, .78, 0, 'stone')
 }
 
 // Preview-owned decoration. Functional seats, colliders and navigation remain in the host.

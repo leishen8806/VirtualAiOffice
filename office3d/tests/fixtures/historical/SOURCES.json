@@ -1,0 +1,92 @@
+[
+  {
+    "sha256": "06DF880A04A113244C031F59BEC6D966CA0BC537B169689EDE14D1F5BAFCA108",
+    "file": "office3d-backup-o4/resume-20261021/app.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-o4\\resume-20261021\\app.js",
+    "canonicalLfSha256": "549CBCC2BF9E78FD16D405315F429499C7149677A756056B40101714C9CB5B31"
+  },
+  {
+    "sha256": "E240CBAE82263E1499BF10C976BD2E6093D1077D5AD3B40E92E7B81758519FD8",
+    "file": "office3d-backup-o4/resume-20261021/office-layout.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-o4\\resume-20261021\\office-layout.js",
+    "canonicalLfSha256": "1D813A3823E516A74089E75874E10FB280D5596C66100864103FC64C51B0B5A7"
+  },
+  {
+    "sha256": "D65B4BAC00B204AEA35914B41283AB625DED85F3AE7D59B4733B0BD25FFE3ADC",
+    "file": "office3d-backup-o6o7/resume-20261022/app.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-o6o7\\resume-20261022\\app.js",
+    "canonicalLfSha256": "DFE902617AF84B15D633230D3F72D9BFC7A1BF931D9CD1CE88C6A7720D29B661"
+  },
+  {
+    "sha256": "D9DDC350226AC28421D783928264FCBCF23E85170CF89EF9F7247B052668CE20",
+    "file": "office3d-backup-o4b/app.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-o4b\\app.js",
+    "canonicalLfSha256": "048FA659BC36BFB1D87C4FC59FF4569001CB4EB30224765E356D2633122F7F05"
+  },
+  {
+    "sha256": "45171C6D98C72758D856A5BE24981D543131338286CD0D70278D6E4664FB7E6D",
+    "file": "office3d-backup-nav-1d/app.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-nav-1d\\app.js",
+    "canonicalLfSha256": "971CD69C98A539F924670DF9AB0B39C47FB7DC5F3332BCDB9EE4D25F7E8B81B1"
+  },
+  {
+    "sha256": "3761AD18C0F0C4B10EDA3827C59E21A9F65D711E2BA376322E17144EFB32B78B",
+    "file": "office3d-backup-s2-1/office-layout.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-s2-1\\office-layout.js",
+    "canonicalLfSha256": "833A208D5F30B18448F6B77B98655B189E63FA0AB7182DA8988A02DB53F8B52A"
+  },
+  {
+    "sha256": "38A376ED7B05CF68F35362AFBF4F68AB0F8437B92154D653DACA6472D195CC7B",
+    "file": "office3d-backup-s2-1/env.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-s2-1\\env.js",
+    "canonicalLfSha256": "90AE8D8D0407989CF9CB05CCAEEA3F7A88C6E73FCEACBB7A38BC27808C32BD8B"
+  },
+  {
+    "sha256": "C9095E8B156E7811F699E21D00E87E5EC2E6FA43CB62C609CF2B618E908BEC37",
+    "file": "office3d-backup-h2/server.mjs",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-h2\\server.mjs",
+    "canonicalLfSha256": "1D91B895941F472E6AE7C7DA0E794184360BDDCD0EEB2D629B7E5A577E6C670D"
+  },
+  {
+    "sha256": "18AF786FAF81B7C6978A6A230348C2C81D9E839714C8360E91CAABE55A70ECB9",
+    "file": "office3d-backup-m5-1/server.mjs",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-m5-1\\server.mjs",
+    "canonicalLfSha256": "B75DE45EAFABAAF5DAB49A92A4E73C37AE98AE35B4942213C5067145CD1D87A6"
+  },
+  {
+    "sha256": "7B0B0F79F97139AB5F6E420CA044AA7AEB3FD278FBF5D8687E9DA74D75042D38",
+    "file": "office3d-backup-m1b/server.mjs",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-m1b\\server.mjs",
+    "canonicalLfSha256": "4F66FFD91056D37CD9FAA0A2EFE5875A7156CB2D1CB09A2EFB3616B777312AC4"
+  },
+  {
+    "sha256": "5CB571CFE66FC2BB0AB563EBBB6BB89904807F4BE773FD092ED20D6AF219A914",
+    "file": "office3d-backup-o2/office-layout.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d\\office3d-backup-o2\\office-layout.js",
+    "canonicalLfSha256": "A95B530C2039FEC75DC24F0F6A47CB31FDE8E8D7B6B66145240CC93B9AE19835"
+  },
+  {
+    "sha256": "E0B3572F1C4E8A9E6B90B8A5C3B6804090C18081A7413E584D25C02F09931C6F",
+    "file": "town-map-data/m0/derived/town-map-v0.json",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\town-map-data\\m0\\derived\\town-map-v0.json",
+    "canonicalLfSha256": "E0B3572F1C4E8A9E6B90B8A5C3B6804090C18081A7413E584D25C02F09931C6F"
+  },
+  {
+    "file": "office3d-backup-s2-4/app.js",
+    "sha256": "BE4A9EF2EFA9147A8CF1FE1F79A5B7A790632EBDC14C504EBC2F6CF20994B08B",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-s2-4\\app.js",
+    "canonicalLfSha256": "9B5CA17A29C720BC1B3A5030F8D7676B9C14DD29EEBB36EB3E18BABEAB3FEDDD"
+  },
+  {
+    "file": "office3d-backup-s2-2/app.js",
+    "sha256": "00BCFFB54808690D541C59CCF2DAF6C5C23D3D948A86DEAF033FD7C35EE45B37",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-s2-2\\app.js",
+    "canonicalLfSha256": "CCDD8B6F9236FBEE7CD9D72E97677AFF1ABDF73A8C1B03E00DF394A10F8FC825"
+  },
+  {
+    "file": "office3d-backup-nav-1d/app.after-merge-before-control-room-camera-fix.js",
+    "source": "E:\\VirtualAIOffice\\paperclip-ops\\office3d-backup-nav-1d\\app.after-merge-before-control-room-camera-fix.js",
+    "sha256": "3BA12DDFDC8A8D7CAD09C5B5BE76AA0F4092DCBB01AE37B35336B4B8D00C598A",
+    "canonicalLfSha256": "55767F9214D84BF994AEFB2E30CE436C70BDE32857F5DD7EB0C24FB661E25EAA"
+  }
+]

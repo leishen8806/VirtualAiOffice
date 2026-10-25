@@ -35,7 +35,8 @@ test('ALIGN walls have exactly one data-owned 1.5m opening in each of seven encl
     }
   }
   assert.equal(finish.solid.filter(p=>p.kind==='door-header').length,7)
-  assert.deepEqual(spec.outer,buildOfficeShellV3Spec(LAYOUT_V3).outer)
+  const originalOuter=buildOfficeShellV3Spec(LAYOUT_V3).outer.map(p=>p.side!=='south'?p:{...p,...(p.lo===LAYOUT_V3.envelope.x0?{hi:-1}:{lo:5})})
+  assert.deepEqual(spec.outer,originalOuter) // 仅南门按本次授权从4m加宽到6m，其余外墙保持不变。
 })
 
 test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of every rectangular path',()=>{
@@ -53,7 +54,7 @@ test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of 
 for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision registration and cleanup ${low?'low':'high'}`,()=>{
   const root=new THREE.Group(),collision=createFurnitureCollision(),v=buildOfficeAlignedZones({THREE,root,layout:ALIGN,low,collision})
   try{
-    assert.equal(v.furnishings.length,8);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
+    assert.equal(v.furnishings.length,9);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
     const forbidden=[...alignPassages(ALIGN),...alignDoorAprons(ALIGN)],pos=new THREE.Vector3()
     for(const f of v.furnishings)for(const p of f.placements){
       const box=new THREE.Box3(),a=f.root.geometry.attributes.position
@@ -61,7 +62,12 @@ for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision 
       const b={x0:box.min.x,x1:box.max.x,z0:box.min.z,z1:box.max.z}
       for(const k of Object.keys(b))close(b[k],p.bounds[k])
       for(const c of forbidden)assert.equal(overlaps(b,c),false,`${p.id} intersects passage/door`)
-      for(const [,x,z]of Object.values(ALIGN.seats))assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' workstation')
+      for(const [id,[,x,z]]of Object.entries(ALIGN.seats)){
+        if(p.workstationIds?.includes(id)){
+          assert.equal(overlaps(b,{x0:x-.7,x1:x+.7,z0:z-.35,z1:z+.35}),false,p.id+' existing desktop')
+          assert.equal(overlaps(b,{x0:x-.4,x1:x+.4,z0:z+.35,z1:z+1.3}),false,p.id+' seat access')
+        }else assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' unrelated workstation')
+      }
       assert.ok(distance(b,ALIGN.ring.center.x,ALIGN.ring.center.z)>=10-1e-6,p.id+' ring')
       assert.ok(v.obstacles().some(o=>o.id===p.id))
     }
@@ -95,13 +101,17 @@ test('ALIGN collision corners stay within 6.3m without gaps in the annular secto
   assert.ok(Math.max(...old.flatMap(b=>[b.x0,b.x1].flatMap(x=>[b.z0,b.z1].map(z=>Math.hypot(x-center.x,z-center.z)))))>6.3,'old approximation is a failing control')
 })
 
-test('ALIGN real registry consumes resolved layout, exposes obstacles and marks display modules pending',async()=>{
+test('ALIGN real registry consumes resolved layout, exposes obstacles and builds display modules',async()=>{
   const scene=new THREE.Scene(),layout=resolveOfficeLayout('?layout=3&align=1'),registered=[]
   const r=startOfficeV3({THREE,scene,layout,quality:{tier:'high'},collision:{add:(p,kind)=>registered.push({p,kind}),remove:()=>{}},canvasTex})
   try{
     assert.equal(r.get('shell3').spec.inner[0].room,layout.regions.find(r=>r.id==='market'))
     assert.equal(r.get('zones').floor.regions.length,15);assert.ok(r.get('zones').obstacles().length>0)
-    assert.equal(r.get('displayDepartments').pending,true);assert.equal(r.get('displayStaff').pending,true)
+    assert.equal(r.get('displayDepartments').pending,undefined)
+    assert.equal(r.get('displayDepartments').regions.length,4)
+    assert.equal(r.get('displayDepartments').summary().departments,4)
+    assert.equal(r.get('displayStaff').pending,undefined)
+    assert.equal(r.get('displayStaff').summary().synthetic,true)
     assert.deepEqual(r.summary().skipped,[])
     assert.equal(registered.filter(p=>p.kind==='office3-align-furnishing').length,r.get('zones').obstacles().length)
   }finally{r.dispose()}

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const current = readFileSync(new URL('../env.js', import.meta.url), 'utf8')
-const before = readFileSync(new URL('../../office3d-backup-s2-1/env.js', import.meta.url), 'utf8')
+const before = readFileSync(new URL('./fixtures/historical/office3d-backup-s2-1/env.js', import.meta.url), 'utf8')
 const count = (source, pattern) => [...source.matchAll(pattern)].length
 
 test('the three campus palms are removed only after palm generation', () => {
@@ -19,7 +19,9 @@ test('the palm and random-call sequences are unchanged', () => {
 })
 
 test('env change is one condition line and introduces no unsafe APIs', () => {
-  const oldLines = before.split(/\r?\n/), newLines = current.split(/\r?\n/)
+  // 旧卡只改棕榈循环；后续天空与画质提交不属于这条单行变更预算。
+  const palmLoop = source => source.slice(source.indexOf('for (const [x, z] of [[-28, 18]'), source.indexOf('// 远处地平线'))
+  const oldLines = palmLoop(before).split(/\r?\n/), newLines = palmLoop(current).split(/\r?\n/)
   const changed = newLines.map((line, i) => ({ before: oldLines[i], after: line })).filter(row => row.before !== row.after)
   assert.equal(changed.length, 1)
   assert.match(changed[0].before, /\[-12, 12\]/)

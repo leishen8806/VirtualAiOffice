@@ -105,7 +105,7 @@ test('display flag requires literal true, invalid/missing JSON stays off, URL op
   assert.equal(logic.displayConfig('{"enabled":true}').enabled, true)
   for (const url of ['', '?display=0', '?display=true', '?display=1&display=1']) assert.equal(logic.displayConfig(null, url).enabled, false)
   assert.equal(logic.displayConfig(null, '?display=1').enabled, true)
-  assert.deepEqual(JSON.parse(source('display-staff.json')), { enabled: false, countPerDepartment: 3 })
+  assert.deepEqual(JSON.parse(source('tests/fixtures/disabled-features/display-staff.json')), { enabled: false, countPerDepartment: 3 })
 })
 test('12 synthetic identities, three per rev2 department, no layout1 roster, no input mutation', () => {
   assert.equal(roster.length, 12); assert.equal(new Set(roster.map(p => p.id)).size, 12)

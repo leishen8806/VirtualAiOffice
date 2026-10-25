@@ -5,8 +5,9 @@ import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
 import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
 import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
 import { buildOfficePlazaHost } from './office-vis2/plaza-host.js'
-import { buildDisplayDepartments } from './display-departments.js'
+import { buildOfficeDisplayFinish as buildDisplayDepartments } from './office-vis2/display-finish.js'
 import { buildDisplayStaff } from './display-staff.js'
+import { createOfficePottedFoliage } from './office-vis2/plants.js'
 
 const pendingModule = name => ({
   pending: true,
@@ -19,21 +20,36 @@ function buildOfficeFurnitureV3(context) {
   if (!context.A?.furn || typeof context.placeFurniture !== 'function' || typeof context.canvasTex !== 'function' || typeof context.makeScreenTexture !== 'function') {
     return pendingModule('office-furniture-v3')
   }
-  const furniture = placeOfficeFurnitureV2({ ...context, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
-  let badges
-  if (officeSampleRequested(context.search)) {
-    const { THREE } = context, seats = Object.values(context.layout.seats)
-    const geometry = new THREE.CylinderGeometry(.06, .06, .012, 6), material = new THREE.MeshBasicMaterial({ toneMapped: false })
-    badges = new THREE.InstancedMesh(geometry, material, seats.length); badges.name = 'agent-model-badges'; badges.onBeforeRender = () => {}
-    const transform = new THREE.Object3D()
-    seats.forEach(([, x, z], i) => {
-      transform.position.set(x + .62, .8, z + .06); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
-      badges.setMatrixAt(i, transform.matrix); badges.setColorAt(i, new THREE.Color(0xffffff))
-      furniture.deskAt(x, z).setBadge = color => { badges.setColorAt(i, new THREE.Color(color)); badges.instanceColor.needsUpdate = true }
-    })
-    context.root.add(badges)
+  const foliage=context.layout.variant==='align'&&officeSampleRequested(context.search)?createOfficePottedFoliage(context.THREE,context.A.furn.pottedPlant,context.low):null
+  const plantPlacements=[],placeFurniture=(A,name,x,z,options)=>{
+    const nextZ=context.layout.variant==='align'&&officeSampleRequested(context.search)&&name==='pottedPlant'?Math.min(z,context.layout.envelope.z1-.6):z
+    if(name==='pottedPlant')plantPlacements.push({x,fromZ:z,z:nextZ})
+    return context.placeFurniture(A,name,x,nextZ,options)
   }
-  return { ...furniture, displaySeats: context.layout.displaySeats, version: 3, dispose() { badges?.removeFromParent(); badges?.geometry.dispose(); badges?.material.dispose(); badges?.dispose(); furniture.dispose() } }
+  const plantProxies=new Map(),registered=new Set(),collision=context.layout.variant==='align'&&officeSampleRequested(context.search)&&context.collision?{...context.collision,
+    add(group,kind){const proxy=kind==='pottedPlant'&&foliage?.enabled?foliage.collisionProxy(group):group;if(proxy!==group)plantProxies.set(group,proxy);registered.add(proxy);return context.collision.add(proxy,kind)},
+    remove(group){const proxy=plantProxies.get(group)||group;registered.delete(proxy);return context.collision.remove?.(proxy)}}:context.collision
+  let furniture, badges, disposed=false
+  const dispose=()=>{if(disposed)return;disposed=true;try{badges?.removeFromParent();badges?.geometry.dispose();badges?.material.dispose();badges?.dispose();furniture?.dispose()}finally{for(const p of registered)context.collision.remove?.(p);registered.clear();for(const p of plantProxies.values())p.clear();plantProxies.clear();foliage?.dispose()}}
+  try {
+    const A=foliage?.enabled?{...context.A,furn:{...context.A.furn,pottedPlant:foliage.source}}:context.A
+    furniture = placeOfficeFurnitureV2({ ...context, A, collision, placeFurniture, parent: context.root, layout: context.layout, warmPalette: officeSampleRequested(context.search) })
+    const surfaceMaterials = new Set()
+    if (context.layout.variant==='align' && officeSampleRequested(context.search)) furniture.root.traverse(m=>{if(m.isMesh&&m.name.startsWith('office2-furniture-part-'))surfaceMaterials.add(m.material)})
+    if (officeSampleRequested(context.search)) {
+      const { THREE } = context, seats = Object.values(context.layout.seats)
+      const geometry = new THREE.CylinderGeometry(.06, .06, .012, 6), material = new THREE.MeshBasicMaterial({ toneMapped: false })
+      badges = new THREE.InstancedMesh(geometry, material, seats.length); badges.name = 'agent-model-badges'; badges.onBeforeRender = () => {}
+      const transform = new THREE.Object3D()
+      seats.forEach(([, x, z], i) => {
+        transform.position.set(x + .62, .8, z + .06); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
+        badges.setMatrixAt(i, transform.matrix); badges.setColorAt(i, new THREE.Color(0xffffff))
+        furniture.deskAt(x, z).setBadge = color => { badges.setColorAt(i, new THREE.Color(color)); badges.instanceColor.needsUpdate = true }
+      })
+      context.root.add(badges)
+    }
+    return { ...furniture, plantPlacements, surfaceMaterials:[...surfaceMaterials], displaySeats: context.layout.displaySeats, version: 3, dispose }
+  }catch(error){dispose();throw error}
 }
 
 const displayLayout = layout => ({ ...layout, version: 2, corridors: {
@@ -43,12 +59,10 @@ const displayLayout = layout => ({ ...layout, version: 2, corridors: {
 }, displayAdapter: 'v3' })
 
 function buildDisplayDepartmentsV3(context) {
-  if (context.layout.variant === 'align') return pendingModule('align-display-departments-door-adapter')
   return buildDisplayDepartments({ ...context, layout: displayLayout(context.layout) })
 }
 
 function buildDisplayStaffV3(context) {
-  if (context.layout.variant === 'align') return pendingModule('align-display-staff-door-adapter')
   return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
 }
 
@@ -96,6 +110,7 @@ export function selectEnvironmentConflicts(environmentRoots, layout) {
     const p = worldPosition(object)
     if (!isInside(p, site, Number(layout.greenBuffer?.width) || 0)) return false
     if (object.isGroup) return true // 环境树 / 棕榈树等局部组
+    if (layout.variant === 'align' && !object.geometry?.boundingBox) object.geometry?.computeBoundingBox?.()
     const box = object.geometry?.boundingBox
     if (!box) return true
     const w = Math.abs((box.max.x - box.min.x) * (object.scale?.x || 1))

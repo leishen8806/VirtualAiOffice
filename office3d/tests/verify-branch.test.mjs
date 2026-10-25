@@ -123,7 +123,8 @@ test('夹具固定 core.autocrlf=false（否则只改换行符的提交会被换
   git(probe, ['add', '-A'])
   assert.equal(run(probe, 'git', ['-C', probe, 'diff', '--cached', '--quiet']).status, 0, 'autocrlf=true 时只改换行符不会产生暂存差异')
   git(probe, ['config', 'core.autocrlf', 'false'])
-  git(probe, ['add', '-A'])
+  // 配置变化不一定使索引的文件状态缓存失效，强制按新规则重读内容。
+  git(probe, ['add', '--renormalize', '--', 'mod.mjs'])
   assert.equal(run(probe, 'git', ['-C', probe, 'diff', '--cached', '--quiet']).status, 1, '关掉换行转换后才能提交换行差异')
 })
 

@@ -21,6 +21,15 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   ring(2.06, spec.barOuter + .045, .95, .1, '#F4F1EA', .32)
   ring(2.11, spec.barOuter + .012, .11, .045, '#B89B64', .33, .7)
   ring(2.11, spec.barOuter + .012, .88, .025, '#B89B64', .33, .7)
+  // 台身竖向橡木条与凹入踢脚形成深度，仍在台面投影内，不改变碰撞与座位环。
+  for (const arc of layout.variant === 'align' ? barArcs(barLayout) : []) {
+    const count = Math.ceil((arc.end - arc.start) * spec.barOuter / .15)
+    for (let i = 1; i < count; i++) {
+      const a = arc.start + (arc.end - arc.start) * i / count
+      batch.add(new THREE.BoxGeometry(.055, .64, .018), i % 4 ? '#A9845C' : '#BFA17A',
+        [center.x + Math.cos(a) * (spec.barOuter + .009), .5, center.z + Math.sin(a) * (spec.barOuter + .009)], Math.PI / 2 - a, .72, 0, 'wood')
+    }
+  }
   // 工作区是可见空腔，树池落地；东西两口沿用既有 1.5 m 通行口与碰撞段。
   const workFloor = new THREE.RingGeometry(1.08, 2.04, detail * 2); workFloor.rotateX(-Math.PI / 2)
   batch.add(workFloor, '#D9D3C6', [center.x, .018, center.z], 0, .9)

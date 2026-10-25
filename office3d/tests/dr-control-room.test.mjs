@@ -30,7 +30,7 @@ test('control room implementation stays local, simulated and disposable', async 
   ].join('\n')
   assert.doesNotMatch(source, /fetch\s*\(|XMLHttpRequest|WebSocket|\/state|Paperclip|createTask|inventory/i)
   assert.match(source, /CAMBODIA_OUTLINE_D/)
-  assert.match(source, /demoSnapshotAt/)
+  assert.match(source, /sharedDemoSnapshotAt/)
   assert.doesNotMatch(source, /createDemoDisplay/)
   assert.match(source, /root\.removeFromParent\(\)/)
   assert.match(source, /模拟数据 · 示意/)
