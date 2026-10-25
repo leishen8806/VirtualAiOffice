@@ -91,7 +91,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   sofa.add(new THREE.BoxGeometry(1.27, .08, .4), '#C9A57A', [0, .27, 0], 0, .7, 0, 'wood')
   for (const x of [-.62, .62]) sofa.add(new THREE.BoxGeometry(.1, .26, .52), '#C9A57A', [x, .55, 0], 0, .7, 0, 'wood')
   const sofas = sofa.build(group, 'tea-bar-instanced-lounges', lounges)
-  const tree = buildHeartBanyan({ THREE, root: group, center, low })
+  const tree = buildHeartBanyan({ THREE, root: group, center, low, leafTriangles: layout.variant === 'align' })
   const bounds = barColliders(layout), proxies = []
   if (collision) for (const b of bounds) {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, 1.1, b.z1 - b.z0), new THREE.MeshBasicMaterial({ visible: false }))

@@ -81,14 +81,14 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "5B46A5DF127E77265285FDFCD0D7847039B3D2DD7FD4750D22EC73BA920415C3",
+      "sha256": "F350047FB201C7C7943118C4CA50EEF4E9BF8389A428D722DC7803D1EDC5B57D",
       "source": "Existing procedural banyan refined in O-V1: smaller leaves, deeper canopy notch and branching; no photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "A0433CD5413876F52B29CBB19D563D76699D9A6494AF4599DC6F826A4DD121A0",
+      "sha256": "488E1F697DCD88A26C9A78023AF4764CD1DB58424B127F0640915FB1E2E24AB3",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -102,7 +102,7 @@
     },
     {
       "file": "office-vis2/plants.js",
-      "sha256": "ACA9B31692CF1A2D6E5BF0F0981C902013E87D2A94266C8C4758F42F119C5E2B",
+      "sha256": "D514A3CFE46EFC008D7AB496AF5F12D66122E9876F8485EB60D75764C427D56D",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -204,6 +204,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "17227FE5D6CF7145ECE2BD123A177621AC52485EEE1CB5DA27939C077CDBB18F"
+    },
+    {
+      "file": "office-vis2/leaf-pass.js",
+      "source": "Original office-owned alpha-preserving normal-pass adapter; no downloads or shared renderer changes",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "5C941D4D02753566037A5A135E867DD9EB1632A9DB7BC9B951224778D8FA170F"
     }
   ],
   "excluded": {

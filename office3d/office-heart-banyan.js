@@ -1,5 +1,6 @@
 // 静态缩景资产；本地小叶几何，新闻图片仅作形态参考，不进入纹理。
-export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = false } = {}) {
+import { bindOfficeLeafNormalPass } from './office-vis2/leaf-pass.js'
+export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = false, leafTriangles = false } = {}) {
   if (!THREE || !root) throw new TypeError('buildHeartBanyan requires THREE and root')
   const group = new THREE.Group(); group.name = 'office-heart-banyan'
   group.position.set(center.x, 0, center.z)
@@ -63,17 +64,19 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   merge(wood, 'heart-banyan-trunk-and-branches', { roughness: .98 })
 
   // 小叶用解析椭圆裁边，保留三维固定朝向；不加载照片，也不随相机转动。
-  const vertices = [], uvs = []
+  const vertices = [], uvs = [], visibleLeaves = []
   for (let i = 0; i < 3; i++) {
     const angle = i * 2.399, x = Math.cos(angle) * .07, z = Math.sin(angle) * .07, y = (i % 2) * .035
     const rim = [[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b]) => {
       const u = a * .09, v = b * .038
       return [x + Math.cos(angle) * u - Math.sin(angle) * v, y + v * .2, z + Math.sin(angle) * u + Math.cos(angle) * v]
     })
-    for (const j of [0,1,2,0,2,3]) vertices.push(...rim[j])
-    uvs.push(0,0,1,0,1,1,0,0,1,1,0,1)
+    visibleLeaves.push(...rim.flat())
+    if (leafTriangles) { vertices.push(...rim[0], ...rim[1].map((v,j)=>2*v-rim[0][j]), ...rim[3].map((v,j)=>2*v-rim[0][j]));uvs.push(0,0,2,0,0,2) }
+    else { for (const j of [0,1,2,0,2,3]) vertices.push(...rim[j]);uvs.push(0,0,1,0,1,1,0,0,1,1,0,1) }
   }
   const leafGeometry = new THREE.BufferGeometry(); leafGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); leafGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); leafGeometry.computeVertexNormals(); geometries.push(leafGeometry)
+  if (leafTriangles) { const bounds=new THREE.BufferGeometry();bounds.setAttribute('position',new THREE.Float32BufferAttribute(visibleLeaves,3));bounds.computeBoundingBox();bounds.computeBoundingSphere();leafGeometry.boundingBox=bounds.boundingBox.clone();leafGeometry.boundingSphere=bounds.boundingSphere.clone();bounds.dispose() }
   const count = low ? 500 : 1000
   const leafMaterial = material({ color: 0xffffff, roughness: .87, side: THREE.DoubleSide })
   leafMaterial.onBeforeCompile = shader => {
@@ -83,6 +86,7 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   leafMaterial.customProgramCacheKey = () => 'heart-banyan-oval-leaf-v1'
   const leaves = new THREE.InstancedMesh(leafGeometry, leafMaterial, count)
   leaves.name = 'heart-banyan-small-leaf-clusters'; const transform = new THREE.Object3D()
+  if (leafTriangles) bindOfficeLeafNormalPass(leaves)
   const colors = ['#355638', '#426640', '#4C7545', '#557A48', '#648B50'].map(c => new THREE.Color(c))
   const accepted = []
   const envelope = (x, y, z) => {
