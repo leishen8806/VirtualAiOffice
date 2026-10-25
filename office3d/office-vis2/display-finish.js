@@ -4,6 +4,7 @@ import { DISPLAY_DEPARTMENTS, displayRoster } from '../display-staff-logic.js'
 import { officeSampleRequested } from './host.js'
 import { officeLeafGeometry } from './plants.js'
 import { facingSample, marketSamplePlan } from './furniture-sample.js'
+import { appendMarketWorkIsland } from './market-work-island.js'
 
 export function officeDisplayRoomSample(layout) {
   if(facingSample(layout))return marketSamplePlan(layout)
@@ -23,7 +24,7 @@ export function buildOfficeDisplayFinish(context) {
   const rooms = departments.map(id => layout.regions.find(r => r.id === id))
   const people = displayRoster(layout).filter(p => departments.includes(p.department))
   const sample=departments.includes('market')?officeDisplayRoomSample(layout):null
-  const vertical=!!sample&&facingSample(layout),posedLayout=vertical?{...layout,marketSample:true}:layout
+  const vertical=sample?.kind==='facing-work-island',posedLayout=vertical?{...layout,marketSample:true}:layout
   const posedPeople=vertical?displayRoster(posedLayout).filter(p=>departments.includes(p.department)):people
   const boxes = rooms.flatMap(r => [
     [r.x1 - .55, .35, r.z0 + .65, .45, .65, .45],
@@ -62,9 +63,9 @@ export function buildOfficeDisplayFinish(context) {
       if (source !== g) source.dispose()
       g.translate(x, y, z)
       if(pose)g.translate(-pose.x,0,-pose.z).rotateY(pose.yaw).translate(pose.x,0,pose.z)
-      const c = new THREE.Color(color), count = g.attributes.position.count
-      const colors = new Float32Array(count * 3), uv = new Float32Array(count * 2).fill(.005)
-      for (let i = 0; i < count; i++) colors.set([c.r, c.g, c.b], i * 3)
+      const c = color===null?null:new THREE.Color(color), count = g.attributes.position.count
+      const colors = c?new Float32Array(count * 3):new Float32Array(g.attributes.color.array), uv = new Float32Array(count * 2).fill(.005)
+      if(c)for (let i = 0; i < count; i++) colors.set([c.r, c.g, c.b], i * 3)
       g.setAttribute('color', new THREE.BufferAttribute(colors, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
       pieces.push(g)
     }
@@ -88,6 +89,7 @@ export function buildOfficeDisplayFinish(context) {
       }
     })
     for (const p of posedPeople) {
+      if(vertical&&p.department==='market')continue
       pose=vertical&&p.department==='market'?{...p.home,yaw:p.yaw}:null
       part(p.id, 'chair', () => {
         const x = p.home.x, z = p.home.z
@@ -123,7 +125,12 @@ export function buildOfficeDisplayFinish(context) {
       })
     }
     pose=null
-    if(sample){
+    if(vertical){
+      const plant=parts.find(p=>p.id==='market'&&p.kind==='plant')
+      sampleParts.push({...plant,id:'market-existing-plant'})
+      appendMarketWorkIsland({THREE,context,plan:sample,add,part,target:sampleParts})
+    }
+    if(sample&&!vertical){
       const t=sample.table
       part(t.id,'shared-table',()=>{
         const shape=new THREE.Shape(),a=t.w/2,b=t.d/2,r=.12
@@ -170,9 +177,9 @@ export function buildOfficeDisplayFinish(context) {
     result.finish = { parts, retainedVertices: keep.length, ...(sample?{sample:{...sample,parts:sampleParts}}:{}) }
     if(sample){
       result.bounds=[...result.bounds.filter(b=>!people.some(p=>p.department===sample.room&&(b.id===`${p.id}-desk`||(vertical&&b.id===`${p.id}-chair`)))),...sample.bounds]
-      if(vertical)result.displayLayout=posedLayout
+      if(vertical)result.displayLayout={...posedLayout,marketObstacles:sample.bounds.map(b=>({...b}))}
       const summary=result.summary
-      result.summary=()=>({...summary(),triangles:mesh.geometry.attributes.position.count/3,sharedTables:1,visitorChairs:sample.visitors.length})
+      result.summary=()=>({...summary(),triangles:mesh.geometry.attributes.position.count/3,...(vertical?{desks:departments.length*3+1,marketWorkstations:4,vacantSeats:1,sharedTables:0,visitorChairs:0}:{sharedTables:1,visitorChairs:sample.visitors.length})})
       const dispose=result.dispose;let disposed=false
       result.dispose=()=>{if(disposed)return;disposed=true;releaseProxy();dispose()}
     }

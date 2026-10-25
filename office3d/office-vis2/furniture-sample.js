@@ -25,13 +25,27 @@ export function marketSamplePlan(layout) {
   const room = layout.regions.find(r => r.id === 'market')
   if (!room || !facingSample(layout)) return null
   const x = (room.x0 + room.x1) / 2, z = (room.z0 + room.z1) / 2
-  return { room: room.id, table: { id: 'market-shared-table', x, z, w: 1.2, d: 2.8, height: .8, thickness: .10 },
-    visitors: [-1, 0, 1].map((dz, i) => ({ id: `market-visitor-${i + 1}`, x: x + 1.1, z: z + dz, yaw: Math.PI / 2, w: .52, d: .54, height: .98, interactive: false })) }
+  const stations=[[-.4,-.8,-Math.PI/2],[-.4,.8,-Math.PI/2],[.4,-.8,Math.PI/2],[.4,.8,Math.PI/2]].map(([dx,dz,yaw],i)=>({
+    id:`market-desk-${i+1}`,personId:i<3?`sim-market-${i+1}`:null,x:x+dx,z:z+dz,yaw,
+    home:{x:x+dx+Math.sin(yaw),z:z+dz},chairId:i<3?`sim-market-${i+1}-chair`:'market-empty-chair',
+  }))
+  return { room:room.id,kind:'facing-work-island',stations,groupBounds:{x0:x-1.7,x1:x+1.7,z0:z-1.5,z1:z+1.5},
+    divider:{id:'market-divider',x,z,w:3,d:.08,yaw:Math.PI/2},
+    cabinet:{id:'market-wall-cabinet',x:room.x0+.5,z,w:1.6,d:.55,yaw:Math.PI/2},
+    art:[-2.2,0,2.2].map((dx,i)=>({id:`market-wall-art-${i+1}`,x:x+dx,z:room.z0+.12,w:.9,d:.10,y:1.68,h:.66})),
+    plants:[{id:'market-existing-plant',x:room.x1-.55,z:room.z0+.65},{id:'market-corner-plant',x:room.x0+.7,z:room.z1-.7}] }
 }
 
 export function marketSamplePose(layout, index) {
   const plan = layout.marketSample === true && marketSamplePlan(layout)
   if (!plan) return null
-  const { x, z } = plan.table
-  return { home: { x: x - 1.1, z: z + index - 1 }, desk: { x: x - .3, z: z + index - 1 }, yaw: -Math.PI / 2 }
+  const station=plan.stations[index]
+  return station?.personId?{home:{...station.home},desk:{x:station.x,z:station.z},yaw:station.yaw}:null
+}
+
+export function marketSampleBounds(plan) {
+  const box=(id,x,z,w,d)=>({id,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})
+  return [...plan.stations.flatMap(s=>[box(s.id,s.x,s.z,.7,1.4),box(s.chairId,s.home.x,s.home.z,.6,.62)]),
+    box(plan.divider.id,plan.divider.x,plan.divider.z,.08,3),box(plan.cabinet.id,plan.cabinet.x,plan.cabinet.z,.55,1.6),
+    ...plan.art.map(p=>({...box(p.id,p.x,p.z,p.w,p.d),z0:p.z-.07,z1:p.z+.064})),...plan.plants.map(p=>box(p.id,p.x,p.z,.55,.5))]
 }

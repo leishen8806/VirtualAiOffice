@@ -189,7 +189,7 @@
       "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "6323C748D14F50D2B87FB54400653230FC7D767F11FE159AE8630729DE67F53A"
+      "sha256": "2277C74446B0C13FC9E505128E0B931393B369045513087E2C7BA5240DE4A712"
     },
     {
       "file": "office-vis2/sample.js",
@@ -245,7 +245,14 @@
       "source": "Board-approved four real workstation poses and market shared-table sample; original pure data, no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "F42E1F6D83069DBE6929E3024030B5EABC466A33CAFB5F76CE9CBE5526D5B50C"
+      "sha256": "5975F8FFD0D74A111DD6ED362DB58674E8B2E98ABD18E944BCA3203F6851E58C"
+    },
+    {
+      "file": "office-vis2/market-work-island.js",
+      "sha256": "F692542F509000D19640504EB52DB81B3B3C756D321E4FFD55E93D9AE5AEC418",
+      "source": "O1O2-R1b original market work-island assembly; reuses existing Kenney desk/chair/computer assets and QA divider/cabinet geometry; no downloads",
+      "license": "Repository MIT; existing Kenney assets CC0 as recorded in assets/ASSET_LEDGER.md",
+      "photographicTexture": false
     }
   ],
   "excluded": {

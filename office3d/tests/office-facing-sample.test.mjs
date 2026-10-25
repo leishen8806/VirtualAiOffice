@@ -12,6 +12,7 @@ import { displayRoster, displayRoute, displayFurnitureBounds } from '../display-
 import { barSeats } from '../office-bar-geometry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import before from './fixtures/office-o1o2-r1-ebd884f.json' with { type: 'json' }
+import { marketFurnitureFixture } from './helpers/market-furniture.mjs'
 
 const sample=LAYOUT_V3_ALIGN_SAMPLE,hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
 const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
@@ -117,11 +118,11 @@ test('OpsLead/OpsEngineer furnishing geometry matches ebd884f byte for byte in b
   }
 })
 
-test('vertical market actors use west-side segments without crossing tables, other chairs or walls',()=>{
+test('market work-island actors use their side aisles without crossing desks, chairs, cabinet or walls',()=>{
   const dl={...sample,version:2,displayAdapter:'v3',marketSample:true},people=displayRoster(dl),room=dl.regions.find(r=>r.id==='market'),obstacles=displayFurnitureBounds(dl)
   assert.equal(people.length,12)
   for(const p of people.filter(p=>p.department==='market')){
-    assert.equal(p.yaw,-Math.PI/2);const rt=displayRoute(dl,p);assert.equal(rt.side,'west')
+    assert.equal(p.yaw,p.id==='sim-market-3'?Math.PI/2:-Math.PI/2);const rt=displayRoute(dl,p);assert.equal(rt.side,'west')
     for(const route of [rt.go,rt.back])for(let i=1;i<route.length;i++){
       const a=route[i-1],b=route[i]
       for(const box of obstacles){
@@ -129,7 +130,7 @@ test('vertical market actors use west-side segments without crossing tables, oth
         if(box.id===p.id+'-chair'&&(i===1||i===route.length-1)&&[a,b].some(q=>q.x===p.home.x&&q.z===p.home.z)){assert.ok(Math.hypot(a.x-b.x,a.z-b.z)<=.700001);continue}
         assert.equal(hit(a,b,box,.22-1e-6),false,`${p.id}/${i}/${box.id}`)
       }
-      if(a.z<=room.z1&&b.z<=room.z1){assert.ok(Math.min(a.x,b.x)>=room.x0+.22);assert.ok(Math.max(a.x,b.x)<=-25.1+1e-6)}
+      if(a.z<=room.z1&&b.z<=room.z1){assert.ok(Math.min(a.x,b.x)>=room.x0+.22);assert.ok(Math.max(a.x,b.x)<=room.x1-.22)}
       for(const w of roomSegments(room)){
         const v=w.side==='west'||w.side==='east',fixed=w.side==='west'?room.x0:w.side==='east'?room.x1:w.side==='north'?room.z0:room.z1
         const wall=v?{x0:fixed-.07,x1:fixed+.07,z0:w.lo,z1:w.hi}:{x0:w.lo,x1:w.hi,z0:fixed-.07,z1:fixed+.07}
@@ -141,17 +142,18 @@ test('vertical market actors use west-side segments without crossing tables, oth
   for(const p of people.filter(p=>p.department!=='market'))assert.deepEqual(p,oldRoster.find(q=>q.id===p.id))
 })
 
-test('vertical market actual geometry and route bounds agree; all owned collisions unregister and failure restores old pose',()=>{
+test('market work-island actual geometry and route bounds agree; owned collisions unregister and failure restores old pose',()=>{
   for(const low of [false,true]){
-    const dl={...sample,version:2,displayAdapter:'v3'},root=new THREE.Group(),world=createFurnitureCollision()
-    const value=buildOfficeDisplayFinish({THREE,root,layout:dl,search:'?officeSample=1',low,collision:world})
+    const dl={...sample,version:2,displayAdapter:'v3'},root=new THREE.Group(),world=createFurnitureCollision(),fixture=marketFurnitureFixture()
+    const value=buildOfficeDisplayFinish({THREE,root,layout:dl,search:'?officeSample=1',low,collision:world,...fixture})
     const previous=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout:{...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'},search:'?officeSample=1',low})
     try{
       assert.equal(value.finish.fallback,undefined);assert.equal(value.summary().calls,1)
-      assert.equal(value.displayLayout.marketSample,true);assert.equal(value.finish.sample.bounds.length,7)
+      assert.equal(value.displayLayout.marketSample,true);assert.equal(value.finish.sample.bounds.length,15)
+      assert.equal(value.summary().sharedTables,0);assert.equal(value.summary().visitorChairs,0);assert.equal(value.summary().marketWorkstations,4)
       const actual=value.finish.sample.bounds,planned=displayFurnitureBounds(value.displayLayout)
       for(const b of actual){const p=planned.find(p=>p.id===b.id);assert.ok(p,b.id);for(const key of ['x0','x1','z0','z1'])assert.ok(Math.abs(b[key]-p[key])<2e-5,`${b.id}/${key}`)}
-      for(const part of value.finish.parts.filter(p=>!p.id.includes('market'))){
+      for(const part of value.finish.parts.filter(p=>p.id!=='market'&&!p.id.startsWith('sim-market-'))){
         const original=previous.finish.parts.find(p=>p.id===part.id&&p.kind===part.kind)
         assert.ok(original);assert.equal(original.count,part.count)
         for(const [key,attr]of Object.entries(value.root.children[0].geometry.attributes)){
@@ -159,11 +161,14 @@ test('vertical market actual geometry and route bounds agree; all owned collisio
           assert.deepEqual(attr.array.slice(part.start*size,(part.start+part.count)*size),oldAttr.array.slice(original.start*size,(original.start+original.count)*size),`${part.id}/${key}`)
         }
       }
-      const room=sample.regions.find(r=>r.id==='market'),all=actual.reduce((a,b)=>({x0:Math.min(a.x0,b.x0),x1:Math.max(a.x1,b.x1),z0:Math.min(a.z0,b.z0),z1:Math.max(a.z1,b.z1)}))
+      // 靠墙矮柜和画板不是工作岛；岛本身含全部四椅，四面仍须有1.2m净距。
+      const room=sample.regions.find(r=>r.id==='market'),islandParts=new Set(value.finish.sample.parts.filter(p=>['work-desk','work-chair','divider'].includes(p.kind)).map(p=>p.id))
+      const all=actual.filter(b=>islandParts.has(b.id)).reduce((a,b)=>({x0:Math.min(a.x0,b.x0),x1:Math.max(a.x1,b.x1),z0:Math.min(a.z0,b.z0),z1:Math.max(a.z1,b.z1)}))
       for(const d of [all.x0-room.x0-.14,room.x1-.14-all.x1,all.z0-room.z0-.14,room.z1-.14-all.z1])assert.ok(d>=1.2-1e-5)
       value.dispose();value.dispose();assert.equal(world.stats().bodies,0);assert.equal(root.children.length,0)
-    }finally{value.dispose();previous.dispose()}
-    const failed=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout:dl,search:'?officeSample=1',low,collision:{add(){throw Error('expected failure')},remove(){}}})
-    try{assert.equal(failed.finish.fallback,true);assert.equal(failed.displayLayout,undefined);assert.equal(displayRoster(dl).find(p=>p.id==='sim-market-1').yaw,0)}finally{failed.dispose()}
+    }finally{value.dispose();previous.dispose();fixture.dispose()}
+    const failureFixture=marketFurnitureFixture()
+    const failed=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout:dl,search:'?officeSample=1',low,...failureFixture,collision:{add(){throw Error('expected failure')},remove(){}}})
+    try{assert.equal(failed.finish.fallback,true);assert.equal(failed.finish.reason,'expected failure');assert.equal(failed.displayLayout,undefined);assert.equal(displayRoster(dl).find(p=>p.id==='sim-market-1').yaw,0)}finally{failed.dispose();failureFixture.dispose()}
   }
 })
