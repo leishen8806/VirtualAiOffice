@@ -2,6 +2,7 @@ import { LAYOUT_V3 } from '../office-layout.js'
 import { barArcs, barColliders, barLounges, barSeats, barSpec, LOUNGE_SIT } from '../office-bar-geometry.js'
 import { buildHeartBanyan } from '../office-heart-banyan.js'
 import { createSampleBatch } from './batch.js'
+import { registerOfficeBarCollision } from './bar-collision.js'
 
 export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low = false, collision, assets } = {}) {
   if (!THREE || !root) throw new TypeError('buildOfficeTeaBarSample requires THREE and root')
@@ -19,6 +20,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   }
   ring(2.1, spec.barOuter, .08, .87, '#C9A57A', .61)
   ring(2.06, spec.barOuter + .045, .95, .1, '#F4F1EA', .32)
+  const counterVertices = batch.triangles() * 3
   ring(2.11, spec.barOuter + .012, .11, .045, '#B89B64', .33, .7)
   ring(2.11, spec.barOuter + .012, .88, .025, '#B89B64', .33, .7)
   // 台身竖向橡木条与凹入踢脚形成深度，仍在台面投影内，不改变碰撞与座位环。
@@ -94,15 +96,19 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   for (const x of [-.62, .62]) sofa.add(new THREE.BoxGeometry(.1, .26, .52), '#C9A57A', [x, .55, 0], 0, .7, 0, 'wood')
   const sofas = sofa.build(group, 'tea-bar-instanced-lounges', lounges)
   const tree = buildHeartBanyan({ THREE, root: group, center, low, leafTriangles: layout.variant === 'align' })
-  const bounds = barColliders(layout), proxies = []
-  if (collision) for (const b of bounds) {
+  const bounds = barColliders(layout), proxies = []; let physical
+  if (collision && layout.variant === 'align') {
+    root.add(group)
+    try { physical = registerOfficeBarCollision({ THREE, root: group, collision, counter: fixed.mesh, counterVertices, stools: stools.mesh, sofas: sofas.mesh, pool: group.getObjectByName('heart-banyan-pool') }) }
+    catch (error) { tree.dispose(); for (const value of [fixed, stools, sofas]) value.dispose(); group.removeFromParent(); throw error }
+  } else if (collision) for (const b of bounds) {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(b.x1 - b.x0, 1.1, b.z1 - b.z0), new THREE.MeshBasicMaterial({ visible: false }))
     proxy.visible = false; proxy.name = b.id; proxy.position.set((b.x0 + b.x1) / 2, .55, (b.z0 + b.z1) / 2); group.add(proxy); proxies.push(proxy); collision.add(proxy, 'officeBar')
   }
   root.add(group); let disposed = false
-  group.userData.bar = { seats, lounges, loungeSit: LOUNGE_SIT, colliders: bounds, plantCollision: false }
+  group.userData.bar = { seats, lounges, loungeSit: LOUNGE_SIT, colliders: bounds, plantCollision: !!physical, physicalBodies: physical?.bodies }
   return { root: group, seats, lounges, colliders: bounds, treeProfile: { height: 3.8, crownWidth: 4, crownDepth: 2.8, poolDiameter: 2, face: 'south' },
-    summary: () => ({ calls: 6, triangles: fixed.triangles() + stools.triangles() + sofas.triangles() + tree.summary().triangles, seats: seats.length, sofas: lounges.length, colliders: proxies.length, low, diameter: spec.diameter, innerRadius: 2.1 }),
-    dispose() { if (disposed) return; disposed = true; tree.dispose(); for (const item of [fixed, stools, sofas]) item.dispose(); for (const p of proxies) { collision?.remove?.(p); p.geometry.dispose(); p.material.dispose() } group.removeFromParent() },
+    summary: () => ({ calls: 6, triangles: fixed.triangles() + stools.triangles() + sofas.triangles() + tree.summary().triangles, seats: seats.length, sofas: lounges.length, colliders: physical?.bodies.length ?? proxies.length, low, diameter: spec.diameter, innerRadius: 2.1 }),
+    dispose() { if (disposed) return; disposed = true; physical?.dispose(); tree.dispose(); for (const item of [fixed, stools, sofas]) item.dispose(); for (const p of proxies) { collision?.remove?.(p); p.geometry.dispose(); p.material.dispose() } group.removeFromParent() },
   }
 }

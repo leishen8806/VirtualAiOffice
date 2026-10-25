@@ -88,7 +88,7 @@
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "A5D2F30479AD4C8E69377E53126A2FE30DD2935D3920F080093B57DB966BA759",
+      "sha256": "6BE7FA73DC641FE36E6A486721EAB0F18B4D4A51136E8AE2816FC22EDF90A70A",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -211,6 +211,27 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "5C941D4D02753566037A5A135E867DD9EB1632A9DB7BC9B951224778D8FA170F"
+    },
+    {
+      "file": "office-vis2/host.js",
+      "source": "Owned office sample collision and fallback integration; original repository source",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "9DF3001F7A5C23F49FCCA5227E2D7EE9D7BAA875CF37F0FC16AE62CCDBA0EE0C"
+    },
+    {
+      "file": "office-vis2/bar-collision.js",
+      "source": "Owned office sample collision and fallback integration; original repository source",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "8DBD964CDDB84BC179D1358EEEE8993660CFDA3BAA775E3F9983E0F54F27F848"
+    },
+    {
+      "file": "office-v2-registry.js",
+      "source": "Existing shared office registry: forward asynchronous collision registrations after factory commit, retain failure isolation",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "52441BE6A08B3CBBDE8F33AE751D5A0EB8882AA8CBE97BCA4776FE12B6A33104"
     }
   ],
   "excluded": {
