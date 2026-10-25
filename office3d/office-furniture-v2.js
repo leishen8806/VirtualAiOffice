@@ -54,8 +54,9 @@ export function officeFurnitureV2Spec(layout) {
     const center = layout.version === 2
       ? (meeting.id === 'A' ? { x: -12.5, z: -14 } : { x: -5.5, z: -14 })
       : { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
-    const room = { ...meeting, ...center, yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
-    return { ...room, seats: room.round
+    const northPod = layout.variant === 'align' && region.z0 === layout.envelope.z0
+    const room = { ...meeting, ...center, ...(northPod ? { round: true, w: 1.5, d: 1.5 } : {}), yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
+    return { ...room, seats: northPod ? layout.meetingSeatPoints[room.id].map(seat => ({ ...seat })) : room.round
     ? Array.from({ length: 6 }, (_, i) => { const angle = i * Math.PI / 3; return { room: room.id, x: room.x + Math.sin(angle) * 1.45, z: room.z + Math.cos(angle) * 1.45, yaw: angle, meeting: true } })
     : [...[-1.4, 0, 1.4].flatMap(dx => [{ room: room.id, x: room.x + dx, z: room.z - 1.15, yaw: Math.PI, meeting: true }, { room: room.id, x: room.x + dx, z: room.z + 1.15, yaw: 0, meeting: true }]), { room: room.id, x: room.x - 2.5, z: room.z, yaw: -Math.PI / 2, meeting: true }, { room: room.id, x: room.x + 2.5, z: room.z, yaw: Math.PI / 2, meeting: true }],
     }
@@ -167,7 +168,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   for (const room of spec.meetings) {
     asset('table', room.x, room.z, room.round ? 1 : room.w, .76, room.round ? 1 : room.d, 0, 0, true)
-    if (room.round) { const disk = new THREE.Mesh(new THREE.CylinderGeometry(.9, .9, .055, 32), new THREE.MeshStandardMaterial({ color: wood })); disk.position.set(room.x, .79, room.z); collision.add(disk, 'meetingTable'); bake(disk); disk.geometry.dispose(); disk.material.dispose() }
+    if (room.round) { const radius = room.w / 2; const disk = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, .055, 32), new THREE.MeshStandardMaterial({ color: wood })); disk.position.set(room.x, .79, room.z); collision.add(disk, 'meetingTable'); bake(disk); disk.geometry.dispose(); disk.material.dispose() }
     room.seats.forEach(seat => chair(seat, 'chairModernCushion'))
   }
   asset('desk', spec.boss.desk.x, spec.boss.desk.z, 1.4, .76, .7, 0, Math.PI, true)

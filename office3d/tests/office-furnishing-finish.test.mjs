@@ -15,7 +15,7 @@ test('furnishing finish retains every group and measured collider from 2dbd13c a
     for (const e of alignZoneObstaclePlan(layout)) {
       const root = new THREE.Group(), value = buildOpenFurnishing({THREE, root, plan:e.plan, low})
       if (e.id !== 'north-nook') records.push({id:e.id, colliders:value.colliders, groups:value.groups})
-      assert.equal(root.children.length, 1); assert.equal(value.summary().calls, 1)
+      assert.equal(root.children.length, 1); assert.equal(value.summary().calls, e.plan.placements.length ? 1 : 0)
       assert.ok(value.summary().triangles <= 8000, e.id + ' existing per-area budget')
       const g = value.root.geometry, released = new Set()
       for (const resource of [g, value.root.material]) resource.addEventListener('dispose', () => released.add(resource.uuid))

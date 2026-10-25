@@ -30,12 +30,13 @@ compare(plan.publicPathNodes, LAYOUT_V3_ALIGN.publicPathNodes.map(({ x, z }) => 
 
 compare(plan.site, baseline.site, 'approved site')
 const baselineRegions = new Map(baseline.regions.map(item => [item.id, item]))
+const northRooms = { board: ['room', -20, -10, -18, -12], review: ['room', -10, -5, -18, -13], plan: ['room', -5, 0, -18, -13] }
 for (const item of plan.regions) {
   const approved = baselineRegions.get(item.id)
   assert.ok(approved, `unknown approved region: ${item.id}`)
   compare(
     [item.kind, item.x0, item.x1, item.z0, item.z1],
-    [approved.kind, approved.x0, approved.x1, approved.z0, approved.z1],
+    northRooms[item.id] ?? [approved.kind, approved.x0, approved.x1, approved.z0, approved.z1],
     `approved coordinates: ${item.id}`,
   )
 }
@@ -43,11 +44,11 @@ compare(plan.workstations.map(({ name, region, x, z }) => ({ name, region, x, z 
 compare(plan.displaySeats, baseline.displaySeats, 'approved display seats')
 compare(
   { center: plan.island.center, barOuter: plan.island.barOuter, collisionRadius: plan.island.collisionRadius, stoolRadius: plan.island.stoolRadius, ring: plan.island.ring },
-  { center: baseline.island.center, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, ring: baseline.island.ring },
+  { center: { x: 2, z: -3 }, barOuter: baseline.island.counterRadius, collisionRadius: baseline.island.collisionRadius, stoolRadius: baseline.island.stoolRadius, ring: baseline.island.ring },
   'approved island geometry',
 )
 assert.equal(baseline.island.sofaRadius, 5.8, 'approved sofa baseline')
 assert.equal(plan.island.sofaOuter, 5.45, 'Board-approved sofa radius')
 
 console.log('允许差异：island.sofaOuter 5.8 → 5.45（董事会裁决）')
-console.log('V3 align plan matches runtime and approved 83ecc1b coordinates')
+console.log('V3 align plan matches runtime; O1 north-room and centre amendments are explicit, other 83ecc1b coordinates unchanged')

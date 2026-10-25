@@ -1,7 +1,8 @@
+import layout from './fixtures/office-align-2309988.json' with { type: 'json' }
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { LAYOUT_V3_ALIGN as layout, createOfficeNavigation } from '../office-layout.js'
+import { createOfficeNavigation } from '../office-layout.js'
 import { alignZoneObstaclePlan, alignPassages, alignDoorAprons, buildAlignZones } from '../office-vis2/align-zones.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 

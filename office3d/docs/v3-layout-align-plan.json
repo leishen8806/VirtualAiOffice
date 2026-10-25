@@ -3,7 +3,7 @@
   "variant": "align",
   "site": { "x0": -28, "x1": 32, "z0": -18, "z1": 30 },
   "island": {
-    "center": { "x": 2, "z": -6 },
+    "center": { "x": 2, "z": -3 },
     "barOuter": 3.5,
     "collisionRadius": 6,
     "stoolRadius": 4.2,
@@ -14,21 +14,21 @@
     { "id": "board", "seats": 0 }, { "id": "review", "seats": 8 }, { "id": "plan", "seats": 6 }
   ],
   "regions": [
-    { "id": "market", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": -18, "z1": -12, "doors": [{ "side": "east", "at": -15, "width": 1.5 }] },
-    { "id": "board", "kind": "room", "walled": true, "x0": -18.5, "x1": -8.5, "z0": -18, "z1": -12, "doors": [{ "side": "east", "at": -15, "width": 1.5 }] },
-    { "id": "kb", "kind": "open", "walled": false, "x0": 12.5, "x1": 20.5, "z0": -18, "z1": -12, "doors": [] },
-    { "id": "service", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": -18, "z1": -12, "doors": [{ "side": "west", "at": -15, "width": 1.5 }] },
-    { "id": "plan", "kind": "room", "walled": true, "x0": -28, "x1": -20, "z0": -11.5, "z1": -5.5, "doors": [{ "side": "south", "at": -24, "width": 1.5 }] },
-    { "id": "review", "kind": "room", "walled": true, "x0": -18.5, "x1": -8.5, "z0": -11.5, "z1": -5.5, "doors": [{ "side": "south", "at": -13.5, "width": 1.5 }] },
-    { "id": "west-open", "kind": "open", "walled": false, "x0": -28, "x1": -8.5, "z0": -4.5, "z1": 5.5, "doors": [] },
-    { "id": "product", "kind": "open", "walled": false, "x0": 12.5, "x1": 21.5, "z0": -10.5, "z1": -1.5, "doors": [] },
-    { "id": "eng", "kind": "open", "walled": false, "x0": 23, "x1": 32, "z0": -10.5, "z1": -1.5, "doors": [] },
-    { "id": "creative", "kind": "display", "walled": false, "x0": 12.5, "x1": 22.5, "z0": -1.5, "z1": 3.5, "doors": [] },
-    { "id": "dining", "kind": "display", "walled": false, "x0": 23, "x1": 32, "z0": -1.5, "z1": 3.5, "doors": [] },
-    { "id": "aftersales", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": 5.5, "z1": 11.5, "doors": [{ "side": "east", "at": 8.5, "width": 1.5 }] },
-    { "id": "leisure", "kind": "display", "walled": false, "x0": -18.5, "x1": -10.5, "z0": 5.5, "z1": 11.5, "doors": [] },
-    { "id": "drlife", "kind": "open", "walled": false, "x0": 12.5, "x1": 23, "z0": 5, "z1": 12, "doors": [] },
-    { "id": "marketing", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": 5.5, "z1": 11.5, "doors": [{ "side": "north", "at": 28, "width": 1.5 }] }
+    {"id": "market", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": -18, "z1": -12, "doors": [{"side": "south", "at": -25.5, "width": 1.5}]},
+    {"id": "board", "kind": "room", "walled": true, "x0": -20, "x1": -10, "z0": -18, "z1": -12, "doors": [{"side": "south", "at": -11.5, "width": 1.5}]},
+    {"id": "kb", "kind": "open", "walled": false, "x0": 12.5, "x1": 20.5, "z0": -18, "z1": -12, "doors": []},
+    {"id": "service", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": -18, "z1": -12, "doors": [{"side": "west", "at": -15, "width": 1.5}]},
+    {"id": "plan", "kind": "room", "walled": true, "x0": -5, "x1": 0, "z0": -18, "z1": -13, "doors": [{"side": "south", "at": -2.5, "width": 1.5}]},
+    {"id": "review", "kind": "room", "walled": true, "x0": -10, "x1": -5, "z0": -18, "z1": -13, "doors": [{"side": "south", "at": -7.5, "width": 1.5}]},
+    {"id": "west-open", "kind": "open", "walled": false, "x0": -28, "x1": -8.5, "z0": -4.5, "z1": 5.5, "doors": []},
+    {"id": "product", "kind": "open", "walled": false, "x0": 12.5, "x1": 21.5, "z0": -10.5, "z1": -1.5, "doors": []},
+    {"id": "eng", "kind": "open", "walled": false, "x0": 23, "x1": 32, "z0": -10.5, "z1": -1.5, "doors": []},
+    {"id": "creative", "kind": "display", "walled": false, "x0": 12.5, "x1": 22.5, "z0": -1.5, "z1": 3.5, "doors": []},
+    {"id": "dining", "kind": "display", "walled": false, "x0": 23, "x1": 32, "z0": -1.5, "z1": 3.5, "doors": []},
+    {"id": "aftersales", "kind": "display", "walled": true, "x0": -28, "x1": -20, "z0": 5.5, "z1": 11.5, "doors": [{"side": "east", "at": 8.5, "width": 1.5}]},
+    {"id": "leisure", "kind": "display", "walled": false, "x0": -18.5, "x1": -10.5, "z0": 5.5, "z1": 11.5, "doors": []},
+    {"id": "drlife", "kind": "open", "walled": false, "x0": 12.5, "x1": 23, "z0": 5, "z1": 12, "doors": []},
+    {"id": "marketing", "kind": "display", "walled": true, "x0": 24, "x1": 32, "z0": 5.5, "z1": 11.5, "doors": [{"side": "north", "at": 28, "width": 1.5}]}
   ],
   "workstations": [
     { "name": "Lead", "region": "product", "x": 14.5, "z": -8.5 }, { "name": "PM", "region": "product", "x": 18, "z": -8.5 }, { "name": "Architect", "region": "product", "x": 14.5, "z": -5.5 }, { "name": "UIUX", "region": "product", "x": 18, "z": -5.5 },
@@ -42,5 +42,35 @@
     { "id": "aftersales-1", "region": "aftersales", "x": -26.5, "z": 8 }, { "id": "aftersales-2", "region": "aftersales", "x": -24, "z": 8 }, { "id": "aftersales-3", "region": "aftersales", "x": -21.5, "z": 8 },
     { "id": "marketing-1", "region": "marketing", "x": 25.5, "z": 8 }, { "id": "marketing-2", "region": "marketing", "x": 28, "z": 8 }, { "id": "marketing-3", "region": "marketing", "x": 30.5, "z": 8 }
   ],
-  "publicPathNodes": [[-19.25, -10.9], [-7.75, -10.9], [-19.25, 7.75], [-10.2, 7.75]]
+  "publicPathNodes": [[-19.25, -10.9], [-7.75, -10.9], [-19.25, 7.75], [-10.2, 7.75]],
+  "northAlignment": {
+    "baseline": "23099888463b892cb973a4715cce6bd1c3b21c42",
+    "authorization": "O0–O4 full office visual alignment",
+    "rooms": {
+      "board": {"x0": -20, "x1": -10, "z0": -18, "z1": -12},
+      "review": {"x0": -10, "x1": -5, "z0": -18, "z1": -13},
+      "plan": {"x0": -5, "x1": 0, "z0": -18, "z1": -13}
+    },
+    "meetingSeatPoints": {
+      "A": [
+        {"room": "A", "x": -7.5, "z": -14.3, "yaw": 0, "meeting": true},
+        {"room": "A", "x": -6.7, "z": -14.7, "yaw": 0.7853981633974477, "meeting": true},
+        {"room": "A", "x": -6.3, "z": -15.5, "yaw": 1.5707963267948966, "meeting": true},
+        {"room": "A", "x": -6.7, "z": -16.3, "yaw": 2.3561944901923457, "meeting": true},
+        {"room": "A", "x": -7.5, "z": -16.7, "yaw": 3.141592653589793, "meeting": true},
+        {"room": "A", "x": -8.3, "z": -16.3, "yaw": -2.356194490192345, "meeting": true},
+        {"room": "A", "x": -8.7, "z": -15.5, "yaw": -1.5707963267948966, "meeting": true},
+        {"room": "A", "x": -8.3, "z": -14.7, "yaw": -0.7853981633974483, "meeting": true}
+      ],
+      "B": [
+        {"room": "B", "x": -2.5, "z": -14.3, "yaw": 0, "meeting": true},
+        {"room": "B", "x": -1.5, "z": -14.9, "yaw": 1.0303768265243127, "meeting": true},
+        {"room": "B", "x": -1.5, "z": -16.1, "yaw": 2.111215827065482, "meeting": true},
+        {"room": "B", "x": -2.5, "z": -16.7, "yaw": 3.141592653589793, "meeting": true},
+        {"room": "B", "x": -3.5, "z": -16.1, "yaw": -2.111215827065482, "meeting": true},
+        {"room": "B", "x": -3.5, "z": -14.9, "yaw": -1.0303768265243127, "meeting": true}
+      ]
+    },
+    "identityCoordinatesPreserved": true
+  }
 }

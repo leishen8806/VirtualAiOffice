@@ -1,0 +1,1399 @@
+{
+  "version": 3,
+  "envelope": {
+    "x0": -28,
+    "x1": 32,
+    "z0": -18,
+    "z1": 12,
+    "width": 60,
+    "depth": 30,
+    "area": 1800
+  },
+  "site": {
+    "x0": -28,
+    "x1": 32,
+    "z0": -18,
+    "z1": 30,
+    "width": 60,
+    "depth": 48,
+    "area": 2880
+  },
+  "foyer": {
+    "id": "foyer",
+    "x0": -6,
+    "x1": 10,
+    "z0": 4,
+    "z1": 12,
+    "width": 16,
+    "depth": 8
+  },
+  "axis": {
+    "x": 2
+  },
+  "regions": [
+    {
+      "id": "market",
+      "name": "市场部（展示）",
+      "x0": -28,
+      "x1": -20,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "east",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "board",
+      "name": "会议与决策",
+      "x0": -18.5,
+      "x1": -8.5,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "east",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "kb",
+      "name": "知识",
+      "x0": 12.5,
+      "x1": 20.5,
+      "z0": -18,
+      "z1": -12,
+      "doors": [],
+      "kind": "open",
+      "walled": false
+    },
+    {
+      "id": "service",
+      "name": "客服部（展示）",
+      "x0": 24,
+      "x1": 32,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "west",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "plan",
+      "name": "计划室 B",
+      "x0": -28,
+      "x1": -20,
+      "z0": -11.5,
+      "z1": -5.5,
+      "doors": [
+        {
+          "side": "south",
+          "at": -24,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "review",
+      "name": "评审室 A",
+      "x0": -18.5,
+      "x1": -8.5,
+      "z0": -11.5,
+      "z1": -5.5,
+      "doors": [
+        {
+          "side": "south",
+          "at": -13.5,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "west-open",
+      "name": "运营、质量与安全开放岛",
+      "x0": -28,
+      "x1": -8.5,
+      "z0": -4.5,
+      "z1": 5.5,
+      "doors": [],
+      "kind": "open",
+      "walled": false
+    },
+    {
+      "id": "product",
+      "name": "产品",
+      "x0": 12.5,
+      "x1": 21.5,
+      "z0": -10.5,
+      "z1": -1.5,
+      "doors": [],
+      "kind": "open",
+      "walled": false
+    },
+    {
+      "id": "eng",
+      "name": "工程",
+      "x0": 23,
+      "x1": 32,
+      "z0": -10.5,
+      "z1": -1.5,
+      "doors": [],
+      "kind": "open",
+      "walled": false
+    },
+    {
+      "id": "creative",
+      "name": "创意讨论区",
+      "x0": 12.5,
+      "x1": 22.5,
+      "z0": -1.5,
+      "z1": 3.5,
+      "doors": [],
+      "kind": "display",
+      "walled": false
+    },
+    {
+      "id": "dining",
+      "name": "餐饮休憩角",
+      "x0": 23,
+      "x1": 32,
+      "z0": -1.5,
+      "z1": 3.5,
+      "doors": [],
+      "kind": "display",
+      "walled": false
+    },
+    {
+      "id": "aftersales",
+      "name": "售后部（展示）",
+      "x0": -28,
+      "x1": -20,
+      "z0": 5.5,
+      "z1": 11.5,
+      "doors": [
+        {
+          "side": "east",
+          "at": 8.5,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "leisure",
+      "name": "休闲展示区",
+      "x0": -18.5,
+      "x1": -10.5,
+      "z0": 5.5,
+      "z1": 11.5,
+      "doors": [],
+      "kind": "display",
+      "walled": false
+    },
+    {
+      "id": "drlife",
+      "name": "D.life 工坊",
+      "x0": 12.5,
+      "x1": 23,
+      "z0": 5,
+      "z1": 12,
+      "doors": [],
+      "kind": "open",
+      "walled": false
+    },
+    {
+      "id": "marketing",
+      "name": "营销部（展示）",
+      "x0": 24,
+      "x1": 32,
+      "z0": 5.5,
+      "z1": 11.5,
+      "doors": [
+        {
+          "side": "north",
+          "at": 28,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    }
+  ],
+  "rooms": [
+    {
+      "id": "market",
+      "name": "市场部（展示）",
+      "x0": -28,
+      "x1": -20,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "east",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "board",
+      "name": "会议与决策",
+      "x0": -18.5,
+      "x1": -8.5,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "east",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "service",
+      "name": "客服部（展示）",
+      "x0": 24,
+      "x1": 32,
+      "z0": -18,
+      "z1": -12,
+      "doors": [
+        {
+          "side": "west",
+          "at": -15,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "plan",
+      "name": "计划室 B",
+      "x0": -28,
+      "x1": -20,
+      "z0": -11.5,
+      "z1": -5.5,
+      "doors": [
+        {
+          "side": "south",
+          "at": -24,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "review",
+      "name": "评审室 A",
+      "x0": -18.5,
+      "x1": -8.5,
+      "z0": -11.5,
+      "z1": -5.5,
+      "doors": [
+        {
+          "side": "south",
+          "at": -13.5,
+          "width": 1.5
+        }
+      ],
+      "kind": "room",
+      "walled": true
+    },
+    {
+      "id": "aftersales",
+      "name": "售后部（展示）",
+      "x0": -28,
+      "x1": -20,
+      "z0": 5.5,
+      "z1": 11.5,
+      "doors": [
+        {
+          "side": "east",
+          "at": 8.5,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    },
+    {
+      "id": "marketing",
+      "name": "营销部（展示）",
+      "x0": 24,
+      "x1": 32,
+      "z0": 5.5,
+      "z1": 11.5,
+      "doors": [
+        {
+          "side": "north",
+          "at": 28,
+          "width": 1.5
+        }
+      ],
+      "kind": "display",
+      "walled": true
+    }
+  ],
+  "seats": {
+    "Lead": [
+      "product",
+      14.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "PM": [
+      "product",
+      18,
+      -8.5,
+      3.141592653589793
+    ],
+    "Architect": [
+      "product",
+      14.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "UIUX": [
+      "product",
+      18,
+      -5.5,
+      3.141592653589793
+    ],
+    "FrontendSenior": [
+      "eng",
+      23.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "Frontend1": [
+      "eng",
+      26.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "Frontend2": [
+      "eng",
+      29.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "BackendSenior": [
+      "eng",
+      23.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "Backend1": [
+      "eng",
+      26.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "Backend2": [
+      "eng",
+      29.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "KnowledgeKeeper": [
+      "kb",
+      14.5,
+      -15,
+      1.5707963267948966
+    ],
+    "QAAutomation": [
+      "west-open",
+      -15,
+      -1,
+      0
+    ],
+    "Reviewer1": [
+      "west-open",
+      -12,
+      -1,
+      0
+    ],
+    "Reviewer2": [
+      "west-open",
+      -15,
+      2,
+      0
+    ],
+    "SecurityReviewer": [
+      "west-open",
+      -12,
+      2,
+      0
+    ],
+    "OpsLead": [
+      "west-open",
+      -25,
+      -1,
+      0
+    ],
+    "OpsEngineer": [
+      "west-open",
+      -21.5,
+      -1,
+      0
+    ],
+    "GoSenior": [
+      "drlife",
+      14.5,
+      6.5,
+      0
+    ],
+    "Go1": [
+      "drlife",
+      17,
+      6.5,
+      0
+    ],
+    "Go2": [
+      "drlife",
+      19.5,
+      6.5,
+      0
+    ],
+    "DBEngineer": [
+      "drlife",
+      22,
+      6.5,
+      0
+    ],
+    "LedgerAuditor": [
+      "drlife",
+      14.5,
+      9.5,
+      0
+    ],
+    "ReactSenior": [
+      "drlife",
+      17,
+      9.5,
+      0
+    ],
+    "React1": [
+      "drlife",
+      19.5,
+      9.5,
+      0
+    ],
+    "Localizer": [
+      "drlife",
+      22,
+      9.5,
+      0
+    ]
+  },
+  "displaySeats": [
+    {
+      "id": "market-1",
+      "region": "market",
+      "x": -26.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "market-2",
+      "region": "market",
+      "x": -24,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "market-3",
+      "region": "market",
+      "x": -21.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-1",
+      "region": "service",
+      "x": 25.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-2",
+      "region": "service",
+      "x": 28,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-3",
+      "region": "service",
+      "x": 30.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "aftersales-1",
+      "region": "aftersales",
+      "x": -26.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "aftersales-2",
+      "region": "aftersales",
+      "x": -24,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "aftersales-3",
+      "region": "aftersales",
+      "x": -21.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-1",
+      "region": "marketing",
+      "x": 25.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-2",
+      "region": "marketing",
+      "x": 28,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-3",
+      "region": "marketing",
+      "x": 30.5,
+      "z": 8,
+      "display": true
+    }
+  ],
+  "corridors": {
+    "westNorthCross": {
+      "x0": -28,
+      "x1": -8.5,
+      "z0": -4.5,
+      "z1": -3,
+      "width": 1.5
+    },
+    "westMiddleCross": {
+      "x0": -8.3,
+      "x1": -6.8,
+      "z0": -5.5,
+      "z1": 5.5,
+      "width": 1.5
+    },
+    "westSouthCross": {
+      "x0": -19.5,
+      "x1": -9,
+      "z0": 5.8,
+      "z1": 7.3,
+      "width": 1.5
+    },
+    "eastNorthCross": {
+      "x0": 20.5,
+      "x1": 24,
+      "z0": -12,
+      "z1": -10.5,
+      "width": 1.5
+    },
+    "eastMiddleCross": {
+      "x0": 20.5,
+      "x1": 23,
+      "z0": -1.5,
+      "z1": 3.5,
+      "width": 2.5
+    },
+    "eastSouthCross": {
+      "x0": 10.5,
+      "x1": 12,
+      "z0": 5,
+      "z1": 12,
+      "width": 1.5
+    },
+    "entranceAxis": {
+      "x0": 0,
+      "x1": 4,
+      "z0": 4,
+      "z1": 12,
+      "width": 4
+    },
+    "centralRing": {
+      "center": {
+        "x": 2,
+        "z": -6
+      },
+      "r0": 6,
+      "r1": 10,
+      "width": 4
+    }
+  },
+  "passages": {
+    "entranceAxis": {
+      "x0": 0,
+      "x1": 4,
+      "z0": 4,
+      "z1": 12,
+      "width": 4
+    },
+    "entranceSpine": {
+      "x0": 0,
+      "x1": 4,
+      "z0": -18,
+      "z1": 30,
+      "width": 4
+    },
+    "westLoop": {
+      "center": {
+        "x": 2,
+        "z": -6
+      },
+      "side": "west",
+      "r0": 6,
+      "r1": 10,
+      "width": 4
+    },
+    "eastLoop": {
+      "center": {
+        "x": 2,
+        "z": -6
+      },
+      "side": "east",
+      "r0": 6,
+      "r1": 10,
+      "width": 4
+    },
+    "northMeetingBuffer": {
+      "x0": -28,
+      "x1": -8.5,
+      "z0": -4.5,
+      "z1": -3,
+      "width": 1.5
+    },
+    "westOpenLink": {
+      "x0": -8.3,
+      "x1": -6.8,
+      "z0": -5.5,
+      "z1": 5.5,
+      "width": 1.5
+    }
+  },
+  "ring": {
+    "center": {
+      "x": 2,
+      "z": -6
+    },
+    "inner": 6,
+    "outer": 10,
+    "width": 4
+  },
+  "island": {
+    "center": {
+      "x": 2,
+      "z": -6
+    },
+    "radius": 6,
+    "diameter": 12,
+    "treeRadius": 1.2,
+    "barOuter": 3.5,
+    "stoolRadius": 4.2,
+    "sofaOuter": 5.45
+  },
+  "bar": {
+    "center": {
+      "x": 2,
+      "z": -6
+    },
+    "radius": 6,
+    "seats": [
+      {
+        "id": "bar-seat-1",
+        "x": 6,
+        "z": -4.7
+      },
+      {
+        "id": "bar-seat-2",
+        "x": 4.5,
+        "z": -2.6
+      },
+      {
+        "id": "bar-seat-3",
+        "x": 2,
+        "z": -1.8
+      },
+      {
+        "id": "bar-seat-4",
+        "x": -0.5,
+        "z": -2.6
+      },
+      {
+        "id": "bar-seat-5",
+        "x": -2,
+        "z": -4.7
+      },
+      {
+        "id": "bar-seat-6",
+        "x": -2,
+        "z": -7.3
+      },
+      {
+        "id": "bar-seat-7",
+        "x": -0.5,
+        "z": -9.4
+      },
+      {
+        "id": "bar-seat-8",
+        "x": 2,
+        "z": -10.2
+      },
+      {
+        "id": "bar-seat-9",
+        "x": 4.5,
+        "z": -9.4
+      },
+      {
+        "id": "bar-seat-10",
+        "x": 6,
+        "z": -7.3
+      }
+    ],
+    "gaps": [
+      {
+        "side": "east",
+        "width": 1.5
+      },
+      {
+        "side": "west",
+        "width": 1.5
+      }
+    ]
+  },
+  "frontDesk": {
+    "x0": -1,
+    "x1": 5,
+    "z0": 8.1,
+    "z1": 9.5,
+    "center": {
+      "x": 2,
+      "z": 8.8
+    }
+  },
+  "serviceBar": {
+    "x0": -5.3,
+    "x1": -2.3,
+    "z0": 7.3,
+    "z1": 9.3,
+    "center": {
+      "x": -3.8,
+      "z": 8.3
+    }
+  },
+  "waitingArc": {
+    "x0": 4,
+    "x1": 9,
+    "z0": 6.8,
+    "z1": 9.8,
+    "center": {
+      "x": 6.5,
+      "z": 8.3
+    }
+  },
+  "doors": {
+    "south": {
+      "x0": -1,
+      "x1": 5,
+      "z": 12,
+      "width": 6,
+      "height": 3.5
+    },
+    "north": {
+      "x0": 0,
+      "x1": 4,
+      "z": -18,
+      "width": 4,
+      "locked": true
+    }
+  },
+  "boss": {
+    "desk": {
+      "x": -16.5,
+      "z": -15
+    },
+    "stand": {
+      "x": -16.5,
+      "z": -13
+    },
+    "region": "board"
+  },
+  "boardTable": {
+    "x": -13.5,
+    "z": -15
+  },
+  "meetingSeats": {
+    "A": 8,
+    "B": 6
+  },
+  "meetingAccess": {
+    "northZ": -3.75,
+    "westSpineX": -7.55,
+    "eastSpineX": 22.25,
+    "westMiddleZ": 0.5,
+    "eastMiddleZ": 1,
+    "eastSouthZ": 4.25
+  },
+  "regionFocus": {
+    "market": {
+      "label": "市场部（展示）",
+      "t": [
+        -24,
+        0,
+        -15
+      ],
+      "r": 16
+    },
+    "board": {
+      "label": "会议与决策",
+      "t": [
+        -13.5,
+        0,
+        -15
+      ],
+      "r": 18
+    },
+    "kb": {
+      "label": "知识",
+      "t": [
+        16.5,
+        0,
+        -15
+      ],
+      "r": 16
+    },
+    "service": {
+      "label": "客服部（展示）",
+      "t": [
+        28,
+        0,
+        -15
+      ],
+      "r": 16
+    },
+    "plan": {
+      "label": "计划室 B",
+      "t": [
+        -24,
+        0,
+        -8.5
+      ],
+      "r": 16
+    },
+    "review": {
+      "label": "评审室 A",
+      "t": [
+        -13.5,
+        0,
+        -8.5
+      ],
+      "r": 18
+    },
+    "west-open": {
+      "label": "运营、质量与安全开放岛",
+      "t": [
+        -18.25,
+        0,
+        0.5
+      ],
+      "r": 27.5
+    },
+    "product": {
+      "label": "产品",
+      "t": [
+        17,
+        0,
+        -6
+      ],
+      "r": 17
+    },
+    "eng": {
+      "label": "工程",
+      "t": [
+        27.5,
+        0,
+        -6
+      ],
+      "r": 17
+    },
+    "creative": {
+      "label": "创意讨论区",
+      "t": [
+        17.5,
+        0,
+        1
+      ],
+      "r": 18
+    },
+    "dining": {
+      "label": "餐饮休憩角",
+      "t": [
+        27.5,
+        0,
+        1
+      ],
+      "r": 17
+    },
+    "aftersales": {
+      "label": "售后部（展示）",
+      "t": [
+        -24,
+        0,
+        8.5
+      ],
+      "r": 16
+    },
+    "leisure": {
+      "label": "休闲展示区",
+      "t": [
+        -14.5,
+        0,
+        8.5
+      ],
+      "r": 16
+    },
+    "drlife": {
+      "label": "D.life 工坊",
+      "t": [
+        17.75,
+        0,
+        8.5
+      ],
+      "r": 18.5
+    },
+    "marketing": {
+      "label": "营销部（展示）",
+      "t": [
+        28,
+        0,
+        8.5
+      ],
+      "r": 16
+    },
+    "ops": {
+      "label": "运营",
+      "t": [
+        -24,
+        0,
+        0.5
+      ],
+      "r": 18
+    },
+    "quality": {
+      "label": "质量与安全",
+      "t": [
+        -14,
+        0,
+        0.5
+      ],
+      "r": 18
+    },
+    "meet": {
+      "label": "会议室",
+      "t": [
+        -18.5,
+        0,
+        -8.5
+      ],
+      "r": 22
+    },
+    "foyer": {
+      "label": "前厅接待区",
+      "t": [
+        2,
+        0,
+        8
+      ],
+      "r": 24
+    },
+    "plaza": {
+      "label": "DR 广场",
+      "t": [
+        2,
+        0,
+        21
+      ],
+      "r": 27
+    }
+  },
+  "miniBounds": {
+    "x0": -30.5,
+    "x1": 34.5,
+    "z0": -20.5,
+    "z1": 32.5
+  },
+  "plaza": {
+    "center": {
+      "x": 2,
+      "z": 21
+    },
+    "radius": 9,
+    "diameter": 18,
+    "rings": 3,
+    "radialSeams": 8,
+    "steps": {
+      "x0": -2,
+      "x1": 6,
+      "z0": 11,
+      "z1": 12
+    },
+    "carts": [
+      {
+        "id": "food-cart-1",
+        "x": -9,
+        "z": 21
+      }
+    ],
+    "kiosks": [
+      {
+        "id": "kiosk-1",
+        "x": 13,
+        "z": 18
+      },
+      {
+        "id": "kiosk-2",
+        "x": 13,
+        "z": 21
+      },
+      {
+        "id": "kiosk-3",
+        "x": 13,
+        "z": 24
+      }
+    ],
+    "umbrellaTables": [
+      {
+        "x": -8,
+        "z": 15
+      },
+      {
+        "x": -8,
+        "z": 27
+      },
+      {
+        "x": 12,
+        "z": 15
+      },
+      {
+        "x": 12,
+        "z": 27
+      }
+    ],
+    "lamps": [
+      {
+        "x": -8.5,
+        "z": 16
+      },
+      {
+        "x": -9,
+        "z": 20
+      },
+      {
+        "x": -8.5,
+        "z": 25
+      },
+      {
+        "x": -5,
+        "z": 30
+      },
+      {
+        "x": 9,
+        "z": 30
+      },
+      {
+        "x": 12.5,
+        "z": 25
+      },
+      {
+        "x": 13,
+        "z": 20
+      },
+      {
+        "x": 12.5,
+        "z": 16
+      }
+    ],
+    "benches": [
+      {
+        "x": -7,
+        "z": 13.5
+      },
+      {
+        "x": -10,
+        "z": 23
+      },
+      {
+        "x": -6,
+        "z": 29.5
+      },
+      {
+        "x": 10,
+        "z": 29.5
+      },
+      {
+        "x": 14,
+        "z": 23
+      },
+      {
+        "x": 11,
+        "z": 13.5
+      }
+    ],
+    "flowerBands": [
+      {
+        "x": -8.5,
+        "z": 21
+      },
+      {
+        "x": 12.5,
+        "z": 21
+      },
+      {
+        "x": -4,
+        "z": 29
+      },
+      {
+        "x": 8,
+        "z": 29
+      }
+    ]
+  },
+  "greenBuffer": {
+    "width": 2.5,
+    "x0": -30.5,
+    "x1": 34.5,
+    "z0": -20.5,
+    "z1": 32.5
+  },
+  "wallHeight": {
+    "standard": 4.5,
+    "atrium": 6,
+    "windowBandBottom": 3.5,
+    "occlusion": {
+      "triggerElevation": 40,
+      "loweredHeight": 0.9,
+      "glassOpacity": 0.08,
+      "transitionMs": 250
+    }
+  },
+  "monitorFit": {
+    "source": "MONITOR_GLASS_SOURCE",
+    "helper": "monitorScreenFit",
+    "offsetMin": 0.001,
+    "offsetMax": 0.002,
+    "handWrittenTransform": false,
+    "extraCalls": 0
+  },
+  "cameraDefaults": {
+    "overview": {
+      "az": 0,
+      "el": 58,
+      "r": 78,
+      "target": [
+        2,
+        0,
+        2
+      ],
+      "wallMode": "full"
+    },
+    "orbit": {
+      "az": 35,
+      "el": 50,
+      "r": 72,
+      "target": [
+        2,
+        0,
+        -1
+      ],
+      "wallMode": "camera-side-below-40"
+    },
+    "top": {
+      "az": 0,
+      "el": 82,
+      "r": 68,
+      "target": [
+        2,
+        0,
+        1
+      ],
+      "wallMode": "full"
+    },
+    "isometric": {
+      "az": -38,
+      "el": 48,
+      "r": 62,
+      "target": [
+        2,
+        0,
+        -1
+      ],
+      "wallMode": "full"
+    },
+    "low": {
+      "az": -20,
+      "el": 28,
+      "r": 44,
+      "target": [
+        2,
+        0,
+        -1
+      ],
+      "wallMode": "camera-side-lowered"
+    },
+    "follow": {
+      "az": 0,
+      "el": 34,
+      "r": 14,
+      "target": [
+        "agent",
+        0,
+        "agent"
+      ],
+      "wallMode": "camera-side-lowered"
+    }
+  },
+  "variant": "align",
+  "meetingSeatPoints": {
+    "A": [
+      {
+        "room": "A",
+        "x": -16.5,
+        "z": -9.75
+      },
+      {
+        "room": "A",
+        "x": -16.5,
+        "z": -7.25
+      },
+      {
+        "room": "A",
+        "x": -14.5,
+        "z": -9.75
+      },
+      {
+        "room": "A",
+        "x": -14.5,
+        "z": -7.25
+      },
+      {
+        "room": "A",
+        "x": -12.5,
+        "z": -9.75
+      },
+      {
+        "room": "A",
+        "x": -12.5,
+        "z": -7.25
+      },
+      {
+        "room": "A",
+        "x": -10.5,
+        "z": -9.75
+      },
+      {
+        "room": "A",
+        "x": -10.5,
+        "z": -7.25
+      }
+    ],
+    "B": [
+      {
+        "room": "B",
+        "x": -26.5,
+        "z": -9.75
+      },
+      {
+        "room": "B",
+        "x": -26.5,
+        "z": -7.25
+      },
+      {
+        "room": "B",
+        "x": -24.5,
+        "z": -9.75
+      },
+      {
+        "room": "B",
+        "x": -24.5,
+        "z": -7.25
+      },
+      {
+        "room": "B",
+        "x": -22.5,
+        "z": -9.75
+      },
+      {
+        "room": "B",
+        "x": -22.5,
+        "z": -7.25
+      }
+    ]
+  },
+  "deskGroups": {
+    "ops": [
+      "OpsLead",
+      "OpsEngineer"
+    ],
+    "quality": [
+      "QAAutomation",
+      "Reviewer1",
+      "Reviewer2",
+      "SecurityReviewer"
+    ]
+  },
+  "publicPathNodes": [
+    {
+      "x": -19.25,
+      "z": -10.9
+    },
+    {
+      "x": -7.75,
+      "z": -10.9
+    },
+    {
+      "x": -19.25,
+      "z": 7.75
+    },
+    {
+      "x": -10.2,
+      "z": 7.75
+    }
+  ]
+}

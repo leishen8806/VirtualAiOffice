@@ -66,7 +66,7 @@ export function alignZoneObstaclePlan(layout) {
   if (layout.variant === 'align') {
     const board = layout.regions.find(r => r.id === 'board')
     const area = { x0: board.x1, x1: layout.doors.north.x0, z0: layout.envelope.z0, z1: board.z1 }
-    const plan = planOpenFurnishing({ area, workstations, corridors, reserved, ring: layout.ring, zoneKind: 'north-nook' })
+    const plan = planOpenFurnishing({ area, workstations, corridors, reserved: [...reserved, ...layout.regions.filter(r => r.walled)], ring: layout.ring, zoneKind: 'north-nook' })
     entries.push({ id: 'north-nook', plan })
   }
   return entries
@@ -110,6 +110,7 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
     paving=batch.build(root,'align-floor-and-ring')
     paving.mesh.material.userData.officeFineStone = true
     for(const {id,plan} of alignZoneObstaclePlan(layout)) {
+      if (!plan.placements.length) continue
       const f=buildOpenFurnishing({THREE,root,plan,low})
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`
       if(id==='north-nook'){

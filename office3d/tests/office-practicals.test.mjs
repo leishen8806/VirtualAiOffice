@@ -8,7 +8,7 @@ import {createFurnitureCollision} from '../furniture-collision.js'
 
 test('warm practicals derive from seven enclosed rooms, connect to real ceiling bands and clear standing volume',()=>{
   const before=JSON.stringify(layout),spec=officePracticalSpec(layout)
-  assert.deepEqual(spec,officePracticalSpec(layout));assert.equal(spec.globes.length,11)
+  assert.deepEqual(spec,officePracticalSpec(layout));assert.equal(spec.globes.length,9)
   assert.deepEqual(officePracticalSpec(LAYOUT_V3),{supports:[],globes:[]})
   assert.equal(new Set(spec.globes.map(p=>p.owner)).size,7)
   for(const room of layout.regions.filter(r=>r.walled)){
@@ -29,7 +29,7 @@ test('warm practicals derive from seven enclosed rooms, connect to real ceiling 
     }
   }
   const details=wholeFloorSpec(layout).details
-  assert.equal(details.filter(p=>p.kind.startsWith('pendant-')).length,40)
+  assert.equal(details.filter(p=>p.kind.startsWith('pendant-')).length,34)
   assert.equal(JSON.stringify(layout),before);assert.equal(Object.keys(layout.seats).length,25);assert.equal(layout.displaySeats.length,12)
 })
 

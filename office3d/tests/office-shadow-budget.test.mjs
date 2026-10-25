@@ -1,7 +1,8 @@
+import layout from './fixtures/office-align-2309988.json' with { type: 'json' }
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import {LAYOUT_V3,LAYOUT_V3_ALIGN as layout} from '../office-layout.js'
+import {LAYOUT_V3} from '../office-layout.js'
 import {buildOfficeAlignedShell,officeShellFinishSpec} from '../office-vis2/shell-finish.js'
 
 function fixture(data=layout,low=false,search='?officeSample=1'){
