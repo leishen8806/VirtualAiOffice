@@ -1,4 +1,5 @@
 import { barSpec, barGaps, barColliders, barSeats, barLounges } from './office-bar-geometry.js'
+import { marketSamplePose, marketSamplePlan } from './office-vis2/furniture-sample.js'
 
 export const DISPLAY_DEPARTMENTS = Object.freeze(['market', 'service', 'aftersales', 'marketing'])
 export const DISPLAY_LABEL = '展示部门 · 模拟角色'
@@ -25,13 +26,22 @@ export function displayRoster(layout) {
   if (layout?.version !== 2) return []
   return DISPLAY_DEPARTMENTS.flatMap(department => layout.displaySeats.filter(s => s.region === department).slice(0, 3)
     .map((s, index) => ({ id: `sim-${s.id}`, department, label: `模拟 ${index + 1}`, synthetic: true,
-      home: { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: 0 })))
+      home: { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: 0,
+      ...(department==='market'?marketSamplePose(layout,index):null) })))
 }
 export function displayFurnitureBounds(layout) {
-  return displayRoster(layout).flatMap(person => [
+  const people=displayRoster(layout),sample=layout.marketSample===true&&marketSamplePlan(layout)
+  const boxes=people.filter(p=>!(sample&&p.department==='market')).flatMap(person => [
     { id: `${person.id}-desk`, x0: person.desk.x - .5, x1: person.desk.x + .5, z0: person.desk.z - .28, z1: person.desk.z + .28 },
     { id: `${person.id}-chair`, x0: person.home.x - .23, x1: person.home.x + .23, z0: person.home.z - .23, z1: person.home.z + .26 },
   ])
+  if(sample){
+    const t=sample.table
+    boxes.push({id:t.id,x0:t.x-t.w/2,x1:t.x+t.w/2,z0:t.z-t.d/2,z1:t.z+t.d/2},
+      ...people.filter(p=>p.department==='market').map(p=>({id:`${p.id}-chair`,x0:p.home.x-.26,x1:p.home.x+.23,z0:p.home.z-.23,z1:p.home.z+.23})),
+      ...sample.visitors.map(p=>({id:p.id,x0:p.x-.23,x1:p.x+.26,z0:p.z-.26,z1:p.z+.26})))
+  }
+  return boxes
 }
 function clearLine(a, b, allowed, boxes) {
   const count = Math.max(1, Math.ceil(distance(a, b) / .08))
@@ -88,7 +98,14 @@ export function displayRoute(layout, person) {
     const outside = { x: inside.x + normal.x * 1.5, z: inside.z + normal.z * 1.5 }
     const boxes = displayFurnitureBounds(layout).filter(b => b.id !== `${person.id}-chair`)
     const inRoom = p => p.x >= room.x0 + .25 && p.x <= room.x1 - .25 && p.z >= room.z0 + .25 && p.z <= room.z1 - .25
-    const go = [...route(person.home, inside, room, boxes, inRoom), outside]
+    let interior
+    if(layout.marketSample===true&&person.department==='market'){
+      // 起身只离开本人椅子；其后把本人椅子也放回障碍，沿西侧走道进出。
+      const step={x:person.home.x-.7,z:person.home.z},spine={x:room.x0+1.4,z:person.home.z}
+      const all=displayFurnitureBounds(layout),west=p=>inRoom(p)&&p.x<=inside.x+1e-6
+      interior=[person.home,step,...route(step,spine,room,all,west).slice(1),...route(spine,inside,room,all,west).slice(1)]
+    }else interior=route(person.home,inside,room,boxes,inRoom)
+    const go = [...interior, outside]
     const length = go.reduce((sum, p, i) => sum + (i ? distance(p, go[i - 1]) : 0), 0)
     return Object.freeze({ go, back: go.toReversed(), length, side: normal.x < 0 ? 'west' : normal.x > 0 ? 'east' : person.home.x < 2 ? 'west' : 'east', gapAccess: false, reason: 'V3_DISPLAY_ROUTE', durationMs: (length * 2 / 1.4 + 20) * 1000 })
   }

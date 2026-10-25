@@ -2,6 +2,7 @@ import { plazaFlowerArcs } from './plaza.js'
 import { planWorkstationIslands } from './align-zones.js'
 import { appendOfficeGardenBed } from './plants.js'
 import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
+import { facingSample, facingHome, posedPoint } from './furniture-sample.js'
 
 const flatDetails = new Set(['floor-joint', 'desk-group-inlay', 'desk-group-rug', 'meeting-paper', 'meeting-folder'])
 export const officeSurfaceDetail = p => flatDetails.has(p.kind) || p.kind === 'shelf-book'
@@ -49,9 +50,12 @@ export function wholeFloorSpec(layout) {
   const details = [], beds = []
   const box = (kind, x, y, z, w, h, d, color, owner) => details.push({ kind, x, y, z, w, h, d, color, owner })
   for (const [id, [, x, z]] of Object.entries(layout.seats)) {
+    const start=details.length
     // 物品留在桌沿，避开中部显示器和键鼠。
     box('desk-tray', x + .51, .795, z - .2, .22, .06, .2, '#596455', id)
     for (let i = 0; i < 3; i++) box('desk-book', x - .51 + i * .045, .88, z - .23, .035, .22 - i * .025, .14, ['#C0AA82', '#71826C', '#E4DDCE'][i], id)
+    const yaw=facingSample(layout)&&facingHome(layout.seats[id])?.yaw
+    if(yaw)for(const p of details.slice(start))Object.assign(p,posedPoint(x,z,yaw,p.x-x,p.z-z))
   }
   if (layout.variant === 'align') {
     const furniture = officeFurnitureV2Spec(layout)

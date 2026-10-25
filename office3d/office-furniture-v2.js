@@ -1,6 +1,7 @@
 import { OFFICE_THEME_V2 as THEME } from './office-theme-v2.js'
 import { buildOfficeShellV2Spec } from './office-layout-v2-scene.js'
 import { LAYOUT_V1 } from './office-layout.js'
+import { facingSample, facingHome } from './office-vis2/furniture-sample.js'
 
 const bounds = (x, z, w, d) => ({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 })
 
@@ -40,11 +41,14 @@ const roomScreen = (region) => {
 }
 
 export function officeFurnitureV2Spec(layout) {
-  const workstations = Object.entries(layout.seats).map(([name, [region, x, z]]) => ({
+  const workstations = Object.entries(layout.seats).map(([name, seat]) => {
+    const [region, x, z] = seat, home = facingSample(layout) && facingHome(seat)
+    return ({
     name, region, x, z, desk: bounds(x, z, 1.4, .7),
-    chair: { x, z: z + 1, yaw: 0, ...bounds(x, z + 1, .62, .6) },
-    front: bounds(x, z - .8, 1.4, .9),
-  }))
+    ...(home ? { yaw: home.yaw } : {}),
+    chair: home ? { ...home, ...bounds(home.x, home.z, .62, .6) } : { x, z: z + 1, yaw: 0, ...bounds(x, z + 1, .62, .6) },
+    front: bounds(x, z + (home?.yaw ? .8 : -.8), 1.4, .9),
+  })})
   const northMeetings = layout.variant === 'align' && meetingRegion(layout, 'review').z0 === layout.envelope.z0
   const meetings = [
     { id: 'A', region: 'review', w: 4, d: 1.4, round: false },
@@ -157,7 +161,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   for (const seat of spec.workstations) {
     const { yaw, monitor, keyboard, mouse, fit } = workstationDesktop(seat)
-    asset('desk', seat.x, seat.z, 1.4, .76, .7)
+    asset('desk', seat.x, seat.z, 1.4, .76, .7, 0, yaw)
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(1.4, .76, .7)); proxy.position.set(seat.x, .38, seat.z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'desk')
     const c = chair(seat.chair)
     asset('computerScreen', monitor.x, monitor.z, .66, .46, .16, .76, yaw)

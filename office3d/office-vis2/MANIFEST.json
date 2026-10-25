@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "EB0108DA58A83230FFCAC31C70B0C59594EF7871E0E6878D356F24BECD01D61A"
+      "sha256": "9F77F7A8341FB5E8AE7E8D5BB60EBAC6F778C36D0B1390BA4206A4FB44BE22D2"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "B908EBA777A05DD62A64662DD937A4914D56D62B53F246F8109CB4FAE3915CA0"
+      "sha256": "62712CA21B309A665544769A135601749ABEEE8350407EB7CB1E9B231E561292"
     },
     {
       "file": "office-vis2/open-furnishing.js",
@@ -182,14 +182,14 @@
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "00CC5C185FEF23D826B04AB7A4B570F340CDBB142141F6434A3E154A812798D4"
+      "sha256": "74C49FD0DEC81BC8F35AF89253E3C29DF84683253F8F8B089C265E85772794EA"
     },
     {
       "file": "office-vis2/display-finish.js",
       "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2DBCC86A6022519C025769E19622A73502F1A85C60F3B1DCADE9A2863F0B8C2A"
+      "sha256": "6323C748D14F50D2B87FB54400653230FC7D767F11FE159AE8630729DE67F53A"
     },
     {
       "file": "office-vis2/sample.js",
@@ -238,7 +238,14 @@
       "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
       "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "EA212692B072AF936E7493EFE1AD23BA9B83E1F2F8562120E0E8514FC8F87E12"
+      "sha256": "9DA1B32CB28B6B03BB2AAAD54AA3A7D967F883027D6E2E2AD0C3C48FFBF3636A"
+    },
+    {
+      "file": "office-vis2/furniture-sample.js",
+      "source": "Board-approved four real workstation poses and market shared-table sample; original pure data, no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "F42E1F6D83069DBE6929E3024030B5EABC466A33CAFB5F76CE9CBE5526D5B50C"
     }
   ],
   "excluded": {

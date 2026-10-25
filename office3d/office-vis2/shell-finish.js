@@ -4,6 +4,7 @@ import { createSampleBatch, officeStoneGrain, warmOfficeArchitecture } from './b
 import { appendOfficePlazaPaving } from './completion.js'
 import { wholeFloorSpec, appendWholeFloorGarden, officeSurfaceDetail, appendOfficeSurfaceDetails } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
+import { facingSample, facingHome, posedPoint } from './furniture-sample.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
 const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'shelf-spine', 'shelf-toe', 'shelf-cornice', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
@@ -64,6 +65,8 @@ export function officeShellFinishSpec(layout, spec) {
     box(x - .5, .38, z, .28, .58, .5, '#D9D3C6', 'desk-cabinet')
     box(x, .53, z - .3, 1.22, .3, .025, '#B7C2B4', 'desk-panel')
     for (const y of [.29, .48]) box(x - .5, y, z + .255, .13, .015, .018, '#B89B64', 'desk-handle')
+    const yaw=facingSample(layout)&&facingHome(layout.seats[id])?.yaw
+    if(yaw)for(const p of solid.slice(start))Object.assign(p,posedPoint(x,z,yaw,p.x-x,p.z-z))
     solid.slice(start).forEach(p => { p.workstation = id })
   }
   const wholeFloor = wholeFloorSpec(layout)

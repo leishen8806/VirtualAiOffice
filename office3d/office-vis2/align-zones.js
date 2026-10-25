@@ -1,6 +1,7 @@
 import { createSampleBatch, warmOfficeArchitecture } from './batch.js'
 import { officeSampleRequested } from './host.js'
 import { buildOpenFurnishing, planOpenFurnishing } from './open-furnishing.js'
+import { facingSample, FACING_SEATS, FACING_ISLAND_BOUNDS } from './furniture-sample.js'
 
 const isRect = b => ['x0','x1','z0','z1'].every(k => Number.isFinite(b?.[k]))
 export const alignPassages = layout => Object.values({ ...layout.corridors, ...layout.passages }).filter(isRect)
@@ -18,7 +19,8 @@ export function alignDoorAprons(layout) {
 
 // 围绕既有真实桌位生成端柜与背屏；不增加桌面、业务席位，也不改变 workHome 朝向。
 export function planWorkstationIslands(layout, area) {
-  const seats=Object.entries(layout.seats).filter(([,s])=>s[0]===area.id).map(([id,[,x,z]])=>({id,x,z}))
+  const paired=facingSample(layout)&&area.id==='west-open'
+  const seats=Object.entries(layout.seats).filter(([id,s])=>s[0]===area.id&&!(paired&&FACING_SEATS[id])).map(([id,[,x,z]])=>({id,x,z}))
   const rows=[]
   for(const seat of seats.sort((a,b)=>a.z-b.z||a.x-b.x)) {
     let row=rows.at(-1)
@@ -29,7 +31,7 @@ export function planWorkstationIslands(layout, area) {
   const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
   for(const [i,row]of rows.entries()) {
     const id=`real-desks-${i+1}`,z=row[0].z,left=row[0].x-.7,right=row.at(-1).x+.7,members=[]
-    const sample=layout.variant==='align'&&area.id==='west-open'&&row.some(s=>s.id==='OpsLead')
+    const sample=layout.variant==='align'&&!facingSample(layout)&&area.id==='west-open'&&row.some(s=>s.id==='OpsLead')
     const add=(kind,x,z,w,d,height)=>{
       const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
       if(bounds.x0<area.x0||bounds.x1>area.x1||bounds.z0<area.z0||bounds.z1>area.z1||forbidden.some(b=>overlap(bounds,b))) {skipped.push(`${id}-${kind}-${x}`);return}
@@ -47,6 +49,17 @@ export function planWorkstationIslands(layout, area) {
     groups.push({id,template:'real-workstation-island',workstationIds:row.map(s=>s.id),memberIds:members.map(p=>p.id),
       groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:Math.min(z-.47,...members.map(p=>p.bounds.z0)),z1:z+1.3},
       useSpace:{x0:left,x1:right,z0:z+.35,z1:z+1.3}})
+  }
+  if(paired){
+    const id='real-desks-2',ids=Object.keys(FACING_SEATS),members=[]
+    for(const [kind,x,z,w,d,height] of [['desk-divider',-13.5,0,3,.08,1.135],['planter-cabinet',-15.3,0,.5,1.5,1.25],['planter-cabinet',-11.7,0,.5,1.5,1.25]]){
+      const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
+      if(forbidden.some(b=>overlap(bounds,b)))throw new Error('FACING_ISLAND_BLOCKS_PASSAGE')
+      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:ids,sample:'quality-facing-island'})
+    }
+    placements.push(...members)
+    groups.push({id,template:'facing-workstation-island',workstationIds:ids,memberIds:members.map(p=>p.id),groupBounds:{...FACING_ISLAND_BOUNDS},
+      useSpaces:[{x0:-15,x1:-12,z0:-1.75,z1:-.75},{x0:-15,x1:-12,z0:.75,z1:1.75}]})
   }
   return{placements,groups,skipped,corridors:alignPassages(layout)}
 }

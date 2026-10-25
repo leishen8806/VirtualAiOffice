@@ -37,6 +37,10 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   // V3-A1/R2 仅追加独立 ALIGN 数据（包含经批准的 5.45m 沙发半径）。
   const alignBlock = /\r?\nconst alignRect = [\s\S]*?(?=\r?\nconst LAYOUT_V1_DATA)/
   const alignExport = /^export const LAYOUT_V3_ALIGN = .*\r?\n/m
+  const sampleExport = /^export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep\(\{ \.\.\.cloneLayoutData\(V3_ALIGN_LAYOUT\), furnitureSample: true,\r?\n  seats: \{ \.\.\.cloneLayoutData\(V3_ALIGN_SEATS\), \.\.\.cloneLayoutData\(FACING_SEATS\) \} \}\)\r?\n/m
+  const approvedHome = 'export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })'
+  const legacyHome = 'export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })'
+  assert.ok(currentSource.includes(approvedHome)); assert.match(currentSource, sampleExport)
   const regionFocusExport = /^export const regionFocusOf = .*\r?\n/m
   const resolverBlock = /export const resolveOfficeLayout = \(search = ''\) => \{[\s\S]*?\r?\n\}/
   assert.match(currentSource, v3FocusMeet)
@@ -44,6 +48,8 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   assert.match(currentSource, alignExport)
   assert.match(currentSource, regionFocusExport)
   const restored = currentSource
+    .replace(approvedHome, legacyHome)
+    .replace(sampleExport, '')
     .replace(v3FocusMeet, '')
     .replace(v3Block, '')
     .replace(alignBlock, '')
@@ -54,6 +60,11 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
     .replace(barBlock, baselineSource.match(barBlock)[0])
   assert.equal(restored.replace(revisedDoor, revisedDoor.replace('at: 24', 'at: 18')).startsWith(baselineSource), true)
   for (const key of Object.keys(baseline)) {
+    if (key === 'workHome') {
+      for (const seats of [current.SEATS, current.LAYOUT_V2.seats, current.LAYOUT_V3.seats, current.LAYOUT_V3_ALIGN.seats])
+        for (const seat of Object.values(seats)) assert.deepEqual(current.workHome(seat), baseline.workHome(seat))
+      continue
+    }
     const expected = comparable(baseline[key])
     if (key === 'resolveOfficeLayout') {
       assert.equal(current.resolveOfficeLayout('?layout=2'), current.LAYOUT_V2)

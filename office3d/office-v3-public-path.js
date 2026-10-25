@@ -1,4 +1,5 @@
 import { alignZoneObstaclePlan } from './office-vis2/align-zones.js'
+import { facingSample, facingAccess, FACING_ISLAND_BOUNDS } from './office-vis2/furniture-sample.js'
 
 // Public circulation only: room interiors and final seat approach remain owned by the director.
 export function createV3PublicPath(layout) {
@@ -11,7 +12,8 @@ export function createV3PublicPath(layout) {
   // 样板咖啡台前另有半径 .42m 的圆桌，通路边界须包含真实桌沿。
   const serviceBounds = align ? { ...layout.serviceBar, z1: Math.max(layout.serviceBar.z1, layout.foyer.z1 - 1.4 + .42) } : layout.serviceBar
   const boxes = [...regionBoxes, layout.frontDesk, serviceBounds, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
-  const blockers = [...boxes, ...desks, ...furnishings.map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
+  const island = facingSample(layout) ? [FACING_ISLAND_BOUNDS] : []
+  const blockers = [...boxes, ...desks, ...[...furnishings, ...island].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
   const finite = p => Number.isFinite(p?.x) && Number.isFinite(p?.z)
   const inside = (p, b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1
   const valid = p => finite(p) && p.x >= layout.envelope.x0 + pad && p.x <= layout.envelope.x1 - pad && p.z >= layout.envelope.z0 + pad && p.z <= layout.doors.south.z - pad && !blockers.some(b => inside(p, b)) && Math.hypot(p.x - center.x, p.z - center.z) >= radius
@@ -62,7 +64,7 @@ export function createV3PublicPath(layout) {
       }
       throw new Error(`V3 public route endpoint blocked: ${JSON.stringify({ from, to })}`)
     }
-    const startPoint = anchor(from), endPoint = anchor(to)
+    const startPoint = anchor(facingAccess(layout, from) || from), endPoint = anchor(facingAccess(layout, to) || to)
     if (clear(startPoint, endPoint)) return dedupe([{ ...from }, startPoint, endPoint, { ...to }])
     const all = [...nodes, startPoint, endPoint], start = nodes.length, end = start + 1
     const edges = [...links.map(list => [...list]), [], []]

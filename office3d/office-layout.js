@@ -32,7 +32,7 @@ export const SEATS = {
   LedgerAuditor: ['drlife', 8.5, 5], ReactSenior: ['drlife', 12, 5], React1: ['drlife', 15.5, 5], Localizer: ['drlife', 19, 5],
   OpsLead: ['ops', -30.5, 4], OpsEngineer: ['ops', -25.5, 4], KnowledgeKeeper: ['kb', -30.5, -8],
 }
-export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })
+export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })
 export const BOSS = { desk: { x: 20, z: -8 }, chair: { x: 21, z: -8 }, stand: { x: 18.5, z: -8 }, via: [{ x: 16, z: -5.5 }, { x: 18.5, z: -5.5 }] }
 export const BOARD_TABLE = { x: 11, z: -8 }
 export const BOARD_DOOR = { x: OFFICE_ROOMS.find(r => r.id === 'board').doors[0].at, zOut: CROSS_Z, zIn: -5.5 }
@@ -584,13 +584,18 @@ export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep({ ...cloneLayoutData(V3_ALIGN_LAYOUT), furnitureSample: true,
+  seats: { ...cloneLayoutData(V3_ALIGN_SEATS), ...cloneLayoutData(FACING_SEATS) } })
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
   const values = params.getAll('layout')
   if (values.length !== 1) return LAYOUT_V1
   if (values[0] === '2') return LAYOUT_V2
-  if (values[0] === '3') return params.getAll('align').length === 1 && params.get('align') === '1' ? LAYOUT_V3_ALIGN : LAYOUT_V3
+  if (values[0] === '3') {
+    if (params.getAll('align').length !== 1 || params.get('align') !== '1') return LAYOUT_V3
+    return params.getAll('officeSample').length === 1 && params.get('officeSample') === '1' ? LAYOUT_V3_ALIGN_SAMPLE : LAYOUT_V3_ALIGN
+  }
   return LAYOUT_V1
 }
 
@@ -638,6 +643,7 @@ export const CAMPUS_FOCUS = freezeDeep({ label: 'DR 仓配服务中心（示意�
 export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: 24, z0: -28, z1: 44 })
 import { barColliders, barLounges } from './office-bar-geometry.js'
 import { createV3PublicPath } from './office-v3-public-path.js'
+import { FACING_SEATS, facingHome, facingAccess } from './office-vis2/furniture-sample.js'
 
 const routePoint = (point) => ({ x: point.x, z: point.z })
 const roomCenter = (room) => ({ x: (room.x0 + room.x1) / 2, z: (room.z0 + room.z1) / 2 })
@@ -676,6 +682,8 @@ function createOfficeV3Navigation(layout) {
     return room?.walled === false ? undefined : room
   }
   const exit = (home) => {
+    const sampleExit = facingAccess(layout, home)
+    if (sampleExit) return [routePoint(home), sampleExit]
     const room = findRoom(home)
     if (!room || room.walled === false) return [routePoint(home)]
     const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
@@ -790,6 +798,8 @@ function createOfficeV3Navigation(layout) {
   }
   return {
     roomAt: walledRoomAt, standAt: home => {
+      const sampleStand = facingAccess(layout, home)
+      if (sampleStand) return sampleStand
       const room = walledRoomAt(home)
       if (!room) return routePoint(home)
       return { x: home.x + (home.x > room.x1 - 1.6 ? -1 : 1), z: home.z }
