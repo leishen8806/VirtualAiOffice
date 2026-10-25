@@ -3,6 +3,16 @@ import { appendOfficePlaza } from './plaza.js'
 
 export function appendOfficePlazaPaving({ THREE, batch, layout, low = false }) {
   const plaza = layout.plaza, c = plaza.center
+  if (layout.variant === 'align') {
+    // 分缝高于原地面1.5mm、低于圆形铺地；旧圆盘和入口石板自然遮住下层缝线。
+    const e = layout.envelope, s = layout.site, depth = s.z1 - e.z1
+    const joint = (w, d, x, z) => {
+      const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2)
+      batch.add(g, '#C0B7A8', [x, .0815, z], 0, .9)
+    }
+    for (let x = c.x - Math.floor((c.x - e.x0) / 1.5) * 1.5 + .75; x < e.x1; x += 1.5) joint(.014, depth, x, e.z1 + depth / 2)
+    for (let z = e.z1 + 1.5; z < s.z1; z += 1.5) joint(e.x1 - e.x0, .014, c.x, z)
+  }
   const disk = new THREE.CircleGeometry(plaza.radius - .25, low ? 48 : 96)
   disk.rotateX(-Math.PI / 2); batch.add(disk, layout.variant==='align'?'#DED6C7':'#E1C399', [c.x, .09, c.z], 0, .9, 0, 'stone')
   for (const radius of [3.1, 5.8, 8.3]) {

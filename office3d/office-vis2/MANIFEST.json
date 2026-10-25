@@ -130,7 +130,7 @@
     },
     {
       "file": "office-vis2/completion.js",
-      "sha256": "012434DCC7EB1710175EF5BF78A9FA4887DB86DFC7097A1B4A19191C8BAC4258",
+      "sha256": "F88846EAFBF228DF61DDBC9304451365B22D56FC1761ECD02F9D98757F04899B",
       "source": "Private procedural room and plaza visual completion for VIS3-M1-FIX1",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
