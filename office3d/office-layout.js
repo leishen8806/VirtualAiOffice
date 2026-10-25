@@ -534,6 +534,7 @@ const V3_ALIGN_LAYOUT = {
   displaySeats: V3_ALIGN_DISPLAY_SEATS,
   meetingSeats: { A: 8, B: 6 },
   meetingSeatPoints: V3_ALIGN_MEETING_SEATS,
+  boardTable: { x: -12.5, z: -15 },
   deskGroups: { ops: ['OpsLead', 'OpsEngineer'], quality: ['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer'] },
   corridors: {
     ...cloneLayoutData(V3_LAYOUT.corridors),

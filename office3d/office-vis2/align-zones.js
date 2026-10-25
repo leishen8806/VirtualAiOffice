@@ -62,10 +62,14 @@ export function alignZoneObstaclePlan(layout) {
     for (const group of plan.groups) reserved.push({ x0: group.groupBounds.x0 - 1.2, x1: group.groupBounds.x1 + 1.2, z0: group.groupBounds.z0 - 1.2, z1: group.groupBounds.z1 + 1.2 })
     entries.push({ id, plan })
   }
-  // 概念图的北侧两组洽谈席：使用会议室与北门之间的余地，不新增业务工位。
+  // 北侧已建业务会议室时，把原洽谈组放到西侧腾出的空间；保留原模块 id，不新增业务工位。
   if (layout.variant === 'align') {
     const board = layout.regions.find(r => r.id === 'board')
-    const area = { x0: board.x1, x1: layout.doors.north.x0, z0: layout.envelope.z0, z1: board.z1 }
+    const west = layout.regions.find(r => r.id === 'west-open')
+    const northOccupied = layout.regions.some(r => ['review', 'plan'].includes(r.id) && r.z0 === layout.envelope.z0)
+    const area = northOccupied
+      ? { x0: west.x0, x1: west.x1, z0: Math.max(board.z1, layout.regions.find(r => r.id === 'market').z1), z1: west.z0 }
+      : { x0: board.x1, x1: layout.doors.north.x0, z0: layout.envelope.z0, z1: board.z1 }
     const plan = planOpenFurnishing({ area, workstations, corridors, reserved: [...reserved, ...layout.regions.filter(r => r.walled)], ring: layout.ring, zoneKind: 'north-nook' })
     entries.push({ id: 'north-nook', plan })
   }

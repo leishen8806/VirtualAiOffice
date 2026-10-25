@@ -38,7 +38,8 @@ test('north-room correction retains all business identities and real desk coordi
   assert.deepEqual(layout.island.center,{x:2,z:-3});assert.deepEqual(layout.bar.center,layout.island.center);assert.deepEqual(layout.ring.center,layout.island.center)
   assert.equal(layout.ring.width,4);assert.equal(layout.island.diameter,12);assert.equal(layout.bar.radius,6)
   for(const r of layout.rooms){const c=layout.ring.center;assert.ok(Math.hypot(Math.max(r.x0-c.x,0,c.x-r.x1),Math.max(r.z0-c.z,0,c.z-r.z1))>=10)}
-  const unused=alignZoneObstaclePlan(layout).find(e=>e.id==='north-nook');assert.deepEqual(unused.plan.placements,[],'real meeting rooms replace decorative duplicate seats')
+  const nook=alignZoneObstaclePlan(layout).find(e=>e.id==='north-nook');assert.equal(nook.plan.groups.length,2)
+  for(const p of nook.plan.placements){assert.ok(p.bounds.z0>=-12&&p.bounds.z1<=-4.5&&p.bounds.x0>=-28&&p.bounds.x1<=-8.5,'decorative seats use the released west area');for(const r of layout.rooms)assert.ok(p.bounds.x1<=r.x0||p.bounds.x0>=r.x1||p.bounds.z1<=r.z0||p.bounds.z0>=r.z1,'no duplicates inside meeting rooms')}
   for(const id of ['market','service','aftersales','marketing'])assert.deepEqual(layout.regions.find(r=>r.id===id).walled,true)
 })
 
@@ -51,7 +52,7 @@ test('rendered meeting seats and routing targets share exact coordinates, yaw an
   }
 })
 
-test('actual registered GLB chairs, tables and walls leave all fourteen interior routes clear at both quality tiers',()=>{
+test('actual registered GLB furniture clears fourteen meeting and twenty-five board-arrival routes at both quality tiers',()=>{
   const A=models()
   try{for(const low of[false,true]){
     const root=new THREE.Group(),scene=new THREE.Scene(),world=createFurnitureCollision();scene.add(root)
@@ -68,6 +69,20 @@ test('actual registered GLB chairs, tables and walls leave all fourteen interior
           const x=a.x+(b.x-a.x)*j/n,z=a.z+(b.z-a.z)*j/n
           if(x<room.x0||x>room.x1||z<room.z0||z>room.z1)continue
           const hit=world.hit(x,z,target);assert.equal(hit?.kind??null,null,`${seat.room} route hits ${hit?.kind} at ${x},${z}`)
+        }}
+      }
+      const boardRoom=layout.regions.find(r=>r.id==='board')
+      for(const seat of furniture.spec.boardSeats){
+        const body=world.seatBody(seat);assert.ok(body,'real board chair')
+        const b=new THREE.Box3().setFromObject(body)
+        assert.ok(b.min.x>=boardRoom.x0+.28&&b.max.x<=boardRoom.x1-.28&&b.min.z>=boardRoom.z0+.28&&b.max.z<=boardRoom.z1-.28,'board chairs do not intersect walls')
+      }
+      for(const home of Object.values(layout.seats).map(workHome)){
+        const route=nav.boardTrip(home,layout.boss.stand)
+        for(let i=1;i<route.length;i++){const a=route[i-1],b=route[i],n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.025));for(let j=1;j<=n;j++){
+          const x=a.x+(b.x-a.x)*j/n,z=a.z+(b.z-a.z)*j/n
+          if(x<boardRoom.x0||x>boardRoom.x1||z<boardRoom.z0||z>boardRoom.z1)continue
+          const hit=world.hit(x,z);assert.equal(hit?.kind??null,null,`board approach hits ${hit?.kind} at ${x},${z}`)
         }}
       }
     }finally{furniture.dispose();shell.dispose()}
