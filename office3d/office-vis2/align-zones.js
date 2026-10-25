@@ -29,21 +29,23 @@ export function planWorkstationIslands(layout, area) {
   const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
   for(const [i,row]of rows.entries()) {
     const id=`real-desks-${i+1}`,z=row[0].z,left=row[0].x-.7,right=row.at(-1).x+.7,members=[]
+    const sample=layout.variant==='align'&&area.id==='west-open'&&row.some(s=>s.id==='OpsLead')
     const add=(kind,x,z,w,d,height)=>{
       const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
       if(bounds.x0<area.x0||bounds.x1>area.x1||bounds.z0<area.z0||bounds.z1>area.z1||forbidden.some(b=>overlap(bounds,b))) {skipped.push(`${id}-${kind}-${x}`);return}
-      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:row.map(s=>s.id)})
+      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:row.map(s=>s.id),...(sample?{sample:'west-desk-island'}:{})})
     }
     const screenLeft=Math.max(left,area.x0),screenRight=Math.min(right,area.x1)
-    add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,.08,1.135)
-    for(const x of [left-.245,right+.245])add('planter-cabinet',x,z,.45,.7,1.25)
+    add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,sample?.12:.08,1.135)
+    const endWidth=sample?.65:.45
+    for(const x of sample?[left-endWidth/2-.02,right+endWidth/2+.02]:[left-.245,right+.245])add('planter-cabinet',x,z-(sample?.175:0),endWidth,sample?1.05:.7,1.25)
     for(let j=1;j<row.length;j++) {
       const gap=row[j].x-row[j-1].x-1.4
-      if(gap>=1.8)add('planter-cabinet',(row[j].x+row[j-1].x)/2,z,Math.min(1.1,gap-.6),.7,1.25)
+      if(gap>=1.8)add(sample?'cabinet':'planter-cabinet',(row[j].x+row[j-1].x)/2,z,sample?gap-.08:Math.min(1.1,gap-.6),.7,sample?.8:1.25)
     }
     placements.push(...members)
     groups.push({id,template:'real-workstation-island',workstationIds:row.map(s=>s.id),memberIds:members.map(p=>p.id),
-      groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:z-.47,z1:z+1.3},
+      groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:Math.min(z-.47,...members.map(p=>p.bounds.z0)),z1:z+1.3},
       useSpace:{x0:left,x1:right,z0:z+.35,z1:z+1.3}})
   }
   return{placements,groups,skipped,corridors:alignPassages(layout)}

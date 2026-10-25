@@ -19,13 +19,16 @@ test('display finish is closed by default and preserves legacy geometry exactly'
   }
 })
 
-test('four rooms retain labels, twelve identities, exact path bounds and one batch at both qualities', () => {
+test('four rooms retain labels, twelve identities, explicit market sample bounds and one batch at both qualities', () => {
   const snapshot = JSON.stringify(layout), roster = displayRoster(layout)
   for (const low of [false, true]) {
     const old = buildDisplayDepartments(context(low)), c = context(low), next = buildOfficeDisplayFinish(c)
     try {
       assert.ok(next.finish?.parts, 'recognized original geometry')
-      assert.deepEqual(next.bounds, old.bounds); assert.deepEqual(next.regions, old.regions)
+      const replaced=new Set(roster.filter(p=>p.department==='market').map(p=>`${p.id}-desk`))
+      assert.deepEqual(next.bounds, [...old.bounds.filter(b=>!replaced.has(b.id)),...next.finish.sample.bounds])
+      assert.equal(next.finish.sample.room,'market');assert.equal(next.finish.sample.bounds.length,4)
+      assert.deepEqual(next.regions, old.regions)
       assert.equal(next.summary().calls, 1); assert.equal(next.summary().desks, 12)
       assert.ok(next.summary().triangles < (low ? 7000 : 14000), 'bounded four-room detail')
       const original = old.root.children[0].geometry.attributes, actual = next.root.children[0].geometry.attributes

@@ -175,21 +175,21 @@
       "source": "Original deterministic open-area furnishing geometry for V3-A2P; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "3ADAF66307818F06F03321EF1448666E399188929B3E222848581052C447C173"
+      "sha256": "D6D738F607229B20EA5A105BB9A79709303257D8BFAFC1ADD5238343FB942053"
     },
     {
       "file": "office-vis2/align-zones.js",
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "ACA16C1977C4B792A2F64EFA6CF6BD9D30E219E84C24E3D241FDED48114E8655"
+      "sha256": "00CC5C185FEF23D826B04AB7A4B570F340CDBB142141F6434A3E154A812798D4"
     },
     {
       "file": "office-vis2/display-finish.js",
       "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "39FB4ED31F38436DEC7753AE96CDB5875337822B1940452E60EF4474A21C7892"
+      "sha256": "2DBCC86A6022519C025769E19622A73502F1A85C60F3B1DCADE9A2863F0B8C2A"
     },
     {
       "file": "office-vis2/sample.js",

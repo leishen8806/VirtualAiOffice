@@ -27,7 +27,8 @@ test('25 real seats are grouped exactly once without adding decorative desks or 
   assert.equal(new Set(ids).size,25)
   for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++)assert.ok(distance(groups[i].groupBounds,groups[j].groupBounds)>=1.2-1e-9,'group aisle >=1.2m')
   for(const {id,plan}of alignZoneObstaclePlan(layout))if(!['creative','dining','leisure','north-nook'].includes(id)){
-    assert.ok(plan.placements.every(p=>['desk-divider','planter-cabinet'].includes(p.kind)))
+    assert.ok(plan.placements.every(p=>['desk-divider','planter-cabinet'].includes(p.kind)||(id==='west-open'&&p.kind==='cabinet'&&p.sample==='west-desk-island'&&p.workstationIds.join('/')==='OpsLead/OpsEngineer')))
+    assert.equal(plan.placements.filter(p=>p.kind==='cabinet').length,id==='west-open'?1:0)
     assert.ok(plan.groups.every(g=>g.workstationIds.length>0))
   }
 })
