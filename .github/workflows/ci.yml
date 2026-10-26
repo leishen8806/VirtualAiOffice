@@ -36,15 +36,17 @@ jobs:
       - name: Unit tests (node --test)
         shell: bash
         run: |
-          set -o pipefail
-          npm test 2>&1 | tee /tmp/unit-test.log
-          status=${PIPESTATUS[0]}
-          if [ $status -ne 0 ]; then
-            grep "^not ok" /tmp/unit-test.log | head -80 | while IFS= read -r line; do echo "::error::${line}"; done
-            echo "===== FAILED TEST DETAILS ====="
-            grep -A10 "^not ok" /tmp/unit-test.log | head -200
-            exit $status
-          fi
+          npm test > /tmp/unit-test.log 2>&1 || {
+            echo "### Windows unit-test failures" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "===== not ok ====="
+            grep "^not ok" /tmp/unit-test.log | head -80
+            echo "===== details ====="
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300
+            exit 1
+          }
       - name: Package spec tests (tsc + node --test)
         run: npm run test:packages
       - name: Packaged layout verification
