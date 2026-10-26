@@ -46,8 +46,8 @@ test('R4 keeps the real label world box clear of dock work and aligns its four r
   const box = new THREE.Box3().setFromObject(label)
   const labelBounds = { x0: box.min.x, x1: box.max.x, z0: box.min.z, z1: box.max.z }
 
-  assert.ok(Math.abs(labelBounds.x0 - -122) < 1e-9)
-  assert.ok(Math.abs(labelBounds.x1 - -102) < 1e-9)
+  assert.ok(Math.abs(labelBounds.x0 - -121.8) < 1e-5)
+  assert.ok(Math.abs(labelBounds.x1 - -102.2) < 1e-5)
   assert.ok(labelBounds.z0 >= -4.95 && labelBounds.z1 <= -4.85)
   assert.ok(labelBounds.x1 < CAMPUS_SHUTTLE_STRIP.x0, 'label does not enter the shuttle strip')
   for (const dock of CAMPUS_DOCKS.filter(({ id }) => /^D0[5-8]$/.test(id))) {
@@ -58,10 +58,10 @@ test('R4 keeps the real label world box clear of dock work and aligns its four r
   assert.deepEqual(
     fillTextCalls.filter(({ text }) => ['A1', 'R2', 'C2', 'B2'].includes(text)),
     [
-      { text: 'A1', x: 50, y: 68 },
-      { text: 'R2', x: 350, y: 68 },
-      { text: 'C2', x: 650, y: 68 },
-      { text: 'B2', x: 950, y: 68 },
+      { text: 'A1', x: 125, y: 68 },
+      { text: 'R2', x: 375, y: 68 },
+      { text: 'C2', x: 625, y: 68 },
+      { text: 'B2', x: 875, y: 68 },
     ],
   )
   built.dispose()

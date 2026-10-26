@@ -1,3 +1,4 @@
+import { buildCampusVehicleMarkings } from './dr-campus-vehicles.js'
 import { buildCampusShell, CAMPUS_FINISHED_FLOOR_Y } from './dr-campus-shell.js'
 import { buildCampusRacks } from './dr-campus-racks.js'
 import { buildCampusInterior } from './dr-campus-interior.js'
@@ -30,6 +31,7 @@ export const campusModules = Object.freeze([
   })],
   ['interior', (context) => buildCampusInterior(context)],
   ['yard-docks', (context) => buildCampusYardDocks(context)],
+  ['vehicle-markings', (context) => buildCampusVehicleMarkings(context)],
   ['motion', (context) => buildCampusMotion(context)],
   ['shuttle', (context) => buildCampusShuttle(context)],
 ])

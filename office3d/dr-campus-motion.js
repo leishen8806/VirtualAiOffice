@@ -1,4 +1,6 @@
-import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, routePointAt, truckPlan } from './dr-campus-motion-logic.js'
+import { B4_PLAN, forkliftParts, truckParts } from './dr-campus-vehicles.js'
+import { CAMPUS_FINISHED_FLOOR_Y } from './dr-campus-shell.js'
+import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, forkliftPose, pathPoint, routePointAt, truckPlan } from './dr-campus-motion-logic.js'
 
 export function buildCampusMotion({ THREE, root, layout, quality, eventSource, now, search = globalThis.location?.search || '' }) {
   const low = quality?.tier === 'low'
@@ -16,28 +18,14 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
   const material = new THREE.MeshStandardMaterial({ roughness: .72, metalness: .18 })
   const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), euler = new THREE.Euler()
   const vector = new THREE.Vector3(), scale = new THREE.Vector3()
-  const forklift = forkliftPath(layout), trucks = truckPlan(layout), belts = conveyorLoop(layout)
+  const forklifts = [forkliftPath(layout),forkliftPath(layout,3)], trucks = truckPlan(layout), belts = conveyorLoop(layout)
   const b3Workstations = root.userData.b3Workstations
   const externalConveyors = Boolean(b3Workstations)
   const b3Path = b3Workstations?.conveyorPath
   const pieces = [[], [], []]
   const add = (batch, kind, index, x, y, z, sx, sy, sz, color) => pieces[batch].push({ kind, index, x, y, z, sx, sy, sz, color })
-  for (let i = 0; i < (low ? 1 : 2); i++) {
-    add(0, 'forklift', i, 0, .65, 0, 1.1, .75, 1.4, 0xe4a844)
-    add(0, 'forklift', i, 0, 1.55, -.25, .9, .14, 1, 0x34404a)
-    for (const x of [-.4, .4]) {
-      add(0, 'forklift', i, x, 1.1, -.6, .1, .9, .1, 0x34404a)
-      add(0, 'forklift', i, x, .65, .85, .08, 1.2, .12, 0x34404a)
-      add(0, 'forklift', i, x, .15, 1.2, .12, .08, .7, 0x34404a)
-      for (const z of [-.5, .5]) add(0, 'forklift', i, x * 1.4, .3, z, .18, .45, .38, 0x242b30)
-    }
-  }
-  for (let i = 0; i < (low ? 2 : trucks.length); i++) {
-    add(1, 'truck', i, 0, 1.35, 0, 2.55, 2.3, 9, 0xdce2df)
-    add(1, 'truck', i, 0, .9, 4.2, 2.55, 1.7, .9, 0x426979)
-    add(1, 'truck', i, 0, 1.4, 4.65, 1.95, .65, .06, 0x1b2d35)
-    for (const x of [-1.15, 1.15]) for (const z of [-3.6, -1.2, 1.2, 3.6]) add(1, 'truck', i, x, .35, z, .3, .6, .7, 0x252c31)
-  }
+  for(let i=0;i<4;i++)for(const part of forkliftParts())pieces[0].push({...part,kind:'forklift',index:i})
+  for(let i=0;i<(low?2:trucks.length);i++)for(const part of truckParts())pieces[1].push({...part,kind:'truck',index:i})
   if (!externalConveyors) for (let i = 0; i < 2; i++) {
     const path = belts[i], width = path[1].x - path[0].x
     add(2, 'fixed', i, (path[0].x + path[1].x) / 2, .58, path[0].z + .45, width + .6, .22, 1.5, 0x4a6870)
@@ -46,11 +34,13 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
   if (externalConveyors) for (let i = 0; i < (low ? 2 : 4); i++) {
     add(2, 'b3-cargo', i, 0, b3Workstations.conveyorSurfaceY + .24, 0, .56, .48, .48, 0xbc9560)
   }
-  const batches = [pieces.flat()]
+  const batches = [pieces.flat().filter(p=>p.shape!=='wheel'),pieces.flat().filter(p=>p.shape==='wheel')]
+  const wheelGeometry = new THREE.CylinderGeometry(.5,.5,1,low?8:12).rotateZ(Math.PI/2)
   const meshes = batches.map((items, i) => {
-    const mesh = new THREE.InstancedMesh(geometry, material, items.length)
+    const mesh = new THREE.InstancedMesh(i===0?geometry:wheelGeometry, material, items.length)
     mesh.name = `campus-motion-${i}`
     mesh.userData.qualityProxy = true
+    mesh.userData.parts = items
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
     mesh.frustumCulled = false
     items.forEach((item, index) => mesh.setColorAt(index, new THREE.Color(item.color)))
@@ -74,7 +64,8 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
     const truckEvent = lastEvent
     const activeTruck = truckEvent?.index ?? -1
     const truckProgress = truckEvent ? Math.max(0, Math.min(1, (elapsed - epoch) / 3200)) : 0
-    const positions = [pathPoint(forklift, forkliftEnabled ? elapsed : 0), pathPoint(forklift, forkliftEnabled ? elapsed + 10000 : 10000)]
+    const positions = B4_PLAN.parking.map(p=>({x:(p.x0+p.x1)/2,z:(p.z0+p.z1)/2,angle:Math.PI/2}))
+    if(forkliftEnabled&&!low){positions[0]=forkliftPose(forklifts[0],elapsed);positions[3]=forkliftPose(forklifts[1],Math.max(0,elapsed-9000))}
     batches.forEach((items, batch) => {
       items.forEach((item, index) => {
         let x = item.x, z = item.z, angle = 0
@@ -100,7 +91,7 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
           x = p.x; z = p.z; angle = p.angle
         }
         quaternion.setFromEuler(euler.set(0, angle, 0))
-        meshes[batch].setMatrixAt(index, matrix.compose(vector.set(x, item.y, z), quaternion, scale.set(item.sx, item.sy, item.sz)))
+        meshes[batch].setMatrixAt(index, matrix.compose(vector.set(x, item.y + (['forklift','truck'].includes(item.kind)?CAMPUS_FINISHED_FLOOR_Y:0), z), quaternion, scale.set(item.sx, item.sy, item.sz)))
       })
       meshes[batch].instanceMatrix.needsUpdate = true
     })
@@ -144,11 +135,11 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
   }
   return {
     root: group, onFrame, setPaused(value) { paused = value === true; motionClock.reset() },
-    summary: () => ({ calls: low ? 0 : 1, triangles: pieces.reduce((sum, items) => sum + items.length * 12, 0), low, enabled, failed, ...group.userData.progress }),
+    summary: () => ({ calls: low ? 0 : 2, triangles: batches.reduce((sum,items,i)=>sum+items.length*(i?wheelGeometry.index.count/3:12),0), low, enabled, failed, ...group.userData.progress }),
     dispose() {
       if (disposed) return
       disposed = true; failed = true
-      unsubscribe?.(); globalThis.document?.removeEventListener('visibilitychange', hidden); geometry.dispose(); material.dispose(); group.removeFromParent()
+      unsubscribe?.(); globalThis.document?.removeEventListener('visibilitychange', hidden); geometry.dispose(); wheelGeometry.dispose(); material.dispose(); group.removeFromParent()
     },
   }
 }

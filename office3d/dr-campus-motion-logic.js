@@ -3,9 +3,34 @@ import { CAMPUS_DOCKS, CAMPUS_VEHICLE_ROUTES } from './office-layout.js'
 const clamp = value => Math.max(0, Math.min(1, value))
 const zone = (layout, name) => layout.zones.find(row => row.id === name)
 const point = (x, z, pauseMs = 1200) => ({ x, z, pauseMs })
-export function forkliftPath(layout) {
-  const area = zone(layout, 'highRack'), x0 = area.x0 + 6, x1 = area.x1 - 10.4
-  return [point(x0, area.z0 - 1.5), point(x1, area.z0 - 1.5), point(x1, area.z1 + 1.5), point(x0, area.z1 + 1.5), point(x0, area.z0 - 1.5)]
+// B4 批准中心线；停车接驳在 Z11 北侧空带内，原穿北墙闭环不再使用。
+export function forkliftPath(layout, index = 0) {
+  const route = index === 3
+    ? [[-83.2,22.05],[-84.5,22.05],[-84.5,17.5],[-91,17.5],[-91,13.15],[-91,17.5],[-106.75,17.5],[-106.75,12.95],[-106.75,-2.5],[-112,-2.5],[-112,-8],[-112,-2.5],[-106.75,-2.5],[-106.75,17.5],[-84.5,17.5],[-84.5,22.05],[-83.2,22.05]]
+    : [[-96.1,22.05],[-98.5,22.05],[-98.5,17.5],[-106.75,17.5],[-106.75,-2.5],[-143.75,-2.5],[-143.75,-3],[-143.75,-15.42],[-143.75,-3],[-143.75,-2.5],[-118,-2.5],[-118,-8],[-118,-2.5],[-106.75,-2.5],[-106.75,17.5],[-98.5,17.5],[-98.5,22.05],[-96.1,22.05]]
+  const path = route.map(([x,z],i)=>({x,z,pauseMs:i===0?6000:1400}))
+  // 狭长作业位原向倒出，避免在货架/停车包络里原地掉头。
+  path.forEach((p,i)=>{const next=path[i+1];if(!next)return;p.heading=Math.atan2(next.x-p.x,next.z-p.z)})
+  for(let i=1;i<path.length-1;i++)if(path[i-1].x===path[i+1].x&&path[i-1].z===path[i+1].z)path[i].heading=path[i-1].heading
+  path[0].heading=Math.PI/2
+  path.at(-1).heading=path[0].heading;path.at(-1).pauseMs=path[0].pauseMs
+  return path
+}
+export function forkliftPose(path,elapsed,speed=1.4) {
+  const stages=path.slice(0,-1).map((p,i)=>({p,to:path[i+1],travel:Math.hypot(path[i+1].x-p.x,path[i+1].z-p.z)/speed*1000}))
+  const period=stages.reduce((s,v)=>s+v.p.pauseMs+v.travel,0)
+  let time=Math.max(0,elapsed)%period
+  for(let i=0;i<stages.length;i++){
+    const {p,to,travel}=stages[i],duration=p.pauseMs+travel
+    if(time<=duration){
+      const previous=path[i===0?path.length-2:i-1].heading
+      const turn=Math.atan2(Math.sin(p.heading-previous),Math.cos(p.heading-previous))
+      const rotation=Math.min(1,time/1200),t=clamp((time-p.pauseMs)/travel)
+      return {x:p.x+(to.x-p.x)*t,z:p.z+(to.z-p.z)*t,angle:previous+turn*rotation,period}
+    }
+    time-=duration
+  }
+  return {...path[0],angle:path[0].heading,period}
 }
 export function truckPlan(layout) {
   const docks = layout.docks || CAMPUS_DOCKS, routes = layout.vehicleRoutes || CAMPUS_VEHICLE_ROUTES

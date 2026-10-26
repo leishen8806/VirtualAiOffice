@@ -61,11 +61,21 @@ export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, base
       ctx.fillStyle = '#18232b'; ctx.fillRect(0, 0, width, height)
       ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, width - 6, height - 6)
       ctx.fillStyle = '#f4f1eb'; ctx.font = '700 55px sans-serif'; ctx.textAlign = 'center'
-      for (const [label, x] of [['A1', .05], ['R2', .35], ['C2', .65], ['B2', .95]]) ctx.fillText(label, width * x, 68)
-      ctx.fillStyle = '#d5af62'; ctx.font = '500 30px sans-serif'; ctx.fillText('穿梭机展示位（VIS2）', width / 2, 118)
+      for(const [i,rack] of plan.racks.entries()){
+        ctx.fillStyle='#f4f1eb';ctx.font='700 55px sans-serif';ctx.fillText(rack.label,width*(i+.5)/4,68)
+        ctx.fillStyle='#d5af62';ctx.font='500 18px sans-serif';ctx.fillText('穿梭机展示位（VIS2）',width*(i+.5)/4,118)
+      }
     })
-    labels = new THREE.Mesh(new THREE.PlaneGeometry(20, 2.1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }))
-    labels.name = 'campus-rack-labels'; labels.position.set(-112, 2.1, -4.9); root.add(labels)
+    // 四块端牌共用图集和一个批次；不能以整面板跨过叉车通道。
+    const positions=[],uvs=[],indices=[],ranges=[]
+    for(const [i,rack] of plan.racks.entries()){
+      const x=(rack.x0+rack.x1)/2,z=rack.z1+.1,n=positions.length/3
+      positions.push(x-.8,2.925,z,x+.8,2.925,z,x+.8,2.075,z,x-.8,2.075,z)
+      uvs.push(i/4,1,(i+1)/4,1,(i+1)/4,0,i/4,0);indices.push(n,n+2,n+1,n,n+3,n+2);ranges.push({id:rack.label,start:n,count:4})
+    }
+    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeVertexNormals()
+    labels = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }))
+    labels.name = 'campus-rack-labels'; labels.userData.labelRanges=ranges;root.add(labels)
   }
   return { instances: solids.length, triangles: solids.length * 12, dispose() { if (root.userData.campusRackSupport === support) delete root.userData.campusRackSupport; texture?.dispose(); material.dispose(); mesh.geometry.dispose(); labels?.geometry?.dispose?.(); labels?.material?.dispose?.() } }
 }

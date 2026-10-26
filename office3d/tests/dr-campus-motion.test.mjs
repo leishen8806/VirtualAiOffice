@@ -14,7 +14,7 @@ test('forklift closed aisle avoids racks and office routes with physical clearan
   assert.deepEqual(path[0], path.at(-1))
   for (let time = 0; time < 100000; time += 40) {
     const p = pathPoint(path, time)
-    assert.ok(p.x < -100)
+    assert.ok(p.x >= -167.72 && p.x <= -80.28 && p.z >= -17.72 && p.z <= 29.72, 'B4 includes approved Z11 parking')
     for (const rack of racks) assert.equal(p.x > rack.x0 - 1.5 && p.x < rack.x1 + 1.5 && p.z > rack.z0 - 1.5 && p.z < rack.z1 + 1.5, false)
   }
 })

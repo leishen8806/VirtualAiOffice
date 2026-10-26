@@ -74,7 +74,9 @@ test('B3 real scene replaces the three old stations and the old conveyor visual'
   })
   assert.deepEqual(root.userData.campusRackSupport.ids, ['receiving-door-D01', 'receiving-door-D02', 'receiving-door-D03', 'receiving-door-D04', 'shipping-door-D05', 'shipping-door-D06', 'shipping-door-D07', 'shipping-door-D08'])
   assert.ok(root.getObjectByName('b3-conveyor-belt'))
-  assert.equal(motion.summary().triangles, 116 * 12)
+  const parts = root.getObjectByName('campus-motion-0').userData.parts
+  assert.equal(parts.filter(p => p.kind === 'b3-cargo').length, 4)
+  assert.equal(parts.filter(p => p.kind === 'cargo' || p.kind === 'fixed').length, 0)
   motion.dispose()
   racks.dispose()
   workstations.dispose()

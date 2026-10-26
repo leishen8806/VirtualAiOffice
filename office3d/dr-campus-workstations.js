@@ -23,7 +23,7 @@ const packingBenches = Object.freeze([
 
 export const B3_WORKSTATION_PLAN = Object.freeze({
   qualityTables,
-  staging: rect('Q-STAGE-01', 'inspection-staging', -136.7, -128.7, -9.3, -3.3),
+  staging: rect('Q-STAGE-01', 'inspection-staging', -136.7, -128.7, -10.3, -4.3),
   pickingRacks,
   packingBenches,
   corridors: Object.freeze([
@@ -101,10 +101,10 @@ export function buildCampusWorkstations({ THREE, root, quality }) {
   })
   const rackCargo = plan.pickingRacks.flatMap((item, index) => [0, 1].map(slot => box(`${item.id}-cargo-${slot}`, center(item).x + (slot ? .85 : -.85), center(item).z, .52, .32, { level: .25 + (index % 3) * .48 })))
   const stageMarks = [
-    box('stage-north', -132.7, -9.25, 8, .05), box('stage-south', -132.7, -3.35, 8, .05),
-    box('stage-west', -136.65, -6.3, .05, 6), box('stage-east', -128.75, -6.3, .05, 6),
+    box('stage-north', -132.7, -10.25, 8, .05), box('stage-south', -132.7, -4.35, 8, .05),
+    box('stage-west', -136.65, -7.3, .05, 6), box('stage-east', -128.75, -7.3, .05, 6),
   ]
-  const pallets = [-135.1, -132.7, -130.3].map((x, index) => box(`stage-pallet-${index + 1}`, x, -6.3, 1.5, 1.2))
+  const pallets = [-135.1, -132.7, -130.3].map((x, index) => box(`stage-pallet-${index + 1}`, x, -7.3, 1.5, 1.2))
   const beltSurface = segments.map(segment => segmentParts(segment, 1, .08))
   const beltGuards = segments.flatMap(segment => [-1, 1].map(side => {
     const part = segmentParts(segment, .08, .16)
