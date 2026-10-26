@@ -51,7 +51,7 @@ test('plan keeps one double rail and all vehicle envelopes inside the 4x14m stri
   assert.equal(plan.rails.length, 2)
   assert.equal(plan.slots.length, 3)
   assert.equal(plan.strip.x1 - plan.strip.x0, 4)
-  assert.equal(plan.strip.z1 - plan.strip.z0, 14)
+  assert.equal(plan.strip.z1 - plan.strip.z0, 12.7)
   for (const slot of plan.slots) {
     const envelope = {
       x0: slot.x - CAMPUS_SHUTTLE_SPEC.bodyWidth / 2,

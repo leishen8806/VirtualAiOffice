@@ -1,5 +1,8 @@
 import { CAMPUS, CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_VEHICLE_ROUTES, CAMPUS_ZONES } from './office-layout.js'
 
+// PlaneGeometry has no thickness: this is the finished floor's world-space Y.
+export const CAMPUS_FINISHED_FLOOR_Y = .06 - .6
+
 const inside = (part, bounds) => part.x0 >= bounds.x0 && part.x1 <= bounds.x1 && part.z0 >= bounds.z0 && part.z1 <= bounds.z1
 const rect = (name, bounds, extra = {}) => Object.freeze({ name, ...bounds, dynamic: false, ...extra })
 const zone = (zones, id) => zones.find((item) => item.id === id)
@@ -116,6 +119,7 @@ export function buildCampusShell({ THREE, root, canvasTex, layout, quality }) {
     else if (part.name.startsWith('campus-roof-')) cube(THREE, root, part, 4.68, .28, mats.roof)
     else if (part.kind === 'volume') cube(THREE, root, part, .42, .72, mats.zone)
     else if (part.kind === 'water') plane(THREE, root, part, part.offset - .6, mats.water)
+    else if (part.name === 'campus-shuttle-reserve') plane(THREE, root, part, CAMPUS_FINISHED_FLOOR_Y + .002, mats.mark)
     else if (part.name !== 'campus-sign') plane(THREE, root, part, part.offset - .6, mats.mark)
   }
   let texture

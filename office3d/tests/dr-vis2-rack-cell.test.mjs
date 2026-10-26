@@ -3,13 +3,16 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
 import * as THREE from '../vendor/three/three.module.js'
-import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
+import { CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { campusModules } from '../dr-campus-modules.js'
-import { initialShuttleState, shuttleFrame, shuttlePlan } from '../dr-campus-shuttle-logic.js'
+import { createDemoShuttleEventSource, initialShuttleState, shuttleFrame, shuttlePlan } from '../dr-campus-shuttle-logic.js'
+import { buildCampusShell, CAMPUS_FINISHED_FLOOR_Y } from '../dr-campus-shell.js'
+import { buildCampusRacks } from '../dr-campus-racks.js'
+import { buildCampusShuttle } from '../dr-campus-shuttle.js'
 import { VIS2_COLORS, VIS2_DIMENSIONS, VIS2_REPLACES, buildVis2RackCell } from '../dr-vis2-rack-cell.js'
 
-const layout = { campus: CAMPUS, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }
+const layout = { campus: CAMPUS, building: CAMPUS_BUILDING, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }
 const highRack = CAMPUS_ZONES.find((zone) => zone.id === 'highRack')
 const D = VIS2_DIMENSIONS
 const build = (options = {}) => { const root = new THREE.Group(), cell = buildVis2RackCell({ THREE, root, layout, quality: { tier: 'high' }, ...options }); return { root, cell } }
@@ -24,6 +27,35 @@ const instances = (mesh) => {
 const box = (item) => ({ x0: item.x - item.sx / 2, x1: item.x + item.sx / 2, y0: item.y - item.sy / 2, y1: item.y + item.sy / 2, z0: item.z - item.sz / 2, z1: item.z + item.sz / 2 })
 const overlaps = (a, b, eps = 1e-6) => a.x0 < b.x1 - eps && a.x1 > b.x0 + eps && a.y0 < b.y1 - eps && a.y1 > b.y0 + eps && a.z0 < b.z1 - eps && a.z1 > b.z0 + eps
 const worldBox = (object) => { object.updateWorldMatrix(true, true); return new THREE.Box3().setFromObject(object) } // 先刷新父级矩阵，否则 lift 后读到的是旧位置
+const instanceWorldBox = (parent, mesh, index) => {
+  const matrix = new THREE.Matrix4()
+  parent.updateWorldMatrix(true, true)
+  mesh.getMatrixAt(index, matrix)
+  mesh.geometry.computeBoundingBox()
+  return mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld.clone().multiply(matrix))
+}
+const partBox = (mesh, name) => {
+  const part = mesh.geometry.userData.parts.find(item => item.name === name)
+  assert.ok(part, `part exists: ${name}`)
+  mesh.updateWorldMatrix(true, false)
+  const position = mesh.geometry.attributes.position, point = new THREE.Vector3(), result = new THREE.Box3()
+  result.makeEmpty()
+  for (let index = part.vertexStart; index < part.vertexStart + part.vertexCount; index++) {
+    result.expandByPoint(point.fromBufferAttribute(position, index).applyMatrix4(mesh.matrixWorld))
+  }
+  return result
+}
+const sourceIds = root => {
+  const ids = new Set()
+  root.traverse(node => node.userData?.sourceIds?.forEach(id => ids.add(id)))
+  return ids
+}
+const canvasTex = (width, height, draw) => {
+  draw({ fillRect() {}, strokeRect() {}, fillText() {}, save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, fill() {}, set fillStyle(value) {}, set strokeStyle(value) {}, set lineWidth(value) {}, set font(value) {}, set textAlign(value) {}, set textBaseline(value) {}, measureText: () => ({ width: 10 }) }, width, height)
+  const texture = new THREE.Texture()
+  texture.image = { width, height }
+  return texture
+}
 const rackData = (cell) => {
   const frame = instances(named(cell, 'vis2-rack-frames')), pallets = instances(named(cell, 'vis2-rack-pallets')), cartons = instances(named(cell, 'vis2-rack-cartons'))
   return { uprights: frame.filter((item) => item.hex === VIS2_COLORS.upright && near(item.sx, D.uprightSize) && near(item.sy, D.uprightHeight)), beams: frame.filter((item) => item.hex === VIS2_COLORS.beam),
@@ -35,8 +67,8 @@ test('structure uses exactly the approved blue and orange, from the shared layou
   assert.deepEqual([...new Set(frame.map((item) => item.hex))].sort(), [VIS2_COLORS.upright, VIS2_COLORS.beam].sort())
   assert.equal(VIS2_COLORS.upright, 0x2f6fa8); assert.equal(VIS2_COLORS.beam, 0xe8832a)
   const summary = cell.summary()
-  assert.deepEqual(summary.rows, ['A1', 'R2', 'C2', 'B2']); assert.equal(summary.uprights, 4 * 7 * 2)
-  assert.ok(summary.beams >= 4 * 6 * 4 * 2 && summary.braces > 0 && summary.loads > 0 && summary.empty > 0)
+  assert.deepEqual(summary.rows, ['A1', 'R2', 'C2', 'B2']); assert.equal(summary.uprights, 4 * 6 * 2)
+  assert.ok(summary.beams >= 4 * 5 * 4 * 2 && summary.braces > 0 && summary.loads > 0 && summary.empty > 0)
 })
 
 test('every rack element stays inside the high-rack zone; vertical extent is measured from the finished floor', () => {
@@ -69,6 +101,53 @@ test('every carton lies inside its pallet footprint, sits on the deck, and clear
     assert.ok(c.x0 >= d.x0 - 1e-4 && c.x1 <= d.x1 + 1e-4 && c.z0 >= d.z0 - 1e-4 && c.z1 <= d.z1 + 1e-4, 'carton inside pallet footprint')
     const above = beams.filter((beam) => beam.y - beam.sy / 2 > deck.y).map((beam) => beam.y - beam.sy / 2).sort((a, b) => a - b)[0]
     assert.ok(c.y1 <= above - 0.05, 'carton top clears the beam above')
+  }
+})
+
+test('slot pallets clear the shuttle body at every occupied slot and all cartons rest on their pallets', () => {
+  const { cell } = build(), plan = shuttlePlan(layout), slots = named(cell, 'vis2-slot-pallets')
+  for (const slot of plan.slots) {
+    cell.setShuttle({ z: slot.z, occupied: [true, true, true] })
+    const shuttleBox = worldBox(named(cell, 'vis2-shuttle-chassis'))
+    for (const item of instances(slots)) assert.equal(overlaps(box(item), {
+      x0: shuttleBox.min.x, x1: shuttleBox.max.x, y0: shuttleBox.min.y, y1: shuttleBox.max.y, z0: shuttleBox.min.z, z1: shuttleBox.max.z,
+    }), false, `slot cargo clears shuttle at ${slot.id}`)
+  }
+  const slotCartons = instances(slots).filter(item => near(item.sy, .348))
+  assert.equal(slotCartons.length, 12)
+  const slotDecks = instances(slots).filter(item => near(item.sy, .03) && near(item.sx, D.palletZ))
+  for (const slot of plan.slots) {
+    const deck = slotDecks.find(item => near(item.z, slot.z))
+    assert.ok(deck, `slot ${slot.id} has a measured deck`)
+    const deckTop = box(deck).y1
+    for (const carton of slotCartons.filter(item => Math.abs(item.z - slot.z) < .4)) {
+      assert.ok(near(box(carton).y0, deckTop, 1e-4), `slot ${slot.id} carton rests on its measured deck`)
+    }
+  }
+  for (const pallet of rackData(cell).decks) {
+    const cartons = rackData(cell).cartons.filter(carton =>
+      Math.abs(pallet.x - carton.x) < .5 &&
+      Math.abs(pallet.z - carton.z) < pallet.sz / 2 &&
+      carton.y > pallet.y &&
+      carton.y < pallet.y + 1,
+    )
+    assert.ok(cartons.length >= 4)
+    const deckTop = box(pallet).y1
+    const firstLayer = cartons.filter(carton => box(carton).y0 < deckTop + .01)
+    assert.equal(firstLayer.length, 4, 'each pallet has four first-layer cartons')
+    for (const carton of firstLayer) assert.ok(near(box(carton).y0, deckTop, 1e-4), 'every first-layer carton rests on its pallet deck')
+    const columns = new Map()
+    for (const carton of cartons) {
+      const key = `${carton.x.toFixed(4)}|${carton.z.toFixed(4)}`
+      if (!columns.has(key)) columns.set(key, [])
+      columns.get(key).push(carton)
+    }
+    for (const column of columns.values()) {
+      column.sort((a, b) => a.y - b.y)
+      for (let index = 1; index < column.length; index++) {
+        assert.ok(near(box(column[index]).y0, box(column[index - 1]).y1 + .012, 1e-4), 'upper carton clears the lower carton by 12 mm')
+      }
+    }
   }
 })
 
@@ -115,6 +194,33 @@ test('lift moves only the platform and its cargo; cargo never floats or intersec
   cell.setShuttle({ lift: 99 }); assert.ok(near(liftGroup.position.y, D.shuttle.maxLift, 1e-9), 'lift is clamped to the maximum'); cell.setShuttle({ lift: -5 }); assert.ok(near(liftGroup.position.y, 0, 1e-9), 'negative lift is clamped to 0')
 })
 
+test('shuttle load cartons rest on the measured pallet deck and preserve the upper-layer gap', () => {
+  const { cell } = build()
+  const load = named(cell, 'vis2-shuttle-load')
+  const deckTop = partBox(load, 'pallet-deck').max.y
+  for (const suffix of ['-1-1', '-11', '1-1', '11']) {
+    assert.ok(near(partBox(load, `carton0${suffix}`).min.y, deckTop, 1e-4), `first-layer shuttle carton ${suffix} rests on its deck`)
+    assert.ok(near(partBox(load, `carton1${suffix}`).min.y, partBox(load, `carton0${suffix}`).max.y + .012, 1e-4), `upper shuttle carton ${suffix} clears lower carton by 12 mm`)
+  }
+})
+
+test('slot and shuttle pallet decks rest on their measured bearer tops', () => {
+  const { cell } = build(), slots = named(cell, 'vis2-slot-pallets'), slotParts = instances(slots)
+  const slotDecks = slotParts.filter(item => near(item.sy, .03) && near(item.sx, D.palletZ))
+  const slotBearers = slotParts.filter(item => near(item.sy, .09) && near(item.sx, D.palletZ))
+  assert.equal(slotDecks.length, 2)
+  for (const deck of slotDecks) {
+    const bearers = slotBearers.filter(bearer => near(bearer.x, deck.x) && Math.abs(bearer.z - deck.z) <= .4001)
+    assert.equal(bearers.length, 3, `slot pallet at z=${deck.z.toFixed(2)} has three bearer legs`)
+    for (const bearer of bearers) assert.ok(near(box(deck).y0, box(bearer).y1, 1e-4), 'slot pallet deck rests on every bearer top')
+  }
+  const load = named(cell, 'vis2-shuttle-load'), deck = partBox(load, 'pallet-deck')
+  for (const name of ['pallet-bearer-0.4', 'pallet-bearer0', 'pallet-bearer0.4']) {
+    const bearer = partBox(load, name)
+    assert.ok(near(deck.min.y, bearer.max.y, 1e-4), `shuttle pallet deck rests on ${bearer.min.x.toFixed(1)} bearer top`)
+  }
+})
+
 test('host state: carrying, occupied and status are accepted from the host only, invalid values are ignored', () => {
   const { cell } = build(), summary0 = cell.summary()
   assert.equal(summary0.state.source, 'fixture')
@@ -128,14 +234,14 @@ test('host state: carrying, occupied and status are accepted from the host only,
 test('intermediate world positions are reachable: driving setShuttle with the real shuttleFrame reaches slot-b and is not clamped', () => {
   const { cell } = build(), plan = shuttlePlan(layout), shuttle = named(cell, 'vis2-shuttle')
   const slots = plan.slots.map((slot) => +slot.z.toFixed(2))
-  assert.deepEqual(slots, [plan.path.z0, (plan.path.z0 + plan.path.z1) / 2, plan.path.z1].map((z) => +z.toFixed(2)))
+  assert.deepEqual(slots, [-16.55, -11.35, -6.15])
   const state = { ...initialShuttleState(plan), target: plan.slots[1].z, movingFrom: plan.slots[0].z, movingAt: 0, lastAt: 0, status: 'moving' }
   for (const time of [0, 600, 1100, 1600, 2200]) {
     const frame = shuttleFrame(state, time)
     cell.setShuttle({ z: frame.position, lift: frame.lift, carrying: frame.carrying, occupied: frame.occupied, status: frame.status })
     assert.ok(near(shuttle.position.z, frame.position, 1e-9), `t=${time}: z = frame.position (world z), not remapped`)
   }
-  assert.ok(near(shuttle.position.z, plan.slots[1].z, 1e-9), 'arrives at the intermediate slot, not an endpoint')
+  assert.ok(near(shuttle.position.z, plan.slots[1].z, 1e-9), 'arrives at the intermediate shuttle slot')
   for (const z of slots) { cell.setShuttle({ z }); assert.ok(near(shuttle.position.z, z, 1e-9), `reaches z=${z}`) }
   cell.setShuttle({ z: -1000 }); assert.ok(near(shuttle.position.z, plan.path.z0, 1e-9)); cell.setShuttle({ z: 1000 }); assert.ok(near(shuttle.position.z, plan.path.z1, 1e-9))
   const stripBox = worldBox(shuttle); assert.ok(stripBox.min.z >= CAMPUS_SHUTTLE_STRIP.z0 && stripBox.max.z <= CAMPUS_SHUTTLE_STRIP.z1)
@@ -167,14 +273,6 @@ test('one vertical reference: baseY moves every part by exactly the same amount 
   assert.ok(near(sa.vertical.wheelBottom, sa.vertical.railTop, 1e-3), 'wheel bottom = rail top')
 })
 
-test('legacy conflict fixture: at baseY = 0 the old shuttle base slab (y 0.06…0.18) would bury the new rails, so the old slab must be removed', () => {
-  const racks = fs.readFileSync(new URL('../dr-campus-racks.js', import.meta.url), 'utf8'), match = racks.match(/y:\s*\.12,[^}]*sy:\s*\.12/)
-  assert.ok(match, 'legacy slab (y .12, sy .12) still exists in dr-campus-racks.js; if it changes this fixture must be reviewed')
-  const slabTop = 0.12 + 0.12 / 2, railTop = D.railBase + D.railHeight, wheelBottom = railTop
-  assert.ok(slabTop > railTop && slabTop > wheelBottom, 'fixture: the legacy slab hides the rails and wheel bottoms')
-  assert.ok(VIS2_REPLACES.some((item) => item.legacy === 'campus-racks-static' && item.part.includes('底座板')), 'replacement list names the slab')
-})
-
 test('deterministic for a seed and different for another; low quality is lighter and creates no empty film mesh', () => {
   const a = build(), b = build(), c = build({ seed: 999 }), low = build({ quality: { tier: 'low' } })
   for (const name of ['vis2-rack-frames', 'vis2-rack-pallets', 'vis2-rack-cartons']) assert.equal(hash(named(a.cell, name)), hash(named(b.cell, name)))
@@ -192,17 +290,65 @@ test('quality contract: every mesh opts out of the global quality capture (quali
   assert.ok(/if\(!o\.isMesh\|\|o\.userData\.qualityProxy\)return/.test(quality), 'quality.js capture() still skips qualityProxy meshes (the contract this module relies on)')
 })
 
-test('inside the real campus registry with the old modules: static parts merge, film and shuttle stay, and merged object names are NOT available for picking', () => {
-  const canvasTex = (w, h, draw) => { draw({ fillRect() {}, strokeRect() {}, fillText() {}, save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, fill() {}, set fillStyle(v) {}, set strokeStyle(v) {}, set lineWidth(v) {}, set font(v) {}, set textAlign(v) {}, set textBaseline(v) {}, measureText: () => ({ width: 10 }) }, w, h); const t = new THREE.Texture(); t.image = { width: w, height: h }; return t }
+test('real campus module wiring keeps one finished-floor rack cell, removes legacy rack and shuttle parts, and forwards shuttle frames', () => {
+  // Build the production factories without merge first so the support instances
+  // themselves, rather than their parameter echo, prove finished-floor alignment.
+  const directRoot = new THREE.Group()
+  const directContext = { THREE, root: directRoot, layout, canvasTex, quality: { tier: 'high' } }
+  const factories = new Map(campusModules)
+  const directCell = factories.get('vis2Rack')(directContext)
+  const directRacks = factories.get('racks')(directContext)
+  const support = directRoot.getObjectByName('campus-racks-support')
+  assert.equal(support.count, 11)
+  for (let index = 0; index < support.count; index++) {
+    assert.ok(near(instanceWorldBox(directRoot, support, index).min.y, CAMPUS_FINISHED_FLOOR_Y, 1e-6), `support instance ${index} rests on the finished floor`)
+  }
+  directRacks.dispose()
+  directCell.dispose()
+
   const scene = new THREE.Scene(), registry = createCampusRegistry({ THREE, scene, quality: { tier: 'high' }, layout })
   for (const [name, factory] of campusModules) registry.register(name, factory)
-  registry.register('vis2Rack', (context) => buildVis2RackCell(context))
-  registry.buildAll({ canvasTex, quality: { tier: 'high' } })
+  let time = 0
+  const source = createDemoShuttleEventSource({ now: () => time, seed: 1212, plan: shuttlePlan(layout) })
+  registry.buildAll({ canvasTex, quality: { tier: 'high' }, eventSource: source })
   const summary = registry.summary(), root = registry.root
   assert.ok(summary.modules.includes('vis2Rack') && !summary.skipped.some((item) => item.name === 'vis2Rack'))
+  const cell = root.userData.vis2RackCell
+  assert.ok(cell)
+  assert.equal(cell.group.position.y, CAMPUS_FINISHED_FLOOR_Y)
+  assert.deepEqual(root.userData.campusRackSupport, {
+    instances: 11,
+    baseY: CAMPUS_FINISHED_FLOOR_Y,
+    ids: ['station-inspection', 'station-picking', 'station-packing', 'receiving-door-D01', 'receiving-door-D02', 'receiving-door-D03', 'receiving-door-D04', 'shipping-door-D05', 'shipping-door-D06', 'shipping-door-D07', 'shipping-door-D08'],
+  })
+  const ids = sourceIds(root)
+  for (const removed of ['campus-racks-static', 'campus-shuttle-rail-1-lower', 'campus-shuttle-sleeper-1', 'campus-shuttle-vehicle']) assert.equal(ids.has(removed), false, `${removed} is absent from the production result`)
+  assert.equal(ids.has('campus-racks-support'), false, 'static support is merged after its count is recorded')
+  assert.equal(root.getObjectByName('campus-shuttle-vehicle'), undefined)
   for (const merged of ['vis2-rack-frames', 'vis2-rack-pallets', 'vis2-rack-cartons', 'vis2-rails', 'campus-racks-static']) assert.equal(root.getObjectByName(merged), undefined, `${merged} is merged away: render-object names are not stable pick targets`)
   for (const kept of ['vis2-rack-film', 'vis2-shuttle', 'campus-rack-labels']) assert.ok(root.getObjectByName(kept), `${kept} stays as its own object`)
-  assert.ok(root.getObjectByName('campus-opaque-batch-1'))
+  const statuses = new Set()
+  for (time = 0; time <= 600000 && !statuses.has('delivery'); time += 100) {
+    registry.onFrame(.1)
+    const shuttle = root.getObjectByName('campus-shuttle')
+    const expected = {
+      z: shuttle.userData.shuttle.position,
+      lift: shuttle.userData.shuttle.lift,
+      carrying: shuttle.userData.pallets.carrying,
+      occupied: shuttle.userData.pallets.occupied,
+      status: shuttle.userData.shuttle.status,
+    }
+    const actual = cell.summary().state
+    assert.deepEqual(
+      { z: actual.z, lift: actual.lift, carrying: actual.carrying, occupied: actual.occupied, status: actual.status },
+      expected,
+      `t=${time}: rack cell receives the full production shuttle frame`,
+    )
+    statuses.add(actual.status)
+  }
+  assert.ok(statuses.has('delivery'), 'production shuttle frames reach delivery')
+  assert.ok(statuses.size > 1, 'production shuttle frames advance beyond the fixture idle state')
+  assert.equal(named(cell, 'vis2-shuttle-lamp').material.color.getHex(), VIS2_COLORS.lampWork, 'delivery uses the work lamp color')
   registry.dispose()
 })
 
@@ -219,11 +365,44 @@ test('dispose releases every owned resource exactly once, also when called twice
   assert.doesNotThrow(() => { registry.dispose(); registry.dispose() })
 })
 
-test('the replacement list names real legacy objects and the module stays free of unsafe APIs', () => {
-  const racks = fs.readFileSync(new URL('../dr-campus-racks.js', import.meta.url), 'utf8'), shuttle = fs.readFileSync(new URL('../dr-campus-shuttle.js', import.meta.url), 'utf8')
-  const names = (text) => new Set([...text.matchAll(/name = [`'"]([^`'"$]+)/g)].map((m) => m[1]).concat([...text.matchAll(/mesh\.name = `([a-z-]+)-/g)].map((m) => m[1])))
-  const known = new Set([...names(racks), ...names(shuttle)])
-  for (const item of VIS2_REPLACES) assert.ok(known.has(item.legacy) || [...known].some((name) => name.startsWith(item.legacy)), `legacy object exists: ${item.legacy}`)
+test('shuttle reserve guide stays 2 mm above the finished floor', () => {
+  const root = new THREE.Group()
+  const shell = buildCampusShell({ THREE, root, canvasTex, layout, quality: { tier: 'high' } })
+  const guide = root.getObjectByName('campus-shuttle-reserve')
+  assert.ok(guide)
+  assert.ok(near(worldBox(guide).min.y, CAMPUS_FINISHED_FLOOR_Y + .002, 1e-6))
+  shell.dispose()
+})
+
+test('rack and shuttle replacement paths build real legacy or VIS2 support objects as intended', () => {
+  const legacyRoot = new THREE.Group()
+  const legacyRacks = buildCampusRacks({ THREE, root: legacyRoot, canvasTex, layout, quality: { tier: 'high' }, replaceRackCell: false })
+  assert.ok(legacyRoot.getObjectByName('campus-racks-static'))
+  assert.equal(legacyRoot.getObjectByName('campus-racks-support'), undefined)
+
+  const replacementRoot = new THREE.Group()
+  const replacementRacks = buildCampusRacks({ THREE, root: replacementRoot, canvasTex, layout, quality: { tier: 'high' }, baseY: CAMPUS_FINISHED_FLOOR_Y, replaceRackCell: true })
+  assert.equal(replacementRoot.getObjectByName('campus-racks-static'), undefined)
+  assert.equal(replacementRoot.getObjectByName('campus-racks-support').count, 11)
+
+  const legacyShuttle = buildCampusShuttle({ THREE, root: legacyRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: null })
+  assert.ok(legacyRoot.getObjectByName('campus-shuttle-static'))
+  assert.ok(legacyRoot.getObjectByName('campus-shuttle-vehicle'))
+  for (const { legacy } of VIS2_REPLACES) {
+    assert.ok(legacyRoot.getObjectByName(legacy), `replacement list names an exact legacy object: ${legacy}`)
+  }
+
+  const replacementShuttle = buildCampusShuttle({ THREE, root: replacementRoot, canvasTex, layout, quality: { tier: 'high' }, visualCell: { setShuttle() {} } })
+  assert.equal(replacementRoot.getObjectByName('campus-shuttle-static'), undefined)
+  assert.equal(replacementRoot.getObjectByName('campus-shuttle-vehicle'), undefined)
+
+  replacementShuttle.dispose()
+  legacyShuttle.dispose()
+  replacementRacks.dispose()
+  legacyRacks.dispose()
+})
+
+test('rack cell module stays free of unsafe APIs', () => {
   const source = fs.readFileSync(new URL('../dr-vis2-rack-cell.js', import.meta.url), 'utf8')
   for (const forbidden of ['requestAnimationFrame', 'Math.random', 'Date.now', 'performance.now', 'fetch(', 'innerHTML', 'WebGLRenderer', 'setInterval', 'setTimeout', 'localStorage', 'computeVertexNormals']) assert.equal(source.includes(forbidden), false, forbidden)
 })

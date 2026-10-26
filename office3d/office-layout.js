@@ -613,7 +613,7 @@ const CAMPUS_ZONES_DATA = [
   campusZone('parking', '园区停车场', '园区停车场（示意）', -98, -76, 30, 42, 'outdoor', 'mark', 'B-R1 / 客户停车'),
   campusZone('logisticsGate', '物流出入口', '物流出入口（示意）', -80, -65, 18, 30, 'outdoor', 'visible', 'B1 / 东侧物流车道'),
 ]
-const CAMPUS_SHUTTLE_STRIP_DATA = { x0: -94, x1: -90, z0: -18, z1: -4, kind: 'mark', label: '穿梭机展示带（示意）' }
+const CAMPUS_SHUTTLE_STRIP_DATA = { x0: -94, x1: -90, z0: -17.7, z1: -5, kind: 'mark', label: '穿梭机展示带（示意）' }
 const CAMPUS_DOCKS_DATA = [
   { id: 'D01', zone: 'receiving', side: 'north', at: -162.5, width: 3.6, bay: { x0: -164.3, x1: -160.7, z0: -14, z1: -5 }, work: { x0: -164.3, x1: -160.7, z0: -17.5, z1: -14 }, route: 'north-D01' },
   { id: 'D02', zone: 'receiving', side: 'north', at: -155, width: 3.6, bay: { x0: -156.8, x1: -153.2, z0: -14, z1: -5 }, work: { x0: -156.8, x1: -153.2, z0: -17.5, z1: -14 }, route: 'north-D02' },

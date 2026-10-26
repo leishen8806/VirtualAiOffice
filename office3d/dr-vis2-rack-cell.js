@@ -28,9 +28,9 @@ export const VIS2_DIMENSIONS = Object.freeze({
 // 本构件登记的「旧对象替换清单」：接线时这些旧对象必须停用，否则会和新模型叠在一起形成重复物体。
 export const VIS2_REPLACES = Object.freeze([
   Object.freeze({ legacy: 'campus-racks-static', part: '其中的货架立柱 / 横梁 / 货物箱体，以及穿梭机展示带的旧底座板（y 0.06…0.18）', note: '该实例化网格还混入了工位与月台门（dr-campus-racks.js 的 inside()）；Trae 应让旧模块跳过货架、货物与穿梭机底座，保留其余。' }),
-  Object.freeze({ legacy: 'campus-shuttle', part: '整个穿梭机车体与动态组', note: '由本构件的 vis2-shuttle 替换；运动状态由宿主经 setShuttle 传入（位置 = frame.position，见交付文档）。' }),
+  Object.freeze({ legacy: 'campus-shuttle', part: '旧穿梭机车体与动态组', note: '替换模式保留 campus-shuttle 作为宿主状态容器，但不再创建旧车体；运动状态由宿主经 setShuttle 传入（位置 = frame.position，见交付文档）。' }),
   Object.freeze({ legacy: 'campus-shuttle-static', part: '轨道与枕木', note: '由本构件的 vis2-rails 替换。' }),
-  Object.freeze({ legacy: 'campus-rack-labels', part: '货架行标签 A1 / R2 / C2 / B2', note: '保留；但标签上「穿梭机展示位（预留）」的文字在接入真实穿梭机后已过时，需 Trae 改标签文案。' }),
+  Object.freeze({ legacy: 'campus-rack-labels', part: '货架行标签 A1 / R2 / C2 / B2', note: '保留；标签已明确标为「穿梭机展示位（模拟）」，不需要再改标签文案。' }),
 ])
 
 const seeded = (value) => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
@@ -110,7 +110,7 @@ function placeLoad(batches, rng, x, base, z, { film = true, layersMax = 3 } = {}
   const layers = 2 + Math.floor(rng() * (layersMax - 1)), layerHeight = Math.min(0.38, D.loadMaxHeight / layers)
   for (let layer = 0; layer < layers; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) {
     rng() // 保持与旧版相同的随机序列消耗（旧版这里用于位置抖动），使货位占用与层数的分布不变
-    batches.carton.add(x + ix * 0.2925, palletTop + layerHeight * (layer + 0.5), z + iz * 0.2425, D.cartonX, layerHeight - 0.012, D.cartonZ, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
+    batches.carton.add(x + ix * 0.2925, palletTop + layerHeight * layer + (layerHeight - 0.012) / 2, z + iz * 0.2425, D.cartonX, layerHeight - 0.012, D.cartonZ, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
   }
   const loadHeight = layers * layerHeight
   if (film && rng() < 0.72) batches.film.add(x, palletTop + loadHeight / 2 + 0.01, z, D.palletX + 0.04, loadHeight + 0.03, D.palletZ + 0.04, VIS2_COLORS.film)
@@ -153,7 +153,7 @@ function buildRails(batches, plan, stats) {
 }
 
 const standard = (THREE, extra = {}) => new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62, metalness: 0.2, ...extra })
-const STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, moving: VIS2_COLORS.lampMoving, pickup: VIS2_COLORS.lampWork, put: VIS2_COLORS.lampWork })
+const STATUS_LAMP = Object.freeze({ idle: VIS2_COLORS.lampIdle, moving: VIS2_COLORS.lampMoving, pickup: VIS2_COLORS.lampWork, put: VIS2_COLORS.lampWork, delivery: VIS2_COLORS.lampWork })
 
 export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, rows = null, baseY = 0 } = {}) {
   if (!Number.isFinite(baseY)) throw new Error('baseY 必须是有限数值（完成面地坪标高）')
@@ -191,7 +191,7 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const loadBuilder = createMeshBuilder(THREE), platformTop = platformY + 0.02, loadTop = platformTop + D.palletHeight
   loadBuilder.addBox('pallet-deck', 0, loadTop - 0.015, 0, D.palletZ, 0.03, D.palletX, VIS2_COLORS.pallet)
   for (const dx of [-0.4, 0, 0.4]) loadBuilder.addBox(`pallet-bearer${dx}`, dx, platformTop + 0.045, 0, 0.1, 0.09, D.palletX, VIS2_COLORS.pallet)
-  for (let layer = 0; layer < 2; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) loadBuilder.addBox(`carton${layer}${ix}${iz}`, ix * 0.2425, loadTop + 0.18 * (2 * layer + 1), iz * 0.2925, D.cartonZ, 0.348, D.cartonX, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
+  for (let layer = 0; layer < 2; layer++) for (const ix of [-1, 1]) for (const iz of [-1, 1]) loadBuilder.addBox(`carton${layer}${ix}${iz}`, ix * 0.2425, loadTop + .36 * layer + (.36 - .012) / 2, iz * 0.2925, D.cartonZ, .348, D.cartonX, TONES[(layer + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3])
   const chassisGeometry = chassisBuilder.build(), platformGeometry = platformBuilder.build(), loadGeometry = loadBuilder.build()
   const shuttle = new THREE.Group(); shuttle.name = 'vis2-shuttle'; shuttle.userData.dynamic = true
   const chassis = new THREE.Mesh(chassisGeometry, materials.shuttle); chassis.name = 'vis2-shuttle-chassis'
@@ -204,14 +204,14 @@ export function buildVis2RackCell({ THREE, root, layout, quality, seed = 4207, r
   const slotB = plan.slots[1]; shuttle.position.set(plan.centerX, 0, slotB.z)
   group.add(shuttle)
 
-  // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.25），不压钢轨
+  // 货位托盘（可选显示 occupied）：三个货位在展示带东侧通道（x = 中线 + 1.4），不压钢轨
   const slotBatch = createBoxBatch(THREE, 'vis2-slot-pallets', materials.slot, 3 * 8); slotBatch.mesh.userData.dynamic = true
-  const slotX = plan.centerX + 1.25
+  const slotX = plan.centerX + 1.4
   const drawSlots = (occupied) => {
     slotBatch.clear()
     plan.slots.forEach((slot, i) => { if (!occupied[i]) return
       slotBatch.add(slotX, D.palletHeight - 0.015, slot.z, D.palletZ, 0.03, D.palletX, VIS2_COLORS.pallet); for (const dz of [-0.4, 0, 0.4]) slotBatch.add(slotX, 0.045, slot.z + dz, D.palletZ, 0.09, 0.1, VIS2_COLORS.pallet)
-      for (const [ix, iz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) slotBatch.add(slotX + ix * 0.2425, D.palletHeight + 0.18, slot.z + iz * 0.2925, D.cartonZ, 0.348, D.cartonX, TONES[(i + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3]) })
+      for (const [ix, iz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) slotBatch.add(slotX + ix * 0.2425, D.palletHeight + (.36 - .012) / 2, slot.z + iz * 0.2925, D.cartonZ, .348, D.cartonX, TONES[(i + (ix > 0 ? 1 : 0) + (iz > 0 ? 2 : 0)) % 3]) })
     slotBatch.finish(); slotBatch.mesh.visible = slotBatch.mesh.count > 0
   }
   group.add(slotBatch.mesh)
