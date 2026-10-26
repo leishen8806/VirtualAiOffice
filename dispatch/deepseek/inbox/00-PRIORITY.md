@@ -2,14 +2,17 @@
 
 本文件只规定**顺序**，各卡内容以对应卡片为准。新指定会覆盖本文件。
 
+**批次规则（董事会 2026-10-26）：** DeepSeek 白天成本过高，harness 只在 17:30（金边）之后开工，白天不开工。
+
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | **`CI-FIX1-R3-rework.md`**（返修：windows #512 短名、补 A7/A8、清理 ci.yml、交回执）＋ `CI-FIX1-portable-tests.md` + `CI-FIX1-ADDENDUM-R2-not-run-and-cleanup.md`（让 GitHub CI 在干净机器上跑通：本机路径 / 钩子依赖改为明确跳过、放错位置的测试文件、平台相关断言、command-view-live 被取消、align-data 路线矩阵） | 新建 `fix/ci-portable-tests`，从 `main` @ `0f851d3` | **立即开始** |
+| **1** | **`CI-FIX1-R4-A7A8-rework.md`**（A7 用运行标识判定、A8 用登记表清理；复审见 `Q-V1-review-CI-FIX1-R3.md`，复现脚本 `Q-V1-CI-FIX1-R3-a7a8-probe.mjs`） | `qa/vis3-test-infra`，从 `c13b10d` 继续 | **夜间批次，17:30 后开始** |
 
 说明：
 
+- `fix/ci-portable-tests`（CI-FIX1 R1–R3 主体）已复审通过，并已开 PR #48，**不要再往这个分支推送**。
 - 不许删测试、放宽断言或改产品代码；必须改产品代码时先停下报告。
-- 验收：新分支上 ubuntu、windows 两个 CI 作业全绿；列出所有新增跳过及原因；交付完整 SHA 与 CI 运行链接后停下，等 Q-V1 复核，不合并。
-- 已交付且复审完成：`VIS3-TEST-FIX2`～`FIX6`、`D-V2-C1` / `D-V2-C1-R1`、`D-V1-R2`～`D-V1-R6`。
+- 交付回执写到 `dispatch/deepseek/outbox/CI-FIX1-交付-R4.md`（模板 `dispatch/_TEMPLATES/2-交付回执.md`），推送后停下，等 Q-V1 复核，不合并。
+- 已交付且复审完成：`CI-FIX1` R1–R3 主体、`VIS3-TEST-FIX2`～`FIX6`、`D-V2-C1` / `D-V2-C1-R1`、`D-V1-R2`～`D-V1-R6`。
 - `DS-1`～`DS-8` 由其他派发人跟进，不在本文件范围内。
 - 所有测试与浏览器运行带资源上限；空闲内存不足时把全量测试 / 端到端记为 NOT_RUN 并说明，不要硬跑。
