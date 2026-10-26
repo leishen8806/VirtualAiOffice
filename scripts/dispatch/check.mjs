@@ -203,8 +203,9 @@ export const claimsPass = (text) => /通过|\bPASS(ED)?\b/i.test(text
 
 // 同一小句（按句号、分号切开）里既说未运行、又宣称通过，才是状态矛盾。
 // "A1：通过（未运行，NOT_RUN）" 是矛盾；"A5 通过：……；跳过项列为 NOT_RUN，不算通过" 不是。
-// "NOT_RUN 标识 / 规则 / 检查 / 字样"是在谈这个词本身（例如回执引用本工具的检查项名），不算状态。
-const mentionOnly = (text) => text.replace(/NOT_RUN\s*(标识|标注|标记|规则|检查|字样|要求|写法)/g, '')
+// 只豁免回执引用本工具 C7 检查项名称的写法（"C7 NOT_RUN标识"）。前面必须紧跟 "C7"：
+// 验收结果或原因里写的"执行状态以 NOT_RUN 标记"是在描述状态，必须参与矛盾判断。
+const mentionOnly = (text) => text.replace(/\bC7\s*[|｜]?\s*NOT_RUN\s*(标识|标注|标记|规则|检查|字样|要求|写法)/g, 'C7')
 export const contradictory = (line) => line.split(/[。；;]/).map(mentionOnly).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
 
 // 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
