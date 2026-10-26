@@ -41,7 +41,7 @@ test('every route starts at Z14; receiving uses east then north yard turns with 
     assert.equal(route.turningRadius, 10)
     assert.ok(route.points.length >= 5)
     assert.ok(route.points[0][0] >= gate.x0 && route.points[0][0] <= gate.x1 && route.points[0][1] >= gate.z0 && route.points[0][1] <= gate.z1, dock.id)
-    assert.equal(route.reverseSegments.length, 1, `${dock.id} reverse`)
+    assert.equal(route.reverseSegments.length, 0, `${dock.id} does not require reverse`)
     assert.ok(route.turns.every((turn) => turn.exteriorRadius === 10 && inside(turn.bounds, CAMPUS)), dock.id)
     assert.ok(route.points.every(([x, z]) => x >= CAMPUS.x0 && x <= CAMPUS.x1 && z >= CAMPUS.z0 && z <= CAMPUS.z1), dock.id)
   }

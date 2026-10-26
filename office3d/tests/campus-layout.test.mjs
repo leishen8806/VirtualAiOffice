@@ -161,7 +161,7 @@ test('B1 docks are exterior, wide enough and keep truck bays with their working 
   assert.equal(current.CAMPUS_DOCKS.at(-1).at + current.CAMPUS_DOCKS.at(-1).width / 2 <= current.CAMPUS_BUILDING.z1, true)
 })
 
-test('B1 vehicle routes start at Z14, use the east and north yards, then reverse into every dock bay', () => {
+test('B1 vehicle routes start at Z14, use the east and north yards, and park forward in every dock bay', () => {
   assert.equal(current.CAMPUS_VEHICLE_ROUTES.length, 8)
   const ids = new Set(current.CAMPUS_DOCKS.map((dock) => dock.id))
   const gate = current.CAMPUS_ZONES.find((zone) => zone.id === 'logisticsGate')
@@ -171,7 +171,7 @@ test('B1 vehicle routes start at Z14, use the east and north yards, then reverse
     assert.equal(route.turningRadius, 10)
     assert.ok(route.points.length >= 5)
     assert.equal(pointIn(route.points[0], gate), true, `${route.id} starts at Z14`)
-    assert.equal(route.reverseSegments.length, 1, `${route.id} has a reversing segment`)
+    assert.equal(route.reverseSegments.length, 0, `${route.id} does not require a reversing segment`)
     assert.ok(route.turns.every((turn) => turn.exteriorRadius === 10 && inside(turn.bounds, current.CAMPUS)), route.id)
     assert.ok(route.points.every((point) => pointIn(point, current.CAMPUS)), route.id)
   }

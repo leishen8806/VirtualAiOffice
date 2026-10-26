@@ -1,4 +1,4 @@
-import { CAMPUS, CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
+import { CAMPUS, CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_VEHICLE_ROUTES, CAMPUS_ZONES } from './office-layout.js'
 
 const inside = (part, bounds) => part.x0 >= bounds.x0 && part.x1 <= bounds.x1 && part.z0 >= bounds.z0 && part.z1 <= bounds.z1
 const rect = (name, bounds, extra = {}) => Object.freeze({ name, ...bounds, dynamic: false, ...extra })
@@ -54,22 +54,45 @@ const plane = (THREE, root, part, y, material) => {
   return mesh
 }
 
-export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS) {
+const intersects = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.z0 < b.z1 && a.z1 > b.z0
+const routeCorridor = (route, width = 1.775) => route.points.slice(0, -1).map(([x0, z0], index) => {
+  const [x1, z1] = route.points[index + 1]
+  return { x0: Math.min(x0, x1) - width, x1: Math.max(x0, x1) + width, z0: Math.min(z0, z1) - width, z1: Math.max(z0, z1) + width }
+})
+export function campusVehicleClearance({ docks = CAMPUS_DOCKS, routes = CAMPUS_VEHICLE_ROUTES } = {}) {
+  return Object.freeze([
+    ...routes.flatMap((route) => [...routeCorridor(route), ...route.turns.map((turn) => turn.bounds)]),
+    ...docks.flatMap((dock) => [dock.bay, dock.work]),
+  ].map((bounds) => Object.freeze({ ...bounds })))
+}
+
+export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS, clearance = campusVehicleClearance()) {
+  const obstacleBounds = new THREE.Box3(), hiddenRoots = new Set()
   const point = new THREE.Vector3(), hidden = {}
   const occupied = CAMPUS_BUILDING
   const occludingAncestor = (object) => {
     for (let current = object.parent; current; current = current.parent) if (current.userData?.campusOccluder) return current
     return null
   }
+  const root = (object) => {
+    let current = object
+    while (current.parent && current.parent !== scene) current = current.parent
+    return current
+  }
   scene.traverse((object) => {
-    if (!object.isMesh || campusRoot.getObjectById(object.id)) return
+    if (!object.isMesh || campusRoot.getObjectById(object.id) || hiddenRoots.has(root(object))) return
     object.getWorldPosition(point)
     const occluder = occludingAncestor(object)
     const anchor = occluder?.getWorldPosition(new THREE.Vector3()) || point
+    obstacleBounds.setFromObject(object)
+    const footprint = { x0: obstacleBounds.min.x, x1: obstacleBounds.max.x, z0: obstacleBounds.min.z, z1: obstacleBounds.max.z }
+    const blocksVehicle = obstacleBounds.max.y - obstacleBounds.min.y > .5 && clearance.some((area) => intersects(footprint, area))
+    const target = blocksVehicle ? root(object) : object
     if ((occluder && anchor.x >= bounds.x0 && anchor.x <= bounds.x1 && anchor.z >= bounds.z0 && anchor.z <= bounds.z1) ||
-        (point.x >= occupied.x0 && point.x <= occupied.x1 && point.z >= occupied.z0 && point.z <= occupied.z1)) {
-      object.visible = false
-      const type = occluder?.name || (object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed')
+        (point.x >= occupied.x0 && point.x <= occupied.x1 && point.z >= occupied.z0 && point.z <= occupied.z1) || blocksVehicle) {
+      target.visible = false
+      hiddenRoots.add(target)
+      const type = blocksVehicle ? `vehicle-clearance:${target.name || object.name || object.geometry?.type || 'unnamed'}` : (occluder?.name || (object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'))
       hidden[type] = (hidden[type] || 0) + 1
     }
   })

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { CAMPUS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
-import { buildCampusShellSpec, hideCampusEnvironment } from '../dr-campus-shell.js'
+import { buildCampusShellSpec, campusVehicleClearance, hideCampusEnvironment } from '../dr-campus-shell.js'
 import * as THREE from '../vendor/three/three.module.js'
 import { createCampusRegistry, mergeCampusStatic } from '../dr-campus-registry.js'
 
@@ -22,9 +22,9 @@ test('campus shell spec stays static, offset, and within the frozen site', () =>
 test('campus hides only environment geometry that conflicts with the building footprint', () => {
   const scene = new THREE.Scene(), campusRoot = new THREE.Group()
   const foreground = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
-  foreground.name = 'foreground-conflict'; foreground.position.set(-100, 0, 0)
+  foreground.name = 'foreground-conflict'; foreground.position.set(-100, 0, 20)
   const distantTower = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
-  distantTower.name = 'distant-blue-glass-tower'; distantTower.position.set(-76, 0, -30)
+  distantTower.name = 'distant-blue-glass-tower'; distantTower.position.set(-46, 0, -30)
   const landmark = new THREE.Group()
   landmark.name = 'landmark-phnom-penh-hill'; landmark.userData.campusOccluder = true; landmark.position.set(-150, 0, 40)
   const landmarkMesh = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial())
@@ -34,6 +34,26 @@ test('campus hides only environment geometry that conflicts with the building fo
   assert.equal(foreground.visible, false)
   assert.equal(distantTower.visible, true)
   assert.equal(landmarkMesh.visible, false)
+})
+
+test('campus clears environment roots that obstruct vehicle corridors, turns, bays, or work strips', () => {
+  const scene = new THREE.Scene(), campusRoot = new THREE.Group()
+  const tree = new THREE.Group()
+  tree.name = 'north-yard-palm'; tree.position.set(-143.7, 0, -22.5)
+  tree.add(new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, 6), new THREE.MeshBasicMaterial()))
+  const block = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), new THREE.MeshBasicMaterial())
+  block.name = 'east-yard-block'; block.position.set(-77.2, 0, -29.5)
+  const clear = new THREE.Mesh(new THREE.BoxGeometry(1, 6, 1), new THREE.MeshBasicMaterial())
+  clear.name = 'clear-backdrop'; clear.position.set(-170, 0, 40)
+  scene.add(campusRoot, tree, block, clear)
+  const clearance = campusVehicleClearance()
+  assert.ok(clearance.length > 20)
+  const hidden = hideCampusEnvironment(THREE, scene, campusRoot, CAMPUS, clearance)
+  assert.equal(tree.visible, false)
+  assert.equal(block.visible, false)
+  assert.equal(clear.visible, true)
+  assert.equal(Object.keys(hidden).some((key) => key.includes('north-yard-palm')), true)
+  assert.equal(Object.keys(hidden).some((key) => key.includes('east-yard-block')), true)
 })
 
 test('campus registry isolates an individual module failure', () => {

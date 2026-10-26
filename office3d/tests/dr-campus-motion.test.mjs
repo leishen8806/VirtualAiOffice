@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
-import { CAMPUS, CAMPUS_DOCKS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
+import { CAMPUS, CAMPUS_DOCKS, CAMPUS_VEHICLE_CORRIDORS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
 import { createCampusRackPlan } from '../dr-campus-racks-spec.mjs'
 import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, routePointAt, truckPlan } from '../dr-campus-motion-logic.mjs'
 import * as browserLogic from '../dr-campus-motion-logic.js'
@@ -43,15 +43,55 @@ test('truck animation follows every declared B1 route segment rather than interp
     assert.ok(Math.abs(end.x - dock.parked.x) < 1e-9 && Math.abs(end.z - dock.parked.z) < 1e-9)
   }
 })
-test('every parked truck backs into its bay with the unloading rear inside its working strip', () => {
+const envelope = (point, angle) => {
+  const length = 4.5, width = 1.275
+  const dx = Math.abs(Math.sin(angle)) * length + Math.abs(Math.cos(angle)) * width
+  const dz = Math.abs(Math.cos(angle)) * length + Math.abs(Math.sin(angle)) * width
+  return { x0: point.x - dx, x1: point.x + dx, z0: point.z - dz, z1: point.z + dz }
+}
+const coveredBy = (area, allowed) => {
+  const intersections = allowed.flatMap((item) => {
+    const x0 = Math.max(area.x0, item.x0), x1 = Math.min(area.x1, item.x1)
+    return x0 < x1 ? [x0, x1] : []
+  })
+  const boundaries = [...new Set([area.x0, area.x1, ...intersections])].sort((a, b) => a - b)
+  for (let index = 0; index < boundaries.length - 1; index++) {
+    const x = (boundaries[index] + boundaries[index + 1]) / 2
+    const intervals = allowed.filter((item) => item.x0 <= x && item.x1 >= x).map((item) => [item.z0, item.z1]).sort((a, b) => a[0] - b[0])
+    let end = area.z0
+    for (const [z0, z1] of intervals) if (z0 <= end + 1e-9) end = Math.max(end, z1)
+    if (end < area.z1 - 1e-9) return false
+  }
+  return true
+}
+test('every parked truck keeps its unloading rear inside the working strip without a direction flip', () => {
   const docks = new Map(CAMPUS_DOCKS.map((dock) => [dock.id, dock]))
   for (const truck of truckPlan(layout)) {
     const dock = docks.get(truck.id), endpoint = routePointAt(truck.route, 1)
-    assert.ok(truck.reverseSegments.includes(endpoint.segment), `${truck.id} final segment reverses`)
-    const angle = endpoint.angle + Math.PI
+    assert.equal(truck.reverseSegments.length, 0, `${truck.id} is forward parked`)
+    const angle = endpoint.angle
     const rear = { x: endpoint.x - Math.sin(angle) * 4.5, z: endpoint.z - Math.cos(angle) * 4.5 }
     assert.ok(rear.x >= dock.work.x0 - 1e-9 && rear.x <= dock.work.x1 + 1e-9, `${truck.id} rear x`)
     assert.ok(rear.z >= dock.work.z0 - 1e-9 && rear.z <= dock.work.z1 + 1e-9, `${truck.id} rear z`)
+  }
+})
+test('truck bodies remain in their dock zone or the declared vehicle corridors throughout every route', () => {
+  const zones = new Map(CAMPUS_ZONES.map((zone) => [zone.id, zone]))
+  const docks = new Map(CAMPUS_DOCKS.map((dock) => [dock.id, dock]))
+  for (const truck of truckPlan(layout)) {
+    const dock = docks.get(truck.id), allowed = [zones.get(dock.zone), ...CAMPUS_VEHICLE_CORRIDORS]
+    for (let step = 0; step <= 100; step++) {
+      const point = routePointAt(truck.route, step / 100)
+      const angle = point.angle + (truck.reverseSegments.includes(point.segment) ? Math.PI : 0)
+      assert.equal(coveredBy(envelope(point, angle), allowed), true, `${truck.id} route sample ${step}`)
+    }
+  }
+})
+test('truck headings never jump more than 90 degrees at route segment boundaries', () => {
+  const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle))
+  for (const truck of truckPlan(layout)) {
+    const headings = truck.route.slice(0, -1).map((from, index) => Math.atan2(truck.route[index + 1].x - from.x, truck.route[index + 1].z - from.z) + (truck.reverseSegments.includes(index) ? Math.PI : 0))
+    for (let index = 1; index < headings.length; index++) assert.ok(Math.abs(normalize(headings[index] - headings[index - 1])) <= Math.PI / 2 + 1e-9, `${truck.id} segment ${index}`)
   }
 })
 test('event source confirmed events are deterministic and subscription is independent of playback', () => {
