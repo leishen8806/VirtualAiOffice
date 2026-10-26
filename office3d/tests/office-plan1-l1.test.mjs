@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V1, LAYOUT_V2, LAYOUT_V3, LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_SAMPLE, createOfficeNavigation, resolveOfficeLayout, workHome } from '../office-layout.js'
 import { OFFICE_PLAN1_REGIONS, OFFICE_PLAN1_SEATS, OFFICE_PLAN1_WALLS, officePlan1Reception, officePlan1SouthHeight } from '../office-plan1-layout.js'
@@ -150,6 +151,7 @@ test('R3 reception logo and lettering attach to the new solid wall, inside its h
 
 test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against separate north-side tracks',()=>{
   const layout=LAYOUT_V3_ALIGN_SAMPLE,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout}),data=shell.reception.data
+  shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
   assert.equal(data.leaves.length,4)
   for(const d of data.doors){
     assert.ok(Math.abs(d.clearX1-d.clearX0-1.7)<1e-8)
@@ -176,20 +178,22 @@ test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against sep
 
 test('R5 warm reflective glass shares one material and inward 0.07m frames preserve all R4 blockers',()=>{
   const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,transparent,opaque}=shell.reception
+  shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
   assert.equal(hash(data.blockers),'f1b6e0f370af6f2c34f5a5358381a22e015c6b8dd91419dd9f6665650fc2a09f')
   assert.equal(data.spec.leafFrameWidth,.07);assert.equal(transparent.mesh.material.opacity,.35)
   assert.equal(transparent.mesh.material.userData.officeArchitectureWarmth,true)
   const color=new THREE.Color('#E8E0D0'),g=transparent.mesh.geometry
   for(let i=0;i<g.attributes.position.count;i++){
+    if(g.attributes.sampleSurface.getY(i)>.2)continue // R7 opaque bronze frames share the glass draw.
     assert.ok(Math.abs(g.attributes.sampleSurface.getX(i)-.12)<1e-6)
     assert.ok(Math.abs(g.attributes.color.getX(i)-color.r)<1e-6)
     assert.ok(Math.abs(g.attributes.color.getY(i)-color.g)<1e-6)
     assert.ok(Math.abs(g.attributes.color.getZ(i)-color.b)<1e-6)
   }
-  opaque.mesh.updateMatrixWorld(true)
+  transparent.mesh.updateMatrixWorld(true)
   for(const p of data.leaves){
     const d=data.doors.find(d=>p.id.startsWith(d.id)),cx=(Math.max(p.x0,d.x0)+Math.min(p.x1,d.x1))/2
-    const frameAt=(x,y)=>new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(opaque.mesh).some(h=>h.point.z>=p.z0-1e-6&&h.point.z<=p.z1+1e-6)
+    const frameAt=(x,y)=>new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(transparent.mesh).some(h=>h.point.z>=p.z0-1e-6&&h.point.z<=p.z1+1e-6&&transparent.mesh.geometry.attributes.sampleSurface.getY(h.face.a)>.2)
     for(const edge of [.06,.08]){
       assert.equal(frameAt(cx,edge),edge<.07,'bottom frame physical width')
       assert.equal(frameAt(cx,p.height-edge),edge<.07,'top frame physical width')
@@ -202,23 +206,24 @@ test('R5 warm reflective glass shares one material and inward 0.07m frames prese
 
 test('R6 bronze frames, horizontal push bars and rail share the actual colour without new draw batches',()=>{
   const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,opaque,transparent}=shell.reception
-  const bronze=new THREE.Color('#705735'),mesh=opaque.mesh;mesh.updateMatrixWorld(true)
+  shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
+  const bronze=new THREE.Color('#705735'),mesh=transparent.mesh;mesh.updateMatrixWorld(true);opaque.mesh.updateMatrixWorld(true)
   assert.equal(data.spec.doorFrameColor,'#705735');assert.equal(transparent.mesh.material.opacity,.35)
-  const surface=(x,y,z0,z1)=>{
-    const hit=new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(mesh).find(h=>h.point.z>=z0-1e-6&&h.point.z<=z1+1e-6)
-    assert.ok(hit,'actual bronze surface');const c=mesh.geometry.attributes.color,i=hit.face.a
+  const surface=(x,y,z0,z1,target=mesh)=>{
+    const hit=new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(target).find(h=>h.point.z>=z0-1e-6&&h.point.z<=z1+1e-6)
+    assert.ok(hit,'actual bronze surface');const c=target.geometry.attributes.color,i=hit.face.a
     for(const [component,value] of [['X',bronze.r],['Y',bronze.g],['Z',bronze.b]])assert.ok(Math.abs(c['get'+component](i)-value)<1e-6)
-    assert.ok(Math.abs(mesh.geometry.attributes.sampleSurface.getY(i)-.25)<1e-6)
+    assert.ok(Math.abs(target.geometry.attributes.sampleSurface.getY(i)-.25)<1e-6)
   }
   for(const p of data.leaves){
     const d=data.doors.find(d=>p.id.startsWith(d.id)),cx=(Math.max(p.x0,d.x0)+Math.min(p.x1,d.x1))/2
     surface(cx,.035,p.z0,p.z1);surface(cx,2.665,p.z0,p.z1)
     surface(p.id.endsWith('-0')?p.x1-.035:p.x0+.035,1.8,p.z0,p.z1)
     for(const dx of [-.08,0,.08])surface(cx+dx,1.05,p.z1-.02,p.z1)
-    const noHandle=new THREE.Raycaster(new THREE.Vector3(cx,1.11,10),new THREE.Vector3(0,0,-1)).intersectObject(mesh).filter(h=>h.point.z>=p.z0&&h.point.z<=p.z1)
+    const noHandle=new THREE.Raycaster(new THREE.Vector3(cx,1.11,10),new THREE.Vector3(0,0,-1)).intersectObject(mesh).filter(h=>h.point.z>=p.z0&&h.point.z<=p.z1&&mesh.geometry.attributes.sampleSurface.getY(h.face.a)>.2)
     assert.equal(noHandle.length,0,'horizontal bar stays within 1.02..1.08m, no old vertical handle')
   }
-  for(const d of data.doors)surface((d.x0+d.x1)/2,2.77,8,8.5)
+  for(const d of data.doors)surface((d.x0+d.x1)/2,2.77,8,8.5,opaque.mesh)
   assert.equal(opaque.mesh.children.length,0);assert.equal(transparent.mesh.children.length,0)
   assert.equal(Array.isArray(opaque.mesh.material),false);assert.equal(Array.isArray(transparent.mesh.material),false)
   assert.equal(opaque.mesh.geometry.groups.length,0);assert.equal(transparent.mesh.geometry.groups.length,0)
@@ -330,4 +335,75 @@ test('four display rooms and their twelve simulated identities move with the app
     assert.deepEqual(seats.map(seat => seat.z), [z - .8, z + .8, z - .8])
     assert.deepEqual(seats.map(seat => seat.yaw), [-Math.PI/2, -Math.PI/2, Math.PI/2])
   }
+})
+
+
+test('R7 closed leaves meet at each doorway centre using shared batch translations, then open independently',()=>{
+  for(const low of [false,true]){
+    const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE,low}),r=shell.reception
+    const west=r.data.doors[0],east=r.data.doors[1],person={x:(west.x0+west.x1)/2,z:west.z+1.99}
+    assert.deepEqual(r.doorOpen.toArray(),[0,0])
+    const originals=[r.opaque,r.transparent].map(b=>({g:b.mesh.geometry.uuid,m:b.mesh.material.uuid,p:hash(Array.from(b.mesh.geometry.attributes.position.array))}))
+    for(const batch of [r.transparent]){
+      const g=batch.mesh.geometry,positions=g.attributes.position
+      assert.equal(g.morphAttributes.position.length,2);assert.equal(g.morphTargetsRelative,true)
+      assert.equal(batch.mesh.userData.dynamic,true);assert.deepEqual(batch.mesh.morphTargetInfluences,[1,1])
+      for(let door=0;door<2;door++)for(const sign of [-1,1]){
+        const attr=g.morphAttributes.position[door],xs=[]
+        assert.equal(attr.count,positions.count)
+        for(let i=0;i<attr.count;i++)if(Math.sign(attr.getX(i))===sign){
+          const actual=batch.mesh.getVertexPosition(i,new THREE.Vector3());xs.push(actual.x)
+          assert.ok(Math.abs(actual.y-positions.getY(i))<1e-6);assert.ok(Math.abs(actual.z-positions.getZ(i))<1e-6)
+          assert.ok(Math.abs(Math.abs(attr.getX(i))-.85)<1e-6)
+        }
+        const d=r.data.doors[door],center=(d.x0+d.x1)/2,inset=0
+        const expected=sign>0?[d.x0+inset,center-inset]:[center+inset,d.x1-inset]
+        assert.ok(Math.abs(Math.min(...xs)-expected[0])<1e-5);assert.ok(Math.abs(Math.max(...xs)-expected[1])<1e-5)
+      }
+    }
+    const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <alphamap_fragment>'}
+    r.transparent.mesh.material.onBeforeCompile(shader);assert.ok(shader.fragmentShader.includes('if (surfaceParams.y > .2) diffuseColor.a = 1.0;'))
+    r.onFrame(.3,[person]);assert.ok(Math.abs(r.states[0].open-(low?1:.5))<1e-8);assert.equal(r.states[1].open,0)
+    r.onFrame(.3,[person]);assert.equal(r.states[0].open,1)
+    r.onFrame(1,[]);assert.equal(r.states[0].open,1)
+    r.onFrame(.4,[]);assert.ok(Math.abs(r.states[0].open-(low?0:.5))<1e-8)
+    r.onFrame(.4,[]);assert.ok(r.states[0].open<1e-8)
+    r.onFrame(.6,[{x:(east.x0+east.x1)/2,z:east.z}]);assert.equal(r.states[1].open,1);assert.ok(r.states[0].open<1e-8)
+    r.onFrame(.6,[person,{x:(east.x0+east.x1)/2,z:east.z}]);assert.deepEqual(r.doorOpen.toArray(),[1,1])
+    r.onFrame(1.4,[]);r.onFrame(.6,[person]);assert.equal(r.states[0].open,1,'re-entry during closing opens immediately without waiting')
+    assert.deepEqual([r.opaque,r.transparent].map(b=>({g:b.mesh.geometry.uuid,m:b.mesh.material.uuid,p:hash(Array.from(b.mesh.geometry.attributes.position.array))})),originals)
+    assert.equal(hash(r.data.blockers),'f1b6e0f370af6f2c34f5a5358381a22e015c6b8dd91419dd9f6665650fc2a09f')
+    const last=r.doorOpen.toArray();shell.dispose();shell.dispose();r.onFrame(5,[]);assert.deepEqual(r.doorOpen.toArray(),last)
+  }
+})
+
+test('R7 opens before the fastest real person reaches any point of the door, including body radius and frame delay',()=>{
+  const director=readFileSync(new URL('../director.js',import.meta.url),'utf8'),display=readFileSync(new URL('../display-staff-logic.js',import.meta.url),'utf8')
+  const speed=Number(director.match(/const SPEED = ([\d.]+)/)[1]);assert.equal(speed,1.4)
+  assert.ok(display.includes('* 1.4'));assert.ok(!director.includes('SPEED * 2'))
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),r=shell.reception,s=r.data.spec
+  // Worst lateral position is the whole doorway edge, including the open leaf depth and a 0.26m person radius.
+  const reach=Math.sqrt(s.sensorRadius**2-(s.doorWidth/2)**2),depth=Math.max(...r.data.leaves.map(p=>Math.abs(p.z0-s.z)))
+  const earliest=(reach-depth-.26)/speed
+  assert.ok(s.openSeconds+.1<earliest,`open plus worst 100ms sensing delay ${s.openSeconds+.1} < arrival ${earliest}`)
+  assert.equal(s.sensorRadius,2.2);assert.equal(s.openSeconds,.6);assert.equal(s.closeDelay,1);assert.equal(s.closeSeconds,.8)
+  const door=r.data.doors[0],x=(door.x0+door.x1)/2
+  let elapsed=0
+  while(elapsed<s.openSeconds+.1){r.onFrame(.02,[{x,z:door.z+s.sensorRadius-speed*elapsed}]);elapsed+=.02}
+  assert.equal(r.states[0].open,1);assert.ok(elapsed<earliest)
+  shell.dispose()
+})
+
+test('R7 host frame detects actual agent roots and display positions once per timestamp, with no extra loop',()=>{
+  const scene=new THREE.Scene(),root=new THREE.Group();scene.add(root)
+  const staff=new THREE.Group();staff.userData.agentId='visitor:test';scene.add(staff)
+  let extra=[];const shell=buildOfficeShellV3({THREE,root,scene,layout:LAYOUT_V3_ALIGN_SAMPLE,get:()=>({positions:()=>extra})}),r=shell.reception
+  const west=r.data.doors[0],east=r.data.doors[1];staff.position.set((west.x0+west.x1)/2,0,west.z)
+  for(let i=0;i<8;i++)shell.onFrame(.1,{now:i*100})
+  assert.equal(r.states[0].open,1);assert.equal(r.states[1].open,0)
+  staff.visible=false;shell.onFrame(.1,{now:800});const absent=r.states[0].absent;shell.onFrame(.1,{now:800});assert.equal(r.states[0].absent,absent)
+  extra=[{x:(east.x0+east.x1)/2,z:east.z}]
+  for(let i=9;i<30;i++)shell.onFrame(.1,{now:i*100})
+  assert.equal(r.states[0].open,0);assert.equal(r.states[1].open,1)
+  shell.dispose();shell.onFrame(5,{now:10000});assert.equal(r.states[1].open,1)
 })

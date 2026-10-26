@@ -72,14 +72,20 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
       solid.add(g,['#3F6341','#55764A','#748950'][i%3],[(p.x0+p.x1)/2+Math.sin(a)*.23,p.height+.28+(i%3)*.08,(p.z0+p.z1)/2+Math.cos(a)*.23])
     }
   }
+  const slides = []
   for (const p of [...data.partitions,...data.leaves]) {
-    const leaf=p.kind==='leaf', w=leaf?data.spec.leafFrameWidth:f, z=(p.z0+p.z1)/2, tint=leaf?data.spec.doorFrameColor:frame, metal=leaf ? .25 : .5
+    const solidStart=solid.triangles()*3, paneStart=panes.triangles()*3
+    const leaf=p.kind==='leaf', target=leaf?panes:solid, w=leaf?data.spec.leafFrameWidth:f, z=(p.z0+p.z1)/2, tint=leaf?data.spec.doorFrameColor:frame, metal=leaf ? .25 : .5
     const glass=layout.walls.internalGlass.glassThickness/2
     panes.add(new THREE.BoxGeometry(p.x1-p.x0-2*w,p.height-2*w,2*glass),data.spec.glassColor,[(p.x0+p.x1)/2,p.height/2,z],0,data.spec.glassRoughness,.15)
     // 框条向门扇内部加粗，不改变已验收的厚度、外包络和净通道。
-    for (const y of [0,p.height-w]) box(solid,p.x0,p.x1,y,w,p.z0,p.z1,tint,metal)
-    for(const end of leaf?[p.x0+w/2,p.x1-w/2]:[p.x0,p.x1]) box(solid,end-w/2,end+w/2,0,p.height,p.z0,p.z1,tint,metal)
-    if(leaf) box(solid,p.x0+w,p.x1-w,1.02,.06,p.z1-.02,p.z1,tint,metal)
+    for (const y of [0,p.height-w]) box(target,p.x0,p.x1,y,w,p.z0,p.z1,tint,metal)
+    for(const end of leaf?[p.x0+w/2,p.x1-w/2]:[p.x0,p.x1]) box(target,end-w/2,end+w/2,0,p.height,p.z0,p.z1,tint,metal)
+    if(leaf) {
+      box(target,p.x0+w,p.x1-w,1.02,.06,p.z1-.02,p.z1,tint,metal)
+      const door=data.doors.findIndex(d=>p.id.startsWith(d.id)), side=p.id.endsWith('-0')?0:1
+      slides.push({door,shift:data.doors[door].x0+side*data.spec.leafWidth-p.x0,solid:[solidStart,solid.triangles()*3],pane:[paneStart,panes.triangles()*3]})
+    }
   }
   for(const d of data.doors) {
     const tracks=data.leaves.filter(p=>p.id.startsWith(d.id)),z0=Math.min(...tracks.map(p=>p.z0)),z1=Math.max(...tracks.map(p=>p.z1))
@@ -93,11 +99,39 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
   transparent.mesh.material.transparent=true; transparent.mesh.material.opacity=data.spec.glassOpacity; transparent.mesh.material.depthWrite=false
   transparent.mesh.material.side=THREE.DoubleSide; transparent.mesh.userData.dynamic=true
   warmOfficeArchitecture(transparent.mesh.material)
+  // 同一合批内只变换门扇顶点；碰撞代理继续使用已验收的开门包络。
+  const doorOpen=new THREE.Vector2(), states=data.doors.map(()=>({open:0,absent:0}))
+  const previousGlass=transparent.mesh.material.onBeforeCompile,glassKey=transparent.mesh.material.customProgramCacheKey()
+  transparent.mesh.material.onBeforeCompile=function(shader,renderer){previousGlass.call(this,shader,renderer);shader.fragmentShader=shader.fragmentShader.replace('#include <alphamap_fragment>','#include <alphamap_fragment>\nif (surfaceParams.y > .2) diffuseColor.a = 1.0;')}
+  transparent.mesh.material.customProgramCacheKey=()=>glassKey+'-opaque-bronze-frames-v1'
+  for(const [batch,range] of [[transparent,'pane']]) {
+    const mesh=batch.mesh, count=mesh.geometry.attributes.position.count
+    mesh.geometry.morphAttributes.position=[0,1].map(door=>{
+      const shifts=new Float32Array(count*3)
+      for(const leaf of slides.filter(p=>p.door===door))for(let i=leaf[range][0];i<leaf[range][1];i++)shifts[i*3]=leaf.shift
+      return new THREE.BufferAttribute(shifts,3)
+    })
+    // 内置平移形变同时覆盖普通、GTAO法线与射线检测，避免只在主材质上移门。
+    mesh.geometry.morphTargetsRelative=true;mesh.updateMorphTargets();mesh.morphTargetInfluences.fill(1);mesh.userData.dynamic=true
+  }
   for(const p of data.blockers) {
     const proxy=new THREE.Mesh(new THREE.BoxGeometry(p.x1-p.x0,p.height,p.z1-p.z0),opaque.mesh.material)
     proxy.position.set((p.x0+p.x1)/2,p.height/2,(p.z0+p.z1)/2);proxy.visible=false;proxy.name='office-plan1-reception-collision-'+p.id
     root.add(proxy);collision?.add(proxy,'office3-wall');proxies.push(proxy)
   }
   let disposed=false
-  return {data,opaque,transparent,proxies,dispose(){if(disposed)return;disposed=true;for(const p of proxies){collision?.remove?.(p);p.geometry.dispose();p.removeFromParent()}opaque.dispose();transparent.dispose()}}
+  function onFrame(dt, people=[]) {
+    if(disposed)return
+    const delta=Number.isFinite(dt)?Math.max(0,dt):0
+    for(let i=0;i<data.doors.length;i++){
+      const door=data.doors[i],state=states[i],x=(door.x0+door.x1)/2
+      const occupied=people.some(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.z)&&(p.x-x)**2+(p.z-door.z)**2<=data.spec.sensorRadius**2)
+      const before=state.absent;state.absent=occupied?0:before+delta
+      if(occupied)state.open=low?1:Math.min(1,state.open+delta/data.spec.openSeconds)
+      else if(state.absent>data.spec.closeDelay){const closing=state.absent-Math.max(before,data.spec.closeDelay);state.open=low?0:Math.max(0,state.open-closing/data.spec.closeSeconds)}
+    }
+    doorOpen.set(states[0].open,states[1].open)
+    for(const batch of [transparent])for(let i=0;i<2;i++)batch.mesh.morphTargetInfluences[i]=1-states[i].open
+  }
+  return {data,opaque,transparent,proxies,doorOpen,states,onFrame,dispose(){if(disposed)return;disposed=true;for(const p of proxies){collision?.remove?.(p);p.geometry.dispose();p.removeFromParent()}opaque.dispose();transparent.dispose()}}
 }

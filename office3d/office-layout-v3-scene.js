@@ -86,7 +86,7 @@ const segmentMatrix = (THREE, segment, y, h, thickness = .18) => {
   return new THREE.Matrix4().compose(position,quaternion,new THREE.Vector3(length,h,thickness))
 }
 
-export function buildOfficeShellV3({ THREE, root, layout, collision, low = false }) {
+export function buildOfficeShellV3({ THREE, root, layout, collision, low = false, scene, get }) {
   const spec = buildOfficeShellV3Spec(layout), outerStyle = layout.walls?.outerSolid
   const outerHeight = outerStyle?.height ?? 3.5, capHeight = outerStyle?.capHeight ?? 0, exteriorColor = outerStyle?.finish ?? THEME.exteriorWall
   const warm = new THREE.MeshStandardMaterial({ color: exteriorColor, emissive: exteriorColor, emissiveIntensity: .28, roughness: THEME.wallRoughness, vertexColors: true, toneMapped: false })
@@ -152,7 +152,21 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   }
   const windowEntries = low || outerStyle ? [] : spec.outer.map(segment => ({matrix:segmentMatrix(THREE,segment,3.5,1)}))
   const windows = addInstances(THREE, root, 'office3-window-band', glass, windowEntries)
-  const update = (dt, { camera } = {}) => {
+  const personPosition=new THREE.Vector3(), people=[]
+  let doorStamp=null
+  const update = (dt, { camera, now } = {}) => {
+    if(disposed)return
+    if(reception){
+      // 宿主可能在同一帧做 RenderPass/GTAO 两次；浏览器帧时钟避免重复感应，亦兼容宿主未提供 now。
+      const stamp=globalThis.document?.timeline?.currentTime ?? now
+      if(stamp==null||stamp!==doorStamp){
+        const elapsed=stamp!=null&&doorStamp!=null?Math.min(.1,Math.max(0,(stamp-doorStamp)/1000)):dt
+        doorStamp=stamp;people.length=0
+        for(const person of scene?.children||[])if(person.visible&&person.userData.agentId){person.getWorldPosition(personPosition);people.push({x:personPosition.x,z:personPosition.z})}
+        people.push(...(get?.('displayStaff')?.positions?.()||[]))
+        reception.onFrame(elapsed,people)
+      }
+    }
     if (!walls || !camera || (!wallState.length && !facade)) return
     const elevation = Math.atan2(camera.position.y - 0.1, Math.hypot(camera.position.x - layout.axis.x, camera.position.z - layout.axis.z)) * 180 / Math.PI
     const outside = camera.position.x < layout.envelope.x0 || camera.position.x > layout.envelope.x1 || camera.position.z < layout.envelope.z0 || camera.position.z > layout.envelope.z1
