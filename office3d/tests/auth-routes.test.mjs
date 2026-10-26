@@ -14,7 +14,7 @@ const ORIGIN = 'http://office.localhost:3200'
 function tempDir(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-routes-'))
   t.after(() => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 }))
-  return dir
+  try { return fs.realpathSync(dir) } catch { return dir } // 规避 macOS /var 符号链接导致的 realpath 不对称
 }
 
 function setup(t, { enabled = true, authEnabled = true, log = () => {} } = {}) {

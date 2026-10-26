@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process'
 import { parseEvidenceVersion, insideRoots, isProtected, createEvidenceVersion } from '../evidence-version.mjs'
 
 const H = 'a'.repeat(64)
-const tmp = (p = 'ev-') => { const d = fs.mkdtempSync(path.join(os.tmpdir(), p)); return d }
+const tmp = (p = 'ev-') => { const d = fs.mkdtempSync(path.join(os.tmpdir(), p)); try { return fs.realpathSync(d) } catch { return d } }
 const git = (cwd, args) => { const out = execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); return out.trim() }
 // 在 roots 下建一个真实 git 仓库，返回 { repo, head, file }
 function makeRepo(root, files = { 'a.txt': 'one' }) {
@@ -97,13 +97,23 @@ test('解析：提交号含非十六进制 / 含空格 / 含分号 → 条目不
 
 // ───── 纯函数：路径安全 ─────
 test('路径安全：insideRoots 拒绝 .. 逃逸 / 前缀混淆，盘符大小写不敏感', () => {
-  const roots = ['E:/VirtualAIOffice', 'E:/pc-worktrees']
-  assert.equal(insideRoots('E:/VirtualAIOffice/paperclip-ops', roots), true)
-  assert.equal(insideRoots('e:/virtualaioffice/paperclip-ops', roots), true)
-  assert.equal(insideRoots('E:/VirtualAIOffice/../outside/x', roots), false)
-  assert.equal(insideRoots('E:/VirtualAIOffice2/x', roots), false)
-  assert.equal(insideRoots('E:/something', roots), false)
-  assert.equal(insideRoots('E:\\VirtualAIOffice\\backslash', roots), true)
+  if (process.platform === 'win32') {
+    // Windows：盘符大小写不敏感 + 反斜杠 + 前缀混淆 + .. 逃逸
+    const roots = ['E:/VirtualAIOffice', 'E:/pc-worktrees']
+    assert.equal(insideRoots('E:/VirtualAIOffice/paperclip-ops', roots), true)
+    assert.equal(insideRoots('e:/virtualaioffice/paperclip-ops', roots), true)
+    assert.equal(insideRoots('E:/VirtualAIOffice/../outside/x', roots), false)
+    assert.equal(insideRoots('E:/VirtualAIOffice2/x', roots), false)
+    assert.equal(insideRoots('E:/something', roots), false)
+    assert.equal(insideRoots('E:\\VirtualAIOffice\\backslash', roots), true)
+  } else {
+    // POSIX：无盘符，前缀混淆 + .. 逃逸（等价语义）
+    const roots = ['/srv/virtual-office', '/srv/pc-worktrees']
+    assert.equal(insideRoots('/srv/virtual-office/paperclip-ops', roots), true)
+    assert.equal(insideRoots('/srv/virtual-office/../outside/x', roots), false)
+    assert.equal(insideRoots('/srv/virtual-office2/x', roots), false)
+    assert.equal(insideRoots('/srv/something', roots), false)
+  }
 })
 
 test('路径安全：符号链接指向根外 → 规范化后被拒', (t) => {

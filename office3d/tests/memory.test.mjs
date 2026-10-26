@@ -7,6 +7,10 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { scanMemoryText, parseMemory, memoryTerms, selectMemories, memoryComment, memorySkip, createMemory, scanStaged, memoryLife } from '../memory.mjs'
 
+const HOOK_URL = new URL('../../../knowledge/.git/hooks/pre-commit', import.meta.url)
+const hookAvailable = fs.existsSync(HOOK_URL)
+const hookSkip = hookAvailable ? false : 'knowledge/.git/hooks/pre-commit 本机证据不存在（CI 干净机器），跳过钩子集成测试'
+
 const AT = Date.parse('2026-10-19T02:00:00Z')
 const sample = (extra = {}) => ({ title: '浏览器布局验证', type: 'process', author: 'Frontend2', source: 'CMP-285', tags: ['浏览器', '布局'], created: '2026-10-19', status: 'approved', body: '浏览器布局先核对窗口尺寸，再逐项检查边界。', path: '记忆/流程/browser.md', ...extra })
 const doc = e => `---\ntitle: ${e.title}\ntype: ${e.type}\nauthor: ${e.author}\nsource: ${e.source}\ntags: [${e.tags.join(', ')}]\ncreated: ${e.created}\nstatus: ${e.status}\n${e.expires ? `expires: ${e.expires}\n` : ''}---\n${e.body}`
@@ -176,7 +180,7 @@ test('积压只提醒固定 KnowledgeKeeper 任务，不创建任务且每小时
   f.advance(300001); await f.mem.tick(); await f.mem.tick(); assert.equal(f.writes.length, 1); assert.ok(f.writes[0][1].endsWith('/review/comments'))
 })
 
-test('临时克隆：同一扫描器读取暂存内容，拒绝假密钥，保留原缺口守卫', t => {
+test('临时克隆：同一扫描器读取暂存内容，拒绝假密钥，保留原缺口守卫', { skip: hookSkip }, t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'memory-hook-')); t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const seed = path.join(root, 'seed'), clone = path.join(root, 'clone'); fs.mkdirSync(seed)
   const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
@@ -196,7 +200,7 @@ test('临时克隆：同一扫描器读取暂存内容，拒绝假密钥，保�
   fs.writeFileSync(path.join(clone, '缺口', '待补充问题.md'), '误覆盖'); git(clone, ['add', '缺口'])
   const guard = spawnSync('git', ['commit', '-m', 'must reject fixture'], { cwd: clone, encoding: 'utf8' }); assert.notEqual(guard.status, 0)
 })
-test('Claude 已接好的钩子先扫描后运行原守卫，本任务不修改钩子', () => {
+test('Claude 已接好的钩子先扫描后运行原守卫，本任务不修改钩子', { skip: hookSkip }, () => {
   const hook = fs.readFileSync(new URL('../../../knowledge/.git/hooks/pre-commit', import.meta.url), 'utf8')
   assert.ok(hook.indexOf('--scan-staged') >= 0 && hook.indexOf('--scan-staged') < hook.indexOf('then exit 0'))
 })
