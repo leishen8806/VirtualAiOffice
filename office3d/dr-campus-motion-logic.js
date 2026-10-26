@@ -15,7 +15,14 @@ export function truckPlan(layout) {
       ? point((dock.bay.x0 + dock.bay.x1) / 2, (dock.bay.z0 + dock.bay.z1) / 2, 0)
       : point((dock.bay.x0 + dock.bay.x1) / 2, (dock.bay.z0 + dock.bay.z1) / 2, 0)
     const entry = route ? point(...route.points[0], 0) : parked
-    return Object.freeze({ id: dock.id, side: dock.side, route: Object.freeze(route?.points.map((item) => point(...item, 0)) || [entry, parked]), parked, entry })
+    return Object.freeze({
+      id: dock.id,
+      side: dock.side,
+      route: Object.freeze(route?.points.map((item) => point(...item, 0)) || [entry, parked]),
+      reverseSegments: Object.freeze(route?.reverseSegments || []),
+      parked,
+      entry,
+    })
   })
 }
 export function conveyorLoop(layout) {
@@ -58,12 +65,13 @@ export function routePointAt(path, progress) {
         x: segment.from.x + (segment.to.x - segment.from.x) * t,
         z: segment.from.z + (segment.to.z - segment.from.z) * t,
         angle: Math.atan2(segment.to.x - segment.from.x, segment.to.z - segment.from.z),
+        segment: segments.indexOf(segment),
       }
     }
     distance -= segment.length
   }
   const last = segments.at(-1)
-  return { x: last.to.x, z: last.to.z, angle: Math.atan2(last.to.x - last.from.x, last.to.z - last.from.z) }
+  return { x: last.to.x, z: last.to.z, angle: Math.atan2(last.to.x - last.from.x, last.to.z - last.from.z), segment: segments.length - 1 }
 }
 export function createDemoCampusEventSource({ now, seed = 2606 } = {}) {
   const listeners = new Set(), emitted = new Set()

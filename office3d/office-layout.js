@@ -615,18 +615,31 @@ const CAMPUS_ZONES_DATA = [
 ]
 const CAMPUS_SHUTTLE_STRIP_DATA = { x0: -94, x1: -90, z0: -18, z1: -4, kind: 'mark', label: '穿梭机展示带（示意）' }
 const CAMPUS_DOCKS_DATA = [
-  { id: 'D01', zone: 'receiving', side: 'north', at: -162.5, width: 3.6, bay: { x0: -164.3, x1: -160.7, z0: -17.5, z1: -8.5 }, work: { x0: -164.3, x1: -160.7, z0: -8.5, z1: -5 }, route: 'north-D01' },
-  { id: 'D02', zone: 'receiving', side: 'north', at: -155, width: 3.6, bay: { x0: -156.8, x1: -153.2, z0: -17.5, z1: -8.5 }, work: { x0: -156.8, x1: -153.2, z0: -8.5, z1: -5 }, route: 'north-D02' },
-  { id: 'D03', zone: 'receiving', side: 'north', at: -147.5, width: 3.6, bay: { x0: -149.3, x1: -145.7, z0: -17.5, z1: -8.5 }, work: { x0: -149.3, x1: -145.7, z0: -8.5, z1: -5 }, route: 'north-D03' },
-  { id: 'D04', zone: 'receiving', side: 'north', at: -140, width: 3.6, bay: { x0: -141.8, x1: -138.2, z0: -17.5, z1: -8.5 }, work: { x0: -141.8, x1: -138.2, z0: -8.5, z1: -5 }, route: 'north-D04' },
+  { id: 'D01', zone: 'receiving', side: 'north', at: -162.5, width: 3.6, bay: { x0: -164.3, x1: -160.7, z0: -14, z1: -5 }, work: { x0: -164.3, x1: -160.7, z0: -17.5, z1: -14 }, route: 'north-D01' },
+  { id: 'D02', zone: 'receiving', side: 'north', at: -155, width: 3.6, bay: { x0: -156.8, x1: -153.2, z0: -14, z1: -5 }, work: { x0: -156.8, x1: -153.2, z0: -17.5, z1: -14 }, route: 'north-D02' },
+  { id: 'D03', zone: 'receiving', side: 'north', at: -147.5, width: 3.6, bay: { x0: -149.3, x1: -145.7, z0: -14, z1: -5 }, work: { x0: -149.3, x1: -145.7, z0: -17.5, z1: -14 }, route: 'north-D03' },
+  { id: 'D04', zone: 'receiving', side: 'north', at: -140, width: 3.6, bay: { x0: -141.8, x1: -138.2, z0: -14, z1: -5 }, work: { x0: -141.8, x1: -138.2, z0: -17.5, z1: -14 }, route: 'north-D04' },
   { id: 'D05', zone: 'shipping', side: 'east', at: -2.15, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: -3.95, z1: -0.35 }, work: { x0: -92.75, x1: -89.25, z0: -3.95, z1: -0.35 }, route: 'east-D05' },
   { id: 'D06', zone: 'shipping', side: 'east', at: 2.95, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 1.15, z1: 4.75 }, work: { x0: -92.75, x1: -89.25, z0: 1.15, z1: 4.75 }, route: 'east-D06' },
   { id: 'D07', zone: 'shipping', side: 'east', at: 8.05, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 6.25, z1: 9.85 }, work: { x0: -92.75, x1: -89.25, z0: 6.25, z1: 9.85 }, route: 'east-D07' },
   { id: 'D08', zone: 'shipping', side: 'east', at: 13.15, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 11.35, z1: 14.95 }, work: { x0: -92.75, x1: -89.25, z0: 11.35, z1: 14.95 }, route: 'east-D08' },
 ]
 const CAMPUS_VEHICLE_ROUTES_DATA = [
-  ...CAMPUS_DOCKS_DATA.slice(0, 4).map((dock) => ({ id: dock.route, dockId: dock.id, entry: 'north-yard', turningRadius: 10, points: [[dock.at + 10, -28], [dock.at + 5, -28], [dock.at, -28], [dock.at, -18], [(dock.bay.x0 + dock.bay.x1) / 2, -13]] })),
-  ...CAMPUS_DOCKS_DATA.slice(4).map((dock) => ({ id: dock.route, dockId: dock.id, entry: 'Z14', turningRadius: 10, points: [[-72, 24], [-69.5, 24], [-69.5, dock.at], [-80, dock.at], [-84.75, dock.at]] })),
+  ...CAMPUS_DOCKS_DATA.slice(0, 4).map((dock) => ({
+    id: dock.route, dockId: dock.id, entry: 'Z14', turningRadius: 10,
+    points: [[-72, 24], [-69.5, 24], [-69.5, -28], [dock.at + 10, -28], [dock.at, -28], [dock.at, -5.5], [(dock.bay.x0 + dock.bay.x1) / 2, (dock.bay.z0 + dock.bay.z1) / 2]],
+    reverseSegments: [5],
+    turns: [
+      { id: 'north-east', exteriorRadius: 10, bounds: { x0: -79.5, x1: -69.5, z0: -28, z1: -18 } },
+      { id: 'north-entry', exteriorRadius: 10, bounds: { x0: dock.at, x1: dock.at + 10, z0: -28, z1: -18 } },
+    ],
+  })),
+  ...CAMPUS_DOCKS_DATA.slice(4).map((dock) => ({
+    id: dock.route, dockId: dock.id, entry: 'Z14', turningRadius: 10,
+    points: [[-72, 24], [-69.5, 24], [-69.5, dock.at], [-80, dock.at], [-84.75, dock.at]],
+    reverseSegments: [3],
+    turns: [{ id: 'east-entry', exteriorRadius: 10, bounds: { x0: -80, x1: -65, z0: dock.at - 10, z1: dock.at } }],
+  })),
 ]
 const CAMPUS_WALKABLE_DATA = [
   { id: 'frontApproach', x0: -155, x1: -98, z0: 30, z1: 42 },

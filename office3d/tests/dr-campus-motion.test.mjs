@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
-import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
+import { CAMPUS, CAMPUS_DOCKS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
 import { createCampusRackPlan } from '../dr-campus-racks-spec.mjs'
 import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, routePointAt, truckPlan } from '../dr-campus-motion-logic.mjs'
 import * as browserLogic from '../dr-campus-motion-logic.js'
@@ -41,6 +41,17 @@ test('truck animation follows every declared B1 route segment rather than interp
     const start = routePointAt(dock.route, 0), end = routePointAt(dock.route, 1)
     assert.ok(Math.abs(start.x - dock.route[0].x) < 1e-9 && Math.abs(start.z - dock.route[0].z) < 1e-9)
     assert.ok(Math.abs(end.x - dock.parked.x) < 1e-9 && Math.abs(end.z - dock.parked.z) < 1e-9)
+  }
+})
+test('every parked truck backs into its bay with the unloading rear inside its working strip', () => {
+  const docks = new Map(CAMPUS_DOCKS.map((dock) => [dock.id, dock]))
+  for (const truck of truckPlan(layout)) {
+    const dock = docks.get(truck.id), endpoint = routePointAt(truck.route, 1)
+    assert.ok(truck.reverseSegments.includes(endpoint.segment), `${truck.id} final segment reverses`)
+    const angle = endpoint.angle + Math.PI
+    const rear = { x: endpoint.x - Math.sin(angle) * 4.5, z: endpoint.z - Math.cos(angle) * 4.5 }
+    assert.ok(rear.x >= dock.work.x0 - 1e-9 && rear.x <= dock.work.x1 + 1e-9, `${truck.id} rear x`)
+    assert.ok(rear.z >= dock.work.z0 - 1e-9 && rear.z <= dock.work.z1 + 1e-9, `${truck.id} rear z`)
   }
 })
 test('event source confirmed events are deterministic and subscription is independent of playback', () => {

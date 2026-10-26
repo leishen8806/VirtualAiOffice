@@ -83,7 +83,7 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
           const progress = item.index === activeTruck && !low ? truckStart + (target - truckStart) * truckProgress : truckOffsets[item.index]
           truckOffsets[item.index] = progress
           const p = routePointAt(dock.route, progress)
-          angle = p.angle
+          angle = p.angle + (dock.reverseSegments.includes(p.segment) ? Math.PI : 0)
           x = p.x + item.x * Math.cos(angle) + item.z * Math.sin(angle)
           z = p.z - item.x * Math.sin(angle) + item.z * Math.cos(angle)
         } else if (item.kind === 'cargo') {

@@ -56,12 +56,20 @@ const plane = (THREE, root, part, y, material) => {
 
 export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS) {
   const point = new THREE.Vector3(), hidden = {}
+  const occupied = CAMPUS_BUILDING
+  const occludingAncestor = (object) => {
+    for (let current = object.parent; current; current = current.parent) if (current.userData?.campusOccluder) return current
+    return null
+  }
   scene.traverse((object) => {
     if (!object.isMesh || campusRoot.getObjectById(object.id)) return
     object.getWorldPosition(point)
-    if (point.x >= bounds.x0 && point.x <= bounds.x1 && point.z >= bounds.z0 && point.z <= bounds.z1) {
+    const occluder = occludingAncestor(object)
+    const anchor = occluder?.getWorldPosition(new THREE.Vector3()) || point
+    if ((occluder && anchor.x >= bounds.x0 && anchor.x <= bounds.x1 && anchor.z >= bounds.z0 && anchor.z <= bounds.z1) ||
+        (point.x >= occupied.x0 && point.x <= occupied.x1 && point.z >= occupied.z0 && point.z <= occupied.z1)) {
       object.visible = false
-      const type = object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'
+      const type = occluder?.name || (object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed')
       hidden[type] = (hidden[type] || 0) + 1
     }
   })

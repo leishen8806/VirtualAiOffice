@@ -31,15 +31,24 @@ test('B1 truck bays and 3.5m working strips are fully inside their owning zones'
   assert.equal(plan.truck.width, 2.55)
 })
 
-test('receiving uses the north yard, shipping uses Z14, and all routes declare 10m clearance within the expanded campus', () => {
+test('every route starts at Z14; receiving uses east then north yard turns with 10m clearance', () => {
   const byDock = new Map(CAMPUS_VEHICLE_ROUTES.map((route) => [route.dockId, route]))
+  const gate = CAMPUS_ZONES.find((zone) => zone.id === 'logisticsGate')
   assert.equal(byDock.size, 8)
   for (const dock of CAMPUS_DOCKS) {
     const route = byDock.get(dock.id)
-    assert.equal(route.entry, dock.side === 'north' ? 'north-yard' : 'Z14')
+    assert.equal(route.entry, 'Z14')
     assert.equal(route.turningRadius, 10)
     assert.ok(route.points.length >= 5)
+    assert.ok(route.points[0][0] >= gate.x0 && route.points[0][0] <= gate.x1 && route.points[0][1] >= gate.z0 && route.points[0][1] <= gate.z1, dock.id)
+    assert.equal(route.reverseSegments.length, 1, `${dock.id} reverse`)
+    assert.ok(route.turns.every((turn) => turn.exteriorRadius === 10 && inside(turn.bounds, CAMPUS)), dock.id)
     assert.ok(route.points.every(([x, z]) => x >= CAMPUS.x0 && x <= CAMPUS.x1 && z >= CAMPUS.z0 && z <= CAMPUS.z1), dock.id)
+  }
+  for (const dock of CAMPUS_DOCKS.filter((item) => item.side === 'north')) {
+    const route = byDock.get(dock.id)
+    assert.deepEqual(route.turns.map((turn) => turn.id), ['north-east', 'north-entry'])
+    assert.deepEqual(route.points.slice(0, 3), [[-72, 24], [-69.5, 24], [-69.5, -28]])
   }
   assert.equal(CAMPUS.x1, -65)
   assert.equal(CAMPUS.z0, -33)

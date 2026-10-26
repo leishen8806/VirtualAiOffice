@@ -261,6 +261,8 @@ export function buildLandmarks(scene, { rnd, leafMs, renderer }) {
   // ════════ 4) 塔仔山（左前）：绿色小山 + 白色佛塔 ════════
   {
     const g = new THREE.Group()
+    g.name = 'landmark-phnom-penh-hill'
+    g.userData.campusOccluder = true
     g.position.set(-150, -0.6, 40)
     scene.add(g)
     const hill = mesh(g, new THREE.SphereGeometry(30, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x4f8a3c, roughness: 1, flatShading: true }), 0, 0, 0)

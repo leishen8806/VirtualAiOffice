@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { CAMPUS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
-import { buildCampusShellSpec } from '../dr-campus-shell.js'
+import { buildCampusShellSpec, hideCampusEnvironment } from '../dr-campus-shell.js'
 import * as THREE from '../vendor/three/three.module.js'
 import { createCampusRegistry, mergeCampusStatic } from '../dr-campus-registry.js'
 
@@ -17,6 +17,23 @@ test('campus shell spec stays static, offset, and within the frozen site', () =>
   for (const part of parts.filter((part) => part.kind === 'thin')) assert.ok(part.offset >= .12, part.name)
   for (const zone of CAMPUS_ZONES.filter((item) => item.v1 === 'reserved')) assert.equal(parts.some((part) => part.name === `campus-zone-${zone.id}`), false)
   assert.ok(parts.some((part) => part.name === 'campus-shuttle-reserve' && part.x0 === CAMPUS_SHUTTLE_STRIP.x0))
+})
+
+test('campus hides only environment geometry that conflicts with the building footprint', () => {
+  const scene = new THREE.Scene(), campusRoot = new THREE.Group()
+  const foreground = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
+  foreground.name = 'foreground-conflict'; foreground.position.set(-100, 0, 0)
+  const distantTower = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
+  distantTower.name = 'distant-blue-glass-tower'; distantTower.position.set(-76, 0, -30)
+  const landmark = new THREE.Group()
+  landmark.name = 'landmark-phnom-penh-hill'; landmark.userData.campusOccluder = true; landmark.position.set(-150, 0, 40)
+  const landmarkMesh = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.MeshBasicMaterial())
+  landmark.add(landmarkMesh)
+  scene.add(campusRoot, foreground, distantTower, landmark)
+  assert.deepEqual(hideCampusEnvironment(THREE, scene, campusRoot), { 'foreground-conflict': 1, 'landmark-phnom-penh-hill': 1 })
+  assert.equal(foreground.visible, false)
+  assert.equal(distantTower.visible, true)
+  assert.equal(landmarkMesh.visible, false)
 })
 
 test('campus registry isolates an individual module failure', () => {
