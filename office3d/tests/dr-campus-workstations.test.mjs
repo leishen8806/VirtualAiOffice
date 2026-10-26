@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import * as THREE from '../vendor/three/three.module.js'
-import { CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
+import { CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
 import { buildCampusWorkstations, B3_WORKSTATION_PLAN } from '../dr-campus-workstations.js'
 import { buildCampusRacks } from '../dr-campus-racks.js'
 import { buildCampusMotion } from '../dr-campus-motion.js'
+import { createDemoCampusEventSource } from '../dr-campus-motion-logic.js'
 
 const overlap = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.z0 < b.z1 && a.z1 > b.z0
 const gap = (a, b) => Math.hypot(Math.max(a.x0 - b.x1, b.x0 - a.x1, 0), Math.max(a.z0 - b.z1, b.z0 - a.z1, 0))
@@ -20,6 +21,12 @@ const instanceBox = (root, mesh, index) => {
   mesh.getMatrixAt(index, matrix)
   mesh.geometry.computeBoundingBox()
   return new THREE.Box3().copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld.clone().multiply(matrix))
+}
+const items = (mesh, root) => Array.from({ length: mesh.count }, (_, index) => instanceBox(root, mesh, index))
+const distanceToSegment = (point, from, to) => {
+  const dx = to.x - from.x, dz = to.z - from.z, length2 = dx * dx + dz * dz
+  const t = Math.max(0, Math.min(1, ((point.x - from.x) * dx + (point.z - from.z) * dz) / length2))
+  return Math.hypot(point.x - (from.x + dx * t), point.z - (from.z + dz * t))
 }
 
 test('B3 approved workstation plan fixes all approved dimensions and corridors', () => {
@@ -66,22 +73,19 @@ test('B3 real scene replaces the three old stations and the old conveyor visual'
     oldStationsDisabled: ['station-inspection', 'station-picking', 'station-packing'],
   })
   assert.deepEqual(root.userData.campusRackSupport.ids, ['receiving-door-D01', 'receiving-door-D02', 'receiving-door-D03', 'receiving-door-D04', 'shipping-door-D05', 'shipping-door-D06', 'shipping-door-D07', 'shipping-door-D08'])
-  assert.ok(root.getObjectByName('campus-b3-conveyors'))
-  assert.equal(motion.summary().triangles, 112 * 12)
+  assert.ok(root.getObjectByName('b3-conveyor-belt'))
+  assert.equal(motion.summary().triangles, 116 * 12)
   motion.dispose()
   racks.dispose()
   workstations.dispose()
 })
 
-test('B3 real workstation meshes measure to the approved plan with Box3', () => {
+test('B3 real workstation meshes preserve the approved plan with Box3', () => {
   const root = new THREE.Group()
   const workstations = buildCampusWorkstations({ THREE, root, quality: { tier: 'high' } })
   root.updateMatrixWorld(true)
   const checks = [
-    ['b3-quality-tables', B3_WORKSTATION_PLAN.qualityTables],
-    ['b3-inspection-staging', [B3_WORKSTATION_PLAN.staging]],
-    ['b3-picking-racks', B3_WORKSTATION_PLAN.pickingRacks],
-    ['b3-packing-benches', B3_WORKSTATION_PLAN.packingBenches],
+    ['b3-table-tops', [...B3_WORKSTATION_PLAN.qualityTables, ...B3_WORKSTATION_PLAN.packingBenches]],
   ]
   for (const [name, items] of checks) {
     const mesh = root.getObjectByName(name)
@@ -92,5 +96,63 @@ test('B3 real workstation meshes measure to the approved plan with Box3', () => 
       close(measured.min.z, item.z0); close(measured.max.z, item.z1)
     })
   }
+  const shelves = root.getObjectByName('b3-picking-shelves')
+  B3_WORKSTATION_PLAN.pickingRacks.forEach((item, index) => {
+    const measured = instanceBox(root, shelves, index * 4)
+    close(measured.min.x, item.x0); close(measured.max.x, item.x1)
+    close(measured.min.z, item.z0); close(measured.max.z, item.z1)
+  })
+  workstations.dispose()
+})
+
+test('B3 R2 raised conveyor and detailed fixtures meet physical presentation rules', () => {
+  const root = new THREE.Group()
+  const workstations = buildCampusWorkstations({ THREE, root, quality: { tier: 'high' } })
+  root.updateMatrixWorld(true)
+  const belt = root.getObjectByName('b3-conveyor-belt')
+  const guards = root.getObjectByName('b3-conveyor-guards')
+  const legs = root.getObjectByName('b3-conveyor-legs')
+  const tops = root.getObjectByName('b3-table-tops')
+  const posts = root.getObjectByName('b3-picking-posts')
+  const pallets = root.getObjectByName('b3-stage-pallets')
+  assert.equal(belt.count, 4)
+  assert.equal(guards.count, 8)
+  assert.ok(legs.count >= 20)
+  assert.equal(pallets.count, 3)
+  assert.ok(tops.count === 16 && posts.count === 32)
+  for (const measured of items(belt, root)) close(measured.max.y - (-.54), .75)
+  const conveyorSegments = B3_WORKSTATION_PLAN.conveyors.flatMap(line => line.points.slice(0, -1).map((from, index) => [from, line.points[index + 1]]))
+  assert.equal(legs.count, conveyorSegments.reduce((count, [from, to]) => count + (Math.ceil(Math.hypot(to[0] - from[0], to[1] - from[1]) / 2) + 1) * 2, 0))
+  for (const mesh of [guards, legs, root.getObjectByName('b3-conveyor-rollers')]) for (const measured of items(mesh, root)) {
+    const point = measured.getCenter(new THREE.Vector3())
+    assert.ok(conveyorSegments.some(([from, to]) => distanceToSegment(point, { x: from[0], z: from[1] }, { x: to[0], z: to[1] }) <= .52), `${mesh.name} stays within belt envelope`)
+  }
+  workstations.dispose()
+})
+
+test('B3 cargo uses the new raised conveyor path without recreating legacy cargo or belts', () => {
+  let time = 0
+  const root = new THREE.Group()
+  const workstations = buildCampusWorkstations({ THREE, root, quality: { tier: 'high' } })
+  const motion = buildCampusMotion({
+    THREE, root, layout, quality: { tier: 'high' },
+    eventSource: createDemoCampusEventSource({ now: () => time }),
+  })
+  motion.onFrame(0)
+  time = 100
+  motion.onFrame(.1)
+  const cargoMesh = root.getObjectByName('campus-motion-0')
+  const matrix = new THREE.Matrix4(), point = new THREE.Vector3()
+  const path = root.userData.b3Workstations.conveyorPath
+  const lanes = path.slice(0, -1).map((from, index) => [from, path[index + 1]])
+  for (let index = cargoMesh.count - 4; index < cargoMesh.count; index++) {
+    cargoMesh.getMatrixAt(index, matrix)
+    point.setFromMatrixPosition(matrix)
+    close(point.y - .24, root.userData.b3Workstations.conveyorSurfaceY)
+    assert.ok(lanes.some(([from, to]) => distanceToSegment(point, from, to) <= .01), `cargo ${index} on new belt`)
+  }
+  assert.equal(root.getObjectByName('campus-b3-conveyors'), undefined)
+  assert.equal(root.getObjectByName('campus-motion-2'), undefined)
+  motion.dispose()
   workstations.dispose()
 })

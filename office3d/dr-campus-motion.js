@@ -17,7 +17,9 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
   const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), euler = new THREE.Euler()
   const vector = new THREE.Vector3(), scale = new THREE.Vector3()
   const forklift = forkliftPath(layout), trucks = truckPlan(layout), belts = conveyorLoop(layout)
-  const externalConveyors = Boolean(root.userData.b3Workstations)
+  const b3Workstations = root.userData.b3Workstations
+  const externalConveyors = Boolean(b3Workstations)
+  const b3Path = b3Workstations?.conveyorPath
   const pieces = [[], [], []]
   const add = (batch, kind, index, x, y, z, sx, sy, sz, color) => pieces[batch].push({ kind, index, x, y, z, sx, sy, sz, color })
   for (let i = 0; i < (low ? 1 : 2); i++) {
@@ -40,6 +42,9 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
     const path = belts[i], width = path[1].x - path[0].x
     add(2, 'fixed', i, (path[0].x + path[1].x) / 2, .58, path[0].z + .45, width + .6, .22, 1.5, 0x4a6870)
     for (let j = 0; j < 6; j++) add(2, 'cargo', i * 6 + j, 0, .92, 0, .65, .55, .6, 0xbc9560)
+  }
+  if (externalConveyors) for (let i = 0; i < (low ? 2 : 4); i++) {
+    add(2, 'b3-cargo', i, 0, b3Workstations.conveyorSurfaceY + .24, 0, .56, .48, .48, 0xbc9560)
   }
   const batches = [pieces.flat()]
   const meshes = batches.map((items, i) => {
@@ -89,6 +94,9 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
           z = p.z - item.x * Math.sin(angle) + item.z * Math.cos(angle)
         } else if (item.kind === 'cargo') {
           const p = pathPoint(belts[Math.floor(item.index / 6)], (conveyorEnabled ? elapsed : 0) + item.index % 6 * 2300, 1)
+          x = p.x; z = p.z; angle = p.angle
+        } else if (item.kind === 'b3-cargo') {
+          const p = pathPoint(b3Path, (conveyorEnabled ? elapsed : 0) + item.index * 3100, 1.2)
           x = p.x; z = p.z; angle = p.angle
         }
         quaternion.setFromEuler(euler.set(0, angle, 0))
