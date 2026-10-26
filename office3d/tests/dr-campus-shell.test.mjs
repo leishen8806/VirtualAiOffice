@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { CAMPUS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
-import { buildCampusShellSpec, campusVehicleClearance, hideCampusEnvironment } from '../dr-campus-shell.js'
+import { buildCampusShell, buildCampusShellSpec, CAMPUS_FINISHED_FLOOR_Y, campusVehicleClearance, hideCampusEnvironment } from '../dr-campus-shell.js'
 import * as THREE from '../vendor/three/three.module.js'
 import { createCampusRegistry, mergeCampusStatic } from '../dr-campus-registry.js'
 
@@ -99,4 +99,73 @@ test('campus app wiring remains limited and local-only', async () => {
   assert.ok(added.length <= 30, `added app.js lines: ${added.length}`)
   assert.match(current, /CAMPUS_MODE/)
   assert.doesNotMatch(added.join('\n'), /fetch\s*\(|innerHTML|\beval\s*\(/)
+})
+
+for (const tier of ['high', 'low']) test(`R2 ${tier}: ground zones and borders stay flat, unique and translucent after registry merge`, () => {
+  const root = new THREE.Group(), noop = () => {}
+  const context = new Proxy({}, { get: () => noop, set: () => true })
+  const shell = buildCampusShell({ THREE, root, quality: { tier }, canvasTex(w, h, draw) { draw(context, w, h); return new THREE.Texture() } })
+  const marks = root.children.filter(mesh => mesh.userData.campusGroundMark)
+  const specs = buildCampusShellSpec().filter(part => part.kind === 'volume')
+  const keys = new Set(specs.map(part => [part.x0, part.x1, part.z0, part.z1].join(',')))
+  assert.equal(marks.length, keys.size)
+  assert.ok(marks.length > 0)
+  const bounds = new THREE.Box3()
+  let markedVertices = 0, roofVertices = 0
+  for (const mesh of marks) {
+    bounds.setFromObject(mesh)
+    assert.ok(bounds.max.y - bounds.min.y < .00001, mesh.name)
+    assert.ok(bounds.min.y > CAMPUS_FINISHED_FLOOR_Y && bounds.max.y <= CAMPUS_FINISHED_FLOOR_Y + .02, mesh.name)
+    assert.ok(mesh.material.transparent && mesh.material.opacity <= .18, mesh.name)
+    assert.equal(mesh.material.depthWrite, false)
+    assert.ok(keys.has([bounds.min.x, bounds.max.x, bounds.min.z, bounds.max.z].join(',')), mesh.name)
+    markedVertices += mesh.geometry.attributes.position.count
+    const borders = root.children.filter(edge => edge.name.startsWith(`${mesh.name}-edge-`))
+    assert.equal(borders.length, 4)
+    for (const border of borders) {
+      bounds.setFromObject(border)
+      const width = Math.min(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z)
+      assert.ok(width >= .06 && width <= .1, border.name)
+      assert.ok(bounds.max.y <= CAMPUS_FINISHED_FLOOR_Y + .02)
+    }
+  }
+  for (const mesh of root.children.filter(mesh => mesh.name.startsWith('campus-roof-'))) {
+    assert.ok(mesh.material.opacity <= .15)
+    assert.equal(mesh.material.depthWrite, false)
+    roofVertices += mesh.geometry.attributes.position.count
+  }
+  const merged = mergeCampusStatic(THREE, root)
+  const batches = root.children.filter(mesh => mesh.name.startsWith('campus-transparent-batch-'))
+  assert.equal(batches.length, 1)
+  const batch = batches[0], color = batch.geometry.attributes.color, position = batch.geometry.attributes.position
+  assert.equal(color.itemSize, 4)
+  let groundCount = 0, roofCount = 0
+  for (let i = 0; i < color.count; i++) {
+    const alpha = color.getW(i) * batch.material.opacity
+    if (Math.abs(alpha - .16) < 1e-6) {
+      groundCount++
+      assert.ok(position.getY(i) > CAMPUS_FINISHED_FLOOR_Y && position.getY(i) <= CAMPUS_FINISHED_FLOOR_Y + .02)
+    } else if (Math.abs(alpha - .12) < 1e-6) roofCount++
+    else assert.ok(Math.abs(alpha - .46) < 1e-6, `unrelated alpha changed: ${alpha}`)
+  }
+  assert.equal(groundCount, markedVertices)
+  assert.equal(roofCount, roofVertices)
+  merged.dispose(); shell.dispose()
+})
+
+test('R2 merge preserves legacy transparent opacity and batch count alongside scoped surface opacity', () => {
+  const root = new THREE.Group()
+  for (const [x, opacity, scoped] of [[0, .28, false], [2, .72, false], [4, .16, true], [6, .12, true]]) {
+    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity })
+    material.userData.campusSurfaceOpacity = scoped
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material)
+    mesh.position.x = x; root.add(mesh)
+  }
+  const originals = root.children.map(mesh => mesh.material)
+  const result = mergeCampusStatic(THREE, root)
+  assert.equal(result.added, 1)
+  assert.equal(result.removed, 4)
+  const batch = root.children[0], colors = batch.geometry.attributes.color
+  for (let i = 0; i < colors.count; i++) assert.ok(Math.abs(colors.getW(i) * batch.material.opacity - [.46, .46, .16, .12][Math.floor(i / 4)]) < 1e-6)
+  result.dispose(); originals.forEach(material => material.dispose())
 })

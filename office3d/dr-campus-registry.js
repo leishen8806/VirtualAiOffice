@@ -2,20 +2,23 @@ const shape = geometry => Object.keys(geometry.attributes).filter(name => name !
 const isDynamic = object => { for (let node = object; node; node = node.parent) if (node.userData.dynamic) return true; return false }
 const isMergeable = mesh => mesh.isMesh && !mesh.isSkinnedMesh && !mesh.morphTargetInfluences && mesh.geometry?.attributes?.position && !Array.isArray(mesh.material) && !mesh.material?.map && !isDynamic(mesh)
 
-function bake(THREE, root, items) {
+function bake(THREE, root, items, transparent) {
   const signature = shape(items[0].mesh.geometry)
   if (items.some(item => shape(item.mesh.geometry) !== signature)) return null
   const local = new THREE.Matrix4().copy(root.matrixWorld).invert(), color = new THREE.Color(), white = new THREE.Color(1, 1, 1)
   const parts = items.map(item => {
     const geometry = item.mesh.geometry.clone()
     geometry.applyMatrix4(local.clone().multiply(item.matrix))
-    const base = item.mesh.material.color || white, source = geometry.getAttribute('color'), colors = new Float32Array(geometry.attributes.position.count * 3)
+    const size = transparent ? 4 : 3
+    const base = item.mesh.material.color || white, source = geometry.getAttribute('color'), colors = new Float32Array(geometry.attributes.position.count * size)
+    // 仅 R2 分区和屋顶保留原透明度，其他透明对象沿用既有的 0.46。
+    const alpha = item.mesh.material.userData.campusSurfaceOpacity === true ? item.mesh.material.opacity : .46
     for (let index = 0; index < geometry.attributes.position.count; index++) {
       color.copy(base).multiply(item.color || white)
       if (source) color.multiply({ r: source.getX(index), g: source.getY(index), b: source.getZ(index) })
-      colors.set([color.r, color.g, color.b], index * 3)
+      colors.set(transparent ? [color.r, color.g, color.b, alpha] : [color.r, color.g, color.b], index * size)
     }
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, size))
     return geometry
   })
   const names = Object.keys(parts[0].attributes), vertices = parts.reduce((total, geometry) => total + geometry.attributes.position.count, 0)
@@ -58,8 +61,8 @@ export function mergeCampusStatic(THREE, root) {
   for (const { type, items } of groups.values()) {
     const material = type === 'opaque'
       ? new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: .72, metalness: .18 })
-      : new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, opacity: .46, depthWrite: false, side: THREE.DoubleSide })
-    const geometry = bake(THREE, root, items)
+      : new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, opacity: 1, depthWrite: false, side: THREE.DoubleSide })
+    const geometry = bake(THREE, root, items, type === 'transparent')
     if (!geometry) { material.dispose(); continue }
     const mesh = new THREE.Mesh(geometry, material)
     mesh.name = `campus-${type}-batch-${added + 1}`; mesh.userData.qualityProxy = true; mesh.castShadow = false; mesh.receiveShadow = false

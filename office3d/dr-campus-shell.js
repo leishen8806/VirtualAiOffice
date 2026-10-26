@@ -107,17 +107,34 @@ export function buildCampusShell({ THREE, root, canvasTex, layout, quality }) {
   const mats = {
     paving: low ? flat : new THREE.MeshStandardMaterial({ color: 0xbcc4c6, roughness: .9, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     structure: low ? flat : new THREE.MeshStandardMaterial({ color: 0x53626a, roughness: .76, metalness: .3 }),
-    roof: low ? flat : new THREE.MeshStandardMaterial({ color: 0x75919a, roughness: .55, transparent: true, opacity: .34, depthWrite: false }),
-    zone: low ? flat : new THREE.MeshStandardMaterial({ color: 0x81979b, roughness: .8, transparent: true, opacity: .28 }),
+    roof: new THREE.MeshBasicMaterial({ color: 0x75919a, transparent: true, opacity: .12, depthWrite: false }),
+    zone: new THREE.MeshBasicMaterial({ color: 0xc4cfcd, transparent: true, opacity: .16, depthWrite: false }),
+    outline: new THREE.MeshBasicMaterial({ color: 0xd5af62 }),
     mark: low ? flat : new THREE.MeshBasicMaterial({ color: 0xd5af62, transparent: true, opacity: .72, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
     water: low ? flat : new THREE.MeshStandardMaterial({ color: 0x407c9e, roughness: .18, metalness: .35 }),
   }
+  mats.roof.userData.campusSurfaceOpacity = mats.zone.userData.campusSurfaceOpacity = true
+  const marked = new Set()
   for (const part of spec) {
     if (part.name === 'campus-paving') plane(THREE, root, part, part.offset - .6, mats.paving)
     else if (part.name === 'campus-building-floor') plane(THREE, root, part, part.offset - .6, mats.structure)
     else if (part.name.startsWith('campus-wall-')) cube(THREE, root, part, 2.25, 4.5, mats.structure)
     else if (part.name.startsWith('campus-roof-')) cube(THREE, root, part, 4.68, .28, mats.roof)
-    else if (part.kind === 'volume') cube(THREE, root, part, .42, .72, mats.zone)
+    else if (part.kind === 'volume') {
+      // logisticsGate 同时来自分区和独立入口项，同一地面只着色一次。
+      const key = [part.x0, part.x1, part.z0, part.z1].join(',')
+      if (marked.has(key)) continue
+      marked.add(key)
+      const mesh = plane(THREE, root, part, CAMPUS_FINISHED_FLOOR_Y + .008, mats.zone)
+      mesh.userData.campusGroundMark = true
+      const width = .08
+      const borders = [
+        { ...part, z1: part.z0 + width }, { ...part, z0: part.z1 - width },
+        { ...part, x1: part.x0 + width, z0: part.z0 + width, z1: part.z1 - width },
+        { ...part, x0: part.x1 - width, z0: part.z0 + width, z1: part.z1 - width },
+      ]
+      borders.forEach((bounds, index) => plane(THREE, root, { ...bounds, name: `${part.name}-edge-${index}` }, CAMPUS_FINISHED_FLOOR_Y + .012, mats.outline))
+    }
     else if (part.kind === 'water') plane(THREE, root, part, part.offset - .6, mats.water)
     else if (part.name === 'campus-shuttle-reserve') plane(THREE, root, part, CAMPUS_FINISHED_FLOOR_Y + .002, mats.mark)
     else if (part.name !== 'campus-sign') plane(THREE, root, part, part.offset - .6, mats.mark)
