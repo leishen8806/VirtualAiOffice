@@ -159,29 +159,58 @@ export function checkEvidence(cardDir, extraDirs = []) {
   return problems.length ? result('C5', '证据校验单', 'FAIL', problems.join('；')) : result('C5', '证据校验单', 'PASS', ok.join('；'))
 }
 
-// 回执里每一条 `node … --test …` 命令都要单独满足资源上限；续行（行尾 \ 或 ^）先拼成一条。
+// 回执里每一条 `node … --test …` 命令都要单独满足资源上限。
+// 续行（行尾 \ 或 ^）先拼成一行；一行里用 ; && || | 连写的多条命令、或连着出现的多个 node 调用，拆开逐条检查。
 export function testCommands(receiptText) {
   const joined = receiptText.replace(/[\\^]\r?\n\s*/g, ' ')
-  return joined.split(/\r?\n/).map((l) => l.trim()).filter((l) => /\bnode(\.exe)?\b[^\n]*\s--test(?=\s|$|`)/.test(l))
+  const cmds = []
+  for (const line of joined.split(/\r?\n/)) {
+    for (const part of line.split(/\s*(?:;|&&|\|\||\|)\s*/)) {
+      const starts = [...part.matchAll(/\bnode(?:\.exe)?(?=\s)/g)].map((m) => m.index)
+      starts.forEach((s, i) => cmds.push(part.slice(s, starts[i + 1] ?? part.length).trim()))
+    }
+  }
+  return cmds.filter((c) => /\s--test(?=\s|$|`)/.test(c))
+}
+
+// 一条命令里同一参数出现多次时，每一次都必须是规定值（例如 --test-concurrency=1 后面又跟 --test-concurrency=8 不算合规）。
+const allValues = (cmd, flag) => [...cmd.matchAll(new RegExp(`${flag}[= ](\\S+)`, 'g'))].map((m) => m[1].replace(/[`'"]/g, ''))
+const compliant = (cmd) => {
+  const mem = allValues(cmd, '--max-old-space-size'), conc = allValues(cmd, '--test-concurrency')
+  return mem.length > 0 && mem.every((v) => v === '1024') && conc.length > 0 && conc.every((v) => v === '1')
 }
 
 export function checkTestFlags(receiptText) {
   const cmds = testCommands(receiptText)
   if (!cmds.length) return /NOT_RUN/.test(receiptText) ? result('C6', '测试参数', 'WARN', '回执没有 node --test 命令，且标了 NOT_RUN')
     : result('C6', '测试参数', 'FAIL', '回执没有写实际运行的 node --test 命令')
-  const bad = cmds.filter((c) => !/--max-old-space-size=1024\b/.test(c) || /--max-old-space-size=(?!1024\b)\d+/.test(c) || !/--test-concurrency[= ]1\b/.test(c))
+  const bad = cmds.filter((c) => !compliant(c))
   if (bad.length) return result('C6', '测试参数', 'FAIL', `${bad.length} 条测试命令缺少 1024 MB 上限或串行参数，如：${bad[0].slice(0, 120)}`)
   return result('C6', '测试参数', 'PASS', `${cmds.length} 条测试命令都带 --max-old-space-size=1024 与 --test-concurrency=1`)
 }
 
-// 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测"的那一行，本行必须写 NOT_RUN；
-// 别处出现的 NOT_RUN 不能替这一行作证。
+const NOT_RUN_WORDS = /未运行|没跑|未执行|没有运行|未测|NOT_RUN/
+
+// 一段文字是否"宣称通过"：先去掉否定写法（未通过、不计为通过、不算通过……）和计数写法（"1473 通过"），剩下仍有"通过 / PASS"才算宣称。
+export const claimsPass = (text) => /通过|\bPASS(ED)?\b/i.test(text
+  .replace(/(未|不|没有?|不能算|不计为|不算|不视为|并非|并未)\s*通过/g, '')
+  .replace(/\d[\d,]*\s*(项|条|个)?\s*(通过|PASS(ED)?)/gi, '')
+  .replace(/\bNOT[_ ]PASS(ED)?\b/gi, ''))
+
+// 同一小句（按句号、分号切开）里既说未运行、又宣称通过，才是状态矛盾。
+// "A1：通过（未运行，NOT_RUN）" 是矛盾；"A5 通过：……；跳过项列为 NOT_RUN，不算通过" 不是。
+export const contradictory = (line) => line.split(/[。；;]/).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
+
+// 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
+// 本行必须写 NOT_RUN（别处的 NOT_RUN 不能替这一行作证），并且同一小句里不能同时宣称"通过"。
 export function checkNotRun(receiptText) {
-  const lines = receiptText.split(/\r?\n/).filter((l) => /未运行|没跑|未执行|没有运行|未测/.test(l))
+  const lines = receiptText.split(/\r?\n/).filter((l) => NOT_RUN_WORDS.test(l))
   if (!lines.length) return result('C7', '未运行要写明', 'PASS', '回执没有提到未运行的项')
-  const bad = lines.filter((l) => !/NOT_RUN/.test(l))
-  if (bad.length) return result('C7', '未运行要写明', 'FAIL', `${bad.length} 行提到未运行却没在本行写 NOT_RUN，如：${bad[0].trim().slice(0, 120)}`)
-  return result('C7', '未运行要写明', 'PASS', `${lines.length} 行未运行项都写了 NOT_RUN`)
+  const missing = lines.filter((l) => !/NOT_RUN/.test(l))
+  if (missing.length) return result('C7', '未运行要写明', 'FAIL', `${missing.length} 行提到未运行却没在本行写 NOT_RUN，如：${missing[0].trim().slice(0, 120)}`)
+  const contradict = lines.filter(contradictory)
+  if (contradict.length) return result('C7', '未运行要写明', 'FAIL', `${contradict.length} 行同时写了未运行和"通过"，状态矛盾，如：${contradict[0].trim().slice(0, 120)}`)
+  return result('C7', '未运行要写明', 'PASS', `${lines.length} 行未运行项都写了 NOT_RUN，且没有同时宣称通过`)
 }
 
 const REQUIRED = [['卡号', /卡号/], ['代码', /代码[：:]/], ['需求哈希', /需求哈希|按哪一版/], ['执行方', /执行方/], ['验收', /验收|A1\b/], ['测试', /测试|--test\b/], ['范围自查', /范围自查|范围/]]

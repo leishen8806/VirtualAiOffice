@@ -80,6 +80,33 @@ test('审查 P2-4：C6 逐条检查测试命令，一条合规不能掩盖另一
   assert.equal(checkTestFlags('测试：略，全部通过').status, 'FAIL', '没有命令也没有 NOT_RUN 要判失败')
 })
 
+// ---- PR #50 第二轮审查（Codex @ b07e609）新增的 3 个边界输入 ----
+
+test('复审 C6-a：同一行用 ; 连写的第二条测试命令缺少资源上限要判失败', () => {
+  const r = checkTestFlags('node --max-old-space-size=1024 --test --test-concurrency=1 tests/a.test.mjs; node --test tests/*.test.mjs')
+  assert.equal(r.status, 'FAIL')
+  assert.equal(checkTestFlags('node --max-old-space-size=1024 --test --test-concurrency=1 a.mjs && node --max-old-space-size=1024 --test --test-concurrency=1 b.mjs').status, 'PASS')
+})
+
+test('复审 C6-b：同一参数出现冲突取值（并发 1 与 8）要判失败', () => {
+  assert.equal(checkTestFlags('node --max-old-space-size=1024 --test --test-concurrency=1 --test-concurrency=8 tests/*.test.mjs').status, 'FAIL')
+  assert.equal(checkTestFlags('node --max-old-space-size=1024 --max-old-space-size=4096 --test --test-concurrency=1 x').status, 'FAIL')
+})
+
+test('复审 C7：同一行"通过"与"未运行 / NOT_RUN"并存判失败；"未通过 / 不计为通过"不误判', () => {
+  assert.equal(checkNotRun('A1 浏览器验收：通过（未运行，NOT_RUN）').status, 'FAIL')
+  assert.equal(checkNotRun('A2：PASS（NOT_RUN）').status, 'FAIL')
+  assert.equal(checkNotRun('跳过项（NOT_RUN），不计为通过').status, 'PASS')
+  assert.equal(checkNotRun('A3：未通过；端到端未运行，NOT_RUN').status, 'PASS')
+  assert.equal(checkNotRun('A4 浏览器：NOT_RUN（缺少 Playwright）').status, 'PASS')
+})
+
+test('复审 C7 不误判：通过计数、以及同一行另一小句里的 NOT_RUN（取自真实回执）', () => {
+  assert.equal(checkNotRun('相对 R6 已交日志（1476 总项、1473 通过、0 失败、3 跳过），无新增失败；没有重跑 R6 全量。原三个 NOT_RUN：D-V1-R5 几何验收').status, 'PASS')
+  assert.equal(checkNotRun('- **A5 通过**：全量测试退出 0、无新增失败；实际计数见下文。跳过项单独列为 NOT_RUN，不算通过。').status, 'PASS')
+  assert.equal(checkNotRun('A6 浏览器：已通过（未运行 NOT_RUN）；A7 另行说明').status, 'FAIL', '同一小句里的矛盾仍要拒绝')
+})
+
 test('审查 P2-5：C7 逐行判断，别处的 NOT_RUN 不能替"未运行却报通过"的那一行作证', () => {
   const receipt = 'A6 浏览器：未运行，已通过\nA7 端到端：NOT_RUN（缺少 Playwright）\n'
   const r = checkNotRun(receipt)
