@@ -1,6 +1,7 @@
 import { OFFICE_THEME_V2 as THEME } from './office-theme-v2.js'
 import { resolveWallOcclusion } from './office-v3-occlusion.js'
 import { officePlan1InnerWalls } from './office-plan1-layout.js'
+import { buildPlan1Facade, buildPlan1Reception } from './office-vis2/plan1-walls.js'
 
 const boxMatrix = (THREE, matrix, x0, x1, y, h, z0, z1) => matrix.makeScale(x1 - x0, h, z1 - z0).setPosition((x0 + x1) / 2, y + h / 2, (z0 + z1) / 2)
 const sideNormal = { north: { x: 0, z: -1 }, south: { x: 0, z: 1 }, west: { x: -1, z: 0 }, east: { x: 1, z: 0 } }
@@ -14,9 +15,9 @@ const wallSegments = (layout) => {
     line({x:layout.envelope.x0,z:layout.envelope.z0},{x:layout.envelope.x1,z:layout.envelope.z0},'north'),
     line({x:layout.envelope.x0,z:layout.envelope.z0},{x:layout.envelope.x0,z:15},'west'),
     line({x:layout.envelope.x1,z:15},{x:layout.envelope.x1,z:layout.envelope.z0},'east'),
-    ...arcLines(layout.entrance.leftArc),
+    ...splitSouthArcs(arcLines(layout.entrance.leftArc), layout),
     line({x:-4,z:18},{x:-1,z:18},'south'), line({x:5,z:18},{x:8,z:18},'south'),
-    ...arcLines(layout.entrance.rightArc),
+    ...splitSouthArcs(arcLines(layout.entrance.rightArc), layout),
   ]
   const e = layout.envelope, doors = layout.doors
   const sides = [
@@ -33,6 +34,13 @@ const wallSegments = (layout) => {
     if (cursor < hi) parts.push({ side, lo: cursor, hi, fixed0, fixed1 })
   }
   return parts
+}
+function splitSouthArcs(segments, layout) {
+  return segments.flatMap(s => {
+    const points = [s.a, ...(layout.walls?.southProfile?.slice(1,-1) || []).filter(p => p.x > Math.min(s.a.x,s.b.x)+1e-8 && p.x < Math.max(s.a.x,s.b.x)-1e-8).map(p => ({x:p.x,z:s.a.z+(s.b.z-s.a.z)*(p.x-s.a.x)/(s.b.x-s.a.x)})), s.b]
+    points.sort((a,b)=>(a.x-b.x)*Math.sign(s.b.x-s.a.x))
+    return points.slice(1).map((b,i)=>line(points[i],b,s.side))
+  })
 }
 const roomSegments = layout => layout.regions.filter(room => layout.variant !== 'align' || room.walled === true).flatMap(room => {
   const result = []
@@ -101,7 +109,9 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   }
   const lowerEntries = [], lowerColors = [], glassEntries = []
   const wallState = []
-  for (const segment of spec.outer) {
+  const facade = layout.walls?.southProfile ? buildPlan1Facade(THREE, root, layout, spec.outer, warm) : null
+  const reception = layout.walls?.reception ? buildPlan1Reception({THREE,root,layout,collision,low}) : null
+  for (const segment of facade ? [] : spec.outer) {
     const matrix = segmentMatrix(THREE,segment,0,outerHeight)
     lowerEntries.push({ matrix }); lowerColors.push(new THREE.Color(exteriorColor))
     const index = lowerEntries.length - 1, capIndex = capHeight ? lowerEntries.length : -1
@@ -109,6 +119,7 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
     wallState.push({ matrix, segment, side: segment.side, base: outerHeight, capHeight, capIndex, index })
   }
   for (const segment of spec.inner) {
+    if (segment.reception) continue
     if(segment.a){const solidHeight=segment.kind==='solid'?2.2:.9;if(solidHeight) {lowerEntries.push({matrix:segmentMatrix(THREE,segment,0,solidHeight,.14)});lowerColors.push(new THREE.Color(THEME.interiorWall))}if(!low&&segment.kind==='glass')glassEntries.push({matrix:segmentMatrix(THREE,segment,solidHeight,2.2-solidHeight,.14)});continue}
     const vertical = segment.side === 'west' || segment.side === 'east',x0=vertical?(segment.side==='west'?segment.room.x0:segment.room.x1-.14):segment.lo,x1=vertical?(segment.side==='west'?segment.room.x0+.14:segment.room.x1):segment.hi,z0=vertical?segment.lo:(segment.side==='north'?segment.room.z0:segment.room.z1-.14),z1=vertical?segment.hi:(segment.side==='north'?segment.room.z0+.14:segment.room.z1),solidHeight=['board','review','plan'].includes(segment.room.id)?.9:0
     if(solidHeight){lowerEntries.push(matrixEntry(THREE,x0,x1,0,solidHeight,z0,z1));lowerColors.push(new THREE.Color(THEME.interiorWall))}if(!low)glassEntries.push(matrixEntry(THREE,x0,x1,solidHeight,2.2-solidHeight,z0,z1))
@@ -125,6 +136,7 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const innerGlass = addInstances(THREE, root, 'office3-inner-glass', glass, glassEntries)
   const collisionEntries = []
   for (const segment of spec.inner) {
+    if (segment.reception) continue
     if(segment.a){collisionEntries.push({matrix:segmentMatrix(THREE,segment,0,2.2,.14)});continue}
     const vertical = segment.side === 'west' || segment.side === 'east'
     collisionEntries.push(matrixEntry(THREE,
@@ -141,11 +153,23 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const windowEntries = low || outerStyle ? [] : spec.outer.map(segment => ({matrix:segmentMatrix(THREE,segment,3.5,1)}))
   const windows = addInstances(THREE, root, 'office3-window-band', glass, windowEntries)
   const update = (dt, { camera } = {}) => {
-    if (!walls || !camera || !wallState.length) return
+    if (!walls || !camera || (!wallState.length && !facade)) return
     const elevation = Math.atan2(camera.position.y - 0.1, Math.hypot(camera.position.x - layout.axis.x, camera.position.z - layout.axis.z)) * 180 / Math.PI
     const outside = camera.position.x < layout.envelope.x0 || camera.position.x > layout.envelope.x1 || camera.position.z < layout.envelope.z0 || camera.position.z > layout.envelope.z1
     const exteriorNear = layout.plan1Phase === 'L1' && outside && Math.hypot(Math.max(layout.envelope.x0-camera.position.x,0,camera.position.x-layout.envelope.x1),Math.max(layout.envelope.z0-camera.position.z,0,camera.position.z-layout.envelope.z1)) <= 12
     const target = { x: layout.axis.x, z: (layout.envelope.z0 + layout.envelope.z1) / 2 }
+    if (facade) {
+      let changed = false
+      for (const state of facade.states) {
+        const normal = sideNormal[state.segment.side] || state.segment.normal
+        for (let i=0;i<2;i++) {
+          const next=resolveWallOcclusion({elevation:exteriorNear?90:elevation,cameraPosition:camera.position,target,wallNormal:normal,thresholds:{...layout.wallHeight.occlusion,standard:state.heights[i]}})
+          const value=state.current[i]+(next.height-state.current[i])*Math.min(1,Math.max(0,dt||0)*1000/layout.wallHeight.occlusion.transitionMs)
+          if(Math.abs(value-state.current[i])>1e-6){state.current[i]=value;changed=true}
+        }
+      }
+      if(changed)facade.write()
+    }
     for (const state of wallState) {
       const normal=sideNormal[state.side]||state.segment.normal,next = resolveWallOcclusion({ elevation: exteriorNear ? 90 : elevation, cameraPosition: camera.position, target, wallNormal: normal, thresholds: { ...layout.wallHeight.occlusion, standard: state.base } })
       state.height += (next.height - state.height) * Math.min(1, Math.max(0, dt || 0) * 1000 / layout.wallHeight.occlusion.transitionMs)
@@ -159,9 +183,10 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   }
   // 初始外墙完整高度；只有相机低于阈值时按帧改变视觉代理。
   wallState.forEach(state => { state.height = state.base })
-  return { root, spec, ground, green, walls, innerGlass, windows, onFrame: update, dispose() {
+  return { root, spec, ground, green, walls, innerGlass, windows, facade, reception, onFrame: update, dispose() {
     if (disposed) return
     disposed = true
+    facade?.dispose(); reception?.dispose()
     for (const proxy of proxies) { collision?.remove?.(proxy); proxy.geometry.dispose(); proxy.removeFromParent() }
     for (const material of [warm, floorMaterial, greenMaterial, inner, glass]) material.dispose()
     for (const mesh of [ground, green, walls, innerGlass, windows]) { mesh?.geometry.dispose(); mesh?.removeFromParent() }

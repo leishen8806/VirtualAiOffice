@@ -95,7 +95,7 @@
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "1ACE77DDCE8F07E7E4593DF9604ABD7AD778B70FF84225339580C0EB889A9C35",
+      "sha256": "9AA35F59A2B7249F10C9BC6AB8CAB037BD4105DD78726A6F83D74517C4483D31",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -109,14 +109,14 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "82E7DDA911931BED188F0E1D4B97AB848A7D2CC70D62075274FB08823BAE1EEE",
+      "sha256": "CDDE73F21760BACCA5CB5CF45687C1E8D9C9BFD0F3AD922E616A68721E1CA069",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/brand.js",
-      "sha256": "964268740E5E2DF0B610E15F6D70967EA3CCB93A5B50ABC5852F0FCC7F406127",
+      "sha256": "071D595DD75D90F318B1D775213E9134AFABD215527D70D40C6EB9447D594C79",
       "source": "Private procedural brand plaques adjusted to the existing counter radius in VIS2-O-R3",
       "license": "Repository MIT for the source code; logo provenance remains recorded separately",
       "photographicTexture": false
@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "349C1C06EFBE1FB22EB6317EDC5C746D38E49A9309B31A50090E45056EEA3F08"
+      "sha256": "AE6C9002411285654716545BB3D1670667D5E1118B6D420281E16E736D456A97"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -253,6 +253,13 @@
       "source": "O1O2-R1b original market work-island assembly; reuses existing Kenney desk/chair/computer assets and QA divider/cabinet geometry; no downloads",
       "license": "Repository MIT; existing Kenney assets CC0 as recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false
+    },
+    {
+      "file": "office-vis2/plan1-walls.js",
+      "source": "OFFICE-L1 R3 original sloped facade and reception geometry; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "82E145968E336D385762AC58C78F96BE4F08B4AF9FCD61EF722B00836C9ABC6A"
     }
   ],
   "excluded": {

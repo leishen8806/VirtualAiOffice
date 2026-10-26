@@ -1,7 +1,10 @@
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
+import { officePlan1Reception } from '../office-plan1-layout.js'
 
-export function receptionBackdrop(front) {
+export function receptionBackdrop(front, layout) {
+  const wall = layout && officePlan1Reception(layout)?.wall
+  if (wall) return { ...wall, top:wall.height, grille:{height:wall.height,depth:0,faceZ:wall.z1} }
   return { x0: front.x0 + .35, x1: front.x1 - .35, z0: front.z0 - .45, z1: front.z0 - .29, top: 2.35,
     grille: { height: 2.3, depth: .045, faceZ: front.z0 - .29 + .04 + .045 / 2 } }
 }
@@ -31,9 +34,11 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
   box(.055, .018, .08, '#9A968E', front.center.x + 1.53, 1.182, front.center.z - .4, .6)
   box(.36, .018, .25, '#B7C2B4', front.center.x - 1.5, 1.179, front.center.z, .95)
   box(.31, .025, .22, '#F4F1EA', front.center.x - 1.5, 1.2, front.center.z, .9)
-  const backdrop = receptionBackdrop(front), grille = backdrop.grille
+  const backdrop = receptionBackdrop(front, layout), grille = backdrop.grille
+  if (!layout.walls?.reception) {
   box(backdrop.x1 - backdrop.x0, backdrop.top, .16, '#D9D3C6', front.center.x, backdrop.top / 2, (backdrop.z0 + backdrop.z1) / 2, .75)
   for (let i = 0; i < 14; i++) box(.055, grille.height, grille.depth, '#C9A57A', front.x0 + .5 + i * (front.x1 - front.x0 - 1) / 13, grille.height / 2, grille.faceZ - grille.depth / 2, .65, 0, 'wood')
+  }
   const bw = bar.x1 - bar.x0, bd = bar.z1 - bar.z0
   box(bw, .85, bd * .55, '#C9A57A', bar.center.x, .5, bar.center.z, .65, 0, 'wood')
   box(bw + .02, .07, bd * .58, '#F4F1EA', bar.center.x, .96, bar.center.z, .35, 0, 'stone')

@@ -31,7 +31,7 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
   // 主场景已有地面、墙与入口；预览围合不能遮盖它们或挡住已验收的侧行路线。
   if (!includeEnclosure) { fixed.mesh.removeFromParent(); panels.removeFromParent() }
   try { if (canvasTex) {
-    const surface = receptionBackdrop(layout.frontDesk).grille
+    const surface = receptionBackdrop(layout.frontDesk, layout).grille
     const welcome = layout.variant === 'align'
     texture = canvasTex(1024, welcome ? 256 : 64, (ctx, width, height) => {
       ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'

@@ -3,11 +3,14 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V1, LAYOUT_V2, LAYOUT_V3, LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_SAMPLE, createOfficeNavigation, resolveOfficeLayout, workHome } from '../office-layout.js'
-import { OFFICE_PLAN1_REGIONS, OFFICE_PLAN1_SEATS, OFFICE_PLAN1_WALLS } from '../office-plan1-layout.js'
+import { OFFICE_PLAN1_REGIONS, OFFICE_PLAN1_SEATS, OFFICE_PLAN1_WALLS, officePlan1Reception, officePlan1SouthHeight } from '../office-plan1-layout.js'
 import { buildOfficeShellV3, buildOfficeShellV3Spec } from '../office-layout-v3-scene.js'
 import { buildOfficeAlignedShell } from '../office-vis2/shell-finish.js'
 import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
 import { buildOfficePlazaHost } from '../office-vis2/plaza-host.js'
+import { receptionBackdrop } from '../office-vis2/foyer.js'
+import { buildOfficeBrandMarks } from '../office-vis2/brand.js'
+import { buildOfficeVis2Frontage } from '../office-vis2/frontage.js'
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const pointInPolygon = (point, polygon) => {
@@ -62,7 +65,7 @@ test('L1 carries the approved 48x36 shell, 13 regions, curved product footprint 
   assert.equal(product.footprint.length, 28)
   assert.deepEqual(layout.regions, OFFICE_PLAN1_REGIONS)
   const shell = buildOfficeShellV3Spec(layout)
-  assert.equal(shell.outer.length, 29)
+  assert.equal(shell.outer.length, 31)
   assert.ok(shell.outer.some(wall => wall.a && wall.a.x !== wall.b.x && wall.a.z !== wall.b.z), 'entrance uses chorded arcs')
 })
 
@@ -76,36 +79,73 @@ test('L1 hides legacy plaza objects until L3 so no outside object enters the off
   host.dispose()
 })
 
-test('L1 outer wall is actual 4.5m warm solid with 0.1m cap and stays full from exterior proof cameras', () => {
-  const layout = LAYOUT_V3_ALIGN_SAMPLE, root = new THREE.Group(), shell = buildOfficeShellV3({ THREE, root, layout, low: false })
-  assert.deepEqual(layout.walls, OFFICE_PLAN1_WALLS)
-  assert.deepEqual(layout.walls.outerSolid, { height: 4.5, thickness: .18, capHeight: .1, finish: '#F4F1EA' })
-  assert.equal(shell.windows, null, 'L1 exterior is solid rather than the legacy 3.5m wall plus window band')
-  const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), rotation = new THREE.Quaternion(), scale = new THREE.Vector3()
-  const outerCount = shell.spec.outer.length
-  assert.ok(outerCount >= 29)
-  for (let index = 0; index < outerCount; index++) {
-    shell.walls.getMatrixAt(index * 2, matrix); matrix.decompose(position, rotation, scale)
-    assert.ok(Math.abs(scale.y - 4.5) < 1e-6, `wall ${index} height`)
-    assert.ok(Math.abs(position.y - 2.25) < 1e-6, `wall ${index} base`)
-    shell.walls.getMatrixAt(index * 2 + 1, matrix); matrix.decompose(position, rotation, scale)
-    assert.ok(Math.abs(scale.y - .1) < 1e-6, `cap ${index} height`)
-    assert.ok(Math.abs(position.y - 4.55) < 1e-6, `cap ${index} top`)
+test('R3 continuous south slopes have actual geometry, 0.1m caps and the existing camera cutaway', () => {
+  const layout=LAYOUT_V3_ALIGN_SAMPLE, root=new THREE.Group(), shell=buildOfficeShellV3({THREE,root,layout})
+  assert.deepEqual(layout.walls,OFFICE_PLAN1_WALLS)
+  assert.deepEqual(layout.walls.outerSolid,{height:4.5,thickness:.18,capHeight:.1,finish:'#F4F1EA'})
+  assert.equal(shell.windows,null)
+  assert.equal(shell.facade.mesh.material.color.getHexString().toUpperCase(),'F4F1EA')
+  const p=shell.facade.mesh.geometry.attributes.position
+  // Downward ray samples the actual cap surface, not just the input profile.
+  const measure=(x)=>{
+    const state=shell.facade.states.find(s=>!['north','west','east'].includes(s.segment.side)&&x>=Math.min(s.segment.a.x,s.segment.b.x)-1e-5&&x<=Math.max(s.segment.a.x,s.segment.b.x)+1e-5)
+    assert.ok(state,`south segment at ${x}`)
+    const {a,b}=state.segment,z=a.z+(b.z-a.z)*(x-a.x)/(b.x-a.x)
+    shell.facade.mesh.updateMatrixWorld(true)
+    const hit=new THREE.Raycaster(new THREE.Vector3(x,10,z),new THREE.Vector3(0,-1,0)).intersectObject(shell.facade.mesh)[0]
+    assert.ok(hit,`physical surface at ${x}`);return hit.point.y
   }
-  assert.equal(shell.walls.material.color.getHexString().toUpperCase(), 'F4F1EA')
-  shell.onFrame(1, { camera: { position: { x: 2, y: 1.65, z: 28 } } })
-  for (let index = 0; index < outerCount; index++) {
-    shell.walls.getMatrixAt(index * 2, matrix); matrix.decompose(position, rotation, scale)
-    assert.ok(Math.abs(scale.y - 4.5) < 1e-6, `exterior wall ${index} remains full`)
+  for(const x of [-22,-15.2,-10,-4,8,14,19.2,26]){
+    const expected=officePlan1SouthHeight(layout,x)
+    assert.ok(Math.abs(measure(x)-expected-.1)<1e-4,`sloped wall/cap at ${x}`)
+    assert.ok(Math.abs(officePlan1SouthHeight(layout,4-x)-expected)<1e-8)
   }
-  shell.onFrame(1, { camera: { position: { x: 2, y: 1.65, z: 10 } } })
-  const southIndex = shell.spec.outer.findIndex(segment => segment.side === 'south')
-  shell.walls.getMatrixAt(southIndex * 2, matrix); matrix.decompose(position, rotation, scale)
-  assert.ok(Math.abs(scale.y - layout.wallHeight.occlusion.loweredHeight) < 1e-6, 'interior low camera retains cutaway')
-  shell.onFrame(1, { camera: { position: { x: 2, y: 1.65, z: 60 } } })
-  shell.walls.getMatrixAt(southIndex * 2, matrix); matrix.decompose(position, rotation, scale)
-  assert.ok(Math.abs(scale.y - layout.wallHeight.occlusion.loweredHeight) < 1e-6, 'distant overview still lowers the camera-facing wall')
-  shell.dispose()
+  const before=Array.from(p.array)
+  for(const position of [{x:2,y:1.65,z:28},{x:-9.4,y:2.09,z:26.3},{x:2,y:66,z:43}]){
+    shell.onFrame(1,{camera:{position}});assert.deepEqual(Array.from(p.array),before,'exterior near and 58-degree overview preserve heights')
+  }
+  for(const position of [{x:2,y:1.65,z:10},{x:2,y:1.65,z:60}]){
+    shell.onFrame(1,{camera:{position}})
+    assert.ok(Math.abs(measure(-3)-1)<1e-5,'low camera south height .9 plus cap .1')
+  }
+  shell.onFrame(1,{camera:{position:{x:2,y:1.65,z:28}}});assert.deepEqual(Array.from(p.array),before)
+  for(const state of shell.facade.states.filter(s=>['north','east','west'].includes(s.segment.side)))assert.deepEqual(state.current,[4.5,4.5])
+  shell.dispose();shell.dispose()
+})
+
+test('R3 reception wall, passable paired doors, pillars and collision volumes use the same geometry',()=>{
+  const layout=LAYOUT_V3_ALIGN_SAMPLE,data=officePlan1Reception(layout),root=new THREE.Group(),registered=new Set()
+  const other={};registered.add(other)
+  const shell=buildOfficeShellV3({THREE,root,layout,collision:{add:p=>registered.add(p),remove:p=>registered.delete(p)}})
+  assert.deepEqual(data.doors.map(d=>[d.x0,d.x1,d.height]),[[-2.6,0,2.7],[4,6.6,2.7]])
+  assert.deepEqual([data.wall.x0,data.wall.x1,data.wall.height],[0,4,3])
+  assert.equal(data.centerX,2)
+  for(const c of data.columns){assert.ok(Math.abs(c.x1-c.x0-.8)<1e-8);assert.equal(c.height,3.6)}
+  assert.ok(Math.abs(data.columns[0].x0+data.columns[1].x1-4)<1e-8)
+  assert.equal(shell.reception.transparent.mesh.material.opacity,.1)
+  assert.equal(shell.reception.proxies.length,data.blockers.length)
+  shell.reception.proxies.forEach((mesh,i)=>{
+    mesh.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(mesh),spec=data.blockers[i]
+    for(const axis of ['x','z']){assert.ok(Math.abs(box.min[axis]-spec[axis+'0'])<1e-6);assert.ok(Math.abs(box.max[axis]-spec[axis+'1'])<1e-6)}
+    assert.ok(Math.abs(box.max.y-spec.height)<1e-6)
+  })
+  for(const d of data.doors)for(const p of data.blockers)assert.equal(segmentHitsBox({x:(d.x0+d.x1)/2,z:6.5},{x:(d.x0+d.x1)/2,z:10},{x0:p.x0-.28,x1:p.x1+.28,z0:p.z0-.28,z1:p.z1+.28}),false)
+  assert.deepEqual(layout.walls.gatePost,{width:.3,depth:.3,height:2.4,color:'#B89B64'})
+  shell.dispose();shell.dispose();assert.deepEqual([...registered],[other])
+  const rebuilt=buildOfficeShellV3({THREE,root,layout,collision:{add:p=>registered.add(p),remove:p=>registered.delete(p)}})
+  rebuilt.dispose();assert.deepEqual([...registered],[other]);assert.equal(root.children.length,0)
+})
+
+test('R3 reception logo and lettering attach to the new solid wall, inside its height',()=>{
+  const layout=LAYOUT_V3_ALIGN_SAMPLE, root=new THREE.Group(), backdrop=receptionBackdrop(layout.frontDesk,layout)
+  assert.equal(backdrop.grille.faceZ,8.57);assert.equal(backdrop.top,3)
+  const brands=buildOfficeBrandMarks({THREE,root,layout}), mark=brands.marks.find(m=>m.id==='reception-wall')
+  assert.equal(mark.x,2);assert.equal(mark.yaw,0);assert.ok(Math.abs(mark.z-8.608)<1e-8)
+  assert.ok(mark.y+mark.height/2+.07<backdrop.top)
+  const frontage=buildOfficeVis2Frontage({THREE,root,layout,includeEnclosure:false,canvasTex:()=>new THREE.Texture()})
+  const label=root.getObjectByName('vis2-reception-wayfinding'),p=label.geometry.attributes.position,n=label.geometry.attributes.normal
+  for(let i=0;i<4;i++){assert.ok(Math.abs(p.getZ(i)-8.572)<1e-5);assert.ok(p.getY(i)<3);assert.equal(n.getZ(i),1)}
+  brands.dispose();frontage.dispose();assert.equal(root.children.length,0)
 })
 
 test('L1 sample keeps the owned solid facade visible and emits only finite finish geometry', () => {
@@ -147,13 +187,15 @@ test('L1 route matrix is finite and no segment cuts a wall, another workstation 
     for (const [target, targetHome] of homes) routes.push([id, target, 'office', nav.officeTrip(home, targetHome, targetHome)])
     for (const seat of nav.LOUNGE_SEATS) routes.push([id, null, 'lounge', nav.loungeTrip(home, seat)])
     for (const seat of meetings) routes.push([id, null, 'meeting', nav.meetingTrip(home, seat)])
-    for (const key of Object.keys(nav.consumerQueues)) routes.push([id, null, 'consumer', nav.consumerTrip(home, key, nav.consumerQueues[key][0])])
+    for (const key of Object.keys(nav.consumerQueues)) for(const target of nav.consumerQueues[key]) routes.push([id, null, 'consumer', nav.consumerTrip(home, key, target)])
   }
-  assert.equal(routes.length, 1225)
+  assert.equal(routes.length, 1825)
   for (const [id, target, kind, route] of routes) {
     assert.ok(route.length >= 1 && route.every(point => Number.isFinite(point.x) && Number.isFinite(point.z)), `${id}/${kind} finite`)
     for (let i = 1; i < route.length; i++) {
       const a = route[i - 1], b = route[i]
+      for(const p of officePlan1Reception(layout).blockers) assert.equal(segmentHitsBox(a,b,{x0:p.x0-.28,x1:p.x1+.28,z0:p.z0-.28,z1:p.z1+.28}),false,`${id}/${kind}/${i} reception ${p.kind}`)
+      if((a.z-8.5)*(b.z-8.5)<0){const x=a.x+(b.x-a.x)*(8.5-a.z)/(b.z-a.z);if(x>-6.6&&x<8.6)assert.ok(officePlan1Reception(layout).doors.some(d=>x>=d.x0+.28&&x<=d.x1-.28),`${id}/${kind} must cross a door`)}
       for (const wall of walls) assert.equal(lineCrosses(a, b, wall.a, wall.b), false, `${id}->${target || kind}/${kind}/${i} wall ${wall.room?.id || wall.side}`)
       for (const [other, box] of desks) if (other !== id && other !== target) assert.equal(segmentHitsBox(a, b, box), false, `${id}/${kind}/${i} desk ${other}`)
       if (kind !== 'lounge') {

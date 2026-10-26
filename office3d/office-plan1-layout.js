@@ -58,10 +58,32 @@ export const OFFICE_PLAN1_DISPLAY_SEATS = [
 export const OFFICE_PLAN1_WALLS = Object.freeze({
   outerSolid: Object.freeze({ height: 4.5, thickness: .18, capHeight: .1, finish: '#F4F1EA' }),
   internalGlass: Object.freeze({ height: 2.7, baseThickness: .14, glassThickness: .018, frame: '#AA9472', targetOpacity: .1 }),
+  southProfile: Object.freeze([{x:-22,h:4.5},{x:-15.2,h:4.5},{x:-4,h:1.2},{x:8,h:1.2},{x:19.2,h:4.5},{x:26,h:4.5}].map(Object.freeze)),
+  gatePost: Object.freeze({width:.3,depth:.3,height:2.4,color:'#B89B64'}),
+  reception: Object.freeze({z:8.5,wallWidth:4,wallHeight:3,wallDepth:.14,doorWidth:2.6,doorHeight:2.7,frameWidth:.05,glassOpacity:.1,columnWidth:.8,columnDepth:.8,columnHeight:3.6}),
 })
 
+export function officePlan1SouthHeight(layout, x) {
+  const points=layout.walls.southProfile
+  for(let i=1;i<points.length;i++)if(x<=points[i].x){const a=points[i-1],b=points[i];return a.h+(b.h-a.h)*Math.max(0,(x-a.x)/(b.x-a.x))}
+  return points.at(-1).h
+}
+
+export function officePlan1Reception(layout) {
+  const s=layout.walls?.reception
+  if(!s)return null
+  const cx=layout.frontDesk.center.x, room=layout.regions.find(r=>r.id==='foyer')
+  const wall={x0:cx-s.wallWidth/2,x1:cx+s.wallWidth/2,z0:s.z-s.wallDepth/2,z1:s.z+s.wallDepth/2,height:s.wallHeight,kind:'solid'}
+  const doors=[{x0:wall.x0-s.doorWidth,x1:wall.x0},{x0:wall.x1,x1:wall.x1+s.doorWidth}].map((d,i)=>({...d,id:i?'east':'west',z:s.z,height:s.doorHeight}))
+  const columns=[{x0:doors[0].x0-s.columnWidth,x1:doors[0].x0},{x0:doors[1].x1,x1:doors[1].x1+s.columnWidth}].map(d=>({...d,z0:s.z-s.columnDepth/2,z1:s.z+s.columnDepth/2,height:s.columnHeight,kind:'column'}))
+  const partitions=[{x0:room.x0,x1:columns[0].x0},{x0:columns[1].x1,x1:room.x1}].map(d=>({...d,z0:s.z-layout.walls.internalGlass.baseThickness/2,z1:s.z+layout.walls.internalGlass.baseThickness/2,height:layout.walls.internalGlass.height,kind:'glass'}))
+  // 门扇固定朝北开启90°；实际玻璃与寻路障碍共用此包络，门洞保持可走。
+  const leaves=doors.flatMap(d=>[d.x0-s.frameWidth/2,d.x1+s.frameWidth/2].map(x=>({x0:x-s.frameWidth/2,x1:x+s.frameWidth/2,z0:s.z-s.doorWidth/2,z1:s.z,height:s.doorHeight,kind:'leaf'})))
+  return {spec:s,centerX:cx,wall,doors,columns,partitions,leaves,blockers:[wall,...columns,...partitions,...leaves]}
+}
+
 export function officePlan1InnerWalls(layout) {
-  return layout.regions.flatMap(room => {
+  const walls=layout.regions.flatMap(room => {
     const result = [], sides = ['north', 'east', 'south', 'west']
     for (const [index, side] of sides.entries()) {
       const kind = room.walls?.[index]
@@ -89,6 +111,13 @@ export function officePlan1InnerWalls(layout) {
     }
     return result
   })
+  const reception=officePlan1Reception(layout), room=layout.regions.find(r=>r.id==='foyer')
+  // 柱和开启门扇按四条边加入既有墙线口径，不扩大或放宽路线避障阈值。
+  if(reception)for(const box of reception.blockers){
+    const corners=[{x:box.x0,z:box.z0},{x:box.x1,z:box.z0},{x:box.x1,z:box.z1},{x:box.x0,z:box.z1}]
+    corners.forEach((a,i)=>walls.push({a,b:corners[(i+1)%4],side:'north',kind:box.kind,room,reception:true}))
+  }
+  return walls
 }
 
 const roundSeats = (room, x, z) => Array.from({length:4},(_,i)=>{const a=i*Math.PI/2;return{room,x:x+Math.sin(a)*1.2,z:z+Math.cos(a)*1.2,yaw:a,meeting:true}})

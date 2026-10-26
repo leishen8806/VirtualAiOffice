@@ -48,7 +48,7 @@ export function officeShellFinishSpec(layout, spec) {
     const fixed = door.side === 'west' ? room.x0 + .07 : door.side === 'east' ? room.x1 - .07 : door.side === 'north' ? room.z0 + .07 : room.z1 - .07
     box(vertical ? fixed : door.at, 2.655, vertical ? door.at : fixed, vertical ? .07 : door.width, .09, vertical ? door.width : .07, '#AA9472', 'door-header')
   }
-  for (const door of Object.values(layout.doors)) box((door.x0 + door.x1) / 2, door.height ? .08 + door.height + .06 : 3.05, door.z, door.width, .12, .16, '#B89B64', 'entrance-header')
+  for (const door of Object.values(layout.doors)) if (!layout.walls?.gatePost || door !== layout.doors.south) box((door.x0 + door.x1) / 2, door.height ? .08 + door.height + .06 : 3.05, door.z, door.width, .12, .16, '#B89B64', 'entrance-header')
   const e = layout.envelope
   for (let x = e.x0 + 2; x < e.x1; x += 2) box(x, .082, (e.z0 + e.z1) / 2, .014, .002, e.z1 - e.z0, '#BFB5A5', 'floor-joint')
   for (let z = e.z0 + 2; z < e.z1; z += 2) box((e.x0 + e.x1) / 2, .082, z, e.x1 - e.x0, .002, .014, '#BFB5A5', 'floor-joint')
