@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import http from 'node:http'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const RUN = path.join(HERE, 'run.mjs')
@@ -22,15 +22,17 @@ const run = (mutate, out, extraEnv = {}) => new Promise((resolve) => {
   const timer = setTimeout(() => child.kill('SIGKILL'), 300000)
   child.on('close', (code) => { clearTimeout(timer); resolve({ exit: code, stdout }) })
 })
-const readReport = (out) => { try { return JSON.parse(fs.readFileSync(path.join(out, 'report.json'), 'utf8')) } catch { return null } }
+import { readReport, assessRun } from './assess.mjs'
 const results = {}
+const HEAD = (() => { try { return execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() } catch { return '' } })()
 
 // 1) 无突变基线
 {
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-sc-'))
   const r = await run(null, out)
   const rep = readReport(out)
-  results.baseline = { exit: r.exit, mandatoryTotal: rep?.mandatory?.total ?? null }
+  const a = assessRun({ exit: r.exit, report: rep, expectedSha: HEAD })
+  results.baseline = { exit: r.exit, mandatoryTotal: rep?.mandatory?.total ?? null, ok: a.ok, reason: a.reason }
 }
 
 // 2) dup-loop / runtime-error
@@ -63,7 +65,7 @@ for (const [mutate, exp] of Object.entries(expectations)) {
   results['unauthorized-port'] = { exit: r.exit, reportExists: Boolean(rep), hit: hit ? hit.id : null, probeConnections: conn.n }
 }
 
-const okBaseline = results.baseline.exit === 0 && (results.baseline.mandatoryTotal || 0) > 0
+const okBaseline = results.baseline.ok === true
 const okDup = results['dup-loop'].exit === 1 && results['dup-loop'].hit === 'office-no-duplicate-loop'
 const okRuntime = results['runtime-error'].exit === 1 && Boolean(results['runtime-error'].hit)
 const okUn = results['unauthorized-port'].exit === 1 && results['unauthorized-port'].probeConnections === 0 && results['unauthorized-port'].hit === 'office-blocked-zero'

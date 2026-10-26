@@ -213,7 +213,8 @@ test('FIX5 工作树：被忽略的受保护文件 → 退出 2', (t) => {
 
 // ---- FIX6 自测 ----
 import { compareRepoClean } from '../tree-check.mjs'
-import { buildServerEnv } from '../fixture.mjs'
+import { buildServerEnv, removeRegisteredDir } from '../fixture.mjs'
+import { readReport, assessRun } from '../assess.mjs'
 
 test('FIX6 compareRepoClean：运行前后干净 → unchanged true / 外写文件 → unchanged false', (t) => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-repo-')); t.after(() => fs.rmSync(repo, { recursive: true, force: true }))
@@ -246,4 +247,48 @@ test('FIX6 __vis3_allowPort 仅在 VIS3_TEST_HOOKS=1 时存在', (t) => {
 test('FIX6 buildServerEnv 不包含 VIS3_TEST_HOOKS', () => {
   const env = buildServerEnv({ emptyBin: '/tmp', mockPort: 1, port: 2, netLog: '/tmp/x.jsonl' })
   assert.equal('VIS3_TEST_HOOKS' in env, false, '被测服务环境不得包含 VIS3_TEST_HOOKS')
+})
+
+// ---- CI-FIX1-R3 A7/A8 负向测试 ----
+
+test('A7 判定通过需满足：退出码 0 + 有效报告 + 报告含被检查项目（正向）', () => {
+  assert.equal(assessRun({ exit: 0, report: { sha: 'abc123', mandatory: { total: 9 } }, expectedSha: 'abc123' }).ok, true)
+})
+
+test('A7 没跑：退出码非 0 → 不得算通过', () => {
+  assert.equal(assessRun({ exit: 2, report: null }).ok, false)
+  assert.equal(assessRun({ exit: 1, report: { sha: 'abc123', mandatory: { total: 9 } }, expectedSha: 'abc123' }).ok, false)
+})
+
+test('A7 报告缺失 / 解析失败 → 不得算通过', (t) => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-a7-')); t.after(() => fs.rmSync(tmp, { recursive: true, force: true }))
+  assert.equal(readReport(tmp), null, '报告缺失应为 null')
+  fs.writeFileSync(path.join(tmp, 'report.json'), '{ 坏 json')
+  assert.equal(readReport(tmp), null, '解析失败应为 null')
+  assert.equal(assessRun({ exit: 0, report: null }).ok, false, '报告缺失不得算通过')
+})
+
+test('A7 残留旧报告：sha 与当前 HEAD 不一致 → 不得算通过', () => {
+  assert.equal(assessRun({ exit: 0, report: { sha: 'stale-commit', mandatory: { total: 9 } }, expectedSha: 'current-head' }).ok, false)
+})
+
+test('A7 NOT_RUN / 未包含检查项 → 不得算通过', () => {
+  assert.equal(assessRun({ exit: 0, report: { sha: 'abc', status: 'NOT_RUN', reason: '空闲内存不足' }, expectedSha: 'abc' }).ok, false)
+  assert.equal(assessRun({ exit: 0, report: { sha: 'abc', mandatory: { total: 0 } }, expectedSha: 'abc' }).ok, false)
+})
+
+test('A8 只清理本次运行登记的目录，同名前缀目录不被删除', (t) => {
+  const base = os.tmpdir()
+  const mine = fs.mkdtempSync(path.join(base, 'vis3-iso-mine-'))
+  const other = fs.mkdtempSync(path.join(base, 'vis3-iso-other-'))
+  t.after(() => { fs.rmSync(mine, { recursive: true, force: true }); fs.rmSync(other, { recursive: true, force: true }) })
+  const r = removeRegisteredDir(mine)
+  assert.equal(r.ok, true)
+  assert.equal(fs.existsSync(mine), false, '登记的目录应被删除')
+  assert.equal(fs.existsSync(other), true, '同名前缀但未登记的目录不得被删除')
+})
+
+test('A8 拒绝未登记的目录，且清理失败留下确切原因', () => {
+  assert.equal(removeRegisteredDir('/tmp/some-random-dir').ok, false, '未登记目录应拒绝')
+  assert.equal(removeRegisteredDir('').ok, false)
 })

@@ -17,6 +17,13 @@ process.on('exit', () => { for (const c of CHILDREN) { try { c.kill('SIGKILL') }
 
 const PROTECTED = /(^|\/)(lan\.json|wall\.json|config\.json|niuma\.config\.json|.*\.dpapi|\.env.*|.*ed25519.*|telegram[^/]*\.json|telegram[^/]*\.dpapi)$/i
 
+// A8：只删除本次运行登记的确切路径，不按目录名前缀猜测归属；清理失败留下确切目录与原因，不吞错。
+export function removeRegisteredDir(registeredPath) {
+  if (typeof registeredPath !== 'string' || !registeredPath.includes('vis3-iso-')) return { ok: false, reason: 'refused-unregistered-dir' }
+  try { fs.rmSync(registeredPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); return { ok: true } }
+  catch (e) { return { ok: false, reason: 'rmSync:' + e.code, path: registeredPath } }
+}
+
 export function buildServerEnv({ emptyBin, mockPort, port, netLog }) {
   // 显式白名单；不包含 VIS3_TEST_HOOKS（测试放行接口不得进入被测服务进程）
   const env = {
@@ -66,7 +73,8 @@ export async function bootIsolated({ repo, office = false, campus = false, missi
     }
     if (mock) { try { mock.server.close() } catch {} }
     if (logFd >= 0) { try { fs.closeSync(logFd) } catch {} }
-    try { fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }) } catch (e) { cleanupErrors.push('rmSync:' + e.code) }
+    const removal = removeRegisteredDir(tmpRoot)
+    if (!removal.ok) cleanupErrors.push(removal.reason)
   }
 
   try {
