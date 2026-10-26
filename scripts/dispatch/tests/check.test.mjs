@@ -118,6 +118,13 @@ test('四审 C7：只有 "C7 NOT_RUN标识" 这个检查项名被豁免；状态
   assert.equal(checkNotRun('| C7 NOT_RUN标识 | PASS；4个既有跳过已另外明确列为NOT_RUN |').status, 'PASS', 'DR-B4 R2 回执原句仍不误判')
 })
 
+test('五审 C7：名称豁免只认整个单元格就是检查项名，不跨列、不进正文', () => {
+  assert.equal(checkNotRun('| C7 | NOT_RUN 标记（缺少浏览器） | PASS |').status, 'FAIL')
+  assert.equal(checkNotRun('| A1 浏览器 | PASS | 关联检查 C7 | NOT_RUN 标识（缺少 Playwright） |').status, 'FAIL')
+  assert.equal(checkNotRun('A1 浏览器 PASS，关联检查 C7 NOT_RUN 标识（缺少 Playwright）').status, 'FAIL', '正文里不再豁免')
+  assert.equal(checkNotRun('| **C7 NOT_RUN标识** | PASS |').status, 'PASS', '加粗的检查项名单元格仍豁免')
+})
+
 test('三审 C6：参数与取值之间多个空格也要识别', () => {
   assert.equal(checkTestFlags('node --max-old-space-size=1024 --test --test-concurrency=1 --test-concurrency  8 tests/*.test.mjs').status, 'FAIL')
   assert.equal(checkTestFlags('node --max-old-space-size  1024 --test --test-concurrency  1 tests/*.test.mjs').status, 'PASS')

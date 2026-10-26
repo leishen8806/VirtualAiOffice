@@ -203,10 +203,12 @@ export const claimsPass = (text) => /通过|\bPASS(ED)?\b/i.test(text
 
 // 同一小句（按句号、分号切开）里既说未运行、又宣称通过，才是状态矛盾。
 // "A1：通过（未运行，NOT_RUN）" 是矛盾；"A5 通过：……；跳过项列为 NOT_RUN，不算通过" 不是。
-// 只豁免回执引用本工具 C7 检查项名称的写法（"C7 NOT_RUN标识"）。前面必须紧跟 "C7"：
-// 验收结果或原因里写的"执行状态以 NOT_RUN 标记"是在描述状态，必须参与矛盾判断。
-const mentionOnly = (text) => text.replace(/\bC7\s*[|｜]?\s*NOT_RUN\s*(标识|标注|标记|规则|检查|字样|要求|写法)/g, 'C7')
-export const contradictory = (line) => line.split(/[。；;]/).map(mentionOnly).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
+// 只豁免回执表格里"检查项名称"单元格整体就是 "C7 NOT_RUN标识" 这类写法的情况（回执引用本工具检查项名）。
+// 必须是整个单元格完全匹配：不跨列、不在正文里豁免——"| C7 | NOT_RUN 标记（缺少浏览器） | PASS |"、
+// "执行状态以 NOT_RUN 标记" 都是在描述状态，必须参与矛盾判断。
+const C7_NAME_CELL = /^\s*[*`]*\s*C7\s*NOT_RUN\s*(标识|标注|标记|规则|检查|字样|要求|写法)\s*[*`]*\s*$/
+const mentionOnly = (line) => (line.includes('|') ? line.split('|').map((cell) => (C7_NAME_CELL.test(cell) ? ' C7 ' : cell)).join('|') : line)
+export const contradictory = (line) => mentionOnly(line).split(/[。；;]/).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
 
 // 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
 // 本行必须写 NOT_RUN（别处的 NOT_RUN 不能替这一行作证），并且同一小句里不能同时宣称"通过"。
