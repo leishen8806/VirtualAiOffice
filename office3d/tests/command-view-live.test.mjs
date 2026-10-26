@@ -237,7 +237,11 @@ test('contract, scheduler, health snapshots are mapped without evidence or ident
 test('5s timeout is contained, rejects stale detail and does not exceed concurrency slots', async () => {
   const s = setup({ get: (path, options, f) => {
     if (path.includes('/issues?')) return copy(f.completed)
-    return new Promise((resolve) => options.signal.addEventListener('abort', () => resolve({ status: 503, body: null }), { once: true }))
+    // 挂起直到调用方 abort；用 ref'd setTimeout 兜底保持事件循环存活（Node 22 上 AbortSignal.timeout 的计时器是 unref 的，否则测试被取消）
+    return new Promise((resolve) => {
+      const hung = setTimeout(() => resolve({ status: 503, body: null }), 10000)
+      options.signal.addEventListener('abort', () => { clearTimeout(hung); resolve({ status: 503, body: null }) }, { once: true })
+    })
   } })
   const output = await valid(s.source, { ...s.input, taskId: 'demo-blocked' })
   assert.ok(output.quality.gaps.includes('SOURCE_FAILED'))

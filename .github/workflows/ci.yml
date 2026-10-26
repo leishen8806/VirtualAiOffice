@@ -17,6 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,4 +33,20 @@ jobs:
           fi
         shell: bash
       - run: npm run test:browser
-      - run: npm run test:all
+      # 等价于原 `npm run test:all`（= npm test && npm run test:packages && npm run verify:packaged-layout），
+      # 拆成三步便于定位失败来源；失败时把 not ok 段写进 step summary。
+      - name: Unit tests (node --test)
+        shell: bash
+        run: |
+          npm test > /tmp/unit-test.log 2>&1 || {
+            echo "### Unit test failures" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300
+            exit 1
+          }
+      - name: Package spec tests (tsc + node --test)
+        run: npm run test:packages
+      - name: Packaged layout verification
+        run: npm run verify:packaged-layout
