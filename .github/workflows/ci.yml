@@ -33,4 +33,9 @@ jobs:
           fi
         shell: bash
       - run: npm run test:browser
-      - run: npm run test:all
+      - name: Unit tests (node --test)
+        run: npm test
+      - name: Package spec tests (tsc + node --test)
+        run: npm run test:packages
+      - name: Packaged layout verification
+        run: npm run verify:packaged-layout
