@@ -122,7 +122,7 @@ test('R3 reception wall, passable paired doors, pillars and collision volumes us
   assert.equal(data.centerX,2)
   for(const c of data.columns){assert.ok(Math.abs(c.x1-c.x0-.8)<1e-8);assert.equal(c.height,3.6)}
   assert.ok(Math.abs(data.columns[0].x0+data.columns[1].x1-4)<1e-8)
-  assert.equal(shell.reception.transparent.mesh.material.opacity,.1)
+  assert.equal(shell.reception.transparent.mesh.material.opacity,.2)
   assert.equal(shell.reception.proxies.length,data.blockers.length)
   shell.reception.proxies.forEach((mesh,i)=>{
     mesh.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(mesh),spec=data.blockers[i]
@@ -172,6 +172,52 @@ test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against sep
     assert.ok(trackHit.length>0,'actual rail box above passage')
   }
   shell.dispose()
+})
+
+test('R5 warm reflective glass shares one material and inward 0.07m frames preserve all R4 blockers',()=>{
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,transparent,opaque}=shell.reception
+  assert.equal(hash(data.blockers),'f1b6e0f370af6f2c34f5a5358381a22e015c6b8dd91419dd9f6665650fc2a09f')
+  assert.equal(data.spec.leafFrameWidth,.07);assert.equal(transparent.mesh.material.opacity,.2)
+  assert.equal(transparent.mesh.material.userData.officeArchitectureWarmth,true)
+  const color=new THREE.Color('#E8E0D0'),g=transparent.mesh.geometry
+  for(let i=0;i<g.attributes.position.count;i++){
+    assert.ok(Math.abs(g.attributes.sampleSurface.getX(i)-.12)<1e-6)
+    assert.ok(Math.abs(g.attributes.color.getX(i)-color.r)<1e-6)
+    assert.ok(Math.abs(g.attributes.color.getY(i)-color.g)<1e-6)
+    assert.ok(Math.abs(g.attributes.color.getZ(i)-color.b)<1e-6)
+  }
+  opaque.mesh.updateMatrixWorld(true)
+  for(const p of data.leaves){
+    const d=data.doors.find(d=>p.id.startsWith(d.id)),cx=(Math.max(p.x0,d.x0)+Math.min(p.x1,d.x1))/2
+    const frameAt=(x,y)=>new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(opaque.mesh).some(h=>h.point.z>=p.z0-1e-6&&h.point.z<=p.z1+1e-6)
+    for(const edge of [.06,.08]){
+      assert.equal(frameAt(cx,edge),edge<.07,'bottom frame physical width')
+      assert.equal(frameAt(cx,p.height-edge),edge<.07,'top frame physical width')
+      const x=p.id.endsWith('-0')?p.x1-edge:p.x0+edge
+      assert.equal(frameAt(x,1.8),edge<.07,'exposed vertical frame physical width')
+    }
+  }
+  shell.dispose()
+})
+
+test('R5 both L1 lettering planes centre on x=2 and frozen non-sample signage stays byte-identical',()=>{
+  for(const [layout,expected] of [[LAYOUT_V3_ALIGN_SAMPLE,null],[LAYOUT_V3,'400b73744d8aac4cd0b6734bb9f8d0264863d0bc6ce4b3e15f6db03dad6c2506'],[LAYOUT_V3_ALIGN,'6c40435d6204abb17ff1375d45dacd29b7990a75ccd125c0bfd9f81f5033731f']]){
+    const root=new THREE.Group(),f=buildOfficeVis2Frontage({THREE,root,layout,includeEnclosure:false,canvasTex:()=>new THREE.Texture()}),label=root.getObjectByName('vis2-reception-wayfinding')
+    label.updateWorldMatrix(true,false)
+    const p=label.geometry.attributes.position,n=label.geometry.attributes.normal,uv=label.geometry.attributes.uv
+    if(expected)assert.equal(hash({p:Array.from(p.array),position:label.position.toArray(),uv:Array.from(uv.array)}),expected)
+    else{
+      for(const start of [0,4]){
+        const points=Array.from({length:4},(_,i)=>new THREE.Vector3().fromBufferAttribute(p,start+i).applyMatrix4(label.matrixWorld))
+        assert.ok(Math.abs(points.reduce((sum,v)=>sum+v.x,0)/4-2)<.00001)
+        if(start===4){
+          for(const v of points){assert.ok(v.x>=-1&&v.x<=5);assert.ok(v.z>18);assert.ok(Math.abs(v.y-.117)<1e-6)}
+          assert.ok(p.getZ(4)<p.getZ(6),'top of south-facing text points north');assert.ok(uv.getY(4)>uv.getY(6));assert.ok(n.getY(4)>.999)
+        }
+      }
+    }
+    f.dispose();assert.equal(root.children.length,0)
+  }
 })
 
 test('R4 facade shares internal strip edges and continuous normals while preserving every R3 height knot',()=>{

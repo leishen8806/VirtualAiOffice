@@ -109,7 +109,7 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "CDDE73F21760BACCA5CB5CF45687C1E8D9C9BFD0F3AD922E616A68721E1CA069",
+      "sha256": "A50B22C5298DE2C3670522BD66227E58694170424AD89EE6FE35CA5F1AF6B4BD",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -259,7 +259,7 @@
       "source": "OFFICE-L1 R3 original sloped facade and reception geometry; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "C652BE72995D0FF3973398BD67776C3BAD4A9989517200415BD2246AD6FDAAD3"
+      "sha256": "B87BB9BAD40C81B9068DD153D6B248928FA4B4D683F64C8C5F7B4B4EFBA80305"
     }
   ],
   "excluded": {

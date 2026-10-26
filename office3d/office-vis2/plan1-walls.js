@@ -1,5 +1,5 @@
 import { officePlan1Reception, officePlan1SouthHeight } from '../office-plan1-layout.js'
-import { createSampleBatch } from './batch.js'
+import { createSampleBatch, warmOfficeArchitecture } from './batch.js'
 
 // 每翼共用截面顶点；只有链首尾有端面，避免逐段盒体留下缝隙和明暗线。
 export function buildPlan1Facade(THREE, root, layout, segments, material) {
@@ -73,12 +73,13 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
     }
   }
   for (const p of [...data.partitions,...data.leaves]) {
-    const leaf=p.kind==='leaf', x=(p.x0+p.x1)/2, z=(p.z0+p.z1)/2
+    const leaf=p.kind==='leaf', w=leaf?data.spec.leafFrameWidth:f, z=(p.z0+p.z1)/2
     const glass=layout.walls.internalGlass.glassThickness/2
-    box(panes,p.x0+f,p.x1-f,f,p.height-2*f,z-glass,z+glass,'#ffffff')
-    for (const y of [0,p.height-f]) box(solid,p.x0,p.x1,y,f,p.z0,p.z1,frame,.5)
-    for(const end of leaf?[p.x0+f/2,p.x1-f/2]:[p.x0,p.x1]) box(solid,end-f/2,end+f/2,0,p.height,p.z0,p.z1,frame,.5)
-    if(leaf){const handle=p.id.endsWith('-0')?p.x1-2*f:p.x0+2*f;box(solid,handle-.015,handle+.015,1,.3,p.z1-.02,p.z1,trim,.6)}
+    panes.add(new THREE.BoxGeometry(p.x1-p.x0-2*w,p.height-2*w,2*glass),data.spec.glassColor,[(p.x0+p.x1)/2,p.height/2,z],0,data.spec.glassRoughness,.15)
+    // 框条向门扇内部加粗，不改变已验收的厚度、外包络和净通道。
+    for (const y of [0,p.height-w]) box(solid,p.x0,p.x1,y,w,p.z0,p.z1,frame,.5)
+    for(const end of leaf?[p.x0+w/2,p.x1-w/2]:[p.x0,p.x1]) box(solid,end-w/2,end+w/2,0,p.height,p.z0,p.z1,frame,.5)
+    if(leaf){const handle=p.id.endsWith('-0')?p.x1-2*w:p.x0+2*w;box(solid,handle-.015,handle+.015,1,.3,p.z1-.02,p.z1,trim,.6)}
   }
   for(const d of data.doors) {
     const tracks=data.leaves.filter(p=>p.id.startsWith(d.id)),z0=Math.min(...tracks.map(p=>p.z0)),z1=Math.max(...tracks.map(p=>p.z1))
@@ -91,6 +92,7 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
   const opaque=solid.build(root,'office-plan1-reception-and-gate'), transparent=panes.build(root,'office-plan1-reception-glass')
   transparent.mesh.material.transparent=true; transparent.mesh.material.opacity=data.spec.glassOpacity; transparent.mesh.material.depthWrite=false
   transparent.mesh.material.side=THREE.DoubleSide; transparent.mesh.userData.dynamic=true
+  warmOfficeArchitecture(transparent.mesh.material)
   for(const p of data.blockers) {
     const proxy=new THREE.Mesh(new THREE.BoxGeometry(p.x1-p.x0,p.height,p.z1-p.z0),opaque.mesh.material)
     proxy.position.set((p.x0+p.x1)/2,p.height/2,(p.z0+p.z1)/2);proxy.visible=false;proxy.name='office-plan1-reception-collision-'+p.id
