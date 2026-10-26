@@ -256,7 +256,7 @@ test('A7 正向：退出码 0 + runId/sha 匹配 + 含检查项 → 通过', () 
 })
 
 test('A7 没跑：退出码非 0 → 不得算通过', () => {
-  assert.equal(assessRun({ exit: 2, report: null }).ok, false)
+  assert.equal(assessRun({ exit: 2, report: null, expectedRunId: 'r1', expectedSha: 'abc' }).ok, false)
   assert.equal(assessRun({ exit: 1, report: { runId: 'r1', sha: 'abc', mandatory: { total: 9 } }, expectedRunId: 'r1', expectedSha: 'abc' }).ok, false)
 })
 
@@ -265,7 +265,13 @@ test('A7 报告缺失 / 解析失败 → 不得算通过', (t) => {
   assert.equal(readReport(tmp), null, '报告缺失应为 null')
   fs.writeFileSync(path.join(tmp, 'report.json'), '{ 坏 json')
   assert.equal(readReport(tmp), null, '解析失败应为 null')
-  assert.equal(assessRun({ exit: 0, report: null }).ok, false, '报告缺失不得算通过')
+  assert.equal(assessRun({ exit: 0, report: null, expectedRunId: 'r1', expectedSha: 'abc' }).ok, false, '报告缺失不得算通过')
+})
+
+test('A7 调用方不传 expectedRunId / expectedSha → 不得算通过', () => {
+  assert.equal(assessRun({ exit: 0, report: { runId: 'whatever', sha: 'abc', mandatory: { total: 9 } }, expectedSha: 'abc' }).ok, false, '不传 expectedRunId 不得通过')
+  assert.equal(assessRun({ exit: 0, report: { runId: 'whatever', sha: 'abc', mandatory: { total: 9 } }, expectedRunId: 'r1' }).ok, false, '不传 expectedSha 不得通过')
+  assert.equal(assessRun({ exit: 0, report: { runId: 'whatever', sha: 'abc', mandatory: { total: 9 } }, expectedRunId: '', expectedSha: '' }).ok, false, '空字符串也算缺省')
 })
 
 test('A7 报告没有 runId / sha 字段 → 不得算通过', () => {
