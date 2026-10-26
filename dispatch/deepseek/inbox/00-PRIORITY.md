@@ -4,7 +4,7 @@
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `CI-FIX1-portable-tests.md`（让 GitHub CI 在干净机器上跑通：本机路径 / 钩子依赖改为明确跳过、放错位置的测试文件、平台相关断言、command-view-live 被取消、align-data 路线矩阵） | 新建 `fix/ci-portable-tests`，从 `main` @ `0f851d3` | **立即开始** |
+| **1** | `CI-FIX1-portable-tests.md` + **`CI-FIX1-ADDENDUM-R2-not-run-and-cleanup.md`**（让 GitHub CI 在干净机器上跑通：本机路径 / 钩子依赖改为明确跳过、放错位置的测试文件、平台相关断言、command-view-live 被取消、align-data 路线矩阵） | 新建 `fix/ci-portable-tests`，从 `main` @ `0f851d3` | **立即开始** |
 
 说明：
 
