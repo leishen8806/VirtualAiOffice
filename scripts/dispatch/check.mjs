@@ -174,7 +174,8 @@ export function testCommands(receiptText) {
 }
 
 // 一条命令里同一参数出现多次时，每一次都必须是规定值（例如 --test-concurrency=1 后面又跟 --test-concurrency=8 不算合规）。
-const allValues = (cmd, flag) => [...cmd.matchAll(new RegExp(`${flag}[= ](\\S+)`, 'g'))].map((m) => m[1].replace(/[`'"]/g, ''))
+// 参数与取值之间可以是 "=" 或任意数量空白（"--test-concurrency  8" 也要抓到）。
+const allValues = (cmd, flag) => [...cmd.matchAll(new RegExp(`${flag}(?:=|\\s+)(\\S+)`, 'g'))].map((m) => m[1].replace(/[`'"]/g, ''))
 const compliant = (cmd) => {
   const mem = allValues(cmd, '--max-old-space-size'), conc = allValues(cmd, '--test-concurrency')
   return mem.length > 0 && mem.every((v) => v === '1024') && conc.length > 0 && conc.every((v) => v === '1')
@@ -191,11 +192,13 @@ export function checkTestFlags(receiptText) {
 
 const NOT_RUN_WORDS = /未运行|没跑|未执行|没有运行|未测|NOT_RUN/
 
-// 一段文字是否"宣称通过"：先去掉否定写法（未通过、不算通过、不计为 / 不计入 / 不视为 / 不代表通过……，即"不"后 3 字以内接"通过"）
-// 和计数写法（"1473 通过"），剩下仍有"通过 / PASS"才算宣称。
+// 一段文字是否"宣称通过"：先去掉否定写法和计数写法，剩下仍有"通过 / PASS"才算宣称。
+// 否定只认明确的词表（未通过、不算通过、不计入通过……），不用"不 + 任意字"——否则"不仅通过"会被当成否定。
+// 计数只认前面不是字母或数字的数字（"1473 通过"），验收编号 "A1 通过"、"B10 通过" 不是计数。
+const NEGATIONS = ['不能视为', '不能算', '不计为', '不计入', '不视为', '不代表', '不等于', '不作为', '不构成', '不算', '并未', '并非', '没有', '没', '未', '不']
 export const claimsPass = (text) => /通过|\bPASS(ED)?\b/i.test(text
-  .replace(/(未|没有?|并非|并未|不[^\s，,。；;、：:（）()]{0,3})\s*通过/g, '')
-  .replace(/\d[\d,]*\s*(项|条|个)?\s*(通过|PASS(ED)?)/gi, '')
+  .replace(new RegExp(`(${NEGATIONS.join('|')})\\s*通过`, 'g'), '')
+  .replace(/(?<![A-Za-z\d])\d[\d,]*\s*(项|条|个)?\s*(通过|PASS(ED)?)/gi, '')
   .replace(/\bNOT[_ ]PASS(ED)?\b/gi, ''))
 
 // 同一小句（按句号、分号切开）里既说未运行、又宣称通过，才是状态矛盾。

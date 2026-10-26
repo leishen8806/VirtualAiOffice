@@ -101,6 +101,20 @@ test('复审 C7：同一行"通过"与"未运行 / NOT_RUN"并存判失败；"�
   assert.equal(checkNotRun('A4 浏览器：NOT_RUN（缺少 Playwright）').status, 'PASS')
 })
 
+// ---- PR #50 第三轮审查（Codex @ f8c7fdd / a42ec51） ----
+
+test('三审 C7：验收编号 "A1 通过" 不是计数，与 NOT_RUN 同句判失败；"不仅通过" 不是否定', () => {
+  assert.equal(checkNotRun('A1 通过（未运行，NOT_RUN）').status, 'FAIL')
+  assert.equal(checkNotRun('B10 通过（NOT_RUN）').status, 'FAIL')
+  assert.equal(checkNotRun('A2 不仅通过，还有 NOT_RUN 项').status, 'FAIL')
+  assert.equal(checkNotRun('全量 1443 项、1439 通过；4 项 NOT_RUN').status, 'PASS', '真正的计数仍不算宣称')
+})
+
+test('三审 C6：参数与取值之间多个空格也要识别', () => {
+  assert.equal(checkTestFlags('node --max-old-space-size=1024 --test --test-concurrency=1 --test-concurrency  8 tests/*.test.mjs').status, 'FAIL')
+  assert.equal(checkTestFlags('node --max-old-space-size  1024 --test --test-concurrency  1 tests/*.test.mjs').status, 'PASS')
+})
+
 test('复审 C7 不误判：通过计数、以及同一行另一小句里的 NOT_RUN（取自真实回执）', () => {
   assert.equal(checkNotRun('相对 R6 已交日志（1476 总项、1473 通过、0 失败、3 跳过），无新增失败；没有重跑 R6 全量。原三个 NOT_RUN：D-V1-R5 几何验收').status, 'PASS')
   assert.equal(checkNotRun('- **A5 通过**：全量测试退出 0、无新增失败；实际计数见下文。跳过项单独列为 NOT_RUN，不算通过。').status, 'PASS')
