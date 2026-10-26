@@ -1,4 +1,4 @@
-import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, truckPlan } from './dr-campus-motion-logic.js'
+import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, routePointAt, truckPlan } from './dr-campus-motion-logic.js'
 
 export function buildCampusMotion({ THREE, root, layout, quality, eventSource, now, search = globalThis.location?.search || '' }) {
   const low = quality?.tier === 'low'
@@ -29,11 +29,11 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
       for (const z of [-.5, .5]) add(0, 'forklift', i, x * 1.4, .3, z, .18, .45, .38, 0x242b30)
     }
   }
-  for (let i = 0; i < (low ? 2 : 3); i++) {
-    add(1, 'truck', i, 0, 1.35, 0, 2.4, 2.3, 3.7, 0xdce2df)
-    add(1, 'truck', i, 0, .9, 2.65, 2.4, 1.7, 1.5, 0x426979)
-    add(1, 'truck', i, 0, 1.4, 3.42, 1.9, .65, .06, 0x1b2d35)
-    for (const x of [-1.15, 1.15]) for (const z of [-1.3, 1, 2.6]) add(1, 'truck', i, x, .35, z, .3, .6, .7, 0x252c31)
+  for (let i = 0; i < (low ? 2 : trucks.length); i++) {
+    add(1, 'truck', i, 0, 1.35, 0, 2.55, 2.3, 9, 0xdce2df)
+    add(1, 'truck', i, 0, .9, 4.2, 2.55, 1.7, .9, 0x426979)
+    add(1, 'truck', i, 0, 1.4, 4.65, 1.95, .65, .06, 0x1b2d35)
+    for (const x of [-1.15, 1.15]) for (const z of [-3.6, -1.2, 1.2, 3.6]) add(1, 'truck', i, x, .35, z, .3, .6, .7, 0x252c31)
   }
   for (let i = 0; i < 2; i++) {
     const path = belts[i], width = path[1].x - path[0].x
@@ -82,9 +82,10 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
           const target = truckEvent?.type === 'truck_depart' ? 0 : 1
           const progress = item.index === activeTruck && !low ? truckStart + (target - truckStart) * truckProgress : truckOffsets[item.index]
           truckOffsets[item.index] = progress
-          angle = item.index === 2 ? -Math.PI / 2 : 0
-          x = dock.entry.x + (dock.parked.x - dock.entry.x) * progress + item.x * Math.cos(angle) + item.z * Math.sin(angle)
-          z = dock.entry.z + (dock.parked.z - dock.entry.z) * progress - item.x * Math.sin(angle) + item.z * Math.cos(angle)
+          const p = routePointAt(dock.route, progress)
+          angle = p.angle
+          x = p.x + item.x * Math.cos(angle) + item.z * Math.sin(angle)
+          z = p.z - item.x * Math.sin(angle) + item.z * Math.cos(angle)
         } else if (item.kind === 'cargo') {
           const p = pathPoint(belts[Math.floor(item.index / 6)], (conveyorEnabled ? elapsed : 0) + item.index % 6 * 2300, 1)
           x = p.x; z = p.z; angle = p.angle

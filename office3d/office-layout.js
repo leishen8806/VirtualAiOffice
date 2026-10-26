@@ -594,48 +594,64 @@ export const resolveOfficeLayout = (search = '') => {
   return LAYOUT_V1
 }
 
-const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }
+const CAMPUS_DATA = { x0: -174, x1: -65, z0: -33, z1: 42, width: 109, depth: 75, area: 8175, westRoadBuffer: 8, northRoadBuffer: 15, eastRoadBuffer: 15 }
 const CAMPUS_BUILDING_DATA = { x0: -168, x1: -80, z0: -18, z1: 30, width: 88, depth: 48, area: 4224 }
 const campusZone = (id, name, label, x0, x1, z0, z1, kind, v1, ref) => ({ id, name, label, x0, x1, z0, z1, kind, v1, ref })
 const CAMPUS_ZONES_DATA = [
-  campusZone('receiving', '收货月台', '收货月台（示意）', -164, -128, -18, -12, 'building', 'visible', 'W1 / 物流入库示意'),
-  campusZone('inspection', '入库质检', '入库质检（示意）', -128, -104, -18, -10, 'building', 'visible', 'W1 / 平台服务示意'),
-  campusZone('highRack', '高位货架仓储区', '高位货架仓储区（示意）', -152, -104, -10, 8, 'building', 'visible', 'W1 / 智慧云仓示意'),
-  campusZone('picking', '拣货区', '拣货区（示意）', -152, -128, 8, 18, 'building', 'visible', 'W2 / 周转示意'),
-  campusZone('packing', '包装区', '包装区（示意）', -128, -104, 8, 18, 'building', 'visible', 'W2 / 周转示意'),
-  campusZone('shipping', '发货月台', '发货月台（示意）', -104, -80, -4, 18, 'building', 'visible', 'W3 / 集货配送示意'),
-  campusZone('dispatch', '调度中控', '调度中控（示意）', -168, -154, 0, 16, 'building', 'visible', '平台运营示意'),
-  campusZone('visitor', '访客接待区', '访客接待区（示意）', -168, -154, 20, 30, 'building', 'visible', '设计服务示意'),
-  campusZone('showcase', '服务中心展示区', '服务中心展示区（示意）', -154, -130, 20, 30, 'building', 'visible', '中央展示示意'),
-  campusZone('officeMeeting', '办公与会议区', '办公与会议区（示意）', -130, -104, 20, 30, 'building', 'mark', '设计会议示意'),
-  campusZone('maintenance', '设备与维护区', '设备与维护区（示意）', -104, -80, 20, 30, 'building', 'mark', '维护演示示意'),
-  campusZone('frontPlaza', '前广场水景门牌', '前广场水景门牌（示意）', -154, -94, 30, 38, 'outdoor', 'visible', '主入口示意'),
-  campusZone('parking', '园区停车场', '园区停车场（示意）', -94, -76, 30, 42, 'outdoor', 'mark', '客户停车示意'),
-  campusZone('logisticsGate', '物流出入口', '物流出入口（示意）', -80, -72, 18, 30, 'outdoor', 'visible', '物流门架示意'),
+  campusZone('receiving', '收货月台', '收货月台（示意）', -166, -137, -18, -5, 'building', 'visible', 'B-R1 / 收货内装卸'),
+  campusZone('inspection', '入库质检', '入库质检（示意）', -137, -124, -17, -3, 'building', 'visible', 'B-R1 / 入库质检'),
+  campusZone('highRack', '高位货架仓储区', '高位货架仓储区（示意）', -124, -90, -18, -4, 'building', 'visible', 'B-R1 / 高位货架'),
+  campusZone('picking', '拣货区', '拣货区（示意）', -149, -127, -1, 15, 'building', 'visible', 'B-R1 / 拣货'),
+  campusZone('packing', '包装区', '包装区（示意）', -127, -105, -1, 15, 'building', 'visible', 'B-R1 / 包装'),
+  campusZone('shipping', '发货月台', '发货月台（示意）', -105, -80, -4, 15, 'building', 'visible', 'B1 / 发货内装卸'),
+  campusZone('dispatch', '调度中控', '调度中控（示意）', -168, -149, 6, 20, 'building', 'visible', 'B-R1 / 调度中控'),
+  campusZone('visitor', '访客接待区', '访客接待区（示意）', -168, -147, 20, 30, 'building', 'visible', 'B-R1 / 访客接待'),
+  campusZone('showcase', '服务中心展示区', '服务中心展示区（示意）', -147, -116, 20, 30, 'building', 'visible', 'B-R1 / 中央展示'),
+  campusZone('officeMeeting', '办公与会议区', '办公与会议区（示意）', -116, -99, 20, 30, 'building', 'mark', 'B-R1 / 设计会议'),
+  campusZone('maintenance', '设备与维护区', '设备与维护区（示意）', -99, -80, 20, 30, 'building', 'mark', 'B-R1 / 维护'),
+  campusZone('frontPlaza', '前广场水景门牌', '前广场水景门牌（示意）', -155, -98, 30, 41, 'outdoor', 'visible', 'B-R1 / 主入口'),
+  campusZone('parking', '园区停车场', '园区停车场（示意）', -98, -76, 30, 42, 'outdoor', 'mark', 'B-R1 / 客户停车'),
+  campusZone('logisticsGate', '物流出入口', '物流出入口（示意）', -80, -65, 18, 30, 'outdoor', 'visible', 'B1 / 东侧物流车道'),
 ]
-const CAMPUS_SHUTTLE_STRIP_DATA = { x0: -148, x1: -144, z0: -8, z1: 6, kind: 'mark', label: '穿梭机展示带（示意）' }
+const CAMPUS_SHUTTLE_STRIP_DATA = { x0: -94, x1: -90, z0: -18, z1: -4, kind: 'mark', label: '穿梭机展示带（示意）' }
+const CAMPUS_DOCKS_DATA = [
+  { id: 'D01', zone: 'receiving', side: 'north', at: -162.5, width: 3.6, bay: { x0: -164.3, x1: -160.7, z0: -17.5, z1: -8.5 }, work: { x0: -164.3, x1: -160.7, z0: -8.5, z1: -5 }, route: 'north-D01' },
+  { id: 'D02', zone: 'receiving', side: 'north', at: -155, width: 3.6, bay: { x0: -156.8, x1: -153.2, z0: -17.5, z1: -8.5 }, work: { x0: -156.8, x1: -153.2, z0: -8.5, z1: -5 }, route: 'north-D02' },
+  { id: 'D03', zone: 'receiving', side: 'north', at: -147.5, width: 3.6, bay: { x0: -149.3, x1: -145.7, z0: -17.5, z1: -8.5 }, work: { x0: -149.3, x1: -145.7, z0: -8.5, z1: -5 }, route: 'north-D03' },
+  { id: 'D04', zone: 'receiving', side: 'north', at: -140, width: 3.6, bay: { x0: -141.8, x1: -138.2, z0: -17.5, z1: -8.5 }, work: { x0: -141.8, x1: -138.2, z0: -8.5, z1: -5 }, route: 'north-D04' },
+  { id: 'D05', zone: 'shipping', side: 'east', at: -2.15, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: -3.95, z1: -0.35 }, work: { x0: -92.75, x1: -89.25, z0: -3.95, z1: -0.35 }, route: 'east-D05' },
+  { id: 'D06', zone: 'shipping', side: 'east', at: 2.95, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 1.15, z1: 4.75 }, work: { x0: -92.75, x1: -89.25, z0: 1.15, z1: 4.75 }, route: 'east-D06' },
+  { id: 'D07', zone: 'shipping', side: 'east', at: 8.05, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 6.25, z1: 9.85 }, work: { x0: -92.75, x1: -89.25, z0: 6.25, z1: 9.85 }, route: 'east-D07' },
+  { id: 'D08', zone: 'shipping', side: 'east', at: 13.15, width: 3.6, bay: { x0: -89.25, x1: -80.25, z0: 11.35, z1: 14.95 }, work: { x0: -92.75, x1: -89.25, z0: 11.35, z1: 14.95 }, route: 'east-D08' },
+]
+const CAMPUS_VEHICLE_ROUTES_DATA = [
+  ...CAMPUS_DOCKS_DATA.slice(0, 4).map((dock) => ({ id: dock.route, dockId: dock.id, entry: 'north-yard', turningRadius: 10, points: [[dock.at + 10, -28], [dock.at + 5, -28], [dock.at, -28], [dock.at, -18], [(dock.bay.x0 + dock.bay.x1) / 2, -13]] })),
+  ...CAMPUS_DOCKS_DATA.slice(4).map((dock) => ({ id: dock.route, dockId: dock.id, entry: 'Z14', turningRadius: 10, points: [[-72, 24], [-69.5, 24], [-69.5, dock.at], [-80, dock.at], [-84.75, dock.at]] })),
+]
 const CAMPUS_WALKABLE_DATA = [
-  { id: 'frontApproach', x0: -154, x1: -94, z0: 38, z1: 42 },
+  { id: 'frontApproach', x0: -155, x1: -98, z0: 30, z1: 42 },
   { id: 'frontAxis', x0: -126, x1: -122, z0: 30, z1: 42 },
-  { id: 'frontBridge', x0: -154, x1: -104, z0: 28, z1: 34 },
-  { id: 'visitorHall', x0: -168, x1: -104, z0: 24, z1: 30 },
-  { id: 'serviceAxis', x0: -166, x1: -160, z0: 10, z1: 25 },
-  { id: 'showcaseHall', x0: -154, x1: -104, z0: 24, z1: 28 },
+  { id: 'frontBridge', x0: -155, x1: -98, z0: 28, z1: 34 },
+  { id: 'visitorHall', x0: -168, x1: -99, z0: 24, z1: 30 },
+  { id: 'serviceAxis', x0: -168, x1: -166, z0: 10, z1: 25 },
+  { id: 'showcaseHall', x0: -147, x1: -116, z0: 24, z1: 28 },
 ]
 const CAMPUS_FLOWS_DATA = [
   { id: 'customer', name: '客户动线（示意）', type: 'walk', points: [[-124, 42], [-124, 34], [-142, 27], [-117, 27]] },
-  { id: 'cargo', name: '货物动线（示意）', type: 'mark', points: [[-146, -18], [-116, -14], [-128, -1], [-140, 13], [-116, 13], [-92, 8]], sequence: ['receiving', 'inspection', 'highRack', 'picking', 'packing', 'shipping'] },
-  { id: 'platform', name: '平台服务动线（示意）', type: 'walk', points: [[-166, 25], [-163, 18], [-163, 25], [-117, 25]] },
+  { id: 'cargo', name: '货物动线（示意）', type: 'mark', points: [[-162, -18], [-130, -10], [-107, -10], [-138, 7], [-116, 7], [-92, 8]], sequence: ['receiving', 'inspection', 'highRack', 'picking', 'packing', 'shipping'] },
+  { id: 'platform', name: '平台服务动线（示意）', type: 'walk', points: [[-167, 25], [-167, 18], [-167, 25], [-117, 25]] },
 ]
 
 export const CAMPUS = freezeDeep(CAMPUS_DATA)
 export const CAMPUS_BUILDING = freezeDeep(CAMPUS_BUILDING_DATA)
 export const CAMPUS_ZONES = freezeDeep(CAMPUS_ZONES_DATA)
 export const CAMPUS_SHUTTLE_STRIP = freezeDeep(CAMPUS_SHUTTLE_STRIP_DATA)
+export const CAMPUS_DOCKS = freezeDeep(CAMPUS_DOCKS_DATA)
+export const CAMPUS_VEHICLE_ROUTES = freezeDeep(CAMPUS_VEHICLE_ROUTES_DATA)
 export const CAMPUS_WALKABLE = freezeDeep(CAMPUS_WALKABLE_DATA)
 export const CAMPUS_FLOWS = freezeDeep(CAMPUS_FLOWS_DATA)
 export const CAMPUS_FOCUS = freezeDeep({ label: 'DR 仓配服务中心（示意）', t: [-124, 0, 6], r: 68 })
-export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: 24, z0: -28, z1: 44 })
+export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: -61, z0: -35, z1: 44 })
 import { barColliders, barLounges } from './office-bar-geometry.js'
 import { createV3PublicPath } from './office-v3-public-path.js'
 

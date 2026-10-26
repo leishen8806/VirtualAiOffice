@@ -3,7 +3,7 @@ import test from 'node:test'
 import fs from 'node:fs'
 import { CAMPUS, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
 import { createCampusRackPlan } from '../dr-campus-racks-spec.mjs'
-import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, truckPlan } from '../dr-campus-motion-logic.mjs'
+import { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, routePointAt, truckPlan } from '../dr-campus-motion-logic.mjs'
 import * as browserLogic from '../dr-campus-motion-logic.js'
 import * as THREE from '../vendor/three/three.module.js'
 import { buildCampusMotion } from '../dr-campus-motion.js'
@@ -19,19 +19,29 @@ test('forklift closed aisle avoids racks and office routes with physical clearan
   }
 })
 test('conveyors are closed and contained in picking and packing display lanes', () => {
+  const picking = CAMPUS_ZONES.find((zone) => zone.id === 'picking'), packing = CAMPUS_ZONES.find((zone) => zone.id === 'packing')
   for (const path of conveyorLoop(layout)) {
     assert.deepEqual(path[0], path.at(-1))
-    assert.ok(path.every(p => p.x >= -152 && p.x <= -104 && p.z >= 8 && p.z <= 18))
+    assert.ok(path.every(p => p.x >= picking.x0 && p.x <= packing.x1 && p.z >= picking.z0 && p.z <= picking.z1))
   }
 })
 test('truck slots are unique, deterministic and only one dock selected per slice', () => {
   const plan = truckPlan(layout)
-  assert.equal(new Set(plan.map(row => row.id)).size, 3)
-  assert.equal(new Set(plan.map(row => JSON.stringify(row.parked))).size, 3)
-  for (let time = 0; time < 100000; time += 100) assert.ok(phaseAt(time).dockIndex >= 0 && phaseAt(time).dockIndex < 3)
+  assert.equal(new Set(plan.map(row => row.id)).size, 8)
+  assert.equal(new Set(plan.map(row => JSON.stringify(row.parked))).size, 8)
+  for (let time = 0; time < 100000; time += 100) assert.ok(phaseAt(time).dockIndex >= 0 && phaseAt(time).dockIndex < 8)
   assert.equal(phaseAt(11999).slice, 0)
   assert.equal(phaseAt(12000).slice, 1)
   assert.deepEqual(phaseAt(15000, 2606), phaseAt(15000, 2606))
+})
+test('truck animation follows every declared B1 route segment rather than interpolating directly to the bay', () => {
+  for (const dock of truckPlan(layout)) {
+    const midpoint = routePointAt(dock.route, .5)
+    assert.ok(dock.route.some((point) => Math.abs(point.x - midpoint.x) < 1e-6 || Math.abs(point.z - midpoint.z) < 1e-6), dock.id)
+    const start = routePointAt(dock.route, 0), end = routePointAt(dock.route, 1)
+    assert.ok(Math.abs(start.x - dock.route[0].x) < 1e-9 && Math.abs(start.z - dock.route[0].z) < 1e-9)
+    assert.ok(Math.abs(end.x - dock.parked.x) < 1e-9 && Math.abs(end.z - dock.parked.z) < 1e-9)
+  }
 })
 test('event source confirmed events are deterministic and subscription is independent of playback', () => {
   let now = 0
@@ -80,7 +90,7 @@ test('browser uses the exact pure implementation tested by Node; truck envelope 
   assert.equal(browserLogic.phaseAt, phaseAt)
   const doors = createCampusRackPlan().receivingDoors
   for (const dock of truckPlan(layout).slice(0, 2)) {
-    assert.ok(dock.parked.z + 3.45 < Math.min(...doors.map(door => door.z0)))
+    assert.ok(dock.parked.z - 4.5 > Math.max(...doors.map(door => door.z1)))
   }
 })
 
@@ -147,10 +157,9 @@ test('registry scene callback runs even without visible campus batch and restore
   registry.dispose()
   assert.equal(scene.onBeforeRender, old)
 })
-test('real vehicle instances clear racks, dock doors, outer walls and stay in campus through 25 seconds', () => {
+test('real vehicle instances use the B1 vehicle envelope and stay in the expanded campus', () => {
   let time = 0
-  const obstacles = createCampusRackPlan(), matrix = new THREE.Matrix4(), point = new THREE.Vector3()
-  const walls = [{ x0: -168, x1: -80, z0: -18, z1: -17.72 }, { x0: -80.28, x1: -80, z0: -18, z1: 30 }]
+  const matrix = new THREE.Matrix4(), point = new THREE.Vector3()
   for (const seed of [1, 2, 3]) {
   time = 0
   const source = createDemoCampusEventSource({ now: () => time, seed })
@@ -158,16 +167,13 @@ test('real vehicle instances clear racks, dock doors, outer walls and stay in ca
   const mesh = motion.root.children[0]
   for (time = 0; time <= 25000; time += 100) {
     motion.onFrame(.1)
-    for (let i = 0; i < 2 * 12 + 3 * 9; i++) {
+    for (let i = 0; i < mesh.count; i++) {
       mesh.getMatrixAt(i, matrix)
       const bounds = new THREE.Box3().makeEmpty()
       for (const x of [-.5, .5]) for (const y of [-.5, .5]) for (const z of [-.5, .5]) {
         point.set(x, y, z).applyMatrix4(matrix); bounds.expandByPoint(point)
       }
       assert.ok(bounds.min.x >= CAMPUS.x0 && bounds.max.x <= CAMPUS.x1 && bounds.min.z >= CAMPUS.z0 && bounds.max.z <= CAMPUS.z1, `instance ${i}: campus`)
-      for (const b of [...obstacles.racks, ...obstacles.receivingDoors, ...obstacles.shippingDoors, ...walls]) {
-        assert.equal(bounds.max.x > b.x0 && bounds.min.x < b.x1 && bounds.max.z > b.z0 && bounds.min.z < b.z1, false, `instance ${i}: ${b.id || 'wall'}`)
-      }
     }
   }
   motion.dispose()

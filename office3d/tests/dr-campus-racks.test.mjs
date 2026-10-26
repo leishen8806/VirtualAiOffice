@@ -17,8 +17,10 @@ test('racks remain in highRack, clear of shuttle and deterministic', () => {
     assert.equal(overlap(rack, CAMPUS_SHUTTLE_STRIP), false)
     assert.ok(rack.sections.every((section) => section.x0 >= highRack.x0 && section.x1 <= highRack.x1))
   }
-  for (let i = 1; i < a.racks.length; i++) assert.ok(a.racks[i].x0 - a.racks[i - 1].x1 >= 2.5)
-  assert.equal(a.receivingDoors.length, 4); assert.equal(a.shippingDoors.length, 3)
+  for (let i = 1; i < a.racks.length; i++) assert.ok(a.racks[i].x0 - a.racks[i - 1].x1 >= 4)
+  assert.equal(a.receivingDoors.length, 4); assert.equal(a.shippingDoors.length, 4)
+  assert.ok(a.receivingDoors.every((door) => door.z0 === highRack.z0 || door.z0 === -18))
+  assert.ok(a.shippingDoors.every((door) => door.x1 === -80))
   assert.ok([...a.receivingDoors, ...a.shippingDoors].every((door) => door.offset >= .12))
 })
 
@@ -27,7 +29,7 @@ test('rack modules stay static and avoid runtime data APIs', async () => {
   assert.doesNotMatch(source.join('\n'), /Math\.random|Date\.now|fetch\s*\(|innerHTML|userData\.dynamic|\beval\s*\(|new Function/)
   const plan = createCampusRackPlan()
   assert.ok(plan.cargo.length <= 48)
-  assert.equal(plan.racks.length * 6 * 6 + plan.cargo.length + plan.stations.length + plan.receivingDoors.length + plan.shippingDoors.length + 1, 203)
-  assert.ok(203 * 12 <= 18000)
+  assert.equal(plan.racks.length * 6 * 6 + plan.cargo.length + plan.stations.length + plan.receivingDoors.length + plan.shippingDoors.length + 1, 204)
+  assert.ok(204 * 12 <= 18000)
   assert.ok(93 * 12 <= 5000)
 })

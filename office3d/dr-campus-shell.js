@@ -1,18 +1,35 @@
-import { CAMPUS, CAMPUS_BUILDING, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
+import { CAMPUS, CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
 
 const inside = (part, bounds) => part.x0 >= bounds.x0 && part.x1 <= bounds.x1 && part.z0 >= bounds.z0 && part.z1 <= bounds.z1
 const rect = (name, bounds, extra = {}) => Object.freeze({ name, ...bounds, dynamic: false, ...extra })
 const zone = (zones, id) => zones.find((item) => item.id === id)
+const wallSegments = (side, building, docks) => {
+  const vertical = side === 'east' || side === 'west'
+  const lo = vertical ? building.z0 : building.x0, hi = vertical ? building.z1 : building.x1
+  const openings = docks.filter((dock) => dock.side === side).map((dock) => ({ lo: dock.at - dock.width / 2, hi: dock.at + dock.width / 2 })).sort((a, b) => a.lo - b.lo)
+  let start = lo, index = 1
+  const segments = []
+  for (const opening of openings) {
+    if (opening.lo > start) segments.push(vertical
+      ? rect(`campus-wall-${side}-${index++}`, { x0: building.x1 - .28, x1: building.x1, z0: start, z1: opening.lo })
+      : rect(`campus-wall-${side}-${index++}`, { x0: start, x1: opening.lo, z0: building.z0, z1: building.z0 + .28 }))
+    start = opening.hi
+  }
+  if (start < hi) segments.push(vertical
+    ? rect(`campus-wall-${side}-${index}`, { x0: building.x1 - .28, x1: building.x1, z0: start, z1: hi })
+    : rect(`campus-wall-${side}-${index}`, { x0: start, x1: hi, z0: building.z0, z1: building.z0 + .28 }))
+  return segments
+}
 
-export function buildCampusShellSpec(layout = { campus: CAMPUS, building: CAMPUS_BUILDING, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }) {
-  const { campus, building, zones, shuttle } = layout
+export function buildCampusShellSpec(layout = { campus: CAMPUS, building: CAMPUS_BUILDING, docks: CAMPUS_DOCKS, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP }) {
+  const { campus, building, zones, shuttle } = layout, docks = layout.docks || CAMPUS_DOCKS
   const front = zone(zones, 'frontPlaza'), parking = zone(zones, 'parking'), gate = zone(zones, 'logisticsGate')
   const shell = [
     rect('campus-paving', campus, { offset: .05, kind: 'ground' }),
     rect('campus-building-floor', building, { offset: .06, kind: 'ground' }),
-    rect('campus-wall-north', { x0: building.x0, x1: building.x1, z0: building.z0, z1: building.z0 + .28 }),
+    ...wallSegments('north', building, docks),
     rect('campus-wall-west', { x0: building.x0, x1: building.x0 + .28, z0: building.z0, z1: building.z1 }),
-    rect('campus-wall-east', { x0: building.x1 - .28, x1: building.x1, z0: building.z0, z1: building.z1 }),
+    ...wallSegments('east', building, docks),
     rect('campus-roof-north', { x0: building.x0, x1: building.x1, z0: building.z0, z1: building.z0 + 5 }),
     rect('campus-roof-south', { x0: building.x0, x1: building.x1, z0: building.z1 - 5, z1: building.z1 }),
     ...zones.filter((item) => item.v1 !== 'reserved').map((item) => rect(`campus-zone-${item.id}`, item, { kind: item.v1 === 'visible' ? 'volume' : 'mark', offset: item.v1 === 'mark' ? .08 : .1 })),

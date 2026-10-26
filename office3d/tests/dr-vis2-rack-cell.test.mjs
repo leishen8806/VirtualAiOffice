@@ -127,15 +127,16 @@ test('host state: carrying, occupied and status are accepted from the host only,
 
 test('intermediate world positions are reachable: driving setShuttle with the real shuttleFrame reaches slot-b and is not clamped', () => {
   const { cell } = build(), plan = shuttlePlan(layout), shuttle = named(cell, 'vis2-shuttle')
-  assert.deepEqual(plan.slots.map((slot) => +slot.z.toFixed(2)), [-6.85, -1, 4.85])
+  const slots = plan.slots.map((slot) => +slot.z.toFixed(2))
+  assert.deepEqual(slots, [plan.path.z0, (plan.path.z0 + plan.path.z1) / 2, plan.path.z1].map((z) => +z.toFixed(2)))
   const state = { ...initialShuttleState(plan), target: plan.slots[1].z, movingFrom: plan.slots[0].z, movingAt: 0, lastAt: 0, status: 'moving' }
   for (const time of [0, 600, 1100, 1600, 2200]) {
     const frame = shuttleFrame(state, time)
     cell.setShuttle({ z: frame.position, lift: frame.lift, carrying: frame.carrying, occupied: frame.occupied, status: frame.status })
     assert.ok(near(shuttle.position.z, frame.position, 1e-9), `t=${time}: z = frame.position (world z), not remapped`)
   }
-  assert.ok(near(shuttle.position.z, -1, 1e-9), 'arrives at the intermediate slot -1, not an endpoint')
-  for (const z of [-6.85, -1, 4.85]) { cell.setShuttle({ z }); assert.ok(near(shuttle.position.z, z, 1e-9), `reaches z=${z}`) }
+  assert.ok(near(shuttle.position.z, plan.slots[1].z, 1e-9), 'arrives at the intermediate slot, not an endpoint')
+  for (const z of slots) { cell.setShuttle({ z }); assert.ok(near(shuttle.position.z, z, 1e-9), `reaches z=${z}`) }
   cell.setShuttle({ z: -1000 }); assert.ok(near(shuttle.position.z, plan.path.z0, 1e-9)); cell.setShuttle({ z: 1000 }); assert.ok(near(shuttle.position.z, plan.path.z1, 1e-9))
   const stripBox = worldBox(shuttle); assert.ok(stripBox.min.z >= CAMPUS_SHUTTLE_STRIP.z0 && stripBox.max.z <= CAMPUS_SHUTTLE_STRIP.z1)
 })

@@ -1,1 +1,1 @@
-export { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, truckPlan } from './dr-campus-motion-logic.js'
+export { confirmedEvents, conveyorLoop, createDemoCampusEventSource, createMotionClock, forkliftPath, pathPoint, phaseAt, routePointAt, truckPlan } from './dr-campus-motion-logic.js'

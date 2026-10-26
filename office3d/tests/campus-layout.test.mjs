@@ -71,11 +71,15 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
 })
 
 test('campus and building meet the frozen planning envelope', () => {
-  assert.equal(area(current.CAMPUS), 6936)
-  assert.ok(area(current.CAMPUS) >= 6500)
+  assert.equal(area(current.CAMPUS), 8175)
+  assert.equal(current.CAMPUS.width, 109)
+  assert.equal(current.CAMPUS.depth, 75)
+  assert.ok(area(current.CAMPUS) >= 8000)
   assert.equal(area(current.CAMPUS_BUILDING), 4224)
   assert.ok(area(current.CAMPUS_BUILDING) >= 4000)
   assert.equal(current.CAMPUS.westRoadBuffer, 8)
+  assert.equal(current.CAMPUS.northRoadBuffer, 15)
+  assert.equal(current.CAMPUS.eastRoadBuffer, 15)
   assert.equal(current.CAMPUS_BUILDING.x0, -168)
   assert.equal(current.CAMPUS_BUILDING.x1, -80)
   assert.equal(current.CAMPUS_BUILDING.z0, -18)
@@ -95,8 +99,10 @@ test('fourteen zones are unique, inside, non-overlapping and labelled as示意',
     for (const other of zones.slice(i + 1)) assert.equal(overlaps(zone, other), false, `${zone.id}/${other.id}`)
     for (const value of [zone.x0, zone.x1, zone.z0, zone.z1]) assert.equal(grid(value), true, zone.id)
   }
-  assert.equal(current.CAMPUS_ZONES.find((zone) => zone.id === 'highRack').x0, -152)
-  assert.equal(current.CAMPUS_ZONES.find((zone) => zone.id === 'logisticsGate').x1, -72)
+  assert.deepEqual(current.CAMPUS_ZONES.find((zone) => zone.id === 'receiving'), { id: 'receiving', name: '收货月台', label: '收货月台（示意）', x0: -166, x1: -137, z0: -18, z1: -5, kind: 'building', v1: 'visible', ref: 'B-R1 / 收货内装卸' })
+  assert.deepEqual(current.CAMPUS_ZONES.find((zone) => zone.id === 'shipping'), { id: 'shipping', name: '发货月台', label: '发货月台（示意）', x0: -105, x1: -80, z0: -4, z1: 15, kind: 'building', v1: 'visible', ref: 'B1 / 发货内装卸' })
+  assert.equal(current.CAMPUS_ZONES.find((zone) => zone.id === 'highRack').x0, -124)
+  assert.equal(current.CAMPUS_ZONES.find((zone) => zone.id === 'logisticsGate').x1, -65)
 })
 
 test('campus stays clear of existing office, plaza, waiting and A4 regions', () => {
@@ -109,11 +115,11 @@ test('campus stays clear of existing office, plaza, waiting and A4 regions', () 
     { x0: 62, x1: 78, z0: -38, z1: -22 },
   ]
   assert.equal(protectedAreas.some((areaBox) => overlaps(current.CAMPUS, areaBox)), false)
-  assert.ok(current.CAMPUS.x1 <= -72)
+  assert.ok(current.CAMPUS.x1 <= -60)
 })
 
 test('road buffer, shuttle strip, flows and walk segments obey planning data', () => {
-  assert.equal(current.CAMPUS.x1 - (-64), -8)
+  assert.equal(current.CAMPUS.x1 - (-60), -5)
   assert.ok(inside(current.CAMPUS_SHUTTLE_STRIP, current.CAMPUS_ZONES.find((zone) => zone.id === 'highRack')))
   assert.deepEqual(current.CAMPUS_FLOWS.map((flow) => flow.type), ['walk', 'mark', 'walk'])
   for (const flow of current.CAMPUS_FLOWS) {
@@ -130,13 +136,41 @@ test('road buffer, shuttle strip, flows and walk segments obey planning data', (
 
 test('focus, minimap and deep freezing are stable', () => {
   assert.deepEqual(current.CAMPUS_FOCUS, { label: 'DR 仓配服务中心（示意）', t: [-124, 0, 6], r: 68 })
-  assert.deepEqual(current.CAMPUS_MINI_BOUNDS, { x0: -178, x1: 24, z0: -28, z1: 44 })
+  assert.deepEqual(current.CAMPUS_MINI_BOUNDS, { x0: -178, x1: -61, z0: -35, z1: 44 })
   assert.equal(current.MINI_BOUNDS.x0, -48)
   assert.equal(Object.isFrozen(current.CAMPUS), true)
   assert.equal(Object.isFrozen(current.CAMPUS_ZONES[0]), true)
   assert.equal(Object.isFrozen(current.CAMPUS_FLOWS[0].points), true)
   assert.throws(() => { current.CAMPUS.x0 = 0 }, TypeError)
   assert.throws(() => { current.CAMPUS_ZONES[0].x0 = 0 }, TypeError)
+})
+
+test('B1 docks are exterior, wide enough and keep truck bays with their working strips inside zones', () => {
+  assert.equal(current.CAMPUS_DOCKS.length, 8)
+  const receiving = current.CAMPUS_ZONES.find((zone) => zone.id === 'receiving')
+  const shipping = current.CAMPUS_ZONES.find((zone) => zone.id === 'shipping')
+  const groups = { north: current.CAMPUS_DOCKS.filter((dock) => dock.side === 'north'), east: current.CAMPUS_DOCKS.filter((dock) => dock.side === 'east') }
+  assert.equal(groups.north.length, 4); assert.equal(groups.east.length, 4)
+  for (const dock of current.CAMPUS_DOCKS) {
+    assert.ok(dock.width >= 3.6, dock.id)
+    assert.equal(dock.side === 'north' ? dock.zone === 'receiving' && dock.bay.z0 >= receiving.z0 && dock.work.z1 <= receiving.z1 : dock.zone === 'shipping' && dock.bay.x1 <= shipping.x1 && dock.work.x0 >= shipping.x0, true, dock.id)
+    assert.ok(inside(dock.bay, dock.zone === 'receiving' ? receiving : shipping), `${dock.id} bay`)
+    assert.ok(inside(dock.work, dock.zone === 'receiving' ? receiving : shipping), `${dock.id} work`)
+  }
+  for (const docks of Object.values(groups)) for (let index = 1; index < docks.length; index++) assert.ok(docks[index].at - docks[index - 1].at - (docks[index].width + docks[index - 1].width) / 2 >= 1.5 - 1e-9)
+  assert.equal(current.CAMPUS_DOCKS.at(-1).at + current.CAMPUS_DOCKS.at(-1).width / 2 <= current.CAMPUS_BUILDING.z1, true)
+})
+
+test('B1 vehicle routes use the north yard for receiving and Z14 for shipping, then end in unique bays with 10m clearance', () => {
+  assert.equal(current.CAMPUS_VEHICLE_ROUTES.length, 8)
+  const ids = new Set(current.CAMPUS_DOCKS.map((dock) => dock.id))
+  for (const route of current.CAMPUS_VEHICLE_ROUTES) {
+    assert.ok(ids.has(route.dockId))
+    assert.equal(route.entry, route.dockId <= 'D04' ? 'north-yard' : 'Z14')
+    assert.equal(route.turningRadius, 10)
+    assert.ok(route.points.length >= 5)
+    assert.ok(route.points.every((point) => pointIn(point, current.CAMPUS)), route.id)
+  }
 })
 
 test('mutation sentinels detect an escaped or overlapping zone', () => {

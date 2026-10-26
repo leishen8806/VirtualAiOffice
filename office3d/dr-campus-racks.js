@@ -1,27 +1,27 @@
-import { CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
+import { CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
 
 const zone = (id, zones) => zones.find((item) => item.id === id)
 const seeded = (value) => () => ((value = (value * 1664525 + 1013904223) >>> 0) / 0x100000000)
 const box = (id, x0, x1, z0, z1, extra = {}) => Object.freeze({ id, x0, x1, z0, z1, ...extra })
 
-export function createCampusRackPlan({ zones = CAMPUS_ZONES, shuttle = CAMPUS_SHUTTLE_STRIP, seed = 2505 } = {}) {
+export function createCampusRackPlan({ zones = CAMPUS_ZONES, shuttle = CAMPUS_SHUTTLE_STRIP, docks = CAMPUS_DOCKS, seed = 2505 } = {}) {
   const highRack = zone('highRack', zones), receiving = zone('receiving', zones), shipping = zone('shipping', zones)
-  const rng = seeded(seed), rowXs = [-142, -133, -124, -115], labels = ['A1', 'R2', 'C2', 'B2']
+  const rng = seeded(seed), rowXs = [-122, -116, -110, -104], labels = ['A1', 'R2', 'C2', 'B2']
   const racks = rowXs.map((x0, row) => Object.freeze({
-    id: `rack-${labels[row]}`, label: labels[row], x0, x1: x0 + 2, z0: -8, z1: 6,
-    sections: Object.freeze(Array.from({ length: 6 }, (_, index) => box(`rack-${labels[row]}-${index + 1}`, x0, x0 + 2, -8 + index * (14 / 6), -8 + (index + 1) * (14 / 6), { row, index }))),
+    id: `rack-${labels[row]}`, label: labels[row], x0, x1: x0 + 2, z0: -17.9, z1: -4.1,
+    sections: Object.freeze(Array.from({ length: 6 }, (_, index) => box(`rack-${labels[row]}-${index + 1}`, x0, x0 + 2, -17.9 + index * (13.8 / 6), -17.9 + (index + 1) * (13.8 / 6), { row, index }))),
   }))
   const cargo = Object.freeze(racks.flatMap((rack) => rack.sections.flatMap((section) => Array.from({ length: 2 }, (_, index) => box(`cargo-${section.id}-${index + 1}`, section.x0 + .28 + index * .8, section.x0 + .92 + index * .8, section.z0 + .24 + rng() * .5, section.z0 + 1.04 + rng() * .5, { height: .5 + rng() * .7 })))))
-  const doors = (prefix, area, count) => Object.freeze(Array.from({ length: count }, (_, index) => {
-    const width = (area.x1 - area.x0 - 2) / count, x0 = area.x0 + 1 + index * width
-    return box(`${prefix}-${index + 1}`, x0, x0 + width - .55, area.z1 - .16, area.z1, { offset: .13 })
+  const doors = (id) => Object.freeze(docks.filter((dock) => dock.zone === id).map((dock) => {
+    if (dock.side === 'north') return box(`${id}-door-${dock.id}`, dock.at - dock.width / 2, dock.at + dock.width / 2, receiving.z0, receiving.z0 + .16, { offset: .13 })
+    return box(`${id}-door-${dock.id}`, shipping.x1 - .16, shipping.x1, dock.at - dock.width / 2, dock.at + dock.width / 2, { offset: .13 })
   }))
   const stations = Object.freeze(['inspection', 'picking', 'packing'].map((id) => {
     const item = zone(id, zones)
     return box(`station-${id}`, item.x0 + 1, item.x1 - 1, item.z0 + 1, item.z0 + 2.1)
   }))
   const labelsPlan = Object.freeze(racks.map((rack) => Object.freeze({ id: `label-${rack.label}`, label: rack.label, x: (rack.x0 + rack.x1) / 2, z: rack.z1 + .13, offset: .13 })))
-  return Object.freeze({ highRack, shuttle, racks: Object.freeze(racks), labels: labelsPlan, cargo, receivingDoors: doors('receiving-door', receiving, 4), shippingDoors: doors('shipping-door', shipping, 3), stations })
+  return Object.freeze({ highRack, shuttle, racks: Object.freeze(racks), labels: labelsPlan, cargo, receivingDoors: doors('receiving'), shippingDoors: doors('shipping'), stations })
 }
 
 const put = (mesh, index, THREE, item, color) => {
@@ -52,7 +52,7 @@ export function buildCampusRacks({ THREE, root, canvasTex, layout, quality }) {
   if (!low) {
     texture = canvasTex(1024, 150, (ctx, width, height) => { ctx.fillStyle = '#18232b'; ctx.fillRect(0, 0, width, height); ctx.strokeStyle = '#d5af62'; ctx.lineWidth = 6; ctx.strokeRect(3, 3, width - 6, height - 6); ctx.fillStyle = '#f4f1eb'; ctx.font = '700 55px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('A1       R2       C2       B2', width / 2, 68); ctx.fillStyle = '#d5af62'; ctx.font = '500 30px sans-serif'; ctx.fillText('穿梭机展示位（预留）', width / 2, 118) })
     labels = new THREE.Mesh(new THREE.PlaneGeometry(30, 2.1), new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false }))
-    labels.name = 'campus-rack-labels'; labels.position.set(-127.5, 2.1, 6.13); root.add(labels)
+    labels.name = 'campus-rack-labels'; labels.position.set(-107, 2.1, -3.87); root.add(labels)
   }
   return { instances: solids.length, triangles: solids.length * 12, dispose() { texture?.dispose(); material.dispose(); mesh.geometry.dispose(); labels?.geometry?.dispose?.(); labels?.material?.dispose?.() } }
 }

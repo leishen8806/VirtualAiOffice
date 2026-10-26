@@ -250,8 +250,9 @@ test('O4 app wiring stays within its own 20-line budget and layout1 data is iden
   const current = await import('../office-layout.js')
   const comparable = value => typeof value === 'function' ? String(value) : Array.isArray(value) ? value.map(comparable) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, comparable(item)])) : value
   assert.deepEqual(comparable(current.LAYOUT_V1), comparable(previous.LAYOUT_V1))
+  const warehouseB1Exports = new Set(['CAMPUS', 'CAMPUS_ZONES', 'CAMPUS_SHUTTLE_STRIP', 'CAMPUS_WALKABLE', 'CAMPUS_FLOWS', 'CAMPUS_MINI_BOUNDS'])
   for (const name of Object.keys(previous)) {
-    if (name === 'LAYOUT_V2') continue
+    if (name === 'LAYOUT_V2' || warehouseB1Exports.has(name)) continue
     if (name === 'resolveOfficeLayout') {
       assert.equal(current.resolveOfficeLayout('?layout=2'), current.LAYOUT_V2)
       assert.equal(current.resolveOfficeLayout(''), current.LAYOUT_V1)
