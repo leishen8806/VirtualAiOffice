@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
-import { LAYOUT_V1, LAYOUT_V2, LAYOUT_V3, LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_SAMPLE, createOfficeNavigation, resolveOfficeLayout, workHome } from '../office-layout.js'
+import { LAYOUT_V1, LAYOUT_V2, LAYOUT_V3, LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_SAMPLE as sample, createOfficeNavigation, resolveOfficeLayout, workHome } from '../office-layout.js'
 import { OFFICE_PLAN1_REGIONS, OFFICE_PLAN1_SEATS, OFFICE_PLAN1_WALLS, officePlan1Reception, officePlan1SouthHeight } from '../office-plan1-layout.js'
 import { buildOfficeShellV3, buildOfficeShellV3Spec } from '../office-layout-v3-scene.js'
 import { buildOfficeAlignedShell } from '../office-vis2/shell-finish.js'
@@ -14,6 +14,7 @@ import { buildOfficeBrandMarks } from '../office-vis2/brand.js'
 import { buildOfficeVis2Frontage } from '../office-vis2/frontage.js'
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+const sampleL1 = { ...sample, plan1Phase: 'L1' }
 const pointInPolygon = (point, polygon) => {
   let inside = false
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -45,19 +46,19 @@ const workstationBox = station => {
 }
 
 test('L1 is selected only by the exact ALIGN sample query and preserves every frozen fallback', () => {
-  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'), LAYOUT_V3_ALIGN_SAMPLE)
+  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'), sample)
   for (const search of ['', '?layout=2', '?layout=3', '?layout=3&align=1', '?layout=3&align=1&officeSample=0', '?layout=3&officeSample=1']) {
-    assert.notEqual(resolveOfficeLayout(search), LAYOUT_V3_ALIGN_SAMPLE, search)
+    assert.notEqual(resolveOfficeLayout(search), sample, search)
   }
   assert.equal(LAYOUT_V1, resolveOfficeLayout(''))
   assert.equal(LAYOUT_V2, resolveOfficeLayout('?layout=2'))
   assert.equal(LAYOUT_V3, resolveOfficeLayout('?layout=3'))
   assert.equal(LAYOUT_V3_ALIGN, resolveOfficeLayout('?layout=3&align=1'))
-  assert.equal(LAYOUT_V3_ALIGN_SAMPLE.plan1Phase, 'L1')
+  assert.equal(sampleL1.plan1Phase, 'L1')
 })
 
 test('L1 carries the approved 48x36 shell, 13 regions, curved product footprint and six-metre gate', () => {
-  const layout = LAYOUT_V3_ALIGN_SAMPLE
+  const layout = sampleL1
   assert.deepEqual(layout.envelope, { x0: -22, x1: 26, z0: -18, z1: 18 })
   assert.equal(layout.regions.length, 13)
   assert.deepEqual(layout.doors.south, { x0: -1, x1: 5, z: 18, width: 6, height: 3.5 })
@@ -72,16 +73,16 @@ test('L1 carries the approved 48x36 shell, 13 regions, curved product footprint 
 
 test('L1 hides legacy plaza objects until L3 so no outside object enters the office envelope', () => {
   const root = new THREE.Group(), registered = []
-  const host = buildOfficePlazaHost({ THREE, root, layout: LAYOUT_V3_ALIGN_SAMPLE, search: '?officeSample=1', collision: { add: value => registered.push(value), remove() {} } })
+  const host = buildOfficePlazaHost({ THREE, root, layout: sampleL1, search: '?officeSample=1', collision: { add: value => registered.push(value), remove() {} } })
   assert.deepEqual(host.placements, [])
   assert.equal(root.children.length, 0)
   assert.equal(registered.length, 0)
-  for (const item of host.placements) assert.ok(item.bounds.z0 >= LAYOUT_V3_ALIGN_SAMPLE.envelope.z1, item.id)
+  for (const item of host.placements) assert.ok(item.bounds.z0 >= sampleL1.envelope.z1, item.id)
   host.dispose()
 })
 
 test('R3 continuous south slopes have actual geometry, 0.1m caps and the existing camera cutaway', () => {
-  const layout=LAYOUT_V3_ALIGN_SAMPLE, root=new THREE.Group(), shell=buildOfficeShellV3({THREE,root,layout})
+  const layout=sampleL1, root=new THREE.Group(), shell=buildOfficeShellV3({THREE,root,layout})
   assert.deepEqual(layout.walls,OFFICE_PLAN1_WALLS)
   assert.deepEqual(layout.walls.outerSolid,{height:4.5,thickness:.18,capHeight:.1,finish:'#F4F1EA'})
   assert.equal(shell.windows,null)
@@ -115,7 +116,7 @@ test('R3 continuous south slopes have actual geometry, 0.1m caps and the existin
 })
 
 test('R3 reception wall, passable paired doors, pillars and collision volumes use the same geometry',()=>{
-  const layout=LAYOUT_V3_ALIGN_SAMPLE,data=officePlan1Reception(layout),root=new THREE.Group(),registered=new Set()
+  const layout=sampleL1,data=officePlan1Reception(layout),root=new THREE.Group(),registered=new Set()
   const other={};registered.add(other)
   const shell=buildOfficeShellV3({THREE,root,layout,collision:{add:p=>registered.add(p),remove:p=>registered.delete(p)}})
   assert.deepEqual(data.doors.map(d=>[d.x0,d.x1,d.height]),[[-2.6,0,2.7],[4,6.6,2.7]])
@@ -138,7 +139,7 @@ test('R3 reception wall, passable paired doors, pillars and collision volumes us
 })
 
 test('R3 reception logo and lettering attach to the new solid wall, inside its height',()=>{
-  const layout=LAYOUT_V3_ALIGN_SAMPLE, root=new THREE.Group(), backdrop=receptionBackdrop(layout.frontDesk,layout)
+  const layout=sampleL1, root=new THREE.Group(), backdrop=receptionBackdrop(layout.frontDesk,layout)
   assert.equal(backdrop.grille.faceZ,8.57);assert.equal(backdrop.top,3)
   const brands=buildOfficeBrandMarks({THREE,root,layout}), mark=brands.marks.find(m=>m.id==='reception-wall')
   assert.equal(mark.x,2);assert.equal(mark.yaw,0);assert.ok(Math.abs(mark.z-8.608)<1e-8)
@@ -150,7 +151,7 @@ test('R3 reception logo and lettering attach to the new solid wall, inside its h
 })
 
 test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against separate north-side tracks',()=>{
-  const layout=LAYOUT_V3_ALIGN_SAMPLE,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout}),data=shell.reception.data
+  const layout=sampleL1,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout}),data=shell.reception.data
   shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
   assert.equal(data.leaves.length,4)
   for(const d of data.doors){
@@ -177,7 +178,7 @@ test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against sep
 })
 
 test('R5 warm reflective glass shares one material and inward 0.07m frames preserve all R4 blockers',()=>{
-  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,transparent,opaque}=shell.reception
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:sampleL1}),{data,transparent,opaque}=shell.reception
   shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
   assert.equal(hash(data.blockers),'f1b6e0f370af6f2c34f5a5358381a22e015c6b8dd91419dd9f6665650fc2a09f')
   assert.equal(data.spec.leafFrameWidth,.07);assert.equal(transparent.mesh.material.opacity,.35)
@@ -205,7 +206,7 @@ test('R5 warm reflective glass shares one material and inward 0.07m frames prese
 })
 
 test('R6 bronze frames, horizontal push bars and rail share the actual colour without new draw batches',()=>{
-  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,opaque,transparent}=shell.reception
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:sampleL1}),{data,opaque,transparent}=shell.reception
   shell.reception.onFrame(.6,shell.reception.data.doors.map(d=>({x:(d.x0+d.x1)/2,z:d.z})))
   const bronze=new THREE.Color('#705735'),mesh=transparent.mesh;mesh.updateMatrixWorld(true);opaque.mesh.updateMatrixWorld(true)
   assert.equal(data.spec.doorFrameColor,'#705735');assert.equal(transparent.mesh.material.opacity,.35)
@@ -231,7 +232,7 @@ test('R6 bronze frames, horizontal push bars and rail share the actual colour wi
 })
 
 test('R5 both L1 lettering planes centre on x=2 and frozen non-sample signage stays byte-identical',()=>{
-  for(const [layout,expected] of [[LAYOUT_V3_ALIGN_SAMPLE,null],[LAYOUT_V3,'400b73744d8aac4cd0b6734bb9f8d0264863d0bc6ce4b3e15f6db03dad6c2506'],[LAYOUT_V3_ALIGN,'6c40435d6204abb17ff1375d45dacd29b7990a75ccd125c0bfd9f81f5033731f']]){
+  for(const [layout,expected] of [[sampleL1,null],[LAYOUT_V3,'400b73744d8aac4cd0b6734bb9f8d0264863d0bc6ce4b3e15f6db03dad6c2506'],[LAYOUT_V3_ALIGN,'6c40435d6204abb17ff1375d45dacd29b7990a75ccd125c0bfd9f81f5033731f']]){
     const root=new THREE.Group(),f=buildOfficeVis2Frontage({THREE,root,layout,includeEnclosure:false,canvasTex:()=>new THREE.Texture()}),label=root.getObjectByName('vis2-reception-wayfinding')
     label.updateWorldMatrix(true,false)
     const p=label.geometry.attributes.position,n=label.geometry.attributes.normal,uv=label.geometry.attributes.uv
@@ -251,7 +252,7 @@ test('R5 both L1 lettering planes centre on x=2 and frozen non-sample signage st
 })
 
 test('R4 facade shares internal strip edges and continuous normals while preserving every R3 height knot',()=>{
-  const layout=LAYOUT_V3_ALIGN_SAMPLE,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout})
+  const layout=sampleL1,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout})
   assert.deepEqual(layout.walls.southProfile,[{x:-22,h:4.5},{x:-15.2,h:4.5},{x:-4,h:1.2},{x:8,h:1.2},{x:19.2,h:4.5},{x:26,h:4.5}])
   const facade=shell.facade,g=facade.mesh.geometry,indices=g.index.array,edges=new Map(),normals=g.attributes.normal
   for(let i=0;i<indices.length;i+=3)for(const [a,b]of [[indices[i],indices[i+1]],[indices[i+1],indices[i+2]],[indices[i+2],indices[i]]]){const key=[a,b].sort((a,b)=>a-b).join('/');edges.set(key,(edges.get(key)||0)+1)}
@@ -267,7 +268,7 @@ test('R4 facade shares internal strip edges and continuous normals while preserv
 })
 
 test('L1 sample keeps the owned solid facade visible and emits only finite finish geometry', () => {
-  const root = new THREE.Group(), shell = buildOfficeAlignedShell({ THREE, root, layout: LAYOUT_V3_ALIGN_SAMPLE, search: '?officeSample=1', low: false })
+  const root = new THREE.Group(), shell = buildOfficeAlignedShell({ THREE, root, layout: sampleL1, search: '?officeSample=1', low: false })
   assert.equal(shell.walls.visible, true)
   assert.equal(shell.walls.userData.dynamic, true, 'facade stays outside static merge so cutaway can update it')
   const finish = root.getObjectByName('office-aligned-frames-and-inlays'), matrix = new THREE.Matrix4()
@@ -280,7 +281,7 @@ test('L1 sample keeps the owned solid facade visible and emits only finite finis
 })
 
 test('all 25 approved identities, desks and chair homes occur once and remain in their assigned regions', () => {
-  const layout = LAYOUT_V3_ALIGN_SAMPLE, ids = Object.keys(layout.seats)
+  const layout = sampleL1, ids = Object.keys(layout.seats)
   assert.equal(ids.length, 25)
   assert.equal(new Set(ids).size, 25)
   assert.equal(hash(layout.seats), 'ace9a3ceb9b0969c244823f0c66dbf0aedd049966fed28741c0b0001a85b7bbb')
@@ -295,7 +296,7 @@ test('all 25 approved identities, desks and chair homes occur once and remain in
 })
 
 test('L1 route matrix is finite and no segment cuts a wall, another workstation or the solid tea-bar core', () => {
-  const layout = LAYOUT_V3_ALIGN_SAMPLE, nav = createOfficeNavigation(layout), homes = Object.entries(layout.seats).map(([id, seat]) => [id, workHome(seat)])
+  const layout = sampleL1, nav = createOfficeNavigation(layout), homes = Object.entries(layout.seats).map(([id, seat]) => [id, workHome(seat)])
   const furniture = officeFurnitureV2Spec(layout), meetings = furniture.meetings.flatMap(room => room.seats)
   const walls = buildOfficeShellV3Spec(layout).inner.filter(wall => wall.a)
   const desks = new Map(furniture.workstations.map(station => [station.name, workstationBox(station)]))
@@ -326,7 +327,7 @@ test('L1 route matrix is finite and no segment cuts a wall, another workstation 
 })
 
 test('four display rooms and their twelve simulated identities move with the approved regions', () => {
-  const layout = LAYOUT_V3_ALIGN_SAMPLE, expected = { market: [-18.6, -14.1], service: [22.85, -14.1], aftersales: [-18.6, 12], marketing: [22.6, 12] }
+  const layout = sampleL1, expected = { market: [-18.6, -14.1], service: [22.85, -14.1], aftersales: [-18.6, 12], marketing: [22.6, 12] }
   assert.equal(layout.displaySeats.length, 12)
   for (const [region, [x, z]] of Object.entries(expected)) {
     const seats = layout.displaySeats.filter(seat => seat.region === region)
@@ -340,7 +341,7 @@ test('four display rooms and their twelve simulated identities move with the app
 
 test('R7 closed leaves meet at each doorway centre using shared batch translations, then open independently',()=>{
   for(const low of [false,true]){
-    const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE,low}),r=shell.reception
+    const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:sampleL1,low}),r=shell.reception
     const west=r.data.doors[0],east=r.data.doors[1],person={x:(west.x0+west.x1)/2,z:west.z+1.99}
     assert.deepEqual(r.doorOpen.toArray(),[0,0])
     const originals=[r.opaque,r.transparent].map(b=>({g:b.mesh.geometry.uuid,m:b.mesh.material.uuid,p:hash(Array.from(b.mesh.geometry.attributes.position.array))}))
@@ -381,7 +382,7 @@ test('R7 opens before the fastest real person reaches any point of the door, inc
   const director=readFileSync(new URL('../director.js',import.meta.url),'utf8'),display=readFileSync(new URL('../display-staff-logic.js',import.meta.url),'utf8')
   const speed=Number(director.match(/const SPEED = ([\d.]+)/)[1]);assert.equal(speed,1.4)
   assert.ok(display.includes('* 1.4'));assert.ok(!director.includes('SPEED * 2'))
-  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),r=shell.reception,s=r.data.spec
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:sampleL1}),r=shell.reception,s=r.data.spec
   // Worst lateral position is the whole doorway edge, including the open leaf depth and a 0.26m person radius.
   const reach=Math.sqrt(s.sensorRadius**2-(s.doorWidth/2)**2),depth=Math.max(...r.data.leaves.map(p=>Math.abs(p.z0-s.z)))
   const earliest=(reach-depth-.26)/speed
@@ -397,7 +398,7 @@ test('R7 opens before the fastest real person reaches any point of the door, inc
 test('R7 host frame detects actual agent roots and display positions once per timestamp, with no extra loop',()=>{
   const scene=new THREE.Scene(),root=new THREE.Group();scene.add(root)
   const staff=new THREE.Group();staff.userData.agentId='visitor:test';scene.add(staff)
-  let extra=[];const shell=buildOfficeShellV3({THREE,root,scene,layout:LAYOUT_V3_ALIGN_SAMPLE,get:()=>({positions:()=>extra})}),r=shell.reception
+  let extra=[];const shell=buildOfficeShellV3({THREE,root,scene,layout:sampleL1,get:()=>({positions:()=>extra})}),r=shell.reception
   const west=r.data.doors[0],east=r.data.doors[1];staff.position.set((west.x0+west.x1)/2,0,west.z)
   for(let i=0;i<8;i++)shell.onFrame(.1,{now:i*100})
   assert.equal(r.states[0].open,1);assert.equal(r.states[1].open,0)

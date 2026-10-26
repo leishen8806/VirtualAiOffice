@@ -42,7 +42,7 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
     if (welcome) {
       // 两处文字共用同一图集与绘制；铺地字面比既有入口石板高2mm，不改变通行体积。
       geometry.translate(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002)
-      const floor = new THREE.PlaneGeometry(3.2, .6); floor.rotateX(-Math.PI / 2); floor.translate(layout.plan1Phase === 'L1' ? (entrance.x0 + entrance.x1) / 2 : mid, .117, f.z1 + .9)
+      const floor = new THREE.PlaneGeometry(3.2, .6); floor.rotateX(-Math.PI / 2); floor.translate(['L1', 'L2'].includes(layout.plan1Phase) ? (entrance.x0 + entrance.x1) / 2 : mid, .117, f.z1 + .9)
       const merged = new THREE.BufferGeometry()
       for (const key of ['position', 'normal', 'uv']) {
         const a = geometry.attributes[key], b = floor.attributes[key], values = [...a.array, ...b.array]

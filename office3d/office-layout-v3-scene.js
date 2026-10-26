@@ -11,7 +11,7 @@ const arcLines = (arc, count = 12) => Array.from({ length: count }, (_, i) => {
   return line({ x: arc.center.x + Math.cos(a) * arc.radius, z: arc.center.z + Math.sin(a) * arc.radius }, { x: arc.center.x + Math.cos(b) * arc.radius, z: arc.center.z + Math.sin(b) * arc.radius })
 })
 const wallSegments = (layout) => {
-  if (layout.plan1Phase === 'L1') return [
+  if (['L1', 'L2'].includes(layout.plan1Phase)) return [
     line({x:layout.envelope.x0,z:layout.envelope.z0},{x:layout.envelope.x1,z:layout.envelope.z0},'north'),
     line({x:layout.envelope.x0,z:layout.envelope.z0},{x:layout.envelope.x0,z:15},'west'),
     line({x:layout.envelope.x1,z:15},{x:layout.envelope.x1,z:layout.envelope.z0},'east'),
@@ -61,7 +61,7 @@ export function buildOfficeShellV3Spec(layout) {
     site: layout.site,
     wallHeight: layout.wallHeight,
     outer: wallSegments(layout),
-    inner: layout.plan1Phase === 'L1' ? officePlan1InnerWalls(layout) : roomSegments(layout),
+    inner: ['L1', 'L2'].includes(layout.plan1Phase) ? officePlan1InnerWalls(layout) : roomSegments(layout),
     greenBuffer: layout.greenBuffer,
     cameraDefaults: layout.cameraDefaults,
   })
@@ -170,7 +170,7 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
     if (!walls || !camera || (!wallState.length && !facade)) return
     const elevation = Math.atan2(camera.position.y - 0.1, Math.hypot(camera.position.x - layout.axis.x, camera.position.z - layout.axis.z)) * 180 / Math.PI
     const outside = camera.position.x < layout.envelope.x0 || camera.position.x > layout.envelope.x1 || camera.position.z < layout.envelope.z0 || camera.position.z > layout.envelope.z1
-    const exteriorNear = layout.plan1Phase === 'L1' && outside && Math.hypot(Math.max(layout.envelope.x0-camera.position.x,0,camera.position.x-layout.envelope.x1),Math.max(layout.envelope.z0-camera.position.z,0,camera.position.z-layout.envelope.z1)) <= 12
+    const exteriorNear = ['L1', 'L2'].includes(layout.plan1Phase) && outside && Math.hypot(Math.max(layout.envelope.x0-camera.position.x,0,camera.position.x-layout.envelope.x1),Math.max(layout.envelope.z0-camera.position.z,0,camera.position.z-layout.envelope.z1)) <= 12
     const target = { x: layout.axis.x, z: (layout.envelope.z0 + layout.envelope.z1) / 2 }
     if (facade) {
       let changed = false

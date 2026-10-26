@@ -1,3 +1,4 @@
+import { addPlan1Equipment } from './plan1-furniture.js'
 import { LAYOUT_V3 } from '../office-layout.js'
 import { barArcs, barColliders, barLounges, barSeats, barSpec, LOUNGE_SIT } from '../office-bar-geometry.js'
 import { buildHeartBanyan } from '../office-heart-banyan.js'
@@ -37,6 +38,8 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   // ALIGN 地面顶面为 0.08m，内圈铺面略抬高，避免被宿主地面盖住。
   batch.add(workFloor, '#D9D3C6', [center.x, layout.variant === 'align' ? .082 : .018, center.z], 0, .9)
   const box = (w, h, d, tint, x, y, z, roughness = .6, metalness = 0) => batch.add(new THREE.BoxGeometry(w, h, d), tint, [x, y, z], 0, roughness, metalness)
+  if (layout.plan1Phase === 'L2') addPlan1Equipment(THREE,batch,'centralIsland')
+  else {
   // 静态咖啡机、接水盘与水槽给出设备体量，不触发任何设备操作。
   box(.58, .43, .4, '#26333A', center.x - .8, 1.27, center.z - 2.75, .3, .5)
   box(.62, .04, .47, '#B89B64', center.x - .8, 1.07, center.z - 2.75, .35, .65)
@@ -56,6 +59,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
     const x = center.x - 1.55 - i * .19, z = center.z - 2.52
     batch.add(new THREE.CylinderGeometry(.065, .065, .18, 10), '#D9D3C6', [x, 1.145, z], 0, .46)
     batch.add(new THREE.CylinderGeometry(.073, .073, .025, 10), '#C9A57A', [x, 1.2475, z], 0, .65, 0, 'wood')
+  }
   }
   // 内移 1 mm 避开高低档折线内壁；合入原批次，不增加 draw call。
   for (const arc of barArcs(barLayout)) for (let i = 1; i < 6; i++) {

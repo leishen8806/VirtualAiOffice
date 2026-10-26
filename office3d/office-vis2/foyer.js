@@ -1,3 +1,4 @@
+import { addPlan1Equipment } from './plan1-furniture.js'
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
 import { officePlan1Reception } from '../office-plan1-layout.js'
@@ -48,9 +49,12 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
     batch.add(new THREE.CylinderGeometry(.065, .065, .16, 10), '#F4F1EA', [bar.center.x + offset, y + .11, bar.z0 + .18], 0, .4)
   }
   for (const x of [bar.x0 + .12, bar.x1 - .12]) box(.04, 1.15, .04, '#B89B64', x, 1.47, bar.z0 + .18, .35, .6)
+  if(layout.plan1Phase === 'L2') addPlan1Equipment(THREE,batch,'southCafe')
+  else {
   box(.55, .4, .38, '#26333A', bar.center.x, 1.2, bar.center.z, .35, .6)
   box(.58, .035, .43, '#9A968E', bar.center.x, 1.015, bar.center.z, .3, .7)
   for (const offset of [-.9, -.62, .65, .92]) batch.add(new THREE.CylinderGeometry(.07, .06, .13, 10), '#F4F1EA', [bar.center.x + offset, 1.06, bar.center.z + .22], 0, .35)
+  }
   for (const x of [bar.x0 + .5, bar.x1 - .5]) {
     batch.add(new THREE.CylinderGeometry(.42, .42, .06, 24), '#F4F1EA', [x, .73, layout.foyer.z1 - 1.4], 0, .4)
     batch.add(new THREE.CylinderGeometry(.04, .06, .67, 8), '#B89B64', [x, .37, layout.foyer.z1 - 1.4], 0, .35, .7)

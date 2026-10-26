@@ -18,15 +18,18 @@ export function facingHome([region, x, z]) {
 export function facingAccess(layout, point) {
   if (!facingSample(layout)) return null
   const seats = Object.values(layout.seats || {})
-  const seat = seats.find(s => {
+  const entry = Object.entries(layout.seats || {}).find(([, s]) => {
     const home = facingHome(s)
     return home && Math.abs(home.x - point.x) < 1e-6 && Math.abs(home.z - point.z) < 1e-6
   })
+  const seat = entry?.[1]
   const home = seat && facingHome(seat)
   if (!home) return null
-  if (layout.plan1Phase === 'L1') {
+  if (['L1', 'L2'].includes(layout.plan1Phase)) {
     const dx = home.x - seat[1], dz = home.z - seat[2], length = Math.hypot(dx, dz) || 1
-    return { x: home.x + dx / length * 1.15, z: home.z + dz / length * 1.15 }
+    // R6: keep the four routes clear of adjacent real-chair envelopes; all other seats retain L1's 1.15 m offset.
+    const distance = layout.plan1Phase === 'L2' && ['PM', 'Frontend1', 'BackendSenior', 'UIUX'].includes(entry[0]) ? .6 : 1.15
+    return { x: home.x + dx / length * distance, z: home.z + dz / length * distance }
   }
   return { x: home.x, z: home.z < 0 ? -2.3 : 2.3 }
 }

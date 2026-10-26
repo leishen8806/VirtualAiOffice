@@ -717,8 +717,9 @@ function createOfficeV3Navigation(layout) {
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
-    if (layout.plan1Phase === 'L1') {
-      const rx = (room.x1 - room.x0) / 2 - .35, rz = (room.z1 - room.z0) / 2 - .35
+    if (['L1', 'L2'].includes(layout.plan1Phase)) {
+      const inset = layout.plan1Phase === 'L2' ? .32 : .35
+      const rx = (room.x1 - room.x0) / 2 - inset, rz = (room.z1 - room.z0) / 2 - inset
       const angle = point => Math.atan2((point.x - center.x) / rx, (point.z - center.z) / rz)
       const start = angle(inside), end = angle(seat), turn = Math.atan2(Math.sin(end - start), Math.cos(end - start))
       const steps = Math.max(1, Math.ceil(Math.abs(turn) / (Math.PI / 24)))

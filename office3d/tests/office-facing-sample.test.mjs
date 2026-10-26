@@ -14,7 +14,7 @@ import { createFurnitureCollision } from '../furniture-collision.js'
 import before from './fixtures/office-o1o2-r1-ebd884f.json' with { type: 'json' }
 import { marketFurnitureFixture } from './helpers/market-furniture.mjs'
 
-const sample=LAYOUT_V3_ALIGN_SAMPLE,hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
+const sample=LAYOUT_V3_ALIGN_SAMPLE, sampleL1={...sample,plan1Phase:'L1'}, hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
 const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
 const gap=(a,b)=>Math.hypot(Math.max(a.x0-b.x1,b.x0-a.x1,0),Math.max(a.z0-b.z1,b.z0-a.z1,0))
 // 独立线段/盒相交检查；不调用生产路径的 clear()，端点安全不能代替整段安全。
@@ -47,7 +47,7 @@ test('OFFICE-PLAN-1 sample is explicit while all four fallback layouts remain fr
     assert.equal(hash(l),snapshots[i]);for(const [,x,z]of Object.values(l.seats||l.SEATS))assert.deepEqual(workHome(['unused',x,z]),{x,z:z+1,yaw:0})
   }
   assert.deepEqual(new Set(Object.keys(sample.seats)),new Set(Object.keys(LAYOUT_V3_ALIGN.seats)));assert.equal(Object.keys(sample.seats).length,25)
-  assert.equal(sample.plan1Phase,'L1');assert.equal(sample.regions.length,13);assert.equal(sample.doors.south.width,6)
+  assert.equal(sampleL1.plan1Phase,'L1');assert.equal(sample.regions.length,13);assert.equal(sample.doors.south.width,6)
 })
 
 test('stable 1375 routes and closed ALIGN 1650 routes preserve their complete c41b7c5 hashes',()=>{
@@ -73,8 +73,20 @@ test('all 25 relocated workstations keep chair anchors and measured monitor fits
     assert.ok(direction.dot(new THREE.Vector3(...fit.normal))>1-1e-10)
     const offset=new THREE.Vector3(fit.center.x-fit.glassCenter.x,fit.center.y-fit.glassCenter.y,fit.center.z-fit.glassCenter.z)
     assert.ok(Math.abs(offset.length()-.0015)<1e-9)
-    const stand=createOfficeNavigation(sample).standAt(home)
+    const stand=createOfficeNavigation(sampleL1).standAt(workHome(sampleL1.seats[s.name]))
     assert.ok(Math.abs(Math.hypot(stand.x-home.x,stand.z-home.z)-1.15)<1e-9,'visitor stands outside the occupied chair')
+  }
+})
+
+test('L2 changes only the four approved existing-seat exit offsets',()=>{
+  const exceptions=new Set(['PM','Frontend1','BackendSenior','UIUX']), l1=createOfficeNavigation(sampleL1), l2=createOfficeNavigation(sample)
+  for(const [id,seat] of Object.entries(sample.seats)){
+    const home=workHome(seat),a=l1.standAt(workHome(sampleL1.seats[id])),b=l2.standAt(home)
+    assert.ok(Math.abs(Math.hypot(a.x-home.x,a.z-home.z)-1.15)<1e-9,`${id} L1`)
+    assert.ok(Math.abs(Math.hypot(b.x-home.x,b.z-home.z)-(exceptions.has(id)?.6:1.15))<1e-9,`${id} L2`)
+    assert.deepEqual(sample.seats[id],sampleL1.seats[id],`${id} seat fields`)
+    if(!exceptions.has(id))assert.deepEqual(b,a,`${id} exit point`)
+    else assert.notDeepEqual(b,a,`${id} approved L2 exception`)
   }
 })
 

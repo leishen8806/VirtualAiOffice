@@ -130,7 +130,7 @@ const focus = Object.fromEntries(OFFICE_PLAN1_REGIONS.map(r=>[r.id,{label:r.name
 export function makeOfficePlan1Layout(base) {
   const center={x:2,z:-2}
   return {
-    ...structuredClone(base), plan1Phase:'L1', furnitureSample:true,
+    ...structuredClone(base), plan1Phase:'L2', furnitureSample:true,
     site:{x0:-28,x1:32,z0:-18,z1:30}, envelope:{x0:-22,x1:26,z0:-18,z1:18},
     walls:structuredClone(OFFICE_PLAN1_WALLS),
     greenBuffer:{width:6,x0:-28,x1:32,z0:-18,z1:30},
@@ -151,5 +151,2321 @@ export function makeOfficePlan1Layout(base) {
     meetingAccess:{northZ:-9.6,westSpineX:-.25,eastSpineX:10.5,westMiddleZ:-2,eastMiddleZ:-2,eastSouthZ:8.2},
     regionFocus:{...focus,ops:{label:'运维·质量与安全',t:[-15,0,-.85],r:24},meet:{label:'会议与决策',t:[-7.9,0,-14],r:18},foyer:{label:'前厅接待区',t:[2,0,13],r:24},plaza:{label:'DR 广场',t:[2,0,24],r:25}},
     miniBounds:{x0:-30,x1:34,z0:-20,z1:32}, plaza:{...structuredClone(base.plaza),center:{x:2,z:24},diameter:10.8,radius:5.4},
+  }
+}
+
+// OFFICE-L2：批准的 B-R3 数据子集；不改变真实工位或 L1 回退数据。
+export const OFFICE_PLAN1_L2 = {
+  "islands": [
+    {
+      "id": "ops-1",
+      "region": "ops",
+      "center": {
+        "x": -16.7,
+        "z": -5.3
+      },
+      "axis": "NS",
+      "capacity": 6,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "OpsLead",
+          "deskCenter": {
+            "x": -17.05,
+            "z": -6.7
+          },
+          "home": {
+            "x": -18.05,
+            "z": -6.7
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": -7,
+            "z1": -6.4,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -17.05,
+            "z": -5.3
+          },
+          "home": {
+            "x": -18.05,
+            "z": -5.3
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": -5.6,
+            "z1": -5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -17.05,
+            "z": -3.9
+          },
+          "home": {
+            "x": -18.05,
+            "z": -3.9
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": -4.2,
+            "z1": -3.6,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -16.35,
+            "z": -6.7
+          },
+          "home": {
+            "x": -15.35,
+            "z": -6.7
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": -7,
+            "z1": -6.4,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 5,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -16.35,
+            "z": -5.3
+          },
+          "home": {
+            "x": -15.35,
+            "z": -5.3
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": -5.6,
+            "z1": -5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 6,
+          "kind": "real",
+          "identity": "OpsEngineer",
+          "deskCenter": {
+            "x": -16.35,
+            "z": -3.9
+          },
+          "home": {
+            "x": -15.35,
+            "z": -3.9
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": -4.2,
+            "z1": -3.6,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "ops-2",
+      "region": "ops",
+      "center": {
+        "x": -11.7,
+        "z": -5.3
+      },
+      "axis": "NS",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "QAAutomation",
+          "deskCenter": {
+            "x": -12.05,
+            "z": -6
+          },
+          "home": {
+            "x": -13.05,
+            "z": -6
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -13.360000000000001,
+            "x1": -12.74,
+            "z0": -6.3,
+            "z1": -5.7,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -12.05,
+            "z": -4.6
+          },
+          "home": {
+            "x": -13.05,
+            "z": -4.6
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -13.360000000000001,
+            "x1": -12.74,
+            "z0": -4.8999999999999995,
+            "z1": -4.3,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -11.35,
+            "z": -6
+          },
+          "home": {
+            "x": -10.35,
+            "z": -6
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -10.66,
+            "x1": -10.04,
+            "z0": -6.3,
+            "z1": -5.7,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "Reviewer1",
+          "deskCenter": {
+            "x": -11.35,
+            "z": -4.6
+          },
+          "home": {
+            "x": -10.35,
+            "z": -4.6
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -10.66,
+            "x1": -10.04,
+            "z0": -4.8999999999999995,
+            "z1": -4.3,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "ops-3",
+      "region": "ops",
+      "center": {
+        "x": -16.7,
+        "z": 1.2
+      },
+      "axis": "NS",
+      "capacity": 6,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -17.05,
+            "z": -0.2
+          },
+          "home": {
+            "x": -18.05,
+            "z": -0.2
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": -0.5,
+            "z1": 0.09999999999999998,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -17.05,
+            "z": 1.2
+          },
+          "home": {
+            "x": -18.05,
+            "z": 1.2
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": 0.8999999999999999,
+            "z1": 1.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "real",
+          "identity": "Reviewer2",
+          "deskCenter": {
+            "x": -17.05,
+            "z": 2.6
+          },
+          "home": {
+            "x": -18.05,
+            "z": 2.6
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -18.36,
+            "x1": -17.740000000000002,
+            "z0": 2.3000000000000003,
+            "z1": 2.9,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -16.35,
+            "z": -0.2
+          },
+          "home": {
+            "x": -15.35,
+            "z": -0.2
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": -0.5,
+            "z1": 0.09999999999999998,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 5,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -16.35,
+            "z": 1.2
+          },
+          "home": {
+            "x": -15.35,
+            "z": 1.2
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": 0.8999999999999999,
+            "z1": 1.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 6,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -16.35,
+            "z": 2.6
+          },
+          "home": {
+            "x": -15.35,
+            "z": 2.6
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -15.66,
+            "x1": -15.04,
+            "z0": 2.3000000000000003,
+            "z1": 2.9,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "ops-4",
+      "region": "ops",
+      "center": {
+        "x": -11.7,
+        "z": 1.2
+      },
+      "axis": "NS",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -12.05,
+            "z": 0.5
+          },
+          "home": {
+            "x": -13.05,
+            "z": 0.5
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -13.360000000000001,
+            "x1": -12.74,
+            "z0": 0.2,
+            "z1": 0.8,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "real",
+          "identity": "SecurityReviewer",
+          "deskCenter": {
+            "x": -12.05,
+            "z": 1.9
+          },
+          "home": {
+            "x": -13.05,
+            "z": 1.9
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": -13.360000000000001,
+            "x1": -12.74,
+            "z0": 1.5999999999999999,
+            "z1": 2.1999999999999997,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -11.35,
+            "z": 0.5
+          },
+          "home": {
+            "x": -10.35,
+            "z": 0.5
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -10.66,
+            "x1": -10.04,
+            "z0": 0.2,
+            "z1": 0.8,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": -11.35,
+            "z": 1.9
+          },
+          "home": {
+            "x": -10.35,
+            "z": 1.9
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": -10.66,
+            "x1": -10.04,
+            "z0": 1.5999999999999999,
+            "z1": 2.1999999999999997,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "pek-1",
+      "region": "product-eng-knowledge",
+      "center": {
+        "x": 7.4,
+        "z": -15.15
+      },
+      "axis": "EW",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "Lead",
+          "deskCenter": {
+            "x": 6.7,
+            "z": -15.5
+          },
+          "home": {
+            "x": 6.7,
+            "z": -16.5
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 6.390000000000001,
+            "x1": 7.01,
+            "z0": -16.8,
+            "z1": -16.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 8.1,
+            "z": -15.5
+          },
+          "home": {
+            "x": 8.1,
+            "z": -16.5
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 7.79,
+            "x1": 8.41,
+            "z0": -16.8,
+            "z1": -16.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 6.7,
+            "z": -14.8
+          },
+          "home": {
+            "x": 6.7,
+            "z": -13.8
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 6.390000000000001,
+            "x1": 7.01,
+            "z0": -14.100000000000001,
+            "z1": -13.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "PM",
+          "deskCenter": {
+            "x": 8.1,
+            "z": -14.8
+          },
+          "home": {
+            "x": 8.1,
+            "z": -13.8
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 7.79,
+            "x1": 8.41,
+            "z0": -14.100000000000001,
+            "z1": -13.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "pek-2",
+      "region": "product-eng-knowledge",
+      "center": {
+        "x": 13.5,
+        "z": -15.15
+      },
+      "axis": "EW",
+      "capacity": 6,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "Architect",
+          "deskCenter": {
+            "x": 12.1,
+            "z": -15.5
+          },
+          "home": {
+            "x": 12.1,
+            "z": -16.5
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 11.79,
+            "x1": 12.41,
+            "z0": -16.8,
+            "z1": -16.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 13.5,
+            "z": -15.5
+          },
+          "home": {
+            "x": 13.5,
+            "z": -16.5
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 13.19,
+            "x1": 13.81,
+            "z0": -16.8,
+            "z1": -16.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 14.9,
+            "z": -15.5
+          },
+          "home": {
+            "x": 14.9,
+            "z": -16.5
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 14.59,
+            "x1": 15.21,
+            "z0": -16.8,
+            "z1": -16.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "UIUX",
+          "deskCenter": {
+            "x": 12.1,
+            "z": -14.8
+          },
+          "home": {
+            "x": 12.1,
+            "z": -13.8
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 11.79,
+            "x1": 12.41,
+            "z0": -14.100000000000001,
+            "z1": -13.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 5,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 13.5,
+            "z": -14.8
+          },
+          "home": {
+            "x": 13.5,
+            "z": -13.8
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 13.19,
+            "x1": 13.81,
+            "z0": -14.100000000000001,
+            "z1": -13.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 6,
+          "kind": "real",
+          "identity": "FrontendSenior",
+          "deskCenter": {
+            "x": 14.9,
+            "z": -14.8
+          },
+          "home": {
+            "x": 14.9,
+            "z": -13.8
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 14.59,
+            "x1": 15.21,
+            "z0": -14.100000000000001,
+            "z1": -13.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "pek-3",
+      "region": "product-eng-knowledge",
+      "center": {
+        "x": 8.65,
+        "z": -10.85
+      },
+      "axis": "EW",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "Frontend1",
+          "deskCenter": {
+            "x": 7.95,
+            "z": -11.2
+          },
+          "home": {
+            "x": 7.95,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 7.640000000000001,
+            "x1": 8.26,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 9.35,
+            "z": -11.2
+          },
+          "home": {
+            "x": 9.35,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 9.04,
+            "x1": 9.66,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 7.95,
+            "z": -10.5
+          },
+          "home": {
+            "x": 7.95,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 7.640000000000001,
+            "x1": 8.26,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "Frontend2",
+          "deskCenter": {
+            "x": 9.35,
+            "z": -10.5
+          },
+          "home": {
+            "x": 9.35,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 9.04,
+            "x1": 9.66,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "pek-4",
+      "region": "product-eng-knowledge",
+      "center": {
+        "x": 13.15,
+        "z": -10.85
+      },
+      "axis": "EW",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "BackendSenior",
+          "deskCenter": {
+            "x": 12.45,
+            "z": -11.2
+          },
+          "home": {
+            "x": 12.45,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 12.139999999999999,
+            "x1": 12.76,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 13.85,
+            "z": -11.2
+          },
+          "home": {
+            "x": 13.85,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 12.45,
+            "z": -10.5
+          },
+          "home": {
+            "x": 12.45,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 12.139999999999999,
+            "x1": 12.76,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "Backend1",
+          "deskCenter": {
+            "x": 13.85,
+            "z": -10.5
+          },
+          "home": {
+            "x": 13.85,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "pek-5",
+      "region": "product-eng-knowledge",
+      "center": {
+        "x": 17.65,
+        "z": -10.85
+      },
+      "axis": "EW",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "Backend2",
+          "deskCenter": {
+            "x": 16.95,
+            "z": -11.2
+          },
+          "home": {
+            "x": 16.95,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 16.64,
+            "x1": 17.259999999999998,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 18.35,
+            "z": -11.2
+          },
+          "home": {
+            "x": 18.35,
+            "z": -12.2
+          },
+          "yawDeg": 180,
+          "chairEnvelope": {
+            "x0": 18.040000000000003,
+            "x1": 18.66,
+            "z0": -12.5,
+            "z1": -11.899999999999999,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 16.95,
+            "z": -10.5
+          },
+          "home": {
+            "x": 16.95,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 16.64,
+            "x1": 17.259999999999998,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "KnowledgeKeeper",
+          "deskCenter": {
+            "x": 18.35,
+            "z": -10.5
+          },
+          "home": {
+            "x": 18.35,
+            "z": -9.5
+          },
+          "yawDeg": 0,
+          "chairEnvelope": {
+            "x0": 18.040000000000003,
+            "x1": 18.66,
+            "z0": -9.8,
+            "z1": -9.2,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "dr-1",
+      "region": "drlife",
+      "center": {
+        "x": 15.2,
+        "z": -4.15
+      },
+      "axis": "NS",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "GoSenior",
+          "deskCenter": {
+            "x": 14.85,
+            "z": -4.85
+          },
+          "home": {
+            "x": 13.85,
+            "z": -4.85
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": -5.1499999999999995,
+            "z1": -4.55,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 14.85,
+            "z": -3.45
+          },
+          "home": {
+            "x": 13.85,
+            "z": -3.45
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": -3.75,
+            "z1": -3.1500000000000004,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 15.55,
+            "z": -4.85
+          },
+          "home": {
+            "x": 16.55,
+            "z": -4.85
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 16.240000000000002,
+            "x1": 16.86,
+            "z0": -5.1499999999999995,
+            "z1": -4.55,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "Go1",
+          "deskCenter": {
+            "x": 15.55,
+            "z": -3.45
+          },
+          "home": {
+            "x": 16.55,
+            "z": -3.45
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 16.240000000000002,
+            "x1": 16.86,
+            "z0": -3.75,
+            "z1": -3.1500000000000004,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "dr-2",
+      "region": "drlife",
+      "center": {
+        "x": 20.6,
+        "z": -4.15
+      },
+      "axis": "NS",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "Go2",
+          "deskCenter": {
+            "x": 20.25,
+            "z": -4.85
+          },
+          "home": {
+            "x": 19.25,
+            "z": -4.85
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 18.94,
+            "x1": 19.56,
+            "z0": -5.1499999999999995,
+            "z1": -4.55,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.25,
+            "z": -3.45
+          },
+          "home": {
+            "x": 19.25,
+            "z": -3.45
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 18.94,
+            "x1": 19.56,
+            "z0": -3.75,
+            "z1": -3.1500000000000004,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.95,
+            "z": -4.85
+          },
+          "home": {
+            "x": 21.95,
+            "z": -4.85
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 21.64,
+            "x1": 22.259999999999998,
+            "z0": -5.1499999999999995,
+            "z1": -4.55,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "DBEngineer",
+          "deskCenter": {
+            "x": 20.95,
+            "z": -3.45
+          },
+          "home": {
+            "x": 21.95,
+            "z": -3.45
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 21.64,
+            "x1": 22.259999999999998,
+            "z0": -3.75,
+            "z1": -3.1500000000000004,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "dr-3",
+      "region": "drlife",
+      "center": {
+        "x": 15.2,
+        "z": 2.2
+      },
+      "axis": "NS",
+      "capacity": 4,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "LedgerAuditor",
+          "deskCenter": {
+            "x": 14.85,
+            "z": 1.5
+          },
+          "home": {
+            "x": 13.85,
+            "z": 1.5
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": 1.2,
+            "z1": 1.8,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 14.85,
+            "z": 2.9
+          },
+          "home": {
+            "x": 13.85,
+            "z": 2.9
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 13.54,
+            "x1": 14.16,
+            "z0": 2.6,
+            "z1": 3.1999999999999997,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 15.55,
+            "z": 1.5
+          },
+          "home": {
+            "x": 16.55,
+            "z": 1.5
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 16.240000000000002,
+            "x1": 16.86,
+            "z0": 1.2,
+            "z1": 1.8,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "real",
+          "identity": "ReactSenior",
+          "deskCenter": {
+            "x": 15.55,
+            "z": 2.9
+          },
+          "home": {
+            "x": 16.55,
+            "z": 2.9
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 16.240000000000002,
+            "x1": 16.86,
+            "z0": 2.6,
+            "z1": 3.1999999999999997,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    },
+    {
+      "id": "dr-4",
+      "region": "drlife",
+      "center": {
+        "x": 20.6,
+        "z": 2.2
+      },
+      "axis": "NS",
+      "capacity": 6,
+      "seats": [
+        {
+          "slot": 1,
+          "kind": "real",
+          "identity": "React1",
+          "deskCenter": {
+            "x": 20.25,
+            "z": 0.8
+          },
+          "home": {
+            "x": 19.25,
+            "z": 0.8
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 18.94,
+            "x1": 19.56,
+            "z0": 0.5,
+            "z1": 1.1,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 2,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.25,
+            "z": 2.2
+          },
+          "home": {
+            "x": 19.25,
+            "z": 2.2
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 18.94,
+            "x1": 19.56,
+            "z0": 1.9000000000000001,
+            "z1": 2.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 3,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.25,
+            "z": 3.6
+          },
+          "home": {
+            "x": 19.25,
+            "z": 3.6
+          },
+          "yawDeg": 90,
+          "chairEnvelope": {
+            "x0": 18.94,
+            "x1": 19.56,
+            "z0": 3.3000000000000003,
+            "z1": 3.9,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 4,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.95,
+            "z": 0.8
+          },
+          "home": {
+            "x": 21.95,
+            "z": 0.8
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 21.64,
+            "x1": 22.259999999999998,
+            "z0": 0.5,
+            "z1": 1.1,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 5,
+          "kind": "empty",
+          "identity": null,
+          "deskCenter": {
+            "x": 20.95,
+            "z": 2.2
+          },
+          "home": {
+            "x": 21.95,
+            "z": 2.2
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 21.64,
+            "x1": 22.259999999999998,
+            "z0": 1.9000000000000001,
+            "z1": 2.5,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        },
+        {
+          "slot": 6,
+          "kind": "real",
+          "identity": "Localizer",
+          "deskCenter": {
+            "x": 20.95,
+            "z": 3.6
+          },
+          "home": {
+            "x": 21.95,
+            "z": 3.6
+          },
+          "yawDeg": 270,
+          "chairEnvelope": {
+            "x0": 21.64,
+            "x1": 22.259999999999998,
+            "z0": 3.3000000000000003,
+            "z1": 3.9,
+            "width": 0.62,
+            "depth": 0.6,
+            "area": 0.372
+          }
+        }
+      ]
+    }
+  ],
+  "support": [
+    {
+      "id": "ops-screen-wall",
+      "region": "ops",
+      "kind": "wall-screen",
+      "bounds": {
+        "x0": -16.6,
+        "x1": -12,
+        "z0": -9.15,
+        "z1": -8.85,
+        "width": 4.6,
+        "depth": 0.3,
+        "area": 1.38
+      },
+      "mount": "north wall",
+      "components": [
+        "4.6m信息屏",
+        "低柜"
+      ]
+    },
+    {
+      "id": "ops-sofa-corner",
+      "region": "ops",
+      "kind": "sofa-corner",
+      "bounds": {
+        "x0": -21.5,
+        "x1": -19.6,
+        "z0": -7.7,
+        "z1": -3.8,
+        "width": 1.9,
+        "depth": 3.9,
+        "area": 7.41
+      },
+      "components": [
+        "L形沙发",
+        "圆几",
+        "落地灯"
+      ]
+    },
+    {
+      "id": "pek-book-wall",
+      "region": "product-eng-knowledge",
+      "kind": "book-wall",
+      "bounds": {
+        "x0": 12.4,
+        "x1": 18.7,
+        "z0": -18,
+        "z1": -17.9,
+        "width": 6.3,
+        "depth": 0.1,
+        "area": 0.63
+      },
+      "mount": "recessed north wall",
+      "components": [
+        "6.3m嵌入式书墙",
+        "展示格"
+      ]
+    },
+    {
+      "id": "drlife-book-wall",
+      "region": "drlife",
+      "kind": "book-wall",
+      "bounds": {
+        "x0": 17,
+        "x1": 23.4,
+        "z0": -7.45,
+        "z1": -7,
+        "width": 6.4,
+        "depth": 0.45,
+        "area": 2.88
+      },
+      "mount": "north wall",
+      "components": [
+        "6.4m书架",
+        "作品展示格"
+      ]
+    },
+    {
+      "id": "drlife-sofa-corner",
+      "region": "drlife",
+      "kind": "sofa-corner",
+      "bounds": {
+        "x0": 23.4,
+        "x1": 25.4,
+        "z0": -5.8,
+        "z1": -2.2,
+        "width": 2,
+        "depth": 3.6,
+        "area": 7.2
+      },
+      "components": [
+        "双人弧沙发",
+        "圆几",
+        "边几"
+      ]
+    },
+    {
+      "id": "coffee-counter",
+      "region": "coffee",
+      "kind": "coffee-bar",
+      "bounds": {
+        "x0": -13.8,
+        "x1": -8.1,
+        "z0": 10.1,
+        "z1": 11.2,
+        "width": 5.7,
+        "depth": 1.1,
+        "area": 6.27
+      },
+      "components": [
+        "5.7m吧台",
+        "后柜",
+        "咖啡设备",
+        "4吧椅"
+      ]
+    },
+    {
+      "id": "reception",
+      "region": "foyer",
+      "kind": "reception",
+      "bounds": {
+        "x0": -2,
+        "x1": 6,
+        "z0": 11.7,
+        "z1": 13.2,
+        "width": 8,
+        "depth": 1.5,
+        "area": 12
+      },
+      "components": [
+        "弧形前台",
+        "品牌背景墙",
+        "接待工位"
+      ]
+    },
+    {
+      "id": "foyer-wait-west",
+      "region": "foyer",
+      "kind": "waiting-seats",
+      "bounds": {
+        "x0": -5.8,
+        "x1": -2.8,
+        "z0": 14,
+        "z1": 16.2,
+        "width": 3,
+        "depth": 2.2,
+        "area": 6.6
+      },
+      "components": [
+        "双人沙发",
+        "圆几"
+      ]
+    },
+    {
+      "id": "foyer-wait-east",
+      "region": "foyer",
+      "kind": "waiting-seats",
+      "bounds": {
+        "x0": 3.2,
+        "x1": 6.2,
+        "z0": 14,
+        "z1": 16.2,
+        "width": 3,
+        "depth": 2.2,
+        "area": 6.6
+      },
+      "components": [
+        "双人沙发",
+        "圆几"
+      ]
+    },
+    {
+      "id": "lounge-sofa",
+      "region": "lounge",
+      "kind": "lounge-group",
+      "bounds": {
+        "x0": 11,
+        "x1": 16.8,
+        "z0": 11,
+        "z1": 14.6,
+        "width": 5.8,
+        "depth": 3.6,
+        "area": 20.88
+      },
+      "components": [
+        "弧形组合沙发",
+        "双圆几",
+        "边几"
+      ]
+    }
+  ],
+  "meetings": {
+    "board": {
+      "table": {
+        "center": {
+          "x": -10.4,
+          "z": -14.3
+        },
+        "size": [
+          5.2,
+          1.4
+        ],
+        "seats": 10
+      },
+      "screenWall": "north",
+      "cabinet": {
+        "x0": -14.3,
+        "x1": -12.8,
+        "z0": -17.5,
+        "z1": -17,
+        "width": 1.5,
+        "depth": 0.5,
+        "area": 0.75
+      }
+    },
+    "review": {
+      "table": {
+        "center": {
+          "x": -3.3,
+          "z": -16.1
+        },
+        "diameter": 1.4,
+        "seats": 4
+      },
+      "screenWall": "west"
+    },
+    "plan": {
+      "table": {
+        "center": {
+          "x": -3.3,
+          "z": -11.9
+        },
+        "diameter": 1.4,
+        "seats": 4
+      },
+      "screenWall": "west"
+    },
+    "directorDesk": {
+      "status": "建议",
+      "center": {
+        "x": -13.3,
+        "z": -11.4
+      },
+      "size": [
+        1.8,
+        0.8
+      ],
+      "region": "board",
+      "businessIdentity": null,
+      "reason": "概念图没有老板桌；作为董事会共享访客席靠会议区南侧，避免引入第26个Agent或占用中央主轴。实施前需董事会单独确认。"
+    }
+  },
+  "equipment": {
+    "coordinateRule": "yawDeg: 0=北、90=东、180=南、270=西；size=[宽,深,高]，单位m",
+    "centralIsland": {
+      "devices": [
+        {
+          "id": "island-espresso",
+          "name": "双头咖啡机",
+          "zone": "central",
+          "center": {
+            "x": 0.337,
+            "z": -4.376
+          },
+          "size": [
+            0.85,
+            0.45,
+            0.52
+          ],
+          "yawDeg": 325,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-grinder",
+          "name": "磨豆机",
+          "zone": "central",
+          "center": {
+            "x": -0.376,
+            "z": -3.663
+          },
+          "size": [
+            0.26,
+            0.26,
+            0.52
+          ],
+          "yawDeg": 305,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-tea",
+          "name": "热水/茶饮机",
+          "zone": "central",
+          "center": {
+            "x": 3.864,
+            "z": -4.222
+          },
+          "size": [
+            0.52,
+            0.38,
+            0.58
+          ],
+          "yawDeg": 40,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-cold-display",
+          "name": "展示冷柜",
+          "zone": "central",
+          "center": {
+            "x": 4.689,
+            "z": -3.086
+          },
+          "size": [
+            0.82,
+            0.42,
+            0.45
+          ],
+          "yawDeg": 68,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-pastry",
+          "name": "糕点展示柜",
+          "zone": "central",
+          "center": {
+            "x": 4.561,
+            "z": -0.639
+          },
+          "size": [
+            0.9,
+            0.44,
+            0.48
+          ],
+          "yawDeg": 118,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-sink",
+          "name": "嵌入式水槽",
+          "zone": "central",
+          "center": {
+            "x": 0.774,
+            "z": 0.628
+          },
+          "size": [
+            0.62,
+            0.44,
+            0.08
+          ],
+          "yawDeg": 205,
+          "support": "环形台面嵌入"
+        },
+        {
+          "id": "island-cup-rack",
+          "name": "杯架/杯具",
+          "zone": "central",
+          "center": {
+            "x": -0.376,
+            "z": -0.337
+          },
+          "size": [
+            0.72,
+            0.28,
+            0.42
+          ],
+          "yawDeg": 235,
+          "support": "环形台面"
+        },
+        {
+          "id": "island-menu",
+          "name": "双面菜单屏",
+          "zone": "central",
+          "center": {
+            "x": 2,
+            "z": -4.75
+          },
+          "size": [
+            0.72,
+            0.08,
+            0.42
+          ],
+          "yawDeg": 0,
+          "support": "台面支架"
+        }
+      ],
+      "stools": [
+        {
+          "id": "island-stool-01",
+          "zone": "central",
+          "center": {
+            "x": 0.392,
+            "z": 1.881
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 22.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-02",
+          "zone": "central",
+          "center": {
+            "x": -0.971,
+            "z": 0.971
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 45,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-03",
+          "zone": "central",
+          "center": {
+            "x": -1.881,
+            "z": -0.392
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 67.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-04",
+          "zone": "central",
+          "center": {
+            "x": -1.881,
+            "z": -3.608
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 112.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-05",
+          "zone": "central",
+          "center": {
+            "x": -0.971,
+            "z": -4.971
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 135,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-06",
+          "zone": "central",
+          "center": {
+            "x": 0.392,
+            "z": -5.881
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 157.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-07",
+          "zone": "central",
+          "center": {
+            "x": 2,
+            "z": -6.201
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 180,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-08",
+          "zone": "central",
+          "center": {
+            "x": 3.608,
+            "z": -5.881
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 202.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-09",
+          "zone": "central",
+          "center": {
+            "x": 4.971,
+            "z": -4.971
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 225,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-10",
+          "zone": "central",
+          "center": {
+            "x": 5.881,
+            "z": -3.608
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 247.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-11",
+          "zone": "central",
+          "center": {
+            "x": 5.881,
+            "z": -0.392
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 292.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-12",
+          "zone": "central",
+          "center": {
+            "x": 4.971,
+            "z": 0.971
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 315,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-13",
+          "zone": "central",
+          "center": {
+            "x": 3.608,
+            "z": 1.881
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 337.5,
+          "support": "floor",
+          "note": "面向岛台"
+        },
+        {
+          "id": "island-stool-14",
+          "zone": "central",
+          "center": {
+            "x": 2,
+            "z": 2.201
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 0,
+          "support": "floor",
+          "note": "面向岛台"
+        }
+      ],
+      "operatorAccess": [
+        "east opening",
+        "west opening"
+      ],
+      "countertopAnnulus": [
+        2.05,
+        3.65
+      ]
+    },
+    "southCafe": {
+      "devices": [
+        {
+          "id": "cafe-espresso",
+          "name": "双头咖啡机",
+          "zone": "coffee",
+          "center": {
+            "x": -10.25,
+            "z": 10.43
+          },
+          "size": [
+            0.85,
+            0.45,
+            0.52
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面"
+        },
+        {
+          "id": "cafe-grinder",
+          "name": "磨豆机",
+          "zone": "coffee",
+          "center": {
+            "x": -11.05,
+            "z": 10.43
+          },
+          "size": [
+            0.26,
+            0.26,
+            0.52
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面"
+        },
+        {
+          "id": "cafe-tea",
+          "name": "热水/茶饮机",
+          "zone": "coffee",
+          "center": {
+            "x": -9.35,
+            "z": 10.43
+          },
+          "size": [
+            0.52,
+            0.38,
+            0.58
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面"
+        },
+        {
+          "id": "cafe-cold-fridge",
+          "name": "台下冷柜",
+          "zone": "coffee",
+          "center": {
+            "x": -12.75,
+            "z": 10.62
+          },
+          "size": [
+            0.8,
+            0.7,
+            0.85
+          ],
+          "yawDeg": 180,
+          "support": "吧台下柜"
+        },
+        {
+          "id": "cafe-pastry",
+          "name": "糕点展示柜",
+          "zone": "coffee",
+          "center": {
+            "x": -8.65,
+            "z": 10.43
+          },
+          "size": [
+            0.82,
+            0.42,
+            0.48
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面"
+        },
+        {
+          "id": "cafe-sink",
+          "name": "嵌入式水槽",
+          "zone": "coffee",
+          "center": {
+            "x": -12.05,
+            "z": 10.5
+          },
+          "size": [
+            0.62,
+            0.44,
+            0.08
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面嵌入"
+        },
+        {
+          "id": "cafe-cup-rack",
+          "name": "杯架/杯具",
+          "zone": "coffee",
+          "center": {
+            "x": -13.35,
+            "z": 10.4
+          },
+          "size": [
+            0.6,
+            0.26,
+            0.42
+          ],
+          "yawDeg": 180,
+          "support": "吧台台面"
+        },
+        {
+          "id": "cafe-menu",
+          "name": "菜单屏",
+          "zone": "coffee",
+          "center": {
+            "x": -10.95,
+            "z": 9.25
+          },
+          "size": [
+            1.1,
+            0.08,
+            0.62
+          ],
+          "yawDeg": 180,
+          "support": "北侧后墙"
+        }
+      ],
+      "stools": [
+        {
+          "id": "cafe-stool-01",
+          "zone": "coffee",
+          "center": {
+            "x": -12.9,
+            "z": 11.9
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 0,
+          "support": "floor",
+          "note": "面向北侧咖啡吧台"
+        },
+        {
+          "id": "cafe-stool-02",
+          "zone": "coffee",
+          "center": {
+            "x": -11.5,
+            "z": 11.9
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 0,
+          "support": "floor",
+          "note": "面向北侧咖啡吧台"
+        },
+        {
+          "id": "cafe-stool-03",
+          "zone": "coffee",
+          "center": {
+            "x": -10.1,
+            "z": 11.9
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 0,
+          "support": "floor",
+          "note": "面向北侧咖啡吧台"
+        },
+        {
+          "id": "cafe-stool-04",
+          "zone": "coffee",
+          "center": {
+            "x": -8.7,
+            "z": 11.9
+          },
+          "diameter": 0.5,
+          "height": 0.78,
+          "yawDeg": 0,
+          "support": "floor",
+          "note": "面向北侧咖啡吧台"
+        }
+      ],
+      "counterBounds": {
+        "x0": -13.8,
+        "x1": -8.1,
+        "z0": 10.1,
+        "z1": 11.2,
+        "width": 5.7,
+        "depth": 1.1,
+        "area": 6.27
+      }
+    }
   }
 }
