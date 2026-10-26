@@ -1,0 +1,38 @@
+{
+  "dr/screenshots/dr-cutaway-high.png": {
+    "blue": 0.06891,
+    "orange": 0.00179
+  },
+  "dr/screenshots/dr-cutaway-low.png": {
+    "blue": 0.0,
+    "orange": 1e-05
+  },
+  "dr/screenshots/dr-shuttle-wheel.png": {
+    "blue": 0.05624,
+    "orange": 0.07575
+  },
+  "dr/screenshots/dr-rack-close.png": {
+    "blue": 0.08493,
+    "orange": 0.00503
+  },
+  "main/screenshots/office-reception.png": {
+    "blue": 0.0,
+    "orange": 5e-05
+  },
+  "main/screenshots/office-overview.png": {
+    "blue": 0.0,
+    "orange": 0.00094
+  },
+  "main/screenshots/dashboard-desktop.png": {
+    "blue": 0.02753,
+    "orange": 0.01037
+  },
+  "main/screenshots/office-tea-bar.png": {
+    "blue": 0.0,
+    "orange": 0.00091
+  },
+  "main/screenshots/office-overview-fallback.png": {
+    "blue": 0.0,
+    "orange": 0.00094
+  }
+}

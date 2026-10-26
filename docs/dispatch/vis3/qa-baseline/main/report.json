@@ -1,0 +1,146 @@
+{
+  "sha": "2f022fe6e9bcc6543e08a26088fd58f7330d5c49",
+  "generatedAt": "2026-10-23T06:50:20.052Z",
+  "env": {
+    "platform": "darwin",
+    "node": "v22.22.1",
+    "dpr": 1,
+    "viewport": "1280x720"
+  },
+  "scenes": {
+    "office": {
+      "checks": [
+        {
+          "id": "office-sample-open",
+          "ok": true,
+          "detail": "样板已开启 · 模拟展示，无业务操作"
+        },
+        {
+          "id": "office-approved-logo",
+          "ok": true
+        },
+        {
+          "id": "office-logo-fallback",
+          "ok": true,
+          "detail": "[\"office-vis2-brand-placeholder-slots\"]"
+        }
+      ],
+      "perf": {
+        "loadMs": null,
+        "frames": {},
+        "rendererInfo": null
+      },
+      "office": {
+        "mode": "open",
+        "names": [
+          "office-island",
+          "office-island-static-batch",
+          "office2-bar-collision-0-0",
+          "office2-bar-collision-0-1",
+          "office2-bar-collision-0-2",
+          "office2-bar-collision-0-3",
+          "office2-bar-collision-0-4",
+          "office2-bar-collision-0-5",
+          "office2-bar-collision-1-0",
+          "office2-bar-collision-1-1",
+          "office2-bar-collision-1-2",
+          "office2-bar-collision-1-3",
+          "office2-bar-collision-1-4",
+          "office2-bar-collision-1-5",
+          "office-sample-zone",
+          "office-vis2-bar",
+          "tea-bar-instanced-stools",
+          "tea-bar-instanced-lounges",
+          "office-heart-banyan",
+          "heart-banyan-small-leaf-clusters",
+          "office3-r3-foyer-furniture",
+          "foyer-instanced-curved-sofas",
+          "office3-r3-floor-pattern",
+          "office-sample-plants",
+          "sample-instanced-potted-plants",
+          "sample-zone-static-surfaces",
+          "office-vis2-brand-marks",
+          "office-vis2-brushed-metal-brand-backing",
+          "office-vis2-approved-logo-marks",
+          "office-vis2-frontage",
+          "frontage-fine-frames-and-entry-posts",
+          "vis2-neutral-transparent-glass"
+        ],
+        "status": "样板已开启 · 模拟展示，无业务操作"
+      },
+      "mockWrites": 0,
+      "pass": true
+    },
+    "dashboard": {
+      "checks": [
+        {
+          "id": "dashboard-kpi",
+          "ok": true,
+          "detail": "KPI/运单文本存在"
+        },
+        {
+          "id": "dashboard-demo-label",
+          "ok": true,
+          "detail": "演示数据标注存在"
+        },
+        {
+          "id": "dashboard-no-errors",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "id": "dashboard-no-writes",
+          "ok": true
+        }
+      ],
+      "perf": {
+        "loadMs": null,
+        "requests": 14,
+        "writes": 0
+      },
+      "text": "DR 智慧仓配服务中心\n\nDR Logistics & Warehouse Service Center\n\n总览\nW1 智慧云仓\nW2 订单周转中心\nW3 集货物流中心\n运单管理\n库存管理\n作业监控\n设备管理\n数据报表\n2026/10/23周五\n13:51:13\n演示数据 · 模拟\n浅色\n总库存\n2,920托盘\n分类托盘数汇总\n今日入库\n12托盘\n托盘上架事件\n今日出库\n16托盘\n出库发运事件\n在库车辆\n3辆\n园区内车辆\n作业任务\n4单\n进行中 2 | 待处理 2\n准时交付率\n75%\n由模拟运单推导\n仓库利用率\n69.9%\n已用库位 / 总库位\n异常预警\n4项\n设备1 | 库存2 | 运单1\n园区总览\nW1 智慧云仓\nW2 订单周转\nW3 物流配送\n运单管理\n库存管理\n设备监控\n作业流水\n数据报表\n告警中心\n设计参考图 · 非实景\n全部园区\n运行模式\n演示\n静态演示 · 默认关闭\n启动动态",
+      "mockWrites": 0,
+      "pass": true
+    }
+  },
+  "browser": "156.0.8078.47",
+  "blockedNetwork": 2,
+  "blockedBrowser": 0,
+  "office_checks": [
+    {
+      "id": "office-sample-open",
+      "ok": true,
+      "detail": "样板已开启 · 模拟展示，无业务操作"
+    },
+    {
+      "id": "office-approved-logo",
+      "ok": true
+    },
+    {
+      "id": "office-logo-fallback",
+      "ok": true,
+      "detail": "[\"office-vis2-brand-placeholder-slots\"]"
+    }
+  ],
+  "dashboard_checks": [
+    {
+      "id": "dashboard-kpi",
+      "ok": true,
+      "detail": "KPI/运单文本存在"
+    },
+    {
+      "id": "dashboard-demo-label",
+      "ok": true,
+      "detail": "演示数据标注存在"
+    },
+    {
+      "id": "dashboard-no-errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "id": "dashboard-no-writes",
+      "ok": true
+    }
+  ]
+}
