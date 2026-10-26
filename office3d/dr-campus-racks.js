@@ -29,7 +29,7 @@ const put = (mesh, index, THREE, item, color) => {
   const matrix = new THREE.Matrix4().compose(new THREE.Vector3(item.x, item.y, item.z), new THREE.Quaternion(), new THREE.Vector3(item.sx, item.sy, item.sz))
   mesh.setMatrixAt(index, matrix); mesh.setColorAt(index, new THREE.Color(color))
 }
-const inside = (plan, low, replaceRackCell = false) => {
+const inside = (plan, low, replaceRackCell = false, replaceStations = false) => {
   const solids = []
   if (!replaceRackCell) {
     for (const rack of plan.racks.slice(0, low ? 2 : 4)) for (const section of rack.sections) {
@@ -39,15 +39,15 @@ const inside = (plan, low, replaceRackCell = false) => {
     }
     for (const item of plan.cargo.filter((_, index) => !low || index % 5 === 0)) solids.push({ x: (item.x0 + item.x1) / 2, y: item.height / 2, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: item.height, sz: item.z1 - item.z0, color: 0xc29b58 })
   }
-  for (const item of [...plan.stations, ...plan.receivingDoors, ...plan.shippingDoors]) solids.push({ id: item.id, x: (item.x0 + item.x1) / 2, y: .55, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: 1.1, sz: Math.max(.18, item.z1 - item.z0), color: 0x5b6c73 })
+  for (const item of [...(replaceStations ? [] : plan.stations), ...plan.receivingDoors, ...plan.shippingDoors]) solids.push({ id: item.id, x: (item.x0 + item.x1) / 2, y: .55, z: (item.z0 + item.z1) / 2, sx: item.x1 - item.x0, sy: 1.1, sz: Math.max(.18, item.z1 - item.z0), color: 0x5b6c73 })
   if (!replaceRackCell) solids.push({ x: (plan.shuttle.x0 + plan.shuttle.x1) / 2, y: .12, z: (plan.shuttle.z0 + plan.shuttle.z1) / 2, sx: plan.shuttle.x1 - plan.shuttle.x0, sy: .12, sz: plan.shuttle.z1 - plan.shuttle.z0, color: 0x718a96 })
   return solids
 }
 
-export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, baseY = CAMPUS_FINISHED_FLOOR_Y, replaceRackCell = false }) {
+export function buildCampusRacks({ THREE, root, canvasTex, layout, quality, baseY = CAMPUS_FINISHED_FLOOR_Y, replaceRackCell = false, replaceStations = false }) {
   if (!Number.isFinite(baseY)) throw new Error('baseY 必须是有限数值')
   const plan = createCampusRackPlan({ zones: layout.zones, shuttle: layout.shuttle })
-  const low = quality?.tier === 'low', solids = inside(plan, low, replaceRackCell)
+  const low = quality?.tier === 'low', solids = inside(plan, low, replaceRackCell, replaceStations)
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .68, metalness: .24 })
   const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, solids.length)
   mesh.name = replaceRackCell ? 'campus-racks-support' : 'campus-racks-static'; mesh.userData.qualityProxy = true; mesh.receiveShadow = true

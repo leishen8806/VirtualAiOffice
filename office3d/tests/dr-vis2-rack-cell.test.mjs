@@ -317,9 +317,9 @@ test('real campus module wiring keeps one finished-floor rack cell, removes lega
   assert.ok(cell)
   assert.equal(cell.group.position.y, CAMPUS_FINISHED_FLOOR_Y)
   assert.deepEqual(root.userData.campusRackSupport, {
-    instances: 11,
+    instances: 8,
     baseY: CAMPUS_FINISHED_FLOOR_Y,
-    ids: ['station-inspection', 'station-picking', 'station-packing', 'receiving-door-D01', 'receiving-door-D02', 'receiving-door-D03', 'receiving-door-D04', 'shipping-door-D05', 'shipping-door-D06', 'shipping-door-D07', 'shipping-door-D08'],
+    ids: ['receiving-door-D01', 'receiving-door-D02', 'receiving-door-D03', 'receiving-door-D04', 'shipping-door-D05', 'shipping-door-D06', 'shipping-door-D07', 'shipping-door-D08'],
   })
   const ids = sourceIds(root)
   for (const removed of ['campus-racks-static', 'campus-shuttle-rail-1-lower', 'campus-shuttle-sleeper-1', 'campus-shuttle-vehicle']) assert.equal(ids.has(removed), false, `${removed} is absent from the production result`)

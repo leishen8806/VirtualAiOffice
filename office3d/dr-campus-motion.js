@@ -17,6 +17,7 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
   const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), euler = new THREE.Euler()
   const vector = new THREE.Vector3(), scale = new THREE.Vector3()
   const forklift = forkliftPath(layout), trucks = truckPlan(layout), belts = conveyorLoop(layout)
+  const externalConveyors = Boolean(root.userData.b3Workstations)
   const pieces = [[], [], []]
   const add = (batch, kind, index, x, y, z, sx, sy, sz, color) => pieces[batch].push({ kind, index, x, y, z, sx, sy, sz, color })
   for (let i = 0; i < (low ? 1 : 2); i++) {
@@ -35,7 +36,7 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
     add(1, 'truck', i, 0, 1.4, 4.65, 1.95, .65, .06, 0x1b2d35)
     for (const x of [-1.15, 1.15]) for (const z of [-3.6, -1.2, 1.2, 3.6]) add(1, 'truck', i, x, .35, z, .3, .6, .7, 0x252c31)
   }
-  for (let i = 0; i < 2; i++) {
+  if (!externalConveyors) for (let i = 0; i < 2; i++) {
     const path = belts[i], width = path[1].x - path[0].x
     add(2, 'fixed', i, (path[0].x + path[1].x) / 2, .58, path[0].z + .45, width + .6, .22, 1.5, 0x4a6870)
     for (let j = 0; j < 6; j++) add(2, 'cargo', i * 6 + j, 0, .92, 0, .65, .55, .6, 0xbc9560)
