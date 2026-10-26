@@ -105,6 +105,12 @@ test('复审 C7 不误判：通过计数、以及同一行另一小句里的 NOT
   assert.equal(checkNotRun('相对 R6 已交日志（1476 总项、1473 通过、0 失败、3 跳过），无新增失败；没有重跑 R6 全量。原三个 NOT_RUN：D-V1-R5 几何验收').status, 'PASS')
   assert.equal(checkNotRun('- **A5 通过**：全量测试退出 0、无新增失败；实际计数见下文。跳过项单独列为 NOT_RUN，不算通过。').status, 'PASS')
   assert.equal(checkNotRun('A6 浏览器：已通过（未运行 NOT_RUN）；A7 另行说明').status, 'FAIL', '同一小句里的矛盾仍要拒绝')
+  // DR-B4 R2 回执原句：此前被误判为矛盾。
+  assert.equal(checkNotRun('- A4 通过：专项9/9；全量1443项、1439通过、0失败、4跳过。4项既有跳过为 NOT_RUN，逐项列在下文，不计入通过。').status, 'PASS')
+  assert.equal(checkNotRun('浏览器 NOT_RUN，不代表通过').status, 'PASS')
+  // 回执引用本工具检查项名（C7 NOT_RUN标识）时，"NOT_RUN" 是名称不是状态。
+  assert.equal(checkNotRun('| C7 NOT_RUN标识 | PASS；4个既有跳过已另外明确列为NOT_RUN |').status, 'PASS')
+  assert.equal(checkNotRun('| A5 浏览器 | PASS（NOT_RUN） |').status, 'FAIL', '名称以外的 NOT_RUN 与 PASS 同句仍是矛盾')
 })
 
 test('审查 P2-5：C7 逐行判断，别处的 NOT_RUN 不能替"未运行却报通过"的那一行作证', () => {

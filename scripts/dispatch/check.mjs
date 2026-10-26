@@ -191,15 +191,18 @@ export function checkTestFlags(receiptText) {
 
 const NOT_RUN_WORDS = /未运行|没跑|未执行|没有运行|未测|NOT_RUN/
 
-// 一段文字是否"宣称通过"：先去掉否定写法（未通过、不计为通过、不算通过……）和计数写法（"1473 通过"），剩下仍有"通过 / PASS"才算宣称。
+// 一段文字是否"宣称通过"：先去掉否定写法（未通过、不算通过、不计为 / 不计入 / 不视为 / 不代表通过……，即"不"后 3 字以内接"通过"）
+// 和计数写法（"1473 通过"），剩下仍有"通过 / PASS"才算宣称。
 export const claimsPass = (text) => /通过|\bPASS(ED)?\b/i.test(text
-  .replace(/(未|不|没有?|不能算|不计为|不算|不视为|并非|并未)\s*通过/g, '')
+  .replace(/(未|没有?|并非|并未|不[^\s，,。；;、：:（）()]{0,3})\s*通过/g, '')
   .replace(/\d[\d,]*\s*(项|条|个)?\s*(通过|PASS(ED)?)/gi, '')
   .replace(/\bNOT[_ ]PASS(ED)?\b/gi, ''))
 
 // 同一小句（按句号、分号切开）里既说未运行、又宣称通过，才是状态矛盾。
 // "A1：通过（未运行，NOT_RUN）" 是矛盾；"A5 通过：……；跳过项列为 NOT_RUN，不算通过" 不是。
-export const contradictory = (line) => line.split(/[。；;]/).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
+// "NOT_RUN 标识 / 规则 / 检查 / 字样"是在谈这个词本身（例如回执引用本工具的检查项名），不算状态。
+const mentionOnly = (text) => text.replace(/NOT_RUN\s*(标识|标注|标记|规则|检查|字样|要求|写法)/g, '')
+export const contradictory = (line) => line.split(/[。；;]/).map(mentionOnly).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
 
 // 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
 // 本行必须写 NOT_RUN（别处的 NOT_RUN 不能替这一行作证），并且同一小句里不能同时宣称"通过"。
