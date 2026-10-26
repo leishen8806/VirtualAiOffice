@@ -13,7 +13,7 @@ import { buildWarehouseShell } from './warehouse-shell.js'
 import { createCampusRegistry } from './dr-campus-registry.js'
 import { campusModules } from './dr-campus-modules.js'
 import { hideCampusEnvironment } from './dr-campus-shell.js'
-import { buildDrControlRoom } from './dr-control-room.js'
+// DR-B5：中控室由 campusModules 登记，旧原型不再加载。
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
 import { officeSampleRequested } from './office-vis2/host.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
@@ -733,8 +733,8 @@ buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
 const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: CAMPUS, building: CAMPUS_BUILDING, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
 if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
-const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
-if (controlRoom && campusRegistry) campusRegistry.root.visible = false
+const controlRoom = null // DR-B5：旧入口只调整园区机位，不再建第二套中控室。
+// controlRoom=1 继续显示园区注册根，由下方机位入口定位中控室。
 
 let latestState = null, foyerData = null, milestoneData = null
 function paintFoyerPanel(id, title, lines, visible = true) {
@@ -1510,7 +1510,7 @@ function setGoal(p, keepMode) {
   if (p.r !== undefined) goal.r = clampTo(p.r, LIM.r)
   if (p.t) goal.t.set(clampTo(p.t[0], LIM.tx), 0, clampTo(p.t[2], LIM.tz))
 }
-if (CONTROL_ROOM_MODE) setGoal({ az: 0, el: 22, r: 24, t: [-161, 1.6, 8] })
+if (CONTROL_ROOM_MODE) setGoal({ az: 90, el: 18, r: 15, t: [-165, 0, 13] })
 if (LAYOUT3_MODE) setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t })
 // 镜头跟随鼠标：鼠标在 3D 画面上移动时，镜头朝鼠标方向轻微偏转（视差，最多约 ±4° / ±2.5°），平滑过渡；
 // 拖动、环绕巡航时让位，鼠标移到面板上或离开画面就慢慢回正；不改变拖动 / 缩放 / 跟随同事这些原有操作。按 M 或点工具栏开关；系统设置了「减少动态效果」时默认关。

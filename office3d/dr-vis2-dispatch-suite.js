@@ -20,7 +20,7 @@ export const VIS2B_DIMENSIONS = Object.freeze({
   monitor: Object.freeze({ width: 0.62, height: 0.36 }), deskTile: Object.freeze({ width: 512, height: 288 }),
 })
 
-export const VIS2B_LABELS = Object.freeze({ simulated: '模拟数据 · 示意', title: 'DR 仓配调度中控', phnom: '金边', phnomEn: 'Phnom Penh', missing: '未提供快照' })
+export const VIS2B_LABELS = Object.freeze({ simulated: '演示数据 · 模拟', title: 'DR 仓配调度中控', phnom: '金边', phnomEn: 'Phnom Penh', missing: '未提供快照' })
 
 // 本构件登记的「旧对象替换清单」。
 export const VIS2B_REPLACES = Object.freeze([
@@ -120,6 +120,7 @@ const NICHES = Object.freeze([
   Object.freeze({ title: 'W2 订单周转', sub: '分拣 · 复核 · 包装', icon: 'boxes' }),
   Object.freeze({ title: 'W3 集货配送', sub: '集货 · 装车 · 配送', icon: 'truck' }),
   Object.freeze({ title: '设备与维护', sub: '点检 · 保养 · 备件', icon: 'gear' }),
+  Object.freeze({ title: '访客与服务', sub: '接待 · 展示 · 协作', icon: 'people' }),
 ])
 export function drawShowcaseAtlas(ctx, width, height) {
   const tw = width / NICHES.length
@@ -194,6 +195,38 @@ function createBatch(THREE, name, material, geometry, capacity) {
   }
 }
 
+// 同一材质的五块屏面烘进一张图集；原画布只用于绘图，不分别上传 GPU。
+function mergeScreenAtlas(THREE, canvasTex, entries) {
+  const width = 4096, height = 2048, positions = [], uvs = [], indices = [], surfaces = {}
+  const vector = new THREE.Vector3()
+  for (const { mesh, x, y, w, h } of entries) {
+    mesh.updateMatrix()
+    const p = mesh.geometry.attributes.position, uv = mesh.geometry.attributes.uv, index = mesh.geometry.index
+    const start = positions.length / 3, indexStart = indices.length
+    for (let i = 0; i < p.count; i++) {
+      vector.fromBufferAttribute(p, i).applyMatrix4(mesh.matrix); positions.push(vector.x, vector.y, vector.z)
+      uvs.push((x + uv.getX(i) * w) / width, 1 - (y + (1 - uv.getY(i)) * h) / height)
+    }
+    for (let i = 0; i < index.count; i++) indices.push(start + index.getX(i))
+    surfaces[mesh.name] = { start, count: p.count, indexStart, indexCount: index.count, atlas: { x, y, w, h } }
+  }
+  const draw = ctx => {
+    ctx.clearRect(0, 0, width, height)
+    for (const { mesh, x, y, w, h } of entries) ctx.drawImage(mesh.material.map.image, x, y, w, h)
+  }
+  const texture = canvasTex(width, height, draw)
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
+  geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
+  const material = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide })
+  const mesh = new THREE.Mesh(geometry, material); mesh.name = 'vis2b-screen-atlas'; mesh.userData.surfaces = surfaces
+  return {
+    mesh,
+    repaint() { const ctx = texture.image?.getContext?.('2d'); if (ctx) { draw(ctx); texture.needsUpdate = true } },
+    dispose() { geometry.dispose(); material.dispose(); texture.dispose() },
+  }
+}
+
 const zoneOf = (zones, id) => { const zone = zones.find((item) => item.id === id); if (!zone) throw new Error(`布局里没有区域 ${id}`); return zone }
 
 export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex, snapshot = null, logo = null } = {}) {
@@ -219,7 +252,7 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   const pane = (region, x, y, z, sx, sy, sz) => { glass.add(x, y, z, sx, sy, sz, C.glass); track(region, x - sx / 2, x + sx / 2, z - sz / 2, z + sz / 2) }
 
   // ——— 中控室（区域 dispatch：x −168…−154，z 0…16）：大屏在西墙，四席面向大屏，仓储在东侧（玻璃外）———
-  const cz = (control.z0 + control.z1) / 2, wallX = control.x0 + 0.25, deskX = control.x0 + 8.2, seatX = deskX + 1.15
+  const cz = (control.z0 + control.z1) / 2, wallX = control.x0 + 0.4, deskX = control.x0 + 8.2, seatX = deskX + 1.15
   const eastX = control.x1 - 0.3, zMin = control.z0 + 0.3, zMax = control.z1 - 0.3, H = D.roomHeight
   // 后墙（暖白）+ 左右木格栅吸音板 + 大屏边框 + 灯带
   box('control', wallX, H / 2, cz, 0.2, H, zMax - zMin, C.wall)
@@ -228,7 +261,7 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   box('control', wallX + 0.17, sc.centerY, cz, 0.08, sc.height + bezel * 2, sc.width + bezel * 2, C.graphite)
   glowBox('control', wallX + 0.12, sc.centerY + sc.height / 2 + 0.3, cz, 0.06, 0.05, sc.width + 0.6, C.warm) // 屏幕上方暖色灯带
   glowBox('control', wallX + 0.12, 0.4, cz, 0.06, 0.04, zMax - zMin - 0.6, C.warm) // 踢脚暖光
-  // 玻璃围合：细框（立柱 + 上下横框）+ 通透玻璃；南墙留 1.6 m 门洞，东墙面向仓储
+  // 玻璃围合：细框（立柱 + 上下横框）+ 通透玻璃；南墙柱内沿净宽 2.0 m，东墙面向仓储
   const frame = (x0, z0, x1, z1) => {
     const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 2)), dx = (x1 - x0) / n, dz = (z1 - z0) / n, yaw = Math.atan2(-(z1 - z0), x1 - x0)
     box('control', (x0 + x1) / 2, 0.04, (z0 + z1) / 2, len, 0.08, 0.08, C.graphite, yaw); box('control', (x0 + x1) / 2, H - 0.04, (z0 + z1) / 2, len, 0.08, 0.08, C.graphite, yaw)
@@ -237,7 +270,7 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   }
   frame(eastX, zMin, eastX, zMax) // 东：面向仓储
   frame(wallX + 0.1, zMin, eastX, zMin) // 北
-  frame(wallX + 0.1, zMax, eastX - 5.6, zMax); frame(eastX - 3.6, zMax, eastX, zMax) // 南（门洞在 eastX−5.6…−3.6，宽 2.0 m；服务通道从南侧进入）
+  frame(wallX + 0.1, zMax, eastX - 5.63, zMax); frame(eastX - 3.57, zMax, eastX, zMax) // 南（门柱中心相距 2.06 m，扣去两侧各 0.03 m 后净宽 2.0 m；服务通道从南侧进入）
   // 单排四席直线控制台：一条连续长桌（暖白台面 + 橡木前沿 + 深色裙板 + 线槽）
   const dk = D.desk, deskZ0 = cz - dk.length / 2
   box('control', deskX, dk.height - dk.topThickness / 2, cz, dk.depth, dk.topThickness, dk.length, C.desk)
@@ -264,10 +297,10 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
       const cx = deskX + 0.12, cy = dk.height + 0.3, cz2 = z + side * 0.33, yaw = side * 0.14
       const base = positions.length / 3, hw = mon.width / 2, hh = mon.height / 2
       for (const [px, py, tu, tv] of [[-hw, -hh, 0, 0], [hw, -hh, 1, 0], [hw, hh, 1, 1], [-hw, hh, 0, 1]]) {
-        const wx = cx - 0.02 - Math.sin(yaw) * px, wz = cz2 + Math.cos(yaw) * px
+        const wx = cx + 0.05 - Math.sin(yaw) * px, wz = cz2 - Math.cos(yaw) * px
         positions.push(wx, cy + py, wz); uvs.push(u0 + tu * 0.5, v0 + tv * 0.5)
       }
-      indices.push(base, base + 2, base + 1, base, base + 3, base + 2)
+      indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
       // 屏幕法线朝东（+x，面向操作员）；这里的顶点绕过了旋转，只做轻微内扣
       box('control', cx + 0.03, cy, cz2, 0.03, mon.height + 0.04, mon.width + 0.04, C.graphite, yaw)
       box('control', cx + 0.1, dk.height + 0.09, cz2, 0.04, 0.16, 0.06, C.graphite); box('control', cx + 0.1, dk.height + 0.015, cz2, 0.2, 0.025, 0.2, C.graphite)
@@ -298,18 +331,18 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   goldBox('reception', vx, 1.045, deskRZ + 0.4, 4.7, 0.022, 0.03) // 台面前沿金色收边
   for (const s of [-1, 1]) { box('reception', vx + s * 0.8, 0.5, deskRZ - 0.95, 0.5, 0.06, 0.5, C.chairSeat); box('reception', vx + s * 0.8, 0.8, deskRZ - 1.15, 0.5, 0.55, 0.06, C.chairSeat); cyl('reception', vx + s * 0.8, 0.25, deskRZ - 0.95, 0.08, 0.5, C.chairFrame) }
   // 休闲区：两张沙发 + 圆几 + 绿植
-  for (const [sx2, sz2, yaw] of [[visitor.x0 + 2.4, visitor.z1 - 2.2, 0], [visitor.x0 + 5.2, visitor.z1 - 2.2, 0]]) {
+  for (const [sx2, sz2, yaw] of [[visitor.x0 + 2.4, visitor.z1 - 2.6, 0], [visitor.x0 + 5.2, visitor.z1 - 2.6, 0]]) {
     box('reception', sx2, 0.28, sz2, 2.0, 0.42, 0.9, C.sofa, yaw); box('reception', sx2, 0.62, sz2 + 0.4, 2.0, 0.5, 0.18, C.sofa, yaw); for (const s of [-1, 1]) box('reception', sx2 + s * 0.95, 0.42, sz2, 0.12, 0.3, 0.9, C.sofa)
   }
   cyl('reception', visitor.x0 + 3.8, 0.19, visitor.z1 - 4.2, 0.9, 0.04, C.oak); cyl('reception', visitor.x0 + 3.8, 0.1, visitor.z1 - 4.2, 0.12, 0.2, C.graphite)
-  for (const [px, pz] of [[visitor.x0 + 0.8, visitor.z0 + 0.8], [visitor.x1 - 0.8, visitor.z1 - 1.0], [vx + 3.0, deskRZ - 1.0]]) { cyl('reception', px, 0.3, pz, 0.5, 0.6, C.pot); leaf('reception', px, 0.95, pz, 0.9); leaf('reception', px, 1.4, pz, 0.6) }
+  for (const [px, pz] of [[visitor.x0 + 0.8, visitor.z0 + 0.8], [visitor.x1 - 0.8, visitor.z1 - 2.5], [vx + 3.0, deskRZ - 1.0]]) { cyl('reception', px, 0.3, pz, 0.5, 0.6, C.pot); leaf('reception', px, 0.95, pz, 0.9); leaf('reception', px, 1.4, pz, 0.6) }
 
   // ——— 服务中心展示区（区域 showcase：x −154…−130，z 20…30）：北墙展示墙 + 中央展示台 ———
   const sx = (showcase.x0 + showcase.x1) / 2, wallZ = showcase.z0 + 0.35, nichePositions = []
   const wallH = 3.9
-  box('showcase', sx, wallH / 2, wallZ, 18.5, wallH, 0.2, C.wall)
-  for (let i = 0; i < 36; i++) box('showcase', sx - 8.9 + i * 0.5, 1.0, wallZ + 0.13, 0.22, 2.0, 0.05, i % 2 ? C.oak : C.oakDark) // 木格栅护墙
-  const NICHE_X = [-7.5, -3.9, 3.9, 7.5], PANEL = { x: sx, y: 2.2, w: 3.6, h: 2.4 }
+  box('showcase', sx, wallH / 2, wallZ, 25.8, wallH, 0.2, C.wall)
+  for (let i = 0; i < 51; i++) box('showcase', sx - 12.5 + i * 0.5, 1.0, wallZ + 0.13, 0.22, 2.0, 0.05, i % 2 ? C.oak : C.oakDark) // 木格栅护墙
+  const NICHE_X = [-11.1, -7.5, -3.9, 3.9, 7.5], PANEL = { x: sx, y: 2.2, w: 3.6, h: 2.4 }
   for (const dx of NICHE_X) {
     const nx = sx + dx
     glowBox('showcase', nx, 2.35, wallZ + 0.14, 2.6, 1.7, 0.04, C.niche) // 背光底板（其上贴展龛画面）
@@ -320,14 +353,14 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   // 品牌面板：居中、比展龛大得多（3.6 x 2.4 m），两侧各留约 0.9 m 空隙，不与任何展龛重叠
   glowBox('showcase', PANEL.x, PANEL.y, wallZ + 0.14, PANEL.w + 0.2, PANEL.h + 0.2, 0.04, C.niche)
   for (const [fx, fy, w, h2] of [[0, PANEL.h / 2 + 0.06, PANEL.w + 0.3, 0.1], [0, -PANEL.h / 2 - 0.06, PANEL.w + 0.3, 0.1], [PANEL.w / 2 + 0.1, 0, 0.1, PANEL.h + 0.22], [-PANEL.w / 2 - 0.1, 0, 0.1, PANEL.h + 0.22]]) goldBox('showcase', PANEL.x + fx, PANEL.y + fy, wallZ + 0.19, w, h2, 0.06)
-  glowBox('showcase', sx, 3.62, wallZ + 0.2, 17, 0.04, 0.1, C.warm) // 顶部暖光带：移到所有展龛与品牌面板之上，不再横穿画面
+  glowBox('showcase', sx, 3.62, wallZ + 0.2, 24.2, 0.04, 0.1, C.warm) // 顶部暖光带：移到所有展龛与品牌面板之上，不再横穿画面
   // 中央展示台：长台 + 仓配园区缩微模型（盒体示意）
   const tableZ = showcase.z0 + 5.2
   box('showcase', sx, 0.45, tableZ, 5.0, 0.9, 1.6, C.stone); box('showcase', sx, 0.93, tableZ, 5.1, 0.05, 1.7, C.desk)
   box('showcase', sx, 1.0, tableZ, 4.4, 0.04, 1.2, C.graphite)
   box('showcase', sx - 0.4, 1.12, tableZ, 2.6, 0.2, 0.7, C.wall); box('showcase', sx + 1.7, 1.1, tableZ, 0.8, 0.16, 0.7, C.wall)
   for (let i = 0; i < 4; i++) box('showcase', sx - 1.4 + i * 0.6, 1.3, tableZ, 0.06, 0.2, 0.62, 0x2f6fa8)
-  for (const [px, pz] of [[showcase.x0 + 1.0, showcase.z0 + 1.2], [showcase.x1 - 1.0, showcase.z0 + 1.2], [showcase.x0 + 1.0, showcase.z1 - 1.0], [showcase.x1 - 1.0, showcase.z1 - 1.0]]) { cyl('showcase', px, 0.3, pz, 0.5, 0.6, C.pot); leaf('showcase', px, 0.95, pz, 0.9); leaf('showcase', px - 0.05, 1.4, pz, 0.6) }
+  for (const [px, pz] of [[showcase.x0 + 1.0, showcase.z0 + 1.2], [showcase.x1 - 1.0, showcase.z0 + 1.2], [showcase.x0 + 1.0, showcase.z1 - 2.5], [showcase.x1 - 1.0, showcase.z1 - 2.5]]) { cyl('showcase', px, 0.3, pz, 0.5, 0.6, C.pot); leaf('showcase', px, 0.95, pz, 0.9); leaf('showcase', px - 0.05, 1.4, pz, 0.6) }
 
   for (const batch of [structure, round, foliage, glow, glass]) { batch.finish(); group.add(batch.mesh) }
   // 展龛画面（5 张合并为 1 个几何，图集 UV）与接待铭牌（1 个平面）
@@ -359,14 +392,21 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
   brandGeometry.setAttribute('position', new THREE.Float32BufferAttribute(brandPos, 3)); brandGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(brandUv, 2)); brandGeometry.setIndex(brandIdx); brandGeometry.computeVertexNormals(); brandGeometry.computeBoundingSphere()
   const brandMaterial = new THREE.MeshBasicMaterial({ map: brandTexture, toneMapped: false }), brand = new THREE.Mesh(brandGeometry, brandMaterial); brand.name = 'vis2b-brand'
   const brandBounds = { panel: { x0: PANEL.x - PANEL.w / 2, x1: PANEL.x + PANEL.w / 2, y0: PANEL.y - PANEL.h / 2, y1: PANEL.y + PANEL.h / 2, z: wallZ + 0.19 }, fascia: { x0: FASCIA.x - FASCIA.s / 2, x1: FASCIA.x + FASCIA.s / 2, y0: FASCIA.y - FASCIA.s / 2, y1: FASCIA.y + FASCIA.s / 2, z: FASCIA.z },
-    niches: NICHE_X.map((dx) => ({ x0: sx + dx - 1.2, x1: sx + dx + 1.2, y0: 1.55, y1: 3.15 })), wall: { x0: sx - 9.25, x1: sx + 9.25, y0: 0, y1: wallH, z: wallZ }, desk: { z: deskRZ + 0.35 }, name: VIS2B_BRAND.name }
+    niches: NICHE_X.map((dx) => ({ x0: sx + dx - 1.2, x1: sx + dx + 1.2, y0: 1.55, y1: 3.15 })), wall: { x0: sx - 12.9, x1: sx + 12.9, y0: 0, y1: wallH, z: wallZ }, desk: { z: deskRZ + 0.35 }, name: VIS2B_BRAND.name }
   const setLogo = (next) => {
     if (disposed) return false
     logo = next ?? null; logoSource = logo?.full || logo?.mark ? 'asset' : 'placeholder'
     const ctx = brandTexture.image?.getContext?.('2d'); if (!ctx) return false
-    drawBrandAtlas(ctx, A.width, A.height, logo); brandTexture.needsUpdate = true; return true
+    drawBrandAtlas(ctx, A.width, A.height, logo); brandTexture.needsUpdate = true; screenAtlas.repaint(); return true
   }
-  group.add(deskScreens, wallScreen, niches, plate, brand)
+  const screenAtlas = mergeScreenAtlas(THREE, canvasTex, [
+    { mesh: wallScreen, x: 0, y: 0, w: 1920, h: 800 },
+    { mesh: brand, x: 2048, y: 0, w: 2048, h: 1024 },
+    { mesh: niches, x: 0, y: 1024, w: 2560, h: 384 },
+    { mesh: deskScreens, x: 0, y: 1408, w: 1024, h: 576 },
+    { mesh: plate, x: 1024, y: 1408, w: 1024, h: 256 },
+  ])
+  group.add(screenAtlas.mesh)
   root.add(group)
 
   let disposed = false, version = snapshot?.generatedAt ?? null, redraws = 0
@@ -375,6 +415,7 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
       const ctx = texture.image?.getContext?.('2d'); if (!ctx) continue
       draw(ctx, w, h, next); texture.needsUpdate = true
     }
+    screenAtlas.repaint()
     redraws++
   }
   const update = (next) => {
@@ -384,12 +425,13 @@ export function buildVis2DispatchSuite({ THREE, root, layout, quality, canvasTex
     version = nextVersion; snapshot = next ?? null; redraw(snapshot); return true
   }
   const triangleCount = () => [structure, round, foliage, glow, glass, gold].reduce((t, b) => t + b.mesh.count * (b.mesh.geometry.index ? b.mesh.geometry.index.count : b.mesh.geometry.attributes.position.count) / 3, 0) + indices.length / 3 + nicheIdx.length / 3 + brandIdx.length / 3 + 4
-  const summary = () => ({ module: 'vis2-dispatch-suite', preview: '组件预览，尚未正式接入', quality: low ? 'low' : 'high', hasSnapshot: !!snapshot, snapshotVersion: version, redraws,
+  const summary = () => ({ module: 'vis2-dispatch-suite', preview: 'DR-B5 园区构件 · 演示数据', quality: low ? 'low' : 'high', hasSnapshot: !!snapshot, snapshotVersion: version, redraws,
     seats: D.seats, seatZ: seatZs.map((z) => +z.toFixed(3)), deskLength: D.desk.length, regions: JSON.parse(JSON.stringify(regions)), screen: { width: sc.width, height: sc.height, ratio: +(sc.width / sc.height).toFixed(3), canvas: sc.canvas }, label: VIS2B_LABELS.simulated,
-    instances: { structure: structure.mesh.count, round: round.mesh.count, foliage: foliage.mesh.count, glow: glow.mesh.count, glass: glass.mesh.count, gold: gold.mesh.count }, brand: JSON.parse(JSON.stringify(brandBounds)), logo: { source: logoSource }, drawCalls: 11, triangles: Math.round(triangleCount()), replaces: VIS2B_REPLACES.map((item) => item.legacy) })
+    instances: { structure: structure.mesh.count, round: round.mesh.count, foliage: foliage.mesh.count, glow: glow.mesh.count, glass: glass.mesh.count, gold: gold.mesh.count }, brand: JSON.parse(JSON.stringify(brandBounds)), logo: { source: logoSource }, drawCalls: 7, triangles: Math.round(triangleCount()), replaces: VIS2B_REPLACES.map((item) => item.legacy) })
   const dispose = () => {
     if (disposed) return; disposed = true
     group.removeFromParent()
+    screenAtlas.dispose()
     brandGeometry.dispose(); brandMaterial.dispose(); brandTexture.dispose?.()
     for (const batch of [structure, round, foliage, glow, glass, gold]) { batch.mesh.geometry.dispose(); batch.mesh.material.dispose(); batch.mesh.dispose?.() }
     deskGeometry.dispose(); deskMaterial.dispose(); deskTexture.dispose?.(); wallScreen.geometry.dispose(); wallMaterial.dispose(); wallTexture.dispose?.()

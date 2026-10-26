@@ -7,6 +7,8 @@ import { buildCampusShuttle } from './dr-campus-shuttle.js'
 import { buildCampusYardDocks } from './dr-campus-yard-docks.js'
 import { buildVis2RackCell } from './dr-vis2-rack-cell.js'
 import { buildCampusWorkstations } from './dr-campus-workstations.js'
+import { buildVis2DispatchSuite } from './dr-vis2-dispatch-suite.js'
+import { sharedDemoSnapshotAt } from './dr-demo-snapshot.js'
 
 const buildVis2Rack = (context) => {
   const cell = buildVis2RackCell({ ...context, baseY: CAMPUS_FINISHED_FLOOR_Y })
@@ -20,6 +22,19 @@ const buildVis2Rack = (context) => {
   }
 }
 
+const buildDispatchSuite = (context) => {
+  const suite = buildVis2DispatchSuite({ ...context, snapshot: sharedDemoSnapshotAt(0) })
+  suite.group.position.y = CAMPUS_FINISHED_FLOOR_Y
+  context.root.userData.dispatchSuite = suite
+  return {
+    ...suite,
+    dispose() {
+      suite.dispose()
+      if (context.root.userData.dispatchSuite === suite) delete context.root.userData.dispatchSuite
+    },
+  }
+}
+
 export const campusModules = Object.freeze([
   ['shell', (context) => buildCampusShell(context)],
   ['vis2Rack', buildVis2Rack],
@@ -29,7 +44,8 @@ export const campusModules = Object.freeze([
     replaceRackCell: Boolean(context.root.userData.vis2RackCell),
     replaceStations: Boolean(context.root.userData.b3Workstations),
   })],
-  ['interior', (context) => buildCampusInterior(context)],
+  ['dispatch-suite', buildDispatchSuite],
+  ['interior', (context) => buildCampusInterior({ ...context, replaceDispatch: Boolean(context.root.userData.dispatchSuite) })],
   ['yard-docks', (context) => buildCampusYardDocks(context)],
   ['vehicle-markings', (context) => buildCampusVehicleMarkings(context)],
   ['motion', (context) => buildCampusMotion(context)],

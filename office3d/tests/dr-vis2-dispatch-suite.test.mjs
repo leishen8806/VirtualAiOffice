@@ -27,6 +27,8 @@ const makeCanvasTex = (log = []) => (w, h, draw) => {
   const texture = new THREE.Texture(); texture.image = { getContext: () => ctx, width: w, height: h }; texture.needsUpdate = false
   return texture
 }
+const atlasOf = suite => suite.group.getObjectByName('vis2b-screen-atlas')
+const surfaceOf = (suite, name) => atlasOf(suite).userData.surfaces[name]
 const build = (options = {}) => {
   const root = new THREE.Group(), log = []
   const suite = buildVis2DispatchSuite({ THREE, root, layout, quality: { tier: 'high' }, canvasTex: makeCanvasTex(log), snapshot: snapshotA, ...options })
@@ -59,16 +61,18 @@ test('the screen is a pure function of the snapshot: identical input, identical 
 })
 
 test('screen aspect is 2.4:1 and the canvas has the same ratio, so nothing is stretched', () => {
-  const { suite } = build(), summary = suite.summary(), screen = suite.group.getObjectByName('vis2b-wall-screen')
+  const { suite } = build(), summary = suite.summary(), screen = atlasOf(suite)
   assert.equal(summary.screen.ratio, 2.4); assert.ok(Math.abs(summary.screen.canvas.width / summary.screen.canvas.height - 2.4) < 1e-9)
-  const geometry = screen.geometry.parameters; assert.ok(Math.abs(geometry.width / geometry.height - 2.4) < 1e-3)
+  const {start,count} = surfaceOf(suite,'vis2b-wall-screen'), bounds = new THREE.Box3()
+  for(let i=start;i<start+count;i++) bounds.expandByPoint(new THREE.Vector3().fromBufferAttribute(screen.geometry.attributes.position,i))
+  const size=bounds.getSize(new THREE.Vector3()); assert.ok(Math.abs(size.z / size.y - 2.4) < 1e-3)
 })
 
 test('exactly one straight row of four seats with equal pitch; every seat has two desk monitors', () => {
   const { suite } = build(), summary = suite.summary(), D = VIS2B_DIMENSIONS
   assert.equal(summary.seats, 4); assert.equal(summary.seatZ.length, 4)
   for (let i = 1; i < 4; i++) assert.ok(Math.abs(summary.seatZ[i] - summary.seatZ[i - 1] - D.seatPitch) < 1e-6)
-  assert.equal(suite.group.getObjectByName('vis2b-desk-screens').geometry.attributes.position.count, 4 * 2 * 4, '4 seats x 2 monitors x 4 vertices')
+  assert.equal(surfaceOf(suite,'vis2b-desk-screens').count, 4 * 2 * 4, '4 seats x 2 monitors x 4 vertices')
   assert.ok(summary.deskLength >= 3 * D.seatPitch)
 })
 
@@ -87,7 +91,7 @@ test('update(): a new snapshot version redraws once, the same version does nothi
   const { suite } = build()
   assert.equal(suite.summary().redraws, 0)
   assert.equal(suite.update(snapshotA), false, 'same generatedAt: no redraw'); assert.equal(suite.summary().redraws, 0)
-  const wall = suite.group.getObjectByName('vis2b-wall-screen'), versionBefore = wall.material.map.version
+  const wall = atlasOf(suite), versionBefore = wall.material.map.version
   assert.equal(suite.update(snapshotB), true); assert.equal(suite.summary().redraws, 1)
   assert.equal(wall.material.map.version, versionBefore + 1, 'texture uploaded exactly once')
   assert.equal(suite.update(snapshotB), false); assert.equal(suite.summary().redraws, 1); assert.equal(wall.material.map.version, versionBefore + 1)
@@ -100,7 +104,7 @@ test('works inside the campus registry: glass and glow keep their own materials,
   registry.buildAll({ quality: { tier: 'high' } })
   const root = registry.root
   assert.equal(registry.summary().skipped.length, 0)
-  for (const name of ['vis2b-glass', 'vis2b-glow', 'vis2b-wall-screen', 'vis2b-desk-screens', 'vis2b-showcase-panels', 'vis2b-reception-plate']) assert.ok(root.getObjectByName(name), name)
+  for (const name of ['vis2b-glass', 'vis2b-glow', 'vis2b-screen-atlas']) assert.ok(root.getObjectByName(name), name)
   assert.equal(root.getObjectByName('vis2b-glass').material.opacity, 0.16)
   assert.ok(root.getObjectByName('campus-opaque-batch-1'))
   registry.dispose()
@@ -108,7 +112,7 @@ test('works inside the campus registry: glass and glow keep their own materials,
 
 test('quality low is lighter, and budgets hold', () => {
   const high = build().suite.summary(), low = build({ quality: { tier: 'low' } }).suite.summary()
-  assert.ok(high.drawCalls <= 11 && high.triangles <= 12000, `high ${high.triangles}`)
+  assert.ok(high.drawCalls <= 7 && high.triangles <= 12000, `high ${high.triangles}`)
   assert.ok(low.triangles < high.triangles)
 })
 
@@ -166,7 +170,7 @@ test('brand atlas: without assets an original placeholder logo is drawn and the 
 
 test('brand: logo is large on the showcase wall and on the desk fascia, clear of every niche and inside the wall', () => {
   const { suite } = build({ logo: { full: fakeImage(979, 544), mark: fakeImage(313, 390) } }), b = suite.summary().brand, s = suite.summary()
-  assert.equal(s.logo.source, 'asset'); assert.equal(b.name, 'DR 仓配服务中心'); assert.equal(b.niches.length, 4)
+  assert.equal(s.logo.source, 'asset'); assert.equal(b.name, 'DR 仓配服务中心'); assert.equal(b.niches.length, 5)
   const panelW = b.panel.x1 - b.panel.x0, panelH = b.panel.y1 - b.panel.y0
   assert.ok(panelW >= 3 && panelH >= 2, 'brand panel is large (>= 3 x 2 m)')
   for (const niche of b.niches) assert.ok(niche.x1 <= b.panel.x0 - 0.5 || niche.x0 >= b.panel.x1 + 0.5, 'at least 0.5 m clear of each niche')
@@ -174,16 +178,16 @@ test('brand: logo is large on the showcase wall and on the desk fascia, clear of
   assert.ok(b.panel.z - b.wall.z <= 0.3, 'mounted flat on the wall, nothing protrudes into the circulation space')
   assert.ok(b.fascia.z - b.desk.z <= 0.07, 'fascia plaque protrudes at most 7 cm from the desk face')
   assert.ok(b.fascia.y0 >= 0 && b.fascia.y1 <= 1.05, 'plaque is on the desk front')
-  assert.equal(suite.group.getObjectByName('vis2b-brand').geometry.attributes.position.count, 8)
+  assert.equal(surfaceOf(suite,'vis2b-brand').count, 8)
 })
 
 test('brand: logo can be replaced at runtime with exactly one upload; the dispatch control room is untouched', () => {
-  const { suite } = build(), before = suite.summary(), brand = suite.group.getObjectByName('vis2b-brand'), version = brand.material.map.version
+  const { suite } = build(), before = suite.summary(), brand = atlasOf(suite), version = brand.material.map.version
   assert.equal(before.logo.source, 'placeholder')
   assert.equal(suite.setLogo({ full: fakeImage(979, 544), mark: fakeImage(313, 390) }), true)
   assert.equal(brand.material.map.version, version + 1); assert.equal(suite.summary().logo.source, 'asset')
   assert.deepEqual(suite.summary().seatZ, before.seatZ); assert.equal(suite.summary().seats, 4)
-  assert.equal(suite.group.getObjectByName('vis2b-desk-screens').geometry.attributes.position.count, 32)
+  assert.equal(surfaceOf(suite,'vis2b-desk-screens').count, 32)
   assert.equal(suite.summary().screen.ratio, 2.4); assert.equal(suite.summary().redraws, 0, 'setLogo does not touch the data screens')
   suite.dispose(); assert.equal(suite.setLogo(null), false)
 })
@@ -193,7 +197,31 @@ test('brand: gold accents use a metallic material that the registry does not mer
   registry.register('vis2Dispatch', (context) => buildVis2DispatchSuite({ ...context, canvasTex: makeCanvasTex(), snapshot: snapshotA }))
   registry.buildAll({ quality: { tier: 'high' } })
   const gold = registry.root.getObjectByName('vis2b-gold'); assert.ok(gold); assert.ok(gold.material.metalness > 0.4 && gold.material.metalness < 0.7, 'subtle metallic')
-  assert.ok(registry.root.getObjectByName('vis2b-brand')); registry.dispose()
+  assert.ok(registry.root.getObjectByName('vis2b-screen-atlas').userData.surfaces['vis2b-brand']); registry.dispose()
   const source = fs.readFileSync(new URL('../dr-vis2-dispatch-suite.js', import.meta.url), 'utf8')
   for (const forbidden of ['new Image', 'TextureLoader', 'ImageLoader', 'createImageBitmap']) assert.equal(source.includes(forbidden), false, forbidden)
+})
+
+
+test('B5 atlas preserves five surfaces, five niches, disjoint tiles and actual right-reading desktop screens outside their backing planes', () => {
+  const {suite}=build(), atlas=atlasOf(suite), surfaces=atlas.userData.surfaces
+  assert.equal(Object.keys(surfaces).length,5)
+  assert.equal(surfaces['vis2b-showcase-panels'].count,5*4)
+  const tiles=Object.values(surfaces).map(s=>s.atlas)
+  for(let i=0;i<tiles.length;i++) {
+    const a=tiles[i]; assert.ok(a.x>=0&&a.y>=0&&a.x+a.w<=4096&&a.y+a.h<=2048)
+    for(let j=i+1;j<tiles.length;j++) {const b=tiles[j]; assert.ok(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y)}
+  }
+  const p=atlas.geometry.attributes.position,uv=atlas.geometry.attributes.uv,range=surfaces['vis2b-desk-screens']
+  const deskX=zone('dispatch').x0+8.2
+  for(let i=0;i<8;i++) {
+    const first=range.start+i*4, a=new THREE.Vector3().fromBufferAttribute(p,first),b=new THREE.Vector3().fromBufferAttribute(p,first+1)
+    const yaw=(i%2===0?-1:1)*.14, normal=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw))
+    const center=a.clone().add(b).multiplyScalar(.5), backCenter=new THREE.Vector3(deskX+.15,center.y,center.z)
+    const clearance=center.clone().sub(backCenter).dot(normal)-.015
+    assert.ok(clearance>=.004&&clearance<=.006,`monitor ${i} clearance ${clearance}`)
+    assert.ok(uv.getX(first+1)>uv.getX(first)&&b.z<a.z,'texture reads left-to-right from the operator side')
+  }
+  assert.equal(suite.summary().drawCalls,suite.group.children.filter(o=>o.isMesh).length)
+  suite.dispose()
 })

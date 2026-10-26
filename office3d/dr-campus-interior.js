@@ -226,17 +226,24 @@ export function buildCampusInterior({
   quality,
   search = globalThis.location?.search || '',
   liveOptions = {},
+  replaceDispatch = false,
 }) {
   const zones = layout.zones, dispatch = zone(zones, 'dispatch'), visitor = zone(zones, 'visitor'), showcase = zone(zones, 'showcase'), office = zone(zones, 'officeMeeting'), maintenance = zone(zones, 'maintenance')
   const props = []
+  if (!replaceDispatch) {
   box(props, -161, .56, 8, 6.4, 1.12, 1.4, 0x344b58); box(props, -161, 1.18, 7.15, 5.8, .08, .32, 0xd5af62)
   box(props, -161, .5, 25.8, 7.2, 1, 1.2, 0x405867); box(props, -164, .55, 22.2, 3.1, .7, 1.25, 0x708997); box(props, -158, .55, 22.2, 3.1, .7, 1.25, 0x708997)
   box(props, -142, .55, 25, 4.8, 1.1, 3.6, 0x4a5e69); box(props, -142, 1.3, 25, 2.8, .18, 1.5, 0xd5af62)
+  }
   for (const x of [-126, -118, -110]) box(props, x, .55, 23.2, 3.8, 1.1, 1.8, 0x53626a)
   box(props, -117, .62, 27.4, 7.2, 1.2, 2.4, 0x405867); box(props, -92, .12, 25, 9.6, .24, 4.8, 0x26333a); box(props, -92, 1.05, 25, 1.7, 2.1, .34, 0x6da2bd)
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .72, metalness: .18 })
   const propsMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, props.length)
   propsMesh.name = 'campus-interior-static'; propsMesh.receiveShadow = false; props.forEach((item, index) => put(propsMesh, index, THREE, item)); propsMesh.instanceMatrix.needsUpdate = true; propsMesh.instanceColor.needsUpdate = true; root.add(propsMesh)
+  if (replaceDispatch) return {
+    root,
+    dispose() { propsMesh.removeFromParent(); propsMesh.geometry.dispose(); material.dispose(); propsMesh.dispose?.() },
+  }
   let texture
   let screenContext = null
   const drawStatic = () => drawCampusDispatchScreen(
