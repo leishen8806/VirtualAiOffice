@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process'
 import { parseEvidenceVersion, insideRoots, isProtected, createEvidenceVersion } from '../evidence-version.mjs'
 
 const H = 'a'.repeat(64)
-const tmp = (p = 'ev-') => { const d = fs.mkdtempSync(path.join(os.tmpdir(), p)); try { return fs.realpathSync(d) } catch { return d } }
+const tmp = (p = 'ev-') => { const d = fs.mkdtempSync(path.join(os.tmpdir(), p)); try { return fs.realpathSync.native(d) } catch { return d } }
 const git = (cwd, args) => { const out = execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); return out.trim() }
 // 在 roots 下建一个真实 git 仓库，返回 { repo, head, file }
 function makeRepo(root, files = { 'a.txt': 'one' }) {
