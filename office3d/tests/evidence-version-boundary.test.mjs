@@ -190,7 +190,10 @@ test('F2 回归：正常文件、大小写、合法短路径仍可核对', async
   }
   fs.mkdirSync(path.join(w.repo, 'sub')); fs.writeFileSync(path.join(w.repo, 'sub', 'ok.txt'), PUBLIC)
   assert.equal((await w.check(`sha256:${ID}:sub/ok.txt=${H}`)).result, '版本一致')
-  assert.equal((await w.check(`sha256:${ID}:sub\\ok.txt=${H}`)).result === '版本一致', WIN) // 反斜杠仅在 Windows 是分隔符
+  // 两种分隔符在所有平台上统一当作分隔符（跨机语义一致）；任何 .. 段（正 / 反斜杠、嵌套）一律拒绝，不依赖平台路径规则
+  assert.equal((await w.check(`sha256:${ID}:sub\\ok.txt=${H}`)).result, '版本一致', '反斜杠写法与正斜杠指向同一文件')
+  for (const rel of ['sub\\..\\normal.txt', 'sub/child\\..\\..\\normal.txt', 'sub\\../normal.txt', 'sub/..\\normal.txt'])
+    assert.match((await w.check(`sha256:${ID}:${rel}=${H}`)).result, /^无法核对.*路径/, rel)
 })
 
 // ───── F3：缺失 vs 查询失败 ─────
@@ -288,8 +291,13 @@ test('insideRoots：大小写敏感的文件系统上，仅大小写不同的兄
     assert.equal(insideRoots(path.join(dir, 'ROOTS', 'x.txt'), [upper]), true, 'Windows 大小写不敏感')
     return
   }
-  fs.mkdirSync(upper); fs.mkdirSync(lower)
-  if (fs.statSync(upper).ino === fs.statSync(lower).ino) return t.skip('这个卷大小写不敏感（macOS 默认）：Roots 与 roots 就是同一目录')
+  fs.mkdirSync(upper)
+  try { fs.mkdirSync(lower) } catch (e) { if (e.code !== 'EEXIST') throw e } // 大小写不敏感的卷上第二次创建会 EEXIST：预期，其它错误不吞
+  const su = fs.statSync(upper), sl = fs.statSync(lower)
+  if (su.ino === sl.ino && su.dev === sl.dev) { // 大小写不敏感卷（macOS 默认）：两个名字是同一个目录，别名应被接受
+    assert.equal(insideRoots(path.join(lower, 'x.txt'), [upper]), true, '同一目录的大小写别名')
+    return
+  }
   assert.equal(insideRoots(path.join(lower, 'x.txt'), [upper]), false, '大小写敏感：roots 不是 Roots')
   assert.equal(insideRoots(path.join(upper, 'x.txt'), [upper]), true)
 })

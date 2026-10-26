@@ -227,7 +227,7 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
     if (e.portable) {
       const local = localRepo(e.repo, cfg)
       if (!local) return notRegistered(e.repo)
-      const rel = String(e.rel || ''), segments = rel.split(/[\/]+/)
+      const rel = String(e.rel || ''), segments = rel.split(/[\\/]+/)
       if (!rel || path.isAbsolute(rel) || /^[A-Za-z]:/.test(rel) || segments.includes('..')) return { state: '无法核对（路径不在允许范围）', note: '相对路径不合法' }
       if (isProtected(rel) || (process.platform === 'win32' && isProtected(stripStreams(rel)))) return PROTECTED_HIT
       const repoT = confine(local, cfg.roots, { mustExist: true })
