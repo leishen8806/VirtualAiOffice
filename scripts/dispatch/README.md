@@ -1,0 +1,29 @@
+# 派单与交付自动检查（PROCESS-1 · D1）
+
+PROCESS-1 的派单与交付规范原先靠审查员手工核对。这个脚本把其中能机械判断的部分做成一条命令：执行方交付前跑一遍，审查员复核时再跑一遍。
+
+```bash
+node scripts/dispatch/check.mjs --card <卡片目录> --receipt <卡片目录>/交付-Rn.md \
+  --repo <本地仓库> --branch <推送的分支> [--evidence <证据目录>] [--json]
+```
+
+| 检查 | 内容 |
+|---|---|
+| C1 卡片状态 | 版本头里没有 PAUSED / WITHDRAWN |
+| C2 需求哈希 | 回执写的是 `SHA256SUMS.txt` 本身的哈希 |
+| C3 卡片校验单 | `SHA256SUMS.txt` 列出的文件都在、哈希一致 |
+| C4 推送一致 | 回执里的完整 SHA 等于远端分支当前 SHA |
+| C5 证据校验单 | 证据子目录或 `--evidence` 目录里的 `SHA256SUMS*.txt` / `evidence-manifest.json` 全部能对上 |
+| C6 测试参数 | 带 `--max-old-space-size=1024` 和 `--test-concurrency=1` |
+| C7 未运行要写明 | 提到"未运行"等字样时必须写 NOT_RUN |
+| C8 回执必填项 | 卡号、代码、需求哈希、执行方、验收、测试、范围自查 |
+
+**结果与退出码：**
+- 每项结果为 PASS、FAIL、WARN 或 NOT_RUN；
+- 有 FAIL 时退出码为 1，参数错误时为 2。
+
+**读取校验单的规则：**
+- 兼容 CRLF 行尾；
+- 文件名可以相对校验单所在目录，也可以相对卡片目录。
+
+**脚本只做机械检查。** 画面是否符合设计、数值是否达标，仍由审查员复核。
