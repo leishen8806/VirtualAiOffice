@@ -4,13 +4,10 @@
 
 | 顺序 | 卡片 / 事项 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | `DR-PLAN-1-按设计图重定仓配园区.md`（规划卡；先做**阶段 A 测量**） | **不建分支、不提交**；交付物放在本机 `E:\VirtualAIOffice\dispatch\DR-PLAN-1-20261026\` | **立即开始** |
+| **1** | `DR-PLAN-1-B-R1-格局按A+返修.md`（阶段 B 返修：格局按 A+、发货门北墙、建筑内装卸 + 9 m 厢式车、补各区内部设施） | **不建分支、不提交**；交付到本机 `E:\VirtualAIOffice\dispatch\DR-PLAN-1-20261026\` | **立即开始** |
 
 ## 说明
 
-- 本卡只做规划，不改仓库代码。
-- 阶段 A 交付后停下，等 Q-V1 核对和董事会确认，再做阶段 B。
-- 设计图：仓库 `docs/visuals/target-dr-campus.png`；本机同目录另有一份副本。
-- 方法参考 Codex 已完成的办公室测量：本机 `E:\VirtualAIOffice\dispatch\OFFICE-PLAN-1-20261026\`。
+- 只做规划，不改仓库代码。
+- 已完成：DR-PLAN-1 阶段 A、A+（已收下）、阶段 B（需按本返修卡修改）。
 - 不碰办公室文件和 Codex 的分支 `feat/office-o0-o4-20261024`。
-- 已通过复审、无需再做：V3-A3（`c19fd6f`，已进 main）、CAMPUS-PREFIX-FIX（`b83e850`）、W-V1-R4（`fb652f0`）、W-RC-R4（`9b1b2ac`），以及 inbox 中其余较早的卡片。
