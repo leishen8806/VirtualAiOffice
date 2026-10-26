@@ -7,6 +7,11 @@ import { OutputPass } from './vendor/three/jsm/postprocessing/OutputPass.js'
 import { buildLandmarks } from './landmarks.js'
 import { ENTRANCE } from './office-layout.js'
 
+export const EAST_TOWN_BUILDING_X = -53
+export const EAST_TOWN_BUILDING_Z = Object.freeze([-30, -18, -6, 6, 18, 30])
+export const EAST_TOWN_BUILDING_BOUNDS = Object.freeze({ x0: -58, x1: -48, westRoadClearance: 6, pavingClearance: 2 })
+export const EAST_TOWN_ROAD_BOUNDS = Object.freeze({ x0: -78, x1: -66, z0: -110, z1: 110 })
+
 // 室外：天空、阳光、云、雨、广场、草地、行道树、街道与远处城市。
 // 时间与天气跟随柬埔寨金边（服务端每 15 分钟取一次天气）：太阳按金边当地时间与日出日落走，
 // 云量变灰、下雨有雨丝、雷雨有闪电，天黑后城市亮灯、办公室开灯。全部程序生成，不依赖外部素材。
@@ -124,16 +129,23 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     }, [30, 1]),
     roughness: 0.95,
   })
-  const road = (w, d, x, z, rot = 0) => { const m = add(new THREE.PlaneGeometry(w, d), asphalt, x, -0.59, z); m.rotation.x = -Math.PI / 2; m.rotation.z = rot; return m }
-  road(260, 12, 0, -46)
-  road(260, 12, 0, 54)
-  road(220, 12, -64, 0, Math.PI / 2)
-  road(220, 12, 64, 0, Math.PI / 2)
+  const road = (w, d, x, z, name) => {
+    const m = add(new THREE.PlaneGeometry(w, d), asphalt, x, -0.59, z)
+    m.name = name
+    m.rotation.x = -Math.PI / 2
+    return m
+  }
+  road(260, 12, 0, -46, 'town-road-south')
+  road(260, 12, 0, 54, 'town-road-north')
+  // A north-south road is a 12 x 220 horizontal plane; rotating an already
+  // horizontal plane made it stand upright and cut through the relocated row.
+  road(12, 220, -72, 0, 'town-road-east')
+  road(12, 220, 72, 0, 'town-road-west')
   // 路灯：天黑后亮
   const lampHeads = []
   const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.6, metalness: 0.5 })
   const lampM = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffd9a0, emissiveIntensity: 0 })
-  for (const [x, z] of [[-40, -38.5], [-20, -38.5], [0, -38.5], [20, -38.5], [40, -38.5], [-40, 46.5], [-20, 46.5], [20, 46.5], [40, 46.5], [-56.5, 0], [56.5, 0], [-56.5, 24], [56.5, 24]]) {
+  for (const [x, z] of [[-40, -38.5], [-20, -38.5], [0, -38.5], [20, -38.5], [40, -38.5], [-40, 46.5], [-20, 46.5], [20, 46.5], [40, 46.5], [-60.5, 0], [56.5, 0], [-60.5, 24], [56.5, 24]]) {
     add(new THREE.CylinderGeometry(0.08, 0.1, 5, 8), poleM, x, 1.9, z)
     lampHeads.push(add(new THREE.SphereGeometry(0.28, 12, 10), lampM, x, 4.5, z))
   }
@@ -206,20 +218,27 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   const facade = tex(128, 256, facadeDraw(false))
   const facadeLit = tex(128, 256, facadeDraw(true))
   const cityMats = []
-  const building = (x, z, w, d, h, ci) => {
+  const building = (x, z, w, d, h, ci, name = '') => {
     const rep = [Math.max(1, Math.round(w / 6)), Math.max(1, Math.round(h / 12))]
     const t = facade.clone(); t.repeat.set(rep[0], rep[1]); t.needsUpdate = true
     const e = facadeLit.clone(); e.repeat.set(rep[0], rep[1]); e.needsUpdate = true
     const m = new THREE.MeshStandardMaterial({ map: t, emissiveMap: e, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.55, metalness: 0.15, color: SHOP_COLORS[ci % SHOP_COLORS.length] })
     cityMats.push(m)
     const b = add(new THREE.BoxGeometry(w, h, d), m, x, h / 2 - 0.6, z)
+    b.name = name ? `${name}-body` : ''
     b.receiveShadow = false
-    add(new THREE.BoxGeometry(w * 0.6, 2, d * 0.6), new THREE.MeshStandardMaterial({ color: 0x8d949c, roughness: 0.8 }), x, h - 0.6 + 1, z)
+    const roof = add(new THREE.BoxGeometry(w * 0.6, 2, d * 0.6), new THREE.MeshStandardMaterial({ color: 0x8d949c, roughness: 0.8 }), x, h - 0.6 + 1, z)
+    roof.name = name ? `${name}-roof` : ''
   }
   // ── 金边街景：低矮的骑楼商铺（粉彩外墙），不再有高楼挡住远处的景点 ──
   let ci = 0
   for (let x = -66; x <= 66; x += 12) if (Math.abs(x) > 14) building(x + rnd() * 2, -62 - rnd() * 4, 10 + rnd() * 2, 10, 6 + rnd() * 4, ci++) // 正中留出缺口，看得到吴哥窟
-  for (const sx of [-1, 1]) for (let z = -30; z <= 40; z += 12) building(sx * (76 + rnd() * 3), z + rnd() * 2, 10, 10 + rnd() * 2, 8 + rnd() * 8, ci++)
+  let eastBuilding = 0
+  for (const sx of [-1, 1]) for (let z = -30; z <= 40; z += 12) {
+    const lateral = rnd() * 3, centerZ = z + rnd() * 2, depth = 10 + rnd() * 2, height = 8 + rnd() * 8
+    if (sx === -1) building(EAST_TOWN_BUILDING_X, centerZ, 10, depth, height, ci++, `town-east-building-${++eastBuilding}`)
+    else building(76 + lateral, centerZ, 10, depth, height, ci++)
+  }
   for (let x = -66; x <= 66; x += 13) building(x + rnd() * 2, 70 + rnd() * 4, 11, 10, 8 + rnd() * 6, ci++)
 
   // ── 高棉地标（程序生成的写意造型，不是精确复刻） ──
@@ -241,8 +260,9 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   // 5) 糖棕树（柬埔寨国树）：细高树干 + 扇形叶冠，点缀在广场四周
   const palmTrunk = new THREE.MeshStandardMaterial({ color: 0x5a4a3c, roughness: 0.95 })
   const palmLeaf = new THREE.MeshStandardMaterial({ color: 0x3f7d3a, roughness: 0.8, side: THREE.DoubleSide, flatShading: true })
-  const palm = (x, z, h = 9) => {
+  const palm = (x, z, h = 9, name = '') => {
     const g = new THREE.Group()
+    g.name = name
     g.position.set(x, -0.6, z)
     const t = part(new THREE.CylinderGeometry(0.22, 0.32, h, 7), palmTrunk, 0, h / 2, 0, g)
     t.castShadow = true
@@ -261,7 +281,15 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     if ((x === -28 && z === 18) || (z === 30 && [-46, -12, 12].includes(x))) scene.remove(tree)
   }
   // 远处地平线上再撒几棵糖棕，田野感
-  for (let i = 0; i < 26; i++) { const a = rnd() * Math.PI * 2, r = 110 + rnd() * 160; const x = Math.cos(a) * r, z = Math.sin(a) * r; if (z > 60 && Math.abs(x) < 120) continue; palm(x, z, 10 + rnd() * 5) }
+  for (let i = 0; i < 26; i++) {
+    const a = rnd() * Math.PI * 2, r = 110 + rnd() * 160
+    let x = Math.cos(a) * r, z = Math.sin(a) * r
+    if (z > 60 && Math.abs(x) < 120) continue
+    // Move the complete D03 palm, including its 1.6m leaf span, beyond the turn.
+    const clearsD03Turn = x >= -148 && x <= -137 && z >= -28 && z <= -18
+    if (clearsD03Turn) { x -= 8; z -= 10 }
+    palm(x, z, 10 + rnd() * 5, clearsD03Turn ? 'd03-turn-palm' : '')
+  }
 
   // ── 云层：一张随风飘动的大云图，透明度跟云量走 ──
   const cloudTex = tex(512, 512, (g, w, h) => {

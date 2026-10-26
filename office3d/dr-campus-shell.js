@@ -67,32 +67,30 @@ export function campusVehicleClearance({ docks = CAMPUS_DOCKS, routes = CAMPUS_V
 }
 
 export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS, clearance = campusVehicleClearance()) {
-  const obstacleBounds = new THREE.Box3(), hiddenRoots = new Set()
+  const obstacleBounds = new THREE.Box3(), hiddenTargets = new Set()
   const point = new THREE.Vector3(), hidden = {}
   const occupied = CAMPUS_BUILDING
   const occludingAncestor = (object) => {
     for (let current = object.parent; current; current = current.parent) if (current.userData?.campusOccluder) return current
     return null
   }
-  const root = (object) => {
-    let current = object
-    while (current.parent && current.parent !== scene) current = current.parent
-    return current
-  }
   scene.traverse((object) => {
-    if (!object.isMesh || campusRoot.getObjectById(object.id) || hiddenRoots.has(root(object))) return
+    if (!object.isMesh || object.isSky || campusRoot.getObjectById(object.id)) return
     object.getWorldPosition(point)
     const occluder = occludingAncestor(object)
     const anchor = occluder?.getWorldPosition(new THREE.Vector3()) || point
     obstacleBounds.setFromObject(object)
     const footprint = { x0: obstacleBounds.min.x, x1: obstacleBounds.max.x, z0: obstacleBounds.min.z, z1: obstacleBounds.max.z }
     const blocksVehicle = obstacleBounds.max.y - obstacleBounds.min.y > .5 && clearance.some((area) => intersects(footprint, area))
-    const target = blocksVehicle ? root(object) : object
+    const target = occluder || object
+    if (hiddenTargets.has(target)) return
     if ((occluder && anchor.x >= bounds.x0 && anchor.x <= bounds.x1 && anchor.z >= bounds.z0 && anchor.z <= bounds.z1) ||
         (point.x >= occupied.x0 && point.x <= occupied.x1 && point.z >= occupied.z0 && point.z <= occupied.z1) || blocksVehicle) {
       target.visible = false
-      hiddenRoots.add(target)
-      const type = blocksVehicle ? `vehicle-clearance:${target.name || object.name || object.geometry?.type || 'unnamed'}` : (occluder?.name || (object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'))
+      hiddenTargets.add(target)
+      const type = blocksVehicle
+        ? `vehicle-clearance:${object.name || object.parent?.name || object.geometry?.type || 'unnamed'}@${point.x.toFixed(1)},${point.z.toFixed(1)}`
+        : (occluder?.name || (object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'))
       hidden[type] = (hidden[type] || 0) + 1
     }
   })
