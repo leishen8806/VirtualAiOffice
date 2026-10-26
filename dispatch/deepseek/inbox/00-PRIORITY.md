@@ -6,13 +6,13 @@
 
 | 顺序 | 卡片 | 分支 | 状态 |
 |---|---|---|---|
-| **1** | **`CI-FIX1-R4-A7A8-rework.md`**（A7 用运行标识判定、A8 用登记表清理；复审见 `Q-V1-review-CI-FIX1-R3.md`，复现脚本 `Q-V1-CI-FIX1-R3-a7a8-probe.mjs`） | `qa/vis3-test-infra`，从 `c13b10d` 继续 | **夜间批次，17:30 后开始** |
+| **1** | **`CI-FIX1-R5-expectedRunId-required.md`**（assessRun 的 expectedRunId / expectedSha 改为必填；复审见 `Q-V1-review-CI-FIX1-R4.md`） | `qa/vis3-test-infra`，从 `d9bb716` 继续 | **夜间批次，立即开始** |
 
 说明：
 
-- `fix/ci-portable-tests`（CI-FIX1 R1–R3 主体）已复审通过，并已开 PR #48，**不要再往这个分支推送**。
+- CI-FIX1 R4 的 A8 已复审通过；A7 只差本卡这一处。
+- `fix/ci-portable-tests` 已合并进 main（PR #48），不要再往这个分支推送。
 - 不许删测试、放宽断言或改产品代码；必须改产品代码时先停下报告。
-- 交付回执写到 `dispatch/deepseek/outbox/CI-FIX1-交付-R4.md`（模板 `dispatch/_TEMPLATES/2-交付回执.md`），推送后停下，等 Q-V1 复核，不合并。
-- 已交付且复审完成：`CI-FIX1` R1–R3 主体、`VIS3-TEST-FIX2`～`FIX6`、`D-V2-C1` / `D-V2-C1-R1`、`D-V1-R2`～`D-V1-R6`。
+- 交付回执写到 `dispatch/deepseek/outbox/CI-FIX1-交付-R5.md`（模板 `dispatch/_TEMPLATES/2-交付回执.md`），推送后停下，等 Q-V1 复核，不合并。
 - `DS-1`～`DS-8` 由其他派发人跟进，不在本文件范围内。
-- 所有测试与浏览器运行带资源上限；空闲内存不足时把全量测试 / 端到端记为 NOT_RUN 并说明，不要硬跑。
+- 所有测试与浏览器运行带资源上限；空闲内存不足时记为 NOT_RUN 并说明，不要硬跑。
