@@ -122,7 +122,7 @@ test('R3 reception wall, passable paired doors, pillars and collision volumes us
   assert.equal(data.centerX,2)
   for(const c of data.columns){assert.ok(Math.abs(c.x1-c.x0-.8)<1e-8);assert.equal(c.height,3.6)}
   assert.ok(Math.abs(data.columns[0].x0+data.columns[1].x1-4)<1e-8)
-  assert.equal(shell.reception.transparent.mesh.material.opacity,.2)
+  assert.equal(shell.reception.transparent.mesh.material.opacity,.35)
   assert.equal(shell.reception.proxies.length,data.blockers.length)
   shell.reception.proxies.forEach((mesh,i)=>{
     mesh.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(mesh),spec=data.blockers[i]
@@ -177,7 +177,7 @@ test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against sep
 test('R5 warm reflective glass shares one material and inward 0.07m frames preserve all R4 blockers',()=>{
   const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,transparent,opaque}=shell.reception
   assert.equal(hash(data.blockers),'f1b6e0f370af6f2c34f5a5358381a22e015c6b8dd91419dd9f6665650fc2a09f')
-  assert.equal(data.spec.leafFrameWidth,.07);assert.equal(transparent.mesh.material.opacity,.2)
+  assert.equal(data.spec.leafFrameWidth,.07);assert.equal(transparent.mesh.material.opacity,.35)
   assert.equal(transparent.mesh.material.userData.officeArchitectureWarmth,true)
   const color=new THREE.Color('#E8E0D0'),g=transparent.mesh.geometry
   for(let i=0;i<g.attributes.position.count;i++){
@@ -197,6 +197,31 @@ test('R5 warm reflective glass shares one material and inward 0.07m frames prese
       assert.equal(frameAt(x,1.8),edge<.07,'exposed vertical frame physical width')
     }
   }
+  shell.dispose()
+})
+
+test('R6 bronze frames, horizontal push bars and rail share the actual colour without new draw batches',()=>{
+  const root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout:LAYOUT_V3_ALIGN_SAMPLE}),{data,opaque,transparent}=shell.reception
+  const bronze=new THREE.Color('#705735'),mesh=opaque.mesh;mesh.updateMatrixWorld(true)
+  assert.equal(data.spec.doorFrameColor,'#705735');assert.equal(transparent.mesh.material.opacity,.35)
+  const surface=(x,y,z0,z1)=>{
+    const hit=new THREE.Raycaster(new THREE.Vector3(x,y,10),new THREE.Vector3(0,0,-1)).intersectObject(mesh).find(h=>h.point.z>=z0-1e-6&&h.point.z<=z1+1e-6)
+    assert.ok(hit,'actual bronze surface');const c=mesh.geometry.attributes.color,i=hit.face.a
+    for(const [component,value] of [['X',bronze.r],['Y',bronze.g],['Z',bronze.b]])assert.ok(Math.abs(c['get'+component](i)-value)<1e-6)
+    assert.ok(Math.abs(mesh.geometry.attributes.sampleSurface.getY(i)-.25)<1e-6)
+  }
+  for(const p of data.leaves){
+    const d=data.doors.find(d=>p.id.startsWith(d.id)),cx=(Math.max(p.x0,d.x0)+Math.min(p.x1,d.x1))/2
+    surface(cx,.035,p.z0,p.z1);surface(cx,2.665,p.z0,p.z1)
+    surface(p.id.endsWith('-0')?p.x1-.035:p.x0+.035,1.8,p.z0,p.z1)
+    for(const dx of [-.08,0,.08])surface(cx+dx,1.05,p.z1-.02,p.z1)
+    const noHandle=new THREE.Raycaster(new THREE.Vector3(cx,1.11,10),new THREE.Vector3(0,0,-1)).intersectObject(mesh).filter(h=>h.point.z>=p.z0&&h.point.z<=p.z1)
+    assert.equal(noHandle.length,0,'horizontal bar stays within 1.02..1.08m, no old vertical handle')
+  }
+  for(const d of data.doors)surface((d.x0+d.x1)/2,2.77,8,8.5)
+  assert.equal(opaque.mesh.children.length,0);assert.equal(transparent.mesh.children.length,0)
+  assert.equal(Array.isArray(opaque.mesh.material),false);assert.equal(Array.isArray(transparent.mesh.material),false)
+  assert.equal(opaque.mesh.geometry.groups.length,0);assert.equal(transparent.mesh.geometry.groups.length,0)
   shell.dispose()
 })
 

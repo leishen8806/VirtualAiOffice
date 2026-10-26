@@ -60,7 +60,7 @@ export const OFFICE_PLAN1_WALLS = Object.freeze({
   internalGlass: Object.freeze({ height: 2.7, baseThickness: .14, glassThickness: .018, frame: '#AA9472', targetOpacity: .1 }),
   southProfile: Object.freeze([{x:-22,h:4.5},{x:-15.2,h:4.5},{x:-4,h:1.2},{x:8,h:1.2},{x:19.2,h:4.5},{x:26,h:4.5}].map(Object.freeze)),
   gatePost: Object.freeze({width:.3,depth:.3,height:2.4,color:'#B89B64'}),
-  reception: Object.freeze({z:8.5,wallWidth:4,wallHeight:3,wallDepth:.14,doorWidth:2.6,doorHeight:2.7,frameWidth:.05,leafFrameWidth:.07,glassOpacity:.2,glassColor:'#E8E0D0',glassRoughness:.12,columnWidth:.8,columnDepth:.8,columnHeight:3.6,leafWidth:1.3,leafExposure:.45,leafGap:.03,trackHeight:.14}),
+  reception: Object.freeze({z:8.5,wallWidth:4,wallHeight:3,wallDepth:.14,doorWidth:2.6,doorHeight:2.7,frameWidth:.05,leafFrameWidth:.07,doorFrameColor:'#705735',glassOpacity:.35,glassColor:'#E8E0D0',glassRoughness:.12,columnWidth:.8,columnDepth:.8,columnHeight:3.6,leafWidth:1.3,leafExposure:.45,leafGap:.03,trackHeight:.14}),
 })
 
 export function officePlan1SouthHeight(layout, x) {

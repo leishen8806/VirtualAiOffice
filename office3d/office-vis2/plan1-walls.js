@@ -73,19 +73,19 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
     }
   }
   for (const p of [...data.partitions,...data.leaves]) {
-    const leaf=p.kind==='leaf', w=leaf?data.spec.leafFrameWidth:f, z=(p.z0+p.z1)/2
+    const leaf=p.kind==='leaf', w=leaf?data.spec.leafFrameWidth:f, z=(p.z0+p.z1)/2, tint=leaf?data.spec.doorFrameColor:frame, metal=leaf ? .25 : .5
     const glass=layout.walls.internalGlass.glassThickness/2
     panes.add(new THREE.BoxGeometry(p.x1-p.x0-2*w,p.height-2*w,2*glass),data.spec.glassColor,[(p.x0+p.x1)/2,p.height/2,z],0,data.spec.glassRoughness,.15)
     // 框条向门扇内部加粗，不改变已验收的厚度、外包络和净通道。
-    for (const y of [0,p.height-w]) box(solid,p.x0,p.x1,y,w,p.z0,p.z1,frame,.5)
-    for(const end of leaf?[p.x0+w/2,p.x1-w/2]:[p.x0,p.x1]) box(solid,end-w/2,end+w/2,0,p.height,p.z0,p.z1,frame,.5)
-    if(leaf){const handle=p.id.endsWith('-0')?p.x1-2*w:p.x0+2*w;box(solid,handle-.015,handle+.015,1,.3,p.z1-.02,p.z1,trim,.6)}
+    for (const y of [0,p.height-w]) box(solid,p.x0,p.x1,y,w,p.z0,p.z1,tint,metal)
+    for(const end of leaf?[p.x0+w/2,p.x1-w/2]:[p.x0,p.x1]) box(solid,end-w/2,end+w/2,0,p.height,p.z0,p.z1,tint,metal)
+    if(leaf) box(solid,p.x0+w,p.x1-w,1.02,.06,p.z1-.02,p.z1,tint,metal)
   }
   for(const d of data.doors) {
     const tracks=data.leaves.filter(p=>p.id.startsWith(d.id)),z0=Math.min(...tracks.map(p=>p.z0)),z1=Math.max(...tracks.map(p=>p.z1))
-    box(solid,d.x0,d.x1,d.height,data.spec.trackHeight,z0-.01,z1+.01,frame,.5)
+    box(solid,d.x0,d.x1,d.height,data.spec.trackHeight,z0-.01,z1+.01,data.spec.doorFrameColor,.25)
     // Jambs stay outside the net 2.6m passage.
-    for(const x of [d.x0-f/2,d.x1+f/2]) box(solid,x-f/2,x+f/2,0,d.height,d.z-f/2,d.z+f/2,frame,.5)
+    for(const x of [d.x0-f/2,d.x1+f/2]) box(solid,x-f/2,x+f/2,0,d.height,d.z-f/2,d.z+f/2,data.spec.doorFrameColor,.25)
   }
   const post = layout.walls.gatePost, gate=layout.doors.south
   for(const x of [gate.x0-post.width/2,gate.x1+post.width/2]) box(solid,x-post.width/2,x+post.width/2,0,post.height,gate.z-post.depth/2,gate.z+post.depth/2,post.color,.5)
