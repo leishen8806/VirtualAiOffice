@@ -8,9 +8,14 @@ import { buildLandmarks } from './landmarks.js'
 import { ENTRANCE } from './office-layout.js'
 
 export const EAST_TOWN_BUILDING_X = -53
-export const EAST_TOWN_BUILDING_Z = Object.freeze([-30, -18, -6, 6, 18, 30])
-export const EAST_TOWN_BUILDING_BOUNDS = Object.freeze({ x0: -58, x1: -48, westRoadClearance: 6, pavingClearance: 2 })
-export const EAST_TOWN_ROAD_BOUNDS = Object.freeze({ x0: -78, x1: -66, z0: -110, z1: 110 })
+export const EAST_TOWN_BUILDING_BASE_Z = Object.freeze([-30, -18, -6, 6, 18, 30])
+export const EAST_TOWN_BUILDING_BOUNDS = Object.freeze({ x0: -58, x1: -48, westRoadClearance: 0, pavingClearance: 2 })
+export const EAST_TOWN_CURB_LAMP_X = -58.3
+export const EAST_TOWN_ROAD_SPECS = Object.freeze({
+  east: Object.freeze({ width: 220, depth: 12, x: -64, z: 0, rotationZ: Math.PI / 2 }),
+  west: Object.freeze({ width: 220, depth: 12, x: 64, z: 0, rotationZ: Math.PI / 2 }),
+})
+export const EAST_TOWN_ROAD_BOUNDS = Object.freeze({ x0: -70, x1: -58, z0: -110, z1: 110 })
 
 // 室外：天空、阳光、云、雨、广场、草地、行道树、街道与远处城市。
 // 时间与天气跟随柬埔寨金边（服务端每 15 分钟取一次天气）：太阳按金边当地时间与日出日落走，
@@ -129,23 +134,36 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     }, [30, 1]),
     roughness: 0.95,
   })
-  const road = (w, d, x, z, name) => {
+  const road = (w, d, x, z, name, rotationZ = 0) => {
     const m = add(new THREE.PlaneGeometry(w, d), asphalt, x, -0.59, z)
     m.name = name
     m.rotation.x = -Math.PI / 2
+    m.rotation.z = rotationZ
     return m
   }
   road(260, 12, 0, -46, 'town-road-south')
   road(260, 12, 0, 54, 'town-road-north')
-  // A north-south road is a 12 x 220 horizontal plane; rotating an already
-  // horizontal plane made it stand upright and cut through the relocated row.
-  road(12, 220, -72, 0, 'town-road-east')
-  road(12, 220, 72, 0, 'town-road-west')
+  road(
+    EAST_TOWN_ROAD_SPECS.east.width,
+    EAST_TOWN_ROAD_SPECS.east.depth,
+    EAST_TOWN_ROAD_SPECS.east.x,
+    EAST_TOWN_ROAD_SPECS.east.z,
+    'town-road-east',
+    EAST_TOWN_ROAD_SPECS.east.rotationZ,
+  )
+  road(
+    EAST_TOWN_ROAD_SPECS.west.width,
+    EAST_TOWN_ROAD_SPECS.west.depth,
+    EAST_TOWN_ROAD_SPECS.west.x,
+    EAST_TOWN_ROAD_SPECS.west.z,
+    'town-road-west',
+    EAST_TOWN_ROAD_SPECS.west.rotationZ,
+  )
   // 路灯：天黑后亮
   const lampHeads = []
   const poleM = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.6, metalness: 0.5 })
   const lampM = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffd9a0, emissiveIntensity: 0 })
-  for (const [x, z] of [[-40, -38.5], [-20, -38.5], [0, -38.5], [20, -38.5], [40, -38.5], [-40, 46.5], [-20, 46.5], [20, 46.5], [40, 46.5], [-60.5, 0], [56.5, 0], [-60.5, 24], [56.5, 24]]) {
+  for (const [x, z] of [[-40, -38.5], [-20, -38.5], [0, -38.5], [20, -38.5], [40, -38.5], [-40, 46.5], [-20, 46.5], [20, 46.5], [40, 46.5], [EAST_TOWN_CURB_LAMP_X, 0], [56.5, 0], [EAST_TOWN_CURB_LAMP_X, 24], [56.5, 24]]) {
     add(new THREE.CylinderGeometry(0.08, 0.1, 5, 8), poleM, x, 1.9, z)
     lampHeads.push(add(new THREE.SphereGeometry(0.28, 12, 10), lampM, x, 4.5, z))
   }
@@ -234,7 +252,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   let ci = 0
   for (let x = -66; x <= 66; x += 12) if (Math.abs(x) > 14) building(x + rnd() * 2, -62 - rnd() * 4, 10 + rnd() * 2, 10, 6 + rnd() * 4, ci++) // 正中留出缺口，看得到吴哥窟
   let eastBuilding = 0
-  for (const sx of [-1, 1]) for (let z = -30; z <= 40; z += 12) {
+  for (const sx of [-1, 1]) for (const z of EAST_TOWN_BUILDING_BASE_Z) {
     const lateral = rnd() * 3, centerZ = z + rnd() * 2, depth = 10 + rnd() * 2, height = 8 + rnd() * 8
     if (sx === -1) building(EAST_TOWN_BUILDING_X, centerZ, 10, depth, height, ci++, `town-east-building-${++eastBuilding}`)
     else building(76 + lateral, centerZ, 10, depth, height, ci++)
