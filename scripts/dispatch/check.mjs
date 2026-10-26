@@ -30,28 +30,38 @@ export const sha256File = (file) => crypto.createHash('sha256').update(fs.readFi
 const result = (id, name, status, detail) => ({ id, name, status, detail })
 const read = (file) => fs.readFileSync(file, 'utf8')
 
-// 解析 sha256sum 格式的校验单：每行"<64 位哈希> [ *]<文件名>"，忽略空行与注释。
+// 解析 sha256sum 格式的校验单：每行"<64 位哈希> [ *]<文件名>"，忽略空行与 # 注释。
+// 其余任何行都记为"格式错误"——损坏的校验单不能因为解析不出条目而被当成"0 项全部一致"。
 export function parseChecksums(text) {
-  const entries = []
+  const entries = [], malformed = []
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.replace(/\r$/, '')
     if (!line.trim() || line.trimStart().startsWith('#')) continue
     const m = line.match(/^([0-9a-fA-F]{64})\s+\*?(.+)$/)
     if (m) entries.push({ hash: m[1].toLowerCase(), name: m[2].trim() })
+    else malformed.push(line.slice(0, 80))
   }
-  return entries
+  return { entries, malformed }
 }
 
-// 解析 evidence-manifest.json：{ files: [{ file, sha256, bytes? }] }（Codex 的证据清单格式）。
+// 解析 evidence-manifest.json：{ files: [{ file, sha256, bytes? }] }（Codex 的证据清单格式）。缺字段或哈希不合法的条目记为格式错误。
 export function parseManifest(text) {
-  const j = JSON.parse(text)
-  return (Array.isArray(j) ? j : j.files || []).filter((e) => e && e.file && /^[0-9a-f]{64}$/i.test(e.sha256 || ''))
-    .map((e) => ({ hash: e.sha256.toLowerCase(), name: e.file }))
+  let j
+  try { j = JSON.parse(text) } catch (e) { return { entries: [], malformed: [`JSON 解析失败：${e.message.slice(0, 60)}`] } }
+  const list = Array.isArray(j) ? j : j?.files
+  if (!Array.isArray(list)) return { entries: [], malformed: ['没有 files 数组'] }
+  const entries = [], malformed = []
+  for (const e of list) {
+    if (e && typeof e.file === 'string' && e.file && /^[0-9a-f]{64}$/i.test(e.sha256 || '')) entries.push({ hash: e.sha256.toLowerCase(), name: e.file })
+    else malformed.push(JSON.stringify(e).slice(0, 80))
+  }
+  return { entries, malformed }
 }
 
 // 核对一份校验单（sha256sum 文本或 evidence-manifest.json）。文件名先按校验单所在目录解析，找不到再按 fallbackDir（卡片目录）解析。
+// ok 仅在：至少 1 项、没有格式错误、没有缺文件、没有哈希不符。
 export function verifyChecksumFile(sumFile, fallbackDir) {
-  const entries = sumFile.endsWith('.json') ? parseManifest(read(sumFile)) : parseChecksums(read(sumFile))
+  const { entries, malformed } = sumFile.endsWith('.json') ? parseManifest(read(sumFile)) : parseChecksums(read(sumFile))
   const bad = [], missing = []
   for (const e of entries) {
     const candidates = [path.resolve(path.dirname(sumFile), e.name), fallbackDir && path.resolve(fallbackDir, e.name)].filter(Boolean)
@@ -59,8 +69,15 @@ export function verifyChecksumFile(sumFile, fallbackDir) {
     if (!found) { missing.push(e.name); continue }
     if (sha256File(found) !== e.hash) bad.push(e.name)
   }
-  return { total: entries.length, bad, missing }
+  const ok = entries.length > 0 && !malformed.length && !bad.length && !missing.length
+  return { total: entries.length, bad, missing, malformed, ok }
 }
+
+const describe = (v) => [!v.total && '没有任何有效条目', v.malformed.length && `格式错误 ${v.malformed.length} 行（如：${v.malformed[0]}）`,
+  v.bad.length && `哈希不符 ${v.bad.join('、')}`, v.missing.length && `缺文件 ${v.missing.join('、')}`].filter(Boolean).join('；')
+
+// 回执里"某字段"所在的行：允许前面有 Markdown 的列表、引用、加粗、表格符号。
+const fieldLines = (text, re) => text.split(/\r?\n/).filter((line) => re.test(line.replace(/^[\s>*\-|`#]+/, '')))
 
 const cardMarkdown = (cardDir) => fs.readdirSync(cardDir)
   .filter((f) => f.endsWith('.md') && !/^交付/.test(f))
@@ -80,13 +97,17 @@ export function checkRequirementHash(cardDir, receiptText) {
   const sums = path.join(cardDir, 'SHA256SUMS.txt')
   if (!fs.existsSync(sums)) return result('C2', '需求哈希', 'FAIL', '卡片目录里没有 SHA256SUMS.txt')
   const expected = sha256File(sums)
-  const written = new Set((receiptText.match(HEX64) || []).map((h) => h.toLowerCase()))
-  if (written.has(expected)) return result('C2', '需求哈希', 'PASS', `回执包含 SHA256SUMS.txt 本身的哈希 ${expected.slice(0, 12)}…`)
+  // 只认"需求哈希 / 按哪一版"字段里紧跟关键词的第一个 64 位哈希；回执别处（证据清单、附件）出现的哈希不算声明。
+  const declared = [...new Set(fieldLines(receiptText, /^(需求哈希|按哪一版)/).map((line) => {
+    const after = line.slice(line.search(/需求哈希|按哪一版/))
+    return (after.match(HEX64) || [])[0]?.toLowerCase()
+  }).filter(Boolean))]
+  if (!declared.length) return result('C2', '需求哈希', 'FAIL', `回执没有"需求哈希："字段，或该字段里没有 64 位哈希（当前应为 ${expected}）`)
+  if (declared.length > 1) return result('C2', '需求哈希', 'FAIL', `回执声明了多个不同的需求哈希：${declared.map((h) => h.slice(0, 12)).join('、')}`)
+  if (declared[0] === expected) return result('C2', '需求哈希', 'PASS', `声明的需求哈希 = SHA256SUMS.txt 本身的哈希 ${expected.slice(0, 12)}…`)
   const cardHashes = new Map(cardMarkdown(cardDir).map((f) => [sha256File(f), path.basename(f)]))
-  const onlyCardHashes = written.size > 0 && [...written].every((h) => cardHashes.has(h))
-  const detail = !written.size ? '回执里没有 64 位哈希'
-    : onlyCardHashes ? `回执只写了卡文件 ${[...written].map((h) => cardHashes.get(h)).join('、')} 的哈希，应写 SHA256SUMS.txt 本身的哈希`
-    : '回执里的哈希都不等于当前 SHA256SUMS.txt 的哈希；如果交付之后卡片目录又加了修订，这是正常的，否则说明没按最新版做'
+  const detail = cardHashes.has(declared[0]) ? `声明的是卡文件 ${cardHashes.get(declared[0])} 的哈希，应写 SHA256SUMS.txt 本身的哈希`
+    : `声明的 ${declared[0].slice(0, 12)}… 不等于当前 SHA256SUMS.txt 的哈希；如果交付之后卡片目录又加了修订，这是正常的，否则说明没按最新版做`
   return result('C2', '需求哈希', 'FAIL', `${detail}（当前应为 ${expected}）`)
 }
 
@@ -94,18 +115,25 @@ export function checkCardChecksums(cardDir) {
   const sums = path.join(cardDir, 'SHA256SUMS.txt')
   if (!fs.existsSync(sums)) return result('C3', '卡片校验单', 'FAIL', '没有 SHA256SUMS.txt')
   const v = verifyChecksumFile(sums, cardDir)
-  if (v.bad.length || v.missing.length) return result('C3', '卡片校验单', 'FAIL', `${v.total} 项中：哈希不符 ${v.bad.join('、') || '无'}；缺文件 ${v.missing.join('、') || '无'}`)
-  return result('C3', '卡片校验单', 'PASS', `${v.total} 项全部一致`)
+  return v.ok ? result('C3', '卡片校验单', 'PASS', `${v.total} 项全部一致`) : result('C3', '卡片校验单', 'FAIL', describe(v))
+}
+
+// 候选提交只从"代码："字段取（排除写着基线的行），不能用回执里随便出现的基线 SHA 冒充。
+export function declaredCommits(receiptText) {
+  return [...new Set(fieldLines(receiptText, /^代码[^：:\n]{0,6}[：:]/).filter((line) => !/基线|baseline/i.test(line))
+    .flatMap((line) => line.match(HEX40) || []).map((s) => s.toLowerCase()))]
 }
 
 export function checkPushed(receiptText, { repo, branch, remote = 'origin' } = {}) {
-  const shas = [...new Set((receiptText.match(HEX40) || []).map((s) => s.toLowerCase()))]
+  const shas = declaredCommits(receiptText)
   if (!repo || !branch) return result('C4', '推送一致', 'NOT_RUN', '没有给 --repo 和 --branch，未核对远端')
+  if (!shas.length) return result('C4', '推送一致', 'FAIL', '回执的"代码："字段里没有完整 40 位提交 SHA')
+  if (shas.length > 1) return result('C4', '推送一致', 'FAIL', `回执的"代码："字段写了多个提交：${shas.map((s) => s.slice(0, 12)).join('、')}；候选提交只能有一个，基线请写在"基线："行`)
   let remoteSha = ''
   try { remoteSha = execFileSync('git', ['-C', repo, 'ls-remote', remote, `refs/heads/${branch}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).split(/\s+/)[0].toLowerCase() } catch (e) { return result('C4', '推送一致', 'FAIL', `读取远端失败：${e.message.split('\n')[0]}`) }
   if (!remoteSha) return result('C4', '推送一致', 'FAIL', `远端没有分支 ${branch}`)
-  if (shas.includes(remoteSha)) return result('C4', '推送一致', 'PASS', `${branch} @ ${remoteSha}`)
-  return result('C4', '推送一致', 'FAIL', `远端 ${branch} 为 ${remoteSha}，回执里的完整 SHA 为 ${shas.join('、') || '（没有写完整 40 位 SHA）'}`)
+  if (shas[0] === remoteSha) return result('C4', '推送一致', 'PASS', `${branch} @ ${remoteSha}`)
+  return result('C4', '推送一致', 'FAIL', `远端 ${branch} 为 ${remoteSha}，回执"代码："写的是 ${shas[0]}（未推送，或推送后又有新提交）`)
 }
 
 const SUM_FILE = /^(SHA256SUMS.*\.txt|evidence-manifest\.json)$/i
@@ -125,25 +153,35 @@ export function checkEvidence(cardDir, extraDirs = []) {
   const problems = [], ok = []
   for (const s of sums) {
     const v = verifyChecksumFile(s, cardDir), label = s.startsWith(cardDir) ? path.relative(cardDir, s) : s
-    if (v.bad.length || v.missing.length) problems.push(`${label}：哈希不符 ${v.bad.length}、缺文件 ${v.missing.length}`)
-    else ok.push(`${label}（${v.total} 项）`)
+    if (v.ok) ok.push(`${label}（${v.total} 项）`)
+    else problems.push(`${label}：${describe(v)}`)
   }
   return problems.length ? result('C5', '证据校验单', 'FAIL', problems.join('；')) : result('C5', '证据校验单', 'PASS', ok.join('；'))
 }
 
-export function checkTestFlags(receiptText) {
-  if (/--max-old-space-size=(?!1024\b)\d+/.test(receiptText)) return result('C6', '测试参数', 'FAIL', '测试命令的内存上限不是 1024 MB')
-  const mem = /--max-old-space-size=1024\b/.test(receiptText), conc = /--test-concurrency[= ]1\b/.test(receiptText)
-  if (mem && conc) return result('C6', '测试参数', 'PASS', '带 --max-old-space-size=1024 与 --test-concurrency=1')
-  if (/NOT_RUN/.test(receiptText) && !mem && !conc) return result('C6', '测试参数', 'WARN', '回执没有测试命令，且标了 NOT_RUN')
-  return result('C6', '测试参数', 'FAIL', `缺少${mem ? '' : ' --max-old-space-size=1024'}${conc ? '' : ' --test-concurrency=1'}`)
+// 回执里每一条 `node … --test …` 命令都要单独满足资源上限；续行（行尾 \ 或 ^）先拼成一条。
+export function testCommands(receiptText) {
+  const joined = receiptText.replace(/[\\^]\r?\n\s*/g, ' ')
+  return joined.split(/\r?\n/).map((l) => l.trim()).filter((l) => /\bnode(\.exe)?\b[^\n]*\s--test(?=\s|$|`)/.test(l))
 }
 
+export function checkTestFlags(receiptText) {
+  const cmds = testCommands(receiptText)
+  if (!cmds.length) return /NOT_RUN/.test(receiptText) ? result('C6', '测试参数', 'WARN', '回执没有 node --test 命令，且标了 NOT_RUN')
+    : result('C6', '测试参数', 'FAIL', '回执没有写实际运行的 node --test 命令')
+  const bad = cmds.filter((c) => !/--max-old-space-size=1024\b/.test(c) || /--max-old-space-size=(?!1024\b)\d+/.test(c) || !/--test-concurrency[= ]1\b/.test(c))
+  if (bad.length) return result('C6', '测试参数', 'FAIL', `${bad.length} 条测试命令缺少 1024 MB 上限或串行参数，如：${bad[0].slice(0, 120)}`)
+  return result('C6', '测试参数', 'PASS', `${cmds.length} 条测试命令都带 --max-old-space-size=1024 与 --test-concurrency=1`)
+}
+
+// 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测"的那一行，本行必须写 NOT_RUN；
+// 别处出现的 NOT_RUN 不能替这一行作证。
 export function checkNotRun(receiptText) {
-  const mentions = receiptText.match(/未运行|没跑|未执行|没有运行|未测/g) || []
-  if (!mentions.length) return result('C7', '未运行要写明', 'PASS', '回执没有提到未运行的项')
-  if (/NOT_RUN/.test(receiptText)) return result('C7', '未运行要写明', 'PASS', '提到未运行的项，并写了 NOT_RUN')
-  return result('C7', '未运行要写明', 'FAIL', `提到"${[...new Set(mentions)].join('、')}"但没有写 NOT_RUN`)
+  const lines = receiptText.split(/\r?\n/).filter((l) => /未运行|没跑|未执行|没有运行|未测/.test(l))
+  if (!lines.length) return result('C7', '未运行要写明', 'PASS', '回执没有提到未运行的项')
+  const bad = lines.filter((l) => !/NOT_RUN/.test(l))
+  if (bad.length) return result('C7', '未运行要写明', 'FAIL', `${bad.length} 行提到未运行却没在本行写 NOT_RUN，如：${bad[0].trim().slice(0, 120)}`)
+  return result('C7', '未运行要写明', 'PASS', `${lines.length} 行未运行项都写了 NOT_RUN`)
 }
 
 const REQUIRED = [['卡号', /卡号/], ['代码', /代码[：:]/], ['需求哈希', /需求哈希|按哪一版/], ['执行方', /执行方/], ['验收', /验收|A1\b/], ['测试', /测试|--test\b/], ['范围自查', /范围自查|范围/]]

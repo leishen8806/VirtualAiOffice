@@ -27,7 +27,63 @@ const goodReceipt = (dir, extra = '') => `卡号 / 修订：X-1 / R1\n代码：f
 
 test('parseChecksums 兼容 CRLF、* 标记、空行与注释', () => {
   const h = 'b'.repeat(64)
-  assert.deepEqual(parseChecksums(`# 注释\r\n${h} *a.md\r\n\r\n${h}  证据/b.png\n`), [{ hash: h, name: 'a.md' }, { hash: h, name: '证据/b.png' }])
+  assert.deepEqual(parseChecksums(`# 注释\r\n${h} *a.md\r\n\r\n${h}  证据/b.png\n`), { entries: [{ hash: h, name: 'a.md' }, { hash: h, name: '证据/b.png' }], malformed: [] })
+})
+
+// ---- PR #50 审查（Codex）复现的 5 类误放行 ----
+
+test('审查 P1-1：损坏或空的校验单不能 PASS（卡片与证据都一样）', (t) => {
+  const dir = makeCard(t)
+  fs.writeFileSync(path.join(dir, 'SHA256SUMS.txt'), 'garbage line\nnot a checksum\n')
+  const c3 = checkCardChecksums(dir)
+  assert.equal(c3.status, 'FAIL'); assert.match(c3.detail, /没有任何有效条目|格式错误/)
+  const ev = path.join(dir, 'R1-证据'); fs.mkdirSync(ev)
+  fs.writeFileSync(path.join(ev, 'SHA256SUMS.txt'), '')
+  assert.equal(checkEvidence(dir).status, 'FAIL')
+  fs.writeFileSync(path.join(ev, 'SHA256SUMS.txt'), `${sha256File(path.join(dir, '参考.json'))} *参考.json\n这一行坏了\n`)
+  assert.equal(checkEvidence(dir).status, 'FAIL', '一行有效 + 一行损坏也不能通过')
+  fs.rmSync(path.join(ev, 'SHA256SUMS.txt')); fs.writeFileSync(path.join(ev, 'evidence-manifest.json'), '{ 不是 json')
+  assert.equal(checkEvidence(dir).status, 'FAIL', '无法解析的 evidence-manifest.json 也要 FAIL，而不是让程序崩溃')
+})
+
+test('审查 P1-2：C4 只认"代码："字段的提交，基线 SHA 不能冒充候选', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dispatch-check-git2-'))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const git = (cwd, ...a) => execFileSync('git', ['-C', cwd, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+  const remote = path.join(root, 'remote.git'), work = path.join(root, 'work')
+  execFileSync('git', ['init', '-q', '--bare', remote]); execFileSync('git', ['init', '-q', work])
+  git(work, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'base')
+  git(work, 'remote', 'add', 'origin', remote); git(work, 'push', '-q', 'origin', 'HEAD:refs/heads/feat/x')
+  const base = git(work, 'rev-parse', 'HEAD')
+  git(work, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'candidate, not pushed')
+  const candidate = git(work, 'rev-parse', 'HEAD')
+  const receipt = `代码：feat/x @ ${candidate}\n基线：${base}\n`
+  const r = checkPushed(receipt, { repo: work, branch: 'feat/x' })
+  assert.equal(r.status, 'FAIL', '远端仍是基线，候选没推送，不能因为回执里出现了基线 SHA 就通过')
+  assert.equal(checkPushed(`代码：feat/x @ ${candidate} / ${base}\n`, { repo: work, branch: 'feat/x' }).status, 'FAIL', '"代码："写两个提交要判失败')
+  assert.equal(checkPushed(`基线：${base}\n`, { repo: work, branch: 'feat/x' }).status, 'FAIL', '没有"代码："字段要判失败')
+})
+
+test('审查 P2-3：C2 只认"需求哈希"字段，附件里出现正确哈希不能掩盖错误声明', (t) => {
+  const dir = makeCard(t), right = sha256File(path.join(dir, 'SHA256SUMS.txt'))
+  const receipt = `需求哈希：${'d'.repeat(64)}\n\n证据清单：\n- SHA256SUMS.txt — ${right}\n`
+  assert.equal(checkRequirementHash(dir, receipt).status, 'FAIL')
+  assert.equal(checkRequirementHash(dir, `证据：${right}\n`).status, 'FAIL', '没有需求哈希字段要判失败')
+  assert.equal(checkRequirementHash(dir, `需求哈希：\`${right}\`（SHA256SUMS.txt 本身）。卡文件 SHA-256：\`${'e'.repeat(64)}\`\n`).status, 'PASS', '同一行先写需求哈希、后写卡文件哈希，取关键词后的第一个')
+})
+
+test('审查 P2-4：C6 逐条检查测试命令，一条合规不能掩盖另一条无上限的全量测试', () => {
+  const receipt = '定向：node --max-old-space-size=1024 --test --test-concurrency=1 tests/a.test.mjs\n全量：node --test tests/*.test.mjs\n'
+  const r = checkTestFlags(receipt)
+  assert.equal(r.status, 'FAIL'); assert.match(r.detail, /1 条/)
+  assert.equal(checkTestFlags('`node --max-old-space-size=1024 --test \\\n  --test-concurrency=1 tests/*.test.mjs`').status, 'PASS', '续行拼接后再判断')
+  assert.equal(checkTestFlags('测试：略，全部通过').status, 'FAIL', '没有命令也没有 NOT_RUN 要判失败')
+})
+
+test('审查 P2-5：C7 逐行判断，别处的 NOT_RUN 不能替"未运行却报通过"的那一行作证', () => {
+  const receipt = 'A6 浏览器：未运行，已通过\nA7 端到端：NOT_RUN（缺少 Playwright）\n'
+  const r = checkNotRun(receipt)
+  assert.equal(r.status, 'FAIL'); assert.match(r.detail, /A6/)
 })
 
 test('C1：ACTIVE 通过；PAUSED、WITHDRAWN 失败；没有状态行给警告', (t) => {
@@ -43,7 +99,7 @@ test('C2：写 SHA256SUMS.txt 本身的哈希才通过；写成卡文件哈希�
   assert.equal(checkRequirementHash(dir, goodReceipt(dir)).status, 'PASS')
   const wrong = checkRequirementHash(dir, `需求哈希：${sha256File(path.join(dir, '卡片.md'))}`)
   assert.equal(wrong.status, 'FAIL')
-  assert.match(wrong.detail, /只写了卡文件 卡片\.md/)
+  assert.match(wrong.detail, /声明的是卡文件 卡片\.md/)
   assert.equal(checkRequirementHash(dir, '需求哈希：无').status, 'FAIL')
 })
 
