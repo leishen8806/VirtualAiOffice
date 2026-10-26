@@ -1,6 +1,11 @@
 // T15：审核绑定版本 —— 在验收的那一刻，把【验收证据】里的对象版本与当前实际版本做只读核对。
-// 只认机器可读写法：证据块首行 `【验收证据】对象版本：` 之后，分号分隔 git:<仓库绝对路径>@<提交号>
-//   / sha256:<文件绝对路径>=<64 位十六进制>；旧写法、缺版本一律「无法核对」，不报错。
+// 只认机器可读写法：证据块首行 `【验收证据】对象版本：` 之后，分号分隔条目；旧写法、缺版本一律「无法核对」，不报错。
+//   本机写法：git:<仓库绝对路径>@<提交号> / sha256:<文件绝对路径>=<64 位十六进制>
+//   跨机写法（不依赖任何一台机器的路径）：git:<owner/name>@<提交号> / sha256:<owner/name>:<仓库内相对路径>=<64 位十六进制>
+//     owner/name 是仓库标识（GitHub 仓库名，大小写不敏感）；每台机器在 evidence-version.json 的 repos 表里
+//     把标识对应到本机目录：{ "repos": { "leishen8806/VirtualAiOffice": "E:/VirtualAIOffice/some-checkout" } }。
+//     相对路径不得含 .. 、不得是绝对路径，登记目录本身仍必须落在 roots 内。
+//     本机仓库里没有该提交时（别的机器刚推送）判「无法核对（先 fetch）」，不判成「已变」。
 // git 条目：当前版本 = 该仓库当前检出分支的 HEAD（git rev-parse HEAD），只读、不经过 shell、5 秒超时。
 // sha256 条目：对每个文件重新算哈希比较；单文件上限 50 MB。
 // 安全边界（硬规则）：路径必须落在白名单 roots 内（规范化后，防 .. / 符号链接 / 盘符大小写）；
@@ -16,6 +21,7 @@ import { execFile } from 'node:child_process'
 export const DEFAULT_CFG = Object.freeze({
   enabled: false,
   roots: ['E:/VirtualAIOffice', 'E:/Dr.life+', 'E:/KhmerX', 'E:/pc-worktrees', 'E:/VirtualAIOffice/pc-worktrees'],
+  repos: {}, // 仓库标识（owner/name）→ 本机目录；跨机证据用
   maxEntries: 10,
   maxFileBytes: 50 * 1024 * 1024,
   gitTimeoutMs: 5000,
@@ -25,6 +31,8 @@ const PROTECTED = /(^|[\\/])(lan\.json|wall\.json|config\.json|telegram[^\\/]*|\
 const EV_LINE = /【验收证据】[：:]*\s*对象版本[：:]*\s*([^\n\r]+)/ // 证据块首行：对象版本：git:…;sha256:…
 const GIT_ENTRY = /^git[：:]\s*(.+)[@＠]([0-9a-fA-F]{7,40})$/ // 提交号只许 7–40 位十六进制，含空格 / 分号 / 其它符号一律不认
 const SHA_ENTRY = /^sha256[：:]\s*(.+)[=＝]([0-9a-fA-F]{64})$/
+const REPO_ID = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/ // owner/name；含盘符、反斜杠、以 / 开头的都是路径，不是标识
+const PORTABLE_FILE = /^([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)[：:](?![\\/])(.+)$/ // owner/name:相对路径（冒号后不能直接是 / 或 \）
 const asList = (r) => (Array.isArray(r) ? r : r?.issues || r?.comments || [])
 const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t }
 
@@ -39,9 +47,17 @@ export function parseEvidenceVersion(body) {
     const t = raw.trim()
     if (!t) continue
     const g = t.match(GIT_ENTRY)
-    if (g) { entries.push({ kind: 'git', repo: g[1].trim(), commit: g[2].toLowerCase() }); continue }
+    if (g) {
+      const repo = g[1].trim()
+      entries.push(REPO_ID.test(repo) ? { kind: 'git', repo, commit: g[2].toLowerCase(), portable: true } : { kind: 'git', repo, commit: g[2].toLowerCase() })
+      continue
+    }
     const s = t.match(SHA_ENTRY)
-    if (s) { entries.push({ kind: 'sha256', file: s[1].trim(), hash: s[2].toLowerCase() }); continue }
+    if (s) {
+      const file = s[1].trim(), pf = file.match(PORTABLE_FILE)
+      entries.push(pf ? { kind: 'sha256', file, repo: pf[1], rel: pf[2].trim(), hash: s[2].toLowerCase(), portable: true } : { kind: 'sha256', file, hash: s[2].toLowerCase() })
+      continue
+    }
     entries.push({ kind: 'unk', raw: clip(t, 60) }) // 写法不可解析的条目也记下来，汇总按「无法核对」处理
   }
   if (!entries.length) return { machineReadable: false, version, entries: [], reason: '对象版本一行没有可解析的条目' }
@@ -50,9 +66,20 @@ export function parseEvidenceVersion(body) {
 }
 
 // ── 路径安全：规范化后必须落在 roots 内（防 .. / 符号链接 / 盘符大小写）──
+// 已存在：realpath.native（展开符号链接与 Windows 8.3 短名）。
+// 不存在：从最近的已存在祖先开始 realpath.native，再把剩下的部分接回去——
+//   这样短名目录（C:\Users\RUNNER~1\…）下缺失的文件不会被误判成"在根外"，
+//   指向根外的符号链接 / 目录联接下的缺失文件也不会被误判成"在根内"。
 function realOrResolve(p) {
   const abs = path.resolve(String(p))
-  try { return fs.realpathSync.native(abs) } catch { return abs } // 不存在 / 无权访问时退回到规范化路径
+  try { return fs.realpathSync.native(abs) } catch { /* 往上找已存在的祖先 */ }
+  const rest = []
+  for (let cur = abs; ;) {
+    const parent = path.dirname(cur)
+    if (parent === cur) return abs // 一路到根都不存在 / 无权访问：退回规范化路径
+    rest.unshift(path.basename(cur)); cur = parent
+    try { return path.join(fs.realpathSync.native(cur), ...rest) } catch { /* 继续往上 */ }
+  }
 }
 export function insideRoots(p, roots) {
   const rp = realOrResolve(p).toLowerCase()
@@ -85,7 +112,22 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
     return { digest: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') }
   }
 
+  // 仓库标识 → 本机目录（大小写不敏感）；没登记返回 null。
+  const localRepo = (id, cfg) => {
+    const key = Object.keys(cfg.repos || {}).find((k) => k.toLowerCase() === String(id).toLowerCase())
+    return key ? String(cfg.repos[key]) : null
+  }
+  const notRegistered = (id) => ({ state: '无法核对（本机没有登记仓库 ' + id + '）', note: '本机没有登记仓库 ' + id + '，请在 evidence-version.json 的 repos 里加上它的本机目录' })
+
   async function gitCheck(e, cfg) {
+    if (e.portable) {
+      const local = localRepo(e.repo, cfg)
+      if (!local) return notRegistered(e.repo)
+      if (!insideRoots(local, cfg.roots)) return { state: '无法核对（路径不在允许范围）', note: '路径不在允许范围' }
+      const has = await git(local, ['cat-file', '-e', e.commit + '^{commit}'])
+      if (has.err) return { state: '无法核对（本机仓库没有该提交，先 git fetch）', note: '本机仓库没有提交 ' + e.commit.slice(0, 7) + '，先 git fetch 再核对' }
+      return gitCheck({ kind: 'git', repo: local, commit: e.commit }, cfg)
+    }
     if (!insideRoots(e.repo, cfg.roots)) return { state: '无法核对（路径不在允许范围）', note: '路径不在允许范围' }
     if (isProtected(e.repo)) return { state: '无法核对（受保护文件）', note: '受保护文件' }
     const head = await git(e.repo, ['rev-parse', 'HEAD'])
@@ -109,6 +151,15 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
   }
 
   async function shaCheck(e, cfg) {
+    if (e.portable) {
+      const local = localRepo(e.repo, cfg)
+      if (!local) return notRegistered(e.repo)
+      const rel = String(e.rel || ''), segments = rel.split(/[\\/]+/)
+      if (!rel || path.isAbsolute(rel) || /^[A-Za-z]:/.test(rel) || segments.includes('..')) return { state: '无法核对（路径不在允许范围）', note: '相对路径不合法' }
+      const file = path.resolve(local, ...segments)
+      if (!insideRoots(local, cfg.roots) || !insideRoots(file, [local])) return { state: '无法核对（路径不在允许范围）', note: '路径不在允许范围' }
+      return shaCheck({ kind: 'sha256', file, hash: e.hash }, cfg)
+    }
     if (!insideRoots(e.file, cfg.roots)) return { state: '无法核对（路径不在允许范围）', note: '路径不在允许范围' }
     if (isProtected(e.file)) return { state: '无法核对（受保护文件）', note: '受保护文件' } // 不写路径进日志
     try {
@@ -154,7 +205,7 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
       const r = e.kind === 'git' ? await gitCheck(e, cfg) : e.kind === 'sha256' ? await shaCheck(e, cfg) : { state: '无法核对', note: '条目写法不可解析' }
       // 受保护文件的路径不得进入输出（label 不暴露路径；note 是固定文案「受保护文件」，保留给汇总）
       const hidden = r.state.includes('受保护')
-      const label = hidden ? '受保护文件' : e.kind === 'git' ? `git:${redactText(e.repo)}@${e.commit.slice(0, 7)}` : `sha256:${redactText(e.file)}`
+      const label = hidden ? '受保护文件' : e.kind === 'git' ? `git:${redactText(e.repo)}@${e.commit.slice(0, 7)}` : e.portable ? `sha256:${redactText(e.repo)}:${redactText(e.rel)}` : `sha256:${redactText(e.file)}`
       results.push({ ...r, label })
     }
     const { result, note } = summarize(results)
