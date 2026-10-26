@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import http from 'node:http'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -12,11 +13,14 @@ const REPO = path.resolve(HERE, '..', '..')
 const PW = process.env.VIS3_PLAYWRIGHT
 if (!PW) { console.error('SELFCHECK_FAIL: 需要 VIS3_PLAYWRIGHT 指向可加载 playwright'); process.exit(1) }
 
+// 本次自检的运行标识：传给 run.mjs 写进 report.runId，用于判定报告是不是本次生成。
+const RUN_ID = crypto.randomUUID()
+
 // async 版：不阻塞本进程事件循环（计数服务器能实时接受连接）
 const run = (mutate, out, extraEnv = {}) => new Promise((resolve) => {
   const cmd = ['node', RUN, '--repo', REPO, '--scene', 'office', '--out', out]
   if (mutate) cmd.push('--mutate', mutate)
-  const child = spawn(process.execPath, cmd.slice(1), { env: { ...process.env, VIS3_PLAYWRIGHT: PW, ...extraEnv }, cwd: REPO })
+  const child = spawn(process.execPath, cmd.slice(1), { env: { ...process.env, VIS3_PLAYWRIGHT: PW, VIS3_RUN_ID: RUN_ID, ...extraEnv }, cwd: REPO })
   let stdout = ''
   child.stdout.on('data', (d) => { stdout += d })
   const timer = setTimeout(() => child.kill('SIGKILL'), 300000)
@@ -31,7 +35,7 @@ const HEAD = (() => { try { return execFileSync('git', ['-C', REPO, 'rev-parse',
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-sc-'))
   const r = await run(null, out)
   const rep = readReport(out)
-  const a = assessRun({ exit: r.exit, report: rep, expectedSha: HEAD })
+  const a = assessRun({ exit: r.exit, report: rep, expectedRunId: RUN_ID, expectedSha: HEAD })
   results.baseline = { exit: r.exit, mandatoryTotal: rep?.mandatory?.total ?? null, ok: a.ok, reason: a.reason }
 }
 

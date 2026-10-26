@@ -17,11 +17,23 @@ process.on('exit', () => { for (const c of CHILDREN) { try { c.kill('SIGKILL') }
 
 const PROTECTED = /(^|\/)(lan\.json|wall\.json|config\.json|niuma\.config\.json|.*\.dpapi|\.env.*|.*ed25519.*|telegram[^/]*\.json|telegram[^/]*\.dpapi)$/i
 
-// A8：只删除本次运行登记的确切路径，不按目录名前缀猜测归属；清理失败留下确切目录与原因，不吞错。
-export function removeRegisteredDir(registeredPath) {
-  if (typeof registeredPath !== 'string' || !registeredPath.includes('vis3-iso-')) return { ok: false, reason: 'refused-unregistered-dir' }
-  try { fs.rmSync(registeredPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); return { ok: true } }
-  catch (e) { return { ok: false, reason: 'rmSync:' + e.code, path: registeredPath } }
+// A8：本进程内的目录登记表。bootIsolated 在 mkdtemp 后登记绝对路径；
+// removeRegisteredDir 只删登记表里完全相同的路径（解析成绝对路径后比较），删后移出表，
+// 不在表里的一律拒绝——不按目录名/前缀猜归属。清理失败留下确切目录与原因，不吞错。
+const REGISTERED_DIRS = new Set()
+
+export function registerDir(p) {
+  const abs = path.resolve(String(p))
+  REGISTERED_DIRS.add(abs)
+  return abs
+}
+
+export function removeRegisteredDir(p) {
+  const abs = typeof p === 'string' && p ? path.resolve(p) : null
+  if (abs == null || !REGISTERED_DIRS.has(abs)) return { ok: false, reason: 'refused-unregistered-dir', path: abs }
+  REGISTERED_DIRS.delete(abs)
+  try { fs.rmSync(abs, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); return { ok: true } }
+  catch (e) { return { ok: false, reason: 'rmSync:' + e.code, path: abs } }
 }
 
 export function buildServerEnv({ emptyBin, mockPort, port, netLog }) {
@@ -50,7 +62,7 @@ function assertSafeRepo(repo) {
 
 export async function bootIsolated({ repo, office = false, campus = false, missing = false, corrupt = false, outDir }) {
   const office3d = assertSafeRepo(repo)
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-iso-'))
+  const tmpRoot = registerDir(fs.mkdtempSync(path.join(os.tmpdir(), 'vis3-iso-')))
   const sandbox = path.join(tmpRoot, 'sandbox')
   fs.mkdirSync(sandbox, { recursive: true })
   const tmpOffice = path.join(sandbox, 'office3d')

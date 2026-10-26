@@ -51,7 +51,7 @@ try {
 } catch {}
 if (ignoredProtected) { console.error('INFRA_ERROR: 存在被忽略的受保护文件，拒绝运行（仅列名，不读内容）：\n' + ignoredProtected); process.exit(2) }
 if (warnOnlyProtected) { console.error('WARN: niuma.config.json 董事会尚未裁决，本次仅列名警告、不拒绝：\n' + warnOnlyProtected) }
-const report = { sha: SHA, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
+const report = { sha: SHA, runId: process.env.VIS3_RUN_ID || null, generatedAt: new Date().toISOString(), env: { platform: process.platform, node: process.version, dpr: DPR, viewport: VIEWPORT.join('x') }, mutate: A.mutate || null, scenes: {}, exit: null }
 const M = { pass: 0, fail: 0, total: 0 }
 const addCheck = (list, id, ok, detail, mandatory = true) => { list.push({ id, ok, detail: String(detail ?? '').slice(0, 400), mandatory }); if (mandatory) { M.total++; ok ? M.pass++ : M.fail++ } }
 const json = (n, v) => fs.writeFileSync(path.join(OUT, n), JSON.stringify(v, null, 2) + '\n')
