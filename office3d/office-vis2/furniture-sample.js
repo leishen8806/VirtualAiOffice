@@ -1,12 +1,45 @@
-// 董事会批准的四席样板；只由对齐版 officeSample=1 解析生成这些唯一坐标。
+// 董事会定稿的质检四席和R2十八席；只由对齐版 officeSample=1 解析采用。
 export const FACING_SEATS = Object.freeze({
   QAAutomation: Object.freeze(['west-open', -14.3, -.4, Math.PI]),
   Reviewer1: Object.freeze(['west-open', -12.7, -.4, Math.PI]),
   Reviewer2: Object.freeze(['west-open', -14.3, .4, 0]),
   SecurityReviewer: Object.freeze(['west-open', -12.7, .4, 0]),
+  Lead: Object.freeze(["product", 15.7, -7.4, Math.PI]),
+  PM: Object.freeze(["product", 17.3, -7.4, Math.PI]),
+  Architect: Object.freeze(["product", 15.7, -6.6, 0]),
+  UIUX: Object.freeze(["product", 17.3, -6.6, 0]),
+  FrontendSenior: Object.freeze(["eng", 25.5, -7.4, Math.PI]),
+  Frontend1: Object.freeze(["eng", 27.1, -7.4, Math.PI]),
+  Frontend2: Object.freeze(["eng", 28.7, -7.4, Math.PI]),
+  BackendSenior: Object.freeze(["eng", 25.5, -6.6, 0]),
+  Backend1: Object.freeze(["eng", 27.1, -6.6, 0]),
+  Backend2: Object.freeze(["eng", 28.7, -6.6, 0]),
+  GoSenior: Object.freeze(["drlife", 14.6, 7.6, Math.PI]),
+  Go1: Object.freeze(["drlife", 16.2, 7.6, Math.PI]),
+  LedgerAuditor: Object.freeze(["drlife", 14.6, 8.4, 0]),
+  ReactSenior: Object.freeze(["drlife", 16.2, 8.4, 0]),
+  Go2: Object.freeze(["drlife", 19.9, 7.6, Math.PI]),
+  DBEngineer: Object.freeze(["drlife", 21.5, 7.6, Math.PI]),
+  React1: Object.freeze(["drlife", 19.9, 8.4, 0]),
+  Localizer: Object.freeze(["drlife", 21.5, 8.4, 0]),
 })
 export const FACING_ISLAND_BOUNDS = Object.freeze({ x0: -15.55, x1: -11.45, z0: -1.75, z1: 1.75 })
 export const facingSample = layout => layout?.variant === 'align' && layout.furnitureSample === true
+
+export function facingIslandGroups(layout) {
+  if(!facingSample(layout))return []
+  return [
+    ['quality','west-open',['QAAutomation','Reviewer1','Reviewer2','SecurityReviewer']],
+    ['product','product',['Lead','PM','Architect','UIUX']],
+    ['engineering','eng',['FrontendSenior','Frontend1','Frontend2','BackendSenior','Backend1','Backend2']],
+    ['drlife-a','drlife',['GoSenior','Go1','LedgerAuditor','ReactSenior']],
+    ['drlife-b','drlife',['Go2','DBEngineer','React1','Localizer']],
+  ].map(([id,region,ids])=>{
+    const seats=ids.map(id=>layout.seats[id]),xs=seats.map(s=>s[1]),zs=seats.map(s=>s[2]),x0=Math.min(...xs),x1=Math.max(...xs),z=(Math.min(...zs)+Math.max(...zs))/2
+    const endWidth=region==='drlife'?.46:.5
+    return{id,region,ids,x0,x1,z,endWidth,bounds:id==='quality'?{...FACING_ISLAND_BOUNDS}:{x0:x0-1-endWidth/2,x1:x1+1+endWidth/2,z0:z-1.75,z1:z+1.75}}
+  })
+}
 
 export function facingHome([region, x, z]) {
   const seat = Object.values(FACING_SEATS).find(s => s[0] === region && s[1] === x && s[2] === z)
@@ -15,29 +48,31 @@ export function facingHome([region, x, z]) {
 
 export function facingAccess(layout, point) {
   if (!facingSample(layout)) return null
-  const home = Object.values(FACING_SEATS).map(facingHome).find(h => Math.abs(h.x - point.x) < 1e-6 && Math.abs(h.z - point.z) < 1e-6)
-  return home ? { x: home.x, z: home.z < 0 ? -2.3 : 2.3 } : null
+  const group=facingIslandGroups(layout).find(g=>g.ids.some(id=>{const h=facingHome(layout.seats[id]);return Math.abs(h.x-point.x)<1e-6&&Math.abs(h.z-point.z)<1e-6}))
+  if(group)return{x:point.x,z:group.z+(point.z<group.z?-2.3:2.3)}
+  const unpaired=Object.entries(layout.seats).find(([id,s])=>!FACING_SEATS[id]&&Math.abs(s[1]-point.x)<1e-6&&Math.abs(s[2]+1-point.z)<1e-6)
+  return unpaired?{x:point.x,z:point.z+.9}:null
 }
 
 export const posedPoint = (x, z, yaw, dx, dz) => ({ x: x + Math.cos(yaw) * dx + Math.sin(yaw) * dz, z: z - Math.sin(yaw) * dx + Math.cos(yaw) * dz })
 
-export function marketSamplePlan(layout) {
-  const room = layout.regions.find(r => r.id === 'market')
+export function marketSamplePlan(layout, department = 'market') {
+  const room = layout.regions.find(r => r.id === department)
   if (!room || !facingSample(layout)) return null
   const x = (room.x0 + room.x1) / 2, z = (room.z0 + room.z1) / 2
   const stations=[[-.4,-.8,-Math.PI/2],[-.4,.8,-Math.PI/2],[.4,-.8,Math.PI/2],[.4,.8,Math.PI/2]].map(([dx,dz,yaw],i)=>({
-    id:`market-desk-${i+1}`,personId:i<3?`sim-market-${i+1}`:null,x:x+dx,z:z+dz,yaw,
-    home:{x:x+dx+Math.sin(yaw),z:z+dz},chairId:i<3?`sim-market-${i+1}-chair`:'market-empty-chair',
+    id:`${department}-desk-${i+1}`,personId:i<3?`sim-${department}-${i+1}`:null,x:x+dx,z:z+dz,yaw,
+    home:{x:x+dx+Math.sin(yaw),z:z+dz},chairId:i<3?`sim-${department}-${i+1}-chair`:`${department}-empty-chair`,
   }))
   return { room:room.id,kind:'facing-work-island',stations,groupBounds:{x0:x-1.7,x1:x+1.7,z0:z-1.5,z1:z+1.5},
-    divider:{id:'market-divider',x,z,w:3,d:.08,yaw:Math.PI/2},
-    cabinet:{id:'market-wall-cabinet',x:room.x0+.5,z,w:1.6,d:.55,yaw:Math.PI/2},
-    art:[-2.2,0,2.2].map((dx,i)=>({id:`market-wall-art-${i+1}`,x:x+dx,z:room.z0+.12,w:.9,d:.10,y:1.68,h:.66})),
-    plants:[{id:'market-existing-plant',x:room.x1-.55,z:room.z0+.65},{id:'market-corner-plant',x:room.x0+.7,z:room.z1-.7}] }
+    divider:{id:`${department}-divider`,x,z,w:3,d:.08,yaw:Math.PI/2},
+    cabinet:{id:`${department}-wall-cabinet`,x:room.x0+.5,z:department==='service'?room.z0+1.05:z,w:1.6,d:.55,yaw:Math.PI/2},
+    art:(department==='marketing'?[-2.8,-1.5,2.2]:[-2.2,0,2.2]).map((dx,i)=>({id:`${department}-wall-art-${i+1}`,x:x+dx,z:room.z0+.12,w:.9,d:.10,y:1.68,h:.66})),
+    plants:[{id:`${department}-existing-plant`,x:room.x1-.55,z:room.z0+.65},{id:`${department}-corner-plant`,x:room.x0+.7,z:room.z1-.7}] }
 }
 
-export function marketSamplePose(layout, index) {
-  const plan = layout.marketSample === true && marketSamplePlan(layout)
+export function marketSamplePose(layout, index, department = 'market') {
+  const plan = (layout.displayWorkIslands === true || (department==='market'&&layout.marketSample===true)) && marketSamplePlan(layout,department)
   if (!plan) return null
   const station=plan.stations[index]
   return station?.personId?{home:{...station.home},desk:{x:station.x,z:station.z},yaw:station.yaw}:null

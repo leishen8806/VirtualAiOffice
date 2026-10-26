@@ -168,7 +168,7 @@
       "source": "Original procedural desk details, wall trim and fine-leaf planting in the reserved green buffer; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "62712CA21B309A665544769A135601749ABEEE8350407EB7CB1E9B231E561292"
+      "sha256": "C5AE79E85871A7B36218401F63BBFAEE9A0315D5222DFA19507157118987FB81"
     },
     {
       "file": "office-vis2/open-furnishing.js",
@@ -182,14 +182,14 @@
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "74C49FD0DEC81BC8F35AF89253E3C29DF84683253F8F8B089C265E85772794EA"
+      "sha256": "63A4047984D639AB5AE45EE92191D56F433A2C122D5FD29925054DC48CA77DD6"
     },
     {
       "file": "office-vis2/display-finish.js",
       "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2277C74446B0C13FC9E505128E0B931393B369045513087E2C7BA5240DE4A712"
+      "sha256": "DAD23B34DC2B238D1366C11A4C00384B4759F58CDBD07F6355A3D2F55C2E05C2"
     },
     {
       "file": "office-vis2/sample.js",
@@ -242,10 +242,10 @@
     },
     {
       "file": "office-vis2/furniture-sample.js",
-      "source": "Board-approved four real workstation poses and market shared-table sample; original pure data, no downloads",
+      "source": "Board-approved QA four-seat sample plus R2 eighteen real workstation poses and four display-room work islands; original pure data, no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "5975F8FFD0D74A111DD6ED362DB58674E8B2E98ABD18E944BCA3203F6851E58C"
+      "sha256": "5EAC77F7A8565C11B2499A1BAF586E2265D4061D74B44FF1BC7C4767B582EEFE"
     },
     {
       "file": "office-vis2/market-work-island.js",

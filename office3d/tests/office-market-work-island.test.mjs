@@ -42,7 +42,7 @@ test('actual host placement builds four desks/chairs and measured screen fits wi
     const value=buildOfficeDisplayFinish({THREE,root,layout,low,search:'?officeSample=1',collision:world,...fixture,placeFurniture(...args){calls.push(args);return fixture.placeFurniture(...args)}})
     try{
       assert.equal(value.finish.fallback,undefined)
-      for(const name of ['desk','chairDesk','computerScreen','computerKeyboard','computerMouse'])assert.equal(calls.filter(c=>c[1]===name).length,4,name)
+      for(const name of ['desk','chairDesk','computerScreen','computerKeyboard','computerMouse'])assert.equal(calls.filter(c=>c[1]===name).length,16,name)
       const s=value.finish.sample;assert.equal(s.parts.filter(p=>p.kind==='work-desk').length,4);assert.equal(s.parts.filter(p=>p.kind==='work-chair').length,4)
       assert.equal(s.parts.filter(p=>p.kind==='wall-art').length,3);assert.equal(s.parts.filter(p=>p.kind==='wall-cabinet').length,1)
       assert.ok(s.bounds.filter(b=>b.id.startsWith('market-desk-')).every(b=>Math.abs(b.y0)<2e-5&&b.y1>1.1))
@@ -50,28 +50,22 @@ test('actual host placement builds four desks/chairs and measured screen fits wi
       for(const b of s.bounds){const p=planned.find(p=>p.id===b.id);assert.ok(p,b.id);assert.ok(p.x0<=b.x0+2e-5&&p.x1>=b.x1-2e-5&&p.z0<=b.z0+2e-5&&p.z1>=b.z1-2e-5,b.id)}
       const art=s.bounds.filter(b=>b.id.startsWith('market-wall-art'))
       for(const b of art){close(b.z0,layout.envelope.z0+.05);assert.ok(b.z1-layout.envelope.z0>=.12);assert.ok(b.y0>=.2&&b.y1<=2.4)}
-      assert.deepEqual(displayFurnitureBounds(value.displayLayout).filter(b=>!b.id.startsWith('sim-service')&&!b.id.startsWith('sim-aftersales')&&!b.id.startsWith('sim-marketing')),s.bounds)
-      assert.equal(value.summary().calls,1);assert.equal(world.stats().bodies,1)
+      assert.deepEqual(displayFurnitureBounds(value.displayLayout).filter(b=>b.id.startsWith('market-')||b.id.startsWith('sim-market-')),s.bounds)
+      assert.equal(value.summary().calls,1);assert.equal(world.stats().bodies,4);assert.equal(value.root.children.filter(m=>m.name.endsWith('furniture-collision')).length,4)
+      for(const proxy of value.root.children.filter(m=>m.name.endsWith('furniture-collision'))){const room=layout.regions.find(r=>proxy.name===`sample-${r.id}-furniture-collision`),b=new THREE.Box3().setFromObject(proxy);assert.ok(room);assert.ok(b.min.x>=room.x0-1e-5&&b.max.x<=room.x1+1e-5&&b.min.z>=room.z0-1e-5&&b.max.z<=room.z1+1e-5,'each collider stays inside its room instead of spanning the whole floor')}
       value.dispose();value.dispose();assert.equal(world.stats().bodies,0);assert.equal(sharedDisposed.length,0);assert.equal(root.children.length,0)
     }finally{value.dispose();fixture.dispose()}
   }
 })
 
-test('three unchanged rooms retain every finished vertex attribute and all nine simulated identities',()=>{
-  const fixture=marketFurnitureFixture(),before=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout:{...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'},search:'?officeSample=1'}),after=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout,search:'?officeSample=1',...fixture})
+test('rollout keeps all twelve simulated IDs while each room consumes its own measured work-island plan',()=>{
+  const fixture=marketFurnitureFixture(),value=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout,search:'?officeSample=1',...fixture})
   try{
-    const unchanged=after.finish.parts.filter(p=>p.id!=='market'&&!p.id.startsWith('sim-market-'))
-    for(const id of ['service','aftersales','marketing'])assert.ok(unchanged.some(p=>p.id===id),id)
-    for(const part of unchanged){
-      const old=before.finish.parts.find(p=>p.id===part.id&&p.kind===part.kind);assert.ok(old);assert.equal(part.count,old.count)
-      for(const [name,a]of Object.entries(after.root.children[0].geometry.attributes)){
-        const b=before.root.children[0].geometry.attributes[name],size=a.itemSize
-        assert.equal(hash(a.array.slice(part.start*size,(part.start+part.count)*size)),hash(b.array.slice(old.start*size,(old.start+old.count)*size)),part.id+'/'+name)
-      }
-    }
-    const old=displayRoster({...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'})
-    for(const p of displayRoster(after.displayLayout).filter(p=>p.department!=='market')){assert.deepEqual(p,old.find(o=>o.id===p.id));assert.deepEqual(displayRoute(after.displayLayout,p),displayRoute({...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'},p))}
-    const roster=displayRoster(after.displayLayout),routes=new Map(roster.map(p=>[p.id,displayRoute(after.displayLayout,p)])),schedule=displaySchedule(roster,routes,0)
-    assert.equal(displayFrame(roster,routes,schedule,0).length,12)
-  }finally{before.dispose();after.dispose();fixture.dispose()}
+    assert.equal(value.finish.samples.length,4);assert.equal(value.summary().workstations,16);assert.equal(value.summary().vacantSeats,4)
+    const old=displayRoster({...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'}),people=displayRoster(value.displayLayout)
+    assert.deepEqual(people.map(p=>p.id),old.map(p=>p.id))
+    for(const p of people){const plan=marketSamplePlan(layout,p.department),s=plan.stations.find(s=>s.personId===p.id);assert.deepEqual(p.home,s.home);assert.equal(p.yaw,s.yaw);assert.equal(p.synthetic,true)}
+    const routes=new Map(people.map(p=>[p.id,displayRoute(value.displayLayout,p)])),schedule=displaySchedule(people,routes,0)
+    assert.equal(displayFrame(people,routes,schedule,0).length,12)
+  }finally{value.dispose();fixture.dispose()}
 })

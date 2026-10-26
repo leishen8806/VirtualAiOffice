@@ -20,11 +20,12 @@ export function buildOfficeDisplayFinish(context) {
   const result = buildDisplayDepartments(context)
   if (context.layout?.variant !== 'align' || !officeSampleRequested(context.search)) return result
   const { THREE, layout, low = false, departments = DISPLAY_DEPARTMENTS } = context
-  const mesh = result.root.children[0], original = mesh.geometry, pieces = [], parts = [], sampleParts=[]
+  const mesh = result.root.children[0], original = mesh.geometry, pieces = [], parts = [], sampleParts=[];let sampleBounds=[]
   const rooms = departments.map(id => layout.regions.find(r => r.id === id))
   const people = displayRoster(layout).filter(p => departments.includes(p.department))
   const sample=departments.includes('market')?officeDisplayRoomSample(layout):null
-  const vertical=sample?.kind==='facing-work-island',posedLayout=vertical?{...layout,marketSample:true}:layout
+  const vertical=sample?.kind==='facing-work-island',posedLayout=vertical?{...layout,marketSample:true,displayWorkIslands:true}:layout
+  const samples=vertical?rooms.map(r=>r.id==='market'?sample:marketSamplePlan(layout,r.id)):[]
   const posedPeople=vertical?displayRoster(posedLayout).filter(p=>departments.includes(p.department)):people
   const boxes = rooms.flatMap(r => [
     [r.x1 - .55, .35, r.z0 + .65, .45, .65, .45],
@@ -34,10 +35,10 @@ export function buildOfficeDisplayFinish(context) {
     [p.home.x, .74, p.home.z + .23, .46, .48, .06],
     [p.home.x, .24, p.home.z, .08, .42, .08],
   ]))
-  if(sample)for(const p of people.filter(p=>p.department===sample.room))boxes.push(
+  if(sample)for(const p of people.filter(p=>vertical||p.department===sample.room))boxes.push(
     [p.desk.x,.76,p.desk.z,1,.08,.56],
     ...[-.4,.4].map(dx=>[p.desk.x+dx,.37,p.desk.z,.06,.72,.45]))
-  if(vertical)for(const p of people.filter(p=>p.department==='market'))boxes.push(
+  if(vertical)for(const p of people)boxes.push(
     [p.desk.x,1.04,p.desk.z-.08,.42,.35,.05],...(!low?[[p.desk.x,1.04,p.desk.z-.047,.36,.28,.012]]:[]))
   const pos = original.attributes.position, keep = []
   for (let i = 0; i < pos.count; i += 3) {
@@ -47,8 +48,9 @@ export function buildOfficeDisplayFinish(context) {
   }
   // 上游几何发生变化时保留原件，不能猜测并删除未知物件。
   if (original.index || pos.count - keep.length !== boxes.length * 36) return result
-  let replacement,proxy
-  const releaseProxy=()=>{if(!proxy)return;context.collision?.remove?.(proxy);proxy.removeFromParent();proxy.geometry.dispose();proxy.material.dispose();proxy=null}
+  let replacement
+  const proxies=[]
+  const releaseProxy=()=>{for(const p of proxies){context.collision?.remove?.(p);p.removeFromParent();p.geometry.dispose();p.material.dispose()}proxies.length=0}
   try {
     const retained = new THREE.BufferGeometry()
     for (const [key, attr] of Object.entries(original.attributes)) {
@@ -89,7 +91,7 @@ export function buildOfficeDisplayFinish(context) {
       }
     })
     for (const p of posedPeople) {
-      if(vertical&&p.department==='market')continue
+      if(vertical)continue
       pose=vertical&&p.department==='market'?{...p.home,yaw:p.yaw}:null
       part(p.id, 'chair', () => {
         const x = p.home.x, z = p.home.z
@@ -126,9 +128,11 @@ export function buildOfficeDisplayFinish(context) {
     }
     pose=null
     if(vertical){
-      const plant=parts.find(p=>p.id==='market'&&p.kind==='plant')
-      sampleParts.push({...plant,id:'market-existing-plant'})
-      appendMarketWorkIsland({THREE,context,plan:sample,add,part,target:sampleParts})
+      for(const plan of samples){
+        const plant=parts.find(p=>p.id===plan.room&&p.kind==='plant')
+        sampleParts.push({...plant,id:`${plan.room}-existing-plant`})
+        appendMarketWorkIsland({THREE,context,plan,add,part,target:sampleParts})
+      }
     }
     if(sample&&!vertical){
       const t=sample.table
@@ -159,27 +163,34 @@ export function buildOfficeDisplayFinish(context) {
     }
     replacement = displayBatch(THREE, pieces, mesh.material).geometry
     if(sample){
-      const positions=replacement.attributes.position,triangles=[]
-      sample.bounds=sampleParts.map(part=>{
+      const positions=replacement.attributes.position
+      sampleBounds=sampleParts.map(part=>{
         const b=new THREE.Box3()
         for(let i=part.start;i<part.start+part.count;i++){
-          b.expandByPoint(new THREE.Vector3().fromBufferAttribute(positions,i));triangles.push(positions.getX(i),positions.getY(i),positions.getZ(i))
+          b.expandByPoint(new THREE.Vector3().fromBufferAttribute(positions,i))
         }
         return {id:part.kind==='chair'?`${part.id}-chair`:part.id,x0:b.min.x,x1:b.max.x,z0:b.min.z,z1:b.max.z,y0:b.min.y,y1:b.max.y}
       })
+      if(vertical)for(const plan of samples){const belongs=id=>id.startsWith(plan.room+'-')||id.startsWith('sim-'+plan.room+'-');plan.parts=sampleParts.filter(p=>belongs(p.id));plan.bounds=sampleBounds.filter(b=>belongs(b.id))}
+      else sample.bounds=sampleBounds
       if(context.collision){
-        const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(triangles,3))
-        proxy=new THREE.Mesh(g,new THREE.MeshBasicMaterial());proxy.visible=false;proxy.name='sample-market-furniture-collision';result.root.add(proxy)
-        context.collision.add(proxy,'officeDisplayRoomSample')
+        // 按室保留紧凑包围盒；跨四室的单个代理会让全层行走都扫描远处三角面。
+        for(const plan of vertical?samples:[{room:sample.room,parts:sampleParts}]){
+          const vertices=[]
+          for(const p of plan.parts)for(let i=p.start;i<p.start+p.count;i++)vertices.push(positions.getX(i),positions.getY(i),positions.getZ(i))
+          const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3))
+          const proxy=new THREE.Mesh(g,new THREE.MeshBasicMaterial());proxy.visible=false;proxy.name=`sample-${plan.room}-furniture-collision`;result.root.add(proxy);proxies.push(proxy)
+          context.collision.add(proxy,'officeDisplayRoomSample')
+        }
       }
     }
     mesh.geometry = replacement; original.dispose()
-    result.finish = { parts, retainedVertices: keep.length, ...(sample?{sample:{...sample,parts:sampleParts}}:{}) }
+    result.finish = { parts, retainedVertices: keep.length, ...(sample?{sample:{...sample,parts:vertical?sample.parts:sampleParts},...(vertical?{samples}: {})}:{}) }
     if(sample){
-      result.bounds=[...result.bounds.filter(b=>!people.some(p=>p.department===sample.room&&(b.id===`${p.id}-desk`||(vertical&&b.id===`${p.id}-chair`)))),...sample.bounds]
-      if(vertical)result.displayLayout={...posedLayout,marketObstacles:sample.bounds.map(b=>({...b}))}
+      result.bounds=[...result.bounds.filter(b=>!people.some(p=>vertical||(vertical||p.department===sample.room)&&(b.id===`${p.id}-desk`||(vertical&&b.id===`${p.id}-chair`)))),...sampleBounds]
+      if(vertical)result.displayLayout={...posedLayout,marketObstacles:sample.bounds.map(b=>({...b})),displayObstacles:sampleBounds.map(b=>({...b}))}
       const summary=result.summary
-      result.summary=()=>({...summary(),triangles:mesh.geometry.attributes.position.count/3,...(vertical?{desks:departments.length*3+1,marketWorkstations:4,vacantSeats:1,sharedTables:0,visitorChairs:0}:{sharedTables:1,visitorChairs:sample.visitors.length})})
+      result.summary=()=>({...summary(),triangles:mesh.geometry.attributes.position.count/3,...(vertical?{desks:departments.length*4,workstations:departments.length*4,marketWorkstations:4,vacantSeats:departments.length,sharedTables:0,visitorChairs:0}:{sharedTables:1,visitorChairs:sample.visitors.length})})
       const dispose=result.dispose;let disposed=false
       result.dispose=()=>{if(disposed)return;disposed=true;releaseProxy();dispose()}
     }

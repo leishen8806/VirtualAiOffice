@@ -719,7 +719,7 @@ function createOfficeV3Navigation(layout) {
     if (layout.variant === 'align' && rooms.find(r => r.id === 'review')?.z0 === layout.envelope.z0) {
       // 北侧圆桌沿椅背外侧绕行；最后径向接近本人椅子，不沿旧长桌直穿其他席位。
       const points = layout.meetingSeatPoints[seat.room]
-      const radius = Math.max(...points.map(p => Math.hypot(p.x - center.x, p.z - center.z))) + .64
+      const radius = Math.max(...points.map(p => Math.hypot(p.x - center.x, p.z - center.z))) + (layout.furnitureSample===true?.85:.64)
       const start = Math.atan2(inside.x - center.x, inside.z - center.z), end = Math.atan2(seat.x - center.x, seat.z - center.z)
       const turn = Math.atan2(Math.sin(end - start), Math.cos(end - start)), steps = Math.max(1, Math.ceil(Math.abs(turn) / (Math.PI / 24)))
       const arc = Array.from({ length: steps + 1 }, (_, index) => {

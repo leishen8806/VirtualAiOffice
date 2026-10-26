@@ -14,6 +14,7 @@ import { createFurnitureCollision } from '../furniture-collision.js'
 import before from './fixtures/office-o1o2-r1-ebd884f.json' with { type: 'json' }
 import { marketFurnitureFixture } from './helpers/market-furniture.mjs'
 
+const qualitySeats=Object.fromEntries(Object.entries(FACING_SEATS).filter(([,s])=>s[0]==='west-open'))
 const sample=LAYOUT_V3_ALIGN_SAMPLE,hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
 const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
 const gap=(a,b)=>Math.hypot(Math.max(a.x0-b.x1,b.x0-a.x1,0),Math.max(a.z0-b.z1,b.z0-a.z1,0))
@@ -63,7 +64,7 @@ test('stable 1375 routes and closed ALIGN 1650 routes preserve their complete c4
 
 test('sample reroutes all 19 foreign functional paths and ten stool probes around the whole facing island',()=>{
   assert.equal(hit({x:-16,z:0},{x:-11,z:0},island),true,'safe endpoints but bad interior must fail')
-  const old=matrix(LAYOUT_V3_ALIGN,true),next=matrix(sample,true),foreign=r=>!FACING_SEATS[r.id]&&!FACING_SEATS[r.target]
+  const old=matrix(LAYOUT_V3_ALIGN,true),next=matrix(sample,true),foreign=r=>!qualitySeats[r.id]&&!qualitySeats[r.target]
   const crossed=old.filter(r=>foreign(r)&&r.route.some((p,i)=>i&&hit(r.route[i-1],p,island)))
   assert.equal(crossed.filter(r=>!r.kind.startsWith('stool:')).length,19)
   assert.equal(crossed.filter(r=>r.kind.startsWith('stool:')).length,10)
@@ -83,7 +84,7 @@ test('sample reroutes all 19 foreign functional paths and ten stool probes aroun
 
 test('facing four share one divider, clear aisles and correctly rotated measured monitor fits',()=>{
   const plan=planWorkstationIslands(sample,sample.regions.find(r=>r.id==='west-open')),g=plan.groups.find(g=>g.template==='facing-workstation-island')
-  assert.deepEqual(g.workstationIds,Object.keys(FACING_SEATS));assert.deepEqual(g.groupBounds,island)
+  assert.deepEqual(g.workstationIds,Object.keys(qualitySeats));assert.deepEqual(g.groupBounds,island)
   assert.equal(plan.placements.filter(p=>p.sample==='quality-facing-island').length,3)
   for(const p of plan.placements.filter(p=>p.sample))for(const use of g.useSpaces)assert.equal(overlap(p.bounds,use),false)
   assert.ok(island.z0-sample.corridors.westNorthCross.z1>=1.2)

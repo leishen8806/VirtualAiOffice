@@ -27,14 +27,15 @@ export function displayRoster(layout) {
   return DISPLAY_DEPARTMENTS.flatMap(department => layout.displaySeats.filter(s => s.region === department).slice(0, 3)
     .map((s, index) => ({ id: `sim-${s.id}`, department, label: `模拟 ${index + 1}`, synthetic: true,
       home: { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: 0,
-      ...(department==='market'?marketSamplePose(layout,index):null) })))
+      ...marketSamplePose(layout,index,department) })))
 }
 export function displayFurnitureBounds(layout) {
-  const people=displayRoster(layout),sample=layout.marketSample===true&&marketSamplePlan(layout)
-  const boxes=people.filter(p=>!(sample&&p.department==='market')).flatMap(person => [
+  const people=displayRoster(layout),sample=layout.marketSample===true&&marketSamplePlan(layout),all=layout.displayWorkIslands===true&&!!marketSamplePlan(layout)
+  const boxes=people.filter(p=>!(all||(sample&&p.department==='market'))).flatMap(person => [
     { id: `${person.id}-desk`, x0: person.desk.x - .5, x1: person.desk.x + .5, z0: person.desk.z - .28, z1: person.desk.z + .28 },
     { id: `${person.id}-chair`, x0: person.home.x - .23, x1: person.home.x + .23, z0: person.home.z - .23, z1: person.home.z + .26 },
   ])
+  if(all)return layout.displayObstacles||DISPLAY_DEPARTMENTS.flatMap(id=>marketSampleBounds(marketSamplePlan(layout,id)))
   if(sample){
     boxes.push(...(layout.marketObstacles||marketSampleBounds(sample)))
   }
@@ -96,13 +97,19 @@ export function displayRoute(layout, person) {
     const boxes = displayFurnitureBounds(layout).filter(b => b.id !== `${person.id}-chair`)
     const inRoom = p => p.x >= room.x0 + .25 && p.x <= room.x1 - .25 && p.z >= room.z0 + .25 && p.z <= room.z1 - .25
     let interior
-    if(layout.marketSample===true&&marketSamplePlan(layout)&&person.department==='market'){
-      // 只豁免本人起身0.7m；东西两侧各走椅背外通道，东席绕南端到既有南门。
-      const east=person.yaw>0,step={x:person.home.x+(east?.7:-.7),z:person.home.z}
-      const spine={x:east?room.x1-1.4:room.x0+1.4,z:person.home.z},all=displayFurnitureBounds(layout)
-      const lane=p=>inRoom(p)&&(east?p.x>=person.home.x+.5:p.x<=inside.x+1e-6)
-      const entry=east?{x:spine.x,z:room.z1-.7}:inside
-      interior=[person.home,step,...route(step,spine,room,all,lane).slice(1),...route(spine,entry,room,all,lane).slice(1),...(east?route(entry,inside,room,all,inRoom).slice(1):[])]
+    if(marketSamplePose(layout,0,person.department)){
+      // 仅起身0.7m豁免本人椅子；横向绕行严格走桌岛端部通道中线。
+      const plan=marketSamplePlan(layout,person.department),east=person.yaw>0
+      const step={x:person.home.x+(east?.7:-.7),z:person.home.z},all=displayFurnitureBounds(layout)
+      const spine={x:east?room.x1-1.4:room.x0+1.4,z:person.home.z}
+      const lane=p=>inRoom(p)&&(east?p.x>=person.home.x+.5:p.x<=person.home.x-.5)
+      interior=[person.home,step,...route(step,spine,room,all,lane).slice(1)]
+      if((door.side==='east'&&east)||(door.side==='west'&&!east))interior.push(...route(spine,inside,room,all,lane).slice(1))
+      else {
+        const north=door.side==='north',z=north?(room.z0+.14+plan.groupBounds.z0)/2:(plan.groupBounds.z1+room.z1-.14)/2
+        const turn={x:spine.x,z},across={x:door.side==='west'?room.x0+1.4:door.side==='east'?room.x1-1.4:inside.x,z}
+        interior.push(...route(spine,turn,room,all,lane).slice(1),...route(turn,across,room,all,inRoom).slice(1),...route(across,inside,room,all,inRoom).slice(1))
+      }
     }else interior=route(person.home,inside,room,boxes,inRoom)
     const go = [...interior, outside]
     const length = go.reduce((sum, p, i) => sum + (i ? distance(p, go[i - 1]) : 0), 0)

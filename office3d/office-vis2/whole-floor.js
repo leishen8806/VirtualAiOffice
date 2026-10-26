@@ -70,6 +70,18 @@ export function wholeFloorSpec(layout) {
       box('shelf-toe', shelf.x, floor + .075, shelf.z + .27, shelf.w, .08, .04, '#B89B64', 'kb')
       box('shelf-cornice', shelf.x, floor + shelf.h + .035, shelf.z, shelf.w, .07, shelf.d, '#C49A6C', 'kb')
     }
+    if(facingSample(layout)) {
+      // 北侧沿用已验收桌椅/书墙尺寸，只统一饰面尺度，不移动业务会议席位。
+      for(const id of ['board','review','plan']) {
+        const r=layout.regions.find(r=>r.id===id),x=(r.x0+r.x1)/2,z=r.z0+.12
+        box('north-reference-frame',x,1.68,z,.9,.66,.08,'#B89B64',id)
+        box('north-reference-art',x,1.68,z+.044,.84,.6,.008,'#F4F1EA',id)
+        box('north-reference-motif',x-.15,1.75,z+.052,.22,.28,.008,'#B7C2B4',id)
+        box('north-reference-motif',x+.13,1.61,z+.052,.24,.17,.008,'#C49A6C',id)
+        for(const dx of[-.3,.3])box('north-reference-support',x+dx,1.68,z-.06,.04,.3,.02,'#756D60',id)
+      }
+      for(const shelf of furniture.shelves)box('north-reference-shelf-trim',shelf.x,shelf.y+.18,shelf.z+.285,shelf.w-.16,.025,.012,'#B89B64','kb')
+    }
     for (const table of [...furniture.meetings, { ...furniture.board, region: 'board' }]) {
       const y = table.round ? .824 : .767, w = table.round ? 1.2 : table.w, d = table.round ? 1.2 : table.d
       box('meeting-runner', table.x, y, table.z, w * .72, .01, d * .32, '#A6B39E', table.region)
