@@ -148,6 +148,48 @@ test('R3 reception logo and lettering attach to the new solid wall, inside its h
   brands.dispose();frontage.dispose();assert.equal(root.children.length,0)
 })
 
+test('R4 sliding leaves expose 0.45m each, leave 1.7m clear and park against separate north-side tracks',()=>{
+  const layout=LAYOUT_V3_ALIGN_SAMPLE,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout}),data=shell.reception.data
+  assert.equal(data.leaves.length,4)
+  for(const d of data.doors){
+    assert.ok(Math.abs(d.clearX1-d.clearX0-1.7)<1e-8)
+    const leaves=data.leaves.filter(p=>p.id.startsWith(d.id))
+    for(const p of leaves){
+      assert.ok(Math.abs(p.x1-p.x0-1.3)<1e-8);assert.equal(p.height,2.7)
+      assert.ok(Math.abs(Math.min(p.x1,d.x1)-Math.max(p.x0,d.x0)-.45)<1e-8)
+      const surface=p.surface==='wall'?data.wall:data.columns[d.id==='west'?0:1]
+      assert.ok(Math.abs(surface.z0-p.z1-.03)<1e-8);assert.ok(surface.z0-p.z0<=.08+1e-8)
+      for(const block of [data.wall,...data.columns])assert.equal(p.x0<block.x1&&p.x1>block.x0&&p.z0<block.z1&&p.z1>block.z0,false)
+      // Ray through the visible glass opening, away from frames and the handle.
+      const x=(Math.max(p.x0,d.x0)+Math.min(p.x1,d.x1))/2
+      shell.reception.transparent.mesh.updateMatrixWorld(true)
+      const hits=new THREE.Raycaster(new THREE.Vector3(x,1.8,10),new THREE.Vector3(0,0,-1)).intersectObject(shell.reception.transparent.mesh)
+      assert.ok(hits.length>0,`${p.id} actual glass visible from south`)
+      assert.ok(hits[0].point.z>=p.z0&&hits[0].point.z<=p.z1)
+    }
+    shell.reception.opaque.mesh.updateMatrixWorld(true)
+    const trackHit=new THREE.Raycaster(new THREE.Vector3((d.x0+d.x1)/2,2.77,10),new THREE.Vector3(0,0,-1)).intersectObject(shell.reception.opaque.mesh)
+    assert.ok(trackHit.length>0,'actual rail box above passage')
+  }
+  shell.dispose()
+})
+
+test('R4 facade shares internal strip edges and continuous normals while preserving every R3 height knot',()=>{
+  const layout=LAYOUT_V3_ALIGN_SAMPLE,root=new THREE.Group(),shell=buildOfficeShellV3({THREE,root,layout})
+  assert.deepEqual(layout.walls.southProfile,[{x:-22,h:4.5},{x:-15.2,h:4.5},{x:-4,h:1.2},{x:8,h:1.2},{x:19.2,h:4.5},{x:26,h:4.5}])
+  const facade=shell.facade,g=facade.mesh.geometry,indices=g.index.array,edges=new Map(),normals=g.attributes.normal
+  for(let i=0;i<indices.length;i+=3)for(const [a,b]of [[indices[i],indices[i+1]],[indices[i+1],indices[i+2]],[indices[i+2],indices[i]]]){const key=[a,b].sort((a,b)=>a-b).join('/');edges.set(key,(edges.get(key)||0)+1)}
+  const wings=facade.strips.filter(s=>s.segments>1);assert.equal(wings.length,8)
+  for(const strip of wings)for(let i=1;i<strip.rows.length-1;i++){
+    const row=strip.rows[i]
+    for(let j=1;j<row.length;j++)assert.equal(edges.get([row[j-1],row[j]].sort((a,b)=>a-b).join('/')),2,'internal cross-section shared by adjacent faces')
+    for(const index of row){const length=Math.hypot(normals.getX(index),normals.getY(index),normals.getZ(index));assert.ok(Math.abs(length-1)<1e-6)}
+  }
+  assert.equal(facade.chains.length,5,'three outer planes plus two continuous wings, no per-segment end faces')
+  for(const state of facade.states.filter(s=>s.segment.side==='curve'))for(const [i,p] of [state.segment.a,state.segment.b].entries())assert.equal(state.heights[i],officePlan1SouthHeight(layout,p.x))
+  shell.dispose()
+})
+
 test('L1 sample keeps the owned solid facade visible and emits only finite finish geometry', () => {
   const root = new THREE.Group(), shell = buildOfficeAlignedShell({ THREE, root, layout: LAYOUT_V3_ALIGN_SAMPLE, search: '?officeSample=1', low: false })
   assert.equal(shell.walls.visible, true)
@@ -195,7 +237,7 @@ test('L1 route matrix is finite and no segment cuts a wall, another workstation 
     for (let i = 1; i < route.length; i++) {
       const a = route[i - 1], b = route[i]
       for(const p of officePlan1Reception(layout).blockers) assert.equal(segmentHitsBox(a,b,{x0:p.x0-.28,x1:p.x1+.28,z0:p.z0-.28,z1:p.z1+.28}),false,`${id}/${kind}/${i} reception ${p.kind}`)
-      if((a.z-8.5)*(b.z-8.5)<0){const x=a.x+(b.x-a.x)*(8.5-a.z)/(b.z-a.z);if(x>-6.6&&x<8.6)assert.ok(officePlan1Reception(layout).doors.some(d=>x>=d.x0+.28&&x<=d.x1-.28),`${id}/${kind} must cross a door`)}
+      if((a.z-8.5)*(b.z-8.5)<0){const x=a.x+(b.x-a.x)*(8.5-a.z)/(b.z-a.z);if(x>-6.6&&x<8.6)assert.ok(officePlan1Reception(layout).doors.some(d=>x>=d.clearX0+.28&&x<=d.clearX1-.28),`${id}/${kind} must cross the sliding-door clear passage`)}
       for (const wall of walls) assert.equal(lineCrosses(a, b, wall.a, wall.b), false, `${id}->${target || kind}/${kind}/${i} wall ${wall.room?.id || wall.side}`)
       for (const [other, box] of desks) if (other !== id && other !== target) assert.equal(segmentHitsBox(a, b, box), false, `${id}/${kind}/${i} desk ${other}`)
       if (kind !== 'lounge') {

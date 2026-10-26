@@ -1,36 +1,59 @@
 import { officePlan1Reception, officePlan1SouthHeight } from '../office-plan1-layout.js'
 import { createSampleBatch } from './batch.js'
 
-// Actual trapezoids, including their sloping caps; only their top vertices change during cutaway.
+// 每翼共用截面顶点；只有链首尾有端面，避免逐段盒体留下缝隙和明暗线。
 export function buildPlan1Facade(THREE, root, layout, segments, material) {
-  const box = new THREE.BoxGeometry(1, 1, 1), unit = box.toNonIndexed(), source = unit.attributes.position
-  box.dispose()
-  const positions = new Float32Array(segments.length * 2 * source.count * 3), geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(positions.length).fill(1), 3))
-  const style = layout.walls.outerSolid
+  const style = layout.walls.outerSolid, geometry = new THREE.BufferGeometry()
   const states = segments.map(segment => {
     const south = !['north', 'west', 'east'].includes(segment.side)
     const heights = [segment.a, segment.b].map(p => south ? officePlan1SouthHeight(layout, p.x) : style.height)
     return { segment, heights, current: [...heights] }
   })
-  function write() {
-    let offset = 0
-    for (const { segment: { a, b }, current: [ha, hb] } of states) {
-      const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz)
-      for (const cap of [false, true]) for (let i = 0; i < source.count; i++) {
-        const t = source.getX(i) + .5, h = ha + (hb - ha) * t, y = source.getY(i) + .5, side = source.getZ(i) * style.thickness
-        positions[offset++] = a.x + dx * t - dz / length * side
-        positions[offset++] = cap ? h + y * style.capHeight : y * h
-        positions[offset++] = a.z + dz * t + dx / length * side
-      }
+  const chains = [
+    ...states.filter(s=>['north','west','east'].includes(s.segment.side)).map(s=>[s]),
+    states.filter(s=>!['north','west','east'].includes(s.segment.side)&&(s.segment.a.x+s.segment.b.x)/2<layout.axis.x),
+    states.filter(s=>!['north','west','east'].includes(s.segment.side)&&(s.segment.a.x+s.segment.b.x)/2>layout.axis.x),
+  ].filter(c=>c.length)
+  const vertices=[], indices=[], strips=[]
+  const vertex=(chain,node,side,level)=>{vertices.push({chain,node,side,level});return vertices.length-1}
+  const quad=(a,b,c,d,reverse=false)=>indices.push(...(reverse?[a,c,b,a,d,c]:[a,b,c,a,c,d]))
+  for(const chain of chains){
+    const points=[chain[0].segment.a,...chain.map(s=>s.segment.b)]
+    chain.nodes=points.map((point,i)=>{
+      const normal=s=>{const dx=s.segment.b.x-s.segment.a.x,dz=s.segment.b.z-s.segment.a.z,l=Math.hypot(dx,dz);return{x:-dz/l,z:dx/l}}
+      const prev=normal(chain[Math.max(0,i-1)]),next=normal(chain[Math.min(i,chain.length-1)])
+      const x=prev.x+next.x,z=prev.z+next.z,den=x*prev.x+z*prev.z
+      return{point,offset:{x:x/den*style.thickness/2,z:z/den*style.thickness/2}}
+    })
+    for(const side of [-1,1]){
+      const rows=points.map((_,i)=>[0,1,2].map(level=>vertex(chain,i,side,level)))
+      for(let i=0;i<chain.length;i++)for(let level=0;level<2;level++)quad(rows[i][level],rows[i+1][level],rows[i+1][level+1],rows[i][level+1],side<0)
+      strips.push({kind:'side',rows,segments:chain.length})
     }
-    geometry.attributes.position.needsUpdate = true; geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
+    for(const level of [0,2]){
+      const rows=points.map((_,i)=>[1,-1].map(side=>vertex(chain,i,side,level)))
+      for(let i=0;i<chain.length;i++)quad(rows[i][0],rows[i+1][0],rows[i+1][1],rows[i][1],level===0)
+      strips.push({kind:level?'cap':'bottom',rows,segments:chain.length})
+    }
+    for(const node of [0,chain.length])quad(vertex(chain,node,-1,0),vertex(chain,node,1,0),vertex(chain,node,1,2),vertex(chain,node,-1,2),node!==0)
   }
-  write(); unit.dispose()
-  const mesh = new THREE.Mesh(geometry, material); mesh.name = 'office-plan1-sloped-facade'; mesh.userData.dynamic = true
-  mesh.castShadow = mesh.receiveShadow = false; root.add(mesh)
-  return { mesh, states, write, dispose() { geometry.dispose(); mesh.removeFromParent() } }
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(vertices.length*3),3))
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(vertices.length*3).fill(1),3))
+  geometry.setIndex(indices)
+  function write(){
+    const p=geometry.attributes.position
+    vertices.forEach(({chain,node,side,level},i)=>{
+      const {point,offset}=chain.nodes[node]
+      const before=chain[Math.max(0,node-1)].current[node?1:0],after=chain[Math.min(node,chain.length-1)].current[node===chain.length?1:0]
+      const h=Math.min(before,after)
+      p.setXYZ(i,point.x+offset.x*side,level===0?0:h+(level===2?style.capHeight:0),point.z+offset.z*side)
+    })
+    p.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere()
+  }
+  write()
+  const mesh=new THREE.Mesh(geometry,material);mesh.name='office-plan1-sloped-facade';mesh.userData.dynamic=true
+  mesh.castShadow=mesh.receiveShadow=false;root.add(mesh)
+  return{mesh,states,chains,strips,write,dispose(){geometry.dispose();mesh.removeFromParent()}}
 }
 
 export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
@@ -52,14 +75,14 @@ export function buildPlan1Reception({ THREE, root, layout, collision, low }) {
   for (const p of [...data.partitions,...data.leaves]) {
     const leaf=p.kind==='leaf', x=(p.x0+p.x1)/2, z=(p.z0+p.z1)/2
     const glass=layout.walls.internalGlass.glassThickness/2
-    box(panes,leaf?x-glass:p.x0+f,leaf?x+glass:p.x1-f,f,p.height-2*f,leaf?p.z0+f:z-glass,leaf?p.z1-f:z+glass,'#ffffff')
+    box(panes,p.x0+f,p.x1-f,f,p.height-2*f,z-glass,z+glass,'#ffffff')
     for (const y of [0,p.height-f]) box(solid,p.x0,p.x1,y,f,p.z0,p.z1,frame,.5)
-    if (leaf) for(const end of [p.z0,p.z1]) box(solid,p.x0,p.x1,0,p.height,end-f/2,end+f/2,frame,.5)
-    else for(const end of [p.x0,p.x1]) box(solid,end-f/2,end+f/2,0,p.height,p.z0,p.z1,frame,.5)
-    if(leaf) box(solid,x-.045,x+.045,1,.3,z-.015,z+.015,trim,.6)
+    for(const end of leaf?[p.x0+f/2,p.x1-f/2]:[p.x0,p.x1]) box(solid,end-f/2,end+f/2,0,p.height,p.z0,p.z1,frame,.5)
+    if(leaf){const handle=p.id.endsWith('-0')?p.x1-2*f:p.x0+2*f;box(solid,handle-.015,handle+.015,1,.3,p.z1-.02,p.z1,trim,.6)}
   }
   for(const d of data.doors) {
-    box(solid,d.x0,d.x1,d.height-f,f,d.z-f/2,d.z+f/2,frame,.5)
+    const tracks=data.leaves.filter(p=>p.id.startsWith(d.id)),z0=Math.min(...tracks.map(p=>p.z0)),z1=Math.max(...tracks.map(p=>p.z1))
+    box(solid,d.x0,d.x1,d.height,data.spec.trackHeight,z0-.01,z1+.01,frame,.5)
     // Jambs stay outside the net 2.6m passage.
     for(const x of [d.x0-f/2,d.x1+f/2]) box(solid,x-f/2,x+f/2,0,d.height,d.z-f/2,d.z+f/2,frame,.5)
   }

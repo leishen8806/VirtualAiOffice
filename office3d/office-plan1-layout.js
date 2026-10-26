@@ -60,7 +60,7 @@ export const OFFICE_PLAN1_WALLS = Object.freeze({
   internalGlass: Object.freeze({ height: 2.7, baseThickness: .14, glassThickness: .018, frame: '#AA9472', targetOpacity: .1 }),
   southProfile: Object.freeze([{x:-22,h:4.5},{x:-15.2,h:4.5},{x:-4,h:1.2},{x:8,h:1.2},{x:19.2,h:4.5},{x:26,h:4.5}].map(Object.freeze)),
   gatePost: Object.freeze({width:.3,depth:.3,height:2.4,color:'#B89B64'}),
-  reception: Object.freeze({z:8.5,wallWidth:4,wallHeight:3,wallDepth:.14,doorWidth:2.6,doorHeight:2.7,frameWidth:.05,glassOpacity:.1,columnWidth:.8,columnDepth:.8,columnHeight:3.6}),
+  reception: Object.freeze({z:8.5,wallWidth:4,wallHeight:3,wallDepth:.14,doorWidth:2.6,doorHeight:2.7,frameWidth:.05,glassOpacity:.1,columnWidth:.8,columnDepth:.8,columnHeight:3.6,leafWidth:1.3,leafExposure:.45,leafGap:.03,trackHeight:.14}),
 })
 
 export function officePlan1SouthHeight(layout, x) {
@@ -77,8 +77,12 @@ export function officePlan1Reception(layout) {
   const doors=[{x0:wall.x0-s.doorWidth,x1:wall.x0},{x0:wall.x1,x1:wall.x1+s.doorWidth}].map((d,i)=>({...d,id:i?'east':'west',z:s.z,height:s.doorHeight}))
   const columns=[{x0:doors[0].x0-s.columnWidth,x1:doors[0].x0},{x0:doors[1].x1,x1:doors[1].x1+s.columnWidth}].map(d=>({...d,z0:s.z-s.columnDepth/2,z1:s.z+s.columnDepth/2,height:s.columnHeight,kind:'column'}))
   const partitions=[{x0:room.x0,x1:columns[0].x0},{x0:columns[1].x1,x1:room.x1}].map(d=>({...d,z0:s.z-layout.walls.internalGlass.baseThickness/2,z1:s.z+layout.walls.internalGlass.baseThickness/2,height:layout.walls.internalGlass.height,kind:'glass'}))
-  // 门扇固定朝北开启90°；实际玻璃与寻路障碍共用此包络，门洞保持可走。
-  const leaves=doors.flatMap(d=>[d.x0-s.frameWidth/2,d.x1+s.frameWidth/2].map(x=>({x0:x-s.frameWidth/2,x1:x+s.frameWidth/2,z0:s.z-s.doorWidth/2,z1:s.z,height:s.doorHeight,kind:'leaf'})))
+  // 北侧双轨分别贴柱/中墙表面，净距30mm；南侧停放会侵入已冻结排队点的人员净距。
+  const leaves=doors.flatMap((d,i)=>[0,1].map(side=>{
+    const wallSide=i!==side, surface=wallSide?wall:columns[i], z0=surface.z0-s.leafGap-s.frameWidth
+    return{x0:side?d.x1-s.leafExposure:d.x0+s.leafExposure-s.leafWidth,x1:side?d.x1-s.leafExposure+s.leafWidth:d.x0+s.leafExposure,z0,z1:z0+s.frameWidth,height:s.doorHeight,kind:'leaf',id:d.id+'-'+side,surface:wallSide?'wall':'column'}
+  }))
+  doors.forEach(d=>{d.clearX0=d.x0+s.leafExposure;d.clearX1=d.x1-s.leafExposure})
   return {spec:s,centerX:cx,wall,doors,columns,partitions,leaves,blockers:[wall,...columns,...partitions,...leaves]}
 }
 
