@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP } from '../office-layout.js'
-import { createCampusRackPlan } from '../dr-campus-racks.js'
+import * as THREE from '../vendor/three/three.module.js'
+import { CAMPUS_BUILDING, CAMPUS_DOCKS, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from '../office-layout.js'
+import { buildCampusRacks, createCampusRackPlan } from '../dr-campus-racks.js'
 import { shuttlePlan } from '../dr-campus-shuttle-logic.js'
 
 const separation = (first, second) => {
@@ -24,6 +25,46 @@ test('R3 fixes four five-section rack rows at the approved 12.7m bounds', () => 
     assert.equal(rack.sections.length, 5)
     for (const section of rack.sections) assert.ok(Math.abs(section.z1 - section.z0 - 2.54) < 1e-9)
   }
+})
+
+test('R4 keeps the real label world box clear of dock work and aligns its four row names', () => {
+  const root = new THREE.Group()
+  const fillTextCalls = []
+  const canvasTex = (width, height, draw) => {
+    draw({
+      fillRect() {}, strokeRect() {}, save() {}, restore() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {},
+      set fillStyle(value) {}, set strokeStyle(value) {}, set lineWidth(value) {}, set font(value) {}, set textAlign(value) {},
+      fillText(text, x, y) { fillTextCalls.push({ text, x, y }) },
+    }, width, height)
+    const texture = new THREE.Texture()
+    texture.image = { width, height }
+    return texture
+  }
+  const layout = { shuttle: CAMPUS_SHUTTLE_STRIP, zones: CAMPUS_ZONES }
+  const built = buildCampusRacks({ THREE, root, canvasTex, layout, quality: { tier: 'high' }, replaceRackCell: true })
+  const label = root.getObjectByName('campus-rack-labels')
+  const box = new THREE.Box3().setFromObject(label)
+  const labelBounds = { x0: box.min.x, x1: box.max.x, z0: box.min.z, z1: box.max.z }
+
+  assert.ok(Math.abs(labelBounds.x0 - -122) < 1e-9)
+  assert.ok(Math.abs(labelBounds.x1 - -102) < 1e-9)
+  assert.ok(labelBounds.z0 >= -4.95 && labelBounds.z1 <= -4.85)
+  assert.ok(labelBounds.x1 < CAMPUS_SHUTTLE_STRIP.x0, 'label does not enter the shuttle strip')
+  for (const dock of CAMPUS_DOCKS.filter(({ id }) => /^D0[5-8]$/.test(id))) {
+    const closest = Math.min(separation(labelBounds, dock.bay), separation(labelBounds, dock.work))
+    assert.ok(closest >= .9, `label clears ${dock.id} by ${closest.toFixed(2)}m`)
+  }
+
+  assert.deepEqual(
+    fillTextCalls.filter(({ text }) => ['A1', 'R2', 'C2', 'B2'].includes(text)),
+    [
+      { text: 'A1', x: 50, y: 68 },
+      { text: 'R2', x: 350, y: 68 },
+      { text: 'C2', x: 650, y: 68 },
+      { text: 'B2', x: 950, y: 68 },
+    ],
+  )
+  built.dispose()
 })
 
 test('R3 shuttle strip, wall, docks, and rail clearances obey the board ruling', () => {
