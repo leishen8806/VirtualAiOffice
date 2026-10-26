@@ -182,14 +182,14 @@
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "74C49FD0DEC81BC8F35AF89253E3C29DF84683253F8F8B089C265E85772794EA"
+      "sha256": "E4448EEEACBDA90A1DCA0CF1AFBF1ACC72324E6B7EA0D0A066D5E789A493D163"
     },
     {
       "file": "office-vis2/display-finish.js",
       "source": "Original procedural display-room finish; reuses repository display builder, atlas and leaf geometry; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2277C74446B0C13FC9E505128E0B931393B369045513087E2C7BA5240DE4A712"
+      "sha256": "C9F1FCAFBB99F056594DDB847C647B9BC7DD4DABD3156920B2CEA70BB42748AC"
     },
     {
       "file": "office-vis2/sample.js",
@@ -238,14 +238,14 @@
       "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
       "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "9DA1B32CB28B6B03BB2AAAD54AA3A7D967F883027D6E2E2AD0C3C48FFBF3636A"
+      "sha256": "DDD3FEFCC3BBA12CD9A62B9452186877979D2F41D38D172083F79B186DDCADDB"
     },
     {
       "file": "office-vis2/furniture-sample.js",
       "source": "Board-approved four real workstation poses and market shared-table sample; original pure data, no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "5975F8FFD0D74A111DD6ED362DB58674E8B2E98ABD18E944BCA3203F6851E58C"
+      "sha256": "F466F1B61BDEDEC7B3BBFAA83AD07014063DC243C1D414E23235D971AC2FAAB1"
     },
     {
       "file": "office-vis2/market-work-island.js",

@@ -78,10 +78,13 @@ export function officeFurnitureV2Spec(layout) {
   let shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
   let opsScreen = { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 }
   if (layout.variant === 'align') {
-    const kb = meetingRegion(layout, 'kb'), west = meetingRegion(layout, 'west-open')
-    const ops = layout.deskGroups.ops.map(name => layout.seats[name]), middle = (kb.x0 + kb.x1) / 2, width = (kb.x1 - kb.x0 - 1) / 2
-    shelves = [-1, 1].map(side => ({ x: middle + side * (width / 2 + .05), z: kb.z0 + .55, w: width, h: 2.65, y: .126, d: .6, yaw: 0 }))
-    opsScreen = { ...opsScreen, x: ops.reduce((sum, seat) => sum + seat[1], 0) / ops.length, z: Math.max(west.z0, layout.corridors.westNorthCross.z1) + .3 }
+    if (layout.plan1Phase === 'L1') { shelves = []; opsScreen = null }
+    else {
+      const kb = meetingRegion(layout, 'kb'), west = meetingRegion(layout, 'west-open')
+      const ops = layout.deskGroups.ops.map(name => layout.seats[name]), middle = (kb.x0 + kb.x1) / 2, width = (kb.x1 - kb.x0 - 1) / 2
+      shelves = [-1, 1].map(side => ({ x: middle + side * (width / 2 + .05), z: kb.z0 + .55, w: width, h: 2.65, y: .126, d: .6, yaw: 0 }))
+      opsScreen = { ...opsScreen, x: ops.reduce((sum, seat) => sum + seat[1], 0) / ops.length, z: Math.max(west.z0, layout.corridors.westNorthCross.z1) + .3 }
+    }
   }
   return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen }
 }
@@ -187,13 +190,15 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
     if (layout.variant !== 'align') asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw)
   }
   detailId = null
-  for (const [x, z] of [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
+  for (const [x, z] of layout.plan1Phase === 'L1' ? [] : [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
   const ops = spec.opsScreen
-  detailId = 'align-ops-screen'
-  box(ops.x, ops.y + ops.h / 2, ops.z, ops.w + .08, ops.h + .08, .08, THEME.trim)
-  screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
-  // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
-  for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
+  if (ops) {
+    detailId = 'align-ops-screen'
+    box(ops.x, ops.y + ops.h / 2, ops.z, ops.w + .08, ops.h + .08, .08, THEME.trim)
+    screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
+    // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
+    for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
+  }
   detailId = null
   const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.screen.x, room.screen.y, room.screen.z, room.screen.w, room.screen.h, `会议室 ${room.id}`, room.screen.yaw)]))
   const boardScr = screen(spec.board.screen.x, spec.board.screen.y, spec.board.screen.z, spec.board.screen.w, spec.board.screen.h, '董事会', spec.board.screen.yaw)

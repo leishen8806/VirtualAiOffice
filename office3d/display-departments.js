@@ -10,8 +10,9 @@ export function buildDisplayDepartments({ THREE, root, layout, low = false, canv
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: T.wallRoughness })
   const white = new THREE.Color(T.nameplate), wood = new THREE.Color(T.trim).lerp(white, .55)
   const leaf = new THREE.Color(T.glass).offsetHSL(.05, .25, -.18)
-  const box = (x, y, z, w, h, d, color) => {
+  const box = (x, y, z, w, h, d, color, yaw=0) => {
     const source = new THREE.BoxGeometry(w, h, d), g = source.toNonIndexed(); source.dispose()
+    if(yaw)g.rotateY(yaw)
     g.translate(x, y, z)
     const colors = new Float32Array(g.attributes.position.count * 3)
     for (let i = 0; i < colors.length; i += 3) colors.set([color.r, color.g, color.b], i)
@@ -52,13 +53,14 @@ export function buildDisplayDepartments({ THREE, root, layout, low = false, canv
     if (!low) box(room.x1 - .55, .95, room.z0 + .65, .55, .65, .5, leaf)
   })
   for (const p of displayRoster(layout).filter(p => departments.includes(p.department))) {
-    box(p.desk.x, .76, p.desk.z, 1, .08, .56, wood)
-    for (const dx of [-.4, .4]) box(p.desk.x + dx, .37, p.desk.z, .06, .72, .45, white)
+    const posed=(point,dx,dz)=>({x:point.x+Math.cos(p.yaw)*dx+Math.sin(p.yaw)*dz,z:point.z-Math.sin(p.yaw)*dx+Math.cos(p.yaw)*dz})
+    box(p.desk.x, .76, p.desk.z, 1, .08, .56, wood, p.yaw)
+    for (const dx of [-.4, .4]) { const at=posed(p.desk,dx,0); box(at.x, .37, at.z, .06, .72, .45, white, p.yaw) }
     box(p.home.x, .47, p.home.z, .46, .1, .46, leaf)
-    box(p.home.x, .74, p.home.z + .23, .46, .48, .06, leaf)
+    const back=posed(p.home,0,.23);box(back.x, .74, back.z, .46, .48, .06, leaf, p.yaw)
     box(p.home.x, .24, p.home.z, .08, .42, .08, wood)
-    box(p.desk.x, 1.04, p.desk.z - .08, .42, .35, .05, new THREE.Color(T.nameplateText))
-    if (!low) box(p.desk.x, 1.04, p.desk.z - .047, .36, .28, .012, leaf)
+    const monitor=posed(p.desk,0,-.08);box(monitor.x, 1.04, monitor.z, .42, .35, .05, new THREE.Color(T.nameplateText), p.yaw)
+    if (!low) {const glass=posed(p.desk,0,-.047);box(glass.x, 1.04, glass.z, .36, .28, .012, leaf, p.yaw)}
   }
   const texture = displayAtlas(THREE, rooms.map(r => [names[r.id], DISPLAY_LABEL]), canvasTex)
   material.map = texture

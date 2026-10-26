@@ -67,6 +67,7 @@ export function planWorkstationIslands(layout, area) {
 // Shared by the renderer and route planner: keep navigation obstacles identical
 // to the deterministic furnishing plan without importing THREE into routing.
 export function alignZoneObstaclePlan(layout) {
+  if (layout.plan1Phase === 'L1') return []
   const reserved = alignDoorAprons(layout)
   const corridors = alignPassages(layout)
   const workstations = Object.values(layout.seats).map(([, x, z]) => ({ x, z, radius: 1 }))
@@ -116,9 +117,13 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get,searc
     furnishings.forEach(f=>f.dispose());paving?.dispose()
   }
   try {
-    const slab=(b,y,color,grain='stone')=>{const g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);batch.add(g,color,[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2],0,.78,0,grain)}
+    const slab=(b,y,color,grain='stone')=>{let g,position
+      if(b.footprint){const shape=new THREE.Shape();b.footprint.forEach((p,i)=>(i?shape.lineTo(p.x,-p.z):shape.moveTo(p.x,-p.z)));shape.closePath();g=new THREE.ShapeGeometry(shape);g.rotateX(-Math.PI/2);position=[0,y,0]}
+      else{g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);position=[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2]}
+      batch.add(g,color,position,0,.78,0,grain)}
     for(const b of floor.regions){
       slab(b,.126,b.color,b.kind==='room'?'wood':'stone')
+      if(b.footprint)continue
       const step=b.kind==='room'?.6:1.5
       for(let x=b.x0+step;x<b.x1;x+=step)slab({x0:x-.007,x1:x+.007,z0:b.z0,z1:b.z1},.128,b.kind==='room'?'#AB9477':'#C8BEAC','')
       if(b.kind!=='room')for(let z=b.z0+1.5;z<b.z1;z+=1.5)slab({x0:b.x0,x1:b.x1,z0:z-.007,z1:z+.007},.128,'#C8BEAC','')

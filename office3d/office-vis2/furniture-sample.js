@@ -9,14 +9,26 @@ export const FACING_ISLAND_BOUNDS = Object.freeze({ x0: -15.55, x1: -11.45, z0: 
 export const facingSample = layout => layout?.variant === 'align' && layout.furnitureSample === true
 
 export function facingHome([region, x, z]) {
+  const explicit = arguments[0]?.[4]
+  if (explicit && Number.isFinite(explicit.x) && Number.isFinite(explicit.z) && Number.isFinite(explicit.yaw)) return { ...explicit }
   const seat = Object.values(FACING_SEATS).find(s => s[0] === region && s[1] === x && s[2] === z)
   return seat ? { x, z: z + (seat[3] ? -1 : 1), yaw: seat[3] } : null
 }
 
 export function facingAccess(layout, point) {
   if (!facingSample(layout)) return null
-  const home = Object.values(FACING_SEATS).map(facingHome).find(h => Math.abs(h.x - point.x) < 1e-6 && Math.abs(h.z - point.z) < 1e-6)
-  return home ? { x: home.x, z: home.z < 0 ? -2.3 : 2.3 } : null
+  const seats = Object.values(layout.seats || {})
+  const seat = seats.find(s => {
+    const home = facingHome(s)
+    return home && Math.abs(home.x - point.x) < 1e-6 && Math.abs(home.z - point.z) < 1e-6
+  })
+  const home = seat && facingHome(seat)
+  if (!home) return null
+  if (layout.plan1Phase === 'L1') {
+    const dx = home.x - seat[1], dz = home.z - seat[2], length = Math.hypot(dx, dz) || 1
+    return { x: home.x + dx / length * 1.15, z: home.z + dz / length * 1.15 }
+  }
+  return { x: home.x, z: home.z < 0 ? -2.3 : 2.3 }
 }
 
 export const posedPoint = (x, z, yaw, dx, dz) => ({ x: x + Math.cos(yaw) * dx + Math.sin(yaw) * dz, z: z - Math.sin(yaw) * dx + Math.cos(yaw) * dz })
@@ -31,7 +43,7 @@ export function marketSamplePlan(layout) {
   }))
   return { room:room.id,kind:'facing-work-island',stations,groupBounds:{x0:x-1.7,x1:x+1.7,z0:z-1.5,z1:z+1.5},
     divider:{id:'market-divider',x,z,w:3,d:.08,yaw:Math.PI/2},
-    cabinet:{id:'market-wall-cabinet',x:room.x0+.5,z,w:1.6,d:.55,yaw:Math.PI/2},
+    cabinet:{id:'market-wall-cabinet',x:room.x0+.2,z,w:1.6,d:.35,yaw:Math.PI/2},
     art:[-2.2,0,2.2].map((dx,i)=>({id:`market-wall-art-${i+1}`,x:x+dx,z:room.z0+.12,w:.9,d:.10,y:1.68,h:.66})),
     plants:[{id:'market-existing-plant',x:room.x1-.55,z:room.z0+.65},{id:'market-corner-plant',x:room.x0+.7,z:room.z1-.7}] }
 }
@@ -46,6 +58,6 @@ export function marketSamplePose(layout, index) {
 export function marketSampleBounds(plan) {
   const box=(id,x,z,w,d)=>({id,x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})
   return [...plan.stations.flatMap(s=>[box(s.id,s.x,s.z,.7,1.4),box(s.chairId,s.home.x,s.home.z,.6,.62)]),
-    box(plan.divider.id,plan.divider.x,plan.divider.z,.08,3),box(plan.cabinet.id,plan.cabinet.x,plan.cabinet.z,.55,1.6),
+    box(plan.divider.id,plan.divider.x,plan.divider.z,.08,3),box(plan.cabinet.id,plan.cabinet.x,plan.cabinet.z,plan.cabinet.d,plan.cabinet.w),
     ...plan.art.map(p=>({...box(p.id,p.x,p.z,p.w,p.d),z0:p.z-.07,z1:p.z+.064})),...plan.plants.map(p=>box(p.id,p.x,p.z,.55,.5))]
 }

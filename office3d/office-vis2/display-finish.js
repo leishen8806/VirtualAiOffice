@@ -26,19 +26,20 @@ export function buildOfficeDisplayFinish(context) {
   const sample=departments.includes('market')?officeDisplayRoomSample(layout):null
   const vertical=sample?.kind==='facing-work-island',posedLayout=vertical?{...layout,marketSample:true}:layout
   const posedPeople=vertical?displayRoster(posedLayout).filter(p=>departments.includes(p.department)):people
+  const poseBox=(p,point,dx,y,dz,w,h,depth)=>{const side=Math.abs(Math.sin(p.yaw))>.5;return[point.x+Math.cos(p.yaw)*dx+Math.sin(p.yaw)*dz,y,point.z-Math.sin(p.yaw)*dx+Math.cos(p.yaw)*dz,side?depth:w,h,side?w:depth]}
   const boxes = rooms.flatMap(r => [
     [r.x1 - .55, .35, r.z0 + .65, .45, .65, .45],
     ...(!low ? [[r.x1 - .55, .95, r.z0 + .65, .55, .65, .5]] : []),
   ]).concat(people.flatMap(p => [
-    [p.home.x, .47, p.home.z, .46, .1, .46],
-    [p.home.x, .74, p.home.z + .23, .46, .48, .06],
-    [p.home.x, .24, p.home.z, .08, .42, .08],
+    poseBox(p,p.home,0,.47,0,.46,.1,.46),
+    poseBox(p,p.home,0,.74,.23,.46,.48,.06),
+    poseBox(p,p.home,0,.24,0,.08,.42,.08),
   ]))
   if(sample)for(const p of people.filter(p=>p.department===sample.room))boxes.push(
-    [p.desk.x,.76,p.desk.z,1,.08,.56],
-    ...[-.4,.4].map(dx=>[p.desk.x+dx,.37,p.desk.z,.06,.72,.45]))
+    poseBox(p,p.desk,0,.76,0,1,.08,.56),
+    ...[-.4,.4].map(dx=>poseBox(p,p.desk,dx,.37,0,.06,.72,.45)))
   if(vertical)for(const p of people.filter(p=>p.department==='market'))boxes.push(
-    [p.desk.x,1.04,p.desk.z-.08,.42,.35,.05],...(!low?[[p.desk.x,1.04,p.desk.z-.047,.36,.28,.012]]:[]))
+    poseBox(p,p.desk,0,1.04,-.08,.42,.35,.05),...(!low?[poseBox(p,p.desk,0,1.04,-.047,.36,.28,.012)]:[]))
   const pos = original.attributes.position, keep = []
   for (let i = 0; i < pos.count; i += 3) {
     const removed = boxes.some(([x, y, z, w, h, d]) => [i, i + 1, i + 2].every(j =>
@@ -90,7 +91,7 @@ export function buildOfficeDisplayFinish(context) {
     })
     for (const p of posedPeople) {
       if(vertical&&p.department==='market')continue
-      pose=vertical&&p.department==='market'?{...p.home,yaw:p.yaw}:null
+      pose=p.yaw?{...p.home,yaw:p.yaw}:null
       part(p.id, 'chair', () => {
         const x = p.home.x, z = p.home.z
         // 圆角外轮廓完全包含于原座垫方形；顶面及靠背高度不变。
@@ -108,8 +109,8 @@ export function buildOfficeDisplayFinish(context) {
           box(x + s * .21, .73, z + .03, .04, .035, .33, '#B7C2B4')
         }
       })
-      if(pose)sampleParts.push(parts.at(-1))
-      pose=vertical&&p.department==='market'?{...p.desk,yaw:p.yaw}:null
+      if(pose&&p.department==='market')sampleParts.push(parts.at(-1))
+      pose=p.yaw?{...p.desk,yaw:p.yaw}:null
       part(p.id, 'desk-detail', () => {
         const x = p.desk.x, z = p.desk.z
         box(x, .805, z - .08, .20, .01, .14, '#746A59')

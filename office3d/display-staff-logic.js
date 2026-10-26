@@ -26,15 +26,18 @@ export function displayRoster(layout) {
   if (layout?.version !== 2) return []
   return DISPLAY_DEPARTMENTS.flatMap(department => layout.displaySeats.filter(s => s.region === department).slice(0, 3)
     .map((s, index) => ({ id: `sim-${s.id}`, department, label: `模拟 ${index + 1}`, synthetic: true,
-      home: { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: 0,
+      home: s.home ? { ...s.home } : { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: s.yaw || 0,
       ...(department==='market'?marketSamplePose(layout,index):null) })))
 }
 export function displayFurnitureBounds(layout) {
   const people=displayRoster(layout),sample=layout.marketSample===true&&marketSamplePlan(layout)
-  const boxes=people.filter(p=>!(sample&&p.department==='market')).flatMap(person => [
-    { id: `${person.id}-desk`, x0: person.desk.x - .5, x1: person.desk.x + .5, z0: person.desk.z - .28, z1: person.desk.z + .28 },
-    { id: `${person.id}-chair`, x0: person.home.x - .23, x1: person.home.x + .23, z0: person.home.z - .23, z1: person.home.z + .26 },
-  ])
+  const boxes=people.filter(p=>!(sample&&p.department==='market')).flatMap(person => {
+    const side=Math.abs(Math.sin(person.yaw))>.5
+    return [
+      { id: `${person.id}-desk`, x0: person.desk.x-(side?.28:.5), x1: person.desk.x+(side?.28:.5), z0: person.desk.z-(side?.5:.28), z1: person.desk.z+(side?.5:.28) },
+      { id: `${person.id}-chair`, x0: person.home.x-(side?.26:.23), x1: person.home.x+(side?.26:.23), z0: person.home.z-(side?.23:.23), z1: person.home.z+(side?.23:.26) },
+    ]
+  })
   if(sample){
     boxes.push(...(layout.marketObstacles||marketSampleBounds(sample)))
   }

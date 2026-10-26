@@ -13,9 +13,10 @@ test('layout1 preserves every pre-O2 export value and order', async () => {
   const currentSource = fs.readFileSync(new URL('../office-layout.js', import.meta.url), 'utf8')
   const approvedHome = 'export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })'
   const legacyHome = 'export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })'
+  const plan1Import = /^import \{ makeOfficePlan1Layout \} from '\.\/office-plan1-layout\.js'\r?\n\r?\n/m
   assert.ok(currentSource.includes(approvedHome))
-  // 只映射已批准的四席姿态入口这一行；其余旧源码仍逐字冻结。
-  assert.equal(currentSource.replace(approvedHome, legacyHome).startsWith(oldSource), true)
+  // L1 仅增加样板数据导入；其余旧源码仍逐字冻结。
+  assert.equal(currentSource.replace(plan1Import, '').replace(approvedHome, legacyHome).startsWith(oldSource), true)
   for (const name of Object.keys(old)) {
     if (name === 'workHome') {
       for (const seats of [layout.SEATS, layout.LAYOUT_V2.seats, layout.LAYOUT_V3.seats, layout.LAYOUT_V3_ALIGN.seats])

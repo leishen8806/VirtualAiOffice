@@ -1,3 +1,5 @@
+import { makeOfficePlan1Layout } from './office-plan1-layout.js'
+
 // 空间坐标与门洞是渲染、碰撞和验证的共同来源；房间不开敞口。
 export const ENVELOPE = { x0: -44, x1: 22, z0: -13, z1: 13 }
 export const MAIN_FLOOR_X0 = -22 // 建筑接缝不随内部房间平移。
@@ -584,8 +586,7 @@ export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
-export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep({ ...cloneLayoutData(V3_ALIGN_LAYOUT), furnitureSample: true,
-  seats: { ...cloneLayoutData(V3_ALIGN_SEATS), ...cloneLayoutData(FACING_SEATS) } })
+export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep(makeOfficePlan1Layout(V3_ALIGN_LAYOUT))
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
@@ -716,6 +717,16 @@ function createOfficeV3Navigation(layout) {
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
+    if (layout.plan1Phase === 'L1') {
+      const rx = (room.x1 - room.x0) / 2 - .35, rz = (room.z1 - room.z0) / 2 - .35
+      const angle = point => Math.atan2((point.x - center.x) / rx, (point.z - center.z) / rz)
+      const start = angle(inside), end = angle(seat), turn = Math.atan2(Math.sin(end - start), Math.cos(end - start))
+      const steps = Math.max(1, Math.ceil(Math.abs(turn) / (Math.PI / 24)))
+      return dedupeRoute([inside, ...Array.from({ length: steps + 1 }, (_, index) => {
+        const a = start + turn * index / steps
+        return { x: center.x + Math.sin(a) * rx, z: center.z + Math.cos(a) * rz }
+      }), routePoint(seat)])
+    }
     if (layout.variant === 'align' && rooms.find(r => r.id === 'review')?.z0 === layout.envelope.z0) {
       // 北侧圆桌沿椅背外侧绕行；最后径向接近本人椅子，不沿旧长桌直穿其他席位。
       const points = layout.meetingSeatPoints[seat.room]

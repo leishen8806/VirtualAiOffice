@@ -899,7 +899,8 @@ function placeSeated(ch, home) {
   ch.solve(0)
 }
 function createAgentView(a, index) {
-  const [zone, sx, sz] = seatFor(a.name)
+  const seat = seatFor(a.name)
+  const [zone, sx, sz] = seat
   const desk = LAYOUT3_MODE ? officeV3?.get('furniture3')?.deskAt(sx, sz) : makeDesk(sx, sz, ZONES[zone].accent)
   if (!desk) return null
   const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
@@ -917,7 +918,7 @@ function createAgentView(a, index) {
       outfit: a.name === 'Lead' ? 0x1b1e22 : 0x25292e, trim: VI.gold, skin: SKIN[index % SKIN.length], hair: HAIR[(index * 3) % HAIR.length], hairStyle: [0, 1, 0, 2, 0][index % 5],
       markTexture: zone === 'drlife' ? markTex : null, accent: ZONE_BADGE[zone] || VI.gold,
     })
-  const home = workHome([zone, sx, sz])
+  const home = workHome(seat)
   placeSeated(ch, home)
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })

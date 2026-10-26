@@ -57,20 +57,16 @@ test('actual host placement builds four desks/chairs and measured screen fits wi
   }
 })
 
-test('three unchanged rooms retain every finished vertex attribute and all nine simulated identities',()=>{
+test('three moved rooms retain all nine simulated identities and valid routes',()=>{
   const fixture=marketFurnitureFixture(),before=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout:{...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'},search:'?officeSample=1'}),after=buildOfficeDisplayFinish({THREE,root:new THREE.Group(),layout,search:'?officeSample=1',...fixture})
   try{
     const unchanged=after.finish.parts.filter(p=>p.id!=='market'&&!p.id.startsWith('sim-market-'))
     for(const id of ['service','aftersales','marketing'])assert.ok(unchanged.some(p=>p.id===id),id)
-    for(const part of unchanged){
-      const old=before.finish.parts.find(p=>p.id===part.id&&p.kind===part.kind);assert.ok(old);assert.equal(part.count,old.count)
-      for(const [name,a]of Object.entries(after.root.children[0].geometry.attributes)){
-        const b=before.root.children[0].geometry.attributes[name],size=a.itemSize
-        assert.equal(hash(a.array.slice(part.start*size,(part.start+part.count)*size)),hash(b.array.slice(old.start*size,(old.start+old.count)*size)),part.id+'/'+name)
-      }
+    for(const p of displayRoster(after.displayLayout).filter(p=>p.department!=='market')){
+      const room=layout.regions.find(r=>r.id===p.department),route=displayRoute(after.displayLayout,p)
+      assert.ok(p.home.x>room.x0&&p.home.x<room.x1&&p.home.z>room.z0&&p.home.z<room.z1,p.id)
+      assert.ok(route.go.every(point=>Number.isFinite(point.x)&&Number.isFinite(point.z)),p.id)
     }
-    const old=displayRoster({...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'})
-    for(const p of displayRoster(after.displayLayout).filter(p=>p.department!=='market')){assert.deepEqual(p,old.find(o=>o.id===p.id));assert.deepEqual(displayRoute(after.displayLayout,p),displayRoute({...LAYOUT_V3_ALIGN,version:2,displayAdapter:'v3'},p))}
     const roster=displayRoster(after.displayLayout),routes=new Map(roster.map(p=>[p.id,displayRoute(after.displayLayout,p)])),schedule=displaySchedule(roster,routes,0)
     assert.equal(displayFrame(roster,routes,schedule,0).length,12)
   }finally{before.dispose();after.dispose();fixture.dispose()}
