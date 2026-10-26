@@ -79,8 +79,9 @@ const segmentMatrix = (THREE, segment, y, h, thickness = .18) => {
 }
 
 export function buildOfficeShellV3({ THREE, root, layout, collision, low = false }) {
-  const spec = buildOfficeShellV3Spec(layout), h = spec.wallHeight.standard
-  const warm = new THREE.MeshStandardMaterial({ color: THEME.exteriorWall, emissive: THEME.exteriorWall, emissiveIntensity: .28, roughness: THEME.wallRoughness, vertexColors: true, toneMapped: false })
+  const spec = buildOfficeShellV3Spec(layout), outerStyle = layout.walls?.outerSolid
+  const outerHeight = outerStyle?.height ?? 3.5, capHeight = outerStyle?.capHeight ?? 0, exteriorColor = outerStyle?.finish ?? THEME.exteriorWall
+  const warm = new THREE.MeshStandardMaterial({ color: exteriorColor, emissive: exteriorColor, emissiveIntensity: .28, roughness: THEME.wallRoughness, vertexColors: true, toneMapped: false })
   const inner = new THREE.MeshStandardMaterial({ color: THEME.interiorWall, roughness: THEME.wallRoughness })
   const glass = new THREE.MeshPhysicalMaterial({ color: THEME.glass, transparent: true, opacity: THEME.glassOpacity, roughness: THEME.glassRoughness, depthWrite: false })
   const proxies = []
@@ -101,8 +102,11 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const lowerEntries = [], lowerColors = [], glassEntries = []
   const wallState = []
   for (const segment of spec.outer) {
-    const matrix = segmentMatrix(THREE,segment,0,3.5)
-    lowerEntries.push({ matrix }); lowerColors.push(new THREE.Color(THEME.exteriorWall)); wallState.push({ matrix, segment, side: segment.side, base: 3.5, index: lowerEntries.length - 1 })
+    const matrix = segmentMatrix(THREE,segment,0,outerHeight)
+    lowerEntries.push({ matrix }); lowerColors.push(new THREE.Color(exteriorColor))
+    const index = lowerEntries.length - 1, capIndex = capHeight ? lowerEntries.length : -1
+    if (capHeight) { lowerEntries.push({ matrix: segmentMatrix(THREE,segment,outerHeight,capHeight,outerStyle.thickness) }); lowerColors.push(new THREE.Color(exteriorColor)) }
+    wallState.push({ matrix, segment, side: segment.side, base: outerHeight, capHeight, capIndex, index })
   }
   for (const segment of spec.inner) {
     if(segment.a){const solidHeight=segment.kind==='solid'?2.2:.9;if(solidHeight) {lowerEntries.push({matrix:segmentMatrix(THREE,segment,0,solidHeight,.14)});lowerColors.push(new THREE.Color(THEME.interiorWall))}if(!low&&segment.kind==='glass')glassEntries.push({matrix:segmentMatrix(THREE,segment,solidHeight,2.2-solidHeight,.14)});continue}
@@ -117,6 +121,7 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
   const green = addInstances(THREE, root, 'office3-green-buffer', greenMaterial, greenEntries, [], greenGeometry)
   const walls = addInstances(THREE, root, 'office3-structure', warm, lowerEntries, lowerColors)
   walls.castShadow = false; walls.receiveShadow = false
+  if (outerStyle) walls.userData.dynamic = true
   const innerGlass = addInstances(THREE, root, 'office3-inner-glass', glass, glassEntries)
   const collisionEntries = []
   for (const segment of spec.inner) {
@@ -133,18 +138,21 @@ export function buildOfficeShellV3({ THREE, root, layout, collision, low = false
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(1, 2.2, 1), inner)
     proxy.visible = false; proxies.push(proxy); entry.matrix.decompose(proxy.position,proxy.quaternion,proxy.scale); root.add(proxy); collision?.add(proxy, 'office3-wall')
   }
-  const windowEntries = low ? [] : spec.outer.map(segment => ({matrix:segmentMatrix(THREE,segment,3.5,1)}))
+  const windowEntries = low || outerStyle ? [] : spec.outer.map(segment => ({matrix:segmentMatrix(THREE,segment,3.5,1)}))
   const windows = addInstances(THREE, root, 'office3-window-band', glass, windowEntries)
   const update = (dt, { camera } = {}) => {
     if (!walls || !camera || !wallState.length) return
     const elevation = Math.atan2(camera.position.y - 0.1, Math.hypot(camera.position.x - layout.axis.x, camera.position.z - layout.axis.z)) * 180 / Math.PI
+    const outside = camera.position.x < layout.envelope.x0 || camera.position.x > layout.envelope.x1 || camera.position.z < layout.envelope.z0 || camera.position.z > layout.envelope.z1
+    const exteriorNear = layout.plan1Phase === 'L1' && outside && Math.hypot(Math.max(layout.envelope.x0-camera.position.x,0,camera.position.x-layout.envelope.x1),Math.max(layout.envelope.z0-camera.position.z,0,camera.position.z-layout.envelope.z1)) <= 12
     const target = { x: layout.axis.x, z: (layout.envelope.z0 + layout.envelope.z1) / 2 }
     for (const state of wallState) {
-      const normal=sideNormal[state.side]||state.segment.normal,next = resolveWallOcclusion({ elevation, cameraPosition: camera.position, target, wallNormal: normal, thresholds: { ...layout.wallHeight.occlusion, standard: state.base } })
+      const normal=sideNormal[state.side]||state.segment.normal,next = resolveWallOcclusion({ elevation: exteriorNear ? 90 : elevation, cameraPosition: camera.position, target, wallNormal: normal, thresholds: { ...layout.wallHeight.occlusion, standard: state.base } })
       state.height += (next.height - state.height) * Math.min(1, Math.max(0, dt || 0) * 1000 / layout.wallHeight.occlusion.transitionMs)
       const segment = state.segment
       const matrix = segmentMatrix(THREE,segment,0,state.height)
       walls.setMatrixAt(state.index, matrix)
+      if (state.capIndex >= 0) walls.setMatrixAt(state.capIndex, segmentMatrix(THREE,segment,state.height,state.capHeight,outerStyle.thickness))
       if (windows) { const wMatrix=segmentMatrix(THREE,segment,state.height,Math.max(0,state.height===state.base?1:.08)); windows.setMatrixAt(state.index,wMatrix) }
     }
     walls.instanceMatrix.needsUpdate = true; if (windows) windows.instanceMatrix.needsUpdate = true

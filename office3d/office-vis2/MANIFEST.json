@@ -154,7 +154,7 @@
       "source": "Opt-in full-office finish reuses LAYOUT_V3, unchanged shell collision proxies and existing plaza paving; existing landscape geometry retained; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "9F77F7A8341FB5E8AE7E8D5BB60EBAC6F778C36D0B1390BA4206A4FB44BE22D2"
+      "sha256": "349C1C06EFBE1FB22EB6317EDC5C746D38E49A9309B31A50090E45056EEA3F08"
     },
     {
       "file": "office-vis2/zone-finish.js",
@@ -203,7 +203,7 @@
       "source": "Original office-only plaza wrapper and owned foliage lifecycle; no downloads or photographic textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "17227FE5D6CF7145ECE2BD123A177621AC52485EEE1CB5DA27939C077CDBB18F"
+      "sha256": "D6D7E781E4F1D503783514B353A653E8E5E045FA509E23FA1DCEAE2327DFCA6C"
     },
     {
       "file": "office-vis2/leaf-pass.js",

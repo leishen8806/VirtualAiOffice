@@ -55,6 +55,11 @@ export const OFFICE_PLAN1_DISPLAY_SEATS = [
   ...display('aftersales','aftersales',-18.6,12), ...display('marketing','marketing',22.6,12),
 ]
 
+export const OFFICE_PLAN1_WALLS = Object.freeze({
+  outerSolid: Object.freeze({ height: 4.5, thickness: .18, capHeight: .1, finish: '#F4F1EA' }),
+  internalGlass: Object.freeze({ height: 2.7, baseThickness: .14, glassThickness: .018, frame: '#AA9472', targetOpacity: .1 }),
+})
+
 export function officePlan1InnerWalls(layout) {
   return layout.regions.flatMap(room => {
     const result = [], sides = ['north', 'east', 'south', 'west']
@@ -94,6 +99,7 @@ export function makeOfficePlan1Layout(base) {
   return {
     ...structuredClone(base), plan1Phase:'L1', furnitureSample:true,
     site:{x0:-28,x1:32,z0:-18,z1:30}, envelope:{x0:-22,x1:26,z0:-18,z1:18},
+    walls:structuredClone(OFFICE_PLAN1_WALLS),
     greenBuffer:{width:6,x0:-28,x1:32,z0:-18,z1:30},
     doors:{...structuredClone(base.doors),south:{x0:-1,x1:5,z:18,width:6,height:3.5}},
     entrance:{middle:{x0:-4,x1:8,z:18},gate:{x0:-1,x1:5,z:18,width:6},leftArc:{center:{x:-4,z:-37.5},radius:55.5,startDeg:108.925,endDeg:90,outer:{x:-22,z:15},inner:{x:-4,z:18}},rightArc:{center:{x:8,z:-37.5},radius:55.5,startDeg:90,endDeg:71.075,inner:{x:8,z:18},outer:{x:26,z:15}}},

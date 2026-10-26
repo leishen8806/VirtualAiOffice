@@ -28,12 +28,12 @@ export function officeShellFinishSpec(layout, spec) {
     panes.push({ x: vertical ? fixed : middle, y: (.32 + height - .09) / 2, z: vertical ? middle : fixed,
       w: vertical ? .018 : span - .05, h: height - .41, d: vertical ? span - .05 : .018, side, lo, hi, outer })
   }
-  for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
+  if (!layout.walls?.outerSolid) for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
   // 概念图的北侧背墙保留暖色实体基底；仅在原墙厚内补面，不跨门洞。
-  if (layout.variant === 'align') for (const s of spec.outer.filter(s => s.side === 'north')) {
+  if (layout.variant === 'align' && !layout.walls?.outerSolid) for (const s of spec.outer.filter(s => s.side === 'north')) {
     box((s.lo + s.hi) / 2, 1.3, (s.fixed0 + s.fixed1) / 2, s.hi - s.lo, 2.2, .1, '#E7DFD0', 'north-wall-panel')
   }
-  for (const segment of spec.inner) {
+  if (!layout.walls?.outerSolid) for (const segment of spec.inner) {
     const { room, side } = segment
     if (layout.variant === 'align' && room.walled !== true) continue
     const boundary = side === 'west' ? room.x0 : side === 'east' ? room.x1 : side === 'north' ? room.z0 : room.z1
@@ -78,7 +78,7 @@ export function buildOfficeAlignedShell(context) {
   const shell = buildOfficeShellV3(context)
   if (!officeSampleRequested(context.search)) return shell
   const { THREE, root, layout, low } = context
-  const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
+  const hidden = [layout.walls?.outerSolid ? null : shell.walls, layout.walls?.outerSolid ? null : shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, oldFloorReceive = shell.ground.receiveShadow, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
   let disposed = false, paving, backdrop, practicals, foliage
