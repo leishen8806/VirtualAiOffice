@@ -34,7 +34,17 @@ jobs:
         shell: bash
       - run: npm run test:browser
       - name: Unit tests (node --test)
-        run: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/unit-test.log
+          status=${PIPESTATUS[0]}
+          if [ $status -ne 0 ]; then
+            grep "^not ok" /tmp/unit-test.log | head -80 | while IFS= read -r line; do echo "::error::${line}"; done
+            echo "===== FAILED TEST DETAILS ====="
+            grep -A10 "^not ok" /tmp/unit-test.log | head -200
+            exit $status
+          fi
       - name: Package spec tests (tsc + node --test)
         run: npm run test:packages
       - name: Packaged layout verification
