@@ -21,12 +21,14 @@
 
 | 地点 | 最新通道 |
 |---|---|
-| 智序工场·办公室 | `/?place=drlife-office&layout=3` |
+| 智序工场·办公室 | `/?place=drlife-office&layout=3&align=1&officeSample=1` |
 | DR 仓配服务中心 | `/?place=drlife-warehouse` |
 
-办公室 rev3 当前仍处于 R3-3b 前后的外壳建设阶段，不代表成品。最新通道显示「最新版 · rev3 开发中」。仓配当前最新版本就是现有园区场景，不需要额外参数。
+2026-10-27，按董事会“更新的版本全部展示”要求，办公室最新通道切到新办公室样板；入口页显示中性副标题「最新版 · 办公室样板」，不把随阶段变化的 L2/L2B 写死。稳定 V3 仍可直接通过 `?place=drlife-office&layout=3` 访问。
 
-最新通道仅用于导航入口。默认页面 `/` 与直接输入 `/?place=drlife-office` 仍为布局 1；`?layout=2` 行为不变。以后切换展示版本，只修改 `PLACE_LATEST`。
+仓配最新通道 = 当前园区场景，随仓配整合更新；本次保持 `?place=drlife-warehouse` 不变。
+
+最新通道仅用于导航入口。默认页面 `/` 与直接输入 `/?place=drlife-office` 仍为布局 1；`?layout=2` 行为不变。稳定 V3 仍可直接使用 `?place=drlife-office&layout=3`。以后切换展示版本，只修改 `PLACE_LATEST`。
 
 `resolvePlaceMode()` 保留现有 `place` 值（`office` 或 `dr`），并返回：
 
