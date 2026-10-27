@@ -175,7 +175,8 @@ for(const tier of ['high','low'])for(const sample of [false,true])test(`stable V
 })
 
 test('app wiring remains a single line with the two resolved-layout arguments',()=>{
-  const lines=readFileSync(new URL('../app.js',import.meta.url),'utf8').split('\n'),line=lines[962]
+  const lines=readFileSync(new URL('../app.js',import.meta.url),'utf8').split('\n'),line=lines.find(value=>value.includes('selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT)'))
+  assert.ok(line)
   assert.ok(line.includes('selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT)'))
   assert.ok(line.includes('layout: OFFICE_LAYOUT'));assert.equal(line.includes('LAYOUT_V3'),false)
 })

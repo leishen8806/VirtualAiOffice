@@ -899,7 +899,8 @@ function placeSeated(ch, home) {
   ch.solve(0)
 }
 function createAgentView(a, index) {
-  const [zone, sx, sz] = seatFor(a.name)
+  const seat = seatFor(a.name)
+  const [zone, sx, sz] = seat
   const desk = LAYOUT3_MODE ? officeV3?.get('furniture3')?.deskAt(sx, sz) : makeDesk(sx, sz, ZONES[zone].accent)
   if (!desk) return null
   const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
@@ -917,7 +918,7 @@ function createAgentView(a, index) {
       outfit: a.name === 'Lead' ? 0x1b1e22 : 0x25292e, trim: VI.gold, skin: SKIN[index % SKIN.length], hair: HAIR[(index * 3) % HAIR.length], hairStyle: [0, 1, 0, 2, 0][index % 5],
       markTexture: zone === 'drlife' ? markTex : null, accent: ZONE_BADGE[zone] || VI.gold,
     })
-  const home = workHome([zone, sx, sz])
+  const home = workHome(seat)
   placeSeated(ch, home)
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
@@ -1141,6 +1142,8 @@ function applyWorld(s) {
 // ── 休息区：上班时间里「空闲」（没有在跑、没有在等你）的同事，过一阵会去沙发坐坐；有活了就回工位 ──
 // 这是把真实的「空闲」状态画出来，不代表在干活。
 const LOUNGE = LOUNGE_SEATS.map(seat => ({ ...seat, taken: null }))
+// 加载期旧岛台仍整圈禁入；只延后可选休息与闲聊，不阻塞业务会议。
+const loungeReady = () => !OFFICE_SAMPLE_MODE || OFFICE_LAYOUT.variant !== 'align' || officeV3?.get('island')?.status === 'open'
 function loungePath(v, seat) {
   if (seat.pathFn) return seat.pathFn(v) // 会议室座位
   return loungeTrip(v.home, seat)
@@ -1164,7 +1167,7 @@ function lifeTick(onDuty) {
   if (!gossip) loungeChat(now)
 }
 function goLounge(v, now, stay, pick) {
-  if (v.visiting) return false
+  if (v.visiting || (!pick?.meeting && !loungeReady())) return false
   const seat = pick || LOUNGE.find((x) => !x.taken)
   if (!seat) return false
   seat.taken = v
@@ -1274,6 +1277,7 @@ function endMeeting() {
   meet = null
 }
 function gossipTick(now) {
+  if (!loungeReady()) return
   if (!gossip) {
     const t = gossipThreads.find((x) => !gossipPlayed.has(x.id) && now - Date.parse(x.at) < 20 * 60000)
     if (!t) return

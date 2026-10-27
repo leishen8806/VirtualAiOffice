@@ -5,15 +5,22 @@ import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN as layout } from '../office-layout.js'
 import { alignZoneObstaclePlan } from '../office-vis2/align-zones.js'
 import { buildOpenFurnishing } from '../office-vis2/open-furnishing.js'
+import sampleBaseline from './fixtures/office-o1o2-r1-ebd884f.json' with {type:'json'}
 
-test('furnishing finish retains every group and measured collider from 2dbd13c at both qualities', () => {
+test('furnishing finish retains the legacy sample plan and every unaffected measured collider from 2dbd13c', () => {
   const before = JSON.stringify(layout)
   // 修改前真实构建的八区边界，浮点统一到微米；不是从新渲染器反向生成。
   const baseline = ['2fcc21647cbceca3d6c2bba3e5a91463a3233db374596d7569fa72aba2a52c1a', '6a7a62dad4088d97bf453a78ee4f98bdb87ce50c6ebe8ab69901d1960b5a3f65']
   for (const low of [false, true]) {
     const records = []
     for (const e of alignZoneObstaclePlan(layout)) {
-      const root = new THREE.Group(), value = buildOpenFurnishing({THREE, root, plan:e.plan, low})
+      let plan=e.plan
+      if(e.id==='west-open'){
+        // 只给授权返修的一组输入原始计划，保留旧构建的冻结哈希；新计划另有真实几何和净距测试。
+        const old=sampleBaseline.deskSampleBefore
+        plan={...plan,placements:[...old.placements,...plan.placements.filter(p=>p.groupId!==old.group.id)],groups:[old.group,...plan.groups.filter(g=>g.id!==old.group.id)]}
+      }
+      const root = new THREE.Group(), value = buildOpenFurnishing({THREE, root, plan, low})
       if (e.id !== 'north-nook') records.push({id:e.id, colliders:value.colliders, groups:value.groups})
       assert.equal(root.children.length, 1); assert.equal(value.summary().calls, e.plan.placements.length ? 1 : 0)
       assert.ok(value.summary().triangles <= 8000, e.id + ' existing per-area budget')

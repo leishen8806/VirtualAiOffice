@@ -11,8 +11,21 @@ const oldSource = fs.readFileSync(new URL('./fixtures/historical/office3d-backup
 test('layout1 preserves every pre-O2 export value and order', async () => {
   const old = await import('./fixtures/historical/office3d-backup-o2/office-layout.js')
   const currentSource = fs.readFileSync(new URL('../office-layout.js', import.meta.url), 'utf8')
-  assert.equal(currentSource.startsWith(oldSource), true)
+  const approvedHome = 'export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })'
+  const legacyHome = 'export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })'
+  const plan1Import = /^import \{ makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase \} from '\.\/office-plan1-layout\.js'\r?\n\r?\n/m
+  assert.ok(currentSource.includes(approvedHome))
+  // L1 仅增加样板数据导入；其余旧源码仍逐字冻结。
+  const frozenSource = currentSource.replace(plan1Import, '').replace(/^export const LAYOUT_V3_ALIGN_L2B = .*\r?\n/m, '').replace(approvedHome, legacyHome)
+    .replace("if (['L1', 'L2'].includes(officePlan1Phase(layout))) {", "if (['L1', 'L2'].includes(layout.plan1Phase)) {")
+    .replace("const inset = officePlan1Phase(layout) === 'L2' ? .32 : .35", "const inset = layout.plan1Phase === 'L2' ? .32 : .35")
+  assert.equal(frozenSource.startsWith(oldSource), true)
   for (const name of Object.keys(old)) {
+    if (name === 'workHome') {
+      for (const seats of [layout.SEATS, layout.LAYOUT_V2.seats, layout.LAYOUT_V3.seats, layout.LAYOUT_V3_ALIGN.seats])
+        for (const seat of Object.values(seats)) assert.deepEqual(layout.workHome(seat), old.workHome(seat))
+      continue
+    }
     if (typeof old[name] === 'function') assert.equal(String(layout[name]), String(old[name]), name)
     else assert.deepEqual(layout[name], old[name], name)
   }

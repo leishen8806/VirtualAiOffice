@@ -252,6 +252,12 @@ test('O4 app wiring stays within its own 20-line budget and layout1 data is iden
   assert.deepEqual(comparable(current.LAYOUT_V1), comparable(previous.LAYOUT_V1))
   for (const name of Object.keys(previous)) {
     if (name === 'LAYOUT_V2') continue
+    if (name === 'workHome') {
+      // 四席样板获准调整朝向；旧布局与未启用样板的每个真实落座点仍须逐项相同。
+      for (const seats of [current.SEATS, current.LAYOUT_V2.seats, current.LAYOUT_V3.seats, current.LAYOUT_V3_ALIGN.seats])
+        for (const seat of Object.values(seats)) assert.deepEqual(current.workHome(seat), previous.workHome(seat))
+      continue
+    }
     if (name === 'resolveOfficeLayout') {
       assert.equal(current.resolveOfficeLayout('?layout=2'), current.LAYOUT_V2)
       assert.equal(current.resolveOfficeLayout(''), current.LAYOUT_V1)

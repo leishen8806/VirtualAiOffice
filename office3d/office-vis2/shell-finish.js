@@ -1,12 +1,13 @@
 import { buildOfficeShellV3 } from '../office-layout-v3-scene.js'
 import { officeSampleRequested } from './host.js'
-import { createSampleBatch, officeStoneGrain } from './batch.js'
+import { createSampleBatch, officeStoneGrain, warmOfficeArchitecture } from './batch.js'
 import { appendOfficePlazaPaving } from './completion.js'
-import { wholeFloorSpec, appendWholeFloorGarden } from './whole-floor.js'
+import { wholeFloorSpec, appendWholeFloorGarden, officeSurfaceDetail, appendOfficeSurfaceDetails } from './whole-floor.js'
 import { buildOfficeBackdropTrees } from './plants.js'
+import { facingSample, facingHome, posedPoint } from './furniture-sample.js'
 
 const enclosed = new Set(['market', 'service', 'aftersales', 'marketing', 'board', 'review', 'plan'])
-const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
+const contactShadowOnly = new Set(['floor-joint', 'desk-handle', 'desk-tray', 'desk-book', 'shelf-book', 'shelf-spine', 'shelf-toe', 'shelf-cornice', 'meeting-runner', 'meeting-console', 'meeting-paper', 'meeting-folder', 'ceiling-trim', 'light-recess', 'wall-slat', 'desk-group-inlay', 'desk-group-rug', 'pendant-cord', 'pendant-canopy', 'pendant-socket'])
 
 // Only visual surfaces change: the host still owns all walls, door gaps and collision proxies.
 export function officeShellFinishSpec(layout, spec) {
@@ -27,12 +28,12 @@ export function officeShellFinishSpec(layout, spec) {
     panes.push({ x: vertical ? fixed : middle, y: (.32 + height - .09) / 2, z: vertical ? middle : fixed,
       w: vertical ? .018 : span - .05, h: height - .41, d: vertical ? span - .05 : .018, side, lo, hi, outer })
   }
-  for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
+  if (!layout.walls?.outerSolid) for (const segment of spec.outer) panel(segment.side, segment.lo, segment.hi, (segment.fixed0 + segment.fixed1) / 2, layout.wallHeight.standard, true)
   // 概念图的北侧背墙保留暖色实体基底；仅在原墙厚内补面，不跨门洞。
-  if (layout.variant === 'align') for (const s of spec.outer.filter(s => s.side === 'north')) {
+  if (layout.variant === 'align' && !layout.walls?.outerSolid) for (const s of spec.outer.filter(s => s.side === 'north')) {
     box((s.lo + s.hi) / 2, 1.3, (s.fixed0 + s.fixed1) / 2, s.hi - s.lo, 2.2, .1, '#E7DFD0', 'north-wall-panel')
   }
-  for (const segment of spec.inner) {
+  if (!layout.walls?.outerSolid) for (const segment of spec.inner) {
     const { room, side } = segment
     if (layout.variant === 'align' && room.walled !== true) continue
     const boundary = side === 'west' ? room.x0 : side === 'east' ? room.x1 : side === 'north' ? room.z0 : room.z1
@@ -47,7 +48,7 @@ export function officeShellFinishSpec(layout, spec) {
     const fixed = door.side === 'west' ? room.x0 + .07 : door.side === 'east' ? room.x1 - .07 : door.side === 'north' ? room.z0 + .07 : room.z1 - .07
     box(vertical ? fixed : door.at, 2.655, vertical ? door.at : fixed, vertical ? .07 : door.width, .09, vertical ? door.width : .07, '#AA9472', 'door-header')
   }
-  for (const door of Object.values(layout.doors)) box((door.x0 + door.x1) / 2, door.height ? .08 + door.height + .06 : 3.05, door.z, door.width, .12, .16, '#B89B64', 'entrance-header')
+  for (const door of Object.values(layout.doors)) if (!layout.walls?.gatePost || door !== layout.doors.south) box((door.x0 + door.x1) / 2, door.height ? .08 + door.height + .06 : 3.05, door.z, door.width, .12, .16, '#B89B64', 'entrance-header')
   const e = layout.envelope
   for (let x = e.x0 + 2; x < e.x1; x += 2) box(x, .082, (e.z0 + e.z1) / 2, .014, .002, e.z1 - e.z0, '#BFB5A5', 'floor-joint')
   for (let z = e.z0 + 2; z < e.z1; z += 2) box((e.x0 + e.x1) / 2, .082, z, e.x1 - e.x0, .002, .014, '#BFB5A5', 'floor-joint')
@@ -64,6 +65,8 @@ export function officeShellFinishSpec(layout, spec) {
     box(x - .5, .38, z, .28, .58, .5, '#D9D3C6', 'desk-cabinet')
     box(x, .53, z - .3, 1.22, .3, .025, '#B7C2B4', 'desk-panel')
     for (const y of [.29, .48]) box(x - .5, y, z + .255, .13, .015, .018, '#B89B64', 'desk-handle')
+    const yaw=facingSample(layout)&&facingHome(layout.seats[id])?.yaw
+    if(yaw)for(const p of solid.slice(start))Object.assign(p,posedPoint(x,z,yaw,p.x-x,p.z-z))
     solid.slice(start).forEach(p => { p.workstation = id })
   }
   const wholeFloor = wholeFloorSpec(layout)
@@ -72,15 +75,10 @@ export function officeShellFinishSpec(layout, spec) {
 }
 
 export function buildOfficeAlignedShell(context) {
-  const track = context.layout.variant === 'align' && officeSampleRequested(context.search), registered = []
-  const shell = buildOfficeShellV3(track ? { ...context, collision: { ...context.collision, add(proxy, kind) { registered.push(proxy); context.collision?.add?.(proxy, kind) } } } : context)
-  if (track) {
-    const dispose = shell.dispose; let cleared = false
-    shell.dispose = () => { if (cleared) return; cleared = true; for (const proxy of registered) context.collision?.remove?.(proxy); registered.length = 0; dispose() }
-  }
+  const shell = buildOfficeShellV3(context)
   if (!officeSampleRequested(context.search)) return shell
   const { THREE, root, layout, low } = context
-  const hidden = [shell.walls, shell.innerGlass, shell.windows, shell.green].filter(Boolean)
+  const hidden = [layout.walls?.outerSolid ? null : shell.walls, layout.walls?.outerSolid ? null : shell.innerGlass, shell.windows, shell.green].filter(Boolean)
   const oldFloor = shell.ground.material, oldFloorReceive = shell.ground.receiveShadow, meshes = [], materials = [], geometries = []
   const oldGreen = shell.green.material.color.clone()
   let disposed = false, paving, backdrop, practicals, foliage
@@ -97,6 +95,7 @@ export function buildOfficeAlignedShell(context) {
       shader.fragmentShader = 'varying vec2 officeStone;\n' + shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n' + stone)
     }
     if (layout.variant === 'align') floor.customProgramCacheKey = () => 'office-vis2-ground-fine-stone-v1'
+    if (layout.variant === 'align' && !low) [surfaces, floor].forEach(warmOfficeArchitecture)
     materials.push(surfaces, glass, floor)
     const add = (name, entries, material) => {
       const geometry = new THREE.BoxGeometry(1, 1, 1); geometries.push(geometry)
@@ -107,7 +106,7 @@ export function buildOfficeAlignedShell(context) {
       mesh.userData.dynamic = true; root.add(mesh); return mesh
     }
     const shadowLod = layout.variant === 'align' && !low
-    const sourceIndices = spec.solid.map((_, i) => i)
+    const sourceIndices = spec.solid.flatMap((p, i) => layout.variant === 'align' && officeSurfaceDetail(p) ? [] : [i])
     if (shadowLod) sourceIndices.sort((a, b) => Number(contactShadowOnly.has(spec.solid[a].kind)) - Number(contactShadowOnly.has(spec.solid[b].kind)))
     const frames = add('office-aligned-frames-and-inlays', sourceIndices.map(i => spec.solid[i]), surfaces)
     // 复用现有太阳阴影；低档与旧布局维持原开销，不新增灯光。
@@ -141,8 +140,9 @@ export function buildOfficeAlignedShell(context) {
     const batch = createSampleBatch(THREE), leafBatch = layout.variant === 'align' && !low ? createSampleBatch(THREE) : batch
     appendOfficePlazaPaving({ THREE, batch, layout, low })
     appendWholeFloorGarden({ THREE, batch, leafBatch, spec: spec.wholeFloor, low })
+    if (layout.variant === 'align') appendOfficeSurfaceDetails({ THREE, batch, details: spec.solid })
     paving = batch.build(root, 'office-aligned-plaza-paving'); paving.mesh.userData.dynamic = true
-    if (layout.variant === 'align') paving.mesh.material.userData.officeFineStone = true
+    if (layout.variant === 'align') { paving.mesh.material.userData.officeFineStone = true; paving.mesh.material.userData.officeBookSpines = true }
     if (leafBatch !== batch) {
       foliage = leafBatch.build(root, 'office-whole-floor-foliage')
       foliage.mesh.material.side = THREE.DoubleSide

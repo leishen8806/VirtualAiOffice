@@ -8,6 +8,7 @@ import { buildOfficePlazaHost } from './office-vis2/plaza-host.js'
 import { buildOfficeDisplayFinish as buildDisplayDepartments } from './office-vis2/display-finish.js'
 import { buildDisplayStaff } from './display-staff.js'
 import { createOfficePottedFoliage } from './office-vis2/plants.js'
+import { facingSample, facingHome, posedPoint } from './office-vis2/furniture-sample.js'
 
 const pendingModule = name => ({
   pending: true,
@@ -41,8 +42,9 @@ function buildOfficeFurnitureV3(context) {
       const geometry = new THREE.CylinderGeometry(.06, .06, .012, 6), material = new THREE.MeshBasicMaterial({ toneMapped: false })
       badges = new THREE.InstancedMesh(geometry, material, seats.length); badges.name = 'agent-model-badges'; badges.onBeforeRender = () => {}
       const transform = new THREE.Object3D()
-      seats.forEach(([, x, z], i) => {
-        transform.position.set(x + .62, .8, z + .06); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
+      seats.forEach((seat, i) => {
+        const [,x,z]=seat,yaw=facingSample(context.layout)&&facingHome(seat)?.yaw||0,p=posedPoint(x,z,yaw,.62,.06)
+        transform.position.set(p.x, .8, p.z); transform.rotation.x = Math.PI / 2; transform.updateMatrix()
         badges.setMatrixAt(i, transform.matrix); badges.setColorAt(i, new THREE.Color(0xffffff))
         furniture.deskAt(x, z).setBadge = color => { badges.setColorAt(i, new THREE.Color(color)); badges.instanceColor.needsUpdate = true }
       })
@@ -63,7 +65,8 @@ function buildDisplayDepartmentsV3(context) {
 }
 
 function buildDisplayStaffV3(context) {
-  return buildDisplayStaff({ ...context, layout: displayLayout(context.layout), search: context.search || '', compact: true })
+  const layout=context.get?.('displayDepartments')?.displayLayout || displayLayout(context.layout)
+  return buildDisplayStaff({ ...context, layout, search: context.search || '', compact: true })
 }
 
 export const officeV3Modules = Object.freeze([

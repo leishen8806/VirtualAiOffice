@@ -75,15 +75,15 @@ test('leaf cutout compiles into both owned material contracts without texture, b
     for(const tier of['high','low']){
       quality.tier=tier;value.sync()
       const mesh=value.root.children[0],material=mesh.material,source=THREE.ShaderLib[tier==='low'?'lambert':'standard']
-      const shader={vertexShader:source.vertexShader,fragmentShader:source.fragmentShader},original={...shader}
+      const shader={uniforms:{},vertexShader:source.vertexShader,fragmentShader:source.fragmentShader},original={...shader}
       material.onBeforeCompile(shader)
       assert.ok(shader.vertexShader.includes('officeBackdropLeafUv = uv;'))
       assert.match(shader.fragmentShader,/if \(dot\(officeLeafPoint, officeLeafPoint\) > 1\.0\) discard;/)
       assert.equal(source.vertexShader,original.vertexShader);assert.equal(source.fragmentShader,original.fragmentShader)
       assert.equal(material.transparent,false);assert.equal(material.depthWrite,true);assert.equal(material.map,null)
       assert.equal(mesh.castShadow,false);assert.equal(mesh.receiveShadow,false)
-      assert.equal(material.customProgramCacheKey(),'office-backdrop-oval-leaf-v1')
-      assert.ok(mesh.geometry.attributes.position.count/3*162 <= (tier==='low'?10400:41500),'bound the real 162-cluster geometry cost without reducing leaf count')
+      assert.equal(material.customProgramCacheKey(),'office-backdrop-oval-leaf-v1'+(tier==='high'?'-office-leaf-normal-v1':''))
+      assert.ok(mesh.geometry.attributes.position.count/3*162 <= (tier==='low'?5184:20736),'bound the real 162-cluster geometry cost without reducing leaf count')
     }
   }finally{value.dispose();f.dispose()}
 })
@@ -96,7 +96,7 @@ test('quality changes reuse at most two owned canopy geometries and release only
       for(const mesh of value.root.children){
         geometries.add(mesh.geometry);materials.add(mesh.material)
         assert.equal(mesh.material.type,tier==='low'?'MeshLambertMaterial':'MeshStandardMaterial')
-        assert.equal(mesh.geometry.attributes.position.count/3,tier==='low'?64:256)
+        assert.equal(mesh.geometry.attributes.position.count/3,tier==='low'?32:128)
         assert.equal(mesh.userData.qualityProxy,true)
       }
     }

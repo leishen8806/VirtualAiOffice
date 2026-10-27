@@ -1,5 +1,6 @@
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
+import { bindOfficeLeafNormalPass } from './leaf-pass.js'
 const backdropOwners = new WeakMap()
 
 export function createOfficePottedFoliage(THREE, source, low = false) {
@@ -27,7 +28,7 @@ export function createOfficePottedFoliage(THREE, source, low = false) {
         const width=new THREE.Vector3(-direction.z,0,direction.x).normalize().multiplyScalar(.032*(1-.35*t)),middle=base.clone().addScaledVector(direction,.45).add(new THREE.Vector3(0,.012,0))
         const rim=[base,base.clone().addScaledVector(direction,.4).add(width),base.clone().add(direction),base.clone().addScaledVector(direction,.4).sub(width)]
         const list=positions[(i+j)%3]
-        for(let k=0;k<4;k++)for(const triangle of[[middle,rim[k],rim[(k+1)%4]],[middle,rim[(k+1)%4],rim[k]]])for(const p of triangle)list.push(p.x,p.y,p.z)
+        for(let k=0;k<4;k++)for(const p of [middle,rim[k],rim[(k+1)%4]])list.push(p.x,p.y,p.z)
       }
     }
     const generated=new THREE.Box3()
@@ -41,7 +42,7 @@ export function createOfficePottedFoliage(THREE, source, low = false) {
       const g=new THREE.BufferGeometry();geometries.push(g);g.setAttribute('position',new THREE.Float32BufferAttribute(list,3));g.computeVertexNormals()
       // GLTF的缓存边界来自accessor小数；重算Float32极值会改变宿主缩放与碰撞三角面。
       g.boundingBox=bounds.clone()
-      const material=new THREE.MeshStandardMaterial({color:['#3F6341','#55764A','#748950'][i],roughness:.86});material.name='plant';materials.push(material)
+      const material=new THREE.MeshStandardMaterial({color:['#3F6341','#55764A','#748950'][i],roughness:.86,side:THREE.DoubleSide});material.name='plant';materials.push(material)
       const mesh=target.clone(false);mesh.name='office-owned-potted-foliage-'+i;mesh.geometry=g;mesh.material=material;parent.add(mesh)
     }
     const collisionProxy=group=>{
@@ -58,8 +59,8 @@ export function createOfficePottedFoliage(THREE, source, low = false) {
 }
 
 // 独立小叶固定三维朝向，复用榕树的解析裁边；不加载贴图，也不让整树朝向相机。
-export function officeBackdropCanopy(THREE, low = false) {
-  const positions = [], colors = [], uvs = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
+export function officeBackdropCanopy(THREE, low = false, singleTriangle = false) {
+  const positions = [], colors = [], uvs = [], visible = [], count = low ? 32 : 128, vertex = new THREE.Vector3(), rotation = new THREE.Euler()
   const fract = n => n - Math.floor(n)
   let radius2 = 0
   for (let i = 0; i < count; i++) {
@@ -69,10 +70,13 @@ export function officeBackdropCanopy(THREE, low = false) {
     const rim = [[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]]
     rotation.set(a * .71, a, Math.sin(a * 1.3) * 1.4)
     const shade = .75 + .25 * fract(i * .43)
-    for (const j of [0,1,2,0,2,3]) {
-      const point = rim[j]
+    for (const point of rim) {
       vertex.set(point[0] * width, point[1] * length, 0).applyEuler(rotation).add(center)
-      positions.push(vertex.x, vertex.y, vertex.z); colors.push(shade, shade, shade); radius2 = Math.max(radius2, vertex.lengthSq())
+      visible.push(vertex.x, vertex.y, vertex.z); radius2 = Math.max(radius2, vertex.lengthSq())
+    }
+    for (const point of singleTriangle ? [[-.5,-.5],[1.5,-.5],[-.5,1.5]] : [0,1,2,0,2,3].map(j=>rim[j])) {
+      vertex.set(point[0] * width, point[1] * length, 0).applyEuler(rotation).add(center)
+      positions.push(vertex.x, vertex.y, vertex.z); colors.push(shade, shade, shade)
       uvs.push(point[0] + .5, point[1] + .5)
     }
   }
@@ -81,6 +85,10 @@ export function officeBackdropCanopy(THREE, low = false) {
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
   geometry.scale(.98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2), .98 / Math.sqrt(radius2))
   geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere()
+  if (singleTriangle) {
+    const bounds = new THREE.BufferGeometry(); bounds.setAttribute('position',new THREE.Float32BufferAttribute(visible,3));bounds.scale(.98/Math.sqrt(radius2),.98/Math.sqrt(radius2),.98/Math.sqrt(radius2));bounds.computeBoundingBox();bounds.computeBoundingSphere()
+    geometry.boundingBox = bounds.boundingBox.clone(); geometry.boundingSphere = bounds.boundingSphere.clone(); bounds.dispose()
+  }
   return geometry
 }
 
@@ -98,6 +106,7 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
     if (disposed) return; disposed = true
     for (const r of records) {
       if (r.source.instanceMatrix?.version === r.maskedVersion) { r.indices.forEach((index,i) => r.source.setMatrixAt(index,r.saved[i])); r.source.instanceMatrix.needsUpdate = true }
+      for (const h of r.hooks || []) { if (h.counts.length && r.source.count === 0) r.source.count = h.counts[0]; if (r.source[h.beforeName] === h.start) r.source[h.beforeName] = h.before; if (r.source[h.afterName] === h.end) r.source[h.afterName] = h.after }
       if (backdropOwners.get(r.source) === owner) backdropOwners.delete(r.source)
     }
     ownedMesh?.dispose(); ownedMesh = null
@@ -107,7 +116,7 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
   const chooseTier = () => {
     const next = quality ? quality.tier === 'low' : low
     if (next === tier) return
-    if (!geometries.has(next)) geometries.set(next,officeBackdropCanopy(THREE,next))
+    if (!geometries.has(next)) geometries.set(next,officeBackdropCanopy(THREE,next,true))
     if (!materials.has(next)) {
       const options = { color:'#ffffff', vertexColors:true, side:THREE.DoubleSide }
       const material = next ? new THREE.MeshLambertMaterial(options) : new THREE.MeshStandardMaterial({...options,roughness:.88})
@@ -118,7 +127,7 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
       material.customProgramCacheKey = () => 'office-backdrop-oval-leaf-v1'
       materials.set(next,material)
     }
-    if (ownedMesh) { ownedMesh.geometry = geometries.get(next); ownedMesh.material = materials.get(next); ownedMesh.boundingSphere = null }
+    if (ownedMesh) { ownedMesh.geometry = geometries.get(next); ownedMesh.material = materials.get(next); ownedMesh.boundingSphere = null; bindNormalPass() }
     tier = next
   }
   const sync = () => {
@@ -142,6 +151,15 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
       if (!ownedMesh.boundingSphere) { ownedMesh.computeBoundingSphere(); ownedMesh.boundingSphere.radius += .3 }
     } catch (error) { reason = String(error?.message || error); dispose() }
   }
+  const normalMaterials = new WeakSet()
+  const bindNormalPass = () => {
+    if (ownedMesh.material.isMeshStandardMaterial && !normalMaterials.has(ownedMesh.material)) { bindOfficeLeafNormalPass(ownedMesh); normalMaterials.add(ownedMesh.material) }
+  }
+  const proxyVisible = () => {
+    if (disposed || !ownedMesh?.visible || group.parent !== root) return false
+    for (let p = group; p; p = p.parent) if (!p.visible) return false
+    return true
+  }
   try {
     if (!root || !layout?.envelope || sources.length !== 4 || new Set(sources.map(s=>s.geometry.uuid)).size !== 1 || sources.some(s=>backdropOwners.has(s))) reason = 'unrecognized or already owned environment'
     else {
@@ -154,10 +172,18 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
         chooseTier()
         ownedMesh = new THREE.InstancedMesh(geometries.get(tier),materials.get(tier),count)
         ownedMesh.name = 'office-backdrop-leaf-clusters'; ownedMesh.userData.qualityProxy = true
+        bindNormalPass()
         ownedMesh.castShadow = ownedMesh.receiveShadow = false; group.add(ownedMesh)
         for (const r of records) {
           const color = new THREE.Color(palette[r.color]); r.indices.forEach((_,i)=>ownedMesh.setColorAt(r.offset+i,color))
           backdropOwners.set(r.source,owner)
+          r.hooks = ['Render','Shadow'].map(phase => {
+            const beforeName='onBefore'+phase, afterName='onAfter'+phase, before=r.source[beforeName], after=r.source[afterName], counts=[]
+            const start=function(...args){before.apply(this,args);if(proxyVisible()&&this[afterName]===end){sync();if(!disposed&&this.instanceMatrix.version===r.maskedVersion){counts.push(this.count);this.count=0}}}
+            const end=function(...args){if(counts.length)this.count=counts.pop();after.apply(this,args)}
+            r.source[beforeName]=start;r.source[afterName]=end
+            return{beforeName,afterName,before,after,start,end,counts}
+          })
         }
         ownedMesh.instanceColor.needsUpdate = true
         root.add(group); sync()
@@ -183,10 +209,10 @@ export function buildOfficeSamplePlants({ THREE, root, layout = LAYOUT_V3, asset
     const stalk = new THREE.CylinderGeometry(.006, .009, stem.length(), 5, 1, true)
     stalk.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), stem.normalize()))
     batch.add(stalk, '#526448', soil.clone().add(base).multiplyScalar(.5).toArray(), 0, .85)
-    const leaf = officeLeafGeometry(THREE, angle, length)
+    const leaf = officeLeafGeometry(THREE, angle, length, 7, layout.variant === 'align')
     batch.add(leaf, i % 4 ? '#4D6A46' : '#708650', base.toArray(), 0, .76)
   }
-  const plants = batch.build(group, 'sample-instanced-potted-plants', poses); root.add(group)
+  const plants = batch.build(group, 'sample-instanced-potted-plants', poses); if (layout.variant === 'align') plants.mesh.material.side = THREE.DoubleSide; root.add(group)
   return { root: group, placements: poses, summary: () => ({ calls: 1, triangles: plants.triangles(), pots: poses.length }), dispose() { plants.dispose(); group.removeFromParent() } }
 }
 
@@ -254,6 +280,8 @@ export function appendOfficeGardenBed({ THREE, batch, leafBatch = batch, bed, lo
     const height = .2 + fract(i * .37 + seed * .21) * .34
     for (let j = 0; j < (low ? 3 : 5); j++) {
       const leaf = officeLeafGeometry(THREE, a + j * 2.399, .23 + fract(i * .43 + j * .27) * .18, 2, leafBatch !== batch)
+      // 低档仍合在原单面批次：只重排轮廓索引，保留两面顶点、法线与植株数量。
+      if (low && leafBatch === batch) leaf.setIndex([5,3,1,3,5,6,10,12,14,15,14,12])
       leaf.scale(1, .65 + (i % 3) * .18, 1)
       leafBatch.add(leaf, ['#365A3D', '#547044', '#7A8D53', '#456A4C'][(i + j) % 4], [px, height + j * .025, pz], 0, .82)
     }

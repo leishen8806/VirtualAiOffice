@@ -59,7 +59,7 @@ export function mergeOfficeStatic(THREE, root, batchPrefix = 'office2') {
 export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName = 'office2-root', batchPrefix = 'office2' }) {
   const root = new THREE.Group(); root.name = rootName
   const modules = new Map(), built = new Map(), skipped = []
-  let merged = { removed: 0, added: 0 }, builtOnce = false
+  let merged = { removed: 0, added: 0 }, builtOnce = false, disposed = false
   let frameHook = null, previousFrame = null, sourceNow = null, lastFrame = null, animationMs = 0
   const stopped = new Set(), bounds = new THREE.Box3(), frustum = new THREE.Frustum(), projection = new THREE.Matrix4()
   const resetFrame = () => { lastFrame = null }
@@ -89,7 +89,11 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
     sourceNow = shared.now || (() => 0); animationMs = sourceNow()
     for (const [name, factory] of modules) {
       const mount = new THREE.Group(); mount.name = `${batchPrefix}-${name}-root`; root.add(mount)
-      const pending = [], collision = shared.collision && { ...shared.collision, add: (...args) => pending.push(args) }
+      let committed = false
+      const pending = [], collision = shared.collision && { ...shared.collision,
+        add: (...args) => { if (!disposed) return committed ? shared.collision.add(...args) : pending.push(args) },
+        remove: object => { for (let i = pending.length - 1; i >= 0; i--) if (pending[i][0] === object) pending.splice(i, 1); return shared.collision.remove?.(object) },
+      }
       const sceneBefore = new Map(scene.children.map(child => [child, child.visible]))
       try {
         const value = factory({ ...shared, THREE, root: mount, scene, layout, quality, low: quality?.tier === 'low', collision, get, now: () => animationMs }) || {}
@@ -97,6 +101,7 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
         mount.traverse(object => { if (object !== mount && !object.name.startsWith(`${batchPrefix}-${name}-`)) object.name = `${batchPrefix}-${name}-${object.name.replace(/^office2-/, '').replace(/^office3-/, '') || `part-${part++}`}` })
         built.set(name, value)
         for (const args of pending) shared.collision.add(...args)
+        committed = true
       } catch (error) {
         const message = String(error?.message || error)
         mount.removeFromParent(); skipped.push({ name, error: message })
@@ -119,6 +124,7 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
     return root
   }
   const dispose = () => {
+    if (disposed) return; disposed = true
     if (frameHook && scene.onBeforeRender === frameHook) scene.onBeforeRender = previousFrame
     globalThis.document?.removeEventListener?.('visibilitychange', resetFrame)
     merged.dispose?.()

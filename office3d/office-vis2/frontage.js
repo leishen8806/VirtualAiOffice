@@ -1,5 +1,6 @@
 import { createSampleBatch } from './batch.js'
 import { receptionBackdrop } from './foyer.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex, includeEnclosure = true }) {
   const f = layout.foyer, group = new THREE.Group(); group.name = 'office-vis2-frontage'; root.add(group)
@@ -31,7 +32,7 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
   // 主场景已有地面、墙与入口；预览围合不能遮盖它们或挡住已验收的侧行路线。
   if (!includeEnclosure) { fixed.mesh.removeFromParent(); panels.removeFromParent() }
   try { if (canvasTex) {
-    const surface = receptionBackdrop(layout.frontDesk).grille
+    const surface = receptionBackdrop(layout.frontDesk, layout).grille
     const welcome = layout.variant === 'align'
     texture = canvasTex(1024, welcome ? 256 : 64, (ctx, width, height) => {
       ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#493f32'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
@@ -42,7 +43,7 @@ export function buildOfficeVis2Frontage({ THREE, root, layout, assets, canvasTex
     if (welcome) {
       // 两处文字共用同一图集与绘制；铺地字面比既有入口石板高2mm，不改变通行体积。
       geometry.translate(layout.frontDesk.center.x, surface.height - .085, surface.faceZ + .002)
-      const floor = new THREE.PlaneGeometry(3.2, .6); floor.rotateX(-Math.PI / 2); floor.translate(mid, .117, f.z1 + .9)
+      const floor = new THREE.PlaneGeometry(3.2, .6); floor.rotateX(-Math.PI / 2); floor.translate(['L1', 'L2'].includes(officePlan1Phase(layout)) ? (entrance.x0 + entrance.x1) / 2 : mid, .117, f.z1 + .9)
       const merged = new THREE.BufferGeometry()
       for (const key of ['position', 'normal', 'uv']) {
         const a = geometry.attributes[key], b = floor.attributes[key], values = [...a.array, ...b.array]

@@ -2,7 +2,8 @@ import { buildOfficePlazaProps } from '../office-plaza-props.js'
 import { officeLeafGeometry, appendOfficeGardenBed } from './plants.js'
 
 export function plazaFlowerArcs(layout) {
-  return [-1, 1].flatMap(side => [[17, 24], [27, 35]].map((range, index) => {
+  const ranges = layout.variant === 'align' ? [[12, 24], [27, 35]] : [[17, 24], [27, 35]]
+  return [-1, 1].flatMap(side => ranges.map((range, index) => {
     const start = (side < 0 ? -range[1] : range[0]) * Math.PI / 180, span = (range[1] - range[0]) * Math.PI / 180
     const corners = [start, start + span].flatMap(a => [11.05, 11.55].map(r => ({ x: layout.plaza.center.x + Math.sin(a) * r, z: layout.plaza.center.z + Math.cos(a) * r })))
     return { id: `plaza-arc-${side}-${index}`, side, start, span, bounds: { x0: Math.min(...corners.map(p => p.x)), x1: Math.max(...corners.map(p => p.x)), z0: Math.min(...corners.map(p => p.z)), z1: Math.max(...corners.map(p => p.z)) } }
@@ -49,6 +50,24 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
     return atPose(point, { ...flank(side, along), delta: side * angle }, draw)
   }
   const box = (x, y, z, w, h, d, color, grain = '') => emit(new THREE.BoxGeometry(w, h, d), color, [x, y, z], 0, .78, 0, grain)
+  const flowerLeaf = (angle, arc) => {
+    if (layout.variant !== 'align') {
+      const leaf = new THREE.IcosahedronGeometry(arc ? .10 : .14, 0)
+      leaf.scale(arc ? .45 : .4, arc ? 1.7 : 1.6, .25); leaf.rotateZ(arc ? .7 : .65); leaf.rotateY(angle)
+      return leaf
+    }
+    const leaf = officeLeafGeometry(THREE, angle, arc ? .20 : .25, low ? 2 : 5, leafBatch !== batch)
+    leaf.scale(.65, .45, .65)
+    return leaf
+  }
+  const flowerPlanter = (x, y, z, w, h, d, color, soil = false) => {
+    if (layout.variant !== 'align') return box(x, y, z, w, h, d, color, soil ? '' : 'stone')
+    const shape = new THREE.Shape(), r = Math.min(.20, d / 3), a = w / 2 - r, b = d / 2 - r
+    shape.absarc(a, b, r, 0, Math.PI / 2, false); shape.absarc(-a, b, r, Math.PI / 2, Math.PI, false)
+    shape.absarc(-a, -b, r, Math.PI, Math.PI * 1.5, false); shape.absarc(a, -b, r, Math.PI * 1.5, Math.PI * 2, false); shape.closePath()
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, steps: 1, curveSegments: low ? 2 : 4, bevelEnabled: false })
+    geometry.rotateX(-Math.PI / 2); emit(geometry, color, [x, y - h / 2, z], 0, .78, 0, soil ? '' : 'stone')
+  }
   const add = (category, kind, id, point, yaw = 0, scale = [1, 1, 1], offset = [0, 0]) => {
     const triangles = () => batch.triangles() + (leafBatch === batch ? 0 : leafBatch.triangles()), triangleStart = triangles()
     const key = category + kind
@@ -73,11 +92,20 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
         geometry.setAttribute('sampleSurface', new THREE.BufferAttribute(surface, 3))
       }
       if(layout.variant==='align' && category==='trees' && mesh.name.endsWith('-leaf')) {
-        const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?40:144
+        const b=geometry.boundingBox,center=b.getCenter(new THREE.Vector3()),size=b.getSize(new THREE.Vector3()),count=low?76:264
+        // 叶片错开倾角，去掉整齐向心的针叶层；用省下的叶面预算补真实分枝。
+        for(let i=0;i<(low?1:3);i++){
+          const a=i*2.399,end=new THREE.Vector3(center.x+Math.sin(a)*size.x*.18,center.y-.06,center.z+Math.cos(a)*size.z*.18)
+          const start=new THREE.Vector3(point.x+offset[0],.11+2.35*scale[1],point.z+offset[1]),direction=end.clone().sub(start)
+          const branch=new THREE.CylinderGeometry(.025,.045,direction.length(),low?3:4)
+          branch.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize()))
+          emit(branch,'#71614B',start.add(end).multiplyScalar(.5).toArray(),0,.88)
+        }
         for(let i=0;i<count;i++){
-          const a=i*2.399,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v),length=Math.min(size.x,size.z)*.3
-          const leaf=officeLeafGeometry(THREE,a+Math.PI,length,3,leafBatch!==batch);leaf.scale(1,.6,1)
-          emit(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.4,center.y+v*size.y*.32-.08,center.z+Math.cos(a)*r*size.z*.4],0,.88)
+          const a=i*2.399+point.x*.37,v=1-2*(i+.5)/count,r=Math.sqrt(1-v*v)
+          const leaf=officeLeafGeometry(THREE,0,.28,2,leafBatch!==batch)
+          leaf.scale(1,.25,1);leaf.rotateZ(Math.sin(i*1.7)*.6);leaf.rotateX(Math.sin(i*1.1)*.75+.2);leaf.rotateY(a+i*1.13)
+          emit(leaf,i%5?'#476641':'#7A8C53',[center.x+Math.sin(a)*r*size.x*.31,center.y+v*size.y*.32-.06,center.z+Math.cos(a)*r*size.z*.31],0,.88)
         }
         geometry.dispose();continue
       }
@@ -122,20 +150,21 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
       const side = point.x < p.center.x ? -1 : 1
       const shift = point.z < p.center.z ? -side * 2.5 : side * 2
       const yaw = point.z > p.center.z && point.z < p.center.z + 5 ? -side * Math.PI / 2 : point.z > p.center.z ? Math.PI : 0
-      const finalShift = layout.variant === 'align' && point.z > p.center.z && point.z < p.center.z + 5 ? -side : shift
+      // 侧椅向外让出B0第四排队位的胶囊净距，保留四个槽位和镜像布局。
+      const finalShift = layout.variant === 'align' && point.z > p.center.z && point.z < p.center.z + 5 ? -side * .65 : shift
       add('benches', '', `plaza-bench-${i + 1}`, point, yaw, [.72, 1, .72], [finalShift, 0])
     })
     // 杆灯与伞面有冲突的点位暂不实例化，保留南侧两盏，避免穿过伞盖。
     p.lamps.filter(point => point.z >= p.center.z + p.radius).forEach((point, i) => add('lamps', '', `plaza-lamp-${i + 1}`, point, 0, [1, 1, 1], [0, .5]))
     p.flowerBands.filter(point => point.z > p.center.z).forEach((point, i) => {
-      box(point.x, .28, point.z, 3.02, .34, .82, '#D9D3C6', 'stone')
-      box(point.x, .46, point.z, 2.88, .025, .68, '#534A3C')
+      flowerPlanter(point.x, .28, point.z, 3.02, .34, .82, '#D9D3C6')
+      flowerPlanter(point.x, .46, point.z, 2.88, .025, .68, '#534A3C', true)
       for (let j = 0; j < (low ? 12 : 24); j++) {
         const x = point.x - 1.25 + (j % (low ? 4 : 8)) * (low ? .83 : .35), z = point.z - .23 + Math.floor(j / (low ? 4 : 8)) * .23
         for (let k = 0; k < (low ? 3 : 5); k++) {
-          const leaf = new THREE.IcosahedronGeometry(.14, 0); leaf.scale(.4, 1.6, .25); leaf.rotateZ(.65); leaf.rotateY(k * 2.399)
-          batch.add(leaf, k % 3 ? '#3E5A4E' : '#648B50', [x, .62, z], 0, .9)
+          emit(flowerLeaf(k * 2.399, false), k % 3 ? '#3E5A4E' : '#648B50', [x, layout.variant === 'align' ? .49 + k % 3 * .065 : .62, z], 0, .9)
         }
+        if (layout.variant === 'align') emit(new THREE.CylinderGeometry(.009, .013, .315, low ? 4 : 5, 1, true), '#526448', [x, .6325, z], 0, .9)
         if (j % 2) batch.add(new THREE.IcosahedronGeometry(.045, 0), j % 3 ? '#BD8C94' : '#E6CD92', [x, .79, z], 0, .95)
       }
       placements.push({ id: `plaza-flowers-${i + 1}`, kind: 'flowers', source: { ...point }, ...point, bounds: { x0: point.x - 1.51, x1: point.x + 1.51, z0: point.z - .41, z1: point.z + .41, y0: .11, y1: .84 }, interaction: 'preview-only' })
@@ -151,24 +180,28 @@ export function appendOfficePlaza({ THREE, batch, leafBatch = batch, layout, low
         const bounds = new THREE.Box3(), triangleStart = batch.triangles()
         const put = (geometry, color, position, grain = '') => {
           geometry.translate(...position); geometry.computeBoundingBox(); bounds.union(geometry.boundingBox)
-          batch.add(geometry, color, [0, 0, 0], 0, .9, 0, grain)
+          emit(geometry, color, [0, 0, 0], 0, .9, 0, grain)
         }
         const { start, span } = arc
         // 前沿四段花境留出原有 4m 中轴，以及花箱和杆灯之间的通道。
-        const shape = new THREE.Shape(), segments = low ? 4 : 8
-        for (let i = 0; i <= segments; i++) { const a = start + span * i / segments; const x = Math.sin(a) * 11.55, z = Math.cos(a) * 11.55; if (!i) shape.moveTo(x, -z); else shape.lineTo(x, -z) }
-        for (let i = segments; i >= 0; i--) { const a = start + span * i / segments; shape.lineTo(Math.sin(a) * 11.05, -Math.cos(a) * 11.05) }
-        shape.closePath()
-        const rim = new THREE.ExtrudeGeometry(shape, { depth: .24, bevelEnabled: false, steps: 1 }); rim.rotateX(-Math.PI / 2)
+        const segments = low ? 4 : 8
+        const arcShape = (inner, outer, margin = 0) => {
+          const shape = new THREE.Shape()
+          for (let i = 0; i <= segments; i++) { const a = start + margin + (span - margin * 2) * i / segments; const x = Math.sin(a) * outer, z = Math.cos(a) * outer; if (!i) shape.moveTo(x, -z); else shape.lineTo(x, -z) }
+          for (let i = segments; i >= 0; i--) { const a = start + margin + (span - margin * 2) * i / segments; shape.lineTo(Math.sin(a) * inner, -Math.cos(a) * inner) }
+          shape.closePath(); return shape
+        }
+        const rim = new THREE.ExtrudeGeometry(arcShape(11.05, 11.55), { depth: .24, bevelEnabled: false, steps: 1 }); rim.rotateX(-Math.PI / 2)
         put(rim, '#CDB78F', [p.center.x, .11, p.center.z], 'stone')
-        const count = low ? 6 : 12
+        if (layout.variant === 'align') { const soil = new THREE.ShapeGeometry(arcShape(11.09, 11.51, .007)); soil.rotateX(-Math.PI / 2); put(soil, '#534A3C', [p.center.x, .3515, p.center.z]) }
+        const count = layout.variant === 'align' && span > .18 ? (low ? 10 : 20) : (low ? 6 : 12)
         for (let i = 0; i < count; i++) {
           const a = start + span * (.1 + .8 * (i % (count / 2)) / (count / 2 - 1)), r = i < count / 2 ? 11.22 : 11.39
           const x = p.center.x + Math.sin(a) * r, z = p.center.z + Math.cos(a) * r
           for (let j = 0; j < (low ? 3 : 5); j++) {
-            const leaf = new THREE.IcosahedronGeometry(.10, 0); leaf.scale(.45, 1.7, .25); leaf.rotateZ(.7); leaf.rotateY(j * 2.399)
-            put(leaf, j % 2 ? '#3E5A4E' : '#648B50', [x, .48, z])
+            put(flowerLeaf(j * 2.399, true), j % 2 ? '#3E5A4E' : '#648B50', [x, layout.variant === 'align' ? .37 + j % 3 * .065 : .48, z])
           }
+          if (layout.variant === 'align') put(new THREE.CylinderGeometry(.009, .013, .277, low ? 4 : 5, 1, true), '#526448', [x, .4915, z])
           put(new THREE.IcosahedronGeometry(.045, 0), i % 3 ? '#BD8C94' : '#E6CD92', [x, .63, z])
         }
         placements.push({ id: arc.id, kind: 'flower-arc', x: (bounds.min.x + bounds.max.x) / 2, z: (bounds.min.z + bounds.max.z) / 2,

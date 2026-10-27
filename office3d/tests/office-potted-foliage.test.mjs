@@ -37,7 +37,8 @@ test('registered plant is refined volumetrically at both tiers without changing 
         assert.ok(Math.abs(Math.hypot(n.getX(i),n.getY(i),n.getZ(i))-1)<1e-5)
         for(const [axis,get]of[['x','getX'],['y','getY'],['z','getZ']])assert.ok(p[get](i)>=leafBounds.min[axis]-1e-7&&p[get](i)<=leafBounds.max[axis]+1e-7,'actual vertices remain within the original GLTF envelope')
       }}
-      assert.equal(triangles,low?480:1024)
+      assert.equal(triangles,low?336:704)
+      assert.ok(parts.every(m=>m.material.side===THREE.DoubleSide))
       const released=new Set();resources.forEach(r=>r.addEventListener('dispose',()=>released.add(r.uuid)))
       value.dispose();value.dispose();assert.equal(released.size,6);assert.equal(sharedDisposed,0)
     }finally{value.dispose()}

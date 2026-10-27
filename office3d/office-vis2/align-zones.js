@@ -1,5 +1,9 @@
-import { createSampleBatch } from './batch.js'
+import { plan1FurniturePlan, buildPlan1Furnishing } from './plan1-furniture.js'
+import { createSampleBatch, warmOfficeArchitecture } from './batch.js'
+import { officeSampleRequested } from './host.js'
 import { buildOpenFurnishing, planOpenFurnishing } from './open-furnishing.js'
+import { facingSample, FACING_SEATS, FACING_ISLAND_BOUNDS } from './furniture-sample.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 const isRect = b => ['x0','x1','z0','z1'].every(k => Number.isFinite(b?.[k]))
 export const alignPassages = layout => Object.values({ ...layout.corridors, ...layout.passages }).filter(isRect)
@@ -17,7 +21,8 @@ export function alignDoorAprons(layout) {
 
 // 围绕既有真实桌位生成端柜与背屏；不增加桌面、业务席位，也不改变 workHome 朝向。
 export function planWorkstationIslands(layout, area) {
-  const seats=Object.entries(layout.seats).filter(([,s])=>s[0]===area.id).map(([id,[,x,z]])=>({id,x,z}))
+  const paired=facingSample(layout)&&area.id==='west-open'
+  const seats=Object.entries(layout.seats).filter(([id,s])=>s[0]===area.id&&!(paired&&FACING_SEATS[id])).map(([id,[,x,z]])=>({id,x,z}))
   const rows=[]
   for(const seat of seats.sort((a,b)=>a.z-b.z||a.x-b.x)) {
     let row=rows.at(-1)
@@ -28,22 +33,35 @@ export function planWorkstationIslands(layout, area) {
   const overlap=(a,b)=>a.x1>b.x0&&a.x0<b.x1&&a.z1>b.z0&&a.z0<b.z1
   for(const [i,row]of rows.entries()) {
     const id=`real-desks-${i+1}`,z=row[0].z,left=row[0].x-.7,right=row.at(-1).x+.7,members=[]
+    const sample=layout.variant==='align'&&!facingSample(layout)&&area.id==='west-open'&&row.some(s=>s.id==='OpsLead')
     const add=(kind,x,z,w,d,height)=>{
       const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
       if(bounds.x0<area.x0||bounds.x1>area.x1||bounds.z0<area.z0||bounds.z1>area.z1||forbidden.some(b=>overlap(bounds,b))) {skipped.push(`${id}-${kind}-${x}`);return}
-      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:row.map(s=>s.id)})
+      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:row.map(s=>s.id),...(sample?{sample:'west-desk-island'}:{})})
     }
     const screenLeft=Math.max(left,area.x0),screenRight=Math.min(right,area.x1)
-    add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,.08,1.135)
-    for(const x of [left-.245,right+.245])add('planter-cabinet',x,z,.45,.7,1.25)
+    add('desk-divider',(screenLeft+screenRight)/2,z-.43,screenRight-screenLeft,sample?.12:.08,1.135)
+    const endWidth=sample?.65:.45
+    for(const x of sample?[left-endWidth/2-.02,right+endWidth/2+.02]:[left-.245,right+.245])add('planter-cabinet',x,z-(sample?.175:0),endWidth,sample?1.05:.7,1.25)
     for(let j=1;j<row.length;j++) {
       const gap=row[j].x-row[j-1].x-1.4
-      if(gap>=1.8)add('planter-cabinet',(row[j].x+row[j-1].x)/2,z,Math.min(1.1,gap-.6),.7,1.25)
+      if(gap>=1.8)add(sample?'cabinet':'planter-cabinet',(row[j].x+row[j-1].x)/2,z,sample?gap-.08:Math.min(1.1,gap-.6),.7,sample?.8:1.25)
     }
     placements.push(...members)
     groups.push({id,template:'real-workstation-island',workstationIds:row.map(s=>s.id),memberIds:members.map(p=>p.id),
-      groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:z-.47,z1:z+1.3},
+      groupBounds:{x0:Math.min(left,...members.map(p=>p.bounds.x0)),x1:Math.max(right,...members.map(p=>p.bounds.x1)),z0:Math.min(z-.47,...members.map(p=>p.bounds.z0)),z1:z+1.3},
       useSpace:{x0:left,x1:right,z0:z+.35,z1:z+1.3}})
+  }
+  if(paired){
+    const id='real-desks-2',ids=Object.keys(FACING_SEATS),members=[]
+    for(const [kind,x,z,w,d,height] of [['desk-divider',-13.5,0,3,.08,1.135],['planter-cabinet',-15.3,0,.5,1.5,1.25],['planter-cabinet',-11.7,0,.5,1.5,1.25]]){
+      const bounds={x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,y0:0,y1:height}
+      if(forbidden.some(b=>overlap(bounds,b)))throw new Error('FACING_ISLAND_BLOCKS_PASSAGE')
+      members.push({id:`${id}-${kind}-${members.length}`,groupId:id,kind,x,z,w,d,height,bounds,workstationIds:ids,sample:'quality-facing-island'})
+    }
+    placements.push(...members)
+    groups.push({id,template:'facing-workstation-island',workstationIds:ids,memberIds:members.map(p=>p.id),groupBounds:{...FACING_ISLAND_BOUNDS},
+      useSpaces:[{x0:-15,x1:-12,z0:-1.75,z1:-.75},{x0:-15,x1:-12,z0:.75,z1:1.75}]})
   }
   return{placements,groups,skipped,corridors:alignPassages(layout)}
 }
@@ -51,6 +69,8 @@ export function planWorkstationIslands(layout, area) {
 // Shared by the renderer and route planner: keep navigation obstacles identical
 // to the deterministic furnishing plan without importing THREE into routing.
 export function alignZoneObstaclePlan(layout) {
+  if (officePlan1Phase(layout) === 'L1') return []
+  if (officePlan1Phase(layout) === 'L2') return [{ id:'plan1-l2', plan:{placements:plan1FurniturePlan(layout),groups:[],skipped:[]} }]
   const reserved = alignDoorAprons(layout)
   const corridors = alignPassages(layout)
   const workstations = Object.values(layout.seats).map(([, x, z]) => ({ x, z, radius: 1 }))
@@ -89,8 +109,9 @@ export function alignFloorSpec(layout) {
   return {regions,corridors,ring:layout.ring}
 }
 
-export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
+export function buildAlignZones({THREE,root,layout,collision,low=false,get,search}) {
   const batch=createSampleBatch(THREE), floor=alignFloorSpec(layout), furnishings=[], proxies=[], registered=[]
+  const warm=layout.variant==='align'&&!low&&officeSampleRequested(search)
   let paving,disposed=false
   const dispose=()=>{
     if(disposed)return;disposed=true
@@ -99,9 +120,13 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
     furnishings.forEach(f=>f.dispose());paving?.dispose()
   }
   try {
-    const slab=(b,y,color,grain='stone')=>{const g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);batch.add(g,color,[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2],0,.78,0,grain)}
+    const slab=(b,y,color,grain='stone')=>{let g,position
+      if(b.footprint){const shape=new THREE.Shape();b.footprint.forEach((p,i)=>(i?shape.lineTo(p.x,-p.z):shape.moveTo(p.x,-p.z)));shape.closePath();g=new THREE.ShapeGeometry(shape);g.rotateX(-Math.PI/2);position=[0,y,0]}
+      else{g=new THREE.PlaneGeometry(b.x1-b.x0,b.z1-b.z0);g.rotateX(-Math.PI/2);position=[(b.x0+b.x1)/2,y,(b.z0+b.z1)/2]}
+      batch.add(g,color,position,0,.78,0,grain)}
     for(const b of floor.regions){
       slab(b,.126,b.color,b.kind==='room'?'wood':'stone')
+      if(b.footprint)continue
       const step=b.kind==='room'?.6:1.5
       for(let x=b.x0+step;x<b.x1;x+=step)slab({x0:x-.007,x1:x+.007,z0:b.z0,z1:b.z1},.128,b.kind==='room'?'#AB9477':'#C8BEAC','')
       if(b.kind!=='room')for(let z=b.z0+1.5;z<b.z1;z+=1.5)slab({x0:b.x0,x1:b.x1,z0:z-.007,z1:z+.007},.128,'#C8BEAC','')
@@ -113,9 +138,12 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get}) {
     }
     paving=batch.build(root,'align-floor-and-ring')
     paving.mesh.material.userData.officeFineStone = true
+    if (warm) warmOfficeArchitecture(paving.mesh.material)
     for(const {id,plan} of alignZoneObstaclePlan(layout)) {
       if (!plan.placements.length) continue
-      const f=buildOpenFurnishing({THREE,root,plan,low})
+      const f=(officePlan1Phase(layout) === 'L2' ? buildPlan1Furnishing : buildOpenFurnishing)({THREE,root,plan,low})
+      // 宿主会把地面和这些自有陈设合批，不能让选中哪份材质决定冷暖。
+      if (warm) warmOfficeArchitecture(f.root.material)
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`
       if(id==='north-nook'){
         const ground=get?.('shell3')?.ground

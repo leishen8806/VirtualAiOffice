@@ -1,17 +1,28 @@
 import { alignZoneObstaclePlan } from './office-vis2/align-zones.js'
+import { facingSample, facingAccess, FACING_ISLAND_BOUNDS } from './office-vis2/furniture-sample.js'
+import { officePlan1InnerWalls, officePlan1Phase } from './office-plan1-layout.js'
 
 // Public circulation only: room interiors and final seat approach remain owned by the director.
 export function createV3PublicPath(layout) {
+  const phase = officePlan1Phase(layout)
   const pad = .28, center = layout.bar.center, radius = layout.island.radius + pad
   const align = Boolean(layout.publicPathNodes)
   const regionBoxes = align ? layout.regions.filter(region => region.walled) : layout.regions
-  const desks = align ? Object.values(layout.seats).map(([, x, z]) => ({ x0: x - .8, x1: x + .8, z0: z - .8, z1: z + .8 })) : []
+  const desks = phase === 'L2' ? Object.values(layout.seats).flatMap(([,x,z,yaw,home])=>{
+    const w=Math.abs(Math.cos(yaw))*1.4+Math.abs(Math.sin(yaw))*.7,d=Math.abs(Math.sin(yaw))*1.4+Math.abs(Math.cos(yaw))*.7
+    return [{x0:x-w/2-pad,x1:x+w/2+pad,z0:z-d/2-pad,z1:z+d/2+pad},{x0:home.x-.31-pad,x1:home.x+.31+pad,z0:home.z-.31-pad,z1:home.z+.31+pad}]
+  }) : align ? Object.values(layout.seats).map(([, x, z]) => ({ x0: x - .8, x1: x + .8, z0: z - .8, z1: z + .8 })) : []
   const furnishings = align ? alignZoneObstaclePlan(layout).flatMap(({ id, plan }) =>
     plan.placements.map(item => ({ id: `${id}-${item.id}`, ...item.bounds }))) : []
   // 样板咖啡台前另有半径 .42m 的圆桌，通路边界须包含真实桌沿。
   const serviceBounds = align ? { ...layout.serviceBar, z1: Math.max(layout.serviceBar.z1, layout.foyer.z1 - 1.4 + .42) } : layout.serviceBar
   const boxes = [...regionBoxes, layout.frontDesk, serviceBounds, layout.waitingArc].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))
-  const blockers = [...boxes, ...desks, ...furnishings.map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
+  const wallBoxes = ['L1', 'L2'].includes(phase) ? officePlan1InnerWalls(layout).map(wall => ({
+    x0: Math.min(wall.a.x, wall.b.x) - pad - .07, x1: Math.max(wall.a.x, wall.b.x) + pad + .07,
+    z0: Math.min(wall.a.z, wall.b.z) - pad - .07, z1: Math.max(wall.a.z, wall.b.z) + pad + .07,
+  })) : []
+  const island = facingSample(layout) && !['L1', 'L2'].includes(phase) ? [FACING_ISLAND_BOUNDS] : []
+  const blockers = [...boxes, ...wallBoxes, ...desks, ...[...furnishings, ...island].map(b => ({ x0: b.x0 - pad, x1: b.x1 + pad, z0: b.z0 - pad, z1: b.z1 + pad }))]
   const finite = p => Number.isFinite(p?.x) && Number.isFinite(p?.z)
   const inside = (p, b) => p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1
   const valid = p => finite(p) && p.x >= layout.envelope.x0 + pad && p.x <= layout.envelope.x1 - pad && p.z >= layout.envelope.z0 + pad && p.z <= layout.doors.south.z - pad && !blockers.some(b => inside(p, b)) && Math.hypot(p.x - center.x, p.z - center.z) >= radius
@@ -62,7 +73,7 @@ export function createV3PublicPath(layout) {
       }
       throw new Error(`V3 public route endpoint blocked: ${JSON.stringify({ from, to })}`)
     }
-    const startPoint = anchor(from), endPoint = anchor(to)
+    const startPoint = anchor(facingAccess(layout, from) || from), endPoint = anchor(facingAccess(layout, to) || to)
     if (clear(startPoint, endPoint)) return dedupe([{ ...from }, startPoint, endPoint, { ...to }])
     const all = [...nodes, startPoint, endPoint], start = nodes.length, end = start + 1
     const edges = [...links.map(list => [...list]), [], []]

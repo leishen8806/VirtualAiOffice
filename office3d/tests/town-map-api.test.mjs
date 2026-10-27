@@ -10,7 +10,7 @@ import { loadTownMap } from '../town-map.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const officeJson = path.join(root, 'town-map.json')
-const sourceJson = path.resolve(root, '..', 'town-map-data', 'm0', 'derived', 'town-map-v0.json')
+const sourceJson = path.resolve(root, 'tests', 'fixtures', 'historical', 'town-map-data', 'm0', 'derived', 'town-map-v0.json')
 const serverPath = path.join(root, 'server.mjs')
 const backupServerPath = path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-m1b', 'server.mjs')
 const townMapPath = path.join(root, 'town-map.mjs')
@@ -171,8 +171,7 @@ test('permission simulation keeps town map read-only and town route aligned with
   assert.equal(simulateRequest({ lanUser: true, lanAuthed: false, wallAuthed: true, method: 'GET', pathname: '/town' }), 200)
 })
 
-test('town-map.json stays byte-identical to the reviewed source snapshot when source exists', (t) => {
-  if (!fs.existsSync(sourceJson)) return t.skip('source snapshot not present')
+test('town-map.json stays byte-identical to the tracked reviewed source snapshot', () => {
   assert.equal(fs.existsSync(officeJson), true)
   assert.equal(sha256(officeJson), sha256(sourceJson))
 })

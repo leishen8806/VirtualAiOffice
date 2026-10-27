@@ -58,7 +58,8 @@ test('bookcase and meeting details remain inside original furniture with measure
   assert.ok(books.length > 40)
   for (const p of books) {
     assert.ok(furniture.shelves.some(s => p.x - p.w / 2 >= s.x - s.w / 2 && p.x + p.w / 2 <= s.x + s.w / 2 && p.z - p.d / 2 >= s.z - s.d / 2 && p.z + p.d / 2 <= s.z + s.d / 2))
-    assert.ok([[.2733, .7148], [.7778, 1.2193], [1.2824, 1.7239]].some(([bottom, top]) => p.y - p.h / 2 > bottom && p.y + p.h / 2 < top))
+    assert.ok(furniture.shelves.some(s => p.x - p.w / 2 >= s.x - s.w / 2 && p.x + p.w / 2 <= s.x + s.w / 2 &&
+      [[.2733, .7148], [.7778, 1.2193], [1.2824, 1.7239]].some(([bottom, top]) => p.y - p.h / 2 > s.y + bottom * s.h / 1.85 && p.y + p.h / 2 < s.y + top * s.h / 1.85)))
   }
   const tables = [...furniture.meetings, { ...furniture.board, region: 'board' }]
   for (const p of details.filter(p => p.kind.startsWith('meeting-'))) {

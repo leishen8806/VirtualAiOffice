@@ -110,6 +110,10 @@ export function buildOpenFurnishing({ THREE, root, area, workstations, corridors
       box(w,.34,d,'#B7C2B4',x,.94,z,'fabric')
       box(w,.025,d,'#B89B64',x,1.1225,z)
       for(const dx of [-w/2+.025,w/2-.025])box(.04,.74,d,'#B89B64',x+dx,.37,z)
+      if(p.sample) {
+        box(w-.08,.035,d,'#C9A57A',x,.7525,z,'wood')
+        for(const dx of [-w/2+.18,w/2-.18])box(.025,.28,d,'#D9D3C6',x+dx,.94,z)
+      }
     } else if (p.kind === 'partition') {
       box(w, 1.05, .08, '#B7C2B4', x, .625, z, 'fabric')
       for (const dx of [-.65, .65]) { box(.045, 1.15, .045, '#B89B64', x + dx, .575, z); box(.12, .025, d, '#756857', x + dx, .0125, z) }

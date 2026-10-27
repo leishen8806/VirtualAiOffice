@@ -1,4 +1,5 @@
 import { barSpec, barGaps, barColliders, barSeats, barLounges } from './office-bar-geometry.js'
+import { marketSamplePose, marketSamplePlan, marketSampleBounds } from './office-vis2/furniture-sample.js'
 
 export const DISPLAY_DEPARTMENTS = Object.freeze(['market', 'service', 'aftersales', 'marketing'])
 export const DISPLAY_LABEL = '展示部门 · 模拟角色'
@@ -25,13 +26,22 @@ export function displayRoster(layout) {
   if (layout?.version !== 2) return []
   return DISPLAY_DEPARTMENTS.flatMap(department => layout.displaySeats.filter(s => s.region === department).slice(0, 3)
     .map((s, index) => ({ id: `sim-${s.id}`, department, label: `模拟 ${index + 1}`, synthetic: true,
-      home: { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: 0 })))
+      home: s.home ? { ...s.home } : { x: s.x, z: s.z + .8 }, desk: { x: s.x, z: s.z }, yaw: s.yaw || 0,
+      ...(department==='market'?marketSamplePose(layout,index):null) })))
 }
 export function displayFurnitureBounds(layout) {
-  return displayRoster(layout).flatMap(person => [
-    { id: `${person.id}-desk`, x0: person.desk.x - .5, x1: person.desk.x + .5, z0: person.desk.z - .28, z1: person.desk.z + .28 },
-    { id: `${person.id}-chair`, x0: person.home.x - .23, x1: person.home.x + .23, z0: person.home.z - .23, z1: person.home.z + .26 },
-  ])
+  const people=displayRoster(layout),sample=layout.marketSample===true&&marketSamplePlan(layout)
+  const boxes=people.filter(p=>!(sample&&p.department==='market')).flatMap(person => {
+    const side=Math.abs(Math.sin(person.yaw))>.5
+    return [
+      { id: `${person.id}-desk`, x0: person.desk.x-(side?.28:.5), x1: person.desk.x+(side?.28:.5), z0: person.desk.z-(side?.5:.28), z1: person.desk.z+(side?.5:.28) },
+      { id: `${person.id}-chair`, x0: person.home.x-(side?.26:.23), x1: person.home.x+(side?.26:.23), z0: person.home.z-(side?.23:.23), z1: person.home.z+(side?.23:.26) },
+    ]
+  })
+  if(sample){
+    boxes.push(...(layout.marketObstacles||marketSampleBounds(sample)))
+  }
+  return boxes
 }
 function clearLine(a, b, allowed, boxes) {
   const count = Math.max(1, Math.ceil(distance(a, b) / .08))
@@ -88,7 +98,16 @@ export function displayRoute(layout, person) {
     const outside = { x: inside.x + normal.x * 1.5, z: inside.z + normal.z * 1.5 }
     const boxes = displayFurnitureBounds(layout).filter(b => b.id !== `${person.id}-chair`)
     const inRoom = p => p.x >= room.x0 + .25 && p.x <= room.x1 - .25 && p.z >= room.z0 + .25 && p.z <= room.z1 - .25
-    const go = [...route(person.home, inside, room, boxes, inRoom), outside]
+    let interior
+    if(layout.marketSample===true&&marketSamplePlan(layout)&&person.department==='market'){
+      // 只豁免本人起身0.7m；东西两侧各走椅背外通道，东席绕南端到既有南门。
+      const east=person.yaw>0,step={x:person.home.x+(east?.7:-.7),z:person.home.z}
+      const spine={x:east?room.x1-1.4:room.x0+1.4,z:person.home.z},all=displayFurnitureBounds(layout)
+      const lane=p=>inRoom(p)&&(east?p.x>=person.home.x+.5:p.x<=inside.x+1e-6)
+      const entry=east?{x:spine.x,z:room.z1-.7}:inside
+      interior=[person.home,step,...route(step,spine,room,all,lane).slice(1),...route(spine,entry,room,all,lane).slice(1),...(east?route(entry,inside,room,all,inRoom).slice(1):[])]
+    }else interior=route(person.home,inside,room,boxes,inRoom)
+    const go = [...interior, outside]
     const length = go.reduce((sum, p, i) => sum + (i ? distance(p, go[i - 1]) : 0), 0)
     return Object.freeze({ go, back: go.toReversed(), length, side: normal.x < 0 ? 'west' : normal.x > 0 ? 'east' : person.home.x < 2 ? 'west' : 'east', gapAccess: false, reason: 'V3_DISPLAY_ROUTE', durationMs: (length * 2 / 1.4 + 20) * 1000 })
   }

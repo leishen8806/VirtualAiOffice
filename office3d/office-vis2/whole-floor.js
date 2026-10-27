@@ -2,6 +2,25 @@ import { plazaFlowerArcs } from './plaza.js'
 import { planWorkstationIslands } from './align-zones.js'
 import { appendOfficeGardenBed } from './plants.js'
 import { officeFurnitureV2Spec } from '../office-furniture-v2.js'
+import { facingSample, facingHome, posedPoint } from './furniture-sample.js'
+
+const flatDetails = new Set(['floor-joint', 'desk-group-inlay', 'desk-group-rug', 'meeting-paper', 'meeting-folder'])
+export const officeSurfaceDetail = p => flatDetails.has(p.kind) || p.kind === 'shelf-book'
+
+export function appendOfficeSurfaceDetails({ THREE, batch, details }) {
+  for (const p of details.filter(officeSurfaceDetail)) {
+    const book = p.kind === 'shelf-book', g = book ? new THREE.BoxGeometry(p.w, p.h, p.d) : new THREE.PlaneGeometry(p.w, p.d)
+    if (book) {
+      const pos = g.attributes.position, normal = g.attributes.normal, uv = [], surface = []
+      for (let i = 0; i < pos.count; i++) {
+        uv.push(pos.getX(i), pos.getY(i) + p.h / 2)
+        surface.push(.7, .08, normal.getZ(i) > .99 ? 5 + p.h : 0)
+      }
+      g.setAttribute('sampleUv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('sampleSurface', new THREE.Float32BufferAttribute(surface, 3))
+    } else g.rotateX(-Math.PI / 2)
+    batch.add(g, p.color, [p.x, p.y + (book ? 0 : p.h / 2), p.z], 0, .7, .08)
+  }
+}
 
 export function officePracticalSpec(layout) {
   const supports = [], globes = []
@@ -31,20 +50,25 @@ export function wholeFloorSpec(layout) {
   const details = [], beds = []
   const box = (kind, x, y, z, w, h, d, color, owner) => details.push({ kind, x, y, z, w, h, d, color, owner })
   for (const [id, [, x, z]] of Object.entries(layout.seats)) {
+    const start=details.length
     // 物品留在桌沿，避开中部显示器和键鼠。
     box('desk-tray', x + .51, .795, z - .2, .22, .06, .2, '#596455', id)
     for (let i = 0; i < 3; i++) box('desk-book', x - .51 + i * .045, .88, z - .23, .035, .22 - i * .025, .14, ['#C0AA82', '#71826C', '#E4DDCE'][i], id)
+    const yaw=facingSample(layout)&&facingHome(layout.seats[id])?.yaw
+    if(yaw)for(const p of details.slice(start))Object.assign(p,posedPoint(x,z,yaw,p.x-x,p.z-z))
   }
   if (layout.variant === 'align') {
     const furniture = officeFurnitureV2Spec(layout)
     for (const shelf of furniture.shelves) {
-      // 原 bookcaseOpen.glb 缩放至1.85m后的层板上表面；避开既有中层书组。
+      // 层板实测值随真实书柜高度缩放；书脊留在柜内，不靠新增业务桌填密度。
+      const scale = shelf.h / 1.85, floor = shelf.y
       for (const base of [.277, .781, 1.286]) for (let i = 0; i < Math.floor((shelf.w - .24) / .11); i++) {
-        const dx = -shelf.w / 2 + .17 + i * .11, height = .25 + (i % 4) * .025
-        if (base === .781 && Math.abs(dx) < shelf.w * .36) continue
-        box('shelf-book', shelf.x + dx, base + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
+        const dx = -shelf.w / 2 + .17 + i * .11, height = (.25 + (i % 4) * .025) * scale, y = floor + base * scale
+        box('shelf-book', shelf.x + dx, y + height / 2, shelf.z + .035, .075 + (i % 2) * .018, height, .29,
           ['#B7C2B4', '#CCB58C', '#E9E1D4', '#826E56', '#58705C'][i % 5], 'kb')
       }
+      box('shelf-toe', shelf.x, floor + .075, shelf.z + .27, shelf.w, .08, .04, '#B89B64', 'kb')
+      box('shelf-cornice', shelf.x, floor + shelf.h + .035, shelf.z, shelf.w, .07, shelf.d, '#C49A6C', 'kb')
     }
     for (const table of [...furniture.meetings, { ...furniture.board, region: 'board' }]) {
       const y = table.round ? .824 : .767, w = table.round ? 1.2 : table.w, d = table.round ? 1.2 : table.d

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN as layout } from '../office-layout.js'
 import { buildOfficeAlignedShell } from '../office-vis2/shell-finish.js'
+import { officeSurfaceDetail } from '../office-vis2/whole-floor.js'
 
 test('actual room crowns reduce overhead coverage, retain original clearance and separate soffit from trim', () => {
   const before = JSON.stringify(layout)
@@ -19,7 +20,9 @@ test('actual room crowns reduce overhead coverage, retain original clearance and
         const originalCoverage = 2 * width * .42 + 2 * .42 * (depth - .84)
         assert.ok(crowns.reduce((area, p) => area + p.w * p.d, 0) < originalCoverage * .65)
         const measured = entries.map(p => {
-          const sourceIndex = spec.indexOf(p), instanceIndex = frames.userData.officeShadow?.sourceIndices.indexOf(sourceIndex) ?? sourceIndex
+          const sourceIndices = frames.userData.officeShadow?.sourceIndices ?? spec.flatMap((entry, i) => officeSurfaceDetail(entry) ? [] : [i])
+          const instanceIndex = sourceIndices.indexOf(spec.indexOf(p))
+          assert.ok(instanceIndex >= 0, 'ceiling detail remains in the actual solid batch')
           const matrix = new THREE.Matrix4(); frames.getMatrixAt(instanceIndex, matrix)
           const box = new THREE.Box3(new THREE.Vector3(-.5, -.5, -.5), new THREE.Vector3(.5, .5, .5)).applyMatrix4(matrix)
           assert.ok(box.min.x >= room.x0 - 1e-5 && box.max.x <= room.x1 + 1e-5)

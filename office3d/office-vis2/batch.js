@@ -1,6 +1,20 @@
 // 细石粒在远景淡出，避免规则正弦条纹把石材画成木纹，或细噪点产生闪烁。
 export const officeStoneGrain = uv => `vec2 stoneCell = floor(${uv} * 180.0); float stoneGrain = fract(sin(dot(stoneCell, vec2(127.1, 311.7))) * 43758.5453); float stoneFade = 1.0 - smoothstep(0.002, 0.006, max(fwidth(${uv}.x), fwidth(${uv}.y))); diffuseColor.rgb *= mix(0.99, 0.982 + 0.018 * stoneGrain, stoneFade);`
 
+const officeWarmIbl = gain => `\n#ifdef USE_ENVMAP\niblIrradiance = mix(iblIrradiance, vec3(dot(iblIrradiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * ${gain};\nradiance = mix(radiance, vec3(dot(radiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * ${gain};\n#endif`
+
+// 建筑表面只接入已有环境采样；自有材质销毁时一并释放，不创建反射贴图或改灯光。
+export function warmOfficeArchitecture(material) {
+  if (material.userData.officeArchitectureWarmth) return
+  const previous = material.onBeforeCompile, key = material.customProgramCacheKey.call(material)
+  material.onBeforeCompile = function(shader, renderer) {
+    previous.call(this, shader, renderer)
+    shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>' + officeWarmIbl(1.2))
+  }
+  material.customProgramCacheKey = () => key + '-office-architecture-warm-ibl-v1'
+  material.userData.officeArchitectureWarmth = true; material.needsUpdate = true
+}
+
 // 家具仍用原 atlas 和合批；只给明确的暖木/织物顶点色补纹理，屏幕白色顶点不受影响。
 const furnitureSurfaceOwners = new WeakSet()
 export function bindOfficeFurnitureSurfaces(THREE, targets, assets) {
@@ -69,10 +83,14 @@ export function createSampleBatch(THREE, assets) {
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (!vis2Textured && surfaceParams.z > .5 && surfaceParams.z < 1.5) { float grain = sin(materialUv.x * 165.0 + sin(materialUv.y * 3.0) * 1.7 + sin(materialUv.x * 13.0) * 2.0); diffuseColor.rgb *= .93 + .07 * smoothstep(-.9, .55, grain); }')
         // 棚布仅在既有棚顶标记，和柜体分开；无额外图像、透明层或绘制批次。
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\nif (surfaceParams.z > 3.5) { float stripe = step(.5, fract(materialUv.y * 4.0)); diffuseColor.rgb = mix(vec3(.48, .55, .43), vec3(.90, .86, .76), stripe); }')
+        if (material.userData.officeBookSpines) {
+          shader.fragmentShader = shader.fragmentShader.replace('if (vis2Textured) {', 'if (vis2Textured && surfaceParams.z < 4.5) {').replace('if (surfaceParams.z > 3.5)', 'if (surfaceParams.z > 3.5 && surfaceParams.z < 4.5)')
+          shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>\nif (surfaceParams.z > 5.0) { float height = surfaceParams.z - 5.0; float band = max(1.0 - step(.0055, abs(materialUv.y - height * .18)), 1.0 - step(.0055, abs(materialUv.y - height * .8))); band *= 1.0 - step(.0285, abs(materialUv.x)); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(${new THREE.Color('#D9D3C6').toArray().join(',')}), band); }`)
+        }
         // 复用天气环境反射，仅中和室内饰面的天空蓝；不改直射光、叶片或全局曝光。
-        if (material.userData.officeWarmReflection) shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>\n#ifdef USE_ENVMAP\niblIrradiance = mix(iblIrradiance, vec3(dot(iblIrradiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\nradiance = mix(radiance, vec3(dot(radiance, vec3(.2126, .7152, .0722))) * vec3(1.04, 1.01, .94), .9) * 1.8;\n#endif')
+        if (material.userData.officeWarmReflection) shader.fragmentShader = shader.fragmentShader.replace('#include <lights_fragment_maps>', '#include <lights_fragment_maps>' + officeWarmIbl(1.8))
       }
-      material.customProgramCacheKey = () => (material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3') + (material.userData.officeWarmReflection ? '-warm-ibl-v1' : '')
+      material.customProgramCacheKey = () => (material.userData.officeFineStone ? 'office-vis2-pbr-v3-fine-stone' : 'office-vis2-pbr-v3') + (material.userData.officeWarmReflection ? '-warm-ibl-v1' : '') + (material.userData.officeBookSpines ? '-book-spines-v1' : '')
       material.userData.officeVis2 = true
       let mesh
       try { mesh = poses ? new THREE.InstancedMesh(geometry, material, poses.length) : new THREE.Mesh(geometry, material) }
