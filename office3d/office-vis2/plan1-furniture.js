@@ -1,4 +1,4 @@
-import { OFFICE_PLAN1_L2 as DATA, officePlan1Phase } from '../office-plan1-layout.js'
+import { OFFICE_PLAN1_L2 as DATA, officePlan1L2BFacingYaw, officePlan1Phase } from '../office-plan1-layout.js'
 import { createSampleBatch } from './batch.js'
 
 // Rendering and routing consume these same, world-space furniture envelopes.
@@ -14,7 +14,7 @@ export function plan1FurniturePlan(layout) {
     for (const seat of island.seats) if (seat.kind === 'empty') {
       const id = `${island.id}-empty-${seat.slot}`
       add(`${id}-desk`,'desk',seat.deskCenter.x,seat.deskCenter.z,1.4,.7,.76,seat.yawDeg*Math.PI/180,{island:island.id,businessIdentity:null})
-      add(`${id}-chair`,'chair',seat.home.x,seat.home.z,.6,.62,.98,seat.yawDeg*Math.PI/180,{island:island.id,businessIdentity:null})
+      add(`${id}-chair`,'chair',seat.home.x,seat.home.z,.6,.62,.98,officePlan1L2BFacingYaw(layout,seat.yawDeg*Math.PI/180),{island:island.id,businessIdentity:null})
     }
     add(`${island.id}-screen`,'divider',island.center.x,island.center.z,length,.06,1.15,yaw,{island:island.id})
     for (const side of [-1,1]) add(`${island.id}-end-${side}`,'cabinet',island.center.x+(ns?0:side*(length/2+.125)),island.center.z+(ns?side*(length/2+.125):0),.25,1.4,.75,yaw,{island:island.id})
