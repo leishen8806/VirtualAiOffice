@@ -261,7 +261,10 @@ test('verifyChecksumFile 区分哈希不符与缺文件', (t) => {
 })
 
 // ───── 自指：回执内嵌本工具自己的输出 ─────
-// 取自 OFFICE-L2 R6-01 回执草稿：内嵌的 "PASS    C7 未运行要写明  2 项状态均为 NOT_RUN" 被判成"未运行却写通过"。
+// 取自 OFFICE-L2 R6-01 回执草稿：内嵌的 "PASS    C7 未运行要写明  …" 被判成"未运行却写通过"。
+// 豁免只限 C7 自己"通过"时写出的两句固定详情，整行逐字匹配；其它输出行按普通行判断。
+const OWN_NONE = 'PASS    C7 未运行要写明   回执没有提到未运行的项'
+const OWN_SOME = 'PASS    C7 未运行要写明   3 行未运行项都写了 NOT_RUN，且没有同时宣称通过'
 const EMBEDDED = [
   'PASS    C1 卡片状态     R2、R3、R4、R5、R6 与 R1 卡片为 ACTIVE',
   'PASS    C2 需求哈希     声明的需求哈希 = SHA256SUMS.txt 本身的哈希 2b957c142db6…',
@@ -269,35 +272,52 @@ const EMBEDDED = [
   'NOT_RUN C4 推送一致     没有给 --repo 和 --branch，未核对远端',
   'WARN    C5 证据校验单    没有找到证据校验单；证据不在卡片目录里时用 --evidence 指定',
   'PASS    C6 测试参数     2 条测试命令都带 --max-old-space-size=1024 与 --test-concurrency=1',
-  'PASS    C7 未运行要写明   2 项状态均为 NOT_RUN',
-  'PASS    C7 未运行要写明   回执没有提到未运行的项',
-  'PASS    C7 未运行要写明   6 行未运行项都写了 NOT_RUN，且没有同时宣称通过',
-  'FAIL    C7 未运行要写明   1 行同时写了未运行和"通过"，状态矛盾，如：A5 通过（NOT_RUN）',
+  OWN_SOME,
   'PASS    C8 回执必填项    必填项齐全',
 ].join('\n')
 
-test('自指：内嵌的本工具输出行（含 C7 自己那一行）不参与 C7 判断', () => {
+test('自指：内嵌的本工具输出（含 C7 自己通过的那一行）不让 C7 失败', () => {
   assert.equal(checkNotRun(EMBEDDED).status, 'PASS')
-  assert.equal(checkNotRun('## 检查器输出\n\n```text\n' + EMBEDDED + '\n```\n\nA5 性能：NOT_RUN（本机没有 Playwright）').status, 'PASS', '内嵌输出之外的 NOT_RUN 行仍然正常判断')
-  for (const line of EMBEDDED.split('\n')) assert.equal(isCheckerOutputLine(line), true, line)
+  assert.equal(checkNotRun(OWN_NONE).status, 'PASS')
+  assert.equal(checkNotRun('```text\n' + EMBEDDED + '\n```\n\nA5 性能：NOT_RUN（本机没有 Playwright）').status, 'PASS', '内嵌输出之外的 NOT_RUN 行仍然正常判断')
+  assert.equal(isCheckerOutputLine(OWN_NONE), true)
+  assert.equal(isCheckerOutputLine(OWN_SOME), true)
+  assert.equal(isCheckerOutputLine('  PASS\tC7\t未运行要写明\t回执没有提到未运行的项  '), true, '缩进与 Tab 不影响')
 })
 
-test('自指：不是严格输出格式的行仍逐行判断，不能借此洗白', () => {
-  // 编号与名称对不上、没有状态词、不是检查项名称：全部照常判断
-  assert.equal(checkNotRun('PASS    C7 浏览器 通过 NOT_RUN').status, 'FAIL')
-  assert.equal(checkNotRun('PASS    C3 未运行要写明   A5 通过（NOT_RUN）').status, 'FAIL', 'C3 对应的名称不是"未运行要写明"')
+test('自指：正确前缀后追加任何内容都不豁免，真实矛盾照常失败（审查 P2）', () => {
+  const forged = [
+    'PASS C7 未运行要写明 A5 未运行但已通过（NOT_RUN）',
+    'PASS C4 推送一致 A5 未运行但已通过（NOT_RUN）',
+    OWN_NONE + '；A5 未运行但已通过（NOT_RUN）',
+    OWN_SOME + ' A5 通过（NOT_RUN）',
+    OWN_NONE + ' A5 通过',
+    'PASS\tC7\t未运行要写明\tA5 未运行但已通过（NOT_RUN）',
+    'PASS　C7　未运行要写明　A5 未运行但已通过（NOT_RUN）',
+    'PASS    C7 未运行要写明   2 项状态均为 NOT_RUN',
+    'FAIL    C7 未运行要写明   1 行同时写了未运行和"通过"，状态矛盾，如：A5 通过（NOT_RUN）',
+  ]
+  for (const line of forged) assert.equal(checkNotRun(line).status, 'FAIL', line)
+  // 前缀后面追加，同时前面另有一行合法的 C7 输出：合法行豁免，伪造行仍然失败
+  assert.equal(checkNotRun(OWN_NONE + '\n' + forged[0]).status, 'FAIL')
+  assert.equal(checkNotRun('A5 未运行但已通过（NOT_RUN）\r\n' + OWN_NONE).status, 'FAIL', 'CRLF 下另起一行的矛盾仍被发现')
+})
+
+test('自指：不是 C7 自己通过详情的行不被豁免', () => {
+  for (const line of ['PASS    C7 浏览器 通过 NOT_RUN', 'PASS    C3 未运行要写明   回执没有提到未运行的项', 'PASS    A5 性能   未运行', 'PASS A5 性能 通过（NOT_RUN）', 'A5 ' + OWN_NONE, '结论：' + OWN_SOME, '| ' + OWN_NONE + ' |', '| A5 浏览器 | PASS（NOT_RUN） |'])
+    assert.equal(isCheckerOutputLine(line), false, line)
   assert.equal(checkNotRun('PASS    A5 性能   未运行').status, 'FAIL')
   assert.equal(checkNotRun('PASS A5 性能 通过（NOT_RUN）').status, 'FAIL')
-  assert.equal(checkNotRun('A5 PASS    C7 未运行要写明  NOT_RUN').status, 'FAIL', '行首不是状态词')
-  assert.equal(checkNotRun('结论：PASS    C7 未运行要写明   2 项均为 NOT_RUN').status, 'FAIL', '正文前缀里夹带')
-  assert.equal(checkNotRun('| A5 浏览器 | PASS（NOT_RUN） |').status, 'FAIL')
-  for (const line of ['PASS    C7 浏览器 通过 NOT_RUN', 'PASS    A5 性能   未运行', 'C7 未运行要写明 NOT_RUN']) assert.equal(isCheckerOutputLine(line), false, line)
+  assert.equal(checkNotRun('结论：' + OWN_SOME).status, 'FAIL')
 })
 
 test('自指：回执 + 本工具对它自己的输出，再次运行结论不变（往返）', (t) => {
   const dir = makeCard(t)
-  const base = goodReceipt(dir)
-  const first = checkNotRun(base)
-  const out = ['PASS    C7 未运行要写明   ' + first.detail, 'NOT_RUN C4 推送一致     没有给 --repo 和 --branch，未核对远端'].join('\n')
-  assert.equal(checkNotRun(base + '\n\n```text\n' + out + '\n```\n').status, first.status)
+  for (const base of [goodReceipt(dir), goodReceipt(dir) + '\nA5 性能：NOT_RUN（本机没有 Playwright）\nA7 浏览器：NOT_RUN']) {
+    const first = checkNotRun(base)
+    assert.equal(first.status, 'PASS')
+    const own = `PASS    C7 未运行要写明   ${first.detail}`
+    assert.equal(isCheckerOutputLine(own), true, own)
+    assert.equal(checkNotRun(base + '\n\n```text\n' + own + '\n```\n').status, first.status)
+  }
 })

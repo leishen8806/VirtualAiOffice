@@ -210,14 +210,15 @@ const C7_NAME_CELL = /^\s*[*`]*\s*C7\s*NOT_RUN\s*(标识|标注|标记|规则|�
 const mentionOnly = (line) => (line.includes('|') ? line.split('|').map((cell) => (C7_NAME_CELL.test(cell) ? ' C7 ' : cell)).join('|') : line)
 export const contradictory = (line) => mentionOnly(line).split(/[。；;]/).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
 
-// 回执里内嵌本工具自己的原始输出时（PASS    C7 未运行要写明  …），那一行是检查结果的记录，不是回执对某个验收项的宣称：
-// 行首的状态词是这项检查的状态，检查项名称 "未运行要写明" 本身含"未运行"二字。不把它们当成回执正文来判。
-// 只认严格的输出格式：行首状态词 + C1–C8 + 与编号对应的检查项名称，三者缺一或编号与名称对不上都不豁免，
-// 所以"PASS C7 浏览器 通过 NOT_RUN" 或普通的 "PASS A5 性能 未运行" 仍然逐行判断。
-const CHECK_NAMES = { C1: '卡片状态', C2: '需求哈希', C3: '卡片校验单', C4: '推送一致', C5: '证据校验单', C6: '测试参数', C7: '未运行要写明', C8: '回执必填项' }
+// 回执里内嵌本工具自己的原始输出时，C7 自己的"通过"那一行本身会撞上 C7 的规则：
+// 行首状态词是 PASS，检查项名称 "未运行要写明" 含"未运行"，详情里还写着 NOT_RUN / 宣称通过。它是检查结果记录，不是回执对验收项的宣称。
+// 豁免范围收得很窄：只认 "PASS  C7  未运行要写明  <本工具 C7 通过时写出的两句固定详情之一>"，整行逐字匹配。
+// 在这个前缀后面追加任何别的内容（例如 "A5 未运行但已通过（NOT_RUN）"）都不再匹配，整行照常逐行判断，因此不能借它洗白。
+// 其它检查项（C1–C6、C8）的输出行以及 C7 的 FAIL 行不需要豁免，按普通行判断即可。
+const C7_OWN_PASS_DETAIL = [/^回执没有提到未运行的项$/, /^\d+ 行未运行项都写了 NOT_RUN，且没有同时宣称通过$/]
 export const isCheckerOutputLine = (line) => {
-  const m = line.match(/^\s*(?:PASS|WARN|FAIL|NOT_RUN)\s+(C[1-8])\s+(\S+)(?:\s|$)/)
-  return Boolean(m && CHECK_NAMES[m[1]] === m[2])
+  const m = line.match(/^\s*PASS\s+C7\s+未运行要写明\s+(.+?)\s*$/)
+  return Boolean(m && C7_OWN_PASS_DETAIL.some((re) => re.test(m[1])))
 }
 
 // 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
