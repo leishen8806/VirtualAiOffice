@@ -71,6 +71,11 @@ export function officePlan1SouthHeight(layout, x) {
 
 export const officePlan1Phase = layout => layout?.plan1Phase === 'L2B' ? 'L2' : layout?.plan1Phase
 
+export function officePlan1L2BFacingYaw(layout, yaw) {
+  if (layout?.plan1Phase !== 'L2B' || Math.abs(Math.cos(yaw)) > 1e-9) return yaw
+  return -yaw
+}
+
 export function officePlan1Reception(layout) {
   const s=layout.walls?.reception
   if(!s)return null
@@ -159,6 +164,11 @@ export function makeOfficePlan1Layout(base) {
 export function makeOfficePlan1L2BLayout(base) {
   const layout = makeOfficePlan1Layout(base)
   layout.plan1Phase = 'L2B'
+  layout.seats = Object.fromEntries(Object.entries(layout.seats).map(([id, seat]) => {
+    const [region, x, z, yaw, home] = seat
+    const facingYaw = officePlan1L2BFacingYaw(layout, yaw)
+    return [id, facingYaw === yaw ? seat : [region, x, z, facingYaw, { ...home, yaw: facingYaw }]]
+  }))
   layout.site.z0 = layout.envelope.z0 = layout.greenBuffer.z0 = -19
   layout.doors.north.z = -19
   layout.regions = layout.regions.map(room => ({

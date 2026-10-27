@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import { registerHooks } from 'node:module'
 import test from 'node:test'
@@ -34,6 +35,8 @@ const hitsBox = (a,b,box) => {
 }
 const bounds2 = (x,z,w,d) => ({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})
 const routeKey = r => `${r.id}/${r.kind}/${r.key}`
+const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+const withoutFacingYaw = seats => Object.fromEntries(Object.entries(seats).map(([id,[region,x,z,yaw,home]])=>[id,[region,x,z,0,{...home,yaw:0}]]))
 const routesFor = layout => {
   const nav=createOfficeNavigation(layout), spec=officeFurnitureV2Spec(layout), routes=[]
   for(const [id,seat] of Object.entries(layout.seats)) {
@@ -73,7 +76,8 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
   assert.deepEqual([l2b.site.z0,l2b.envelope.z0,l2b.greenBuffer.z0,l2b.miniBounds.z0,l2b.doors.north.z],[-19,-19,-19,-21,-19])
   assert.deepEqual(l2b.regions.filter(r=>['market','board','review','product-eng-knowledge','service'].includes(r.id)).map(r=>[r.id,r.z0]),[['market',-19],['board',-19],['review',-19],['product-eng-knowledge',-19],['service',-19]])
   assert.deepEqual(l2b.regions.filter(r=>['review','plan'].includes(r.id)).map(r=>[r.id,r.z0,r.z1]),[['review',-19,-14.8],['plan',-14.4,-10.2]])
-  assert.deepEqual(l2b.seats,LAYOUT_V3_ALIGN_SAMPLE.seats)
+  assert.deepEqual(withoutFacingYaw(l2b.seats),withoutFacingYaw(LAYOUT_V3_ALIGN_SAMPLE.seats),'L2B seat data differs from frozen L2 only in the approved facing fields')
+  assert.equal(hash(l2b.seats),'61b151046f0c5b428b81b0d7eb0f185cdf6c5452e8862800a8bd5fe717f765b3','approved L2B-only facing exception hash')
   assert.equal(l2b.passages.entranceSpine,undefined,'the empty band gets no new navigation edge')
 
   const b1Fixture=structuredClone(l2b);b1Fixture.plan1Phase='L2'
