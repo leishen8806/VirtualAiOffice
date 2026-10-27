@@ -45,6 +45,27 @@ test('I1 converts WH-R1 metres and millimetres once, retaining zone dimensions',
   assert.equal(runtimeYawFromFacing(0, -1), 0)
 })
 
+test('I1 preserves all 68 WH-R1 wall-face identities and centreline offsets', () => {
+  const faces = WH_R1_DATA.wallFaces, walls = new Map(WH_R1_DATA.walls.map(wall => [wall.id, wall]))
+  const distance = ([x0, y0], [x1, y1]) => Math.hypot(x1 - x0, y1 - y0)
+  assert.equal(faces.length, 68); assert.equal(new Set(faces.map(face => face.id)).size, 68)
+  for (const face of faces) {
+    const wall = walls.get(face.wallId)
+    assert.ok(wall, face.id)
+    assert.ok(Math.abs(face.lengthM - distance(face.centrelineStartM, face.centrelineEndM)) < 1e-6, face.id)
+    assert.ok(Math.abs(face.heightM - wall.heightM) < 1e-6, face.id); assert.ok(Math.abs(face.thicknessM - wall.widthM) < 1e-6, face.id)
+    assert.ok(Math.abs(distance(face.centrelineStartM, face.faceStartM) - face.thicknessM / 2) < 1e-6, face.id)
+    assert.ok(Math.abs(distance(face.centrelineEndM, face.faceEndM) - face.thicknessM / 2) < 1e-6, face.id)
+  }
+  for (const wall of WH_R1_DATA.walls) assert.deepEqual(faces.filter(face => face.wallId === wall.id).map(face => face.side).sort(), ['A', 'B'], wall.id)
+  assert.deepEqual(faces.find(face => face.id === 'WH-00-W-001-A'), {
+    id: 'WH-00-W-001-A', wallId: 'WH-00-W-001', side: 'A', lengthM: 2.06, heightM: 4.5, thicknessM: 0.28,
+    centrelineStartM: [0.14, 47.86], centrelineEndM: [2.2, 47.86], faceStartM: [0.14, 48], faceEndM: [2.2, 48],
+    grossRectAreaM2: 9.27, openingsAreaM2: 0, axisCoordinateStatus: 'START_END_FIELDS_ARE_WALL_CENTRELINE',
+    areaStatus: 'CANDIDATE_SEGMENT_RECTANGLE_EXCLUDING_SEPARATE_DOOR_OPENINGS; RETURNS_AND_HEADS_UNKNOWN', source: '原图室外+远端空间边界', status: 'PROPOSED', notes: '仅本墙段主平面，不含门洞侧壁、压顶、踢脚和节点；门头另列未知。',
+  })
+})
+
 test('I1 preserves door labels, the two check collections and I8 audit inputs', () => {
   const tags = rows => rows.map(row => row.sourceTag)
   assert.deepEqual(tags(WH_R1_DATA.doors.filter(row => row.regionId === '01')), ['01', '02', '02', '02', '04'])
