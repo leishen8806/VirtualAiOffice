@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
 import { createR1Layout, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
@@ -88,10 +88,13 @@ test('I1 retains clearance parameters needed to compare future route recomputati
   assert.equal(R1_DATA.doorStateConditions.length, 39); assert.equal(R1_DATA.doorStateConditions[0].open_motion, 'NOT_RUN')
 })
 
-test('I1 keeps the frozen runtime isolated from the new offline data module', () => {
+test('R1 runtime bridges are explicit and all other runtime modules stay isolated from the offline data module', () => {
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
+  const approved = new Set(['office-layout.js', 'office-layout-v3-scene.js', 'office-v3-modules.js', 'office-vis2/r1-site.js', 'office-vis2/r1-shell.js', 'office-vis2/r1-zones.js', 'tests/office-r1-data.test.mjs'])
   for (const file of walk(repo).filter(file => /\\.(?:js|mjs)$/.test(file.replaceAll('/', '\\')))) {
-    if (file.includes('office-r1') || file.endsWith('office-r1-data.test.mjs')) continue
-    assert.ok(!readFileSync(file, 'utf8').includes('office-r1'), file)
+    const repoFile = relative(repo, file).replaceAll('\\', '/')
+    if (repoFile.startsWith('office-r1/') || repoFile === 'tests/office-r1-data.test.mjs') continue
+    const importsR1 = readFileSync(file, 'utf8').includes('office-r1')
+    assert.ok(!importsR1 || approved.has(repoFile), repoFile)
   }
 })

@@ -27,8 +27,13 @@ export function weatherText(code) {
 const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 const hm = (s) => { if (!s) return null; const m = String(s).match(/T(\d\d):(\d\d)/); return m ? +m[1] * 60 + +m[2] : null }
+export const r1EnvironmentRequested = (search = '') => {
+  const params = new URLSearchParams(String(search).replace(/^\?/, ''))
+  return params.getAll('layout').length === 1 && params.get('layout') === '3' && params.getAll('align').length === 1 && params.get('align') === '1' && params.getAll('officeSample').length === 1 && params.get('officeSample') === '1' && params.getAll('r1').length === 1 && params.get('r1') === '1'
+}
 
 export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, officeWarm = false }) {
+  const r1Mode = r1EnvironmentRequested(typeof location === 'undefined' ? '' : location.search)
   // ── 天空 ──
   const sky = new Sky()
   sky.scale.setScalar(3000)
@@ -163,8 +168,10 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   }
   for (let x = -50, i = 1; x <= 50; x += 9, i++) { tree(x + rnd() * 2, -38 + rnd() * 2, 1 + rnd() * 0.3, `north-row-${String(i).padStart(2,'0')}`); tree(x + rnd() * 2, 46 + rnd() * 2, 1 + rnd() * 0.3, `south-row-${String(i).padStart(2,'0')}`) }
   for (let z = -30, i = 1; z <= 40; z += 9, i++) { tree(-55 + rnd() * 2, z, 1.1, `west-row-${String(i).padStart(2,'0')}`); tree(55 + rnd() * 2, z, 1.1, `east-row-${String(i).padStart(2,'0')}`) }
-  add(new THREE.PlaneGeometry(60, 18), grass, 0, -0.595, -24).rotation.x = -Math.PI / 2
-  for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5, `north-garden-${String(i + 1).padStart(2,'0')}`)
+  if (!r1Mode) {
+    add(new THREE.PlaneGeometry(60, 18), grass, 0, -0.595, -24).rotation.x = -Math.PI / 2
+    for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5, `north-garden-${String(i + 1).padStart(2,'0')}`)
+  }
   const crownGeo = new THREE.IcosahedronGeometry(1, 1)
   const crownMeshes = leafMs.map((mat, mi) => {
     const list = crowns.filter((c) => c.m === mi)

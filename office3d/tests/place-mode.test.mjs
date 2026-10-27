@@ -373,7 +373,7 @@ test('main page wires DR isolation without changing office defaults', () => {
   assert.match(app, /const CAMPUS_MODE = PLACE_MODE\.campus/)
   assert.match(app, /if \(DR_MODE\) \{[\s\S]*\} else \{[\s\S]*setInterval\(poll, POLL_MS\)/)
   assert.match(app, /if \(!DR_MODE\) \{[\s\S]*director\.update\(dt\)/)
-  assert.match(app, /const MINI = DR_MODE \? PLACE_MODE\.miniBounds : MINI_BOUNDS/)
+  assert.match(app, /const MINI = DR_MODE \? PLACE_MODE\.miniBounds : OFFICE_LAYOUT\.r1Phase === 'R1' \? OFFICE_LAYOUT\.miniBounds : MINI_BOUNDS/)
   assert.match(app, /isolateDrPlace\(\{ scene, campusRoot: campusRegistry\?\.root/)
   assert.match(view, /root === campusRoot \|\| keepRoots\.includes\(root\) \|\| root\.isLight \|\| environmentRoots\.has\(root\)/)
   assert.doesNotMatch(view, /\bfetch\b|XMLHttpRequest|WebSocket|setInterval/)

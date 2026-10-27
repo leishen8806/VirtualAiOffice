@@ -260,6 +260,27 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "51B1A693A4BF623729775999D98929B20C5C28CBF2C7047E30BF6D07619458C2"
+    },
+    {
+      "file": "office-vis2/r1-shell.js",
+      "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "0901B8E0CD2D738E93393BBD5DBFD681C30159F563DD3A370E331652BD7DC803"
+    },
+    {
+      "file": "office-vis2/r1-site.js",
+      "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "5435A974554A860AA17DA17DCCC09757F45BACBDF25C3EEFA6E1BC50E35FE7D5"
+    },
+    {
+      "file": "office-vis2/r1-zones.js",
+      "source": "OFFICE-R1-I2 R1-only data-driven floor-zone marks and labels; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "3CA079899558FAA0B4F0ECFED8B927A18CBF79422FFF96019E7082569270D071"
     }
   ],
   "excluded": {
