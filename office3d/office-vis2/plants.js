@@ -100,6 +100,8 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
     Array.isArray(m.userData.list) && m.count === m.userData.list.length && m.count > 0 && m.count <= 512 &&
     m.userData.list.every(c => ['x','y','z','r','ph','m'].every(k => Number.isFinite(c[k])) && Number.isInteger(c.m) && c.m >= 0 && c.m < 4 && c.r > 0 && oldColors[c.m] === m.material.color.getHex()))
   const records = [], geometries = new Map(), materials = new Map(), owner = {}, matrix = new THREE.Matrix4(), masked = new THREE.Matrix4(), tiny = new THREE.Vector3(1e-6,1e-6,1e-6)
+  const l2b = layout.plan1Phase === 'L2B', trees = l2b ? (scene.userData.officeBackdropTreeGroups || []).filter(tree => /^north-garden-\d{2}$/.test(tree.userData?.officeBackdropTreeId || '')) : []
+  const originalTrees = trees.map(tree => { tree.updateWorldMatrix(true, false); return { tree, parent: tree.parent, matrix: tree.matrixWorld.clone() } })
   const group = new THREE.Group(); group.name = 'office-owned-backdrop-trees'; group.userData.dynamic = true
   let disposed = false, reason = '', tier, ownedMesh
   const dispose = () => {
@@ -108,6 +110,10 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
       if (r.source.instanceMatrix?.version === r.maskedVersion) { r.indices.forEach((index,i) => r.source.setMatrixAt(index,r.saved[i])); r.source.instanceMatrix.needsUpdate = true }
       for (const h of r.hooks || []) { if (h.counts.length && r.source.count === 0) r.source.count = h.counts[0]; if (r.source[h.beforeName] === h.start) r.source[h.beforeName] = h.before; if (r.source[h.afterName] === h.end) r.source[h.afterName] = h.after }
       if (backdropOwners.get(r.source) === owner) backdropOwners.delete(r.source)
+    }
+    for (const {tree,parent,matrix:world} of originalTrees) {
+      if (parent) parent.attach(tree); else tree.removeFromParent()
+      if (parent) { world.decompose(tree.position, tree.quaternion, tree.scale); tree.updateMatrix(); tree.updateMatrixWorld(true) }
     }
     ownedMesh?.dispose(); ownedMesh = null
     group.removeFromParent(); group.clear(); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose())
@@ -141,7 +147,9 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
         if (r.source.instanceMatrix.version === r.maskedVersion) continue
         r.source.updateWorldMatrix(true,false); const local = inverse.clone().multiply(r.source.matrixWorld)
         r.indices.forEach((index,i) => {
-          r.source.getMatrixAt(index,r.saved[i]); ownedMesh.setMatrixAt(r.offset+i,matrix.multiplyMatrices(local,r.saved[i]))
+          r.source.getMatrixAt(index,r.saved[i]); matrix.multiplyMatrices(local,r.saved[i])
+          if (l2b && /^north-garden-\d{2}$/.test(r.source.userData.list[index].treeId || '')) matrix.elements[14] -= 2.1
+          ownedMesh.setMatrixAt(r.offset+i,matrix)
           r.source.setMatrixAt(index,masked.copy(r.saved[i]).scale(tiny))
         })
         r.source.instanceMatrix.needsUpdate = true; r.maskedVersion = r.source.instanceMatrix.version
@@ -161,7 +169,7 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
     return true
   }
   try {
-    if (!root || !layout?.envelope || sources.length !== 4 || new Set(sources.map(s=>s.geometry.uuid)).size !== 1 || sources.some(s=>backdropOwners.has(s))) reason = 'unrecognized or already owned environment'
+    if (!root || !layout?.envelope || sources.length !== 4 || new Set(sources.map(s=>s.geometry.uuid)).size !== 1 || sources.some(s=>backdropOwners.has(s)) || l2b && trees.length !== 14) reason = 'unrecognized or already owned environment'
     else {
       let count = 0
       for (const source of sources) {
@@ -186,7 +194,9 @@ export function buildOfficeBackdropTrees({ THREE, scene, root, layout, low = fal
           })
         }
         ownedMesh.instanceColor.needsUpdate = true
-        root.add(group); sync()
+        root.add(group)
+        for (const tree of trees) { root.attach(tree); tree.position.z -= 2.1; tree.updateMatrix(); tree.updateMatrixWorld(true) }
+        sync()
       } else reason = 'no office trees'
     }
   } catch (error) { reason = String(error?.message || error); dispose() }

@@ -66,7 +66,7 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
   assert.deepEqual(makeOfficePlan1L2BLayout(LAYOUT_V3_ALIGN), l2b)
   assert.deepEqual(LAYOUT_V3_ALIGN_SAMPLE,l2Before)
   assert.equal(LAYOUT_V3_ALIGN_L2B.plan1Phase,'L2B')
-  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'),LAYOUT_V3_ALIGN_SAMPLE)
+  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'),LAYOUT_V3_ALIGN_L2B)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=1'),LAYOUT_V3_ALIGN_L2B)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=1&l2b=1'),LAYOUT_V3_ALIGN_SAMPLE)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&l2b=1'),LAYOUT_V3_ALIGN)
@@ -76,7 +76,8 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
   assert.deepEqual(l2b.seats,LAYOUT_V3_ALIGN_SAMPLE.seats)
   assert.equal(l2b.passages.entranceSpine,undefined,'the empty band gets no new navigation edge')
 
-  const before=routesFor(LAYOUT_V3_ALIGN_SAMPLE), after=routesFor(l2b), beforeMap=new Map(before.map(r=>[routeKey(r),r]))
+  const b1Fixture=structuredClone(l2b);b1Fixture.plan1Phase='L2'
+  const before=routesFor(LAYOUT_V3_ALIGN_SAMPLE), after=routesFor(b1Fixture), beforeMap=new Map(before.map(r=>[routeKey(r),r]))
   assert.equal(before.length,1825);assert.equal(after.length,1825)
   for(const route of after) {
     assert.ok(route.points.length&&route.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)),`${routeKey(route)} finite`)
@@ -84,7 +85,7 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
     assert.ok(old,`${routeKey(route)} exists in L2`)
     if(route.kind!=='meeting')assert.deepEqual(route.points,old.points,`${routeKey(route)} unchanged`)
   }
-  const meetings=officeFurnitureV2Spec(l2b).meetings, expected={A:{z:-16.9,delta:-.8,r:.96,d:1.2},B:{z:-12.3,delta:-.3,r:.86,d:1}}
+  const meetings=officeFurnitureV2Spec(b1Fixture).meetings, expected={A:{z:-16.9,delta:-.8,r:.96,d:1.2},B:{z:-12.3,delta:-.3,r:.86,d:1}}
   assert.deepEqual(meetings.map(r=>[r.id,r.seats.length]),[['A',4],['B',4]])
   for(const room of meetings) {
     const spec=expected[room.id], prior=officeFurnitureV2Spec(LAYOUT_V3_ALIGN_SAMPLE).meetings.find(r=>r.id===room.id)
@@ -109,7 +110,7 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
     const bytes=fs.readFileSync(new URL(`../assets/models/furniture/${name}.glb`,import.meta.url))
     models[name]=(await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'')).scene
   }
-  const spec=officeFurnitureV2Spec(l2b), furniture=plan1FurniturePlan(l2b).map(p=>({id:p.id,bounds:p.bounds}))
+  const spec=officeFurnitureV2Spec(b1Fixture), furniture=plan1FurniturePlan(b1Fixture).map(p=>({id:p.id,bounds:p.bounds}))
   for(const [id,seat] of Object.entries(l2b.seats)) {
     const [,x,z,yaw,home]=seat,w=Math.abs(Math.cos(yaw))*1.4+Math.abs(Math.sin(yaw))*.7,d=Math.abs(Math.sin(yaw))*1.4+Math.abs(Math.cos(yaw))*.7
     furniture.push({id:`${id}-desk`,owner:id,bounds:bounds2(x,z,w,d)},{id:`${id}-chair`,owner:id,bounds:bounds2(home.x,home.z,.62,.6)})
@@ -123,7 +124,7 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
   furniture.push({id:'boss-chair',bounds:assetBox(models,'chairDesk',spec.boss.chair,.62,1.04,.6)})
   for(const seat of spec.boardSeats)furniture.push({id:'board-chair',bounds:assetBox(models,'chairModernCushion',seat,.62,1.04,.6)})
 
-  const walls=[...officePlan1InnerWalls(l2b).filter(w=>w.a&&w.b),...buildOfficeShellV3Spec(l2b).outer.filter(w=>w.a&&w.b)]
+  const walls=[...officePlan1InnerWalls(b1Fixture).filter(w=>w.a&&w.b),...buildOfficeShellV3Spec(b1Fixture).outer.filter(w=>w.a&&w.b)]
   const crossings=[]
   for(const route of after)for(let i=1;i<route.points.length;i++) {
     const a=route.points[i-1],b=route.points[i]
