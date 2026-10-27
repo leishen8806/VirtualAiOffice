@@ -4,6 +4,7 @@ import { barArcs, barColliders, barLounges, barSeats, barSpec, LOUNGE_SIT } from
 import { buildHeartBanyan } from '../office-heart-banyan.js'
 import { createSampleBatch } from './batch.js'
 import { registerOfficeBarCollision } from './bar-collision.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low = false, collision, assets } = {}) {
   if (!THREE || !root) throw new TypeError('buildOfficeTeaBarSample requires THREE and root')
@@ -38,7 +39,7 @@ export function buildOfficeTeaBarSample({ THREE, root, layout = LAYOUT_V3, low =
   // ALIGN 地面顶面为 0.08m，内圈铺面略抬高，避免被宿主地面盖住。
   batch.add(workFloor, '#D9D3C6', [center.x, layout.variant === 'align' ? .082 : .018, center.z], 0, .9)
   const box = (w, h, d, tint, x, y, z, roughness = .6, metalness = 0) => batch.add(new THREE.BoxGeometry(w, h, d), tint, [x, y, z], 0, roughness, metalness)
-  if (layout.plan1Phase === 'L2') addPlan1Equipment(THREE,batch,'centralIsland')
+  if (officePlan1Phase(layout) === 'L2') addPlan1Equipment(THREE,batch,'centralIsland')
   else {
   // 静态咖啡机、接水盘与水槽给出设备体量，不触发任何设备操作。
   box(.58, .43, .4, '#26333A', center.x - .8, 1.27, center.z - 2.75, .3, .5)

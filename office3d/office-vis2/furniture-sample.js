@@ -1,3 +1,5 @@
+import { officePlan1Phase } from '../office-plan1-layout.js'
+
 // 董事会批准的四席样板；只由对齐版 officeSample=1 解析生成这些唯一坐标。
 export const FACING_SEATS = Object.freeze({
   QAAutomation: Object.freeze(['west-open', -14.3, -.4, Math.PI]),
@@ -25,10 +27,10 @@ export function facingAccess(layout, point) {
   const seat = entry?.[1]
   const home = seat && facingHome(seat)
   if (!home) return null
-  if (['L1', 'L2'].includes(layout.plan1Phase)) {
+  if (['L1', 'L2'].includes(officePlan1Phase(layout))) {
     const dx = home.x - seat[1], dz = home.z - seat[2], length = Math.hypot(dx, dz) || 1
     // R6: keep the four routes clear of adjacent real-chair envelopes; all other seats retain L1's 1.15 m offset.
-    const distance = layout.plan1Phase === 'L2' && ['PM', 'Frontend1', 'BackendSenior', 'UIUX'].includes(entry[0]) ? .6 : 1.15
+    const distance = officePlan1Phase(layout) === 'L2' && ['PM', 'Frontend1', 'BackendSenior', 'UIUX'].includes(entry[0]) ? .6 : 1.15
     return { x: home.x + dx / length * distance, z: home.z + dz / length * distance }
   }
   return { x: home.x, z: home.z < 0 ? -2.3 : 2.3 }

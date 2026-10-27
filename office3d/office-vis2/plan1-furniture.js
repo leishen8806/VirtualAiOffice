@@ -1,9 +1,9 @@
-import { OFFICE_PLAN1_L2 as DATA } from '../office-plan1-layout.js'
+import { OFFICE_PLAN1_L2 as DATA, officePlan1Phase } from '../office-plan1-layout.js'
 import { createSampleBatch } from './batch.js'
 
 // Rendering and routing consume these same, world-space furniture envelopes.
 export function plan1FurniturePlan(layout) {
-  if (layout.plan1Phase !== 'L2') return []
+  if (officePlan1Phase(layout) !== 'L2') return []
   const items = []
   const add = (id, kind, x, z, w, d, h, yaw = 0, extra = {}) => {
     const c = Math.abs(Math.cos(yaw)), s = Math.abs(Math.sin(yaw)), wx = w*c+d*s, dz = w*s+d*c

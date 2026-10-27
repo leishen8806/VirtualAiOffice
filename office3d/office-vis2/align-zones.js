@@ -3,6 +3,7 @@ import { createSampleBatch, warmOfficeArchitecture } from './batch.js'
 import { officeSampleRequested } from './host.js'
 import { buildOpenFurnishing, planOpenFurnishing } from './open-furnishing.js'
 import { facingSample, FACING_SEATS, FACING_ISLAND_BOUNDS } from './furniture-sample.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 const isRect = b => ['x0','x1','z0','z1'].every(k => Number.isFinite(b?.[k]))
 export const alignPassages = layout => Object.values({ ...layout.corridors, ...layout.passages }).filter(isRect)
@@ -68,8 +69,8 @@ export function planWorkstationIslands(layout, area) {
 // Shared by the renderer and route planner: keep navigation obstacles identical
 // to the deterministic furnishing plan without importing THREE into routing.
 export function alignZoneObstaclePlan(layout) {
-  if (layout.plan1Phase === 'L1') return []
-  if (layout.plan1Phase === 'L2') return [{ id:'plan1-l2', plan:{placements:plan1FurniturePlan(layout),groups:[],skipped:[]} }]
+  if (officePlan1Phase(layout) === 'L1') return []
+  if (officePlan1Phase(layout) === 'L2') return [{ id:'plan1-l2', plan:{placements:plan1FurniturePlan(layout),groups:[],skipped:[]} }]
   const reserved = alignDoorAprons(layout)
   const corridors = alignPassages(layout)
   const workstations = Object.values(layout.seats).map(([, x, z]) => ({ x, z, radius: 1 }))
@@ -140,7 +141,7 @@ export function buildAlignZones({THREE,root,layout,collision,low=false,get,searc
     if (warm) warmOfficeArchitecture(paving.mesh.material)
     for(const {id,plan} of alignZoneObstaclePlan(layout)) {
       if (!plan.placements.length) continue
-      const f=(layout.plan1Phase === 'L2' ? buildPlan1Furnishing : buildOpenFurnishing)({THREE,root,plan,low})
+      const f=(officePlan1Phase(layout) === 'L2' ? buildPlan1Furnishing : buildOpenFurnishing)({THREE,root,plan,low})
       // 宿主会把地面和这些自有陈设合批，不能让选中哪份材质决定冷暖。
       if (warm) warmOfficeArchitecture(f.root.material)
       furnishings.push(f);f.region=id;f.root.name=`align-${id}-furnishing`

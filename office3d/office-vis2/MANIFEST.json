@@ -88,14 +88,14 @@
     },
     {
       "file": "office-vis2/bar.js",
-      "sha256": "505AF64B13E0E6A7E5C5A2EA62FE27A68945E9D6E0B390C7CF5427962854D182",
+      "sha256": "5DBF7090C26656CB8854342D9D38015A3A22665FD513D79A69A9E3A6B13775B5",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
     },
     {
       "file": "office-vis2/foyer.js",
-      "sha256": "EC6C3EB1F7EA904700E49B85DB79A0A5C6656A5B37F5DF6EC0B3A5FA3C078EC8",
+      "sha256": "914AC3857F60DD0DFDC276E1D9DB999BE6D28CCC5C08D126A9871703E6E6E4AB",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -109,7 +109,7 @@
     },
     {
       "file": "office-vis2/frontage.js",
-      "sha256": "6CB1D6E0836188A150209A48D10ADBF9B02172CBDD0D344745F42D118E1CCC22",
+      "sha256": "F7A35D92B89243736766C009AEC45242C4B3012C75875C8563DB99C698DFF8B5",
       "source": "Private procedural geometry adapted in VIS2-O",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -182,7 +182,7 @@
       "source": "Original ALIGN paving and constrained furnishing assembly reusing existing office batches; no downloads or photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "5AE501E1FB9872DC8B2ED3B4016B0E8003885AEBDDD6F80B59E7BE9CA992072E"
+      "sha256": "1CF09C53E1E4989E6D2FDAC066556C361174176334B231603F377C893CFE42D1"
     },
     {
       "file": "office-vis2/display-finish.js",
@@ -203,7 +203,7 @@
       "source": "Original office-only plaza wrapper and owned foliage lifecycle; no downloads or photographic textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "200D4988DC60903439EF5E1EC9B5D20EA2D45701A93CA3B7B981330829BEEC63"
+      "sha256": "4D51D1115FC8B2E22A9007DE13A71EFEDF571FBB15FF876E7B9E5D26A84C5C09"
     },
     {
       "file": "office-vis2/leaf-pass.js",
@@ -238,14 +238,14 @@
       "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
       "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "E91E7DFE7A79FDDCE05A03FDF74E071234BA7A918C087C85E533BA004D9C879D"
+      "sha256": "941B25108A715308ADB0319C8BCC73B24D87B4EC9BBAD491904E3861718A3002"
     },
     {
       "file": "office-vis2/furniture-sample.js",
       "source": "Board-approved four real workstation poses and market shared-table sample; original pure data, no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "B8625E7A1F356DB0F75970A057BFEA3B784936D7666620C69C113ADA6CFD630F"
+      "sha256": "770F708996D553CA8ED2136E434B4AC60F18F88495304416ADD41F969C3E0546"
     },
     {
       "file": "office-vis2/market-work-island.js",

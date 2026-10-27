@@ -1,11 +1,12 @@
 import { createSampleBatch } from './batch.js'
 import { appendOfficePlaza } from './plaza.js'
 import { officeSampleRequested } from './host.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 export function buildOfficePlazaHost({ THREE, root, layout, search, collision, low = false }) {
   if (layout.version !== 3 || !officeSampleRequested(search)) return { dispose() {} }
   // L1 只交付新办公外框；旧广场坐标与 z=18 南界冲突，等 L3 按定稿重建。
-  if (['L1', 'L2'].includes(layout.plan1Phase)) return { placements: [], dispose() {} }
+  if (['L1', 'L2'].includes(officePlan1Phase(layout))) return { placements: [], dispose() {} }
   if (!collision?.add || !collision?.remove) throw new Error('Plaza needs removable collision registration')
   root.userData.dynamic = true
   const batch = createSampleBatch(THREE), leafBatch = layout.variant === 'align' && !low ? createSampleBatch(THREE) : batch, proxies = []

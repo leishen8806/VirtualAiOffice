@@ -2,6 +2,7 @@ import { addPlan1Equipment } from './plan1-furniture.js'
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
 import { officePlan1Reception } from '../office-plan1-layout.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
 export function receptionBackdrop(front, layout) {
   const wall = layout && officePlan1Reception(layout)?.wall
@@ -49,7 +50,7 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
     batch.add(new THREE.CylinderGeometry(.065, .065, .16, 10), '#F4F1EA', [bar.center.x + offset, y + .11, bar.z0 + .18], 0, .4)
   }
   for (const x of [bar.x0 + .12, bar.x1 - .12]) box(.04, 1.15, .04, '#B89B64', x, 1.47, bar.z0 + .18, .35, .6)
-  if(layout.plan1Phase === 'L2') addPlan1Equipment(THREE,batch,'southCafe')
+  if(officePlan1Phase(layout) === 'L2') addPlan1Equipment(THREE,batch,'southCafe')
   else {
   box(.55, .4, .38, '#26333A', bar.center.x, 1.2, bar.center.z, .35, .6)
   box(.58, .035, .43, '#9A968E', bar.center.x, 1.015, bar.center.z, .3, .7)

@@ -1,4 +1,4 @@
-import { makeOfficePlan1Layout } from './office-plan1-layout.js'
+import { makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase } from './office-plan1-layout.js'
 
 // 空间坐标与门洞是渲染、碰撞和验证的共同来源；房间不开敞口。
 export const ENVELOPE = { x0: -44, x1: 22, z0: -13, z1: 13 }
@@ -587,6 +587,7 @@ export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
 export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep(makeOfficePlan1Layout(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_ALIGN_L2B = freezeDeep(makeOfficePlan1L2BLayout(V3_ALIGN_LAYOUT))
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
@@ -595,10 +596,12 @@ export const resolveOfficeLayout = (search = '') => {
   if (values[0] === '2') return LAYOUT_V2
   if (values[0] === '3') {
     if (params.getAll('align').length !== 1 || params.get('align') !== '1') return LAYOUT_V3
-    return params.getAll('officeSample').length === 1 && params.get('officeSample') === '1' ? LAYOUT_V3_ALIGN_SAMPLE : LAYOUT_V3_ALIGN
+    const sample = params.getAll('officeSample').length === 1 && params.get('officeSample') === '1'
+    return sample && params.getAll('l2b').length === 1 && params.get('l2b') === '1' ? LAYOUT_V3_ALIGN_L2B : sample ? LAYOUT_V3_ALIGN_SAMPLE : LAYOUT_V3_ALIGN
   }
   return LAYOUT_V1
 }
+
 
 const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }
 const CAMPUS_BUILDING_DATA = { x0: -168, x1: -80, z0: -18, z1: 30, width: 88, depth: 48, area: 4224 }
@@ -717,8 +720,8 @@ function createOfficeV3Navigation(layout) {
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
-    if (['L1', 'L2'].includes(layout.plan1Phase)) {
-      const inset = layout.plan1Phase === 'L2' ? .32 : .35
+    if (['L1', 'L2'].includes(officePlan1Phase(layout))) {
+      const inset = officePlan1Phase(layout) === 'L2' ? .32 : .35
       const rx = (room.x1 - room.x0) / 2 - inset, rz = (room.z1 - room.z0) / 2 - inset
       const angle = point => Math.atan2((point.x - center.x) / rx, (point.z - center.z) / rz)
       const start = angle(inside), end = angle(seat), turn = Math.atan2(Math.sin(end - start), Math.cos(end - start))

@@ -69,6 +69,8 @@ export function officePlan1SouthHeight(layout, x) {
   return points.at(-1).h
 }
 
+export const officePlan1Phase = layout => layout?.plan1Phase === 'L2B' ? 'L2' : layout?.plan1Phase
+
 export function officePlan1Reception(layout) {
   const s=layout.walls?.reception
   if(!s)return null
@@ -152,6 +154,25 @@ export function makeOfficePlan1Layout(base) {
     regionFocus:{...focus,ops:{label:'运维·质量与安全',t:[-15,0,-.85],r:24},meet:{label:'会议与决策',t:[-7.9,0,-14],r:18},foyer:{label:'前厅接待区',t:[2,0,13],r:24},plaza:{label:'DR 广场',t:[2,0,24],r:25}},
     miniBounds:{x0:-30,x1:34,z0:-20,z1:32}, plaza:{...structuredClone(base.plaza),center:{x:2,z:24},diameter:10.8,radius:5.4},
   }
+}
+
+export function makeOfficePlan1L2BLayout(base) {
+  const layout = makeOfficePlan1Layout(base)
+  layout.plan1Phase = 'L2B'
+  layout.site.z0 = layout.envelope.z0 = layout.greenBuffer.z0 = -19
+  layout.doors.north.z = -19
+  layout.regions = layout.regions.map(room => ({
+    ...room,
+    ...( ['market', 'board', 'review', 'product-eng-knowledge', 'service'].includes(room.id) ? { z0: -19 } : {}),
+    ...(room.id === 'review' ? { z1: -14.8 } : {}),
+    ...(room.id === 'plan' ? { z0: -14.4 } : {}),
+  }))
+  layout.rooms = layout.regions.filter(room => room.walled)
+  layout.meetingSeatPoints = Object.fromEntries([['A', -16.9, .96], ['B', -12.3, .86]].map(([id, z, radius]) => [id,
+    Array.from({ length: 4 }, (_, i) => { const angle = i * Math.PI / 2; return { room: id, x: -3.3 + Math.sin(angle) * radius, z: z + Math.cos(angle) * radius, yaw: angle, meeting: true } }),
+  ]))
+  layout.miniBounds.z0 = -21
+  return layout
 }
 
 // OFFICE-L2：批准的 B-R3 数据子集；不改变真实工位或 L1 回退数据。
