@@ -168,7 +168,7 @@ export function makeOfficePlan1L2BLayout(base) {
     ...(room.id === 'plan' ? { z0: -14.4 } : {}),
   }))
   layout.rooms = layout.regions.filter(room => room.walled)
-  layout.meetingSeatPoints = Object.fromEntries([['A', -16.9, .96], ['B', -12.3, .86]].map(([id, z, radius]) => [id,
+  layout.meetingSeatPoints = Object.fromEntries([['A', -16.9, 1.2], ['B', -12.3, 1.2]].map(([id, z, radius]) => [id,
     Array.from({ length: 4 }, (_, i) => { const angle = i * Math.PI / 2; return { room: id, x: -3.3 + Math.sin(angle) * radius, z: z + Math.cos(angle) * radius, yaw: angle, meeting: true } }),
   ]))
   layout.miniBounds.z0 = -21

@@ -720,6 +720,16 @@ function createOfficeV3Navigation(layout) {
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
+    if (layout.plan1Phase === 'L2B') {
+      // The -1.4 m entry stays centered in the 0.28 m clearance band between the east chair and wall.
+      const entry = { x: room.x1 - .4, z: door.at }
+      // The 0.30 m aisle is the midpoint of the 0.60 m chair-back-to-north-wall gap.
+      const aisleZ = room.z1 - .3
+      if (seat.x > center.x + .2) return dedupeRoute([entry, routePoint(seat)])
+      if (seat.z > center.z + .2) return dedupeRoute([entry, { x: entry.x, z: seat.z }, routePoint(seat)])
+      if (seat.z < center.z - .2) return dedupeRoute([entry, { x: entry.x, z: seat.z }, routePoint(seat)])
+      return dedupeRoute([entry, { x: entry.x, z: aisleZ }, { x: seat.x, z: aisleZ }, routePoint(seat)])
+    }
     if (['L1', 'L2'].includes(officePlan1Phase(layout))) {
       const inset = officePlan1Phase(layout) === 'L2' ? .32 : .35
       const rx = (room.x1 - room.x0) / 2 - inset, rz = (room.z1 - room.z0) / 2 - inset

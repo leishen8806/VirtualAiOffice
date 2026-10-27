@@ -238,7 +238,7 @@
       "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
       "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "941B25108A715308ADB0319C8BCC73B24D87B4EC9BBAD491904E3861718A3002"
+      "sha256": "B570627F5F7E4D549075D031FC1D7123E78E783F0B5965002ADCD438BF275718"
     },
     {
       "file": "office-vis2/furniture-sample.js",

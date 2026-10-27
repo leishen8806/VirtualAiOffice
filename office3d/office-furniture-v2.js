@@ -51,6 +51,7 @@ export function officeFurnitureV2Spec(layout) {
     front: bounds(x, z + (home?.yaw ? .8 : -.8), 1.4, .9),
   })})
   const phase = officePlan1Phase(layout)
+  const l2b = layout.plan1Phase === 'L2B'
   const northMeetings = layout.variant === 'align' && meetingRegion(layout, 'review').z0 === layout.envelope.z0
   const meetings = [
     { id: 'A', region: 'review', w: 4, d: 1.4, round: false },
@@ -61,8 +62,8 @@ export function officeFurnitureV2Spec(layout) {
     const center = layout.version === 2
       ? (meeting.id === 'A' ? { x: -12.5, z: -14 } : { x: -5.5, z: -14 })
       : { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
-    const roundDiameter = phase === 'L2' ? (meeting.id === 'A' ? 1.2 : 1) : 1.5
-    const seatRadius = phase === 'L2' ? (meeting.id === 'A' ? .96 : .86) : 1.2
+    const roundDiameter = l2b ? 1.4 : phase === 'L2' ? (meeting.id === 'A' ? 1.2 : 1) : 1.5
+    const seatRadius = l2b ? 1.2 : phase === 'L2' ? (meeting.id === 'A' ? .96 : .86) : 1.2
     const room = { ...meeting, ...center, ...(northMeetings ? { round: true, w: roundDiameter, d: roundDiameter } : {}), yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
     return { ...room, seats: northMeetings ? phase === 'L2'
       ? Array.from({ length: 4 }, (_, i) => { const angle = i * Math.PI / 2; return { room: room.id, x: room.x + Math.sin(angle) * seatRadius, z: room.z + Math.cos(angle) * seatRadius, yaw: angle, meeting: true } })
