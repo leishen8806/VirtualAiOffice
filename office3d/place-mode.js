@@ -9,14 +9,16 @@ export const PLACE_TENANTS = Object.freeze({
   drlife: Object.freeze({ id: 'drlife' }),
 })
 export const DEFAULT_PLACE_TENANT = 'drlife'
-// 董事会批准 rev3 为默认前，直接入口继续使用当前场景。
+// The default route remains unchanged; the latest office channel is explicit.
 export const DEFAULT_OFFICE_LAYOUT = 1
 export const LEGACY_DR_CAMERA_KEY = 'office3d.camera.dr'
-// 这是展示通道，不是默认页面；默认入口仍保持现状，直到董事会批准 rev3 为默认。
+const STABLE_V3_SUBTITLE = '最新版 · rev3 开发中'
 export const PLACE_LATEST = Object.freeze({
   office: Object.freeze({
     layout: 3,
-    subtitle: '最新版 · rev3 开发中',
+    align: 1,
+    officeSample: 1,
+    subtitle: '最新版 · 办公室样板',
   }),
   warehouse: Object.freeze({}),
 })
@@ -63,11 +65,11 @@ function placeMeta(kind, legacy, layout = DEFAULT_OFFICE_LAYOUT) {
   }
 }
 
-function officeMode(campus, legacy, layout = DEFAULT_OFFICE_LAYOUT) {
+function officeMode(campus, legacy, layout = DEFAULT_OFFICE_LAYOUT, latest = false) {
   return {
     ...OFFICE_MODE,
     ...(layout === PLACE_LATEST.office.layout
-      ? { subtitle: PLACE_LATEST.office.subtitle }
+      ? { subtitle: latest ? PLACE_LATEST.office.subtitle : STABLE_V3_SUBTITLE }
       : {}),
     campus,
     ...placeMeta('office', legacy, layout),
@@ -100,6 +102,17 @@ function officeLayout(params) {
     return DEFAULT_OFFICE_LAYOUT
   }
   return Number(layouts[0])
+}
+
+function isLatestOfficeParams(params) {
+  if (params.getAll('place').length !== 1 || params.get('place') !== `${DEFAULT_PLACE_TENANT}-office`) return false
+  for (const [key, value] of Object.entries(PLACE_LATEST.office)) {
+    if (key === 'subtitle') continue
+    const values = params.getAll(key)
+    if (values.length !== 1 || values[0] !== String(value)) return false
+  }
+  const l2b = params.getAll('l2b')
+  return l2b.length === 0 || l2b.length === 1 && l2b[0] === '1'
 }
 
 export function latestSearch(placeId) {
@@ -141,6 +154,7 @@ export function resolvePlaceMode(search = '') {
       campuses.length === 1 && campuses[0] === '1',
       false,
       officeLayout(params),
+      isLatestOfficeParams(params),
     )
   }
   const campuses = params.getAll('campus')
@@ -156,7 +170,7 @@ export function maintainLatestSubtitle({
   const mode = resolvePlaceMode(search)
   if (
     mode.kind !== 'office' ||
-    mode.layout !== PLACE_LATEST.office.layout ||
+    !isLatestOfficeParams(new URLSearchParams(String(search || '').replace(/^\?/, ''))) ||
     !documentRef ||
     typeof Observer !== 'function'
   ) {

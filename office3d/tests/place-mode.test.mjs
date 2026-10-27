@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
+import {
+  LAYOUT_V1,
+  LAYOUT_V2,
+  LAYOUT_V3,
+  LAYOUT_V3_ALIGN,
+  LAYOUT_V3_ALIGN_SAMPLE,
+  resolveOfficeLayout,
+} from '../office-layout.js'
 
 import {
   DEFAULT_OFFICE_LAYOUT,
@@ -40,6 +49,15 @@ const oldFields = ({
   ...(zones ? { zones } : {}),
   ...(controlRoom ? { controlRoom } : {}),
 })
+const layoutName = (search) => {
+  const layout = resolveOfficeLayout(search)
+  if (layout === LAYOUT_V1) return 'LAYOUT_V1'
+  if (layout === LAYOUT_V2) return 'LAYOUT_V2'
+  if (layout === LAYOUT_V3) return 'LAYOUT_V3'
+  if (layout === LAYOUT_V3_ALIGN) return 'LAYOUT_V3_ALIGN'
+  if (layout === LAYOUT_V3_ALIGN_SAMPLE) return 'LAYOUT_V3_ALIGN_SAMPLE'
+  return 'unknown'
+}
 
 test('place mode resolves strict URL parameter matrix', () => {
   assert.deepEqual(
@@ -62,6 +80,38 @@ test('place mode resolves strict URL parameter matrix', () => {
   assert.equal(resolvePlaceMode('?place=dr').place, 'dr')
   assert.equal(resolvePlaceMode('?place=dr').campus, true)
   assert.equal(resolvePlaceMode('?campus=1&place=dr').place, 'dr')
+})
+
+test('ENTRANCE-1 preserves the baseline parse matrix except the new latest office query', () => {
+  const baseline = [
+    ['empty', '', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['canonical office', '?place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['stable V3', '?place=drlife-office&layout=3', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3'],
+    ['new latest sample', '?place=drlife-office&layout=3&align=1&officeSample=1', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3_ALIGN_SAMPLE'],
+    ['warehouse latest', '?place=drlife-warehouse', '9a611052a0767ced059d37faba83ff6c42442bf870be0b9cc71ebb174bccd612', 'LAYOUT_V1'],
+    ['layout 2', '?layout=2', '4a4415a9df99c3d5263f66afddf4ee20432379ee9901d8fa97ac5efe9af430b0', 'LAYOUT_V2'],
+    ['ALIGN without sample', '?layout=3&align=1', '3f4e4925cee7cb49874f475a0782610dd3fcdc2a356f19e31ff50d9839b02598', 'LAYOUT_V3_ALIGN'],
+    ['campus preview', '?campus=1', '97a90876ce07b7b6639a5326f49f79a116d8e54c565b977de7c12c2ee5b0bb04', 'LAYOUT_V1'],
+    ['legacy office', '?place=office', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['legacy warehouse', '?place=dr', '7c27943e311b9ba04ac46db4e257da0f26c04aecd0a2b41f11746af0971976f8', 'LAYOUT_V1'],
+    ['uppercase value', '?place=DRLIFE-OFFICE', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['uppercase key', '?Place=drlife-office', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['duplicate place', '?place=drlife-office&place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['duplicate latest shape', '?place=drlife-office&place=drlife-office&layout=3&align=1&officeSample=1', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V3_ALIGN_SAMPLE'],
+  ]
+  for (const [label, search, baselineHash, baselineLayout] of baseline) {
+    const mode = resolvePlaceMode(search)
+    const hash = createHash('sha256').update(JSON.stringify(mode)).digest('hex')
+    assert.equal(layoutName(search), baselineLayout, `${label}: office layout`)
+    if (label === 'new latest sample') {
+      const stableV3 = resolvePlaceMode('?place=drlife-office&layout=3')
+      assert.deepEqual({ ...mode, subtitle: stableV3.subtitle }, stableV3, 'only the new latest route subtitle changes')
+      assert.equal(mode.subtitle, '最新版 · 办公室样板')
+      assert.notEqual(hash, baselineHash)
+    } else {
+      assert.equal(hash, baselineHash, `${label}: full resolvePlaceMode result`)
+    }
+  }
 })
 
 test('legacy URLs preserve every pre-NAV-2 field', () => {
@@ -124,7 +174,9 @@ test('latest channel is frozen and generates complete place searches', () => {
   assert.deepEqual(PLACE_LATEST, {
     office: {
       layout: 3,
-      subtitle: '最新版 · rev3 开发中',
+      align: 1,
+      officeSample: 1,
+      subtitle: '最新版 · 办公室样板',
     },
     warehouse: {},
   })
@@ -133,7 +185,7 @@ test('latest channel is frozen and generates complete place searches', () => {
   assert.ok(Object.isFrozen(PLACE_LATEST.warehouse))
   assert.equal(
     latestSearch('drlife-office'),
-    '?place=drlife-office&layout=3',
+    '?place=drlife-office&layout=3&align=1&officeSample=1',
   )
   assert.equal(
     latestSearch('drlife-warehouse'),
@@ -141,7 +193,7 @@ test('latest channel is frozen and generates complete place searches', () => {
   )
   assert.equal(
     latestSearch('unknown-place'),
-    '?place=drlife-office&layout=3',
+    '?place=drlife-office&layout=3&align=1&officeSample=1',
   )
 })
 
@@ -154,11 +206,15 @@ test('office layout metadata follows valid URL values and fails closed', () => {
       assert.equal(
         mode.subtitle,
         layout === 3
-          ? PLACE_LATEST.office.subtitle
+          ? '最新版 · rev3 开发中'
           : '连接中…',
       )
     }
   }
+  assert.equal(
+    resolvePlaceMode(latestSearch('drlife-office')).subtitle,
+    PLACE_LATEST.office.subtitle,
+  )
   for (const search of [
     '?place=drlife-office&layout=0',
     '?place=drlife-office&layout=4',
@@ -179,7 +235,7 @@ test('office layout metadata follows valid URL values and fails closed', () => {
   )
 })
 
-test('latest office subtitle survives connection text updates only on layout 3', () => {
+test('latest office subtitle survives connection updates only on the generated latest route', () => {
   const target = { textContent: '连接中…' }
   let sync = null
   const observer = {
@@ -217,6 +273,11 @@ test('latest office subtitle survives connection text updates only on layout 3',
   assert.equal(target.textContent, PLACE_LATEST.office.subtitle)
   assert.equal(maintainLatestSubtitle({
     search: '?place=drlife-office',
+    documentRef,
+    Observer,
+  }), null)
+  assert.equal(maintainLatestSubtitle({
+    search: '?place=drlife-office&layout=3',
     documentRef,
     Observer,
   }), null)
