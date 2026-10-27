@@ -66,7 +66,7 @@ test('OFFICE-L2B B1: isolated boundaries, frozen L1/L2, unchanged non-meeting ro
   assert.deepEqual(makeOfficePlan1L2BLayout(LAYOUT_V3_ALIGN), l2b)
   assert.deepEqual(LAYOUT_V3_ALIGN_SAMPLE,l2Before)
   assert.equal(LAYOUT_V3_ALIGN_L2B.plan1Phase,'L2B')
-  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'),LAYOUT_V3_ALIGN_SAMPLE)
+  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'),LAYOUT_V3_ALIGN_L2B)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=1'),LAYOUT_V3_ALIGN_L2B)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=1&l2b=1'),LAYOUT_V3_ALIGN_SAMPLE)
   assert.equal(resolveOfficeLayout('?layout=3&align=1&l2b=1'),LAYOUT_V3_ALIGN)

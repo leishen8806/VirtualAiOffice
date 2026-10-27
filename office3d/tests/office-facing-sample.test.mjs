@@ -38,7 +38,7 @@ function matrix(layout,extended=false){
 }
 
 test('OFFICE-PLAN-1 sample is explicit while all four fallback layouts remain frozen',()=>{
-  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'),sample)
+  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=0'),sample)
   for(const suffix of ['', '&officeSample=0','&officeSample=true','&officeSample=1&officeSample=1'])assert.equal(resolveOfficeLayout('?layout=3&align=1'+suffix),LAYOUT_V3_ALIGN)
   assert.equal(resolveOfficeLayout('?layout=3&officeSample=1'),LAYOUT_V3)
   assert.equal(resolveOfficeLayout('?layout=2&officeSample=1'),LAYOUT_V2)

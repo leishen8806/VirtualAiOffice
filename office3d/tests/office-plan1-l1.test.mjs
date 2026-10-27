@@ -46,7 +46,7 @@ const workstationBox = station => {
 }
 
 test('L1 is selected only by the exact ALIGN sample query and preserves every frozen fallback', () => {
-  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1'), sample)
+  assert.equal(resolveOfficeLayout('?layout=3&align=1&officeSample=1&l2b=0'), sample)
   for (const search of ['', '?layout=2', '?layout=3', '?layout=3&align=1', '?layout=3&align=1&officeSample=0', '?layout=3&officeSample=1']) {
     assert.notEqual(resolveOfficeLayout(search), sample, search)
   }

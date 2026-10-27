@@ -597,7 +597,9 @@ export const resolveOfficeLayout = (search = '') => {
   if (values[0] === '3') {
     if (params.getAll('align').length !== 1 || params.get('align') !== '1') return LAYOUT_V3
     const sample = params.getAll('officeSample').length === 1 && params.get('officeSample') === '1'
-    return sample && params.getAll('l2b').length === 1 && params.get('l2b') === '1' ? LAYOUT_V3_ALIGN_L2B : sample ? LAYOUT_V3_ALIGN_SAMPLE : LAYOUT_V3_ALIGN
+    if (!sample) return LAYOUT_V3_ALIGN
+    const l2b = params.getAll('l2b')
+    return (l2b.length === 0 || l2b.length === 1 && l2b[0] === '1') ? LAYOUT_V3_ALIGN_L2B : LAYOUT_V3_ALIGN_SAMPLE
   }
   return LAYOUT_V1
 }

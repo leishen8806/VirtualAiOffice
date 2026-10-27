@@ -143,8 +143,11 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   const leafMs = [0x4f8a3c, 0x5d9a44, 0x3f7a39, 0x6aa04f].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, flatShading: true }))
   // 树冠用实例化网格（每种叶色一次绘制），随风摆动只改实例矩阵；树干是静态的，会被合并
   const crowns = []
-  const tree = (x, z, s = 1) => {
+  const treeGroups = scene.userData.officeBackdropTreeGroups ||= []
+  const tree = (x, z, s = 1, id) => {
     const g = new THREE.Group()
+    g.name = id
+    g.userData.officeBackdropTreeId = id
     g.position.set(x, -0.6, z)
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.6 * s, 7), trunkM)
     t.position.y = 1.3 * s
@@ -153,14 +156,15 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     for (let k = 0; k < 3; k++) {
       const r = (1.3 + rnd() * 0.7) * s, m = (k + Math.floor(rnd() * 4)) % 4
       const px = (rnd() - 0.5) * 1.2 * s, py = (2.9 + k * 0.7 + rnd() * 0.4) * s, pz = (rnd() - 0.5) * 1.2 * s
-      crowns.push({ m, r, x: x + px, y: -0.6 + py, z: z + pz, ph: rnd() * 6 })
+      crowns.push({ m, r, x: x + px, y: -0.6 + py, z: z + pz, ph: rnd() * 6, treeId: id })
     }
     scene.add(g)
+    treeGroups.push(g)
   }
-  for (let x = -50; x <= 50; x += 9) { tree(x + rnd() * 2, -38 + rnd() * 2, 1 + rnd() * 0.3); tree(x + rnd() * 2, 46 + rnd() * 2, 1 + rnd() * 0.3) }
-  for (let z = -30; z <= 40; z += 9) { tree(-55 + rnd() * 2, z, 1.1); tree(55 + rnd() * 2, z, 1.1) }
+  for (let x = -50, i = 1; x <= 50; x += 9, i++) { tree(x + rnd() * 2, -38 + rnd() * 2, 1 + rnd() * 0.3, `north-row-${String(i).padStart(2,'0')}`); tree(x + rnd() * 2, 46 + rnd() * 2, 1 + rnd() * 0.3, `south-row-${String(i).padStart(2,'0')}`) }
+  for (let z = -30, i = 1; z <= 40; z += 9, i++) { tree(-55 + rnd() * 2, z, 1.1, `west-row-${String(i).padStart(2,'0')}`); tree(55 + rnd() * 2, z, 1.1, `east-row-${String(i).padStart(2,'0')}`) }
   add(new THREE.PlaneGeometry(60, 18), grass, 0, -0.595, -24).rotation.x = -Math.PI / 2
-  for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5)
+  for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5, `north-garden-${String(i + 1).padStart(2,'0')}`)
   const crownGeo = new THREE.IcosahedronGeometry(1, 1)
   const crownMeshes = leafMs.map((mat, mi) => {
     const list = crowns.filter((c) => c.m === mi)
