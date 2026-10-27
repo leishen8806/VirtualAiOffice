@@ -6,7 +6,7 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import {
   sha256File, parseChecksums, verifyChecksumFile, checkCardStatus, checkRequirementHash, checkCardChecksums,
-  checkPushed, checkEvidence, checkTestFlags, checkNotRun, checkReceiptFields,
+  checkPushed, checkEvidence, checkTestFlags, checkNotRun, checkReceiptFields, isCheckerOutputLine,
 } from '../check.mjs'
 
 // 每个测试自建一个卡片目录，结束后只删除自己建的这一个目录。
@@ -258,4 +258,46 @@ test('verifyChecksumFile 区分哈希不符与缺文件', (t) => {
   fs.writeFileSync(path.join(dir, 'S.txt'), `${'0'.repeat(64)} *卡片.md\n${'0'.repeat(64)} *不存在.md\n`)
   const v = verifyChecksumFile(path.join(dir, 'S.txt'), dir)
   assert.deepEqual([v.total, v.bad, v.missing], [2, ['卡片.md'], ['不存在.md']])
+})
+
+// ───── 自指：回执内嵌本工具自己的输出 ─────
+// 取自 OFFICE-L2 R6-01 回执草稿：内嵌的 "PASS    C7 未运行要写明  2 项状态均为 NOT_RUN" 被判成"未运行却写通过"。
+const EMBEDDED = [
+  'PASS    C1 卡片状态     R2、R3、R4、R5、R6 与 R1 卡片为 ACTIVE',
+  'PASS    C2 需求哈希     声明的需求哈希 = SHA256SUMS.txt 本身的哈希 2b957c142db6…',
+  'PASS    C3 卡片校验单    9 项全部一致',
+  'NOT_RUN C4 推送一致     没有给 --repo 和 --branch，未核对远端',
+  'WARN    C5 证据校验单    没有找到证据校验单；证据不在卡片目录里时用 --evidence 指定',
+  'PASS    C6 测试参数     2 条测试命令都带 --max-old-space-size=1024 与 --test-concurrency=1',
+  'PASS    C7 未运行要写明   2 项状态均为 NOT_RUN',
+  'PASS    C7 未运行要写明   回执没有提到未运行的项',
+  'PASS    C7 未运行要写明   6 行未运行项都写了 NOT_RUN，且没有同时宣称通过',
+  'FAIL    C7 未运行要写明   1 行同时写了未运行和"通过"，状态矛盾，如：A5 通过（NOT_RUN）',
+  'PASS    C8 回执必填项    必填项齐全',
+].join('\n')
+
+test('自指：内嵌的本工具输出行（含 C7 自己那一行）不参与 C7 判断', () => {
+  assert.equal(checkNotRun(EMBEDDED).status, 'PASS')
+  assert.equal(checkNotRun('## 检查器输出\n\n```text\n' + EMBEDDED + '\n```\n\nA5 性能：NOT_RUN（本机没有 Playwright）').status, 'PASS', '内嵌输出之外的 NOT_RUN 行仍然正常判断')
+  for (const line of EMBEDDED.split('\n')) assert.equal(isCheckerOutputLine(line), true, line)
+})
+
+test('自指：不是严格输出格式的行仍逐行判断，不能借此洗白', () => {
+  // 编号与名称对不上、没有状态词、不是检查项名称：全部照常判断
+  assert.equal(checkNotRun('PASS    C7 浏览器 通过 NOT_RUN').status, 'FAIL')
+  assert.equal(checkNotRun('PASS    C3 未运行要写明   A5 通过（NOT_RUN）').status, 'FAIL', 'C3 对应的名称不是"未运行要写明"')
+  assert.equal(checkNotRun('PASS    A5 性能   未运行').status, 'FAIL')
+  assert.equal(checkNotRun('PASS A5 性能 通过（NOT_RUN）').status, 'FAIL')
+  assert.equal(checkNotRun('A5 PASS    C7 未运行要写明  NOT_RUN').status, 'FAIL', '行首不是状态词')
+  assert.equal(checkNotRun('结论：PASS    C7 未运行要写明   2 项均为 NOT_RUN').status, 'FAIL', '正文前缀里夹带')
+  assert.equal(checkNotRun('| A5 浏览器 | PASS（NOT_RUN） |').status, 'FAIL')
+  for (const line of ['PASS    C7 浏览器 通过 NOT_RUN', 'PASS    A5 性能   未运行', 'C7 未运行要写明 NOT_RUN']) assert.equal(isCheckerOutputLine(line), false, line)
+})
+
+test('自指：回执 + 本工具对它自己的输出，再次运行结论不变（往返）', (t) => {
+  const dir = makeCard(t)
+  const base = goodReceipt(dir)
+  const first = checkNotRun(base)
+  const out = ['PASS    C7 未运行要写明   ' + first.detail, 'NOT_RUN C4 推送一致     没有给 --repo 和 --branch，未核对远端'].join('\n')
+  assert.equal(checkNotRun(base + '\n\n```text\n' + out + '\n```\n').status, first.status)
 })
