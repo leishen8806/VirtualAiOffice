@@ -12,13 +12,14 @@ const same = (actual, expected) => assert.deepEqual(actual, expected)
 
 test('I1 freezes the R1 register, topology, mappings, routes and check inputs', () => {
   const manifest = JSON.parse(readFileSync(new URL('../office-r1/MANIFEST.json', import.meta.url)))
-  assert.deepEqual(Object.fromEntries(['r1Model', 'r1Register', 'c01Model', 'c01Register'].map(key => [key, manifest.sources[key].sha256])), {
+  assert.deepEqual(Object.fromEntries(['r1Model', 'r1Register', 'r1Walls', 'c01Model', 'c01Register'].map(key => [key, manifest.sources[key].sha256])), {
     r1Model: '2bcb1fbca9e1bdc1d9b65804c75b10f767665afba7a0e07a33263ffb6ea7438b',
     r1Register: '1358d23f0f33f38de6887de86557395615938a2b32b3adb915babedcd1c93350',
+    r1Walls: '9c43e7b53c7d01150bdb747a1717d18bc176f47bdec6e1ae988ec576e55b9f4d',
     c01Model: '926554077c81b21e97fe8c4cd93d190434449cdd1fba597d3e6b8cc83efe4d70',
     c01Register: '54aae1f8d4491c55731143afc832c6dc4d7b8a3cbe7a193e0d9e43ca54599d49',
   })
-  assert.deepEqual(manifest.counts, { elements: 1132, unknown: 463, walls: 42, wallFaces: 84, doors: 13, doorLeaves: 26, zones: 14, routes: 17, checks: 29, businessIds: 25, c01ElementDelta: 141, c01WorkstationDelta: 11 })
+  assert.deepEqual(manifest.counts, { elements: 1132, unknown: 463, walls: 42, wallFaces: 84, doors: 13, doorLeaves: 26, zones: 14, routes: 17, routeReports: 17, checks: 29, localChecks: 9, bodyProfiles: 2, doorTargetFrames: 26, doorStateConditions: 39, businessIds: 25, c01ElementDelta: 141, c01WorkstationDelta: 11 })
   assert.equal(R1_DATA.unknownComponents.length, 463)
   assert.equal(R1_DATA.workstations.filter(row => row.group === 'ops').length, 6)
   assert.equal(R1_DATA.workstations.filter(row => row.group === 'product').length, 11)
@@ -28,6 +29,17 @@ test('I1 freezes the R1 register, topology, mappings, routes and check inputs', 
   assert.equal(categories('椅子'), 57); assert.equal(categories('吧凳'), 19)
   assert.equal(categories('显示器'), 78); assert.equal(categories('端柜'), 32); assert.equal(categories('桌间屏风'), 16)
   assert.equal(categories('会议桌'), 1); assert.equal(categories('圆桌'), 12); assert.equal(categories('植物总成'), 46); assert.equal(categories('连续花境'), 6)
+})
+
+test('I1 preserves 84 source wall faces with their parent identity and dimensions', () => {
+  const wallIds = new Set(R1_DATA.walls.map(row => row.id)), faces = R1_DATA.wallFaces
+  assert.equal(faces.length, 84); assert.equal(new Set(faces.map(face => face.id)).size, 84)
+  for (const face of faces) {
+    assert.ok(wallIds.has(face.wallId), face.id)
+    assert.ok(Number.isFinite(face.lengthM) && Number.isFinite(face.heightM) && Number.isFinite(face.thicknessM), face.id)
+  }
+  for (const wallId of wallIds) assert.deepEqual(faces.filter(face => face.wallId === wallId).map(face => face.side).sort(), ['A', 'B'], wallId)
+  assert.deepEqual(faces.find(face => face.id === '00-W-001-A'), { id: '00-W-001-A', wallId: '00-W-001', side: 'A', lengthM: 39.39697, heightM: 4.5, thicknessM: .2, openingAreaM2: 0, startM: [0, 3.60303], endM: [0, 43], source: 'R1候选几何；非实测', status: 'PROPOSED' })
 })
 
 test('I1 converts millimetres and zone axes once, with source-width/depth invariants', () => {
@@ -63,6 +75,17 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   assert.ok(C01_DELTA.workstations.every(row => row.base.zone === '04'))
   assert.equal(candidate.elements.filter((row, index) => JSON.stringify(row) !== JSON.stringify(r1.elements[index])).length, 141)
   assert.equal(candidate.workstations.filter((row, index) => JSON.stringify(row) !== JSON.stringify(r1.workstations[index])).length, 11)
+})
+
+test('I1 retains clearance parameters needed to compare future route recomputation', () => {
+  assert.deepEqual(R1_DATA.bodyProfiles, { H2: { radius_m: .6, height_m: 2.1, rect_mm: [700, 600, 1900] }, H3: { radius_m: .8, height_m: 2.1, rect_mm: [1000, 800, 1900] } })
+  assert.equal(R1_DATA.routes.length, 17); assert.equal(R1_DATA.routeReports.length, 17); assert.equal(R1_DATA.checks.length, 29); assert.equal(R1_DATA.localChecks.length, 9)
+  const entry = R1_DATA.routeReports.find(route => route.id === 'entry_left')
+  assert.equal(entry.status, 'CONDITIONAL_PASS'); assert.equal(entry.minimum_margin_mm, 499.9999999999979); assert.equal(entry.nearest_obstacle.id, '11-D-001:target_frame_a')
+  assert.deepEqual(R1_DATA.checks.find(check => check.id === 'element_identity'), { duplicate_ids: [], element_count: 1132, id: 'element_identity', invalid_id_indices: [], orphan_ids: [], parent_cycles: [], status: 'PASS', unique_ids: 1132 })
+  assert.equal(R1_DATA.localChecks.find(check => check.id === 'product_side_clear_mm').actual_minimum_mm, 1250)
+  assert.equal(R1_DATA.doorTargetFrames.length, 26); assert.equal(R1_DATA.doorTargetFrames[0].clear_target_m, 6.8)
+  assert.equal(R1_DATA.doorStateConditions.length, 39); assert.equal(R1_DATA.doorStateConditions[0].open_motion, 'NOT_RUN')
 })
 
 test('I1 keeps the frozen runtime isolated from the new offline data module', () => {
