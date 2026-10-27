@@ -133,9 +133,19 @@ export function wholeFloorSpec(layout) {
   }
   // 弧形花境替代同位置的矩形绿化格，避免两套花槽穿插。
   const arcs = plazaFlowerArcs(layout)
+  const arcFilteredBeds = beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1))
+  let bedSeeds
+  // B4 includes product-engineering's two physical wall sides despite its open-room flag.
+  const visibleBeds = layout.plan1Phase === 'L2B' ? arcFilteredBeds.filter((bed, seed) => {
+    const x0 = bed.x - bed.w / 2 - .3, x1 = bed.x + bed.w / 2 + .3
+    const z0 = bed.z - bed.d / 2 - .3, z1 = bed.z + bed.d / 2 + .3
+    const blocked = layout.regions.some(room => (room.walled === true || room.id === 'product-eng-knowledge') && Math.min(x1, room.x1) > Math.max(x0, room.x0) && Math.min(z1, room.z1) > Math.max(z0, room.z0))
+    if (!blocked) (bedSeeds ||= []).push(seed)
+    return !blocked
+  }) : arcFilteredBeds
   const practicals = officePracticalSpec(layout)
   details.push(...practicals.supports)
-  return { referenceFinish: layout.variant === 'align', details, ...(layout.variant==='align'?{practicals}:{}), beds: beds.filter(p => !arcs.some(({ bounds: b }) => p.x + p.w / 2 > b.x0 && p.x - p.w / 2 < b.x1 && p.z + p.d / 2 > b.z0 && p.z - p.d / 2 < b.z1)) }
+  return { referenceFinish: layout.variant === 'align', details, ...(layout.variant==='align'?{practicals}:{}), beds: visibleBeds, ...(bedSeeds ? { bedSeeds } : {}) }
 }
 
 export function appendWholeFloorGarden({ THREE, batch, leafBatch = batch, spec, low = false }) {
@@ -147,7 +157,7 @@ export function appendWholeFloorGarden({ THREE, batch, leafBatch = batch, spec, 
     batch.add(g,color,[x,y,z],0,.86)
   }
   for (const [index, bed] of spec.beds.entries()) {
-    if (spec.referenceFinish) { appendOfficeGardenBed({ THREE, batch, leafBatch, bed, low, seed: index }); continue }
+    if (spec.referenceFinish) { appendOfficeGardenBed({ THREE, batch, leafBatch, bed, low, seed: spec.bedSeeds?.[index] ?? index }); continue }
     batch.add(new THREE.BoxGeometry(bed.w,.11,bed.d),'#B8AE98',[bed.x,.065,bed.z],0,.94)
     batch.add(new THREE.BoxGeometry(bed.w-.12,.025,bed.d-.12),'#554E3C',[bed.x,.13,bed.z],0,1)
     const enhanced = spec.referenceFinish && !low, clumps = low ? 4 : enhanced ? 9 : 6, leaves = low ? 5 : enhanced ? 9 : 7
