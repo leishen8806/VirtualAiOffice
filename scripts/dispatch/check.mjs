@@ -210,10 +210,22 @@ const C7_NAME_CELL = /^\s*[*`]*\s*C7\s*NOT_RUN\s*(标识|标注|标记|规则|�
 const mentionOnly = (line) => (line.includes('|') ? line.split('|').map((cell) => (C7_NAME_CELL.test(cell) ? ' C7 ' : cell)).join('|') : line)
 export const contradictory = (line) => mentionOnly(line).split(/[。；;]/).some((clause) => NOT_RUN_WORDS.test(clause) && claimsPass(clause))
 
+// 回执里内嵌本工具自己的原始输出时，C7 自己的"通过"那一行本身会撞上 C7 的规则：
+// 行首状态词是 PASS，检查项名称 "未运行要写明" 含"未运行"，详情里还写着 NOT_RUN / 宣称通过。它是检查结果记录，不是回执对验收项的宣称。
+// 豁免范围收得很窄：只认 "PASS  C7  未运行要写明  <本工具 C7 通过时写出的两句固定详情之一>"，整行逐字匹配。
+// 在这个前缀后面追加任何别的内容（例如 "A5 未运行但已通过（NOT_RUN）"）都不再匹配，整行照常逐行判断，因此不能借它洗白。
+// 其它检查项（C1–C6、C8）的输出行以及 C7 的 FAIL 行不需要豁免，按普通行判断即可。
+const C7_OWN_PASS_DETAIL = [/^回执没有提到未运行的项$/, /^\d+ 行未运行项都写了 NOT_RUN，且没有同时宣称通过$/]
+export const isCheckerOutputLine = (line) => {
+  const m = line.match(/^\s*PASS\s+C7\s+未运行要写明\s+(.+?)\s*$/)
+  return Boolean(m && C7_OWN_PASS_DETAIL.some((re) => re.test(m[1])))
+}
+
 // 逐行判断：凡是提到"未运行 / 没跑 / 未执行 / 没有运行 / 未测 / NOT_RUN"的那一行，
 // 本行必须写 NOT_RUN（别处的 NOT_RUN 不能替这一行作证），并且同一小句里不能同时宣称"通过"。
+// 内嵌的本工具输出行（见上）不参与。
 export function checkNotRun(receiptText) {
-  const lines = receiptText.split(/\r?\n/).filter((l) => NOT_RUN_WORDS.test(l))
+  const lines = receiptText.split(/\r?\n/).filter((l) => !isCheckerOutputLine(l) && NOT_RUN_WORDS.test(l))
   if (!lines.length) return result('C7', '未运行要写明', 'PASS', '回执没有提到未运行的项')
   const missing = lines.filter((l) => !/NOT_RUN/.test(l))
   if (missing.length) return result('C7', '未运行要写明', 'FAIL', `${missing.length} 行提到未运行却没在本行写 NOT_RUN，如：${missing[0].trim().slice(0, 120)}`)
