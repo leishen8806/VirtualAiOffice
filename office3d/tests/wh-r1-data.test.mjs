@@ -8,6 +8,10 @@ import { runtimeYawFromFacing, whElementWorld, whToWorld, whZoneToWorld } from '
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const categories = category => WH_R1_DATA.elements.filter(row => row.category === category).length
+const assertRequiredRows = (rows, fields, label) => {
+  assert.ok(Array.isArray(rows), `${label} is an array`)
+  for (const [index, row] of rows.entries()) for (const field of fields) assert.notEqual(row[field], undefined, `${label}[${index}].${field}`)
+}
 
 test('I1 freezes the four WH-R1 source hashes and source counts', () => {
   const manifest = JSON.parse(readFileSync(new URL('../wh-r1/MANIFEST.json', import.meta.url)))
@@ -43,6 +47,52 @@ test('I1 converts WH-R1 metres and millimetres once, retaining zone dimensions',
     assert.ok(point.z >= -26 && point.z <= 42, element.id)
   }
   assert.equal(runtimeYawFromFacing(0, -1), 0)
+})
+
+test('I2 step 0 preserves all 68 WH-R1 wall-face identities and centreline offsets', () => {
+  const faces = WH_R1_DATA.wallFaces, walls = new Map(WH_R1_DATA.walls.map(wall => [wall.id, wall]))
+  const distance = ([x0, y0], [x1, y1]) => Math.hypot(x1 - x0, y1 - y0)
+  assert.equal(faces.length, 68); assert.equal(new Set(faces.map(face => face.id)).size, 68)
+  for (const face of faces) {
+    const wall = walls.get(face.wallId)
+    assert.ok(wall, face.id)
+    assert.ok(Math.abs(face.lengthM - distance(face.centrelineStartM, face.centrelineEndM)) < 1e-6, face.id)
+    assert.ok(Math.abs(face.heightM - wall.heightM) < 1e-6, face.id); assert.ok(Math.abs(face.thicknessM - wall.widthM) < 1e-6, face.id)
+    assert.ok(Math.abs(distance(face.centrelineStartM, face.faceStartM) - face.thicknessM / 2) < 1e-6, face.id)
+    assert.ok(Math.abs(distance(face.centrelineEndM, face.faceEndM) - face.thicknessM / 2) < 1e-6, face.id)
+  }
+  for (const wall of WH_R1_DATA.walls) assert.deepEqual(faces.filter(face => face.wallId === wall.id).map(face => face.side).sort(), ['A', 'B'], wall.id)
+  assert.deepEqual(faces.find(face => face.id === 'WH-00-W-001-A'), {
+    id: 'WH-00-W-001-A', wallId: 'WH-00-W-001', side: 'A', lengthM: 2.06, heightM: 4.5, thicknessM: 0.28,
+    centrelineStartM: [0.14, 47.86], centrelineEndM: [2.2, 47.86], faceStartM: [0.14, 48], faceEndM: [2.2, 48],
+    grossRectAreaM2: 9.27, openingsAreaM2: 0, axisCoordinateStatus: 'START_END_FIELDS_ARE_WALL_CENTRELINE',
+    areaStatus: 'CANDIDATE_SEGMENT_RECTANGLE_EXCLUDING_SEPARATE_DOOR_OPENINGS; RETURNS_AND_HEADS_UNKNOWN', source: '原图室外+远端空间边界', status: 'PROPOSED', notes: '仅本墙段主平面，不含门洞侧壁、压顶、踢脚和节点；门头另列未知。',
+  })
+})
+
+test('I2 step 0 requires fields on every WH-R1 data row', () => {
+  const elementFields = ['id', 'parentId', 'category', 'regionId', 'xM', 'yM', 'zM', 'lengthM', 'widthM', 'heightM', 'yawDeg', 'facingLocal', 'collisionRole', 'status', 'unknown', 'designAssumption', 'sourceTag', 'geometry']
+  assertRequiredRows(WH_R1_DATA.elements, elementFields, 'elements')
+  assertRequiredRows(WH_R1_DATA.walls, elementFields, 'walls')
+  assertRequiredRows(WH_R1_DATA.doors, elementFields, 'doors')
+  assertRequiredRows(WH_R1_DATA.wallFaces, ['id', 'wallId', 'side', 'lengthM', 'heightM', 'thicknessM', 'centrelineStartM', 'centrelineEndM', 'faceStartM', 'faceEndM', 'grossRectAreaM2', 'openingsAreaM2', 'axisCoordinateStatus', 'areaStatus', 'source', 'status', 'notes'], 'wallFaces')
+  assertRequiredRows(WH_R1_DATA.zones, ['id', 'businessId', 'name', 'sourceBboxM', 'worldBboxXZ'], 'zones')
+  assertRequiredRows(WH_R1_DATA.racks, ['id', 'bays', 'levels', 'faces', 'pallets_per_cell', 'candidate_slots'], 'racks')
+  assertRequiredRows(WH_R1_DATA.routes, ['id', 'name', 'mode', 'points', 'radius_m', 'z_span'], 'routes')
+  assertRequiredRows(WH_R1_DATA.passageChecks, ['id', 'name', 'required_mm', 'available_mm', 'margin_mm', 'status'], 'passageChecks')
+  assertRequiredRows(WH_R1_DATA.bodyProfiles, ['id', 'width_mm', 'depth_mm', 'height_mm'], 'bodyProfiles')
+  assertRequiredRows(WH_R1_DATA.unknownComponents, ['id', 'parentId', 'category', 'reason', 'status'], 'unknownComponents')
+  assertRequiredRows(WH_R1_ASSIGNMENT, ['id', 'card'], 'assignments')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.integrity, ['name', 'detail', 'status'], 'integrityChecks')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.arithmeticChecks, ['id', 'meaning', 'recomputed_required_mm', 'recomputed_margin_mm', 'status'], 'arithmeticChecks')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.capacity, ['id', 'registered_positions', 'formula_positions', 'status'], 'capacityChecks')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.routes, ['id', 'name', 'mode', 'points_m', 'status'], 'routeChecks')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.expectedJunctions, ['a', 'b', 'categories', 'status'], 'junctionChecks')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.physicalProxyOverlapReview, ['a', 'b', 'categories', 'status'], 'physicalProxyOverlapReview')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.occupiedEnvelopeOverlapReview, ['a', 'b', 'categories', 'status'], 'occupiedEnvelopeOverlapReview')
+  assertRequiredRows(WH_R1_DATA.integrityAudit.zoneBoundaryReview, ['id', 'zone', 'category', 'zone_bbox_m', 'bbox_m', 'status'], 'zoneBoundaryReview')
+  assert.ok(WH_R1_DATA.metadata.revision); assert.ok(WH_R1_DATA.metadata.status); assert.ok(WH_R1_DATA.metadata.coordinate)
+  assert.notEqual(WH_R1_DATA.integrityAudit.derivedDimensions, undefined); assertRequiredRows(WH_R1_DATA.integrityAudit.limitations.map((text, index) => ({ index, text })), ['index', 'text'], 'limitations')
 })
 
 test('I1 preserves door labels, the two check collections and I8 audit inputs', () => {
