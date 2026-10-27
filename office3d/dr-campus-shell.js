@@ -66,7 +66,7 @@ export function inspectEnvironmentMeshes(THREE, scene, campusRoot, bounds) {
   const box = new THREE.Box3(), items = []
   scene.updateMatrixWorld?.(true)
   scene.traverse((object) => {
-    if (!object.isMesh || object.geometry?.type === 'SphereGeometry' || campusRoot.getObjectById(object.id)) return
+    if (!object.isMesh || campusRoot.getObjectById(object.id)) return
     box.setFromObject(object)
     if (!box.isEmpty() && box.intersectsBox(site)) {
       const type = object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'

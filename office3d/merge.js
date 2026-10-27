@@ -21,7 +21,7 @@ export function snapshot(scene) {
 export function mergeStatic(scene, before) {
   scene.updateMatrixWorld(true)
   const buckets = new Map()
-  const skipUnder = (o) => { for (let p = o; p; p = p.parent) { if (p.userData.agentId || p.userData.dynamic || !p.visible) return true } return false }
+  const skipUnder = (o) => { for (let p = o; p; p = p.parent) { if (p.userData.agentId || p.userData.dynamic || p.userData.noMerge || p.userData.collisionProxy || !p.visible) return true } return false }
   const box = new THREE.Box3(), c = new THREE.Vector3()
   scene.traverse((o) => {
     if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh || o.morphTargetInfluences) return

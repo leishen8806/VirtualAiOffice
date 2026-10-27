@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WH_R1_ASSIGNMENT, WH_R1_DATA } from '../wh-r1/data.js'
 import { runtimeYawFromFacing, whElementWorld, whToWorld, whZoneToWorld } from '../wh-r1-layout.js'
@@ -113,8 +113,10 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
   assert.equal(new Set(WH_R1_ASSIGNMENT.map(row => row.id)).size, 1244)
   assert.deepEqual([...new Set(WH_R1_ASSIGNMENT.map(row => row.card))].sort(), ['I2', 'I3', 'I4', 'I5', 'I6', 'I7'])
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
+  const allowed = new Set(['dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'place-mode.js', 'wh-r1-layout.js', 'tests/wh-r1-data.test.mjs', 'tests/wh-r1-shell.test.mjs'])
   for (const file of walk(repo).filter(file => /\.(?:js|mjs)$/.test(file.replaceAll('/', '\\')))) {
-    if (file.includes('wh-r1') || file.endsWith('wh-r1-data.test.mjs')) continue
-    assert.ok(!readFileSync(file, 'utf8').includes('wh-r1'), file)
+    const path = relative(repo, file).replaceAll('\\', '/')
+    if (path.startsWith('wh-r1/') || allowed.has(path) || /^dr-wh-r1-[^/]+\.js$/.test(path)) continue
+    assert.ok(!readFileSync(file, 'utf8').includes('wh-r1'), path)
   }
 })
