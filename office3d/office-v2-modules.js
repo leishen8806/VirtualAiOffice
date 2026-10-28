@@ -12,7 +12,7 @@ export const OFFICE_LAYOUT = resolveOfficeLayout(browser ? location.search : '')
 const [bar, departments, staff] = !browser || OFFICE_LAYOUT.version === 2 ? await Promise.all([
   import('./office-bar.js'), import('./display-departments.js'), import('./display-staff.js'),
 ]) : []
-export const officeSeats = layout => layout?.r1Phase === 'R1' ? {} : [2, 3].includes(layout.version) ? Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, layout.seats[name]])) : LEGACY_SEATS
+export const officeSeats = layout => layout?.r1Phase === 'R1' ? layout.seats : [2, 3].includes(layout.version) ? Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, layout.seats[name]])) : LEGACY_SEATS
 export const SEATS = officeSeats(OFFICE_LAYOUT)
 const navigation = createOfficeNavigation(OFFICE_LAYOUT)
 export const { officeExit, corridorPath, loungeTrip, meetingTrip, LOUNGE_AREA, LOUNGE_SEATS } = navigation

@@ -273,7 +273,14 @@
       "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "5435A974554A860AA17DA17DCCC09757F45BACBDF25C3EEFA6E1BC50E35FE7D5"
+      "sha256": "8BC6A1A784F3CC57651AAFA62E7D404AB35727819DC93F0200718E1C69C55225"
+    },
+    {
+      "file": "office-vis2/r1-furniture.js",
+      "source": "OFFICE-R1-I3 R1-only procedural furniture batches, active workstation screens and ordinary collision proxies; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "067EDFDBE005E7165222395DBAD8727E83CDF1825D6D115A2494349C7A7B9CA6"
     },
     {
       "file": "office-vis2/r1-zones.js",

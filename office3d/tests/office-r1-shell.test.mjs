@@ -7,6 +7,9 @@ import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B, SEATS as LEGACY_SEATS, createOffi
 import { officeSeats } from '../office-v2-modules.js'
 import { officeV3Modules, officeV3ModulesFor } from '../office-v3-modules.js'
 import { buildR1Shell, r1CornerSpec, r1FrontHeight, r1WallPlan } from '../office-vis2/r1-shell.js'
+import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
+import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
+import { createDirector } from '../director.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 
 const R1_SEARCH = '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1'
@@ -14,7 +17,7 @@ const r1 = () => resolveOfficeLayout(R1_SEARCH)
 
 test('I2 resolves only the strict sample r1 switch and preserves every other sample entry', () => {
   assert.equal(r1().r1Phase, 'R1')
-  assert.deepEqual(r1().seats, {})
+  assert.equal(Object.keys(r1().seats).length, 25)
   for (const search of ['?layout=3&align=1&officeSample=1', '?layout=3&align=1&officeSample=1&r1=0', '?layout=3&align=1&officeSample=1&r1=1&r1=1']) {
     assert.equal(resolveOfficeLayout(search), LAYOUT_V3_ALIGN_L2B, search)
   }
@@ -27,15 +30,16 @@ test('I2 excludes the old north garden only for the same strict R1 query', () =>
   assert.match(env, /if \(!r1Mode\) \{[\s\S]*north-garden-\$\{String\(i \+ 1\)\.padStart\(2,'0'\)\}/)
 })
 
-test('I2 retains the old V3 module order and isolates R1 to its one shell slot', () => {
+test('I3 retains the old V3 module order and isolates R1 to its shell and furniture slots', () => {
   assert.deepEqual(officeV3Modules.map(([name]) => name), ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN_L2B).map(([name]) => name), officeV3Modules.map(([name]) => name))
-  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3'])
+  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3'])
 })
 
-test('I2 R3 provides only stationary navigation and no seats for R1 while freezing L2B navigation', () => {
+test('I3 R4 provides registered R1 seats while retaining the stationary navigation adapter', () => {
   const layout = r1(), nav = createOfficeNavigation(layout), home = { x: 1, z: 2 }
-  assert.deepEqual(officeSeats(layout), {})
+  assert.equal(Object.keys(officeSeats(layout)).length, 25)
+  assert.deepEqual(officeSeats(layout), layout.seats)
   assert.deepEqual(nav.officeExit(home), [home]); assert.deepEqual(nav.corridorPath(home, { x: 4, z: 5 }), [home])
   assert.deepEqual(nav.loungeTrip(home, { x: 4, z: 5 }), [home]); assert.deepEqual(nav.meetingTrip(home, { x: 4, z: 5 }), [home])
   assert.deepEqual(nav.standAt(home), home); assert.deepEqual(nav.LOUNGE_SEATS, []); assert.deepEqual(nav.consumerQueues, { waiting: [] })
@@ -43,6 +47,44 @@ test('I2 R3 provides only stationary navigation and no seats for R1 while freezi
   const snapshot = { seats: LAYOUT_V3_ALIGN_L2B.seats, entrance: frozen.ENTRANCE, lounge: frozen.LOUNGE_SEATS, queues: frozen.consumerQueues, exit: frozen.officeExit(legacyHome), corridor: frozen.corridorPath(legacyHome, frozen.ENTRANCE.inner), stand: frozen.standAt(legacyHome) }
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(snapshot)).digest('hex'), '20225f85b3da10410659dbba819f3465b9db5aa2909b158f70b2725f14a5ba54')
   assert.deepEqual(officeSeats(LAYOUT_V3_ALIGN_L2B), Object.fromEntries(Object.keys(LEGACY_SEATS).map(name => [name, LAYOUT_V3_ALIGN_L2B.seats[name]])))
+})
+
+test('I3 registers all workstation seats with the candidate C-01 coordinates and runtime-facing yaw', () => {
+  const candidate = createOfficeR1Layout(), base = createOfficeR1Layout({ candidateC01: false })
+  assert.equal(Object.keys(candidate.seats).length, 25)
+  assert.deepEqual(Object.values(candidate.seats).map(seat => seat[0]).reduce((counts, group) => ({ ...counts, [group]: (counts[group] || 0) + 1 }), {}), { product: 11, drlife: 8, ops: 6 })
+  for (const station of candidate.r1.workstations) {
+    const seat = candidate.seats[station.business_id], home = seat[4]
+    assert.ok(seat, station.business_id)
+    assert.ok(Math.abs(seat[1] - (station.xM - 26)) < 1e-9); assert.ok(Math.abs(seat[2] - (18 - station.yM)) < 1e-9)
+    assert.ok(Math.abs(home.x - (station.chairXM - 26)) < 1e-9); assert.ok(Math.abs(home.z - (18 - station.chairYM)) < 1e-9)
+    const facing = { x: -Math.sin(home.yaw), z: -Math.cos(home.yaw) }
+    assert.ok(facing.x * (seat[1] - home.x) + facing.z * (seat[2] - home.z) > 0, station.business_id)
+  }
+  assert.notDeepEqual(candidate.seats.Architect, base.seats.Architect)
+})
+
+test('I3 furniture batches static pieces, exposes every staffed desk and registers ordinary collision proxies', () => {
+  const layout = createOfficeR1Layout(), root = new THREE.Group(), collision = createFurnitureCollision()
+  const furniture = buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
+  root.updateMatrixWorld(true)
+  assert.ok(Object.keys(furniture.instanceIds).length >= 10)
+  assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.category === '吧凳' && item.regionId === '07')).length)
+  for (const seat of Object.values(layout.seats)) assert.ok(furniture.deskAt(seat[1], seat[2]))
+  const solid = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '吧凳'])
+  const solidItems = layout.r1.elements.filter(item => solid.has(item.category) && !(item.category === '吧凳' && item.regionId === '07'))
+  for (const item of solidItems) assert.ok(collision.hit(item.xM - 26, 18 - item.yM), item.id)
+  assert.equal(collision.stats().bodies, solidItems.length)
+  furniture.dispose()
+})
+
+test('I3 seated-only director rejects every R1 walking entry point without changing other layouts', () => {
+  const director = createDirector({ views: new Map(), board: {}, layer: { appendChild() {} }, project: { tmp: new THREE.Vector3(), fn() {} }, layout: r1() })
+  const view = { act: null, home: { x: 1, z: 2 }, char: { group: new THREE.Group(), pose: {} } }
+  assert.equal(director.travel(view, [{ x: 2, z: 2 }], view.home, false), false)
+  assert.equal(director.goHome(view), false); assert.equal(director.arrive(view), false)
+  director.enqueue({ kind: 'report', from: 'x', to: 'y' })
+  assert.equal(director.stats().queued, 0)
 })
 
 test('I2 R3 selects R1 miniBounds without altering the non-R1 minimap expression', () => {

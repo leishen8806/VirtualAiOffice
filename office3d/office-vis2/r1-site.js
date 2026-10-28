@@ -1,9 +1,19 @@
-import { createR1Layout, r1ToWorld } from '../office-r1-layout.js'
+import { createR1Layout, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 export const isOfficeR1Layout = layout => layout?.r1Phase === 'R1'
 export const r1World = ([x, y]) => r1ToWorld(x, y)
 
 const worldBox = ([x0, y0, x1, y1]) => ({ x0: x0 - 26, x1: x1 - 26, z0: 18 - y1, z1: 18 - y0 })
+
+const workstationSeats = workstations => Object.freeze(Object.fromEntries(workstations.map((station) => {
+  const desk = r1ToWorld(station.xM, station.yM)
+  const chair = r1ToWorld(station.chairXM, station.chairYM)
+  return [station.business_id, Object.freeze([station.group, desk.x, desk.z, 0, Object.freeze({
+    x: chair.x,
+    z: chair.z,
+    yaw: runtimeYawFromFacing(desk.x - chair.x, desk.z - chair.z),
+  })])]
+})))
 
 // R1 is an independent layout object: it never reuses or mutates the frozen L1/L2/L2B layout graph.
 export function createOfficeR1Layout({ candidateC01 = true } = {}) {
@@ -26,9 +36,8 @@ export function createOfficeR1Layout({ candidateC01 = true } = {}) {
     miniBounds: Object.freeze({ x0: -38, x1: 42, z0: -31, z1: 44 }),
     axis: Object.freeze(r1ToWorld(...r1.data.central.center_m)),
     regions: Object.freeze(regions),
-    // The legacy app enumerates this object before V3 modules decide whether people are renderable.
-    // Keep it empty in I2: I3 is the first card allowed to attach R1 workstation seats.
-    seats: Object.freeze({}),
+    // I3 supplies the existing 25 colleagues with their registered desks and chairs.
+    seats: workstationSeats(r1.workstations),
     cameraDefaults: Object.freeze({ target: Object.freeze({ x: 2, z: -3.5 }), radius: 57 }),
   })
 }

@@ -90,7 +90,7 @@ test('I1 retains clearance parameters needed to compare future route recomputati
 
 test('R1 runtime bridges are explicit and all other runtime modules stay isolated from the offline data module', () => {
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
-  const approved = new Set(['office-layout.js', 'office-layout-v3-scene.js', 'office-v3-modules.js', 'office-vis2/r1-site.js', 'office-vis2/r1-shell.js', 'office-vis2/r1-zones.js', 'tests/office-r1-data.test.mjs'])
+  const approved = new Set(['office-layout.js', 'office-layout-v3-scene.js', 'office-v3-modules.js', 'office-vis2/r1-site.js', 'office-vis2/r1-shell.js', 'office-vis2/r1-zones.js', 'office-vis2/r1-furniture.js', 'tests/office-r1-data.test.mjs'])
   for (const file of walk(repo).filter(file => /\\.(?:js|mjs)$/.test(file.replaceAll('/', '\\')))) {
     const repoFile = relative(repo, file).replaceAll('\\', '/')
     if (repoFile.startsWith('office-r1/') || repoFile === 'tests/office-r1-data.test.mjs') continue
