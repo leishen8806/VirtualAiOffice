@@ -53,6 +53,27 @@ export function staleView(stale) {
   return { active, text: !active ? '' : stale.reason === 'STALE_DATA' ? `数据已过期 ${minutes === null ? '时间未知' : `${minutes} 分钟`}` : `数据来自 ${minutes === null ? '时间未知' : `${minutes} 分钟前`} · Paperclip 暂不可用` }
 }
 
+// ── 派发窗口 / 「交给」窗口的候选同事：纯函数，便于单测 ──
+const MONEY_OK = ['GoSenior', 'DBEngineer']
+const statusTag = (a, offDuty) => a.liveRun ? '执行中' : a.status === 'paused' ? (offDuty ? '已下班，上班后开始' : '已暂停') : a.status === 'error' ? '出错' : a.task ? '手上有任务' : '空闲'
+// query 只在列表上过滤：匹配中文名 / 英文名 / 岗位任一，不区分大小写；资金类限制、排序、状态标签照旧。
+// fixed 是「交给 Lead 拆解」「先放待排期」两项，永远保留；selected 为 '' 表示不显式选中（由浏览器取第一项）。
+export function dispatchChoices({ agents, names, money = false, lead = false, pick = '', query = '', offDuty = false } = {}) {
+  const roster = (Array.isArray(agents) ? agents : []).filter((a) => a && typeof a === 'object')
+  const cn = (a) => (names || {})[a.id] || a.name || ''
+  const q = String(query ?? '').trim().toLowerCase()
+  const people = roster.filter((a) => !money || MONEY_OK.includes(a.name))
+    .sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? '')))
+    .filter((a) => !q || [cn(a), a.name, a.title].filter(Boolean).join(' ').toLowerCase().includes(q))
+    .map((a) => ({ value: a.id, label: `${cn(a)}${cn(a) !== a.name ? ' / ' + a.name : ''} · ${a.title || ''} · ${statusTag(a, offDuty)}`, agent: a }))
+  const lead0 = roster.find((a) => a.name === 'Lead')
+  const fixed = []
+  if (lead && lead0 && !money) fixed.push({ value: `lead:${lead0.id}`, label: '交给 Lead 拆解后派发（推荐）' })
+  if (lead) fixed.push({ value: '', label: '先放「待排期」，不指派' })
+  const selected = people.some((p) => p.value === pick) ? pick : pick && people.length ? people[0].value : ''
+  return { fixed, people, options: fixed.concat(people), selected, empty: people.length === 0 }
+}
+
 export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let token = null
   let state = null
@@ -375,16 +396,41 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
 
   // ── 派发任务：新建任务 / 把「待排期」的任务指派给某位同事 ──
-  const MONEY_OK = ['GoSenior', 'DBEngineer']
   const PRIO = [['medium', '普通'], ['high', '高'], ['critical', '紧急'], ['low', '低']]
+  const AGENT_FIND = '搜索同事：中文名 / 英文名 / 岗位'
+  const choicesFor = (opts) => dispatchChoices({
+    agents: state.agents, names: state && state.names,
+    offDuty: state.world && state.world.duty && state.world.duty.on === false, ...opts,
+  })
+  // selected 为 null 时不写 selected 属性，交给浏览器取第一项（和加搜索框之前一致）
+  const optionsHtml = (result, selected) => result.options
+    .map((o) => `<option value="${esc(o.value)}"${selected !== null && o.value === selected ? ' selected' : ''}>${esc(o.label)}</option>`).join('')
   function agentOptions({ money = false, lead = false, pick = '' } = {}) {
-    const offDuty = state.world && state.world.duty && state.world.duty.on === false
-    const list = state.agents.filter((a) => !money || MONEY_OK.includes(a.name)).slice().sort((a, b) => a.name.localeCompare(b.name))
-    const tag = (a) => a.liveRun ? '执行中' : a.status === 'paused' ? (offDuty ? '已下班，上班后开始' : '已暂停') : a.status === 'error' ? '出错' : a.task ? '手上有任务' : '空闲'
-    const lead0 = state.agents.find((a) => a.name === 'Lead')
-    return (lead && lead0 && !money ? `<option value="lead:${lead0.id}">交给 Lead 拆解后派发（推荐）</option>` : '')
-      + (lead ? '<option value="">先放「待排期」，不指派</option>' : '')
-      + list.map((a) => `<option value="${a.id}"${a.id === pick ? ' selected' : ''}>${esc(agentName(a.id))}${agentName(a.id) !== a.name ? ' / ' + esc(a.name) : ''} · ${esc(a.title || '')} · ${tag(a)}</option>`).join('')
+    const result = choicesFor({ money, lead, pick })
+    return optionsHtml(result, result.selected || null)
+  }
+  // 搜索框与下拉联动：即时过滤、无匹配时提示并禁用按钮、↓ 进下拉、回车选中第一个匹配项
+  function wireAgentSearch({ find, select, none, submit, choices, selected = null }) {
+    let value = selected
+    const draw = () => {
+      const result = choices(find.value)
+      if (value !== null && !result.options.some((o) => o.value === value)) value = result.people.length ? result.people[0].value : null
+      select.innerHTML = optionsHtml(result, value)
+      none.hidden = !result.empty
+      submit.disabled = result.empty
+      return result
+    }
+    select.onchange = () => { value = select.value }
+    find.oninput = draw
+    find.onkeydown = (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); select.focus() }
+      else if (e.key === 'Enter') {
+        e.preventDefault()
+        const first = draw().people[0]
+        if (first) { value = first.value; select.value = first.value; select.focus() }
+      }
+    }
+    return draw
   }
   function openDispatch(agentId = '', tab = 'new') {
     const projects = state.projects || []
@@ -418,17 +464,28 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
           <label class="fl">风险等级<select data-contract-field="风险等级"><option value="">选择风险等级</option><option>低</option><option>中</option><option>高</option><option>资金</option></select></label>
         </div></details>
         <div class="row2"><div><label class="fl">优先级</label><select id="dPrio">${PRIO.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
-        <div><label class="fl">负责人</label><select id="dWho">${agentOptions({ lead: !agentId, pick: agentId })}</select></div></div>
+        <div><label class="fl">负责人</label>
+          <input type="text" id="dWhoFind" class="one" placeholder="${AGENT_FIND}" autocomplete="off">
+          <select id="dWho">${agentOptions({ lead: !agentId, pick: agentId })}</select>
+          <div class="note" id="dWhoNone" role="status" hidden>没有匹配的同事</div></div></div>
         <label class="chk"><input type="checkbox" id="dMoney"> 资金类（账务 / 提现 / 鉴权 / IAM / 迁移 / 密钥 / 入账队列）——只能交给 GoSenior / DBEngineer，PR 要过三道审查再由董事会过目</label>
         <div class="actions"><button class="btn gold" id="dCreate">派发</button></div>`
       const money = pane.querySelector('#dMoney'), who = pane.querySelector('#dWho')
       const risk = pane.querySelector('[data-contract-field="风险等级"]')
       const projectName = () => (projects.find((project) => String(project.id) === String(proj.value)) || {}).name || 'Virtual AI Office'
+      let lead = !agentId // 勾过「资金类」之后和原来一样，重新带上 Lead / 待排期两项
+      const find = pane.querySelector('#dWhoFind')
+      const draw = wireAgentSearch({
+        find, select: who, none: pane.querySelector('#dWhoNone'), submit: pane.querySelector('#dCreate'),
+        selected: agentId || null, choices: (query) => choicesFor({ money: money.checked, lead, pick: agentId, query }),
+      })
       money.onchange = () => {
-        who.innerHTML = agentOptions({ money: money.checked, lead: true, pick: agentId })
+        lead = true
         risk.value = money.checked ? '资金' : ''
         risk.disabled = money.checked
+        draw() // 保留搜索词，按资金类限制重新过滤
       }
+      if (!agentId) find.focus()
       pane.querySelector('#dCreate').onclick = async () => {
         const title = pane.querySelector('#dTitle').value.trim()
         if (!title) { toast('请填写任务标题', false); return }
@@ -491,10 +548,19 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         ${openDeps.length ? `<div class="warnbox">⚠️ 依赖还没完成：${openDeps.map((b) => esc(b.identifier)).join('、')}。现在派发，负责人很可能会卡住。</div>` : ''}
         ${pre >= 0 ? `<div class="warnbox md">${md(d.description.slice(pre, pre + 1200))}</div>` : ''}
         <details><summary class="note">看完整任务说明</summary><div class="fold md">${md(d.description)}</div></details>
-        <label class="fl">交给</label><select id="dWho2">${agentOptions({ money: d.money, pick: agentId })}</select>
+        <label class="fl">交给</label>
+        <input type="text" id="dWhoFind2" class="one" placeholder="${AGENT_FIND}" autocomplete="off">
+        <select id="dWho2">${agentOptions({ money: d.money, pick: agentId })}</select>
+        <div class="note" id="dWhoNone2" role="status" hidden>没有匹配的同事</div>
         ${d.money ? '<div class="note">资金类：只列出 GoSenior / DBEngineer。</div>' : ''}
         <div class="actions"><button class="btn gold" id="dAssign">${openDeps.length ? '依赖未完成，仍然派发' : '指派并开始'}</button></div>`
       const b = out.querySelector('#dAssign')
+      const find2 = out.querySelector('#dWhoFind2')
+      wireAgentSearch({
+        find: find2, select: out.querySelector('#dWho2'), none: out.querySelector('#dWhoNone2'), submit: b,
+        selected: agentId || null, choices: (query) => choicesFor({ money: d.money, pick: agentId, query }),
+      })
+      if (!agentId) find2.focus()
       b.onclick = async () => {
         if ((openDeps.length || pre >= 0) && !b.dataset.sure) { // 有依赖或开工前提时，先提示一次，再点才派发
           b.dataset.sure = '1'
