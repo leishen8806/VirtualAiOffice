@@ -22,7 +22,11 @@ export function buildR1Plants({ THREE, root, layout, A, quality, low = false, co
     const record = { id: plant.id, position: p, parts: {} }
     for (const [kind, suffix] of [['pot', 'POT'], ['crown', 'CR']]) {
       const row = children[suffix], box = boxes[kind], size = box.getSize(new THREE.Vector3()), middle = box.getCenter(new THREE.Vector3())
-      const scale = new THREE.Vector3(row.lengthM / size.x, row.heightM / size.y, row.widthM / size.z)
+      // 盆按登记尺寸分轴贴合；冠改等比缩放（OFFICE-R1-I6B）：沿用旧版绿植外形，不再把冠拉成登记的方框。
+      // 以登记冠高定标，冠宽随 GLB 原比例，因此冠缩进登记包络内（.495 < .64），路线净距只会变好。
+      const scale = kind === 'crown'
+        ? new THREE.Vector3().setScalar(row.heightM / size.y)
+        : new THREE.Vector3(row.lengthM / size.x, row.heightM / size.y, row.widthM / size.z)
       const transform = new THREE.Matrix4().makeScale(...scale.toArray()); transform.setPosition(p.x - middle.x * scale.x, row.zM - box.min.y * scale.y, p.z - middle.z * scale.z)
       const bounds = new THREE.Box3(), vertices = [], startVertex = batch.triangles() * 3
       for (const source of parts[kind]) {

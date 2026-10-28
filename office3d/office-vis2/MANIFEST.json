@@ -301,7 +301,14 @@
       "source": "R1 registered indoor pots with existing pottedPlant foliage; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "47F14D1B20E9F08F9F05D3F31388EF612AF0946B3548E3C07F82E5CB1A2EC7B8"
+      "sha256": "581D4D2477982C8946C1B23E514A8143E190AFAF5A3929617A1C2AF264B0614E"
+    },
+    {
+      "file": "office-vis2/r1-decor.js",
+      "source": "OFFICE-R1-I6B R1 small props reusing existing repository furniture GLBs; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "D09498B423DB14D489778AA2F8BC197DBFE4088B6E64A34A7D300951D7A732B2"
     }
   ],
   "excluded": {
