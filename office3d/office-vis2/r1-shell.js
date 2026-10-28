@@ -2,7 +2,6 @@ import { buildR1Site, r1World } from './r1-site.js'
 import { buildR1Zones } from './r1-zones.js'
 
 const frontIds = new Set(['00-W-005', '00-W-006', '00-W-007', '00-W-008', '00-W-009', '00-W-010'])
-const specialWalls = new Set(['00-W-013', '00-W-016', '00-W-021'])
 const localPoint = ([x, y]) => r1World([x, y])
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
 
@@ -54,30 +53,67 @@ const addInstanced = (THREE, root, name, entries, material) => {
   return mesh
 }
 
-function frontGeometry(THREE, walls) {
-  const positions = [], indices = [], ids = []
-  const add = (a, b, id) => {
-    const aw = localPoint(a), bw = localPoint(b), ah = r1FrontHeight(a[0], walls), bh = r1FrontHeight(b[0], walls)
-    const i = positions.length / 3
-    positions.push(aw.x, 0, aw.z, bw.x, 0, bw.z, bw.x, bh, bw.z, aw.x, ah, aw.z)
-    indices.push(i, i + 1, i + 2, i, i + 2, i + 3, i + 3, i + 2, i + 1, i + 3, i + 1, i)
-    ids.push(id)
+const groupFaces = faces => faces.reduce((groups, face) => {
+  ;(groups[face.wallId] ||= []).push(face)
+  return groups
+}, {})
+
+function thickPathsGeometry(THREE, paths, thickness, heightAt = () => 2.7) {
+  const positions = [], indices = []
+  const add = (a, b, c, d) => indices.push(a, b, c, a, c, d)
+  for (const path of paths) {
+    if (path.points.length < 2) continue
+    const nodes = path.points.map(localPoint)
+    const offsets = nodes.map((point, index) => {
+      const before = nodes[Math.max(0, index - 1)], after = nodes[Math.min(nodes.length - 1, index + 1)]
+      const dx = after.x - before.x, dz = after.z - before.z, length = Math.hypot(dx, dz) || 1
+      return { x: -dz / length * thickness / 2, z: dx / length * thickness / 2 }
+    })
+    const base = positions.length / 3
+    nodes.forEach((point, index) => {
+      const { x, z } = offsets[index], [localX, localY] = path.points[index]
+      const outerHeight = heightAt([localX + x, localY]), innerHeight = heightAt([localX - x, localY])
+      positions.push(point.x + x, 0, point.z + z, point.x - x, 0, point.z - z, point.x + x, outerHeight, point.z + z, point.x - x, innerHeight, point.z - z)
+    })
+    for (let index = 0; index < nodes.length - 1; index++) {
+      const a = base + index * 4, b = a + 4
+      add(a, b, b + 2, a + 2) // outer
+      add(a + 1, a + 3, b + 3, b + 1) // inner
+      add(a + 2, b + 2, b + 3, a + 3) // top
+      add(a, a + 1, b + 1, b) // bottom
+    }
+    const first = base, last = base + (nodes.length - 1) * 4
+    add(first, first + 2, first + 3, first + 1)
+    add(last, last + 1, last + 3, last + 2)
   }
-  for (const wall of walls.filter(wall => frontIds.has(wall.id))) for (let i = 1; i < wall.geometry.points.length; i++) add(wall.geometry.points[i - 1], wall.geometry.points[i], wall.id)
   const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setIndex(indices); geometry.computeVertexNormals()
-  return { geometry, ids }
+  const normals = []
+  for (let index = 0; index < positions.length; index += 12) {
+    const a = new THREE.Vector3(positions[index], positions[index + 1], positions[index + 2])
+    const b = new THREE.Vector3(positions[index + 3], positions[index + 4], positions[index + 5])
+    const c = new THREE.Vector3(positions[index + 6], positions[index + 7], positions[index + 8])
+    const normal = new THREE.Vector3().subVectors(c, b).cross(new THREE.Vector3().subVectors(a, b)).normalize()
+    for (let vertex = 0; vertex < 4; vertex++) normals.push(normal.x, normal.y, normal.z)
+  }
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); geometry.setIndex(indices)
+  return geometry
+}
+
+function frontGeometry(THREE, walls) {
+  const byId = Object.fromEntries(walls.filter(wall => frontIds.has(wall.id)).map(wall => [wall.id, wall]))
+  const join = ids => ids.flatMap((id, index) => byId[id].geometry.points.slice(index ? 1 : 0))
+  const paths = [{ points: join(['00-W-005', '00-W-006', '00-W-009']) }, { points: join(['00-W-010', '00-W-007', '00-W-008']) }]
+  return { geometry: thickPathsGeometry(THREE, paths, .2, point => r1FrontHeight(point[0], walls)), ids: [...frontIds] }
 }
 
 export function r1WallPlan(layout) {
   const walls = layout.r1.data.walls
-  const faceIds = Object.groupBy(layout.r1.data.wallFaces, face => face.wallId)
+  const faceIds = groupFaces(layout.r1.data.wallFaces)
   const straight = []
   for (const wall of walls) {
     if (frontIds.has(wall.id)) continue
     let points = wall.geometry.points
     if (wall.id === '00-W-021') points = [[15.6, 31], [24.3, 31]]
-    if (wall.id === '00-W-013') points = [[25.8, 32.5], [25.8, 32.6]]
     if (wall.id === '00-W-016') points = [[30.2, 32.5], [30.2, 43]]
     straight.push({ id: wall.id, exterior: wall.geometry.exterior, height: wall.geometry.height, thickness: wall.geometry.thickness, points, faceIds: (faceIds[wall.id] || []).map(face => face.id) })
   }
@@ -93,15 +129,6 @@ const curvePoints = (center, start, end, count = 12) => {
     const angle = a0 + delta * index / count
     return [center[0] + 1.5 * Math.cos(angle), center[1] + 1.5 * Math.sin(angle)]
   })
-}
-
-const addCurve = (THREE, root, id, spec, material, faceIds) => {
-  const points = curvePoints(spec.center, spec.from, spec.to)
-  const entries = points.slice(1).map((point, index) => {
-    const a = localPoint(points[index]), b = localPoint(point)
-    return { id, faceIds, matrix: boxInstance(THREE, a.x, b.x, a.z, b.z, 2.7, .1) }
-  })
-  return addInstanced(THREE, root, `r1-wall-${id}`, entries, material)
 }
 
 const doorAxis = door => door.facingLocal[0] ? 'vertical' : 'horizontal'
@@ -145,14 +172,12 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const front = frontGeometry(THREE, plan.front)
   const frontWall = new THREE.Mesh(front.geometry, opaque)
   frontWall.name = 'r1-front-slope-wall'; frontWall.userData.dynamic = true; frontWall.userData.wallIds = front.ids; frontWall.userData.faceIds = plan.front.flatMap(wall => plan.faces[wall.id].map(face => face.id)); shell.add(frontWall)
-  const curveA = addCurve(THREE, shell, '00-W-021', r1CornerSpec.southeast, opaque, plan.faces['00-W-021'].map(face => face.id))
-  const curveB = addCurve(THREE, shell, '00-W-016', r1CornerSpec.southwest, opaque, plan.faces['00-W-016'].map(face => face.id))
-  const frontCollisionEntries = plan.front.flatMap(wall => wall.geometry.points.slice(1).map((point, index) => {
-    const a = localPoint(wall.geometry.points[index]), b = localPoint(point)
-    return { id: wall.id, faceIds: plan.faces[wall.id].map(face => face.id), matrix: boxInstance(THREE, a.x, b.x, a.z, b.z, (r1FrontHeight(wall.geometry.points[index][0], plan.front) + r1FrontHeight(point[0], plan.front)) / 2, .2) }
-  }))
-  const frontCollider = addInstanced(THREE, shell, 'r1-front-slope-collision', frontCollisionEntries, opaque)
-  frontCollider.visible = false
+  const cornerGeometry = thickPathsGeometry(THREE, [
+    { points: curvePoints(r1CornerSpec.southeast.center, r1CornerSpec.southeast.from, r1CornerSpec.southeast.to) },
+    { points: curvePoints(r1CornerSpec.southwest.center, r1CornerSpec.southwest.from, r1CornerSpec.southwest.to) },
+  ], .1)
+  const cornerWall = new THREE.Mesh(cornerGeometry, opaque)
+  cornerWall.name = 'r1-corner-walls'; cornerWall.userData.dynamic = true; cornerWall.userData.wallIds = ['00-W-021', '00-W-016']; cornerWall.userData.faceIds = [...plan.faces['00-W-021'], ...plan.faces['00-W-016']].map(face => face.id); shell.add(cornerWall)
   addInstanced(THREE, shell, 'r1-door-frames', layout.r1.data.doors.flatMap(door => doorFrameEntries(THREE, door)), frame)
   const site = buildR1Site({ THREE, root: shell, layout })
   const zones = buildR1Zones({ THREE, root: shell, layout })
@@ -162,7 +187,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
     proxy.name = `r1-collision-${entry.id}`; proxy.visible = false; proxy.userData.dynamic = true; entry.matrix.decompose(proxy.position, proxy.quaternion, proxy.scale)
     shell.add(proxy); collision?.add?.(proxy, 'r1-wall'); collisions.push(proxy)
   }
-  for (const collider of [frontCollider, curveA, curveB].filter(Boolean)) { collision?.add?.(collider, 'r1-wall'); collisions.push(collider) }
+  for (const collider of [frontWall, cornerWall]) { collision?.add?.(collider, 'r1-wall'); collisions.push(collider) }
   root.add(shell)
   const allWallIds = [...new Set([...plan.straight.map(entry => entry.id), ...front.ids, '00-W-021', '00-W-016'])]
   return {
@@ -171,6 +196,6 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
     walls: { userData: { wallIds: allWallIds, faceIds: layout.r1.data.wallFaces.map(face => face.id) } },
     wallLedger: { wallIds: allWallIds, faceIds: layout.r1.data.wallFaces.map(face => face.id), doorIds: layout.r1.data.doors.map(door => door.id) },
     onFrame() {},
-    dispose() { collisions.forEach(proxy => { collision?.remove?.(proxy); if (proxy.name.startsWith('r1-collision-')) { proxy.geometry.dispose(); proxy.removeFromParent() } }); site.dispose(); zones.dispose(); front.geometry.dispose(); opaque.dispose(); glass.dispose(); frame.dispose(); shell.removeFromParent() },
+    dispose() { collisions.forEach(proxy => { collision?.remove?.(proxy); if (proxy.name.startsWith('r1-collision-')) proxy.removeFromParent() }); site.dispose(); zones.dispose(); front.geometry.dispose(); cornerGeometry.dispose(); opaque.dispose(); glass.dispose(); frame.dispose(); shell.removeFromParent() },
   }
 }

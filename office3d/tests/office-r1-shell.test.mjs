@@ -7,6 +7,7 @@ import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B, SEATS as LEGACY_SEATS, createOffi
 import { officeSeats } from '../office-v2-modules.js'
 import { officeV3Modules, officeV3ModulesFor } from '../office-v3-modules.js'
 import { buildR1Shell, r1CornerSpec, r1FrontHeight, r1WallPlan } from '../office-vis2/r1-shell.js'
+import { createFurnitureCollision } from '../furniture-collision.js'
 
 const R1_SEARCH = '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1'
 const r1 = () => resolveOfficeLayout(R1_SEARCH)
@@ -70,16 +71,59 @@ test('I2 front profile is symmetric, continuous and bounded by the approved heig
   assert.equal(r1FrontHeight(21, walls), 1.2); assert.equal(r1FrontHeight(35, walls), 1.2)
 })
 
-test('I2 shell marks its identity ledger dynamic so app-wide mergeStatic must leave it addressable', () => {
+const withCanvas = callback => {
   const oldDocument = globalThis.document
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ({ clearRect() {}, fillText() {}, set fillStyle(_) {}, set font(_) {}, set textAlign(_) {} }) }) }
-  try {
-    const scene = new THREE.Scene(), root = new THREE.Group(), collisions = []
-    scene.add(root)
-    const shell = buildR1Shell({ THREE, root, layout: r1(), collision: { add: proxy => collisions.push(proxy), remove() {} } })
-    assert.equal(root.children[0].name, 'r1-shell-root')
-    assert.equal(root.children[0].userData.dynamic, true)
-    assert.equal(shell.wallLedger.wallIds.length, 42); assert.equal(shell.wallLedger.faceIds.length, 84); assert.equal(collisions.length, 39)
-    shell.dispose()
-  } finally { globalThis.document = oldDocument }
-})
+  try { return callback() } finally { globalThis.document = oldDocument }
+}
+
+const closedMesh = mesh => {
+  const counts = new Map(), index = mesh.geometry.index.array
+  for (let at = 0; at < index.length; at += 3) {
+    for (const [a, b] of [[index[at], index[at + 1]], [index[at + 1], index[at + 2]], [index[at + 2], index[at]]]) {
+      const key = a < b ? `${a}:${b}` : `${b}:${a}`
+      counts.set(key, (counts.get(key) || 0) + 1)
+    }
+  }
+  assert.ok([...counts.values()].every(count => count === 2))
+}
+
+test('I2 R4 makes the real collision engine block every registered wall sample but leave door centres clear', () => withCanvas(() => {
+  const root = new THREE.Group(), collision = createFurnitureCollision(), layout = r1()
+  const shell = buildR1Shell({ THREE, root, layout, collision }); root.updateMatrixWorld(true)
+  let samples = 0
+  for (const wall of layout.r1.data.walls) {
+    for (let index = 1; index < wall.geometry.points.length; index++) {
+      const [a, b] = [wall.geometry.points[index - 1], wall.geometry.points[index]]
+      for (const fraction of [.25, .5, .75]) {
+        samples++
+        assert.ok(collision.hit(a[0] + (b[0] - a[0]) * fraction - 26, 18 - a[1] - (b[1] - a[1]) * fraction), `${wall.id}@${fraction}`)
+      }
+    }
+  }
+  assert.equal(samples, 618)
+  for (const door of layout.r1.data.doors) assert.equal(collision.hit(door.xM - 26, 18 - door.yM), null, door.id)
+  assert.equal(collision.hit(2, 18 - 31.5), null, '00-D-001 centre')
+  assert.equal(collision.stats().contacts, samples)
+  shell.dispose()
+}))
+
+test('I2 R4 keeps the identity ledger addressable and batches its zones and closed wall solids', () => withCanvas(() => {
+  const root = new THREE.Group(), collision = createFurnitureCollision()
+  const shell = buildR1Shell({ THREE, root, layout: r1(), collision }); root.updateMatrixWorld(true)
+  assert.equal(root.children[0].name, 'r1-shell-root')
+  assert.equal(root.children[0].userData.dynamic, true)
+  assert.equal(shell.wallLedger.wallIds.length, 42); assert.equal(shell.wallLedger.faceIds.length, 84)
+  const front = root.getObjectByName('r1-front-slope-wall'), corners = root.getObjectByName('r1-corner-walls')
+  assert.equal(front.material.side, THREE.FrontSide); closedMesh(front); closedMesh(corners)
+  const normal = front.geometry.attributes.normal, position = front.geometry.attributes.position
+  for (let index = 0; index < position.count; index += 4) {
+    const a = new THREE.Vector3().fromBufferAttribute(position, index), b = new THREE.Vector3().fromBufferAttribute(position, index + 1), c = new THREE.Vector3().subVectors(a, b)
+    const face = new THREE.Vector3().subVectors(new THREE.Vector3().fromBufferAttribute(position, index + 2), b).cross(c).normalize()
+    for (let vertex = 0; vertex < 4; vertex++) assert.ok(Math.abs(face.dot(new THREE.Vector3().fromBufferAttribute(normal, index + vertex))) > Math.cos(Math.PI / 36))
+    assert.ok(Math.abs(position.getY(index + 2) - r1FrontHeight(position.getX(index + 2) + 26, r1().r1.data.walls)) <= .001)
+  }
+  const zones = root.getObjectByName('r1-zones')
+  assert.equal(zones.children.length, 2); assert.equal(root.getObjectByName('r1-zones-ground').userData.zoneIds['14'].count, 4); assert.equal(root.getObjectByName('r1-zone-labels').userData.zoneIds.length, 13)
+  shell.dispose()
+}))
