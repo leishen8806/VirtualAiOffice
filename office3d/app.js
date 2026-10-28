@@ -922,7 +922,7 @@ function createAgentView(a, index) {
     })
   const home = workHome(seat)
   placeSeated(ch, home)
-  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) fitR1SeatedPerson(ch, { home, desk: { x: sx, z: sz }, chair: officeV3.get('furniture3').chairAt(home.x, home.z) })
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(a.name).handY, home, desk: { x: sx, z: sz }, chair: officeV3.get('furniture3').chairAt(home.x, home.z) })
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -2184,7 +2184,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
             const ch = createPerson(assets, avatar), previous = v.char
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home)
-            fitR1SeatedPerson(ch, { home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
+            fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(v.name).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent(); v.char = ch

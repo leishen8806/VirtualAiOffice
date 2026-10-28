@@ -359,16 +359,28 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
-export function fitR1SeatedPerson(ch, { home, desk, chair }) {
-  const model = ch.parts.model, meshes = [], pelvis = [], arms = [], point = new THREE.Vector3()
+export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
+  if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
+  const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
   model.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return
-    meshes.push(mesh)
+    const rows = new Map(), basis = new THREE.Matrix4(), cache = { rows, basis, bind: new THREE.Matrix4(), position: null, version: -1, changed: true }
+    skinning.set(mesh, cache)
     const { skinIndex, skinWeight, position } = mesh.geometry.attributes
     for (let i = 0; i < position.count; i++) {
       let weight = 0
       for (let j = 0; j < 4; j++) if (mesh.skeleton.bones[skinIndex.getComponent(i, j)]?.name === 'Bip01_Pelvis') weight += skinWeight.getComponent(i, j)
-      if (weight >= .5) pelvis.push([mesh, i])
+      if (weight >= .5) {
+        const influences = []
+        for (let j = 0; j < 4; j++) {
+          const w = skinWeight.getComponent(i, j), index = skinIndex.getComponent(i, j)
+          if (!w) continue
+          if (!rows.has(index)) rows.set(index, new THREE.Matrix4())
+          influences.push([w, rows.get(index).elements])
+        }
+        const dynamicMorph = (mesh.geometry.morphAttributes.position || []).some(p => [0, 1, 2].some(k => p.getComponent(i, k) !== (mesh.geometry.morphTargetsRelative ? 0 : position.getComponent(i, k))))
+        pelvis.push({ mesh, i, influences, basis, cache, dynamicMorph, point: new THREE.Vector3() })
+      }
     }
   })
   chair.updateWorldMatrix(true, true)
@@ -377,31 +389,49 @@ export function fitR1SeatedPerson(ch, { home, desk, chair }) {
   for (const side of ['L', 'R']) {
     const bones = ['UpperArm', 'Forearm', 'Hand'].map(name => model.getObjectByName(`Bip01_${side}_${name}`))
     if (bones.some(b => !b)) throw new Error(`R1 missing ${side} arm bones`)
-    arms.push({ side, bones, original: bones.map(b => b.quaternion.clone()) })
+    const chain = []
+    for (let bone = bones[2]; bone && bone !== bones[0].parent; bone = bone.parent) chain.unshift(bone)
+    arms.push({ side, bones, chain, original: bones.map(b => b.quaternion.clone()) })
   }
   const forward = ch.avatar === 'Female_Adult_09' ? .24 : ch.avatar.startsWith('Female_') ? .28 : .12
   const spread = ch.avatar === 'Female_Adult_09' ? .08 : 0
   const solve = ch.solve, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw), radians = Math.PI / 180
   const limits = [R1_ARM_LIMITS.upperArm, R1_ARM_LIMITS.forearm, R1_ARM_LIMITS.wrist].map(v => v * radians)
-  const report = ch.r1Seated = { seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward, limits: R1_ARM_LIMITS, hands: [] }
+  const pivot = new THREE.Vector3(), current = new THREE.Vector3(), wanted = new THREE.Vector3(), scale = new THREE.Vector3()
+  const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
+  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward, limits: R1_ARM_LIMITS, hands: [] }
   ch.solve = dt => {
     // Remove last frame's correction before the original mixer updates its pose.
     for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
     solve(dt)
     ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
-    ch.group.updateMatrixWorld(true); meshes.forEach(m => m.skeleton.update())
-    let bottom = Infinity
-    for (const [mesh, i] of pelvis) bottom = Math.min(bottom, mesh.getVertexPosition(i, point).applyMatrix4(mesh.matrixWorld).y)
-    ch.group.position.y = hit.point.y + .015 - bottom
     ch.group.updateMatrixWorld(true)
+    for (const [mesh, cache] of skinning) {
+      const { rows, basis } = cache, position = mesh.geometry.attributes.position
+      cache.changed = cache.position !== position || cache.version !== position.version || !cache.bind.equals(mesh.bindMatrix)
+      cache.position = position; cache.version = position.version; cache.bind.copy(mesh.bindMatrix)
+      basis.multiplyMatrices(mesh.matrixWorld, mesh.bindMatrixInverse)
+      for (const [index, matrix] of rows) matrix.multiplyMatrices(mesh.skeleton.bones[index].matrixWorld, mesh.skeleton.boneInverses[index]).premultiply(basis)
+    }
+    let bottom = Infinity
+    // Same skinning as THREE, computing only world Y and reusing each bone matrix across vertices.
+    for (const { mesh, i, influences, basis, cache, dynamicMorph, point } of pelvis) {
+      // Cache only unchanged bind-space vertices; animated garments and nonzero morphs stay live.
+      if (cache.changed || dynamicMorph) THREE.Mesh.prototype.getVertexPosition.call(mesh, i, point).applyMatrix4(mesh.bindMatrix)
+      let y = 0, sum = 0
+      for (const [w, m] of influences) { y += w * (m[1] * point.x + m[5] * point.y + m[9] * point.z + m[13]); sum += w }
+      bottom = Math.min(bottom, y + basis.elements[13] * (1 - sum))
+    }
+    ch.group.position.y = hit.point.y + .015 - bottom
+    ch.group.updateWorldMatrix(false, false)
     report.offset = ch.group.position.toArray(); report.pelvisY = hit.point.y + .015; report.hands = []
     for (const arm of arms) {
-      const { bones, original } = arm, hand = bones[2]
+      const { bones, original, chain } = arm, hand = bones[2]
       bones.forEach((bone, i) => original[i].copy(bone.quaternion))
       const before = hand.getWorldPosition(new THREE.Vector3()), target = before.clone(), handWorld = hand.getWorldQuaternion(new THREE.Quaternion())
       const dx = before.x - desk.x, dz = before.z - desk.z
       const x = THREE.MathUtils.clamp(cos * dx - sin * dz + (arm.side === 'L' ? -spread : spread), -.62, .62), z = THREE.MathUtils.clamp(sin * dx + cos * dz, -.34, .34)
-      target.set(desk.x + cos * x + sin * z, .82, desk.z - sin * x + cos * z)
+      target.set(desk.x + cos * x + sin * z, handY, desk.z - sin * x + cos * z)
       // Let raised hands/head-touch/stretch gestures pass through; never pin an arm to the desk.
       const weight = 1 - THREE.MathUtils.smoothstep(before.y - ch.group.position.y, .90, 1.06)
       const clampJoint = i => {
@@ -409,14 +439,17 @@ export function fitR1SeatedPerson(ch, { home, desk, chair }) {
         if (angle > limits[i]) bones[i].quaternion.slerpQuaternions(original[i], bones[i].quaternion.clone(), limits[i] / angle)
       }
       if (weight > 0) {
-        for (let pass = 0; pass < 24; pass++) for (const i of [1, 0]) {
-          const joint = bones[i], pivot = joint.getWorldPosition(new THREE.Vector3()), current = hand.getWorldPosition(new THREE.Vector3()).sub(pivot), wanted = target.clone().sub(pivot)
-          const delta = new THREE.Quaternion().setFromUnitVectors(current.normalize(), wanted.normalize()), parent = joint.parent.getWorldQuaternion(new THREE.Quaternion()), world = joint.getWorldQuaternion(new THREE.Quaternion())
-          joint.quaternion.copy(parent.invert().multiply(delta.multiply(world))); clampJoint(i); ch.group.updateMatrixWorld(true)
+        for (let pass = 0; pass < (ch.avatar === 'Female_Adult_09' ? 8 : 4); pass++) for (const i of [1, 0]) {
+          const joint = bones[i]
+          pivot.setFromMatrixPosition(joint.matrixWorld); current.setFromMatrixPosition(hand.matrixWorld).sub(pivot); wanted.copy(target).sub(pivot)
+          delta.setFromUnitVectors(current.normalize(), wanted.normalize())
+          joint.parent.matrixWorld.decompose(pivot, parent, scale); joint.matrixWorld.decompose(pivot, world, scale)
+          joint.quaternion.copy(parent.invert().multiply(delta.multiply(world))); clampJoint(i)
+          for (let j = chain.indexOf(joint); j < chain.length; j++) chain[j].updateWorldMatrix(false, false)
         }
         hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(handWorld)); clampJoint(2)
         bones.forEach((bone, i) => bone.quaternion.slerpQuaternions(original[i], bone.quaternion.clone(), weight))
-        ch.group.updateMatrixWorld(true)
+        bones[0].updateWorldMatrix(true, true)
       }
       report.hands.push({ side: arm.side, before: before.toArray(), after: hand.getWorldPosition(new THREE.Vector3()).toArray(), angles: bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians), weight })
     }

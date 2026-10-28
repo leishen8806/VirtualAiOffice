@@ -78,7 +78,7 @@ test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjus
  for(const id of ['02-CH-013','02-CH-014','08-CH-023','08-CH-024','10-CH-001']){const row=layout.r1.elements.find(i=>i.id===id),actual=f.chairFacings.get(id).yaw,registered=row.facingLocal;assert.ok(Math.sin(actual)*registered[0]+Math.cos(actual)*registered[1]>.9,id+' already-facing chair preserved')}
  assert.equal(Object.keys(R1_SEATED_PROFILES).length,25)
  for(const station of layout.r1.workstations){
- const profile=f.seatedProfile(station.business_id);assert.ok(Object.isFrozen(profile));assert.ok(profile.seat>=-.04&&profile.seat<=.08);assert.ok(profile.motions.length>=2&&profile.motions.some(n=>/^neutral_/.test(n)));assert.equal(new Set(profile.motions).size,profile.motions.length)
+ const profile=f.seatedProfile(station.business_id);assert.ok(Object.isFrozen(profile));assert.ok(profile.seat>=-.04&&profile.seat<=.08);assert.ok(Number.isFinite(profile.handY)&&profile.handY>=.75&&profile.handY<=.85);assert.ok(profile.motions.length>=2&&profile.motions.some(n=>/^neutral_/.test(n)));assert.equal(new Set(profile.motions).size,profile.motions.length)
  const p=r1ToWorld(station.chairXM,station.chairYM),chair=f.chairAt(p.x,p.z),old=placeFurniture(A,'chairDesk',p.x,p.z,{scale:1,rotY:chair.rotation.y});old.group.scale.copy(chair.scale)
  const bounds=new THREE.Box3().setFromObject(chair),before=new THREE.Box3().setFromObject(old.group)
  for(const axis of ['x','z']){assert.ok(Math.abs(before.min[axis]-bounds.min[axis])<1e-6);assert.ok(Math.abs(before.max[axis]-bounds.max[axis])<1e-6)}

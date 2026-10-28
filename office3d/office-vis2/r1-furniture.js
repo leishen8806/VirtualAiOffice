@@ -7,34 +7,34 @@ const MODEL = Object.freeze({ 办公桌: 'desk', 办公椅: 'chairDesk', 显示�
 const COLOR = Object.freeze({ wood: '#9a7650', fabric: '#66706c', trim: '#4f6670', dark: '#3e4b50', screen: '#18242d' })
 const key = (x, z) => `${x},${z}`
 
-// R6: fixed seat heights (metres) and individually measured animation pools.
+// R7: fixed seat/hand heights (metres), certified at every source key and at least 30 Hz.
 export const R1_SEATED_PROFILES = Object.freeze(Object.fromEntries([
-  ['OpsLead', 0.0, ['neutral_01', 'neutral_02']],
-  ['OpsEngineer', 0.053, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['QAAutomation', 0.0, ['neutral_01', 'neutral_02']],
-  ['Reviewer1', -0.026, ['neutral_01', 'neutral_02']],
-  ['Reviewer2', 0.0, ['neutral_01', 'neutral_02']],
-  ['SecurityReviewer', 0.0, ['neutral_01', 'neutral_02']],
-  ['Lead', 0.0, ['neutral_01', 'neutral_02']],
-  ['PM', 0.053, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['Architect', 0.0, ['neutral_01', 'neutral_02']],
-  ['UIUX', 0.0, ['neutral_01', 'neutral_02']],
-  ['FrontendSenior', 0.0, ['neutral_01', 'neutral_02']],
-  ['Frontend1', 0.0, ['neutral_01', 'neutral_02']],
-  ['Frontend2', 0.016, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['BackendSenior', 0.0, ['neutral_01', 'neutral_02']],
-  ['Backend1', 0.062, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['Backend2', 0.0, ['neutral_01', 'neutral_02']],
-  ['KnowledgeKeeper', 0.0, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['GoSenior', 0.059, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['Go1', 0.047, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['Go2', 0.0, ['neutral_01', 'neutral_02']],
-  ['DBEngineer', 0.008, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['LedgerAuditor', 0.0, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['ReactSenior', 0.0, ['neutral_01', 'neutral_02']],
-  ['React1', 0.0, ['neutral_01', 'neutral_02', 'waiting_01']],
-  ['Localizer', 0.0, ['neutral_01', 'neutral_02']],
-].map(([name, seat, motions]) => [name, Object.freeze({ seat, motions: Object.freeze(motions) })])))
+  ['OpsLead', 0.076, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['OpsEngineer', 0.065, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['QAAutomation', 0.076, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Reviewer1', -0.026, 0.82, ['neutral_01', 'neutral_02']],
+  ['Reviewer2', 0.075, 0.841, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['SecurityReviewer', 0.072, 0.841, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Lead', 0.076, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['PM', 0.053, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Architect', 0.078, 0.839, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['UIUX', 0.075, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['FrontendSenior', 0.08, 0.838, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Frontend1', 0.075, 0.836, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Frontend2', 0.017, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['BackendSenior', 0.08, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Backend1', 0.062, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Backend2', 0.075, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['KnowledgeKeeper', 0, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['GoSenior', 0.07, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Go1', 0.06, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Go2', 0.074, 0.839, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['DBEngineer', 0.017, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['LedgerAuditor', 0.005, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['ReactSenior', 0.079, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['React1', 0, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Localizer', 0.079, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+].map(([name, seat, handY, motions]) => [name, Object.freeze({ seat, handY, motions: Object.freeze(motions) })])))
 const yawFor = item => -Number(item.yawDeg || 0) * Math.PI / 180
 const dimensions = item => ({ x: Math.max(.02, Number(item.lengthM) || .1), y: Math.max(.02, Number(item.heightM) || .1), z: Math.max(.02, Number(item.widthM) || .1) })
 const bucketFor = item => item.category === '显示器' || item.category === '共享显示站' ? 'screen' : item.category === '办公椅' || item.category === '椅子' || item.category === '弧形座段' || item.category === '弧形沙发段' || item.category === '吧凳' ? 'fabric' : item.category === '桌间屏风' ? 'trim' : 'wood'
