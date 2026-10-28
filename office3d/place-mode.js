@@ -3,6 +3,7 @@ import {
   CAMPUS_BUILDING,
   CAMPUS_ZONES,
 } from './office-layout.js'
+import { WH_R1_CAMERA_VIEWS, WH_R1_SITE, WH_R1_ZONES } from './dr-wh-r1-zones.js'
 
 // 将来由多租户配置替换；F01 完成前不接受或展示其它租户。
 export const PLACE_TENANTS = Object.freeze({
@@ -76,11 +77,18 @@ function officeMode(campus, legacy, layout = DEFAULT_OFFICE_LAYOUT, latest = fal
   }
 }
 
-function warehouseMode(controlRoom, legacy) {
+export function whR1Requested(paramsOrSearch = '') {
+  const params = paramsOrSearch instanceof URLSearchParams ? paramsOrSearch : new URLSearchParams(String(paramsOrSearch || ''))
+  const values = params.getAll('whr1')
+  return values.length === 1 && values[0] === '1'
+}
+
+function warehouseMode(controlRoom, legacy, whr1 = false) {
   return {
     ...DR_MODE,
     ...placeMeta('warehouse', legacy),
     ...(controlRoom ? { controlRoom: true } : {}),
+    ...(whr1 ? { whr1: true, miniBounds: WH_R1_SITE, cameraViews: WH_R1_CAMERA_VIEWS, homeCamera: WH_R1_CAMERA_VIEWS[0], zones: WH_R1_ZONES } : {}),
   }
 }
 
@@ -132,10 +140,11 @@ export function latestSearch(placeId) {
 export function resolvePlaceMode(search = '') {
   const params = new URLSearchParams(String(search || ''))
   const controlRoom = params.get('controlRoom') === '1'
+  const whr1 = whR1Requested(params)
   const places = params.getAll('place')
   if (places.length > 1) return officeMode(false, false)
   if (places.length === 1) {
-    if (places[0] === 'dr') return warehouseMode(controlRoom, true)
+    if (places[0] === 'dr') return warehouseMode(controlRoom, true, whr1)
     if (places[0] === 'office') {
       const campuses = params.getAll('campus')
       return officeMode(
@@ -147,7 +156,7 @@ export function resolvePlaceMode(search = '') {
     const canonical = parseCanonicalPlace(places[0])
     if (!canonical) return officeMode(false, false)
     if (canonical.kind === 'warehouse') {
-      return warehouseMode(controlRoom, false)
+      return warehouseMode(controlRoom, false, whr1)
     }
     const campuses = params.getAll('campus')
     return officeMode(
@@ -159,6 +168,7 @@ export function resolvePlaceMode(search = '') {
   }
   const campuses = params.getAll('campus')
   const campus = campuses.length === 1 && campuses[0] === '1'
+  if (campus && whr1) return warehouseMode(controlRoom, true, true)
   return officeMode(campus, true, officeLayout(params))
 }
 
