@@ -277,10 +277,10 @@
     },
     {
       "file": "office-vis2/r1-furniture.js",
-      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; no downloaded assets",
+      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2F5C72BDE14A0CDCF56CF26591D742AED8B3102FF1DE280DB8A3DCAD8C0E24BD"
+      "sha256": "D3BA3043AE8472FAC17442CEF28134E3E822D082794A9C240DBF10F4B2AAA24B"
     },
     {
       "file": "office-vis2/r1-zones.js",
@@ -302,6 +302,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "47F14D1B20E9F08F9F05D3F31388EF612AF0946B3548E3C07F82E5CB1A2EC7B8"
+    },
+    {
+      "file": "office-vis2/r1-plaza.js",
+      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "3E1B34CC8D211EA5468B3B44A1FAB49539614E1413430664C1359C7D5DFEF861"
     }
   ],
   "excluded": {
