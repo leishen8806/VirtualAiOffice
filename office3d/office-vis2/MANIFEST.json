@@ -280,7 +280,7 @@
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2F5C72BDE14A0CDCF56CF26591D742AED8B3102FF1DE280DB8A3DCAD8C0E24BD"
+      "sha256": "415D031CB0E743405524F1CB82F972FEE092F6EFE4834537179498591C3BF8CA"
     },
     {
       "file": "office-vis2/r1-zones.js",
@@ -302,6 +302,20 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "47F14D1B20E9F08F9F05D3F31388EF612AF0946B3548E3C07F82E5CB1A2EC7B8"
+    },
+    {
+      "file": "office-vis2/r1-doors.js",
+      "source": "R1 registered procedural r1-doors; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "69152743DBB387EBA3654A57CE5E90E5AE151B30567558C21798E667AB2F6C93"
+    },
+    {
+      "file": "office-vis2/r1-lounge.js",
+      "source": "R1 registered procedural r1-lounge; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "21BED0A4EF5B53904E0B85B698CDF69B6E7E46453B2F9B788D354C2ACF8E1FD7"
     }
   ],
   "excluded": {
