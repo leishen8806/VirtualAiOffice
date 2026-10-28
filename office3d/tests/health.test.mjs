@@ -16,9 +16,25 @@ test('parses 12-hour reset times in Phnom Penh and rolls past times to tomorrow'
 test('classifies quota, auth, upstream and worktree lock errors', () => {
   assert.equal(classifyFailure({ errorCode: 'provider_quota' }), 'quota')
   assert.equal(classifyFailure({ errorCode: 'claude_auth_required' }), 'login')
+  assert.equal(classifyFailure({ error: 'login required' }), 'login')
   assert.equal(classifyFailure({ errorCode: 'claude_transient_upstream' }), 'upstream')
   assert.equal(classifyFailure({ errorCode: 'setup_failed', error: 'git worktree add failed: .git/config.lock' }), 'worktree_lock')
 })
+
+test('network disconnect text takes precedence over a misleading auth code', () => {
+  const securityReviewer = run('SecurityReviewer', 'failed', '2026-10-18T01:00:00Z', 'claude_auth_required', 'API Error: The socket connection was closed unexpectedly')
+  assert.equal(classifyFailure(securityReviewer), 'upstream')
+  assert.equal(classifyFailure({ errorCode: 'claude_auth_required', error: 'socket hang up' }), 'upstream')
+  const out = buildHealth({ now, agents: [agent('SecurityReviewer')], runs: [securityReviewer] })
+  assert.equal(out.agents[0].lastFailure.category, 'upstream')
+  assert.equal(out.incidents.some((item) => item.agentIds.includes('SecurityReviewer')), false)
+})
+
+for (const signal of ['socket connection was closed', 'socket hang up', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'ETIMEDOUT', 'fetch failed', 'network error', 'connection to upstream was reset']) {
+  test(`network disconnect signal is upstream: ${signal}`, () => {
+    assert.equal(classifyFailure({ errorCode: 'claude_auth_required', error: signal }), 'upstream')
+  })
+}
 
 test('merges same quota incident and calculates family failure rate', () => {
   const out = buildHealth({ now, agents: [agent('Lead'), agent('Reviewer')], runs: [run('Lead', 'failed', '2026-10-18T01:00:00Z', 'provider_quota', 'resets 7:10pm'), run('Reviewer', 'failed', '2026-10-18T01:30:00Z', 'provider_quota', 'resets 7:10pm'), run('Lead', 'succeeded', '2026-10-17T12:00:00Z')] })
