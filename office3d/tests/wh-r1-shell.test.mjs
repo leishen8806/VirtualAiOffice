@@ -82,10 +82,12 @@ test('WH-R1 step 0 retains all 19 door panel IDs through the full scene static m
   const { mergeStatic } = await import(`data:text/javascript,${encodeURIComponent(source)}`)
   mergeStatic(scene, undefined)
   const doors = []
-  scene.traverse((object) => { if (object.name.startsWith('wh-r1-door-') && object.userData?.whR1Id) doors.push(object) })
-  assert.equal(doors.length, 19)
-  assert.deepEqual(new Set(doors.map((door) => door.userData.whR1Id)), new Set(WH_R1_DOORS.map((door) => door.id)))
-  assert.ok(doors.every((door) => door.userData.noMerge === true && door.userData.collisionProxy === false))
+  scene.traverse((object) => { if (object.name === 'wh-r1-door-panels' && object.userData?.whR1DoorIds) doors.push(object) })
+  assert.equal(doors.length, 1)
+  assert.equal(doors[0].count, 19)
+  assert.deepEqual(new Set(doors[0].userData.whR1DoorIds), new Set(WH_R1_DOORS.map((door) => door.id)))
+  assert.deepEqual(doors[0].userData.instanceToRegisterId, WH_R1_DOORS.map((door) => door.id))
+  assert.equal(doors[0].userData.noMerge, true); assert.equal(doors[0].userData.collisionProxy, false)
 })
 
 test('WH-R1 environment inventory includes and hides sphere crowns within the site only', () => {

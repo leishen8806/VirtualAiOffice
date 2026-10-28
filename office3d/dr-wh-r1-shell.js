@@ -74,20 +74,31 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
       faceIds: WH_R1_DATA.wallFaces.filter((face) => face.wallId === wall.id).map((face) => face.id),
     })
   }
-  for (const door of WH_R1_DOORS) {
-    const panel = new THREE.Mesh(new THREE.PlaneGeometry(door.width, door.height), doorMaterial)
-    panel.name = `wh-r1-door-${door.id}`
-    panel.position.set(door.x, door.height / 2 - .6, door.z)
-    panel.rotation.y = door.yaw
-    panel.userData = { whR1Id: door.id, collisionProxy: false, noMerge: true, state: 'UNKNOWN', label: door.label }
-    root.add(panel)
-    if (door.label && canvasTex) {
-      const texture = canvasTex(256, 96, (context, width, height) => {
-        context.clearRect(0, 0, width, height); context.fillStyle = '#f4f1eb'; context.textAlign = 'center'; context.font = '700 58px sans-serif'; context.fillText(door.label, width / 2, height * .7)
-      })
-      const label = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(1.2, door.width * .42), .45), new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false }))
-      label.name = `wh-r1-door-label-${door.id}`; label.position.set(door.x, Math.min(door.height - .25, 2.7), door.z); label.rotation.y = door.yaw; label.userData = { whR1Id: door.id, label: door.label }; root.add(label)
-    }
+  const doorGeometry = new THREE.PlaneGeometry(1, 1), doorPanels = new THREE.InstancedMesh(doorGeometry, doorMaterial, WH_R1_DOORS.length)
+  const doorMatrix = new THREE.Matrix4(), doorPosition = new THREE.Vector3(), doorScale = new THREE.Vector3(), doorRotation = new THREE.Quaternion(), doorEuler = new THREE.Euler()
+  WH_R1_DOORS.forEach((door, index) => {
+    doorMatrix.compose(doorPosition.set(door.x, door.height / 2 - .6, door.z), doorRotation.setFromEuler(doorEuler.set(0, door.yaw, 0)), doorScale.set(door.width, door.height, 1))
+    doorPanels.setMatrixAt(index, doorMatrix)
+  })
+  doorPanels.instanceMatrix.needsUpdate = true; doorPanels.name = 'wh-r1-door-panels'
+  doorPanels.userData = { whR1DoorIds: WH_R1_DOORS.map(door => door.id), instanceToRegisterId: WH_R1_DOORS.map(door => door.id), collisionProxy: false, noMerge: true, state: 'UNKNOWN' }
+  root.add(doorPanels)
+  let doorLabels = null
+  const labelledDoors = canvasTex ? WH_R1_DOORS.filter(door => door.label) : []
+  if (labelledDoors.length) {
+    const texture = canvasTex(2048, 96, (context, width, height) => {
+      context.clearRect(0, 0, width, height); context.fillStyle = '#f4f1eb'; context.textAlign = 'center'; context.font = '700 58px sans-serif'
+      labelledDoors.forEach((door, index) => context.fillText(door.label, (index + .5) * width / labelledDoors.length, height * .7))
+    })
+    const positions = [], uvs = [], indices = []
+    labelledDoors.forEach((door, index) => {
+      const width = Math.min(1.2, door.width * .42), height = .45, y = Math.min(door.height - .25, 2.7), cos = Math.cos(door.yaw), sin = Math.sin(door.yaw), u0 = index / labelledDoors.length, u1 = (index + 1) / labelledDoors.length, base = index * 4
+      for (const [x, yy] of [[-width / 2, -height / 2], [width / 2, -height / 2], [width / 2, height / 2], [-width / 2, height / 2]]) positions.push(door.x + x * cos, y + yy, door.z - x * sin)
+      uvs.push(u0, 0, u1, 0, u1, 1, u0, 1); indices.push(base, base + 1, base + 2, base, base + 2, base + 3)
+    })
+    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals()
+    doorLabels = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false, side: THREE.DoubleSide }))
+    doorLabels.name = 'wh-r1-door-labels'; doorLabels.userData = { whR1DoorLabelIds: labelledDoors.map(door => door.id), noMerge: true }; root.add(doorLabels)
   }
   const roof = [
     ['north', 88, .28, -124, -17.86], ['south', 88, .28, -124, 29.86],
@@ -96,6 +107,9 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
   for (const [name, width, depth, x, z] of roof) box(THREE, root, `wh-r1-roof-${name}`, width, .28, depth, x, 3.9, z, 0, roofMaterial)
   return {
     shellSpec: WH_R1_SHELL_SPEC,
-    dispose() { new Set([wallMaterial, floorMaterial, roofMaterial, doorMaterial]).forEach((material) => material.dispose()) },
+    dispose() {
+      new Set([wallMaterial, floorMaterial, roofMaterial, doorMaterial]).forEach((material) => material.dispose()); doorGeometry.dispose()
+      if (doorLabels) { doorLabels.geometry.dispose(); doorLabels.material.map?.dispose(); doorLabels.material.dispose() }
+    },
   }
 }
