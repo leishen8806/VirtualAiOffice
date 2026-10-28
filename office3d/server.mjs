@@ -54,6 +54,7 @@ import { createCommandLiveWiring } from './command-view-wiring.mjs'
 import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
 import { createLastGoodState, loadStateComponents, createBackgroundHealth } from './state-last-good.mjs'
+import { readProcessTable, runAlive, shouldBlockCancel } from './run-liveness.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
@@ -375,6 +376,13 @@ async function act(a, options = {}) {
   }
   if (a.type === 'cancel_run') { // 取消一次运行：进程还在就停掉；进程已退出的残留记录就把它标掉
     need(UUID.test(a.runId || ''), '运行 id 不对')
+    const runRows = await get(`/api/companies/${COMPANY}/heartbeat-runs?limit=1000`)
+    const run = (Array.isArray(runRows) ? runRows : runRows.runs || []).find((row) => row.id === a.runId)
+    const liveness = run && runAlive(run, await readProcessTable())
+    if (shouldBlockCancel(liveness)) {
+      const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
+      throw Object.assign(new Error(`进程仍在运行：${names}（${liveness.descendants.length} 个后代）；取消只会把记录标掉，进程会继续跑。`), { status: 409 })
+    }
     return send('POST', `/api/heartbeat-runs/${a.runId}/cancel`, {})
   }
   if (a.type === 'review') {
@@ -583,17 +591,6 @@ async function buildEvents(activity, approvalsAll) {
     }
   }
   return out.slice(-40)
-}
-
-// 进程探测：只发「0 号信号」判断进程是否还在，不会影响它。
-function pidAlive(pid) {
-  if (!pid) return null
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (e) {
-    return e.code === 'EPERM'
-  }
 }
 
 // 问题卡的内容（题目、选项）：给页面直接作答用。待回答期间内容不变，按 id 缓存。
@@ -960,10 +957,12 @@ async function state() {
   }
   const lastRun = new Map()
   const liveRun = new Map()
+  const processTable = await readProcessTable({ wait: false })
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
     if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: pidAlive(r.processPid) })
+      const liveness = runAlive(r, processTable)
+      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via })
     }
   }
   // 休息区八卦：上班时间、空闲（不在跑、没在等董事会、没暂停）的同事够两位就后台生成一段（不等它）
