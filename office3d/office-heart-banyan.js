@@ -1,7 +1,8 @@
 // 静态缩景资产；本地小叶几何，新闻图片仅作形态参考，不进入纹理。
 import { bindOfficeLeafNormalPass } from './office-vis2/leaf-pass.js'
-export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = false, leafTriangles = false } = {}) {
+export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = false, leafTriangles = false, fit } = {}) {
   if (!THREE || !root) throw new TypeError('buildHeartBanyan requires THREE and root')
+  if (fit && (!['crownDiameter', 'crownBase', 'totalHeight', 'poolDiameter', 'poolHeight', 'trunkDiameter', 'trunkTop'].every(key => Number.isFinite(fit[key]) && fit[key] > 0) || fit.totalHeight <= fit.crownBase || fit.trunkTop <= fit.poolHeight)) throw new TypeError('Invalid banyan fit')
   const group = new THREE.Group(); group.name = 'office-heart-banyan'
   group.position.set(center.x, 0, center.z)
   const geometries = [], materials = []
@@ -61,6 +62,7 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
     branch([[0, .75, 0], [x * .18, .42, z * .18], [x * .55, .31, z * .55]], .065, .018, 4)
     branch([[x * .65, 2.5, z * .55], [x * 1.1, 2.85, z * .8], [x * 1.35, 3.12, z * .88]], .022, .006, 4)
   }
+  const mainTrunkCount = wood[0][0].index?.count ?? wood[0][0].attributes.position.count
   merge(wood, 'heart-banyan-trunk-and-branches', { roughness: .98 })
 
   // 小叶用解析椭圆裁边，保留三维固定朝向；不加载照片，也不随相机转动。
@@ -108,6 +110,42 @@ export function buildHeartBanyan({ THREE, root, center = { x: 0, z: 0 }, low = f
   }
   leaves.count = accepted.length; leaves.instanceMatrix.needsUpdate = true; leaves.instanceColor.needsUpdate = true
   leaves.computeBoundingBox(); leaves.computeBoundingSphere(); group.add(leaves); root.add(group)
+  if (fit) {
+    const { crownDiameter, crownBase, totalHeight, poolDiameter, poolHeight, trunkDiameter, trunkTop } = fit
+    // Measure expanded leaf vertices: cached instance bounds include empty corners of each leaf plane.
+    const bounds = new THREE.Box3(), matrix = new THREE.Matrix4(), vertex = new THREE.Vector3()
+    for (let i = 0; i < leaves.count; i++) {
+      leaves.getMatrixAt(i, matrix)
+      for (let j = 0; j < leafGeometry.attributes.position.count; j++) bounds.expandByPoint(vertex.fromBufferAttribute(leafGeometry.attributes.position, j).applyMatrix4(matrix))
+    }
+    const size = bounds.getSize(new THREE.Vector3()), middle = bounds.getCenter(new THREE.Vector3())
+    leaves.scale.set(crownDiameter / size.x, (totalHeight - crownBase) / size.y, crownDiameter / size.z)
+    leaves.position.set(-middle.x * leaves.scale.x, crownBase - bounds.min.y * leaves.scale.y, -middle.z * leaves.scale.z)
+    const pot = group.getObjectByName('heart-banyan-pool'), woodMesh = group.getObjectByName('heart-banyan-trunk-and-branches')
+    pot.geometry.computeBoundingBox()
+    const potBox = pot.geometry.boundingBox, potSize = potBox.getSize(new THREE.Vector3())
+    pot.scale.set(poolDiameter / potSize.x, poolHeight / potSize.y, poolDiameter / potSize.z)
+    pot.position.y = -potBox.min.y * pot.scale.y
+    const positions = woodMesh.geometry.attributes.position
+    woodMesh.geometry.computeBoundingBox()
+    const woodBox = woodMesh.geometry.boundingBox.clone(), baseScale = trunkDiameter / (.46 * 1.07)
+    const trunkBox = new THREE.Box3()
+    for (let i = 0; i < mainTrunkCount; i++) trunkBox.expandByPoint(vertex.fromBufferAttribute(positions, i))
+    const trunkSize = trunkBox.getSize(new THREE.Vector3()), trunkCenter = trunkBox.getCenter(new THREE.Vector3())
+    for (let i = 0; i < positions.count; i++) {
+      if (i < mainTrunkCount) {
+        positions.setXYZ(i, (positions.getX(i) - trunkCenter.x) * trunkDiameter / trunkSize.x, poolHeight + (positions.getY(i) - trunkBox.min.y) * (trunkTop - poolHeight) / trunkSize.y, (positions.getZ(i) - trunkCenter.z) * trunkDiameter / trunkSize.z)
+        continue
+      }
+      const y = positions.getY(i), upper = Math.max(0, Math.min(1, (y - 1.25) / (2.35 - 1.25)))
+      const xScale = baseScale + (leaves.scale.x - baseScale) * upper, zScale = baseScale + (leaves.scale.z - baseScale) * upper
+      const fittedY = y <= 2.35 ? poolHeight + (y - woodBox.min.y) / (2.35 - woodBox.min.y) * (trunkTop - poolHeight) : trunkTop + (y - 2.35) / (woodBox.max.y - 2.35) * (totalHeight - trunkTop)
+      positions.setXYZ(i, positions.getX(i) * xScale, fittedY, positions.getZ(i) * zScale)
+    }
+    positions.needsUpdate = true; woodMesh.geometry.computeVertexNormals(); woodMesh.geometry.computeBoundingBox(); woodMesh.geometry.computeBoundingSphere()
+    woodMesh.userData.trunkVertices = { start: 0, count: mainTrunkCount }
+    group.userData.fit = { ...fit }
+  }
   const triangles = group.children.reduce((n, m) => n + (m.geometry.index?.count ?? m.geometry.attributes.position.count) / 3 * (m.isInstancedMesh ? m.count : 1), 0)
   return {
     root: group,

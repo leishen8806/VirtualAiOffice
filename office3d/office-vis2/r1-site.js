@@ -51,9 +51,15 @@ export function buildR1Site({ THREE, root, layout }) {
   const floor = new THREE.Mesh(new THREE.BoxGeometry(layout.site.x1 - layout.site.x0, .08, layout.site.z1 - layout.site.z0), floorMaterial)
   floor.name = 'r1-site-paved-ground'
   floor.position.set((layout.site.x0 + layout.site.x1) / 2, -.04, (layout.site.z0 + layout.site.z1) / 2)
-  const buffer = new THREE.Mesh(new THREE.RingGeometry(1, 2, 4), greenMaterial)
+  const { x0, x1, z0, z1 } = layout.site, width = layout.greenBuffer.width
+  const shape = new THREE.Shape()
+  shape.moveTo(x0 - width, -z0 + width); shape.lineTo(x1 + width, -z0 + width)
+  shape.lineTo(x1 + width, -z1 - width); shape.lineTo(x0 - width, -z1 - width); shape.closePath()
+  const hole = new THREE.Path()
+  hole.moveTo(x0, -z0); hole.lineTo(x0, -z1); hole.lineTo(x1, -z1); hole.lineTo(x1, -z0); hole.closePath()
+  shape.holes.push(hole)
+  const buffer = new THREE.Mesh(new THREE.ShapeGeometry(shape), greenMaterial)
   buffer.name = 'r1-site-green-buffer'
-  buffer.scale.set((layout.site.x1 - layout.site.x0) / 2, (layout.site.z1 - layout.site.z0) / 2, 1)
   buffer.rotation.x = -Math.PI / 2
   buffer.position.y = .003
   group.add(floor, buffer)
