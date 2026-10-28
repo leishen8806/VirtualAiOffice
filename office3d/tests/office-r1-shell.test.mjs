@@ -9,6 +9,7 @@ import { officeV3Modules, officeV3ModulesFor } from '../office-v3-modules.js'
 import { buildR1Shell, r1CornerSpec, r1FrontHeight, r1WallPlan } from '../office-vis2/r1-shell.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
+import { r1ToWorld } from '../office-r1-layout.js'
 import { createDirector } from '../director.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 
@@ -64,17 +65,37 @@ test('I3 registers all workstation seats with the candidate C-01 coordinates and
   assert.notDeepEqual(candidate.seats.Architect, base.seats.Architect)
 })
 
-test('I3 furniture batches static pieces, exposes every staffed desk and registers ordinary collision proxies', () => {
+const r1Assets = THREE => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded'].map(name => [name, name])) })
+const r1PlaceFurniture = THREE => (_A, name, x, z, { y = 0, rotY = 0 } = {}) => {
+  const group = new THREE.Group(), mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
+  mesh.position.y = .5; group.add(mesh); group.position.set(x, y, z); group.rotation.y = rotY
+  return { group, size: new THREE.Vector3(1, 1, 1), name }
+}
+
+test('I3 furniture bakes mapped assets into a few meshes, exposes desks and registers real-geometry collision', () => {
   const layout = createOfficeR1Layout(), root = new THREE.Group(), collision = createFurnitureCollision()
-  const furniture = buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
+  const calls = [], placeFurniture = (_A, ...args) => { calls.push({ name: args[0], x: args[1], z: args[2], options: args[3] }); return r1PlaceFurniture(THREE)(_A, ...args) }
+  const furniture = buildR1Furniture({ THREE, root, layout, collision, A: r1Assets(THREE), placeFurniture, makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
   root.updateMatrixWorld(true)
   assert.ok(Object.keys(furniture.instanceIds).length >= 10)
   assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.category === '吧凳' && item.regionId === '07')).length)
+  for (const asset of ['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded']) assert.ok(calls.some(call => call.name === asset), asset)
+  assert.ok(root.getObjectByName('r1-furniture-wood')); assert.ok(root.getObjectByName('r1-furniture-fabric')); assert.ok(root.getObjectByName('r1-furniture-screen'))
   for (const seat of Object.values(layout.seats)) assert.ok(furniture.deskAt(seat[1], seat[2]))
+  for (const station of layout.r1.workstations) {
+    const chair = r1ToWorld(station.chairXM, station.chairYM)
+    assert.ok(furniture.chairAt(chair.x, chair.z)?.children.some(child => child.isMesh), station.business_id)
+    assert.ok(furniture.itemBounds.get(station.chair_id)?.isBox3, station.chair_id)
+  }
   const solid = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '吧凳'])
   const solidItems = layout.r1.elements.filter(item => solid.has(item.category) && !(item.category === '吧凳' && item.regionId === '07'))
   for (const item of solidItems) assert.ok(collision.hit(item.xM - 26, 18 - item.yM), item.id)
   assert.equal(collision.stats().bodies, solidItems.length)
+  for (const station of layout.r1.workstations) {
+    const chair = r1ToWorld(station.chairXM, station.chairYM), home = layout.seats[station.business_id][4]
+    const call = calls.find(value => value.name === 'chairDesk' && value.x === chair.x && value.z === chair.z)
+    assert.ok(call, station.business_id); assert.ok(Math.abs(call.options.rotY - (home.yaw + Math.PI)) < 1e-9, station.business_id)
+  }
   furniture.dispose()
 })
 
