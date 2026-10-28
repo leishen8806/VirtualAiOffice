@@ -331,3 +331,96 @@ export function createPerson(P, name) {
   solve(0)
   return { group: root, body: { head }, pose, solve, labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
 }
+
+// Only the R1 caller opts in; existing animation pools and source clips stay intact.
+export const R1_SEATED_EXTRAS = Object.freeze(['sit_table_idle_neutral_02', 'sit_table_idle_relaxed_01', 'sit_table_idle_waiting_01', 'sit_table_idle_nervous_01', 'sit_table_gestic_shrug_01', 'sit_table_idle_touch_hair', 'sit_table_idle_roll_head'])
+export async function loadR1Extras(P) {
+  await Promise.all(['male', 'female'].flatMap(g => R1_SEATED_EXTRAS.filter(name => /idle_(neutral_02|relaxed_01|waiting_01|nervous_01)$/.test(name) && !(g === 'female' && name === 'sit_table_idle_nervous_01')).map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`
+    const source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    ;(P.extras[g].sitFlavor ||= []).push(clip)
+  })))
+}
+
+const R1_POOL_WARNED = new Set()
+export function r1SeatedAssets(P, avatar, profile, personName) {
+  const gender = avatar.startsWith('Female_') ? 'female' : 'male'
+  const clips = new Map([['neutral_01', P.clips[gender].sitIdle], ...(P.extras[gender].sitFlavor || []).map(clip => [clip.name.replace(/^[mf]_sit_table_idle_/, ''), clip])])
+  const names = [...new Set(profile?.motions || [])]
+  const neutral = names.find(name => /^neutral_0[12]$/.test(name))
+  if (names.length < 2 || !neutral || names.some(name => !/^(neutral_01|neutral_02|relaxed_01|waiting_01|nervous_01)$/.test(name) || !clips.has(name))) {
+    if (!R1_POOL_WARNED.has(personName)) { console.warn(`R1 ${personName}：坐姿动作池不足或未就绪，保留卡通占位`); R1_POOL_WARNED.add(personName) }
+    return null
+  }
+  // Separate actions avoid cross-fading an action into itself when speech starts; source tracks stay intact.
+  return { ...P, clips: { ...P.clips, [gender]: { sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
+}
+
+export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
+export function fitR1SeatedPerson(ch, { home, desk, chair }) {
+  const model = ch.parts.model, meshes = [], pelvis = [], arms = [], point = new THREE.Vector3()
+  model.traverse(mesh => {
+    if (!mesh.isSkinnedMesh) return
+    meshes.push(mesh)
+    const { skinIndex, skinWeight, position } = mesh.geometry.attributes
+    for (let i = 0; i < position.count; i++) {
+      let weight = 0
+      for (let j = 0; j < 4; j++) if (mesh.skeleton.bones[skinIndex.getComponent(i, j)]?.name === 'Bip01_Pelvis') weight += skinWeight.getComponent(i, j)
+      if (weight >= .5) pelvis.push([mesh, i])
+    }
+  })
+  chair.updateWorldMatrix(true, true)
+  const hit = new THREE.Raycaster(new THREE.Vector3(home.x, 2, home.z), new THREE.Vector3(0, -1, 0)).intersectObject(chair, true).find(h => h.face.normal.y > .8)
+  if (!hit || !pelvis.length) throw new Error('R1 cannot measure the actual seat or pelvis')
+  for (const side of ['L', 'R']) {
+    const bones = ['UpperArm', 'Forearm', 'Hand'].map(name => model.getObjectByName(`Bip01_${side}_${name}`))
+    if (bones.some(b => !b)) throw new Error(`R1 missing ${side} arm bones`)
+    arms.push({ side, bones, original: bones.map(b => b.quaternion.clone()) })
+  }
+  const forward = ch.avatar === 'Female_Adult_09' ? .24 : ch.avatar.startsWith('Female_') ? .28 : .12
+  const spread = ch.avatar === 'Female_Adult_09' ? .08 : 0
+  const solve = ch.solve, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw), radians = Math.PI / 180
+  const limits = [R1_ARM_LIMITS.upperArm, R1_ARM_LIMITS.forearm, R1_ARM_LIMITS.wrist].map(v => v * radians)
+  const report = ch.r1Seated = { seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward, limits: R1_ARM_LIMITS, hands: [] }
+  ch.solve = dt => {
+    // Remove last frame's correction before the original mixer updates its pose.
+    for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
+    solve(dt)
+    ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
+    ch.group.updateMatrixWorld(true); meshes.forEach(m => m.skeleton.update())
+    let bottom = Infinity
+    for (const [mesh, i] of pelvis) bottom = Math.min(bottom, mesh.getVertexPosition(i, point).applyMatrix4(mesh.matrixWorld).y)
+    ch.group.position.y = hit.point.y + .015 - bottom
+    ch.group.updateMatrixWorld(true)
+    report.offset = ch.group.position.toArray(); report.pelvisY = hit.point.y + .015; report.hands = []
+    for (const arm of arms) {
+      const { bones, original } = arm, hand = bones[2]
+      bones.forEach((bone, i) => original[i].copy(bone.quaternion))
+      const before = hand.getWorldPosition(new THREE.Vector3()), target = before.clone(), handWorld = hand.getWorldQuaternion(new THREE.Quaternion())
+      const dx = before.x - desk.x, dz = before.z - desk.z
+      const x = THREE.MathUtils.clamp(cos * dx - sin * dz + (arm.side === 'L' ? -spread : spread), -.62, .62), z = THREE.MathUtils.clamp(sin * dx + cos * dz, -.34, .34)
+      target.set(desk.x + cos * x + sin * z, .82, desk.z - sin * x + cos * z)
+      // Let raised hands/head-touch/stretch gestures pass through; never pin an arm to the desk.
+      const weight = 1 - THREE.MathUtils.smoothstep(before.y - ch.group.position.y, .90, 1.06)
+      const clampJoint = i => {
+        const angle = original[i].angleTo(bones[i].quaternion)
+        if (angle > limits[i]) bones[i].quaternion.slerpQuaternions(original[i], bones[i].quaternion.clone(), limits[i] / angle)
+      }
+      if (weight > 0) {
+        for (let pass = 0; pass < 24; pass++) for (const i of [1, 0]) {
+          const joint = bones[i], pivot = joint.getWorldPosition(new THREE.Vector3()), current = hand.getWorldPosition(new THREE.Vector3()).sub(pivot), wanted = target.clone().sub(pivot)
+          const delta = new THREE.Quaternion().setFromUnitVectors(current.normalize(), wanted.normalize()), parent = joint.parent.getWorldQuaternion(new THREE.Quaternion()), world = joint.getWorldQuaternion(new THREE.Quaternion())
+          joint.quaternion.copy(parent.invert().multiply(delta.multiply(world))); clampJoint(i); ch.group.updateMatrixWorld(true)
+        }
+        hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(handWorld)); clampJoint(2)
+        bones.forEach((bone, i) => bone.quaternion.slerpQuaternions(original[i], bone.quaternion.clone(), weight))
+        ch.group.updateMatrixWorld(true)
+      }
+      report.hands.push({ side: arm.side, before: before.toArray(), after: hand.getWorldPosition(new THREE.Vector3()).toArray(), angles: bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians), weight })
+    }
+  }
+  ch.solve(0)
+  return report
+}
