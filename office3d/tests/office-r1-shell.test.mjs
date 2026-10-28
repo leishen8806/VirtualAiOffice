@@ -34,7 +34,7 @@ test('I2 excludes the old north garden only for the same strict R1 query', () =>
 test('I3 retains the old V3 module order and isolates R1 to its shell and furniture slots', () => {
   assert.deepEqual(officeV3Modules.map(([name]) => name), ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN_L2B).map(([name]) => name), officeV3Modules.map(([name]) => name))
-  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge'])
+  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Plaza'])
 })
 
 test('I3 R4 provides registered R1 seats while retaining the stationary navigation adapter', () => {
@@ -78,7 +78,8 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   const furniture = buildR1Furniture({ THREE, root, layout, collision, A: r1Assets(THREE), placeFurniture, makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
   root.updateMatrixWorld(true)
   assert.ok(Object.keys(furniture.instanceIds).length >= 10)
-  assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && item.id !== '11-CT-001' && !(item.regionId === '12' && item.category === '弧形沙发段')).length)
+  // I6 起区 14 的室外长椅由 r1-plaza.js 重建，I3 不再画它的素色方块。
+  assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && item.id !== '11-CT-001' && !(item.regionId === '12' && item.category === '弧形沙发段') && !(item.regionId === '14' && item.category === '室外长椅')).length)
   for (const asset of ['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded']) assert.ok(calls.some(call => call.name === asset), asset)
   assert.ok(root.getObjectByName('r1-furniture-wood')); assert.ok(root.getObjectByName('r1-furniture-fabric')); assert.ok(root.getObjectByName('r1-furniture-screen'))
   for (const seat of Object.values(layout.seats)) assert.ok(furniture.deskAt(seat[1], seat[2]))
