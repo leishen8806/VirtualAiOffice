@@ -72,8 +72,8 @@ function badgeBatch(THREE, stations) {
 export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture, A, placeFurniture }) {
   if (layout?.r1Phase !== 'R1' || typeof makeScreenTexture !== 'function' || !A?.furn || typeof placeFurniture !== 'function') return { deskAt() { return null }, dispose() {} }
   const group = new THREE.Group(); group.name = 'r1-furniture'; group.userData.dynamic = true
-  // 区 07 的吧凳 / 弧形座段由 I4 岛台重建，区 14 的室外长椅由 I6 广场重建；这里不再画成素色方块。
-  const items = layout.r1.elements.filter(item => FURNITURE.has(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && !(item.regionId === '14' && item.category === '室外长椅'))
+  // 区 07 的吧凳 / 弧形座段由 I4 岛台重建，接待台与区 12 弧形沙发段由 I5 重建，区 14 的室外长椅由 I6 广场重建；这里不再画成素色方块。
+  const items = layout.r1.elements.filter(item => FURNITURE.has(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && item.id !== '11-CT-001' && !(item.regionId === '12' && item.category === '弧形沙发段') && !(item.regionId === '14' && item.category === '室外长椅'))
   const buckets = new Map(Object.keys(COLOR).map(name => [name, []])), collisionGroups = [], ids = new Map(), itemBounds = new Map(), chairModels = new Map(), itemCategories = new Map()
   const chairYaw = new Map(layout.r1.workstations.map(station => [station.chair_id, layout.seats[station.business_id][4].yaw + Math.PI]))
   const stationByDesk = new Map(layout.r1.workstations.map(station => [station.desk_id, station]))
