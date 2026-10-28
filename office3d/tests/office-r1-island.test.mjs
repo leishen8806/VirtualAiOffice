@@ -106,11 +106,7 @@ test('I4 35 real GLB plants preserve every registered layer and every low crown 
       assert.ok(collision.hit(record.position.x, record.position.z), record.id)
       for (const suffix of ['POT', 'CR']) {
         const part = record.parts[suffix], row = layout.r1.elements.find(row => row.id === part.id), size = part.bounds.getSize(new THREE.Vector3()), center = part.bounds.getCenter(new THREE.Vector3())
-        // OFFICE-R1-I6B: pots still fit the registered envelope per axis, crowns are scaled uniformly so they
-        // sit inside it instead of filling it. The exact crown ratio is asserted in office-r1-foliage.test.mjs.
-        if (suffix === 'POT') { near(size.x, row.lengthM); near(size.z, row.widthM) }
-        else { assert.ok(size.x <= row.lengthM + 1e-9, `${part.id} crown x ${size.x}`); assert.ok(size.z <= row.widthM + 1e-9, `${part.id} crown z ${size.z}`) }
-        near(size.y, row.heightM); near(part.bounds.min.y, row.zM)
+        near(size.x, row.lengthM); near(size.z, row.widthM); near(size.y, row.heightM); near(part.bounds.min.y, row.zM)
         near(center.x, row.xM - 26); near(center.z, 18 - row.yM)
       }
       const p = record.parts.CR.vertices

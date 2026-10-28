@@ -10,25 +10,25 @@ import { createFurnitureCollision } from '../furniture-collision.js'
 
 const hooks = registerHooks({ resolve(specifier, context, next) { return specifier === 'three' ? { url: new URL('../vendor/three/three.module.js', import.meta.url).href, shortCircuit: true } : next(specifier, context) } })
 const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
-const { placeFurniture } = await import('../assets3d.js')
 hooks.deregister()
 const bytes = readFileSync(new URL('../assets/models/furniture/pottedPlant.glb', import.meta.url))
 const source = (await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')).scene
 const A = { furn: { pottedPlant: source } }
 const near = (a, b, tolerance = .005, message = '') => assert.ok(Math.abs(a - b) <= tolerance, `${message} ${a} != ${b}`)
 
-// GLB 冠源包围盒的长宽高比：R1 等比缩放之后必须保持这个比例（= 旧版 L2B 绿植的外形）
-const sourceCrownAspect = low => {
+// 一株绿植的冠源（叶片 + 分枝）三角形数：加密层复用同一叶源，所以每层面数相同
+const sourceCrown = low => {
   const foliage = createOfficePottedFoliage(THREE, source, low), box = new THREE.Box3()
+  let triangles = 0
   foliage.source.updateWorldMatrix(true, true)
   foliage.source.traverse(mesh => {
     if (!mesh.isMesh || mesh.material.name !== 'plant') return
     const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld); geometry.computeBoundingBox()
-    box.union(geometry.boundingBox); geometry.dispose()
+    box.union(geometry.boundingBox); triangles += (geometry.index ? geometry.index.count : geometry.attributes.position.count) / 3
+    geometry.dispose()
   })
-  const size = box.getSize(new THREE.Vector3())
   foliage.dispose()
-  return { x: size.x / size.y, z: size.z / size.y }
+  return { triangles, size: box.getSize(new THREE.Vector3()) }
 }
 
 const segmentDistance = (x, y, a, b) => {
@@ -37,73 +37,94 @@ const segmentDistance = (x, y, a, b) => {
   return Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy)
 }
 
-test('I6B-2 35 株绿植保持登记位置、盆尺寸与总高，冠改等比缩放（不再分轴拉伸）', () => {
+const routeClearance = (layout, vertices) => {
+  let minimum = Infinity
+  for (let i = 0; i < vertices.length; i += 3) {
+    if (vertices[i + 1] > 2.1) continue
+    for (const route of layout.r1.routes) for (let j = 1; j < route.points_m.length; j++) {
+      minimum = Math.min(minimum, segmentDistance(vertices[i] + 26, 18 - vertices[i + 2], route.points_m[j - 1], route.points_m[j]))
+    }
+  }
+  return minimum
+}
+
+// 裁定 D（裁定-绿植外形-R2.md）：不改登记值、不改缩放方式、不缩窄。
+test('I6B-2 35 株绿植的盆尺寸、冠包络与总高仍逐值等于登记值（裁定 D 不改缩放方式）', () => {
   for (const low of [false, true]) {
     const root = new THREE.Group(), layout = createOfficeR1Layout(), collision = createFurnitureCollision()
     const plants = buildR1Plants({ THREE, root, layout, A, low, collision })
-    const aspect = sourceCrownAspect(low)
     assert.equal(plants.records.length, 35)
     for (const record of plants.records) {
       const assembly = layout.r1.elements.find(row => row.id === record.id)
-      const potRow = layout.r1.elements.find(row => row.id === `${record.id}-POT`)
-      const crownRow = layout.r1.elements.find(row => row.id === `${record.id}-CR`)
-      const pot = record.parts.POT, crown = record.parts.CR
-      const potSize = pot.bounds.getSize(new THREE.Vector3()), potCenter = pot.bounds.getCenter(new THREE.Vector3())
-      const crownSize = crown.bounds.getSize(new THREE.Vector3()), crownCenter = crown.bounds.getCenter(new THREE.Vector3())
-      // 盆：尺寸与位置仍逐值等于登记值
-      near(potSize.x, potRow.lengthM, .005, `${record.id} pot x`)
-      near(potSize.z, potRow.widthM, .005, `${record.id} pot z`)
-      near(potSize.y, potRow.heightM, .005, `${record.id} pot y`)
-      near(pot.bounds.min.y, potRow.zM, .005, `${record.id} pot base`)
-      // 位置：平面中心仍在登记点上
-      near(potCenter.x, potRow.xM - 26, .005, `${record.id} pot cx`)
-      near(potCenter.z, 18 - potRow.yM, .005, `${record.id} pot cz`)
-      near(crownCenter.x, crownRow.xM - 26, .005, `${record.id} crown cx`)
-      near(crownCenter.z, 18 - crownRow.yM, .005, `${record.id} crown cz`)
-      // 总高：冠顶 = 总成登记高度
-      near(crown.bounds.min.y, crownRow.zM, .005, `${record.id} crown base`)
-      near(crown.bounds.max.y, assembly.heightM, .005, `${record.id} 总高`)
-      near(crownSize.y, crownRow.heightM, .005, `${record.id} crown height`)
-      // 冠：等比缩放 —— 长宽高比等于 GLB 源，且不再被拉成登记的 0.64 方框
-      near(crownSize.x / crownSize.y, aspect.x, .0005, `${record.id} crown aspect x`)
-      near(crownSize.z / crownSize.y, aspect.z, .0005, `${record.id} crown aspect z`)
-      // 等比之后冠缩进登记包络内（登记 0.64），净距只会变好
-      assert.ok(crownSize.x <= crownRow.lengthM + 1e-9, `${record.id} crown x ${crownSize.x} > ${crownRow.lengthM}`)
-      assert.ok(crownSize.z <= crownRow.widthM + 1e-9, `${record.id} crown z ${crownSize.z} > ${crownRow.widthM}`)
-    }
-    // 真实顶点：H2 带内每个冠顶点距 17 条路线中心线 >= .6 m
-    assert.equal(layout.r1.routes.length, 17)
-    let minimum = Infinity
-    for (const record of plants.records) {
-      const p = record.parts.CR.vertices
-      for (let i = 0; i < p.length; i += 3) {
-        if (p[i + 1] > 2.1) continue
-        for (const route of layout.r1.routes) for (let j = 1; j < route.points_m.length; j++) {
-          const d = segmentDistance(p[i] + 26, 18 - p[i + 2], route.points_m[j - 1], route.points_m[j])
-          minimum = Math.min(minimum, d)
-          assert.ok(d >= .6, `${record.id} ${route.id}: ${d}`)
-        }
+      for (const suffix of ['POT', 'CR']) {
+        const part = record.parts[suffix], row = layout.r1.elements.find(row => row.id === part.id)
+        const size = part.bounds.getSize(new THREE.Vector3()), center = part.bounds.getCenter(new THREE.Vector3())
+        near(size.x, row.lengthM, .005, `${part.id} x`)
+        near(size.z, row.widthM, .005, `${part.id} z`)
+        near(size.y, row.heightM, .005, `${part.id} y`)
+        near(part.bounds.min.y, row.zM, .005, `${part.id} base`)
+        near(center.x, row.xM - 26, .005, `${part.id} cx`)
+        near(center.z, 18 - row.yM, .005, `${part.id} cz`)
       }
+      near(record.parts.CR.bounds.max.y, assembly.heightM, .005, `${record.id} 总高`)
     }
-    assert.ok(minimum >= .6)
-    plants.dispose()
-    assert.equal(collision.stats().bodies, 0)
+    plants.dispose(); assert.equal(collision.stats().bodies, 0)
   }
 })
 
-test('I6B-2 R1 冠外形与旧版 L2B 绿植逐值同比例（沿用旧版绿植外形）', () => {
-  const foliage = createOfficePottedFoliage(THREE, source, false)
-  const placed = placeFurniture({ furn: { pottedPlant: foliage.source } }, 'pottedPlant', 0, 0, {})
-  placed.group.updateWorldMatrix(true, true)
-  const legacy = new THREE.Box3()
-  placed.group.traverse(mesh => { if (mesh.isMesh && mesh.material?.name === 'plant') { mesh.updateWorldMatrix(true, false); legacy.union(new THREE.Box3().setFromObject(mesh)) } })
-  const legacySize = legacy.getSize(new THREE.Vector3())
-  foliage.dispose()
+test('I6B-2 冠包络内加密一层叶片：高档两层（内层 72% 并绕竖轴旋转），低档只保留外层', () => {
+  for (const low of [false, true]) {
+    const root = new THREE.Group(), layout = createOfficeR1Layout()
+    const plants = buildR1Plants({ THREE, root, layout, A, low })
+    const crown = sourceCrown(low)
+    for (const record of plants.records) {
+      const part = record.parts.CR, row = layout.r1.elements.find(row => row.id === part.id)
+      const layers = part.layers
+      assert.ok(Array.isArray(layers), `${part.id} 冠应逐层记录`)
+      assert.equal(layers.length, low ? 1 : 2, `${part.id} 低档只留外层、高档两层`)
+      // 外层正好顶到登记冠包络
+      near(layers[0].shrink, 1, 1e-9, `${part.id} 外层`)
+      near(layers[0].bounds.getSize(new THREE.Vector3()).x, row.lengthM, .005, `${part.id} 外层 x`)
+      // 每层复用同一叶源，面数相同：高档整株冠面数 = 源的 2 倍
+      for (const layer of layers) assert.equal(layer.triangles, crown.triangles, `${part.id} 每层面数应等于叶源`)
+      assert.equal(part.count / 3, crown.triangles * (low ? 1 : 2), `${part.id} 冠面数加密倍数`)
+      if (low) continue
+      // 内层：缩到 72 %、绕竖轴转过一个角度，整体仍在登记冠包络之内
+      const inner = layers[1], size = inner.bounds.getSize(new THREE.Vector3()), center = inner.bounds.getCenter(new THREE.Vector3())
+      near(inner.shrink, .72, 1e-9, `${part.id} 内层缩放`)
+      assert.ok(Math.abs(inner.yaw) > .1, `${part.id} 内层应绕竖轴旋转，实际 ${inner.yaw}`)
+      near(size.x, row.lengthM * .72, .005, `${part.id} 内层 x`)
+      near(size.z, row.widthM * .72, .005, `${part.id} 内层 z`)
+      near(size.y, row.heightM * .72, .005, `${part.id} 内层 y`)
+      near(center.x, row.xM - 26, .005, `${part.id} 内层 cx`)
+      near(center.z, 18 - row.yM, .005, `${part.id} 内层 cz`)
+      near(center.y, row.zM + row.heightM / 2, .005, `${part.id} 内层应在冠包络内居中`)
+    }
+    // 所有叶片顶点仍在登记冠包络内（≤ 5 mm）
+    for (const record of plants.records) {
+      const part = record.parts.CR, row = layout.r1.elements.find(row => row.id === part.id)
+      const limit = { x: [row.xM - 26 - row.lengthM / 2, row.xM - 26 + row.lengthM / 2], y: [row.zM, row.zM + row.heightM], z: [18 - row.yM - row.widthM / 2, 18 - row.yM + row.widthM / 2] }
+      for (let i = 0; i < part.vertices.length; i += 3) for (const [axis, k] of [[0, 'x'], [1, 'y'], [2, 'z']]) {
+        const v = part.vertices[i + axis]
+        assert.ok(v >= limit[k][0] - .005 && v <= limit[k][1] + .005, `${part.id} 顶点 ${k}=${v} 超出登记冠包络 ${limit[k]}`)
+      }
+    }
+    plants.dispose()
+  }
+})
 
-  const root = new THREE.Group(), layout = createOfficeR1Layout()
-  const plants = buildR1Plants({ THREE, root, layout, A })
-  const crown = plants.records[0].parts.CR.bounds.getSize(new THREE.Vector3())
-  near(crown.x / crown.y, legacySize.x / legacySize.y, .0005, '冠 x/y 比例应与旧版一致')
-  near(crown.z / crown.y, legacySize.z / legacySize.y, .0005, '冠 z/y 比例应与旧版一致')
-  plants.dispose()
+test('I6B-2 加密不改路线净距：加密层顶点到 17 条路线中心线仍 >= .6 m，且不比外层更近', () => {
+  assert.equal(createOfficeR1Layout().r1.routes.length, 17)
+  for (const low of [false, true]) {
+    const root = new THREE.Group(), layout = createOfficeR1Layout()
+    const plants = buildR1Plants({ THREE, root, layout, A, low })
+    let all = Infinity, outer = Infinity
+    for (const record of plants.records) {
+      all = Math.min(all, routeClearance(layout, record.parts.CR.vertices))
+      outer = Math.min(outer, routeClearance(layout, record.parts.CR.layers[0].vertices))
+    }
+    assert.ok(all >= .6, `加密后净距 ${all}`)
+    near(all, outer, 1e-9, '加密层不得让净距变差')
+    plants.dispose()
+  }
 })

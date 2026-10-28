@@ -298,10 +298,10 @@
     },
     {
       "file": "office-vis2/r1-plants.js",
-      "source": "R1 registered indoor pots with existing pottedPlant foliage; no downloaded assets",
+      "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "581D4D2477982C8946C1B23E514A8143E190AFAF5A3929617A1C2AF264B0614E"
+      "sha256": "ECCF600317E3DF83F92AF41C1CCAD66A0C9DD198DCA669698490D67092A00B16"
     },
     {
       "file": "office-vis2/r1-decor.js",

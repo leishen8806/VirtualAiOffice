@@ -2,9 +2,15 @@ import { r1ToWorld } from '../office-r1-layout.js'
 import { createOfficePottedFoliage } from './plants.js'
 import { createSampleBatch } from './batch.js'
 
+// 裁定 D（dispatch/OFFICE-R1-I6B-20261028/裁定-绿植外形-R2.md）：登记冠包络、盆尺寸与总高都不动，
+// 只在包络内加密叶片。外层正好顶到登记冠包络；内层复用同一叶源，缩到 72 % 并绕竖轴转过一个角度后
+// 在包络内居中，把源模型稀疏的叶片填实。低档只保留外层，不增加面数。
+const CROWN_FILL = .72
+
 export function buildR1Plants({ THREE, root, layout, A, quality, low = false, collision }) {
   if (layout?.r1Phase !== 'R1' || !A?.furn?.pottedPlant) return { dispose() {} }
-  const foliage = createOfficePottedFoliage(THREE, A.furn.pottedPlant, quality ? quality.tier === 'low' : low)
+  const lowTier = quality ? quality.tier === 'low' : low
+  const foliage = createOfficePottedFoliage(THREE, A.furn.pottedPlant, lowTier)
   if (!foliage.enabled) throw new Error('R1 requires the registered pottedPlant foliage asset')
   const group = new THREE.Group(); group.name = 'r1-plants'; group.userData.dynamic = true
   const batch = createSampleBatch(THREE), parts = { pot: [], crown: [] }, boxes = { pot: new THREE.Box3(), crown: new THREE.Box3() }
@@ -17,24 +23,36 @@ export function buildR1Plants({ THREE, root, layout, A, quality, low = false, co
   })
   const plants = layout.r1.elements.filter(row => row.category === '植物总成' && row.regionId !== '14' && row.id !== '07-PL-001')
   const proxies = [], records = [], proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
-  for (const plant of plants) {
+  for (const [index, plant] of plants.entries()) {
     const p = r1ToWorld(plant.xM, plant.yM), children = Object.fromEntries(['POT', 'TR', 'CR'].map(suffix => [suffix, layout.r1.elements.find(row => row.id === `${plant.id}-${suffix}`)]))
     const record = { id: plant.id, position: p, parts: {} }
     for (const [kind, suffix] of [['pot', 'POT'], ['crown', 'CR']]) {
-      const row = children[suffix], box = boxes[kind], size = box.getSize(new THREE.Vector3()), middle = box.getCenter(new THREE.Vector3())
-      // 盆按登记尺寸分轴贴合；冠改等比缩放（OFFICE-R1-I6B）：沿用旧版绿植外形，不再把冠拉成登记的方框。
-      // 以登记冠高定标，冠宽随 GLB 原比例，因此冠缩进登记包络内（.495 < .64），路线净距只会变好。
-      const scale = kind === 'crown'
-        ? new THREE.Vector3().setScalar(row.heightM / size.y)
-        : new THREE.Vector3(row.lengthM / size.x, row.heightM / size.y, row.widthM / size.z)
-      const transform = new THREE.Matrix4().makeScale(...scale.toArray()); transform.setPosition(p.x - middle.x * scale.x, row.zM - box.min.y * scale.y, p.z - middle.z * scale.z)
-      const bounds = new THREE.Box3(), vertices = [], startVertex = batch.triangles() * 3
-      for (const source of parts[kind]) {
-        const g = source.geometry.clone().applyMatrix4(transform); g.computeBoundingBox(); bounds.union(g.boundingBox)
-        if (kind === 'crown') vertices.push(...g.attributes.position.array)
-        batch.add(g, source.color, [0, 0, 0], 0, .88)
+      const row = children[suffix]
+      const specs = kind === 'crown' && !lowTier ? [{ shrink: 1, yaw: 0 }, { shrink: CROWN_FILL, yaw: .7 + index * .37 }] : [{ shrink: 1, yaw: 0 }]
+      const bounds = new THREE.Box3(), vertices = [], startVertex = batch.triangles() * 3, layers = []
+      for (const spec of specs) {
+        // 先转过角度并量出真实包围盒，再贴合登记包络、整体缩到 shrink 并居中，
+        // 内层的包围盒因此正好是登记包络的 shrink 倍，必然落在外层包络之内。
+        const rotation = spec.yaw ? new THREE.Matrix4().makeRotationY(spec.yaw) : null, turned = new THREE.Box3()
+        const geometries = parts[kind].map(source => {
+          const g = source.geometry.clone(); if (rotation) g.applyMatrix4(rotation)
+          g.computeBoundingBox(); turned.union(g.boundingBox)
+          return { geometry: g, color: source.color }
+        })
+        const size = turned.getSize(new THREE.Vector3()), middle = turned.getCenter(new THREE.Vector3())
+        const scale = new THREE.Vector3(row.lengthM / size.x, row.heightM / size.y, row.widthM / size.z).multiplyScalar(spec.shrink)
+        const transform = new THREE.Matrix4().makeScale(...scale.toArray())
+        transform.setPosition(p.x - middle.x * scale.x, row.zM + row.heightM * (1 - spec.shrink) / 2 - turned.min.y * scale.y, p.z - middle.z * scale.z)
+        const layerBounds = new THREE.Box3(), layerVertices = [], layerStart = batch.triangles() * 3
+        for (const { geometry, color } of geometries) {
+          geometry.applyMatrix4(transform); geometry.computeBoundingBox(); layerBounds.union(geometry.boundingBox)
+          if (kind === 'crown') layerVertices.push(...geometry.attributes.position.array)
+          batch.add(geometry, color, [0, 0, 0], 0, .88)
+        }
+        bounds.union(layerBounds); vertices.push(...layerVertices)
+        layers.push({ shrink: spec.shrink, yaw: spec.yaw, bounds: layerBounds, vertices: layerVertices, triangles: (batch.triangles() * 3 - layerStart) / 3 })
       }
-      record.parts[suffix] = { id: row.id, bounds, vertices, startVertex, count: batch.triangles() * 3 - startVertex }
+      record.parts[suffix] = { id: row.id, bounds, vertices, startVertex, count: batch.triangles() * 3 - startVertex, layers }
     }
     const trunk = children.TR, trunkGeometry = new THREE.CylinderGeometry(trunk.lengthM / 2, trunk.widthM / 2, trunk.heightM, 8)
     batch.add(trunkGeometry, '#756857', [p.x, trunk.zM + trunk.heightM / 2, p.z])
