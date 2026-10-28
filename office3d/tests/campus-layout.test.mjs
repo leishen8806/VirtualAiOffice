@@ -37,12 +37,15 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   // V3-A1/R2 仅追加独立 ALIGN 数据（包含经批准的 5.45m 沙发半径）。
   const alignBlock = /\r?\nconst alignRect = [\s\S]*?(?=\r?\nconst LAYOUT_V1_DATA)/
   const alignExport = /^export const LAYOUT_V3_ALIGN = .*\r?\n/m
-  const plan1Import = /^import \{ makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase \} from '\.\/office-plan1-layout\.js'\r?\n\r?\n/m
+  const plan1Import = /^import \{ makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase \} from '\.\/office-plan1-layout\.js'\r?\n/m
+  const r1Import = /^import \{ createOfficeR1Layout \} from '\.\/office-vis2\/r1-site\.js'\r?\n\r?\n/m
   const sampleExport = /^export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep\(makeOfficePlan1Layout\(V3_ALIGN_LAYOUT\)\)\r?\n/m
   const l2bExport = /^export const LAYOUT_V3_ALIGN_L2B = .*\r?\n/m
+  const r1Export = /^export const LAYOUT_V3_R1 = createOfficeR1Layout\(\)\r?\n/m
   const approvedHome = 'export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })'
   const legacyHome = 'export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })'
   assert.ok(currentSource.includes(approvedHome)); assert.match(currentSource, sampleExport)
+  assert.match(currentSource, r1Import); assert.match(currentSource, r1Export)
   const regionFocusExport = /^export const regionFocusOf = .*\r?\n/m
   const resolverBlock = /export const resolveOfficeLayout = \(search = ''\) => \{[\s\S]*?\r?\n\}/
   const phaseLines = source => source.replace("if (['L1', 'L2'].includes(officePlan1Phase(layout))) {", "if (['L1', 'L2'].includes(layout.plan1Phase)) {")
@@ -53,9 +56,11 @@ test('all pre-S2-3 exports keep values and source prefix', () => {
   assert.match(currentSource, regionFocusExport)
   const restored = currentSource
     .replace(plan1Import, '')
+    .replace(r1Import, '')
     .replace(approvedHome, legacyHome)
     .replace(sampleExport, '')
     .replace(l2bExport, '')
+    .replace(r1Export, '')
     .replace(v3FocusMeet, '')
     .replace(v3Block, '')
     .replace(alignBlock, '')

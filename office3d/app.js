@@ -1692,7 +1692,7 @@ addEventListener('keydown', (e) => {
   if (e.key === '-') setGoal({ r: goal.r * 1.1 }, true)
 })
 // ── 小地图（左下角）：整个办公室的平面图 + 每个人的位置 + 镜头位置；点击 / 拖动 = 镜头跳到那里
-const MINI = DR_MODE ? PLACE_MODE.miniBounds : MINI_BOUNDS
+const MINI = DR_MODE ? PLACE_MODE.miniBounds : OFFICE_LAYOUT.r1Phase === 'R1' ? OFFICE_LAYOUT.miniBounds : MINI_BOUNDS
 const miniEl = $('minimap')
 const miniCtx = miniEl.getContext('2d')
 const miniView = () => { const s = Math.min(miniEl.width / (MINI.x1 - MINI.x0), miniEl.height / (MINI.z1 - MINI.z0)); return { s, ox: (miniEl.width - (MINI.x1 - MINI.x0) * s) / 2, oy: (miniEl.height - (MINI.z1 - MINI.z0) * s) / 2 } }

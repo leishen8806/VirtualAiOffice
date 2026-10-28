@@ -2,6 +2,7 @@ import { OFFICE_THEME_V2 as THEME } from './office-theme-v2.js'
 import { resolveWallOcclusion } from './office-v3-occlusion.js'
 import { officePlan1InnerWalls, officePlan1Phase } from './office-plan1-layout.js'
 import { buildPlan1Facade, buildPlan1Reception } from './office-vis2/plan1-walls.js'
+import { buildR1Shell } from './office-vis2/r1-shell.js'
 
 const boxMatrix = (THREE, matrix, x0, x1, y, h, z0, z1) => matrix.makeScale(x1 - x0, h, z1 - z0).setPosition((x0 + x1) / 2, y + h / 2, (z0 + z1) / 2)
 const sideNormal = { north: { x: 0, z: -1 }, south: { x: 0, z: 1 }, west: { x: -1, z: 0 }, east: { x: 1, z: 0 } }
@@ -87,6 +88,7 @@ const segmentMatrix = (THREE, segment, y, h, thickness = .18) => {
 }
 
 export function buildOfficeShellV3({ THREE, root, layout, collision, low = false, scene, get }) {
+  if (layout?.r1Phase === 'R1') return buildR1Shell({ THREE, root, layout, collision, low, scene, get })
   const spec = buildOfficeShellV3Spec(layout), outerStyle = layout.walls?.outerSolid
   const outerHeight = outerStyle?.height ?? 3.5, capHeight = outerStyle?.capHeight ?? 0, exteriorColor = outerStyle?.finish ?? THEME.exteriorWall
   const warm = new THREE.MeshStandardMaterial({ color: exteriorColor, emissive: exteriorColor, emissiveIntensity: .28, roughness: THEME.wallRoughness, vertexColors: true, toneMapped: false })

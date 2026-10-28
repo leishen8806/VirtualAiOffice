@@ -260,6 +260,34 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "51B1A693A4BF623729775999D98929B20C5C28CBF2C7047E30BF6D07619458C2"
+    },
+    {
+      "file": "office-vis2/r1-shell.js",
+      "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "5B177DB08732EDD0963E4DDE903C50069322AED9AFDA18AED4AFB41D1E8693E1"
+    },
+    {
+      "file": "office-vis2/r1-site.js",
+      "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "8BC6A1A784F3CC57651AAFA62E7D404AB35727819DC93F0200718E1C69C55225"
+    },
+    {
+      "file": "office-vis2/r1-furniture.js",
+      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "E74E410326AC37E5AD6FCBBDB4766AA2B8B09D2EEEB33EFD01CB5923CD9EAAC1"
+    },
+    {
+      "file": "office-vis2/r1-zones.js",
+      "source": "OFFICE-R1-I2 R1-only data-driven floor-zone marks and labels; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "70D3F6E2C3B64539E52A8DD9B25B93C5714D1BFB516C950D6168D60C732F2F58"
     }
   ],
   "excluded": {

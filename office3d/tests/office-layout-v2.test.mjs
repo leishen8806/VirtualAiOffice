@@ -13,10 +13,13 @@ test('layout1 preserves every pre-O2 export value and order', async () => {
   const currentSource = fs.readFileSync(new URL('../office-layout.js', import.meta.url), 'utf8')
   const approvedHome = 'export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })'
   const legacyHome = 'export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })'
-  const plan1Import = /^import \{ makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase \} from '\.\/office-plan1-layout\.js'\r?\n\r?\n/m
+  const plan1Import = /^import \{ makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase \} from '\.\/office-plan1-layout\.js'\r?\n/m
+  const r1Import = /^import \{ createOfficeR1Layout \} from '\.\/office-vis2\/r1-site\.js'\r?\n\r?\n/m
+  const r1Export = /^export const LAYOUT_V3_R1 = createOfficeR1Layout\(\)\r?\n/m
   assert.ok(currentSource.includes(approvedHome))
+  assert.match(currentSource, r1Import); assert.match(currentSource, r1Export)
   // L1 仅增加样板数据导入；其余旧源码仍逐字冻结。
-  const frozenSource = currentSource.replace(plan1Import, '').replace(/^export const LAYOUT_V3_ALIGN_L2B = .*\r?\n/m, '').replace(approvedHome, legacyHome)
+  const frozenSource = currentSource.replace(plan1Import, '').replace(r1Import, '').replace(/^export const LAYOUT_V3_ALIGN_L2B = .*\r?\n/m, '').replace(r1Export, '').replace(approvedHome, legacyHome)
     .replace("if (['L1', 'L2'].includes(officePlan1Phase(layout))) {", "if (['L1', 'L2'].includes(layout.plan1Phase)) {")
     .replace("const inset = officePlan1Phase(layout) === 'L2' ? .32 : .35", "const inset = layout.plan1Phase === 'L2' ? .32 : .35")
   assert.equal(frozenSource.startsWith(oldSource), true)

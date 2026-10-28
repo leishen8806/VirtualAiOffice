@@ -1,6 +1,7 @@
 import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
 import { buildOfficeAlignedShell } from './office-vis2/shell-finish.js'
+import { buildOfficeShellV3 } from './office-layout-v3-scene.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
 import { buildOfficeSampleHost, officeSampleRequested } from './office-vis2/host.js'
 import { buildOfficeAlignedZones } from './office-vis2/zone-finish.js'
@@ -9,6 +10,7 @@ import { buildOfficeDisplayFinish as buildDisplayDepartments } from './office-vi
 import { buildDisplayStaff } from './display-staff.js'
 import { createOfficePottedFoliage } from './office-vis2/plants.js'
 import { facingSample, facingHome, posedPoint } from './office-vis2/furniture-sample.js'
+import { buildR1Furniture } from './office-vis2/r1-furniture.js'
 
 const pendingModule = name => ({
   pending: true,
@@ -79,10 +81,14 @@ export const officeV3Modules = Object.freeze([
   ['displayStaff', buildDisplayStaffV3],
 ])
 
+export const officeV3ModulesFor = layout => layout?.r1Phase === 'R1'
+  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture]])
+  : officeV3Modules
+
 export function startOfficeV3(shared) {
   if ((shared.layout || LAYOUT_V3).version !== 3) return null
   const registry = createOfficeV2Registry({ THREE: shared.THREE, scene: shared.scene, quality: shared.quality, layout: shared.layout || LAYOUT_V3, rootName: 'office3-root', batchPrefix: 'office3' })
-  officeV3Modules.forEach(([name, factory]) => registry.register(name, factory))
+  officeV3ModulesFor(shared.layout || LAYOUT_V3).forEach(([name, factory]) => registry.register(name, factory))
   registry.buildAll(shared)
   if (!registry.get('shell3')) { registry.dispose(); return null }
   shared.scene.userData.officeV3 = registry

@@ -1,4 +1,5 @@
 import { makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase } from './office-plan1-layout.js'
+import { createOfficeR1Layout } from './office-vis2/r1-site.js'
 
 // 空间坐标与门洞是渲染、碰撞和验证的共同来源；房间不开敞口。
 export const ENVELOPE = { x0: -44, x1: 22, z0: -13, z1: 13 }
@@ -588,6 +589,7 @@ export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
 export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep(makeOfficePlan1Layout(V3_ALIGN_LAYOUT))
 export const LAYOUT_V3_ALIGN_L2B = freezeDeep(makeOfficePlan1L2BLayout(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_R1 = createOfficeR1Layout()
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
@@ -598,6 +600,8 @@ export const resolveOfficeLayout = (search = '') => {
     if (params.getAll('align').length !== 1 || params.get('align') !== '1') return LAYOUT_V3
     const sample = params.getAll('officeSample').length === 1 && params.get('officeSample') === '1'
     if (!sample) return LAYOUT_V3_ALIGN
+    const r1 = params.getAll('r1')
+    if (r1.length === 1 && r1[0] === '1') return LAYOUT_V3_R1
     const l2b = params.getAll('l2b')
     return (l2b.length === 0 || l2b.length === 1 && l2b[0] === '1') ? LAYOUT_V3_ALIGN_L2B : LAYOUT_V3_ALIGN_SAMPLE
   }
@@ -839,8 +843,22 @@ function createOfficeV3Navigation(layout) {
   }
 }
 
+function createOfficeR1Navigation(layout) {
+  const point = value => Number.isFinite(value?.x) && Number.isFinite(value?.z) ? { x: value.x, z: value.z } : undefined
+  const origin = point(layout.axis) || { x: 0, z: 0 }
+  const stay = value => point(value) ? [point(value)] : []
+  return {
+    roomAt: () => undefined, standAt: point, officeExit: stay, corridorPath: stay, loungeTrip: stay, meetingTrip: stay, officeTrip: stay, boardTrip: stay,
+    consumerTrip: stay, foyerTrip: stay, plazaTrip: stay, foyerReturnTrip: stay, consumerAdvance: (_, from) => stay(from), consumerDeparture: (_, stand) => stay(stand),
+    consumerTargets: {}, consumerQueues: { waiting: [] }, ENTRANCE: { x0: origin.x, x1: origin.x, inner: origin, gate: [] }, CORRIDOR_X: origin.x,
+    BOARD_DOOR: { x: origin.x, zOut: origin.z, zIn: origin.z, outside: origin, inside: origin, side: 'none' }, FOYER_Z: origin.z, AISLE_OFFSET: 0,
+    LOUNGE_AREA: { x: origin.x, z: origin.z, width: 0, depth: 0, entryZ: origin.z }, LOUNGE_SEATS: [], COFFEE_SEATS: [],
+  }
+}
+
 // 调用方持有选定版本；旧版导出和数据不参与重写。
 export function createOfficeNavigation(layout = LAYOUT_V1) {
+  if (layout?.r1Phase === 'R1') return createOfficeR1Navigation(layout)
   if (layout.version === 3) return createOfficeV3Navigation(layout)
   if (layout.version !== 2) return LAYOUT_V1
   const rooms = layout.regions, center = layout.bar.center, corridors = layout.corridors
