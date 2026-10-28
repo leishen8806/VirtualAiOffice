@@ -11,6 +11,8 @@ import { buildDisplayStaff } from './display-staff.js'
 import { createOfficePottedFoliage } from './office-vis2/plants.js'
 import { facingSample, facingHome, posedPoint } from './office-vis2/furniture-sample.js'
 import { buildR1Furniture } from './office-vis2/r1-furniture.js'
+import { buildR1Island } from './office-vis2/r1-island.js'
+import { buildR1Plants } from './office-vis2/r1-plants.js'
 
 const pendingModule = name => ({
   pending: true,
@@ -82,7 +84,7 @@ export const officeV3Modules = Object.freeze([
 ])
 
 export const officeV3ModulesFor = layout => layout?.r1Phase === 'R1'
-  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture]])
+  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture], ['r1Island', buildR1Island], ['r1Plants', buildR1Plants]])
   : officeV3Modules
 
 export function startOfficeV3(shared) {

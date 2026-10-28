@@ -81,7 +81,7 @@
   "geometry": [
     {
       "file": "office-heart-banyan.js",
-      "sha256": "F350047FB201C7C7943118C4CA50EEF4E9BF8389A428D722DC7803D1EDC5B57D",
+      "sha256": "35952BC50DB1D10A34D4AB17634F8137CC04B506FE947181D158E7B4451CFAC6",
       "source": "Existing procedural banyan refined in O-V1: smaller leaves, deeper canopy notch and branching; no photo textures",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false
@@ -273,14 +273,14 @@
       "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "8BC6A1A784F3CC57651AAFA62E7D404AB35727819DC93F0200718E1C69C55225"
+      "sha256": "84BA97EC3958C31C2CA3BBBA2FB270F8B18B5FD9EE20E06B58DEEBAD9653245B"
     },
     {
       "file": "office-vis2/r1-furniture.js",
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E74E410326AC37E5AD6FCBBDB4766AA2B8B09D2EEEB33EFD01CB5923CD9EAAC1"
+      "sha256": "2F5C72BDE14A0CDCF56CF26591D742AED8B3102FF1DE280DB8A3DCAD8C0E24BD"
     },
     {
       "file": "office-vis2/r1-zones.js",
@@ -288,6 +288,20 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "70D3F6E2C3B64539E52A8DD9B25B93C5714D1BFB516C950D6168D60C732F2F58"
+    },
+    {
+      "file": "office-vis2/r1-island.js",
+      "source": "R1 registered island, arc seats and fitted existing banyan; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "742E77FB0724FBA110B87431CAC7FC36DFFFC63C94BD5DB8EC91224B1A7095BF"
+    },
+    {
+      "file": "office-vis2/r1-plants.js",
+      "source": "R1 registered indoor pots with existing pottedPlant foliage; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "47F14D1B20E9F08F9F05D3F31388EF612AF0946B3548E3C07F82E5CB1A2EC7B8"
     }
   ],
   "excluded": {
