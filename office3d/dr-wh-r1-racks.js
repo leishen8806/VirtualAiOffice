@@ -1,6 +1,6 @@
 // Extracted and adapted from feat/dr-b5-dispatch-suite@640d7f4: rack batching only; WH-R1 coordinates come from wh-r1/data.js.
 import { WH_R1_DATA } from './wh-r1/data.js'
-import { whToWorld } from './wh-r1-layout.js'
+import { whToWorld, WH_R1_FLOOR_Y } from './wh-r1-layout.js'
 
 const COLORS = Object.freeze({ frame: 0x2f6fa8, beam: 0xe8832a, pallet: 0xb98a58, guard: 0xf2b632, rail: 0x6b7780, shuttle: 0x56636d })
 const CATEGORY = Object.freeze({ frames: '货架立柱框占位', beams: '货架横梁占位', pallets: '托盘占位子件', guards: '架端防撞占位', cells: '货架格控制体' })
@@ -61,7 +61,7 @@ const rackElement = id => {
 const yellowReview = Object.freeze(WH_R1_DATA.passageChecks.filter(check => ['F03', 'R02'].includes(check.id)).map(check => Object.freeze({ id: check.id, margin_mm: check.margin_mm, status: check.status, marker: 'yellow' })))
 
 export function buildWhR1Racks({ THREE, root, collision, canvasTex }) {
-  const group = new THREE.Group(); group.name = 'wh-r1-racks'; group.userData.dynamic = true
+  const group = new THREE.Group(); group.name = 'wh-r1-racks'; group.userData.dynamic = true; group.position.y = WH_R1_FLOOR_Y
   root.add(group)
   const frames = registeredRows(CATEGORY.frames), beams = registeredRows(CATEGORY.beams), pallets = registeredRows(CATEGORY.pallets), guards = registeredRows(CATEGORY.guards), cells = registeredRows(CATEGORY.cells)
   const rails = [], shuttles = [], proxies = [], labels = []

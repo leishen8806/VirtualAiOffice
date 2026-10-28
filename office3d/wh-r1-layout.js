@@ -1,5 +1,7 @@
 import { WH_R1_DATA } from './wh-r1/data.js'
 
+export const WH_R1_FLOOR_Y = -.59
+
 const coordinate = value => Number(value.toFixed(6))
 export const whToWorld = (xM, yM) => Object.freeze({ x: coordinate(xM - 168), z: coordinate(30 - yM) })
 export const whElementWorld = row => Object.freeze({ ...whToWorld(row.xM, row.yM), y: row.zM })

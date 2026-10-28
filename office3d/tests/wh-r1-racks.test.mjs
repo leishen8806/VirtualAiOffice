@@ -6,7 +6,7 @@ import { createFurnitureCollision } from '../furniture-collision.js'
 import { buildWhR1Racks } from '../dr-wh-r1-racks.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { WH_R1_DATA } from '../wh-r1/data.js'
-import { whToWorld } from '../wh-r1-layout.js'
+import { whToWorld, WH_R1_FLOOR_Y } from '../wh-r1-layout.js'
 import { WH_R1_WALLS } from '../dr-wh-r1-shell.js'
 
 const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) <= .005, `${message}: ${actual} !== ${expected}`)
@@ -22,7 +22,8 @@ const instances = mesh => {
 }
 
 test('I3 builds four instanced WH-R1 pallet racks and real mesh collision proxies', () => {
-  const root = new THREE.Group(), collision = createFurnitureCollision(), value = buildWhR1Racks({ THREE, root, collision, canvasTex: () => new THREE.Texture() })
+  const root = new THREE.Group(); root.position.y = -WH_R1_FLOOR_Y // Test the ground-relative collision library with the whole scene at floor zero.
+  const collision = createFurnitureCollision(), value = buildWhR1Racks({ THREE, root, collision, canvasTex: () => new THREE.Texture() })
   assert.deepEqual(value.counts, { racks: 4, frames: 40, cells: 96, pallets: 192, beams: 128, guards: 8, shuttleRails: 8, shuttleCars: 4 })
   const group = root.getObjectByName('wh-r1-racks')
   const specs = [
@@ -90,6 +91,6 @@ test('I3 appends racks only to the WH-R1 registry source order', () => {
   globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
   try {
     const registry = createCampusRegistry({ THREE, scene, quality: { tier: 'low' }, layout: {} })
-    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-racks']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
+    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-racks', 'wh-r1-workflow']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
   } finally { globalThis.location = prior }
 })
