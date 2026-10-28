@@ -116,7 +116,67 @@ function frontGeometry(THREE, walls) {
   const byId = Object.fromEntries(walls.filter(wall => frontIds.has(wall.id)).map(wall => [wall.id, wall]))
   const join = ids => ids.flatMap((id, index) => byId[id].geometry.points.slice(index ? 1 : 0))
   const paths = [{ points: join(['00-W-005', '00-W-006', '00-W-009']) }, { points: join(['00-W-010', '00-W-007', '00-W-008']) }]
-  return { geometry: thickPathsGeometry(THREE, paths, .2, point => r1FrontHeight(point[0], walls)), ids: [...frontIds] }
+  return { paths, geometry: thickPathsGeometry(THREE, paths, .2, point => r1FrontHeight(point[0], walls)), ids: [...frontIds] }
+}
+
+
+export const r1FenceSpec = Object.freeze({ baseHeight: .3, thickness: .2, barWidth: .025, barSpacing: .125, railHeight: .05, railDepth: .03, bottomRail: .4, topInset: .05, maxRailGap: 1.5, postWidth: .1, maxPostGap: 3 })
+
+function buildFrontFence(THREE, shell, front, faces, walls, opaque) {
+  const spec = r1FenceSpec, metal = new THREE.MeshStandardMaterial({ color: '#2E2F31', metalness: .6, roughness: .45 })
+  const base = new THREE.Mesh(thickPathsGeometry(THREE, front.paths, spec.thickness, () => spec.baseHeight), opaque)
+  base.name = 'r1-fence-base'
+  const entries = { bars: [], rails: [], posts: [] }, height = x => r1FrontHeight(x + 26, walls)
+  for (const path of front.paths) {
+    const nodes = path.points.map(localPoint), segments = []; let length = 0
+    for (let i = 1; i < nodes.length; i++) {
+      const a = nodes[i - 1], b = nodes[i], span = Math.hypot(b.x - a.x, b.z - a.z)
+      segments.push({ a, b, start: length, span, dx: (b.x - a.x) / span, dz: (b.z - a.z) / span }); length += span
+    }
+    const at = distance => {
+      const segment = segments.find(s => distance <= s.start + s.span + 1e-9) || segments.at(-1)
+      return { ...segment, x: segment.a.x + segment.dx * (distance - segment.start), z: segment.a.z + segment.dz * (distance - segment.start) }
+    }
+    const upright = (distance, width, kind) => {
+      const p = at(distance), top = height(p.x), h = top - spec.baseHeight, matrix = new THREE.Matrix4()
+      matrix.set(p.dx * width, 0, -p.dz * width, p.x, 0, h, 0, spec.baseHeight, p.dz * width, 0, p.dx * width, p.z, 0, 0, 0, 1)
+      const tilt = [[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => (height(p.x + width / 2 * (p.dx * x - p.dz * z)) - top) / h)
+      entries[kind].push({ matrix, tilt, distance, path: front.paths.indexOf(path) })
+    }
+    // Endpoint posts finish at the original end planes, never protruding into the doorway.
+    const postCount = Math.ceil((length - spec.postWidth) / spec.maxPostGap)
+    for (let i = 0; i <= postCount; i++) upright(spec.postWidth / 2 + i * (length - spec.postWidth) / postCount, spec.postWidth, 'posts')
+    const barCount = Math.ceil((length - spec.barWidth) / spec.barSpacing)
+    for (let i = 0; i <= barCount; i++) upright(spec.barWidth / 2 + i * (length - spec.barWidth) / barCount, spec.barWidth, 'bars')
+    const railGaps = Math.ceil((4.5 - spec.topInset - spec.bottomRail) / spec.maxRailGap)
+    for (const p of segments) for (let level = 0; level <= railGaps; level++) {
+      const y = x => spec.bottomRail + level / railGaps * (height(x) - spec.topInset - spec.bottomRail)
+      const ya = y(p.a.x), yb = y(p.b.x), matrix = new THREE.Matrix4()
+      matrix.set(p.dx * p.span, 0, -p.dz * spec.railDepth, (p.a.x + p.b.x) / 2,
+        yb - ya, spec.railHeight, 0, (ya + yb) / 2 - spec.railHeight / 2,
+        p.dz * p.span, 0, p.dx * spec.railDepth, (p.a.z + p.b.z) / 2, 0, 0, 0, 1)
+      entries.rails.push({ matrix, tilt: [0,0,0,0], level, path: front.paths.indexOf(path) })
+    }
+  }
+  const geometry = new THREE.BoxGeometry(1, 1, 1).translate(0, .5, 0), position = geometry.attributes.position
+  // Four top-corner morphs keep flat feet and profile-cut tops in a single instanced batch.
+  geometry.morphTargetsRelative = true
+  geometry.morphAttributes.position = [[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => {
+    const values = new Float32Array(position.count * 3)
+    for (let i = 0; i < position.count; i++) if (position.getY(i) > .5 && Math.sign(position.getX(i)) === x && Math.sign(position.getZ(i)) === z) values[i * 3 + 1] = 1
+    return new THREE.Float32BufferAttribute(values, 3)
+  })
+  const meshes = [base]
+  for (const [kind, rows] of Object.entries(entries)) {
+    const mesh = new THREE.InstancedMesh(geometry, metal, rows.length)
+    mesh.name = 'r1-fence-' + kind
+    rows.forEach((row, index) => { mesh.setMatrixAt(index, row.matrix); mesh.setMorphAt(index, { morphTargetInfluences: row.tilt }) })
+    mesh.instanceMatrix.needsUpdate = true; mesh.morphTexture.needsUpdate = true
+    mesh.userData.parts = rows.map(({ matrix, ...row }) => row)
+    meshes.push(mesh)
+  }
+  for (const mesh of meshes) { Object.assign(mesh.userData, { dynamic: true, wallIds: front.ids, faceIds: faces }); shell.add(mesh) }
+  return { dispose() { base.geometry.dispose(); geometry.dispose(); metal.dispose(); meshes.slice(1).forEach(m => m.dispose()) } }
 }
 
 export function r1WallPlan(layout) {
@@ -203,7 +263,8 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   ].filter(Boolean)
   const front = frontGeometry(THREE, plan.front)
   const frontWall = new THREE.Mesh(front.geometry, opaque)
-  frontWall.name = 'r1-front-slope-wall'; frontWall.userData.dynamic = true; frontWall.userData.wallIds = front.ids; frontWall.userData.faceIds = plan.front.flatMap(wall => plan.faces[wall.id].map(face => face.id)); shell.add(frontWall)
+  frontWall.name = 'r1-collision-front'; frontWall.visible = false; frontWall.userData.dynamic = true; frontWall.userData.wallIds = front.ids; frontWall.userData.faceIds = plan.front.flatMap(wall => plan.faces[wall.id].map(face => face.id)); shell.add(frontWall)
+  const fence = buildFrontFence(THREE, shell, front, frontWall.userData.faceIds, plan.front, opaque)
   const cornerPaths = [
     { points: curvePoints(r1CornerSpec.southeast.center, r1CornerSpec.southeast.from, r1CornerSpec.southeast.to) },
     { points: curvePoints(r1CornerSpec.southwest.center, r1CornerSpec.southwest.from, r1CornerSpec.southwest.to) },
@@ -244,6 +305,6 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
     walls: { userData: { wallIds: allWallIds, faceIds: layout.r1.data.wallFaces.map(face => face.id) } },
     wallLedger: { wallIds: allWallIds, faceIds: layout.r1.data.wallFaces.map(face => face.id), doorIds: layout.r1.data.doors.map(door => door.id) },
     onFrame() {},
-    dispose() { collisions.forEach(proxy => { collision?.remove?.(proxy); if (proxy.name.startsWith('r1-collision-')) proxy.removeFromParent() }); site.dispose(); zones.dispose(); front.geometry.dispose(); cornerGeometry.dispose(); cornerProxy.geometry.dispose(); bands.geometry.dispose(); innerFrames.geometry.dispose(); innerGlassMaterial.dispose(); outerGlassMaterial.dispose(); bandMaterial.dispose(); opaque.dispose(); glass.dispose(); frame.dispose(); shell.removeFromParent() },
+    dispose() { collisions.forEach(proxy => { collision?.remove?.(proxy); if (proxy.name.startsWith('r1-collision-')) proxy.removeFromParent() }); site.dispose(); zones.dispose(); fence.dispose(); front.geometry.dispose(); cornerGeometry.dispose(); cornerProxy.geometry.dispose(); bands.geometry.dispose(); innerFrames.geometry.dispose(); innerGlassMaterial.dispose(); outerGlassMaterial.dispose(); bandMaterial.dispose(); opaque.dispose(); glass.dispose(); frame.dispose(); shell.removeFromParent() },
   }
 }
