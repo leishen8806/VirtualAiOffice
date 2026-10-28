@@ -142,7 +142,11 @@ test('I6-6 the plaza slot is appended last for R1 only and builds nothing for an
   }
 })
 
-const r1Assets = () => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded'].map(name => [name, name])) })
+const r1Assets = () => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1'].map(name => {
+  const group = new THREE.Group()
+  for (const [name, color] of [['wood', 0xcdbb9c], ['metal', 0xc7cbcf]]) group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ name, color })))
+  return [name, group]
+})) })
 const r1PlaceFurniture = (_A, name, x, z, { y = 0, rotY = 0 } = {}) => {
   const group = new THREE.Group(), mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
   mesh.position.y = .5; group.add(mesh); group.position.set(x, y, z); group.rotation.y = rotY

@@ -6,7 +6,7 @@ import { createUI } from './ui.js'
 import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
 import { createFurnitureCollision } from './furniture-collision.js'
 import { startOfficeV2, OFFICE_LAYOUT, SEATS, buildWing, ROOMS, buildOfficePartitions, createDirector, createFun, holidayInfo, officeStand, officeExit, corridorPath, LOUNGE_AREA, LOUNGE_SEATS, loungeTrip, meetingTrip, createWaitingBoard, waitingPlan } from './office-v2-modules.js'
 import { buildWarehouseShell } from './warehouse-shell.js'
@@ -906,8 +906,10 @@ function createAgentView(a, index) {
   const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
   const gender = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1][index % 10] ? 'female' : 'male'
   const seatIdx = Object.keys(SEATS).indexOf(a.name)
-  const ch = PEOPLE
-    ? createPerson(PEOPLE, CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length])
+  const avatar = (OFFICE_LAYOUT.r1Phase === 'R1' && ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[a.name]) || CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length]
+  const personAssets = PEOPLE && (OFFICE_LAYOUT.r1Phase === 'R1' ? r1SeatedAssets(PEOPLE, avatar, officeV3.get('furniture3').seatedProfile(a.name), a.name) : PEOPLE)
+  const ch = personAssets
+    ? createPerson(personAssets, avatar)
     : A
     ? createCharacter3D(A, {
       gender, tone: [0, 0, 1, 0, 1, 1, 0, 0, 1, 0][index % 10] ? 'light' : 'dark',
@@ -920,6 +922,7 @@ function createAgentView(a, index) {
     })
   const home = workHome(seat)
   placeSeated(ch, home)
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(a.name).handY, home, desk: { x: sx, z: sz }, chair: officeV3.get('furniture3').chairAt(home.x, home.z) })
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -2162,6 +2165,39 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
 }
 frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
+  const ready = () => {
+    if (!views.size) { setTimeout(ready, 100); return }
+    // Paint the seated placeholders before starting expensive FBX parsing.
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(async () => {
+      const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [] }
+      try {
+        const loaded = await loadPeople()
+        await loadR1Extras(loaded)
+        PEOPLE = loaded
+        for (const v of views.values()) {
+          if (v.char.avatar) continue
+          try {
+            const seatIdx = Object.keys(SEATS).indexOf(v.name), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[v.name] || CAST_OVERRIDE[v.name] || CAST[seatIdx % CAST.length]
+            const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(v.name), v.name)
+            if (!assets) { status.failed.push(v.name); continue }
+            const ch = createPerson(assets, avatar), previous = v.char
+            Object.assign(ch.pose, previous.pose)
+            placeSeated(ch, v.home)
+            fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(v.name).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
+            ch.group.visible = previous.group.visible
+            ch.group.traverse(o => { o.userData.agentId = v.id })
+            ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent(); v.char = ch
+            status.replaced.push(v.name)
+          } catch { status.failed.push(v.name) }
+          await new Promise(resolve => requestAnimationFrame(resolve))
+        }
+        status.completedAt = performance.now()
+      } catch { status.loadFailed = true }
+    }, 0)))
+  }
+  ready()
+}
 window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
 window.__office.officeV2 = officeFurnitureV2?.registry || null
