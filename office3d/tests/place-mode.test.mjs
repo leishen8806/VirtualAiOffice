@@ -7,6 +7,7 @@ import {
   LAYOUT_V2,
   LAYOUT_V3,
   LAYOUT_V3_ALIGN,
+  LAYOUT_V3_ALIGN_L2B,
   LAYOUT_V3_ALIGN_SAMPLE,
   resolveOfficeLayout,
 } from '../office-layout.js'
@@ -56,6 +57,7 @@ const layoutName = (search) => {
   if (layout === LAYOUT_V3) return 'LAYOUT_V3'
   if (layout === LAYOUT_V3_ALIGN) return 'LAYOUT_V3_ALIGN'
   if (layout === LAYOUT_V3_ALIGN_SAMPLE) return 'LAYOUT_V3_ALIGN_SAMPLE'
+  if (layout === LAYOUT_V3_ALIGN_L2B) return 'LAYOUT_V3_ALIGN_L2B'
   return 'unknown'
 }
 
@@ -87,7 +89,8 @@ test('ENTRANCE-1 preserves the baseline parse matrix except the new latest offic
     ['empty', '', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
     ['canonical office', '?place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
     ['stable V3', '?place=drlife-office&layout=3', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3'],
-    ['new latest sample', '?place=drlife-office&layout=3&align=1&officeSample=1', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3_ALIGN_SAMPLE'],
+    // OFFICE-L2B-B3 起，精确样板入口默认解析到 L2B（ENTRANCE-1 写这条测试时还是 L2 样板）。
+    ['new latest sample', '?place=drlife-office&layout=3&align=1&officeSample=1', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3_ALIGN_L2B'],
     ['warehouse latest', '?place=drlife-warehouse', '9a611052a0767ced059d37faba83ff6c42442bf870be0b9cc71ebb174bccd612', 'LAYOUT_V1'],
     ['layout 2', '?layout=2', '4a4415a9df99c3d5263f66afddf4ee20432379ee9901d8fa97ac5efe9af430b0', 'LAYOUT_V2'],
     ['ALIGN without sample', '?layout=3&align=1', '3f4e4925cee7cb49874f475a0782610dd3fcdc2a356f19e31ff50d9839b02598', 'LAYOUT_V3_ALIGN'],
@@ -97,7 +100,7 @@ test('ENTRANCE-1 preserves the baseline parse matrix except the new latest offic
     ['uppercase value', '?place=DRLIFE-OFFICE', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
     ['uppercase key', '?Place=drlife-office', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
     ['duplicate place', '?place=drlife-office&place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
-    ['duplicate latest shape', '?place=drlife-office&place=drlife-office&layout=3&align=1&officeSample=1', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V3_ALIGN_SAMPLE'],
+    ['duplicate latest shape', '?place=drlife-office&place=drlife-office&layout=3&align=1&officeSample=1', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V3_ALIGN_L2B'],
   ]
   for (const [label, search, baselineHash, baselineLayout] of baseline) {
     const mode = resolvePlaceMode(search)
