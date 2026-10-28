@@ -79,7 +79,7 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
     panel.name = `wh-r1-door-${door.id}`
     panel.position.set(door.x, door.height / 2 - .6, door.z)
     panel.rotation.y = door.yaw
-    panel.userData = { whR1Id: door.id, collisionProxy: false, state: 'UNKNOWN', label: door.label }
+    panel.userData = { whR1Id: door.id, collisionProxy: false, noMerge: true, state: 'UNKNOWN', label: door.label }
     root.add(panel)
     if (door.label && canvasTex) {
       const texture = canvasTex(256, 96, (context, width, height) => {

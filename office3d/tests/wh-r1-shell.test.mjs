@@ -74,6 +74,20 @@ test('WH-R1 walls retain their IDs and face maps through the full scene static m
   assert.deepEqual(new Set(walls.flatMap((wall) => wall.userData.faceIds)), new Set(WH_R1_SHELL_SPEC.wallFaces.map((face) => face.id)))
 })
 
+test('WH-R1 step 0 retains all 19 door panel IDs through the full scene static merge', async () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  scene.add(root)
+  buildWhR1Shell({ THREE, root, quality: { tier: 'low' } })
+  const source = readFileSync(new URL('../merge.js', import.meta.url), 'utf8').replace("from 'three'", `from '${new URL('../vendor/three/three.module.js', import.meta.url).href}'`)
+  const { mergeStatic } = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+  mergeStatic(scene, undefined)
+  const doors = []
+  scene.traverse((object) => { if (object.name.startsWith('wh-r1-door-') && object.userData?.whR1Id) doors.push(object) })
+  assert.equal(doors.length, 19)
+  assert.deepEqual(new Set(doors.map((door) => door.userData.whR1Id)), new Set(WH_R1_DOORS.map((door) => door.id)))
+  assert.ok(doors.every((door) => door.userData.noMerge === true && door.userData.collisionProxy === false))
+})
+
 test('WH-R1 environment inventory includes and hides sphere crowns within the site only', () => {
   const scene = new THREE.Scene(), root = new THREE.Group(), crown = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
   const outside = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
