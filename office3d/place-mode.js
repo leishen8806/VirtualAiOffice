@@ -19,6 +19,7 @@ export const PLACE_LATEST = Object.freeze({
     layout: 3,
     align: 1,
     officeSample: 1,
+    r1: 1,
     subtitle: '最新版 · 办公室样板',
   }),
   warehouse: Object.freeze({}),
@@ -115,12 +116,13 @@ function officeLayout(params) {
 function isLatestOfficeParams(params) {
   if (params.getAll('place').length !== 1 || params.get('place') !== `${DEFAULT_PLACE_TENANT}-office`) return false
   for (const [key, value] of Object.entries(PLACE_LATEST.office)) {
-    if (key === 'subtitle') continue
+    // r1 is optional here so the older latest URL (without r1) keeps resolving the same way.
+    if (key === 'subtitle' || key === 'r1') continue
     const values = params.getAll(key)
     if (values.length !== 1 || values[0] !== String(value)) return false
   }
-  const l2b = params.getAll('l2b')
-  return l2b.length === 0 || l2b.length === 1 && l2b[0] === '1'
+  const l2b = params.getAll('l2b'), r1 = params.getAll('r1')
+  return (l2b.length === 0 || l2b.length === 1 && l2b[0] === '1') && (r1.length === 0 || r1.length === 1 && r1[0] === '1')
 }
 
 export function latestSearch(placeId) {

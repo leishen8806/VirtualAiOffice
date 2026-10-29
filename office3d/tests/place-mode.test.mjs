@@ -179,6 +179,7 @@ test('latest channel is frozen and generates complete place searches', () => {
       layout: 3,
       align: 1,
       officeSample: 1,
+      r1: 1,
       subtitle: '最新版 · 办公室样板',
     },
     warehouse: {},
@@ -188,7 +189,7 @@ test('latest channel is frozen and generates complete place searches', () => {
   assert.ok(Object.isFrozen(PLACE_LATEST.warehouse))
   assert.equal(
     latestSearch('drlife-office'),
-    '?place=drlife-office&layout=3&align=1&officeSample=1',
+    '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
   assert.equal(
     latestSearch('drlife-warehouse'),
@@ -196,7 +197,7 @@ test('latest channel is frozen and generates complete place searches', () => {
   )
   assert.equal(
     latestSearch('unknown-place'),
-    '?place=drlife-office&layout=3&align=1&officeSample=1',
+    '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
 })
 
