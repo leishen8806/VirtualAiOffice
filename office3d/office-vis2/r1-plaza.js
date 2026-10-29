@@ -1,6 +1,7 @@
 import { r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { officeBackdropCanopy, appendOfficeGardenBed } from './plants.js'
 import { createSampleBatch } from './batch.js'
+import { buildR1Fountain } from './r1-fountain.js'
 
 const REGION = '14'
 // R1 场地地面在 y = 0；铺装抬 4 mm 既避开闪烁，又守住验收的 5 mm 上限。
@@ -232,13 +233,15 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
   built.mesh.material.side = THREE.DoubleSide
   built.mesh.userData.itemIds = records.map(record => record.id)
   root.add(group)
+  const fountain = buildR1Fountain({ THREE, root: group, layout, collision, quality, low })
   let disposed = false
   return {
-    root: group, paving, records, proxies, mesh: built.mesh, triangles: built.triangles,
+    root: group, paving, records, proxies, mesh: built.mesh, triangles: built.triangles, fountain, onFrame: fountain.onFrame,
     byId: new Map(records.map(record => [record.id, record])),
     dispose() {
       if (disposed) return
       disposed = true
+      fountain.dispose()
       proxies.forEach(mesh => collision?.remove?.(mesh))
       ownGeometries.forEach(geometry => geometry.dispose())
       proxyMaterial.dispose(); built.dispose(); group.removeFromParent()
