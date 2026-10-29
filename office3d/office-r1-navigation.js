@@ -509,6 +509,12 @@ export function createR1Navigation(layout) {
   }
   function staticClear(a, b, name, connector = false) {
     const length = distance(a, b), n = Math.max(1, Math.ceil(length / (fine / 2))), dx = (b.x - a.x) / n, dz = (b.z - a.z) / n
+    // Reject proven solid samples before expensive triangle checks near other boundaries.
+    if (length > 1) for (let i = 0; i <= n; i++) {
+      if (connector && Math.min(i, n - i) * length / n <= .1) continue
+      const x = Math.floor((a.x + dx * i - layout.site.x0) / fine), z = Math.floor((a.z + dz * i - layout.site.z0) / fine)
+      if (x >= 0 && x < cols && z >= 0 && z < rows && mask[z * cols + x] === 1) return false
+    }
     function range(lo, hi) {
       const ax = a.x + dx * lo, az = a.z + dz * lo, bx = a.x + dx * hi, bz = a.z + dz * hi
       const x0 = Math.floor((Math.min(ax, bx) - layout.site.x0) / fine), x1 = Math.floor((Math.max(ax, bx) - layout.site.x0) / fine) + 1
