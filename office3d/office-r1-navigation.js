@@ -265,6 +265,7 @@ const distance = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2)
 const cache = new WeakMap()
 class Heap {
   rows = { length: 0 }
+  first = { id: 0, g: 0, f: 0 }
   ids = new Int32Array(4096)
   gs = new Float64Array(4096)
   fs = new Float64Array(4096)
@@ -275,7 +276,7 @@ class Heap {
     this.ids[i] = id; this.gs[i] = g; this.fs[i] = f
   }
   pop() {
-    const first = { id: this.ids[0], g: this.gs[0], f: this.fs[0] }, n = --this.rows.length
+    const first = this.first, n = --this.rows.length; first.id = this.ids[0]; first.g = this.gs[0]; first.f = this.fs[0]
     if (n) {
       const id = this.ids[n], g = this.gs[n], f = this.fs[n]; let i = 0
       while (i * 2 + 1 < n) { let c = i * 2 + 1; if (c + 1 < n && this.fs[c + 1] < this.fs[c]) c++; if (this.fs[c] >= f) break; this.ids[i] = this.ids[c]; this.gs[i] = this.gs[c]; this.fs[i] = this.fs[c]; i = c }
@@ -298,6 +299,7 @@ export function createR1Navigation(layout) {
   const jumpSegments = []
   const jumpEdges = new Map(), landmarkCosts = [], reverseCosts = []
   const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap() }
+  const preparation = { milliseconds: 0, searchWarmup: [] }
   const bodyMasks = new Map()
   const currentMasks = new WeakMap()
   const stations = new Map(layout.r1.workstations.map(w => [w.business_id, { ...w, home: layout.seats[w.business_id][4] }]))
@@ -359,6 +361,7 @@ export function createR1Navigation(layout) {
   }
   async function prepare() {
     if (mask) return
+    const started = performance.now()
     const next = new Uint8Array(cols * rows), radius = .6 + Math.SQRT2 * fine / 2
     for (let iz = 0; iz < rows; iz++) {
       const z = layout.site.z0 + (iz + .5) * fine
@@ -455,6 +458,14 @@ export function createR1Navigation(layout) {
       }
       await new Promise(resolve => setTimeout(resolve, 0))
     }
+    // Warm the real search during initialization; report this cost separately and retain no routes.
+    const probes = [...chosen].filter(id => !query(gridPoints[id]) && Number.isFinite(landmarkCosts[0][id]))
+    for (let i = 1; i < Math.min(9, probes.length); i++) {
+      const start = performance.now(), path = plan(gridPoints[probes[i - 1]], gridPoints[probes[i]])
+      preparation.searchWarmup.push({ reachable: !!path, milliseconds: performance.now() - start })
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+    preparation.milliseconds = performance.now() - started
     prepared = true
   }
   function rasterFree(p) {
@@ -634,7 +645,8 @@ export function createR1Navigation(layout) {
     const goalDistances = landmarkCosts.map(costs => Math.min(...goals.map(([id, length]) => costs[id] + length))), reverseGoals = reverseCosts.map(costs => Math.min(...goals.map(([id, length]) => costs[id] + length))), estimates = search.estimates; estimates.fill(-1)
     const originId = Math.round((start.z - layout.site.z0) / R1_GRID) * width + Math.round((start.x - layout.site.x0) / R1_GRID)
     // A 2% weighted A* budget reduces expansion; independent any-angle checks enforce the overall 5% limit.
-    const selected = landmarkCosts.map((costs, i) => ({ i, bound: Math.max(Number.isFinite(goalDistances[i] - costs[originId]) ? goalDistances[i] - costs[originId] : 0, Number.isFinite(reverseCosts[i][originId] - reverseGoals[i]) ? reverseCosts[i][originId] - reverseGoals[i] : 0) })).sort((a,b) => b.bound - a.bound).slice(0, 4).map(r => r.i)
+    const ranked = landmarkCosts.map((costs, i) => ({ i, bound: Math.max(Number.isFinite(goalDistances[i] - costs[originId]) ? goalDistances[i] - costs[originId] : 0, Number.isFinite(reverseCosts[i][originId] - reverseGoals[i]) ? reverseCosts[i][originId] - reverseGoals[i] : 0) })).sort((a,b) => b.bound - a.bound).map(r => r.i)
+    const selected = ranked.slice(0, 4)
     const heuristic = id => {
       if (estimates[id] >= 0) return estimates[id]
       let h = distance(gridPoints[id], end)
@@ -697,7 +709,7 @@ export function createR1Navigation(layout) {
     const start = owner ? parameters.get(owner).exit : from
     return plan(start, to, owner) || []
   }
-  const nav = { attach, prepare, prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
+  const nav = { attach, prepare, preparationInfo: () => structuredClone(preparation), prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
     standAt: p => ({ x: p.x, z: p.z }), officeExit: p => [p], corridorPath: trip, loungeTrip: trip, meetingTrip: trip, officeTrip: trip, boardTrip: trip, consumerTrip: trip, foyerTrip: trip, plazaTrip: trip, foyerReturnTrip: trip,
     consumerAdvance: (_, p) => [p], consumerDeparture: (_, p) => [p], consumerTargets: {}, consumerQueues: { waiting: [] },
     ENTRANCE: { x0: gate.x - 3.5, x1: gate.x + 3.5, inner: { x: gate.x, z: gate.z - 2 }, gate: [{ x: gate.x, z: gate.z - 2 }, { x: gate.x, z: gate.z + 2 }] },
