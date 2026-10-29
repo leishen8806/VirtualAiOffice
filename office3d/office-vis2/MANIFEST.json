@@ -273,7 +273,7 @@
       "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "84BA97EC3958C31C2CA3BBBA2FB270F8B18B5FD9EE20E06B58DEEBAD9653245B"
+      "sha256": "6E10EB19BBE4EDE9C0ED241BB1E390F2B98C8238468E942ACC386256A1B4B78D"
     },
     {
       "file": "office-vis2/r1-furniture.js",
@@ -287,7 +287,7 @@
       "source": "OFFICE-R1-I2 R1-only data-driven floor-zone marks and labels; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "70D3F6E2C3B64539E52A8DD9B25B93C5714D1BFB516C950D6168D60C732F2F58"
+      "sha256": "674185729E2D74442DF0C47A6474B93F599004D351255FD1D8BB238ACF56C423"
     },
     {
       "file": "office-vis2/r1-island.js",
@@ -301,7 +301,7 @@
       "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "09414FA04257D2C9FAA042F49619839A1C1F6CFB45C8B9C1C00788A39AA21CCB"
+      "sha256": "81C5B180BE3E5624BA4047A2878323A36EA4684A9F932BFAC2766FBBE7C0E2EB"
     },
     {
       "file": "office-vis2/r1-doors.js",
@@ -329,14 +329,14 @@
       "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "3E1B34CC8D211EA5468B3B44A1FAB49539614E1413430664C1359C7D5DFEF861"
+      "sha256": "ED0E295CD3ACA7CDCDD5EDD0D8A07ADBDB3A6D25DC42CF61A173DC06AE3B91F7"
     },
     {
       "file": "office-vis2/r1-lights.js",
       "source": "R1-only procedural zone and plaza lighting; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "043345D77C576A092F91480766D8A434B4939FB29C549FA8F338DDB6EB231B2F"
+      "sha256": "122C98078AAAA389FD5615106473FB0CD8B21A1693905CF546B955C5DB490B7C"
     },
     {
       "file": "office-vis2/r1-brand.js",
@@ -344,6 +344,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "B7E478699114D9236AA4ED2E90EC01F35D61F0F185F911AD10B570EDEAA53974"
+    },
+    {
+      "file": "office-vis2/r1-look.js",
+      "source": "R1-only procedural marble, registered-centre floor inlay and supplemental plant positions; existing leaf assets; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "0D863B8397F44D3094B6142CB5C12EFF109F5697AE1BA220FD38EFBAE70E97A9"
     }
   ],
   "excluded": {

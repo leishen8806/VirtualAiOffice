@@ -3,7 +3,7 @@ import { r1ToWorld } from '../office-r1-layout.js'
 
 // Positions and fixture sizes are world metres; no lighting object enters the collision registry.
 export function r1LightingPlan(layout) {
-  const fixtures = [], lights = []
+  const fixtures = [], lights = [], accents = []
   const box = (id, zone, kind, position, size, glow = false, yaw = 0) => fixtures.push({ id, zone, kind, position, size, glow, yaw })
   const point = (id, zone, position, intensity, distance) => lights.push({ id, zone, position, intensity, distance })
   for (const zone of layout.regions.filter(z => z.id !== '14')) {
@@ -22,7 +22,7 @@ export function r1LightingPlan(layout) {
   for (const wall of r1WallPlan(layout).straight) {
     if (['00-W-035', '00-W-036', '00-W-037'].includes(wall.id) || wall.height < 2.7) continue
     const [a, b] = wall.points.map(p => r1ToWorld(...p))
-    strip(`${wall.id}-strip`, a, b, wall.height - (wall.exterior ? r1Glazing.exteriorBand : r1Glazing.interiorBand) - .025)
+    strip(`${wall.id}-strip`, a, b, wall.height - (wall.exterior ? r1Glazing.exteriorBand : r1Glazing.interiorBand))
   }
   for (const [name, corner] of Object.entries(r1CornerSpec)) {
     const start = Math.atan2(corner.from[1] - corner.center[1], corner.from[0] - corner.center[0])
@@ -30,7 +30,16 @@ export function r1LightingPlan(layout) {
     while (arc > Math.PI) arc -= 2 * Math.PI
     while (arc < -Math.PI) arc += 2 * Math.PI
     const points = Array.from({ length: 13 }, (_, i) => r1ToWorld(corner.center[0] + 1.5 * Math.cos(start + arc * i / 12), corner.center[1] + 1.5 * Math.sin(start + arc * i / 12)))
-    for (let i = 1; i < points.length; i++) strip(`${name}-strip-${i}`, points[i - 1], points[i], 2.7 - r1Glazing.interiorBand - .025)
+    for (let i = 1; i < points.length; i++) strip(`${name}-strip-${i}`, points[i - 1], points[i], 2.7 - r1Glazing.interiorBand)
+  }
+  for (const light of lights) accents.push({ id: `${light.id}-wash`, zone: light.zone, kind: 'floor-wash', position: [light.position[0], .016, light.position[2]], size: [7, .001, 7], yaw: 0, glow: true })
+  const center = r1ToWorld(...layout.r1.data.central.center_m), radius = layout.r1.data.central.radii_m.bar_outer
+  const bar = layout.r1.elements.find(row => row.id === '07-BAR-001'), halfEntry = layout.r1.controls.barEntryClearMm / 2000
+  for (const [name, y] of [['counter', bar.heightM - .025], ['foot', .04]]) for (let i = 0; i < 192; i++) {
+    const a = i * Math.PI / 96, b = (i + 1) * Math.PI / 96, mid = (a + b) / 2
+    // Retain the real bar entrance, including its carrying clearance.
+    if (Math.sin(mid) < 0 && Math.min(Math.abs(Math.cos(a) * radius), Math.abs(Math.cos(b) * radius)) < halfEntry + .025) continue
+    accents.push({ id: `bar-${name}-${i}`, zone: '07', kind: 'bar-strip', position: [center.x + Math.cos(mid) * (radius - .01), y, center.z + Math.sin(mid) * (radius - .01)], size: [radius * Math.PI / 96 * 1.02, .022, .025], yaw: -mid - Math.PI / 2, glow: true })
   }
   const plaza = r1ToWorld(...layout.r1.data.plaza.center_m)
   for (let i = 0; i < 8; i++) {
@@ -58,17 +67,24 @@ export function r1LightingPlan(layout) {
     box(`gate-${x}-lamp`, '14', 'gate', [x, 2.8, 18.33], [.12, .27, .025], true)
   }
   for (const [i, position] of [[2, 4.2, 27.5], [-12, 3.5, 25], [16, 3.5, 25], [2, 4.2, 19.5]].entries()) point(`plaza-${i + 1}`, '14', position, 160, 26)
-  return { fixtures, lights }
+  return { fixtures, lights, accents }
 }
 
 export function buildR1Lights({ THREE, root, layout, env }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
   const plan = r1LightingPlan(layout), group = new THREE.Group(), geometry = new THREE.BoxGeometry(1, 1, 1)
+  const pixels = new Uint8Array(128 * 128 * 4)
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+    const radius = Math.hypot((x - 63.5) / 63.5, (y - 63.5) / 63.5), k = (y * 128 + x) * 4
+    pixels.set([255, 255, 255, Math.round(255 * Math.max(0, 1 - radius) ** 2)], k)
+  }
+  const halo = new THREE.DataTexture(pixels, 128, 128); halo.magFilter = halo.minFilter = THREE.LinearFilter; halo.needsUpdate = true
   group.name = 'r1-lights'; group.userData.dynamic = true
   const zones = ['interior', 'plaza'].map(name => {
     const mount = new THREE.Group(); mount.name = name; group.add(mount)
-    const fixtures = plan.fixtures.filter(row => (row.zone === '14') === (name === 'plaza'))
+    const fixtures = [...plan.fixtures, ...plan.accents].filter(row => (row.zone === '14') === (name === 'plaza'))
     const materials = [new THREE.MeshBasicMaterial({ color: '#6C5943' }), new THREE.MeshBasicMaterial({ color: '#FFDAB0', toneMapped: false })]
+    if (name === 'interior') { materials[1].map = halo; materials[1].transparent = true; materials[1].depthWrite = false; materials[1].opacity = .75 }
     for (const [index, material] of materials.entries()) {
       const rows = fixtures.filter(row => row.glow === Boolean(index))
       if (!rows.length) continue
@@ -95,5 +111,5 @@ export function buildR1Lights({ THREE, root, layout, env }) {
     }
   }
   onFrame()
-  return { root: group, plan, onFrame, dispose() { group.removeFromParent(); geometry.dispose(); zones.forEach(zone => zone.materials.forEach(material => material.dispose())) } }
+  return { root: group, plan, onFrame, dispose() { group.removeFromParent(); halo.dispose(); geometry.dispose(); zones.forEach(zone => zone.materials.forEach(material => material.dispose())) } }
 }

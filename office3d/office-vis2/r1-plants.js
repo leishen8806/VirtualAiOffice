@@ -1,6 +1,7 @@
 import { r1ToWorld } from '../office-r1-layout.js'
 import { createOfficePottedFoliage } from './plants.js'
 import { createSampleBatch } from './batch.js'
+import { r1LookPlantElements } from './r1-look.js'
 
 // 裁定 D（dispatch/OFFICE-R1-I6B-20261028/裁定-绿植外形-R2.md）：登记冠包络、盆尺寸与总高都不动，
 // 只在包络内加密叶片。外层正好顶到登记冠包络；内层复用同一叶源，缩到 CROWN_FILL 并绕竖轴转过一个
@@ -9,12 +10,12 @@ import { createSampleBatch } from './batch.js'
 // 叶片与树干后面，椅子视角只多 6.7 % 叶片像素；.92 同样满足全部硬约束且面数增量不变。
 const CROWN_FILL = .92
 
-export function buildR1Plants({ THREE, root, layout, A, quality, low = false, collision }) {
+function buildPlantSet({ THREE, root, layout, A, quality, low = false, collision, elements = layout?.r1?.elements, name = 'r1-plants' }) {
   if (layout?.r1Phase !== 'R1' || !A?.furn?.pottedPlant) return { dispose() {} }
   const lowTier = quality ? quality.tier === 'low' : low
   const foliage = createOfficePottedFoliage(THREE, A.furn.pottedPlant, lowTier)
   if (!foliage.enabled) throw new Error('R1 requires the registered pottedPlant foliage asset')
-  const group = new THREE.Group(); group.name = 'r1-plants'; group.userData.dynamic = true
+  const group = new THREE.Group(); group.name = name; group.userData.dynamic = true
   const batch = createSampleBatch(THREE), parts = { pot: [], crown: [] }, boxes = { pot: new THREE.Box3(), crown: new THREE.Box3() }
   foliage.source.updateWorldMatrix(true, true)
   foliage.source.traverse(mesh => {
@@ -23,10 +24,10 @@ export function buildR1Plants({ THREE, root, layout, A, quality, low = false, co
     const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld); geometry.computeBoundingBox()
     boxes[kind].union(geometry.boundingBox); parts[kind].push({ geometry, color: mesh.material.color?.clone() || new THREE.Color('#e6dfd2') })
   })
-  const plants = layout.r1.elements.filter(row => row.category === '植物总成' && row.regionId !== '14' && row.id !== '07-PL-001')
+  const plants = elements.filter(row => row.category === '植物总成' && row.regionId !== '14' && row.id !== '07-PL-001')
   const proxies = [], records = [], proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
   for (const [index, plant] of plants.entries()) {
-    const p = r1ToWorld(plant.xM, plant.yM), children = Object.fromEntries(['POT', 'TR', 'CR'].map(suffix => [suffix, layout.r1.elements.find(row => row.id === `${plant.id}-${suffix}`)]))
+    const p = r1ToWorld(plant.xM, plant.yM), children = Object.fromEntries(['POT', 'TR', 'CR'].map(suffix => [suffix, elements.find(row => row.id === `${plant.id}-${suffix}`)]))
     const record = { id: plant.id, position: p, parts: {} }
     for (const [kind, suffix] of [['pot', 'POT'], ['crown', 'CR']]) {
       const row = children[suffix]
@@ -64,8 +65,17 @@ export function buildR1Plants({ THREE, root, layout, A, quality, low = false, co
     collision?.add(proxy, pot.id); proxies.push(proxy); records.push(record)
   }
   Object.values(parts).flat().forEach(part => part.geometry.dispose()); foliage.dispose()
-  const built = batch.build(group, 'r1-indoor-plants'); built.mesh.material.side = THREE.DoubleSide
+  const built = batch.build(group, name === 'r1-plants' ? 'r1-indoor-plants' : name + '-surfaces'); built.mesh.material.side = THREE.DoubleSide
   built.mesh.userData.itemIds = records.map(row => row.id)
   root.add(group); let disposed = false
   return { root: group, records, proxies, dispose() { if (disposed) return; disposed = true; proxies.forEach(proxy => { collision?.remove?.(proxy); proxy.geometry.dispose() }); proxyMaterial.dispose(); built.dispose(); group.removeFromParent() } }
+}
+
+export function buildR1Plants(context) {
+  const registered = buildPlantSet(context)
+  if (!registered.root) return registered
+  let look
+  try { look = buildPlantSet({ ...context, elements: r1LookPlantElements(), name: 'r1-look-plants' }) }
+  catch (error) { registered.dispose(); throw error }
+  return { ...registered, look, dispose() { registered.dispose(); look.dispose() } }
 }

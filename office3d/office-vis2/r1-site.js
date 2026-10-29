@@ -1,4 +1,5 @@
 import { createR1Layout, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { r1MarbleTexture, r1FloorInlay } from './r1-look.js'
 
 export const isOfficeR1Layout = layout => layout?.r1Phase === 'R1'
 export const r1World = ([x, y]) => r1ToWorld(x, y)
@@ -46,11 +47,18 @@ export function buildR1Site({ THREE, root, layout }) {
   const group = new THREE.Group()
   group.name = 'r1-site'
   group.userData.dynamic = true
-  const floorMaterial = new THREE.MeshStandardMaterial({ color: '#E7E1D5', roughness: .86 })
+  const marble = r1MarbleTexture(THREE)
+  const floorMaterial = new THREE.MeshStandardMaterial({ color: '#FFFFFF', map: marble, roughness: .3, metalness: .02 })
   const greenMaterial = new THREE.MeshStandardMaterial({ color: '#789467', roughness: .95 })
   const floor = new THREE.Mesh(new THREE.BoxGeometry(layout.site.x1 - layout.site.x0, .08, layout.site.z1 - layout.site.z0), floorMaterial)
   floor.name = 'r1-site-paved-ground'
   floor.position.set((layout.site.x0 + layout.site.x1) / 2, -.04, (layout.site.z0 + layout.site.z1) / 2)
+  const positions = floor.geometry.attributes.position, uv = new Float32Array(positions.count * 2)
+  for (let i = 0; i < positions.count; i++) {
+    uv[i * 2] = (positions.getX(i) + floor.position.x) / 2.4
+    uv[i * 2 + 1] = (positions.getZ(i) + floor.position.z) / 2.4
+  }
+  floor.geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
   const { x0, x1, z0, z1 } = layout.site, width = layout.greenBuffer.width
   const shape = new THREE.Shape()
   shape.moveTo(x0 - width, -z0 + width); shape.lineTo(x1 + width, -z0 + width)
@@ -63,6 +71,7 @@ export function buildR1Site({ THREE, root, layout }) {
   buffer.rotation.x = -Math.PI / 2
   buffer.position.y = .003
   group.add(floor, buffer)
+  const inlay = r1FloorInlay(THREE, group, layout)
   root.add(group)
-  return { root: group, floor, dispose() { group.removeFromParent(); floor.geometry.dispose(); floorMaterial.dispose(); buffer.geometry.dispose(); greenMaterial.dispose() } }
+  return { root: group, floor, inlay, dispose() { group.removeFromParent(); inlay.dispose(); marble.dispose(); floor.geometry.dispose(); floorMaterial.dispose(); buffer.geometry.dispose(); greenMaterial.dispose() } }
 }

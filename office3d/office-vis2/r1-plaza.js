@@ -7,7 +7,7 @@ const REGION = '14'
 const PAVING_LIFT = .004
 const RIM_WIDTH = .35
 const COLOR = Object.freeze({
-  paving: '#D9D3C5', rim: '#C2BAA8', planter: '#BEB7A7', soil: '#4D4736', trunk: '#756857',
+  paving: '#E2D2B4', rim: '#B99A6E', planter: '#BEB7A7', soil: '#4D4736', trunk: '#756857',
   body: '#B9523E', panel: '#EFE7D8', sign: '#F2EADA', interior: '#28313A', counter: '#E6DECD',
   frame: '#A8794F', roof: '#4C6B5A', metal: '#5A5F62', seat: '#9A7650', leg: '#52534E', pole: '#6E7276',
 })

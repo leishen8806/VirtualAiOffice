@@ -389,6 +389,14 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
       scene.environmentIntensity *= .12
       if (hemi) hemi.color.setHex(0xf4f1ea)
     }
+    if (r1Mode) {
+      sun.color.setHex(0xffb072).lerp(new THREE.Color(0xffdda8), smooth(2, 25, elev))
+      if (hemi) {
+        hemi.color.setHex(0xfff0d8).lerp(new THREE.Color(0xc6b7a3), overcast)
+        hemi.groundColor.setHex(0x8c6e4e)
+        hemi.intensity = .12 + .48 * cur.day * (1 - .3 * overcast) + flash * 3
+      }
+    }
     // 雾：夜里深色，阴雨更浓
     const fogDay = new THREE.Color(0xcdd6de).lerp(new THREE.Color(0x9ea6ae), overcast)
     scene.fog.color.copy(new THREE.Color(0x0e1320).lerp(fogDay, cur.day))
