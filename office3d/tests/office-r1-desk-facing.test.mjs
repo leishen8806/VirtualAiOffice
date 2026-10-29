@@ -7,7 +7,7 @@ import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Furniture, R1_SEATED_PROFILES } from '../office-vis2/r1-furniture.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
-import { r1ToWorld } from '../office-r1-layout.js'
+import { r1ToWorld, isReservedDesk } from '../office-r1-layout.js'
 import { r1ReceptionCenter } from '../office-vis2/r1-lounge.js'
 const hooks = registerHooks({ resolve(s,c,next) { return s === 'three' ? {url:new URL('../vendor/three/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c) } })
 const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
@@ -71,7 +71,11 @@ test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjus
  const layout=createOfficeR1Layout(),root=new THREE.Group(),collision=createFurnitureCollision(),sources=[]
  const build=()=>buildR1Furniture({THREE,root,layout,A,placeFurniture,makeScreenTexture:()=>({ctx:{},tex:new THREE.Texture()}),collision:{add(g,k){sources.push(g);return collision.add(g,k)},remove:collision.remove}})
  const f=build();assert.equal(f.desktopItems.size,78);assert.equal(f.chairFacings.size,154)
- for(const [id,items] of f.desktopItems){assert.equal(items.length,4);assert.equal(new Set(items.map(i=>i.id.split('/')[1])).size,4);const box=f.itemBounds.get(id);for(const d of items)for(const axis of ['x','z']){assert.ok(d.bounds.min[axis]>=box.min[axis]-.001,d.id);assert.ok(d.bounds.max[axis]<=box.max[axis]+.001,d.id)}}
+ // OFFICE-R1-AMBIENCE 补充 R2（董事会 2026-10-29 授权）：三张预留桌不放个人物品，
+ // 桌面散件因此是 3 件（键盘 / 鼠标 / 鼠标垫）而不是 4 件；其余 75 张仍是 4 件。占地约束不变。
+ const wanted=id=>isReservedDesk(id)?3:4
+ for(const [id,items] of f.desktopItems){assert.equal(items.length,wanted(id),id);assert.equal(new Set(items.map(i=>i.id.split('/')[1])).size,wanted(id),id);const box=f.itemBounds.get(id);for(const d of items)for(const axis of ['x','z']){assert.ok(d.bounds.min[axis]>=box.min[axis]-.001,d.id);assert.ok(d.bounds.max[axis]<=box.max[axis]+.001,d.id)}}
+ assert.equal([...f.desktopItems.keys()].filter(isReservedDesk).length,3)
  const groups={}
  // OFFICE-R1-RECEP：接待台翻转后接待椅坐进凹面，椅心落在 11-CT-001 的登记占地框之内，
  // 「把椅心夹进桌子 AABB」这个最近点代理就退化成椅心本身（距离 0）。弧形台改按内半径弧面取最近点，

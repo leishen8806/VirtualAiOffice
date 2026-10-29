@@ -14,6 +14,13 @@ const COLOR = Object.freeze({
   frame: '#A8794F', roof: '#4C6B5A', metal: '#5A5F62', seat: '#9A7650', leg: '#52534E', pole: '#6E7276',
 })
 const CANOPY_TINTS = Object.freeze(['#46633F', '#56734A', '#3A593B', '#67804D'])
+// CMP-624 / OFFICE-R1-AMBIENCE：遮阳伞与餐车只换颜色和贴图，登记几何尺寸一律不动。
+export const R1_PLAZA_LOGO_URL = new URL('../assets/logo.png', import.meta.url).href
+export const R1_PLAZA_LOGO_ASPECT = Object.freeze([979, 544])
+export const r1PlazaBrand = Object.freeze({
+  canopy: Object.freeze({ panels: 8, tints: Object.freeze(['#C9A15E', '#3B2A20']), valance: '#3B2A20', valanceHeight: .12 }),
+  truck: Object.freeze({ cap: '#3B2A20', trim: '#C9A15E', trimHeight: .04, logoWidth: 3.2, logoLift: .012 }),
+})
 // R1 的 yawDeg 是罗盘约定：世界朝向向量 (dx, −dy)，运行时 yaw 由 runtimeYawFromFacing 推出。
 const yawOf = item => runtimeYawFromFacing(Number(item.facingLocal?.[0]) || 0, -(Number(item.facingLocal?.[1]) || 0))
 // 正多边形内接会把登记直径画小；偏转半个分段后 x / z 两轴同时差 cos(π/n)，补回去包围盒就逐值相等。
@@ -115,11 +122,13 @@ const boardTexture = (THREE, canvasTex) => {
   return texture
 }
 
-export function buildR1Plaza({ THREE, root, layout, collision, quality, low = false, canvasTex }) {
+export function buildR1Plaza({ THREE, root, layout, collision, quality, low = false, canvasTex, textureLoader }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
   const lowTier = quality ? quality.tier === 'low' : low
   const group = new THREE.Group(); group.name = 'r1-plaza'; group.userData.dynamic = true
   const batch = createSampleBatch(THREE), records = [], proxies = [], ownGeometries = [], stack = []
+  // 伞面垂边不是登记件：量出包围盒放进 extras，绝不混进 60 条登记记录。
+  const extras = new Map(), decalQuads = []
   const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
   const elementOf = id => layout.r1.elements.find(item => item.id === id)
   const pick = category => layout.r1.elements.filter(item => item.regionId === REGION && item.category === category)
@@ -141,8 +150,10 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
       record.bounds.union(probe.boundingBox)
       if (record.vertices) record.vertices.push(...probe.attributes.position.array)
     }
+    const bounds = probe.boundingBox.clone()
     probe.dispose()
     batch.add(geometry, tint, position, yaw, roughness, metalness, grain)
+    return bounds
   }
   const proxy = (id, geometry, position, yaw = 0) => {
     const mesh = new THREE.Mesh(geometry, proxyMaterial)
@@ -324,11 +335,18 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
     emit(new THREE.BoxGeometry(2.8, bandHigh - bandLow, .5), COLOR.interior, [backX, (bandLow + bandHigh) / 2, backZ], yaw, .5)
     const [shelfX, shelfZ] = at(0, -(halfZ - .2))
     emit(new THREE.BoxGeometry(2.9, .07, .34), COLOR.counter, [shelfX, bandLow + .035, shelfZ], yaw, .55, 0, 'stone')
-    emit(new THREE.BoxGeometry(truck.lengthM - .1, cap - roof, truck.widthM - .1), COLOR.panel, [p.x, (roof + cap) / 2, p.z], yaw, .7)
+    // 顶盖改深褐、加一圈铜色压边；招牌保持登记尺寸不变。
+    emit(new THREE.BoxGeometry(truck.lengthM - .1, cap - roof, truck.widthM - .1), r1PlazaBrand.truck.cap, [p.x, (roof + cap) / 2, p.z], yaw, .6)
+    emit(new THREE.BoxGeometry(truck.lengthM - .06, r1PlazaBrand.truck.trimHeight, truck.widthM - .06), r1PlazaBrand.truck.trim,
+      [p.x, roof + r1PlazaBrand.truck.trimHeight / 2, p.z], yaw, .35, .6)
     emit(new THREE.BoxGeometry(2.4, truck.heightM - cap, .1), COLOR.sign, [p.x, (cap + truck.heightM) / 2, p.z], yaw, .65)
     close()
     boxProxy(truck, yaw)
     stallDisplay(truck, yaw)
+    // 顶上铺 DR.LIFE+ 标志：一张平贴，和伞面一起合进同一个贴图网格。
+    const logoWidth = Math.min(truck.lengthM * .7, r1PlazaBrand.truck.logoWidth)
+    decalQuads.push({ width: logoWidth, height: logoWidth * R1_PLAZA_LOGO_ASPECT[1] / R1_PLAZA_LOGO_ASPECT[0],
+      position: [p.x, cap + r1PlazaBrand.truck.logoLift, p.z], yaw })
   }
 
   // ── 摊亭 3 座：角柱、取货台、后柜与四坡顶，顶面对角正好落在登记的 2.4 × 2.4 上 ──
@@ -362,10 +380,20 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
       COLOR.pole, [p.x, pole.zM + pole.heightM / 2, p.z], 0, .5, .35)
     close()
     open(canopy, true)
-    emit(new THREE.ConeGeometry(fitRadius(canopy.lengthM, 8), canopy.heightM, 8, 1, false, Math.PI / 8),
-      COLOR.sign, [p.x, canopy.zM + canopy.heightM / 2, p.z], 0, .9)
+    // 八片金 / 深褐相间：每片是原来那把伞的一个分段，顶点环与单锥完全一致，包围盒逐值不变。
+    const canopyRadius = fitRadius(canopy.lengthM, r1PlazaBrand.canopy.panels)
+    const sector = Math.PI * 2 / r1PlazaBrand.canopy.panels
+    for (let panel = 0; panel < r1PlazaBrand.canopy.panels; panel++) {
+      emit(new THREE.ConeGeometry(canopyRadius, canopy.heightM, 1, 1, false, Math.PI / 8 + panel * sector, sector),
+        r1PlazaBrand.canopy.tints[panel % r1PlazaBrand.canopy.tints.length], [p.x, canopy.zM + canopy.heightM / 2, p.z], 0, .78)
+    }
     close()
     close()
+    // 深褐垂边挂在伞面下沿：不是登记件，所以在两层记录都关掉之后才发射。
+    const valanceHeight = r1PlazaBrand.canopy.valanceHeight
+    extras.set(`${canopy.id}-VALANCE`, emit(
+      new THREE.CylinderGeometry(canopyRadius, canopyRadius, valanceHeight, r1PlazaBrand.canopy.panels, 1, true, Math.PI / 8),
+      r1PlazaBrand.canopy.valance, [p.x, canopy.zM - valanceHeight / 2, p.z], 0, .78))
     proxy(pole.id, new THREE.CylinderGeometry(pole.lengthM / 2, pole.widthM / 2, pole.heightM, 10), [p.x, pole.zM + pole.heightM / 2, p.z], 0)
   }
 
@@ -401,11 +429,40 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
     group.add(mesh)
   }
   boardFaces.forEach(entry => entry.geometry.dispose())
+
+  // DR.LIFE+ 平贴合成一个网格：只多一次绘制，贴图取不到时整块隐藏，不抛错也不留白板。
+  const decalMaterial = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false })
+  const decalPositions = [], decalNormals = [], decalUvs = []
+  for (const quad of decalQuads) {
+    const plane = new THREE.PlaneGeometry(quad.width, quad.height)
+    plane.rotateX(-Math.PI / 2); plane.rotateY(quad.yaw); plane.translate(...quad.position)
+    const flat = plane.toNonIndexed()
+    decalPositions.push(...flat.attributes.position.array)
+    decalNormals.push(...flat.attributes.normal.array)
+    decalUvs.push(...flat.attributes.uv.array)
+    flat.dispose(); plane.dispose()
+  }
+  const decalGeometry = new THREE.BufferGeometry()
+  decalGeometry.setAttribute('position', new THREE.Float32BufferAttribute(decalPositions, 3))
+  decalGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(decalNormals, 3))
+  decalGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(decalUvs, 2))
+  decalGeometry.computeBoundingBox(); decalGeometry.computeBoundingSphere()
+  const decals = new THREE.Mesh(decalGeometry, decalMaterial)
+  decals.name = 'r1-plaza-logo-decals'; decals.visible = false
+  group.add(decals)
+  const ownTextures = []
+  const loader = textureLoader || (typeof document === 'undefined' ? null : new THREE.TextureLoader())
+  loader?.load(R1_PLAZA_LOGO_URL, texture => {
+    texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 8
+    decalMaterial.map = texture; decalMaterial.needsUpdate = true; decals.visible = decalQuads.length > 0
+    ownTextures.push(texture)
+  }, undefined, () => { decals.visible = false })
+
   root.add(group)
   const fountain = buildR1Fountain({ THREE, root: group, layout, collision, quality, low })
   let disposed = false
   return {
-    root: group, paving, records, proxies, mesh: built.mesh, triangles: built.triangles, fountain, onFrame: fountain.onFrame,
+    root: group, paving, records, proxies, mesh: built.mesh, triangles: built.triangles, fountain, onFrame: fountain.onFrame, extras, decals,
     props, boards: group.getObjectByName('r1-plaza-stall-boards') || null, boardMap,
     byId: new Map(records.map(record => [record.id, record])),
     byPropId: new Map(props.map(record => [record.id, record])),
@@ -416,6 +473,8 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
       proxies.forEach(mesh => collision?.remove?.(mesh))
       ownGeometries.forEach(geometry => geometry.dispose())
       boardGeometry?.dispose(); boardMaterial?.dispose(); boardMap?.dispose()
+      ownTextures.forEach(texture => texture.dispose?.())
+      decalGeometry.dispose(); decalMaterial.dispose()
       proxyMaterial.dispose(); built.dispose(); group.removeFromParent()
     },
   }

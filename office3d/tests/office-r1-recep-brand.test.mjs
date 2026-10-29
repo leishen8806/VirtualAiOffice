@@ -92,7 +92,8 @@ test('RC-1 the receptionist sits in the concave bay 0.4 m clear of the inner arc
 test('RC-2 the board table adds exactly the four approved reception-chair rows and leaves I6C and data.js alone', () => {
   const ids = R1_BOARD_OVERRIDES.map(entry => entry.id)
   assert.equal(new Set(ids).size, ids.length)
-  assert.equal(ids.length, 28)
+  // 24 条 I6C + 4 条接待椅 + 12 条 OFFICE-R1-AMBIENCE 补充 R2 的预留座位推椅（数值由 AM-7c 锁）。
+  assert.equal(ids.length, 40)
   const byId = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry]))
   for (const [id, want] of Object.entries(RECEP_OVERRIDES)) {
     const entry = byId.get(id)
@@ -108,9 +109,10 @@ test('RC-2 the board table adds exactly the four approved reception-chair rows a
     assert.equal(entry.date, '2026-10-28', id)
     assert.ok(/前台|翻转/.test(entry.reason), id)
   }
-  // I6C 的 24 条一条不改。
-  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES)).length, 24)
-  // 关掉 C-01 候选后，与裸登记值有差异的行只能是偏离表这 28 条，别的一行都不许动。
+  // I6C 的 24 条一条不改（补充 R2 的 12 条预留座位推椅由 AM-7c 锁，不归 RC-2 管）。
+  const RESERVED_SET = ['08-CH-011', '08-CH-012', '08-CH-013'].flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`])
+  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES) && !RESERVED_SET.includes(id)).length, 24)
+  // 关掉 C-01 候选后，与裸登记值有差异的行只能是偏离表这 40 条，别的一行都不许动。
   const applied = createR1Layout({ candidateC01: false }).elements
   // 2026-10-29 长椅转向另有一张董事会表，一并计入。
   assert.deepEqual(applied.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids, ...R1_BOARD_FACING_OVERRIDES.map(entry => entry.id)].sort())
@@ -186,8 +188,9 @@ test('RC-7 the brand backdrop covers the whole 00-W-036 entrance face and the th
     near(light.intensity, 10, MM)
   })
   // 不做可见灯具、光锥、墙面光斑：高档下除这 3 个网格外没有别的几何（标志贴图未加载时自身隐藏）。
+  // CMP-624 的氛围五项挂在同一模块里，统一用 r1-ambience- 前缀，和入口面的品牌件分开计数。
   const meshes = []
-  module.root.traverse(node => { if (node.isMesh) meshes.push(node.name) })
+  module.root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) meshes.push(node.name) })
   assert.deepEqual(meshes.sort(), ['r1-brand-logo', 'r1-brand-panel', 'r1-brand-slogan'])
   module.dispose(); assert.equal(root.children.length, 0)
 })
@@ -224,15 +227,15 @@ test('RC-10 the low tier drops the real spotlights for a glow texture and a miss
   const glow = low.module.root.getObjectByName('r1-brand-glow')
   assert.ok(glow?.isMesh, '低档应叠一张光晕贴图')
   assert.equal(glow.material.blending, THREE.AdditiveBlending)
-  // 两档合批：高档 3 个网格，低档 4 个。
-  const count = root => { let n = 0; root.traverse(node => { if (node.isMesh) n++ }); return n }
+  // 两档合批：入口面高档 3 个网格，低档 4 个（CMP-624 的氛围件另算，前缀 r1-ambience-）。
+  const count = root => { let n = 0; root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) n++ }); return n }
   assert.equal(count(low.module.root), 4)
   const high = brand()
   assert.equal(count(high.module.root), 3)
   // 两档三角数都要很小（≤ 200）。
   for (const built of [low, high]) {
     let triangles = 0
-    built.module.root.traverse(node => { if (node.isMesh) triangles += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 })
+    built.module.root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) triangles += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 })
     assert.ok(triangles <= 200, `三角数 ${triangles} 应 ≤ 200`)
   }
   // 标志贴图加载失败时不抛错，黑底、标语都还在，标志网格隐藏。
