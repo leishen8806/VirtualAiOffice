@@ -1,3 +1,4 @@
+import { buildR1DenseGarden } from './r1-dense-garden.js'
 import { r1ToWorld } from '../office-r1-layout.js'
 import { createOfficePottedFoliage } from './plants.js'
 import { createSampleBatch } from './batch.js'
@@ -74,8 +75,8 @@ function buildPlantSet({ THREE, root, layout, A, quality, low = false, collision
 export function buildR1Plants(context) {
   const registered = buildPlantSet(context)
   if (!registered.root) return registered
-  let look
-  try { look = buildPlantSet({ ...context, elements: r1LookPlantElements(), name: 'r1-look-plants' }) }
-  catch (error) { registered.dispose(); throw error }
-  return { ...registered, look, dispose() { registered.dispose(); look.dispose() } }
+  let look, dense
+  try { look = buildPlantSet({ ...context, elements: r1LookPlantElements(), name: 'r1-look-plants' }); dense = buildR1DenseGarden(context) }
+  catch (error) { registered.dispose(); look?.dispose(); throw error }
+  return { ...registered, look, dense, onFrame() { dense.onFrame() }, dispose() { registered.dispose(); look.dispose(); dense.dispose() } }
 }

@@ -301,7 +301,7 @@
       "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "81C5B180BE3E5624BA4047A2878323A36EA4684A9F932BFAC2766FBBE7C0E2EB"
+      "sha256": "1F99A99DDC93E1412ACD4E36EC1EA7E21EC0FB4EEB6C677A5ADDD8E5E78CC2D6"
     },
     {
       "file": "office-vis2/r1-doors.js",
@@ -358,6 +358,20 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "2740994857181F26F6B9AE4F2A5B23316EE5A75C34312A3794C60F1DB2E6DD43"
+    },
+    {
+      "file": "office-vis2/r1-dense-garden.js",
+      "source": "R1-only merged pottedPlant leaf layers and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "7151946884EC9B2A81E52A410717E314D512D1268F8E997E37E9C95DD9133C9A"
+    },
+    {
+      "file": "office-vis2/r1-landscape-plan.js",
+      "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors and door sweeps; no source-register changes",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "E7E1BFEEE18552D87E99E12B6D7F2DCA81C52602421E965BC76DB8FB84A5E686"
     }
   ],
   "excluded": {

@@ -53,7 +53,7 @@ test('LOOK adds 12 atrium and 12 corner plants from the actual leaf asset, with 
   for(const zone of ['04','06','08','10','11','12'])assert.equal(r1LookPlantPositions.filter(r=>r[1]===zone).length,2)
   for(const low of [false,true]){
     const root=new THREE.Group(),collision=createFurnitureCollision(),plants=buildR1Plants({THREE,root,layout,A,low,collision})
-    assert.equal(plants.records.length,35);assert.equal(plants.look.records.length,24);assert.equal(collision.stats().bodies,59)
+    assert.equal(plants.records.length,35);assert.equal(plants.look.records.length,24);assert.equal(collision.stats().bodies,59 + plants.dense.proxies.length)
     for(const record of plants.look.records){
       assert.ok(collision.hit(record.position.x,record.position.z));assert.equal(record.parts.CR.layers.length,low?1:2)
       const v=record.parts.CR.vertices
@@ -82,7 +82,7 @@ test('LOOK full plant envelopes clear all 17 swept routes, all door travel envel
   }
 })
 
-test('LOOK added geometry stays inside the 60k triangle budget and does not create real lights', () => {
+test('LOOK original 24-plant geometry stays inside its 60k triangle budget and does not create real lights', () => {
   for(const low of [false,true]){
     const root=new THREE.Group(),site=buildR1Site({THREE,root,layout}),plants=buildR1Plants({THREE,root,layout,A,low})
     const addition=triangles(plants.look.root)+triangles(site.inlay.mesh)+r1LightingPlan(layout).accents.length*12
