@@ -964,7 +964,7 @@ const officePartitions = buildOfficePartitions({ scene, collision: furnitureColl
 for (const child of scene.children) if (child.userData.legacyHangingSign) child.visible = false
 
 // rev3 不复用旧外壳、家具、广场和仓配旧址；保留灯光，V3 注册根独立接管场景。
-const activeCollision = LAYOUT3_MODE ? createFurnitureCollision() : furnitureCollision; const officeV3 = LAYOUT3_MODE ? (() => { const legacy = scene.children.filter((child) => !environmentRoots.has(child) && !child.isLight && !child.isCamera); const envConflicts = selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT); demolishLegacyScene(scene, new Set([...legacy, ...envConflicts])); return startOfficeV3({ THREE, scene, quality: qualityPolicy, layout: OFFICE_LAYOUT, collision: activeCollision, A, placeFurniture, canvasTex, makeScreenTexture, floor, search: location.search }) })() : null
+const activeCollision = LAYOUT3_MODE ? createFurnitureCollision() : furnitureCollision; const officeV3 = LAYOUT3_MODE ? (() => { const legacy = scene.children.filter((child) => !environmentRoots.has(child) && !child.isLight && !child.isCamera); const envConflicts = selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT); demolishLegacyScene(scene, new Set([...legacy, ...envConflicts])); return startOfficeV3({ THREE, scene, env: env3d, quality: qualityPolicy, layout: OFFICE_LAYOUT, collision: activeCollision, A, placeFurniture, canvasTex, makeScreenTexture, floor, search: location.search }) })() : null
 if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   wing = officeV3.get('furniture3').wing
   MEET_SEATS = wing.seats

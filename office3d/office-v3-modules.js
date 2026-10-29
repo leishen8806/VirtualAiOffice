@@ -1,3 +1,4 @@
+import { buildR1Lights } from './office-vis2/r1-lights.js'
 import { LAYOUT_V3 } from './office-layout.js'
 import { createOfficeV2Registry } from './office-v2-registry.js'
 import { buildOfficeAlignedShell } from './office-vis2/shell-finish.js'
@@ -87,7 +88,7 @@ export const officeV3Modules = Object.freeze([
 ])
 
 export const officeV3ModulesFor = layout => layout?.r1Phase === 'R1'
-  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture], ['r1Island', buildR1Island], ['r1Plants', buildR1Plants], ['r1Doors', buildR1Doors], ['r1Lounge', buildR1Lounge], ['r1Plaza', buildR1Plaza]])
+  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture], ['r1Island', buildR1Island], ['r1Plants', buildR1Plants], ['r1Doors', buildR1Doors], ['r1Lounge', buildR1Lounge], ['r1Plaza', buildR1Plaza], ['r1Lights', buildR1Lights]])
   : officeV3Modules
 
 export function startOfficeV3(shared) {

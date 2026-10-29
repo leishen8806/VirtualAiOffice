@@ -309,7 +309,8 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
 
   // ── 室内灯：天黑或阴雨时亮 ──
   const indoor = []
-  for (const [x, z] of [[-15, -6], [-5, -6], [5, -6], [15, -6], [-15, 4], [-5, 4], [5, 4], [15, 4], [-26, -6], [-26, 5], [-37, -8], [-37, 7]]) {
+  let indoorLevel = 0
+  if (!r1Mode) for (const [x, z] of [[-15, -6], [-5, -6], [5, -6], [15, -6], [-15, 4], [-5, 4], [5, 4], [15, 4], [-26, -6], [-26, 5], [-37, -8], [-37, 7]]) {
     const l = new THREE.PointLight(0xffd6a0, 0, 16, 1.6)
     l.position.set(x, 3.7, z)
     scene.add(l)
@@ -419,6 +420,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     for (const m of cityMats) m.emissiveIntensity = night * 1.1
     lampM.emissiveIntensity = smooth(0.4, 0.9, night) * 4
     const indoorOn = Math.max(smooth(0.3, 0.8, night), overcast * 0.6)
+    indoorLevel = indoorOn
     for (const l of indoor) l.intensity = indoorOn * 18
     // 树叶随风轻轻摆
     const sway = Math.min(0.12, W.wind / 300)
@@ -444,6 +446,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
 
   return {
     get quality() { return quality },
+    get indoorLevel() { return indoorLevel },
     get night() { return 1 - cur.day },
     setQuality(q) {
       quality = ['low','medium','high'].includes(q) ? q : 'medium'
