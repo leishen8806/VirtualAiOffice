@@ -2,6 +2,7 @@ import { r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { officeBackdropCanopy, appendOfficeGardenBed } from './plants.js'
 import { createSampleBatch } from './batch.js'
 import { buildR1Fountain } from './r1-fountain.js'
+import { r1FoodPieces } from './r1-island.js'
 
 const REGION = '14'
 // R1 场地地面在 y = 0；铺装抬 4 mm 既避开闪烁，又守住验收的 5 mm 上限。
@@ -18,7 +19,103 @@ const yawOf = item => runtimeYawFromFacing(Number(item.facingLocal?.[0]) || 0, -
 // 正多边形内接会把登记直径画小；偏转半个分段后 x / z 两轴同时差 cos(π/n)，补回去包围盒就逐值相等。
 const fitRadius = (diameter, segments) => diameter / 2 / Math.cos(Math.PI / segments)
 
-export function buildR1Plaza({ THREE, root, layout, collision, quality, low = false }) {
+// ── OFFICE-R1-FOOD：四个摊位的主题食物陈列与价目牌 ──────────────────────────────
+// 柜台面局部坐标：dx 沿摊位 length，dz 沿摊位 width，顾客在 −dz 一侧（柜台和取货台都朝那边）。
+// surfaceY 是本摊柜台面的实际高度：摊亭取货台面 .985 + .035 = 1.02，餐车出餐台 1.22 + .07 = 1.29。
+// dy 是件底面相对柜台面的抬高，只有摆进托盘 / 篮子里的食物才抬一个底板厚度。
+export const R1_STALL_BOARD = Object.freeze({ width: .46, height: .345, depth: .02, foot: .018, footDepth: .1, face: '#F7F1E3', frame: '#2F3A33', price: '#9A5B2A' })
+
+export const R1_STALL_THEMES = Object.freeze([
+  { id: '14-KS-002', theme: '面包与咖啡', surfaceY: 1.02, board: Object.freeze({ dx: .86, dz: -.72 }),
+    display: Object.freeze([
+      Object.freeze({ kind: 'basket', dx: -.62, dz: -.72 }),
+      Object.freeze({ kind: 'bread', dx: -.62, dz: -.72, dy: .014 }),
+      Object.freeze({ kind: 'croissant', dx: -.20, dz: -.70 }),
+      Object.freeze({ kind: 'croissant', dx: -.02, dz: -.78 }),
+      Object.freeze({ kind: 'coffeeCup', dx: .26, dz: -.68 }),
+      Object.freeze({ kind: 'coffeeCup', dx: .44, dz: -.78 }),
+    ]),
+    menu: Object.freeze([Object.freeze(['牛角包', '$3.50']), Object.freeze(['乡村面包', '$5.20']), Object.freeze(['手冲咖啡', '$4.00'])]) },
+  { id: '14-KS-003', theme: '水果与果汁', surfaceY: 1.02, board: Object.freeze({ dx: .86, dz: -.72 }),
+    display: Object.freeze([
+      Object.freeze({ kind: 'basket', dx: -.62, dz: -.72 }),
+      Object.freeze({ kind: 'apple', dx: -.70, dz: -.76, dy: .014 }),
+      Object.freeze({ kind: 'orange', dx: -.62, dz: -.69, dy: .014 }),
+      Object.freeze({ kind: 'lime', dx: -.54, dz: -.76, dy: .014 }),
+      Object.freeze({ kind: 'juiceCup', dx: -.10, dz: -.70 }),
+      Object.freeze({ kind: 'juiceCup', dx: .10, dz: -.78 }),
+      Object.freeze({ kind: 'orange', dx: .36, dz: -.72 }),
+    ]),
+    menu: Object.freeze([Object.freeze(['鲜榨橙汁', '$4.80']), Object.freeze(['当季水果', '$2.60']), Object.freeze(['混合果盘', '$6.50'])]) },
+  { id: '14-KS-004', theme: '甜品', surfaceY: 1.02, board: Object.freeze({ dx: .86, dz: -.72 }),
+    display: Object.freeze([
+      Object.freeze({ kind: 'tray', dx: -.60, dz: -.72 }),
+      Object.freeze({ kind: 'donut', dx: -.70, dz: -.72, dy: .014 }),
+      Object.freeze({ kind: 'donut', dx: -.50, dz: -.72, dy: .014 }),
+      Object.freeze({ kind: 'cake', dx: -.14, dz: -.72 }),
+      Object.freeze({ kind: 'cake', dx: .12, dz: -.72 }),
+      Object.freeze({ kind: 'berry', dx: .38, dz: -.72 }),
+    ]),
+    menu: Object.freeze([Object.freeze(['甜甜圈', '$2.80']), Object.freeze(['蛋糕片', '$4.50']), Object.freeze(['浆果挞', '$5.00'])]) },
+  { id: '14-KS-001', theme: '简餐', surfaceY: 1.29, board: Object.freeze({ dx: .95, dz: -.90 }),
+    display: Object.freeze([
+      Object.freeze({ kind: 'tray', dx: -1.00, dz: -.90 }),
+      Object.freeze({ kind: 'sandwich', dx: -1.05, dz: -.90, dy: .014 }),
+      Object.freeze({ kind: 'sandwich', dx: -.90, dz: -.90, dy: .014 }),
+      Object.freeze({ kind: 'coffeeCup', dx: -.55, dz: -.88 }),
+      Object.freeze({ kind: 'coffeeCup', dx: -.38, dz: -.92 }),
+      Object.freeze({ kind: 'sandwich', dx: .10, dz: -.90 }),
+    ]),
+    menu: Object.freeze([Object.freeze(['火腿三明治', '$6.00']), Object.freeze(['今日简餐', '$8.50']), Object.freeze(['美式咖啡', '$3.20'])]) },
+].map(Object.freeze))
+
+// 四块价目牌共用一张 2 × 2 的 Canvas 图集：中文菜名左对齐、美元价格右对齐，字号按格高推。
+export function drawR1StallBoards(ctx, width, height) {
+  const cellWidth = width / 2, cellHeight = height / 2
+  ctx.clearRect(0, 0, width, height)
+  R1_STALL_THEMES.forEach((stall, index) => {
+    const ox = (index % 2) * cellWidth, oy = Math.floor(index / 2) * cellHeight
+    ctx.fillStyle = R1_STALL_BOARD.face; ctx.fillRect(ox, oy, cellWidth, cellHeight)
+    ctx.fillStyle = R1_STALL_BOARD.frame; ctx.fillRect(ox, oy, cellWidth, cellHeight * .26)
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'; ctx.fillStyle = R1_STALL_BOARD.face
+    ctx.font = `700 ${Math.round(cellHeight * .15)}px "Microsoft YaHei", "Noto Sans SC", sans-serif`
+    ctx.fillText(stall.theme, ox + cellWidth / 2, oy + cellHeight * .13)
+    ctx.font = `600 ${Math.round(cellHeight * .125)}px "Microsoft YaHei", "Noto Sans SC", sans-serif`
+    stall.menu.forEach(([name, price], line) => {
+      const y = oy + cellHeight * (.42 + line * .2)
+      ctx.textAlign = 'left'; ctx.fillStyle = R1_STALL_BOARD.frame; ctx.fillText(name, ox + cellWidth * .09, y)
+      ctx.textAlign = 'right'; ctx.fillStyle = R1_STALL_BOARD.price; ctx.fillText(price, ox + cellWidth * .91, y)
+    })
+  })
+}
+
+// 牌面已经各自烤进世界坐标，只要把 position / normal / uv 顺序接起来就是一个批次。
+const mergeFaces = (THREE, geometries) => {
+  const merged = new THREE.BufferGeometry()
+  for (const [name, size] of [['position', 3], ['normal', 3], ['uv', 2]]) {
+    const values = new Float32Array(geometries.reduce((sum, geometry) => sum + geometry.attributes[name].array.length, 0))
+    let offset = 0
+    for (const geometry of geometries) { values.set(geometry.attributes[name].array, offset); offset += geometry.attributes[name].array.length }
+    merged.setAttribute(name, new THREE.BufferAttribute(values, size))
+  }
+  merged.computeBoundingBox(); merged.computeBoundingSphere()
+  return merged
+}
+
+const BOARD_CANVAS = Object.freeze([1536, 1152])
+const boardTexture = (THREE, canvasTex) => {
+  if (canvasTex) return canvasTex(...BOARD_CANVAS, drawR1StallBoards)
+  if (typeof document === 'undefined') return null
+  const canvas = document.createElement('canvas')
+  canvas.width = BOARD_CANVAS[0]; canvas.height = BOARD_CANVAS[1]
+  drawR1StallBoards(canvas.getContext('2d'), ...BOARD_CANVAS)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 8
+  return texture
+}
+
+export function buildR1Plaza({ THREE, root, layout, collision, quality, low = false, canvasTex }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
   const lowTier = quality ? quality.tier === 'low' : low
   const group = new THREE.Group(); group.name = 'r1-plaza'; group.userData.dynamic = true
@@ -146,6 +243,64 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
   // 登记件的局部坐标 (dx 沿 length，dz 沿 width) 旋到世界：绕 Y 轴 yaw 的标准映射。
   const placer = (p, yaw) => (dx, dz) => [p.x + dx * Math.cos(yaw) + dz * Math.sin(yaw), p.z - dx * Math.sin(yaw) + dz * Math.cos(yaw)]
 
+  // ── OFFICE-R1-FOOD：摊位陈列与价目牌 ──
+  // 这些件都站在柜台面上，不落地，所以不另加碰撞（摊亭与餐车本体的代理已经挡住行人）；
+  // 它们也不进 records，登记件的清单与包围盒保持 I6 验收时的逐值不变。
+  const props = [], boardFaces = []
+  const propOf = id => {
+    let record = props.find(row => row.id === id)
+    if (!record) props.push(record = { id, stallId: '', kind: '', bounds: new THREE.Box3(), local: new THREE.Box3(), triangles: 0 })
+    return record
+  }
+  // 与 emit 同样先在副本上量包围盒，但只记进 props，不动 stack 里的登记件。
+  // local 是旋到世界之前的摊位局部包围盒（dx 沿 length、dz 沿 width），用来逐件核对「在本摊柜台内」。
+  const place = (id, geometry, tint, origin, yaw, roughness = .62, metalness = 0, grain = '') => {
+    const probe = geometry.index ? geometry.toNonIndexed() : geometry.clone()
+    probe.computeBoundingBox()
+    const record = propOf(id); record.local.union(probe.boundingBox)
+    probe.rotateY(yaw); probe.translate(...origin); probe.computeBoundingBox()
+    record.bounds.union(probe.boundingBox); probe.dispose()
+    const before = batch.triangles()
+    batch.add(geometry, tint, origin, yaw, roughness, metalness, grain)
+    record.triangles += batch.triangles() - before
+  }
+  // 低档每摊只留前 3 个槽位（容器 + 两件食物），每个摊位都仍有一种陈列。
+  const stallDisplay = (item, yaw) => {
+    const stall = R1_STALL_THEMES.find(row => row.id === item.id)
+    if (!stall) return
+    const p = r1ToWorld(item.xM, item.yM), origin = [p.x, stall.surfaceY, p.z], B = R1_STALL_BOARD
+    const slots = lowTier ? stall.display.slice(0, 3) : stall.display
+    slots.forEach((slot, index) => {
+      const id = `${item.id}/FD-${String(index + 1).padStart(2, '0')}`
+      for (const piece of r1FoodPieces(THREE, slot.kind, lowTier)) {
+        piece.geometry.translate(slot.dx + piece.dx, (slot.dy || 0) + piece.dy, slot.dz + piece.dz)
+        place(id, piece.geometry, piece.tint, origin, yaw)
+      }
+      Object.assign(propOf(id), { stallId: item.id, kind: slot.kind })
+    })
+    const boardId = `${item.id}/BOARD`
+    const foot = new THREE.BoxGeometry(B.width, B.foot, B.footDepth)
+    foot.translate(stall.board.dx, B.foot / 2, stall.board.dz)
+    place(boardId, foot, B.frame, origin, yaw, .6)
+    const panel = new THREE.BoxGeometry(B.width, B.height, B.depth)
+    panel.translate(stall.board.dx, B.foot + B.height / 2, stall.board.dz)
+    place(boardId, panel, B.frame, origin, yaw, .6)
+    // 牌面文字朝 −dz（顾客一侧）：四块牌共用一张图集和一个绘制批次，这里只按格子改 uv。
+    const face = new THREE.PlaneGeometry(B.width - .03, B.height - .03).toNonIndexed()
+    face.rotateY(Math.PI)
+    face.translate(stall.board.dx, B.foot + B.height / 2, stall.board.dz - B.depth / 2 - .002)
+    const record = propOf(boardId)
+    face.computeBoundingBox(); record.local.union(face.boundingBox)
+    face.rotateY(yaw); face.translate(...origin)
+    const cell = R1_STALL_THEMES.indexOf(stall), uv = face.attributes.uv
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (cell % 2 + uv.getX(i)) / 2, (1 - Math.floor(cell / 2) + uv.getY(i)) / 2)
+    face.computeBoundingBox()
+    record.bounds.union(face.boundingBox); Object.assign(record, { stallId: item.id, kind: 'board' })
+    record.triangles += face.attributes.position.count / 3
+    // 餐车比摊亭先建，所以合批里的次序不是 R1_STALL_THEMES 的次序：id 跟着牌面一起记。
+    boardFaces.push({ id: boardId, geometry: face })
+  }
+
   // ── 餐车 1 台：车轮、车厢、真实取餐窗洞与车顶招牌，整车留在登记包围盒内 ──
   for (const truck of pick('餐车')) {
     const p = r1ToWorld(truck.xM, truck.yM), yaw = yawOf(truck), at = placer(p, yaw)
@@ -173,6 +328,7 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
     emit(new THREE.BoxGeometry(2.4, truck.heightM - cap, .1), COLOR.sign, [p.x, (cap + truck.heightM) / 2, p.z], yaw, .65)
     close()
     boxProxy(truck, yaw)
+    stallDisplay(truck, yaw)
   }
 
   // ── 摊亭 3 座：角柱、取货台、后柜与四坡顶，顶面对角正好落在登记的 2.4 × 2.4 上 ──
@@ -193,6 +349,7 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
     emit(new THREE.ConeGeometry(fitRadius(kiosk.lengthM, 4), kiosk.heightM - eave, 4, 1, false, Math.PI / 4), COLOR.roof, [p.x, (eave + kiosk.heightM) / 2, p.z], yaw, .8)
     close()
     boxProxy(kiosk, yaw)
+    stallDisplay(kiosk, yaw)
   }
 
   // ── 遮阳伞 2 把：伞柱与八角伞面都是登记子件，伞面底 2.3 m 高于 2.1 m 头部净高 ──
@@ -232,18 +389,33 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
   const built = batch.build(group, 'r1-plaza-surfaces')
   built.mesh.material.side = THREE.DoubleSide
   built.mesh.userData.itemIds = records.map(record => record.id)
+  // 四块价目牌的牌面：一张 Canvas 图集 + 一个 MeshBasicMaterial（+1 draw call）。
+  // 取不到 Canvas 时只剩空白牌面，不抛错（验收要求 pageerror 为 0）。
+  const boardMap = boardFaces.length ? boardTexture(THREE, canvasTex) : null
+  const boardGeometry = boardFaces.length ? mergeFaces(THREE, boardFaces.map(entry => entry.geometry)) : null
+  const boardMaterial = boardGeometry && new THREE.MeshBasicMaterial({ map: boardMap, color: boardMap ? 0xffffff : new THREE.Color(R1_STALL_BOARD.face), toneMapped: false })
+  if (boardGeometry) {
+    const mesh = new THREE.Mesh(boardGeometry, boardMaterial)
+    mesh.name = 'r1-plaza-stall-boards'; mesh.castShadow = false; mesh.receiveShadow = false
+    mesh.userData.itemIds = boardFaces.map(entry => entry.id)
+    group.add(mesh)
+  }
+  boardFaces.forEach(entry => entry.geometry.dispose())
   root.add(group)
   const fountain = buildR1Fountain({ THREE, root: group, layout, collision, quality, low })
   let disposed = false
   return {
     root: group, paving, records, proxies, mesh: built.mesh, triangles: built.triangles, fountain, onFrame: fountain.onFrame,
+    props, boards: group.getObjectByName('r1-plaza-stall-boards') || null, boardMap,
     byId: new Map(records.map(record => [record.id, record])),
+    byPropId: new Map(props.map(record => [record.id, record])),
     dispose() {
       if (disposed) return
       disposed = true
       fountain.dispose()
       proxies.forEach(mesh => collision?.remove?.(mesh))
       ownGeometries.forEach(geometry => geometry.dispose())
+      boardGeometry?.dispose(); boardMaterial?.dispose(); boardMap?.dispose()
       proxyMaterial.dispose(); built.dispose(); group.removeFromParent()
     },
   }

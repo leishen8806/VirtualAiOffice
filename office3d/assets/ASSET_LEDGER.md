@@ -40,6 +40,8 @@
 | assets/models/furniture/computerMouse.glb | 5868 | d3ad1a923f0f7707ef367bb969eb94c9076e211c98c830ba52e133fadc5cdfc0 |
 | assets/models/furniture/computerScreen.glb | 6404 | 5942cbad29a2d2b956619569926e81d50a4174403d592fece6556e57632dc643 |
 | assets/models/furniture/desk.glb | 15048 | 0164fe828f028b321730fb8c74502e353583f751be74da1682d42fff7d3c5a42 |
+| assets/models/furniture/kitchenBlender.glb | 18728 | f471defb5b2b1cf3b949a1a8aaef0a8b727afe662b0815068cf4e963325a3c1f |
+| assets/models/furniture/kitchenCoffeeMachine.glb | 13332 | 063f582c6fa0f00a9f24e3393dac2295491c4becdaf5513c893ab1a2826b6ec3 |
 | assets/models/furniture/lampRoundTable.glb | 6604 | 75bb644caaa3da003b4fcad7a931722dd61cd2858aab70cf660021d5061fa1b2 |
 | assets/models/furniture/lampSquareFloor.glb | 5624 | 6466993748d8e184de9ec5b6b0af613867c50c0ce320d1898b1db9e4c27c2561 |
 | assets/models/furniture/laptop.glb | 5540 | 5fa8a1f4a71ab8d82ef64da77a6973ffd350c6d4557516069a4ffd4bb8d808af |
@@ -54,7 +56,13 @@
 | assets/models/furniture/speaker.glb | 15744 | 78230b9fb382a937cb19e4bf7556ee9402d33ac80b1baaee2d2eb89493cfa1fc |
 | assets/models/furniture/table.glb | 8196 | ff1a94498d023957f4bc3ff6f55a7a82977d336dbf01a573b3364f03afe5ff61 |
 | assets/models/furniture/tableCoffee.glb | 8256 | e38bea760fbd514efbb75528d09b4752c91af44677bbb97e6d4386c263525179 |
+| assets/models/furniture/toaster.glb | 14924 | 38c1fb7b122be9997758c8ee855d87f28014cf282f24d66d39f4e8d8b236d2af |
 | assets/models/furniture/trashcan.glb | 6452 | e0ccc1fe50cbd05386477fdff527171d1cf7c0de2ba7ff3233f8d9561feb2561 |
+
+`kitchenBlender.glb`、`kitchenCoffeeMachine.glb`、`toaster.glb` 由 OFFICE-R1-FOOD（CMP-626，2026-10-29）从隔离区
+`paperclip-ops/_quarantine/x-kenney/Models/GLTF format/` 拷入，用于中央吧台台面的搅拌机、咖啡机与面包机。
+三件与隔离区原件逐字节相同（上表 SHA-256 即原件哈希），同属上面那个 `kenney_furniture-kit.zip`，
+授权沿用本目录未改动的 `License.txt`（Kenney Furniture Kit 2.0，CC0 1.0），没有下载任何新素材。
 
 ### Quaternius Universal Base Characters Standard（CC0）
 
