@@ -73,7 +73,9 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
     return mesh
   }
   const water = joined('r1-fountain-water', [disk(3.6, .34), disk(1.36, 1.67), disk(.66, 2.5)],
-    new THREE.MeshPhysicalMaterial({ color: '#2E7C8C', roughness: .05, transparent: true, opacity: .78, clearcoat: 1, clearcoatRoughness: .05, normalMap: textures.normal, normalScale: new THREE.Vector2(.35, .35) }))
+    // opacity 从 .78 降到 .34：水先画鱼再混在上面，.78 时鱼只占像素的两成，
+    // 再鲜艳的橙红也被水色压成灰白（Q-V1 R2 退回）。法线扰动 + clearcoat 高光仍在，水面依旧成立。
+    new THREE.MeshPhysicalMaterial({ color: '#2E7C8C', roughness: .05, transparent: true, opacity: .34, clearcoat: 1, clearcoatRoughness: .05, normalMap: textures.normal, normalScale: new THREE.Vector2(.35, .35) }))
   const curtain = (top, bottom, y0, y1) => new THREE.CylinderGeometry(top, bottom, y1 - y0, 72, 1, true).translate(0, (y0 + y1) / 2, 0)
   const curtains = joined('r1-fountain-curtains', [curtain(1.52, 1.62, .36, 1.68), curtain(.82, .9, 1.68, 2.5)],
     new THREE.MeshBasicMaterial({ map: textures.streak, transparent: true, opacity: .55, depthWrite: false, side: THREE.DoubleSide, forceSinglePass: true }))
@@ -175,7 +177,8 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   const koiCrest = new THREE.SphereGeometry(1, 6, 4); koiCrest.scale(.13, .085, .085); koiCrest.translate(.1, .014, 0)
   const koiFleck = new THREE.SphereGeometry(1, 6, 4); koiFleck.scale(.07, .07, .07); koiFleck.translate(-.1, .012, 0)
   const koiTail = new THREE.ConeGeometry(.11, .2, 3); koiTail.rotateZ(-Math.PI / 2); koiTail.scale(1, 1, .32); koiTail.translate(-.3, 0, 0)
-  const koiGeometry = mergeParts([paint(koiBody, '#FFFFFF', .26), paint(koiCrest, '#D4663F', .26), paint(koiFleck, '#C9573A', .26), paint(koiTail, '#F3E7DF', .26)], POND_KEYS)
+  // 花色烤得更艳、lit 从 .26 收到 .12：侧面不再整体压暗四分之一，近景平视也看得出橙红。
+  const koiGeometry = mergeParts([paint(koiBody, '#FFFFFF', .12), paint(koiCrest, '#FF3B1E', .12), paint(koiFleck, '#FF5A2A', .12), paint(koiTail, '#FFE2CF', .12)], POND_KEYS)
   koiGeometry.computeBoundingBox()
   const span = koiGeometry.boundingBox.max.x - koiGeometry.boundingBox.min.x
   koiGeometry.translate(-(koiGeometry.boundingBox.max.x + koiGeometry.boundingBox.min.x) / 2, 0, 0)
@@ -188,9 +191,11 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
     depth: .238 + pondRandom() * .03, length: .29 + pondRandom() * .12,
     beat: 2.4 + pondRandom() * 1.2, bob: .5 + pondRandom() * .4,
   })
-  const koiMesh = new THREE.InstancedMesh(koiGeometry, new THREE.MeshBasicMaterial({ vertexColors: true }), koi.length)
+  // toneMapped: false —— ACES 色调映射会把高饱和的橙红压成灰褐，锦鲤这一批不参与。
+  const koiMesh = new THREE.InstancedMesh(koiGeometry, new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }), koi.length)
   koiMesh.name = 'r1-fountain-koi'; koiMesh.frustumCulled = false
-  const koiColours = ['#FFFFFF', '#F7933C', '#F4C442', '#FFF0DA', '#F0663A'], tint = new THREE.Color()
+  // 红白（白身红斑）、橙红、金黄、橙、朱红；原来的米白 / 奶油色去掉，九条里有四条都读成灰白。
+  const koiColours = ['#FFFFFF', '#FF5A1E', '#FFC02A', '#FF8030', '#FF4A2A'], tint = new THREE.Color()
   koi.forEach((_, i) => koiMesh.setColorAt(i, tint.set(koiColours[i % koiColours.length])))
   life.add(koiMesh); meshes.push(koiMesh)
   const koiMatrix = new THREE.Matrix4(), koiSpin = new THREE.Quaternion(), koiUp = new THREE.Vector3(0, 1, 0)

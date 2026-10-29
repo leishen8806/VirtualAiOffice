@@ -170,3 +170,49 @@ test('PD-4 锦鲤与荷的布局确定，不依赖共享随机状态', () => {
   assert.equal(a.particleCount, 2380)
   a.dispose(); b.dispose()
 })
+
+// PD-6（R2）：Q-V1 2026-10-29 退回「锦鲤颜色太淡，鱼呈灰白 / 灰褐，被水色压掉了」。
+// 这里不看材质的原始色，而是看「隔着水面实际看到的颜色」——水是 transparent 的，
+// 鱼先画进帧缓冲，水再以 opacity 混在上面，所以可见色 ≈ 鱼色·(1-opacity) + 水色·opacity。
+// 原始色再鲜艳，只要水不够通透，落到屏幕上就是灰的，这正是退回要治的问题。
+const srgbHSL = linear => { const out = {}; linear.clone().convertLinearToSRGB().getHSL(out); return out }
+// 色相用「度」表述并在 0 附近取负值（水是青蓝的，混上来会把红压到 0° 两侧）：橙红≈-10–32°，金黄≈32–55°。
+const hueDeg = hsl => { const h = hsl.h * 360; return h > 300 ? h - 360 : h }
+// 鱼身上每一块烤进顶点色的花色，乘上这条鱼的实例色，就是这块的实际颜色。
+const koiPartColours = (koiMesh, i) => {
+  const instance = new THREE.Color(); koiMesh.getColorAt(i, instance)
+  const colour = koiMesh.geometry.attributes.color, seen = new Map()
+  for (let v = 0; v < colour.count; v++) {
+    const key = `${colour.getX(v).toFixed(3)}|${colour.getY(v).toFixed(3)}|${colour.getZ(v).toFixed(3)}`
+    if (!seen.has(key)) seen.set(key, new THREE.Color(colour.getX(v) * instance.r, colour.getY(v) * instance.g, colour.getZ(v) * instance.b))
+  }
+  return [...seen.values()]
+}
+const throughWater = (fish, water, opacity) =>
+  new THREE.Color(fish.r * (1 - opacity) + water.r * opacity, fish.g * (1 - opacity) + water.g * opacity, fish.b * (1 - opacity) + water.b * opacity)
+
+test('PD-6 锦鲤隔着水面看仍是鲜艳的橙红 / 金黄，不被水色压成灰白', () => {
+  const { f } = setup(), { koiMesh } = f.pond, water = f.water.material
+  // ACES 色调映射会把高饱和的橙红压灰，锦鲤这一批必须关掉。
+  assert.equal(koiMesh.material.toneMapped, false, '锦鲤材质要关掉色调映射')
+  const everyPart = []
+  for (let i = 0; i < koiMesh.count; i++) {
+    // 一条鱼身上不止一种花色（白身 + 红斑等），逐块算，再看这条鱼最鲜艳的一块。
+    const parts = koiPartColours(koiMesh, i)
+      .map(c => srgbHSL(throughWater(c, water.color, water.opacity)))
+      .filter(hsl => hueDeg(hsl) >= -10 && hueDeg(hsl) <= 55 && hsl.l >= .3)
+      .sort((a, b) => b.s - a.s)
+    assert.ok(parts.length, `第 ${i} 条鱼隔水后没有一块落在橙红 / 金黄区间`)
+    assert.ok(parts[0].s >= .42, `第 ${i} 条鱼隔水后最高饱和度只有 ${parts[0].s.toFixed(3)}，仍是灰白`)
+    everyPart.push(...parts.map(hsl => ({ fish: i, ...hsl })))
+  }
+  // 效果图里一眼可辨的是橙红，至少要有一块落在橙红窄区间里。
+  const vividRed = everyPart.filter(p => hueDeg(p) >= -10 && hueDeg(p) <= 32 && p.s >= .55)
+  assert.ok(vividRed.length >= 1, `没有橙红花色（s≥.55），最高只有 ${Math.max(...everyPart.map(p => p.s)).toFixed(3)}`)
+  // 金黄也要有，保证不是清一色同一种橙。
+  const gold = everyPart.filter(p => hueDeg(p) > 32 && hueDeg(p) <= 55 && p.s >= .5)
+  assert.ok(gold.length >= 1, `没有金黄花色，色相分布 ${[...new Set(everyPart.map(p => hueDeg(p).toFixed(0)))].join(',')}`)
+  // 两者要分别落在不同的鱼或不同的花色块上，不能是同一块既算橙红又算金黄。
+  assert.ok(new Set([...vividRed, ...gold]).size >= 2, '橙红与金黄必须是不同的花色块')
+  f.dispose()
+})
