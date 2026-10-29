@@ -280,7 +280,7 @@
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "44F4D71C48652902DB9643A414F4037962D56C740961C48423CC19FE1C39B622"
+      "sha256": "A50EE341BF2A550B6660BD14FEAB27D04165C009DF61BA7110A59C9112889397"
     },
     {
       "file": "office-vis2/r1-zones.js",

@@ -129,6 +129,7 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
   }))
   const stationByDesk = new Map(layout.r1.workstations.map(station => [station.desk_id, station]))
   const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, R1_SEATED_PROFILES[station.business_id]?.seat || 0]))
+  const movingChairs = new Map(), bucketMeshes = new Map()
   const deskMaterials = {}
   A.furn.desk?.traverse(mesh => { const material = mesh.material; if (material?.name === 'wood') deskMaterials.wood = material; if (/^metal/.test(material?.name)) deskMaterials.metal = material })
   const addAsset = (name, item, bucket = bucketFor(item), size = dimensions(item), yaw = yawFor(item), placement = {}) => {
@@ -148,7 +149,12 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
     }
     f.group.updateWorldMatrix(true, true); itemBounds.set(item.id, new THREE.Box3().setFromObject(f.group)); itemCategories.set(item.id, item.category)
     if (item.category === '办公椅') chairModels.set(item.id, f.group)
+    const first = buckets.get(bucket).reduce((sum, g) => sum + g.attributes.position.count, 0)
     bake(THREE, buckets, f.group, bucket, new THREE.Color(COLOR[bucket]), ['办公椅', '椅子', '吧凳'].includes(item.category) || placement.preserveColor)
+    if (chairAdjustments.has(item.id)) {
+      const end = buckets.get(bucket).reduce((sum, g) => sum + g.attributes.position.count, 0)
+      movingChairs.set(item.id, { source: f.group, bucket, first, count: end - first, home: f.group.position.clone(), baseYaw: f.group.rotation.y, dx: 0, dz: 0, yaw: 0 })
+    }
     if (SOLID.has(item.category)) { collision?.add(f.group, item.category); collisionGroups.push(f.group) }
     return f.group
   }
@@ -209,7 +215,33 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
     const geometry = mergeGeometries(THREE, geometries); geometries.forEach(value => value.dispose())
     if (!geometry) throw new Error(`R1 家具合批失败: ${bucket}`)
     const material = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: bucket === 'screen' ? .35 : .72, metalness: bucket === 'screen' ? .18 : .02 }), mesh = new THREE.Mesh(geometry, material)
-    mesh.name = `r1-furniture-${bucket}`; mesh.userData.itemIds = items.filter(item => bucketFor(item) === bucket).map(item => item.id); group.add(mesh); materials.push(material); merged.push(mesh)
+    mesh.name = `r1-furniture-${bucket}`; mesh.userData.itemIds = items.filter(item => bucketFor(item) === bucket).map(item => item.id); group.add(mesh); materials.push(material); merged.push(mesh); bucketMeshes.set(bucket, mesh)
+  }
+  for (const row of movingChairs.values()) {
+    row.mesh = bucketMeshes.get(row.bucket)
+    row.original = row.mesh.geometry.attributes.position.array.slice(row.first * 3, (row.first + row.count) * 3)
+    row.normals = row.mesh.geometry.attributes.normal.array.slice(row.first * 3, (row.first + row.count) * 3)
+  }
+  for (const mesh of new Set([...movingChairs.values()].map(row => row.mesh))) {
+    mesh.geometry.computeBoundingSphere(); mesh.geometry.boundingSphere.radius += .8
+  }
+  function moveChair(id, dx, dz, yaw = 0) {
+    const row = movingChairs.get(id)
+    if (!row || ![dx, dz, yaw].every(Number.isFinite) || Math.hypot(dx, dz) > .800001 || Math.abs(yaw) > Math.PI / 2) throw new Error(`Invalid R1 chair pose: ${id}`)
+    if (row.dx === dx && row.dz === dz && row.yaw === yaw) return false
+    const p = row.mesh.geometry.attributes.position, normals = row.mesh.geometry.attributes.normal, co = Math.cos(yaw), si = Math.sin(yaw)
+    for (let i = 0; i < row.count; i++) {
+      const x = row.original[i * 3] - row.home.x, z = row.original[i * 3 + 2] - row.home.z, nx = row.normals[i * 3], nz = row.normals[i * 3 + 2]
+      p.setXYZ(row.first + i, row.home.x + co * x + si * z + dx, row.original[i * 3 + 1], row.home.z - si * x + co * z + dz)
+      normals.setXYZ(row.first + i, co * nx + si * nz, row.normals[i * 3 + 1], -si * nx + co * nz)
+    }
+    p.addUpdateRange(row.first * 3, row.count * 3); p.needsUpdate = true
+    normals.addUpdateRange(row.first * 3, row.count * 3); normals.needsUpdate = true
+    row.source.position.set(row.home.x + dx, row.home.y, row.home.z + dz); row.source.updateWorldMatrix(true, true)
+    row.source.rotation.y = row.baseYaw + yaw; row.source.updateWorldMatrix(true, true)
+    collision?.poseNavigationBody(row.source, row.home, dx, dz, yaw)
+    itemBounds.get(id).setFromObject(row.source)
+    row.dx = dx; row.dz = dz; row.yaw = yaw; return true
   }
   const stations = layout.r1.workstations, screens = screenAtlas(THREE, stations, makeScreenTexture), badges = badgeBatch(THREE, stations), handles = new Map()
   group.add(screens.mesh, badges)
@@ -220,5 +252,5 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
     handles.set(key(desk.x, desk.z), { group: anchor, scr, chair: chairAnchor, setBadge(color) { badges.setColorAt(index, new THREE.Color(color)); badges.instanceColor.needsUpdate = true } })
   })
   root.add(group); let disposed = false
-  return { root: group, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings, seatedProfile(name) { return R1_SEATED_PROFILES[name] || null }, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
+  return { root: group, moveChair, chairMotion: id => { const r = movingChairs.get(id); return r ? { dx: r.dx, dz: r.dz, yaw: r.yaw } : null }, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings, seatedProfile(name) { return R1_SEATED_PROFILES[name] || null }, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
 }

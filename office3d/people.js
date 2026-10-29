@@ -239,6 +239,7 @@ export function createPerson(P, name) {
   const X = P.extras[src.gender]
   const looseGarment = LOOSE_GARMENT.test(name)
   const pick = () => {
+    if (pose.r1Motion && X.r1Motions?.[pose.r1Motion]) return `r1:${pose.r1Motion}`
     if (pose.walk > 0.5) return 'walk'
     if (pose.sit > 0.5) {
       if (pose.lounge > 0.5 && X.lounge && X.lounge.length) return 'lounge'
@@ -247,7 +248,7 @@ export function createPerson(P, name) {
     return pose.talk > 0.5 && pose.carry <= 0.5 ? 'standTalk' : 'stand'
   }
   const loungeClip = () => X.lounge[Math.floor(pose.seed * 7) % X.lounge.length]
-  const actionFor = (k) => (k === 'lounge' ? extraAction(loungeClip(), false) : actions[k])
+  const actionFor = (k) => (k?.startsWith('r1:') ? extraAction(X.r1Motions[k.slice(3)], false) : k === 'lounge' ? extraAction(loungeClip(), false) : actions[k])
   function solve(dt) {
     pose.t += dt
     const want = pick()
@@ -344,6 +345,23 @@ export async function loadR1Extras(P) {
   })))
 }
 
+
+export async function loadR1MovementExtras(P) {
+  const names = ['cheer_01', 'cheer_03', 'claphands_01', 'gestic_talk_excited_01', 'gestic_talk_relaxed_01']
+  await Promise.all(['male', 'female'].flatMap(g => names.map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`
+    const source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    ;(P.extras[g].r1Motions ||= {})[name] = clip
+  })))
+  await Promise.all(['male', 'female'].flatMap(g => EXTRA.lounge.map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`, source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file; (P.extras[g].lounge ||= []).push(clip)
+  })))
+}
+
 const R1_POOL_WARNED = new Set()
 export function r1SeatedAssets(P, avatar, profile, personName) {
   const gender = avatar.startsWith('Female_') ? 'female' : 'male'
@@ -355,7 +373,7 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
     return null
   }
   // Separate actions avoid cross-fading an action into itself when speech starts; source tracks stay intact.
-  return { ...P, clips: { ...P.clips, [gender]: { sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
+  return { ...P, clips: { ...P.clips, [gender]: { ...P.clips[gender], sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { ...P.extras[gender], sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
@@ -404,6 +422,11 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
     // Remove last frame's correction before the original mixer updates its pose.
     for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
     solve(dt)
+    if (ch.pose?.r1AtDesk === false) {
+      for (const arm of arms) arm.bones.forEach((bone, i) => arm.original[i].copy(bone.quaternion))
+      report.active = false; return
+    }
+    report.active = true
     ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
     ch.group.updateMatrixWorld(true)
     for (const [mesh, cache] of skinning) {

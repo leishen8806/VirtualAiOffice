@@ -6,7 +6,7 @@ import { createUI } from './ui.js'
 import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
 import { createFurnitureCollision } from './furniture-collision.js'
 import { startOfficeV2, OFFICE_LAYOUT, SEATS, buildWing, ROOMS, buildOfficePartitions, createDirector, createFun, holidayInfo, officeStand, officeExit, corridorPath, LOUNGE_AREA, LOUNGE_SEATS, loungeTrip, meetingTrip, createWaitingBoard, waitingPlan } from './office-v2-modules.js'
 import { buildWarehouseShell } from './warehouse-shell.js'
@@ -975,6 +975,7 @@ for (const child of scene.children) if (child.userData.legacyHangingSign) child.
 
 // rev3 不复用旧外壳、家具、广场和仓配旧址；保留灯光，V3 注册根独立接管场景。
 const activeCollision = LAYOUT3_MODE ? createFurnitureCollision() : furnitureCollision; const officeV3 = LAYOUT3_MODE ? (() => { const legacy = scene.children.filter((child) => !environmentRoots.has(child) && !child.isLight && !child.isCamera); const envConflicts = selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT); demolishLegacyScene(scene, new Set([...legacy, ...envConflicts])); return startOfficeV3({ THREE, scene, env: env3d, quality: qualityPolicy, layout: OFFICE_LAYOUT, collision: activeCollision, A, placeFurniture, canvasTex, makeScreenTexture, floor, search: location.search }) })() : null
+if (OFFICE_LAYOUT.r1Phase === 'R1') { MEET_SEATS = LOUNGE_SEATS.filter(s => s.meeting); for (const seat of MEET_SEATS) seat.pathFn = v => meetingTrip(v.home, seat) }
 if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   wing = officeV3.get('furniture3').wing
   MEET_SEATS = wing.seats
@@ -1163,8 +1164,9 @@ function applyWorld(s) {
 // 这是把真实的「空闲」状态画出来，不代表在干活。
 const LOUNGE = LOUNGE_SEATS.map(seat => ({ ...seat, taken: null }))
 // 加载期旧岛台仍整圈禁入；只延后可选休息与闲聊，不阻塞业务会议。
-const loungeReady = () => !OFFICE_SAMPLE_MODE || OFFICE_LAYOUT.variant !== 'align' || officeV3?.get('island')?.status === 'open'
+const loungeReady = () => OFFICE_LAYOUT.r1Phase === 'R1' ? director.stats().prepared : !OFFICE_SAMPLE_MODE || OFFICE_LAYOUT.variant !== 'align' || officeV3?.get('island')?.status === 'open'
 function loungePath(v, seat) {
+  if (OFFICE_LAYOUT.r1Phase === 'R1') return [] // R1 plans once the measured chair/seat transition has completed.
   if (seat.pathFn) return seat.pathFn(v) // 会议室座位
   return loungeTrip(v.home, seat)
 }
@@ -1188,7 +1190,8 @@ function lifeTick(onDuty) {
 }
 function goLounge(v, now, stay, pick) {
   if (v.visiting || (!pick?.meeting && !loungeReady())) return false
-  const seat = pick || LOUNGE.find((x) => !x.taken)
+  const free = director.r1 ? LOUNGE.filter(x => !x.taken && !x.meeting) : null
+  const seat = pick || (free ? free[Math.floor(Math.random() * free.length)] : LOUNGE.find((x) => !x.taken))
   if (!seat) return false
   seat.taken = v
   if (director.travel(v, loungePath(v, seat), seat, !seat.meeting, null)) { v.lounging = seat; v.loungeUntil = now + stay; return true }
@@ -1220,7 +1223,7 @@ function meetTick(now) {
     const people = m.participants.map((id) => views.get(id)).filter(Boolean)
     const free = people.filter((v) => isFreeForChat(v) && !v.act && !v.lounging)
     if (free.length < 2) return // 不够两个人有空：不开会（也不编）
-    const room = free.length <= 6 || voteMeet ? 'B' : 'A' // 评审室 A 在投票会期间留给委员
+    const room = OFFICE_LAYOUT.r1Phase === 'R1' ? 'A' : free.length <= 6 || voteMeet ? 'B' : 'A' // R1 只有登记会议室 02。
     const seats = MEET_SEATS.filter((s) => s.room === room && !s.taken)
     const here = []
     free.slice(0, seats.length).forEach((v, i) => { if (goLounge(v, now, 14 * 60000, seats[i])) here.push(v) })
@@ -1403,7 +1406,7 @@ function declutter(list) {
     if (y !== el._sy) el.style.transform = `translate(${el._sx}px, ${y}px) translate(-50%, -100%)`
   }
 }
-const director = createDirector({ views, board: boardViews, layer: bubblesEl, project: { tmp: new THREE.Vector3(), fn: projectTo }, needDesk: (v) => backToDesk(v), furnitureCollision: activeCollision })
+const director = createDirector({ views, board: boardViews, layer: bubblesEl, project: { tmp: new THREE.Vector3(), fn: projectTo }, needDesk: (v) => backToDesk(v), furnitureCollision: activeCollision, ...(OFFICE_LAYOUT.r1Phase === 'R1' ? { r1Furniture: officeV3.get('furniture3'), r1Doors: officeV3.get('r1Doors') } : {}) })
 const waitingBoard = createWaitingBoard()
 const hasQuestion = (id) => (latestState?.waiting || []).some((item) => item.agentId === id && item.kind === 'question')
 function syncWaitingPeople(onDuty, live) {
@@ -1460,6 +1463,7 @@ function onCelebrate(e) {
   if (!v || v.away) return
   v.happyUntil = Date.now() + 2 * 3600000 // 完成任务后两小时里笑得开心一点
   fun.celebrate(v)
+  if (OFFICE_LAYOUT.r1Phase === 'R1') director.celebrate(v)
   ui.toast(e.text)
 }
 function boardCheer() {
@@ -2024,7 +2028,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     const ch = v.char, p = ch.pose
     if (!v.act) {
       // 没有互动时：按真实状态坐着干活 / 发呆
-      p.sit = THREE.MathUtils.lerp(p.sit, 1, ease(dt, 6))
+      p.sit = THREE.MathUtils.lerp(p.sit, OFFICE_LAYOUT.r1Phase === 'R1' && v.r1Standing ? 0 : 1, ease(dt, 6))
       p.walk = THREE.MathUtils.lerp(p.walk, 0, ease(dt, 6))
       p.type = THREE.MathUtils.lerp(p.type, v.mode === 'run' ? 1 : 0, ease(dt, 5))
       p.talk = THREE.MathUtils.lerp(p.talk, 0, ease(dt, 5))
@@ -2190,7 +2194,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
       const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [] }
       try {
         const loaded = await loadPeople()
-        await loadR1Extras(loaded)
+        await Promise.all([loadR1Extras(loaded), loadR1MovementExtras(loaded)])
         PEOPLE = loaded
         for (const v of views.values()) {
           if (v.char.avatar) continue

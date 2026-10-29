@@ -208,3 +208,9 @@ test('I6C-2 I3 draws the shifted region 14 round table and chairs at their devia
   }
   furniture.dispose()
 })
+
+// MOVE R5 changes one coordinate in the existing four-entry bench table; no new data rows.
+test('MOVE R5 bench override count and exact positional exception remain frozen', () => {
+  assert.equal(R1_BOARD_FACING_OVERRIDES.length, 4)
+  assert.deepEqual(R1_BOARD_FACING_OVERRIDES.filter(e => 'xM' in e.to).map(e => [e.id, e.from.xM, e.to.xM]), [['14-BN-003', 49, 48.5]])
+})

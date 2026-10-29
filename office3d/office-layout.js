@@ -843,20 +843,10 @@ function createOfficeV3Navigation(layout) {
   }
 }
 
-function createOfficeR1Navigation(layout) {
-  const point = value => Number.isFinite(value?.x) && Number.isFinite(value?.z) ? { x: value.x, z: value.z } : undefined
-  const origin = point(layout.axis) || { x: 0, z: 0 }
-  const stay = value => point(value) ? [point(value)] : []
-  return {
-    roomAt: () => undefined, standAt: point, officeExit: stay, corridorPath: stay, loungeTrip: stay, meetingTrip: stay, officeTrip: stay, boardTrip: stay,
-    consumerTrip: stay, foyerTrip: stay, plazaTrip: stay, foyerReturnTrip: stay, consumerAdvance: (_, from) => stay(from), consumerDeparture: (_, stand) => stay(stand),
-    consumerTargets: {}, consumerQueues: { waiting: [] }, ENTRANCE: { x0: origin.x, x1: origin.x, inner: origin, gate: [] }, CORRIDOR_X: origin.x,
-    BOARD_DOOR: { x: origin.x, zOut: origin.z, zIn: origin.z, outside: origin, inside: origin, side: 'none' }, FOYER_Z: origin.z, AISLE_OFFSET: 0,
-    LOUNGE_AREA: { x: origin.x, z: origin.z, width: 0, depth: 0, entryZ: origin.z }, LOUNGE_SEATS: [], COFFEE_SEATS: [],
-  }
-}
+import { createR1Navigation } from './office-r1-navigation.js'
 
-// 调用方持有选定版本；旧版导出和数据不参与重写。
+function createOfficeR1Navigation(layout) { return createR1Navigation(layout) }
+
 export function createOfficeNavigation(layout = LAYOUT_V1) {
   if (layout?.r1Phase === 'R1') return createOfficeR1Navigation(layout)
   if (layout.version === 3) return createOfficeV3Navigation(layout)

@@ -328,3 +328,21 @@ Microsoft Rocketbox，MIT。仅导入下列 13 项；原件来自已核对的隔
 | models/people/anim/m_sit_table_idle_touch_hair.fbx | 2414176 | 60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314 |
 | models/people/anim/f_sit_table_idle_roll_head.fbx | 2153328 | 6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014 |
 | models/people/anim/m_sit_table_idle_roll_head.fbx | 2374048 | 8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d |
+
+
+## OFFICE-R1-MOVE / 2026-10-29
+
+Microsoft Rocketbox, MIT; unchanged source FBX from the approved quarantine. Relaxed talk is recorded in manifest3.json; cheer, clap and excited talk are actually recorded in manifest5.json (the MOVE card refers to manifest3 for these too). No animation tracks or source files were edited.
+
+| File | Bytes | SHA-256 | Quarantine record |
+|---|---:|---|---|
+| assets/models/people/anim/f_cheer_01.fbx | 3015536 | c6348d384bf83f66d6b77a45229847eea94cdcf5cdc06659d5f6d964f028b54d | manifest5.json |
+| assets/models/people/anim/f_cheer_03.fbx | 1513040 | 03d6f83b11f1c1efe05b22d415134a778a3854bc6eb373a497bc83c27b16f08d | manifest5.json |
+| assets/models/people/anim/f_claphands_01.fbx | 3088480 | 125b108aa10a1207d4beb9a0041a0b20fcb29d96f7c2fb9fc5e343e51aae863a | manifest5.json |
+| assets/models/people/anim/f_gestic_talk_excited_01.fbx | 5043104 | c80b5e40a00f121bd5dc4b18cf0e16dc558bcd985621b89ce89cd7464f815384 | manifest5.json |
+| assets/models/people/anim/f_gestic_talk_relaxed_01.fbx | 4802192 | a22d59d1d0cc34a16df70a994ef829d3206034f6416bc9bd3de387fb3f204c61 | manifest3.json |
+| assets/models/people/anim/m_cheer_01.fbx | 4390576 | f71a32d4c4629817488855bbca36ce3c4112e8605cd90dcf84ba1726687f8d10 | manifest5.json |
+| assets/models/people/anim/m_cheer_03.fbx | 1788592 | 93bee57cc1edfb9ccf45c530b144464a1fd55686724bb3b747fd12e3f513c4e7 | manifest5.json |
+| assets/models/people/anim/m_claphands_01.fbx | 2133184 | b1db818b9381e959e367d5ce23babf26c27b3f2cdc5540f0cd0b6bda1d8694bc | manifest5.json |
+| assets/models/people/anim/m_gestic_talk_excited_01.fbx | 4669728 | ce7638f6a36e6f49d81f7eeedae3b820eafa35025f6429cc92803155c76926d8 | manifest5.json |
+| assets/models/people/anim/m_gestic_talk_relaxed_01.fbx | 5511856 | 560c369eeec15c56534cdd8a87bdebd76f365a783c43b473e879a1707721be07 | manifest3.json |
