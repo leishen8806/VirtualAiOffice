@@ -1,4 +1,7 @@
 // Deterministic R1-only placements; clearance evidence is generated from the rendered baseline.
+// Row order is load-bearing: r1-dense-garden.js seeds species, yaw and scale from the array index,
+// and the low tier keeps the leading rows of each zone. Edit coordinates in place, never reorder.
+// Rule D (OFFICE-R1-SIGHTLINE) keeps every display face clear for 1.2 m; see tests/office-r1-sightline.test.mjs.
 export const R1_LANDSCAPE = Object.freeze({
   plants: [
     {"id":"DENSE-GATE-0-R","zone":"07","x":11.5,"z":-5.9,"r":0.44,"height":2.1,"kind":"tall","role":"passage"},
@@ -35,10 +38,10 @@ export const R1_LANDSCAPE = Object.freeze({
     {"id":"DENSE-10-8","zone":"10","x":-19.3,"z":13.6,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-10-9","zone":"10","x":-19.3,"z":12.5,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-10-10","zone":"10","x":-17.9,"z":17.4,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
-    {"id":"DENSE-11-5","zone":"11","x":0.65,"z":9.75,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
+    {"id":"DENSE-11-5","zone":"11","x":-0.6,"z":10.6,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-11-6","zone":"11","x":4.5,"z":9.75,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-11-7","zone":"11","x":7.8,"z":11.4,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
-    {"id":"DENSE-11-8","zone":"11","x":1.75,"z":9.75,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
+    {"id":"DENSE-11-8","zone":"11","x":4.65,"z":10.6,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-11-9","zone":"11","x":7.8,"z":10.3,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-11-10","zone":"11","x":-0.45,"z":9.75,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
     {"id":"DENSE-12-6","zone":"12","x":18.5,"z":9.2,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
@@ -52,7 +55,7 @@ export const R1_LANDSCAPE = Object.freeze({
     {"id":"DENSE-02-4","zone":"02","x":-19.3,"z":-21.55,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
     {"id":"DENSE-02-5","zone":"02","x":-17.65,"z":-24.3,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-02-6","zone":"02","x":-19.3,"z":-22.65,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
-    {"id":"DENSE-02-7","zone":"02","x":-13.8,"z":-24.3,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
+    {"id":"DENSE-02-7","zone":"02","x":-10.3,"z":-24.3,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
     {"id":"DENSE-02-8","zone":"02","x":-9.4,"z":-24.3,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-02-9","zone":"02","x":-19.3,"z":-18.25,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-02-10","zone":"02","x":-19.3,"z":-17.15,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
@@ -105,15 +108,15 @@ export const R1_LANDSCAPE = Object.freeze({
     {"id":"DENSE-08-13","zone":"08","x":26.8,"z":7.5,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
     {"id":"DENSE-08-14","zone":"08","x":29,"z":5.85,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-08-15","zone":"08","x":29,"z":-9,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
-    {"id":"DENSE-08-16","zone":"08","x":29,"z":4.75,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
-    {"id":"DENSE-08-17","zone":"08","x":29,"z":3.65,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
+    {"id":"DENSE-08-16","zone":"08","x":29.1,"z":6.8,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
+    {"id":"DENSE-08-17","zone":"08","x":28.1,"z":7.8,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-08-18","zone":"08","x":29,"z":-6.8,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
-    {"id":"DENSE-08-19","zone":"08","x":29,"z":2.55,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
+    {"id":"DENSE-08-19","zone":"08","x":29.1,"z":-1.3,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
     {"id":"DENSE-08-20","zone":"08","x":29,"z":-5.7,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
-    {"id":"DENSE-08-21","zone":"08","x":29,"z":1.45,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
+    {"id":"DENSE-08-21","zone":"08","x":28.2,"z":6.5,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-08-22","zone":"08","x":29,"z":-4.6,"r":0.44,"height":1.9,"kind":"tall","role":"zone-edge"},
-    {"id":"DENSE-08-23","zone":"08","x":29,"z":0.35,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
-    {"id":"DENSE-08-24","zone":"08","x":29,"z":-0.75,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
+    {"id":"DENSE-08-23","zone":"08","x":29.1,"z":-2.4,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
+    {"id":"DENSE-08-24","zone":"08","x":28.2,"z":-1.6,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},
     {"id":"DENSE-09-2","zone":"09","x":-25.3,"z":13.6,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-09-3","zone":"09","x":-21.45,"z":9.2,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"}
   ],
