@@ -68,6 +68,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     for (const other of views.values()) {
       if (other === v && ['rise', 'sit'].includes(v.act?.phase) || other.away || !other.char.group.visible) continue
       const pos = anchor(other), radius = other === v ? .24 : .6
+      const parked = Math.hypot(current.dx, current.dz)
+      if (travel > 1e-9 && (parked < 1e-9 || Math.abs(parked - p.slide) < 1e-9) && nav.chairSweepHit(p.chairId, pos, radius)) return false
       if (dist(pos, { x: v.home.x + target.dx, z: v.home.z + target.dz }) > 1.1 + travel) continue
       for (let i = 1; i <= samples; i++) {
         const t = i / samples, dx = current.dx + (target.dx - current.dx) * t, dz = current.dz + (target.dz - current.dz) * t, yaw = (target.yaw - current.yaw) * t, co = Math.cos(yaw), si = Math.sin(yaw)
@@ -273,6 +275,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     }
     if (changed) nav.refreshChairs()
     for (const [name, move] of chairMoves) {
+      // Start only after the entire chair sweep is empty; walking then respects its temporary reservation.
+      if (move.t === 0 && !safeChairMove(move.v, move.to)) continue
       const next = Math.min(.6, move.t + dt), k = smooth(next / .6), amount = move.from + (move.to - move.from) * k
       if (!safeChairMove(move.v, amount)) continue
       chair(move.v, amount); move.t = next; if (next === .6) chairMoves.delete(name)

@@ -348,12 +348,29 @@ export function createR1Navigation(layout) {
     return nav
   }
   function refreshChairs() { dynamic = collision.navigationBodies().filter(movable); revision++ }
+  function chairSweepHit(id, p, radius) {
+    const sweep = sweepMasks.get(id)
+    return sweep ? collision.navigationHit(p.x, p.z, radius, null, [sweep.proxy]) : null
+  }
+  function activeSweep(body) {
+    const sweep = sweepMasks.get(identity(body))
+    if (!sweep || !sweep.box.containsBox(body.box)) return null
+    const same = box => box.min.distanceToSquared(body.box.min) + box.max.distanceToSquared(body.box.max) < 1e-12
+    return same(sweep.closed) || same(sweep.open) ? null : sweep
+  }
   function query(p, name, radius = .6, ignore) {
     if (!collision) throw new Error('R1 navigation is not attached to real collision geometry')
     const s = stations.get(name), excluded = ignore || new Set(s ? [bodyFor(s.chair_id)?.group] : [])
     const { x0, x1, z0, z1 } = layout.site
     if (!Number.isFinite(p.x) || !Number.isFinite(p.z) || p.x < x0 + radius || p.x > x1 - radius || p.z < z0 + radius || p.z > z1 - radius) return { kind: 'site-boundary' }
-    return collision.navigationHit(p.x, p.z, radius, excluded, cells.get(square(p.x, p.z)) || []) || collision.navigationHit(p.x, p.z, radius, excluded, dynamic)
+    const hit = collision.navigationHit(p.x, p.z, radius, excluded, cells.get(square(p.x, p.z)) || []) || collision.navigationHit(p.x, p.z, radius, excluded, dynamic)
+    if (hit) return hit
+    for (const body of dynamic) {
+      if (excluded?.has(body.group)) continue
+      const sweep = activeSweep(body)
+      if (sweep && collision.navigationHit(p.x, p.z, radius, null, [sweep.proxy])) return { kind: 'moving-chair-reservation', group: body.group }
+    }
+    return null
   }
   function clear(a, b, name, radius = .6, ignore) {
     const n = Math.max(1, Math.ceil(distance(a, b) / .04))
@@ -498,7 +515,7 @@ export function createR1Navigation(layout) {
         for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) vertices.push(new THREE.Vector3(x,y,z))
         for (const [a,b,c,d] of [[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]]) triangles.push(new THREE.Triangle(vertices[a],vertices[b],vertices[c]),new THREE.Triangle(vertices[a],vertices[c],vertices[d]))
         const proxy = { ...body, box, triangles, group: { userData: { r1Id: `${identity(body)}-chair-sweep` } } }
-        sweepMasks.set(identity(body), { box, mask: bodyMask(proxy, .6) })
+        sweepMasks.set(identity(body), { box, proxy, closed: body.box.clone(), open: open.box.clone(), mask: bodyMask(proxy, .6) })
       }
       await new Promise(resolve => setTimeout(resolve, 0))
     }
@@ -716,7 +733,14 @@ export function createR1Navigation(layout) {
       if (x >= 0 && z >= 0 && x < width && z < height && free(id, p) && visible(start, p, true)) starts.push([id, distance(start, p)])
     }
     if (!starts.length) return null
-    const bounds = connectors => [landmarkCosts, reverseCosts].map(fields => fields.map(costs => Math.min(...connectors.map(([id, length]) => costs[id] + length))))
+    const bounds = connectors => {
+      const from = new Float64Array(landmarkCosts.length).fill(Infinity), to = new Float64Array(reverseCosts.length).fill(Infinity)
+      for (let i = 0; i < landmarkCosts.length; i++) for (let j = 0; j < connectors.length; j++) {
+        const id = connectors[j][0], length = connectors[j][1]
+        from[i] = Math.min(from[i], landmarkCosts[i][id] + length); to[i] = Math.min(to[i], reverseCosts[i][id] + length)
+      }
+      return [from, to]
+    }
     const [goalFrom, goalTo] = bounds(goals), [startFrom, startTo] = bounds(starts)
     const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,4).map(row => row.i)
     // Endpoint-near landmarks constrain local detours that distant landmark ties cannot distinguish.
@@ -794,7 +818,7 @@ export function createR1Navigation(layout) {
     const start = owner ? parameters.get(owner).exit : from
     return plan(start, to, owner) || []
   }
-  const nav = { attach, prepare, preparationInfo: () => structuredClone(preparation), prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
+  const nav = { attach, prepare, preparationInfo: () => structuredClone(preparation), prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, chairSweepHit, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
     standAt: p => ({ x: p.x, z: p.z }), officeExit: p => [p], corridorPath: trip, loungeTrip: trip, meetingTrip: trip, officeTrip: trip, boardTrip: trip, consumerTrip: trip, foyerTrip: trip, plazaTrip: trip, foyerReturnTrip: trip,
     consumerAdvance: (_, p) => [p], consumerDeparture: (_, p) => [p], consumerTargets: {}, consumerQueues: { waiting: [] },
     ENTRANCE: { x0: gate.x - 3.5, x1: gate.x + 3.5, inner: { x: gate.x, z: gate.z - 2 }, gate: [{ x: gate.x, z: gate.z - 2 }, { x: gate.x, z: gate.z + 2 }] },

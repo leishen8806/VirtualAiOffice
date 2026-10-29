@@ -137,6 +137,8 @@ test('moving a workstation chair invalidates cached visible edges and preserves 
     for (let j = 0; j <= n; j++) assert.equal(nav.query({ x: a.x + (b.x - a.x) * j / n, z: a.z + (b.z - a.z) * j / n }, 'A'), null)
   }
   c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -1.2); nav.refreshChairs()
+  assert.equal(c.navigationHit(2, 1.6, .6), null)
+  assert.equal(nav.query({ x: 2, z: 1.6 }, 'A')?.kind, 'moving-chair-reservation')
   const during = nav.plan(from, to, 'A'); assert.ok(during)
   for (let i = 1; i < during.length; i++) assert.equal(nav.clear(during[i - 1], during[i], 'A'), true)
   c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -.4); nav.refreshChairs()
