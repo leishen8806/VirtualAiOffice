@@ -50,6 +50,8 @@ const addInstanced = (THREE, root, name, entries, material) => {
   mesh.name = name
   mesh.userData.dynamic = true
   mesh.userData.wallIds = entries.map(entry => entry.id)
+  // 带门洞的墙被切成多段，每段一个实例；partIds 让每个实例还能单独定位，wallIds 仍然是台账用的墙 ID。
+  mesh.userData.partIds = entries.map(entry => entry.partId ?? entry.id)
   mesh.userData.faceIds = entries.flatMap(entry => entry.faceIds)
   root.add(mesh)
   return mesh
@@ -209,6 +211,22 @@ function buildFrontFence(THREE, shell, front, faces, walls, opaque, collision) {
   return {proxies, dispose(){proxies.forEach(p=>{collision?.remove?.(p);p.geometry.dispose();p.removeFromParent()});meshes.forEach(m=>{m.geometry.dispose();if(m.isInstancedMesh)m.dispose()});for(const m of [bronze,stone,plants,concrete,signMaterial])m.dispose();texture.dispose()}}
 }
 
+// 门洞把一段直墙切成若干实体段；没有 openings 的墙照旧返回原来的一段，端点逐值不变。
+export function wallSolidSpans(points, openings) {
+  if (!openings?.length) return [points]
+  const start = points[0], end = points.at(-1)
+  const along = ([x, y]) => (x - start[0]) * (end[0] - start[0]) + (y - start[1]) * (end[1] - start[1])
+  const sorted = [...openings].sort((a, b) => along(a.fromM) - along(b.fromM))
+  const spans = []
+  let cursor = start
+  for (const opening of sorted) {
+    if (along(opening.fromM) - along(cursor) > 1e-9) spans.push([cursor, opening.fromM])
+    cursor = opening.toM
+  }
+  if (along(end) - along(cursor) > 1e-9) spans.push([cursor, end])
+  return spans
+}
+
 export function r1WallPlan(layout) {
   const walls = layout.r1.data.walls
   const faceIds = groupFaces(layout.r1.data.wallFaces)
@@ -218,7 +236,8 @@ export function r1WallPlan(layout) {
     let points = wall.geometry.points
     if (wall.id === '00-W-021') points = [[15.6, 31], [24.3, 31]]
     if (wall.id === '00-W-016') points = [[30.2, 32.5], [30.2, 43]]
-    straight.push({ id: wall.id, exterior: wall.geometry.exterior, height: wall.geometry.height, thickness: wall.geometry.thickness, points, faceIds: (faceIds[wall.id] || []).map(face => face.id) })
+    const spans = wallSolidSpans(points, wall.geometry.openings)
+    spans.forEach((span, index) => straight.push({ id: wall.id, partId: spans.length > 1 ? `${wall.id}-P${index + 1}` : wall.id, exterior: wall.geometry.exterior, height: wall.geometry.height, thickness: wall.geometry.thickness, points: span, faceIds: (faceIds[wall.id] || []).map(face => face.id) }))
   }
   return { straight, front: walls.filter(wall => frontIds.has(wall.id)), faces: faceIds }
 }
@@ -273,7 +292,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const layer = (entry, base, height) => { const [a, b] = entry.points.map(localPoint); return { ...entry, matrix: boxInstance(THREE, a.x, b.x, a.z, b.z, height, entry.thickness).premultiply(new THREE.Matrix4().makeTranslation(0, base, 0)) } }
   for (const entry of [...outerGlass, ...partitions]) {
     const height = entry.exterior ? r1Glazing.exteriorBand : r1Glazing.interiorBand
-    tops.push({ id: entry.id, geometry: new THREE.BoxGeometry(1, 1, 1).applyMatrix4(layer(entry, entry.height - height, height).matrix) })
+    tops.push({ id: entry.partId ?? entry.id, wallId: entry.id, geometry: new THREE.BoxGeometry(1, 1, 1).applyMatrix4(layer(entry, entry.height - height, height).matrix) })
   }
   for (const entry of partitions) {
     const [a, b] = entry.points.map(localPoint), length = Math.hypot(b.x - a.x, b.z - a.z), dx = (b.x - a.x) / length, dz = (b.z - a.z) / length, count = Math.ceil(length / r1Glazing.maxFrameSpacing), width = r1Glazing.frameWidth
@@ -304,7 +323,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   cornerWall.name = 'r1-corner-walls'; cornerWall.userData.dynamic = true; cornerWall.userData.wallIds = ['00-W-021', '00-W-016']; cornerWall.userData.faceIds = [...plan.faces['00-W-021'], ...plan.faces['00-W-016']].map(face => face.id); shell.add(cornerWall)
   cornerPaths.forEach((path, index) => {
     const id = cornerWall.userData.wallIds[index], faceIds = plan.faces[id].map(face => face.id)
-    tops.push({ id, geometry: thickPathsGeometry(THREE, [path], .1, () => r1Glazing.interiorBand).translate(0, 2.7 - r1Glazing.interiorBand, 0) })
+    tops.push({ id, wallId: id, geometry: thickPathsGeometry(THREE, [path], .1, () => r1Glazing.interiorBand).translate(0, 2.7 - r1Glazing.interiorBand, 0) })
     const points = path.points.map(localPoint), width = r1Glazing.frameWidth
     for (let i = 1; i < points.length; i++) { const a = points[i - 1], b = points[i]; partitionFrames.push({ id, faceIds, matrix: boxInstance(THREE, a.x, b.x, a.z, b.z, width, width) }) }
     for (const i of [0, 6, 12]) {
@@ -313,7 +332,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
     }
   })
   const bands = joinedSurfaces(THREE, tops), topBands = new THREE.Mesh(bands.geometry, bandMaterial)
-  topBands.name = 'r1-top-bands'; topBands.userData = { dynamic: true, wallIds: tops.map(row => row.id), faceIds: tops.flatMap(row => plan.faces[row.id].map(face => face.id)), ranges: bands.ranges }; shell.add(topBands)
+  topBands.name = 'r1-top-bands'; topBands.userData = { dynamic: true, wallIds: tops.map(row => row.wallId), partIds: tops.map(row => row.id), faceIds: tops.flatMap(row => plan.faces[row.wallId].map(face => face.id)), ranges: bands.ranges }; shell.add(topBands)
   const innerFrames = addInstanced(THREE, shell, 'r1-interior-frames', partitionFrames, frame)
   addInstanced(THREE, shell, 'r1-door-frames', layout.r1.data.doors.flatMap(door => doorFrameEntries(THREE, door)), frame)
   const site = buildR1Site({ THREE, root: shell, layout })
@@ -321,7 +340,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const collisions = []
   for (const entry of [...outerGlass, ...innerSolid, ...lowGlass]) {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), opaque)
-    proxy.name = `r1-collision-${entry.id}`; proxy.visible = false; proxy.userData.dynamic = true; entry.matrix.decompose(proxy.position, proxy.quaternion, proxy.scale)
+    proxy.name = `r1-collision-${entry.partId ?? entry.id}`; proxy.visible = false; proxy.userData.dynamic = true; entry.matrix.decompose(proxy.position, proxy.quaternion, proxy.scale)
     shell.add(proxy); collision?.add?.(proxy, 'r1-wall'); collisions.push(proxy)
   }
   const cornerProxy = new THREE.Mesh(thickPathsGeometry(THREE, cornerPaths, .1), opaque)

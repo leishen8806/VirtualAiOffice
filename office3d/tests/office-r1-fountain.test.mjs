@@ -4,7 +4,7 @@ import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Fountain } from '../office-vis2/r1-fountain.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
-import { R1_BOARD_ROUTE_OVERRIDES, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { R1_BACKWALL, R1_BOARD_ROUTE_OVERRIDES, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
@@ -53,7 +53,8 @@ test('FT-2 only Z14 endpoint is overridden, frozen with provenance; all 17 swept
   assert.deepEqual(route.points_m, [[28, -1], [28, -4], [28, -5]])
   assert.deepEqual(R1_DATA.routes.find(r => r.id === 'Z14').points_m, [[28, -1], [28, -4], [28, -10]])
   for (const r of layout.r1.routes) {
-    if (r.id !== 'Z14') assert.equal(r, R1_DATA.routes.find(x => x.id === r.id))
+    // Z09 / Z13 是 OFFICE-R1-BACKWALL 的穿墙改道（冻结在 R1_BACKWALL.routes，由 office-r1-backwall.test.mjs 锁住），不属于喷泉偏离。
+    if (r.id !== 'Z14') assert.deepEqual(r.points_m, R1_BACKWALL.routes.get(r.id) ?? R1_DATA.routes.find(x => x.id === r.id).points_m)
     const gap = Math.min(...r.points_m.slice(1).map((b, i) => segmentDistance(r.points_m[i], b))) - 4.15
     assert.ok(gap >= R1_DATA.bodyProfiles[r.body_profile].radius_m, `${r.id}: ${gap}`)
     if (r.id === 'Z14') near(gap, .85)
