@@ -72,6 +72,21 @@
       "usage": "R1 added Monstera, fiddle-leaf fig, money tree, variegated pothos; alphaTest .45",
       "generationModel": "unknown",
       "exactPerImagePrompt": "unknown"
+    },
+    {
+      "file": "assets/win98-idle.png",
+      "bytes": 81629,
+      "sha256": "1685F3448B076FBBB68A699AA31ACCE42B1826ADBC94CF74E85DCD2D1EF589FF",
+      "dimensions": [
+        640,
+        400
+      ],
+      "source": "董事会提供（OFFICE-R1-DESKSTATUS 需求目录 E:/VirtualAIOffice/dispatch/OFFICE-R1-DESKSTATUS-20261029/素材-windows98.png，逐字节复制，哈希与该目录 SHA256SUMS.txt 一致）",
+      "licenseAsRecorded": "第三方商标图片，董事会决定仅用于内部展示",
+      "usage": "R1 工位屏幕空闲画面（无任务且非暂停时铺满居中裁切）；代码里只在 app.js 的 WIN98_IDLE_IMAGE 一处引用",
+      "thirdPartyTrademark": true,
+      "generationModel": "not applicable",
+      "exactPerImagePrompt": "not applicable"
     }
   ],
   "brandAsset": {
@@ -291,10 +306,10 @@
     },
     {
       "file": "office-vis2/r1-furniture.js",
-      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; no downloaded assets",
+      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; OFFICE-R1-DESKSTATUS adds the brass desk-corner status lamps (two instanced batches, colour by instanceColor); no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7AFD8D60E0DABDE0B0F7A81285815F88704881796F751DE4A581D0339291C625"
+      "sha256": "9394885894F69DEE41285207F873C3C8E64152BEE1F551EA6B81673741F165DF"
     },
     {
       "file": "office-vis2/r1-zones.js",
