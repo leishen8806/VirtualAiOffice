@@ -356,7 +356,8 @@ test('AMB-9 the food truck keeps its registered box while the roof cap turns esp
 test('AMB-10 the R1 module list is unchanged and both tiers stay inside the draw-call budget', () => {
   const layout = createOfficeR1Layout()
   assert.deepEqual(officeV3ModulesFor(layout).map(([name]) => name),
-    ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza', 'r1Lights', 'r1Brand'])
+    // r1Books 是 OFFICE-R1-FOOD 补充 R2 的书架书籍模块，排在 r1Decor 之后、r1Plaza 之前。
+    ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Books', 'r1Plaza', 'r1Lights', 'r1Brand'])
   assert.ok(!officeV3ModulesFor({}).some(([name]) => name === 'r1Brand'))
   // 高档走 env.js 的 GTAO composer，整个场景每帧渲染两遍，一个网格就是两次 draw call；
   // AM-5 的 +8 call 上限换算过来就是「两个模块合计最多 4 个新网格」。
