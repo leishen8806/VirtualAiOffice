@@ -1,3 +1,4 @@
+import * as THREE from './vendor/three/three.module.js'
 import { r1ToWorld, runtimeYawFromFacing } from './office-r1-layout.js'
 
 export const R1_WALK_RADIUS = .6
@@ -295,12 +296,12 @@ export function createR1Navigation(layout) {
   const directions = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1], [1, 2], [1, -2], [-1, 2], [-1, -2], [2, 1], [2, -1], [-2, 1], [-2, -1]]
   const gridPoints = Array.from({ length: size }, (_, id) => ({ x: layout.site.x0 + (id % width) * R1_GRID, z: layout.site.z0 + Math.floor(id / width) * R1_GRID }))
   const directionLengths = directions.map(([x, z]) => Math.hypot(x, z) * R1_GRID)
-  let edges = null, staticBlocked = null, integral = null, prepared = false
+  let edges = null, staticBlocked = null, integral = null, prepared = false, graphs
   const jumpSegments = []
   const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
   const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap() }
   const preparation = { milliseconds: 0, searchWarmup: [] }
-  const bodyMasks = new Map()
+  const bodyMasks = new Map(), sweepMasks = new Map()
   const currentMasks = new WeakMap()
   const stations = new Map(layout.r1.workstations.map(w => [w.business_id, { ...w, home: layout.seats[w.business_id][4] }]))
   const ownedChairs = new Set([...stations.values()].map(s => s.chair_id)), parameters = new Map()
@@ -417,6 +418,32 @@ export function createR1Navigation(layout) {
       if (iz % 8 === 0) await new Promise(resolve => setTimeout(resolve, 0))
     }
     search.jumpBlocked = new Uint8Array(jumpSegments.length)
+    // Compact the same grid edges once; queries need no per-node arrays or coordinate arithmetic.
+    const counts = new Uint32Array(size), reverseCounts = new Uint32Array(size)
+    for (let id = 0; id < size; id++) {
+      for (let bit = 0; bit < directions.length; bit++) if (edges[id] & (1 << bit)) {
+        counts[id]++; reverseCounts[id + directions[bit][1] * width + directions[bit][0]]++
+      }
+      for (const [next] of jumpEdges.get(id) || []) { counts[id]++; reverseCounts[next]++ }
+    }
+    const allocate = counts => {
+      const offsets = new Uint32Array(size + 1)
+      for (let id = 0; id < size; id++) offsets[id + 1] = offsets[id] + counts[id]
+      const n = offsets[size]
+      return { offsets, ids: new Uint32Array(n), lengths: new Float64Array(n), bits: new Uint16Array(n), jumps: new Int32Array(n).fill(-1) }
+    }
+    graphs = [allocate(counts), allocate(reverseCounts)]
+    const cursors = graphs.map(g => g.offsets.slice())
+    const append = (from, to, length, bit, jump = -1) => {
+      for (let reverse = 0; reverse < 2; reverse++) {
+        const g = graphs[reverse], at = cursors[reverse][reverse ? to : from]++
+        g.ids[at] = reverse ? from : to; g.lengths[at] = length; g.bits[at] = bit; g.jumps[at] = jump
+      }
+    }
+    for (let id = 0; id < size; id++) {
+      for (let bit = 0; bit < directions.length; bit++) if (edges[id] & (1 << bit)) append(id, id + directions[bit][1] * width + directions[bit][0], directionLengths[bit], 1 << bit)
+      for (const [next, length, edge] of jumpEdges.get(id) || []) append(id, next, length, 0, edge)
+    }
     // Directed landmark distances bound the search without prescribing waypoints.
     const freeIds = [], chosen = new Set()
     for (const [id, jumps] of jumpEdges) for (const [next, length, edge] of jumps) {
@@ -457,6 +484,21 @@ export function createR1Navigation(layout) {
           v.x = p.standing.x + co * x + si * z + p.back.x * p.slide; v.z = p.standing.z - si * x + co * z + p.back.z * p.slide; open.box.expandByPoint(v)
         }
         bodyMask(open, .6); bodyMask(open, .24)
+        // A moving chair reserves its complete sweep until parked, avoiding repeated per-triangle searches.
+        const box = body.box.clone()
+        for (let step = 1; step <= 90; step++) {
+          const amount = step / 90, angle = p.turn * Math.PI / 180 * amount, co = Math.cos(angle), si = Math.sin(angle)
+          for (const t of body.triangles) for (const v of [t.a, t.b, t.c]) {
+            const x = v.x - p.standing.x, z = v.z - p.standing.z
+            box.expandByPoint(new THREE.Vector3(p.standing.x + co * x + si * z + p.back.x * p.slide * amount, v.y, p.standing.z - si * x + co * z + p.back.z * p.slide * amount))
+          }
+        }
+        box.expandByScalar(.001)
+        const vertices = [], triangles = []
+        for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) vertices.push(new THREE.Vector3(x,y,z))
+        for (const [a,b,c,d] of [[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]]) triangles.push(new THREE.Triangle(vertices[a],vertices[b],vertices[c]),new THREE.Triangle(vertices[a],vertices[c],vertices[d]))
+        const proxy = { ...body, box, triangles, group: { userData: { r1Id: `${identity(body)}-chair-sweep` } } }
+        sweepMasks.set(identity(body), { box, mask: bodyMask(proxy, .6) })
       }
       await new Promise(resolve => setTimeout(resolve, 0))
     }
@@ -546,7 +588,10 @@ export function createR1Navigation(layout) {
     if (current.radii.has(radius)) return current.radii.get(radius)
     const key = `${identity(body)}:${radius}:${box.min.x.toFixed(6)},${box.min.z.toFixed(6)},${box.max.x.toFixed(6)},${box.max.z.toFixed(6)},${first?.x.toFixed(6)},${first?.z.toFixed(6)}`
     if (bodyMasks.has(key)) { current.radii.set(radius, bodyMasks.get(key)); return bodyMasks.get(key) }
-    if (!build) return null
+    if (!build) {
+      const sweep = radius === .6 && sweepMasks.get(identity(body))
+      return sweep && sweep.box.containsBox(box) ? sweep.mask : null
+    }
     const blocked = [], links = [], nearby = []
     const x0 = Math.max(0, Math.floor((box.min.x - radius - .75 - layout.site.x0) / R1_GRID)), x1 = Math.min(width - 1, Math.ceil((box.max.x + radius + .75 - layout.site.x0) / R1_GRID))
     const z0 = Math.max(0, Math.floor((box.min.z - radius - .75 - layout.site.z0) / R1_GRID)), z1 = Math.min(height - 1, Math.ceil((box.max.z + radius + .75 - layout.site.z0) / R1_GRID))
@@ -674,6 +719,12 @@ export function createR1Navigation(layout) {
     const bounds = connectors => [landmarkCosts, reverseCosts].map(fields => fields.map(costs => Math.min(...connectors.map(([id, length]) => costs[id] + length))))
     const [goalFrom, goalTo] = bounds(goals), [startFrom, startTo] = bounds(starts)
     const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,4).map(row => row.i)
+    // Endpoint-near landmarks constrain local detours that distant landmark ties cannot distinguish.
+    for (const values of [goalFrom, startFrom]) {
+      let nearest = -1
+      for (let i = 0; i < values.length; i++) if (Number.isFinite(values[i]) && (nearest < 0 || values[i] < values[nearest])) nearest = i
+      if (nearest >= 0 && !selected.includes(nearest)) selected.push(nearest)
+    }
     const estimates = search.estimates, forwardEstimates = search.forwardEstimates, bidirectional = people.length > 0; estimates.fill(NaN)
     // Balanced landmark potentials let both frontiers meet without searching a whole room behind a narrow goal.
     const potential = id => {
@@ -699,32 +750,26 @@ export function createR1Navigation(layout) {
     costs.fill(Infinity); backCosts.fill(Infinity); previous.fill(-2); following.fill(-2); closed.fill(0); backClosed.fill(0); open.rows.length = 0; backOpen.rows.length = 0
     for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + priority(id)) }
     for (const [id, length] of goals) { backCosts[id] = length; following[id] = -1; backOpen.push(id, length, length + priority(id, true)) }
-    let best = Infinity, meeting = -1, turn = 0
+    let best = Infinity, meeting = -1
     const meet = id => { const length = costs[id] + backCosts[id]; if (length < best) { best = length; meeting = id } }
     for (const [id] of starts) meet(id)
     const trim = (heap, done, distances) => { while (heap.rows.length && (done[heap.ids[0]] || heap.gs[0] > distances[heap.ids[0]])) heap.pop() }
-    // Stop at a certified 2% grid bound; independent any-angle acceptance remains capped at 5%.
+    // Stop at a certified 4% grid bound; independent any-angle acceptance remains capped at 5%.
     while (open.rows.length && backOpen.rows.length) {
       trim(open, closed, costs); if (bidirectional) trim(backOpen, backClosed, backCosts)
-      if (!open.rows.length || bidirectional && (!backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.02 - 1e-9)) break
-      // Alternate equal-cost frontiers so a broad open side cannot monopolize expansion.
-      const reverse = bidirectional && (turn++ & 1) === 1, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
+      if (!open.rows.length || bidirectional && (!backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.04 - 1e-9)) break
+      // Expand the smaller frontier to avoid flooding an open room while the other side crosses a narrow exit.
+      const reverse = bidirectional && backOpen.rows.length < open.rows.length, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
       const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; meet(id)
       if (!bidirectional && following[id] === -1) { meeting = id; break }
-      const relax = (other, length, edge) => {
-        if (done[other] || blocked[other] || edge !== undefined && jumpBlocked[edge]) return
-        const g = g0 + length; if (g >= distances[other]) return
-        const p = gridPoints[other], a = reverse ? p : here, b = reverse ? here : p, from = reverse ? other : id
-        if (!edgePeopleClear(from, a, b) || uncached.length && !movingClear(a, b, name, uncached)) return
+      const graph = graphs[reverse ? 1 : 0]
+      for (let at = graph.offsets[id]; at < graph.offsets[id + 1]; at++) {
+        const other = graph.ids[at], from = reverse ? other : id, bit = graph.bits[at], edge = graph.jumps[at]
+        if (done[other] || blocked[other] || bit && !(links[from] & bit) || edge >= 0 && jumpBlocked[edge]) continue
+        const g = g0 + graph.lengths[at]; if (g >= distances[other]) continue
+        const p = gridPoints[other], a = reverse ? p : here, b = reverse ? here : p
+        if (!edgePeopleClear(from, a, b) || uncached.length && !movingClear(a, b, name, uncached)) continue
         distances[other] = g; parent[other] = id; heap.push(other, g, g + priority(other, reverse)); meet(other)
-      }
-      for (const [other, length, edge] of (reverse ? reverseJumps : jumpEdges).get(id) || []) relax(other, length, edge)
-      const x = id % width, z = Math.floor(id / width)
-      for (let bit = 0; bit < directions.length; bit++) {
-        const [dx, dz] = directions[bit], other = reverse ? id - dz * width - dx : id + dz * width + dx
-        if (reverse) { const px = x-dx, pz = z-dz; if (px < 0 || pz < 0 || px >= width || pz >= height || !(links[other] & (1 << bit))) continue }
-        else if (!(links[id] & (1 << bit))) continue
-        relax(other, directionLengths[bit])
       }
     }
     if (meeting < 0) return null

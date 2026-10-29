@@ -136,7 +136,10 @@ test('moving a workstation chair invalidates cached visible edges and preserves 
     const a = moved[i - 1], b = moved[i], n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / .005)
     for (let j = 0; j <= n; j++) assert.equal(nav.query({ x: a.x + (b.x - a.x) * j / n, z: a.z + (b.z - a.z) * j / n }, 'A'), null)
   }
-  c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -1.6); nav.refreshChairs()
+  c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -1.2); nav.refreshChairs()
+  const during = nav.plan(from, to, 'A'); assert.ok(during)
+  for (let i = 1; i < during.length; i++) assert.equal(nav.clear(during[i - 1], during[i], 'A'), true)
+  c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -.4); nav.refreshChairs()
   assert.equal(nav.plan(from, to, 'A').length, 2)
 })
 
