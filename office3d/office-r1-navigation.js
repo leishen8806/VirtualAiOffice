@@ -298,7 +298,7 @@ export function createR1Navigation(layout) {
   let edges = null, staticBlocked = null, integral = null, prepared = false
   const jumpSegments = []
   const jumpEdges = new Map(), landmarkCosts = [], reverseCosts = []
-  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap() }
+  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size) }
   const preparation = { milliseconds: 0, searchWarmup: [] }
   const bodyMasks = new Map()
   const currentMasks = new WeakMap()
@@ -617,7 +617,8 @@ export function createR1Navigation(layout) {
     const peopleClear = (a, b) => {
       if (!people.length) return true
       const dx = b.x - a.x, dz = b.z - a.z, length2 = dx * dx + dz * dz
-      return people.every(p => { const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (length2 || 1))); const x = p.x - a.x - t * dx, z = p.z - a.z - t * dz; return x * x + z * z >= .25 })
+      for (const p of people) { const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (length2 || 1))); const x = p.x - a.x - t * dx, z = p.z - a.z - t * dz; if(x * x + z * z < .25) return false }
+      return true
     }
     const visible = (a, b, connector = false) => peopleClear(a, b) && clearFast(a, b, name, connector)
     if (query(start, name) || query(end, name)) return null
@@ -636,6 +637,19 @@ export function createR1Navigation(layout) {
       }
     }
     const free = (id, p) => { if (blocked[id] < 0) blocked[id] = (mask ? rasterFree(p) && dynamicFree(p, name) : !query(p, name)) ? 0 : 1; return !blocked[id] && peopleClear(p, p) && !uncached.some(b => collision.navigationHit(p.x,p.z,identity(b) === owner ? .24 : .6,null,[b])) }
+    // A grid edge is at most 2.5 m: only people within 3 m of its start can intersect it.
+    const flags = search.peopleFlags; flags.fill(0)
+    for (let i = 0; i < people.length; i++) {
+      const p = people[i], x0 = Math.max(0, Math.floor((p.x - 3.01 - layout.site.x0) / R1_GRID)), x1 = Math.min(width-1, Math.ceil((p.x + 3.01 - layout.site.x0) / R1_GRID))
+      const z0 = Math.max(0, Math.floor((p.z - 3.01 - layout.site.z0) / R1_GRID)), z1 = Math.min(height-1, Math.ceil((p.z + 3.01 - layout.site.z0) / R1_GRID))
+      for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)flags[z*width+x] |= 1<<i
+    }
+    const edgePeopleClear = (id,a,b) => {
+      const bits=flags[id];if(!bits)return true
+      const dx=b.x-a.x,dz=b.z-a.z,length2=dx*dx+dz*dz
+      for(let i=0;i<people.length;i++)if(bits&(1<<i)){const p=people[i],t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/(length2||1))),x=p.x-a.x-t*dx,z=p.z-a.z-t*dz;if(x*x+z*z<.25)return false}
+      return true
+    }
     const goals = [], ex = Math.round((end.x - layout.site.x0) / R1_GRID), ez = Math.round((end.z - layout.site.z0) / R1_GRID)
     for (let dx = -4; dx <= 4; dx++) for (let dz = -4; dz <= 4; dz++) {
       const x = ex + dx, z = ez + dz, id = z * width + x
@@ -684,7 +698,7 @@ export function createR1Navigation(layout) {
         const g = row.g + length
         if (g >= costs[next]) continue
         const p = gridPoints[next]
-        if (jumpBlocked[edge] || !peopleClear(here, p) || uncached.length && !movingClear(here,p,name,uncached)) continue
+        if (jumpBlocked[edge] || !edgePeopleClear(id,here,p) || uncached.length && !movingClear(here,p,name,uncached)) continue
         costs[next] = g; previous[next] = id; open.push(next, g, g + 1.02 * heuristic(next))
       }
       for (let bit = 0; bit < directions.length; bit++) {
@@ -694,7 +708,7 @@ export function createR1Navigation(layout) {
         const g = row.g + directionLengths[bit]
         if (g >= costs[next]) continue
         const p = gridPoints[next]
-        if (!peopleClear(here, p) || uncached.length && !movingClear(here,p,name,uncached)) continue
+        if (!edgePeopleClear(id,here,p) || uncached.length && !movingClear(here,p,name,uncached)) continue
         costs[next] = g; previous[next] = id; open.push(next, g, g + 1.02 * heuristic(next))
       }
     }
