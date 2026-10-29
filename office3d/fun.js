@@ -26,18 +26,25 @@ export function holidayInfo(dateStr) {
 // R1 没有楼板：外墙高 4.5 m、内隔墙 2.7 m。卡面要求挂件最低点不低于 2.4 m，勘察 D 要求不得悬在
 // 2.7 m 隔墙顶之上，所以 R1 的挂件全部落在 2.40–2.70 m 这条带里，尺寸比旧版（挂在 3.25 m）小。
 // 彩旗一区一段，都在开敞区（10 咖啡 / 11 前台 / 12 休闲）框内，不横穿房间。
+// OFFICE-R1-SIGHTLINE：区 11 原来是一整段 x -4…8、z 11 的彩旗，正好横过前台屏风 00-W-036（x -0.5…4.5）
+// 正前方，把 DR.LIFE+ 标志压住；现在拆成屏风两侧两段，两段的内端各离屏风端头 0.7 m，
+// 常用机位下投到墙面的落点离标语边缘还有 1.2 m 以上。横幅也从接待台上空（z 13，正对标志）
+// 挪到大门内侧上方（z 17.5）：所有前台机位都在它之前，几何上不可能遮挡，挂高仍在 2.40–2.70 m 带里。
+// flags 是这一段的三角片数：短段按区 10 / 12 的旗距（13 m / 33 段 ≈ 0.394 m）取 10 片，两段合起来 20 片，
+// 比拆之前的 34 片还少，所以节日装饰的 draw call 与三角数都不增加。
 export const R1_FESTIVE = Object.freeze({
   minY: 2.4,
   maxY: 2.7,
   buntings: Object.freeze([
-    Object.freeze({ regionId: '10', x0: -19, x1: -6, z: 13, y: 2.56, sag: .06, flag: .16 }),
-    Object.freeze({ regionId: '11', x0: -4, x1: 8, z: 11, y: 2.56, sag: .06, flag: .16 }),
-    Object.freeze({ regionId: '12', x0: 10, x1: 23, z: 13, y: 2.56, sag: .06, flag: .16 }),
+    Object.freeze({ regionId: '10', x0: -19, x1: -6, z: 13, y: 2.56, sag: .06, flag: .16, flags: 34 }),
+    Object.freeze({ regionId: '11', x0: -4.6, x1: -1.2, z: 11, y: 2.56, sag: .06, flag: .16, flags: 10 }),
+    Object.freeze({ regionId: '11', x0: 5.2, x1: 8.6, z: 11, y: 2.56, sag: .06, flag: .16, flags: 10 }),
+    Object.freeze({ regionId: '12', x0: 10, x1: 23, z: 13, y: 2.56, sag: .06, flag: .16, flags: 34 }),
   ]),
   // 灯笼在入口内侧（区 11），落在 11-D-001 两侧门樘的扫掠盘之外
   lanterns: Object.freeze({ regionId: '11', x0: -1.5, x1: 5.5, count: 7, z: 14.5, y: 2.53, radius: .09, cord: .05 }),
-  // 横幅挂在接待台上空、面朝入口
-  banner: Object.freeze({ regionId: '11', x: 2, y: 2.56, z: 13, width: 3.6, height: .26, canvasHeight: 74, font: 'bold 44px sans-serif' }),
+  // 横幅挂在大门内侧上方、面朝入口；z 17.5 离 11-D-001（z 18）的门扇扫掠还有 0.3 m
+  banner: Object.freeze({ regionId: '11', x: 2, y: 2.56, z: 17.5, width: 3.6, height: .26, canvasHeight: 74, font: 'bold 44px sans-serif' }),
   // 莲花灯沿接待台前落地
   lotus: Object.freeze({ regionId: '11', x0: .2, step: .45, count: 9, z: 11.6, y: .05 }),
   // 奖杯放在获奖同事 R1 桌面上：座位朝向坐标系里的桌面偏移（避开显示器 / 键盘 / 鼠标）
@@ -403,8 +410,9 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
   // R1 下在真正要挂装饰之前把它接回来；非 R1 不做这件事，旧版行为与 main 逐值一致（另见交付回执里的遗留缺陷登记）。
   function ensureDeco() { if (r1 && deco.parent !== root) root.add(deco) }
   // 旧版（布局 1 / 2）的默认值与原来逐值相同；R1 另给一组挂点参数（见 R1_FESTIVE）。
-  function bunting(z, colors, { x0 = -20, x1 = 20, y = 3.25, sagMax = 0.35, flag = 0.32, radius = 0.16 } = {}) {
-    const n = 34
+  // n 默认 34：旧版（布局 1 / 2）三段彩旗的三角片数与原来逐值相同。R1 的短段按同样的旗距给自己的片数，
+  // 所以区 11 拆成两段之后三角片总数反而比拆之前少（34 → 20），draw call 不增加。
+  function bunting(z, colors, { x0 = -20, x1 = 20, y = 3.25, sagMax = 0.35, flag = 0.32, radius = 0.16, n = 34 } = {}) {
     for (let i = 0; i < n; i++) {
       const x = x0 + ((x1 - x0) * i) / (n - 1)
       const sag = sagMax * Math.sin((Math.PI * i) / (n - 1))
@@ -486,8 +494,9 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
       const { buntings, lanterns: lamp, banner: strip, lotus } = R1_FESTIVE
       banner(title, strip)
       if (style === 'festive' || style === 'water') {
-        const palettes = [KH, [0xd4af37, 0xe00025, 0x032ea1], KH]
-        buntings.forEach((anchor, index) => bunting(anchor.z, palettes[index % palettes.length], { x0: anchor.x0, x1: anchor.x1, y: anchor.y, sagMax: anchor.sag, flag: anchor.flag, radius: anchor.flag / 2 }))
+        // 区 10 蓝红白、区 11 金红蓝、区 12 蓝红白：区 11 拆成两段后两段同色，各区配色与拆之前逐值相同
+        const gold = [0xd4af37, 0xe00025, 0x032ea1], palettes = [KH, gold, gold, KH]
+        buntings.forEach((anchor, index) => bunting(anchor.z, palettes[index % palettes.length], { x0: anchor.x0, x1: anchor.x1, y: anchor.y, sagMax: anchor.sag, flag: anchor.flag, radius: anchor.flag / 2, n: anchor.flags }))
         const half = lamp.radius * 1.25
         lanterns([0xe00025, 0xd4af37], { x0: lamp.x0, step: (lamp.x1 - lamp.x0) / (lamp.count - 1), count: lamp.count, z: lamp.z, y: lamp.y, radius: lamp.radius, cord: lamp.cord, cordY: lamp.y + half + lamp.cord / 2 })
       }
