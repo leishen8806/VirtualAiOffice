@@ -16,7 +16,9 @@ const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
 const { createFun, R1_FESTIVE } = await import('../fun.js')
 hooks.deregister()
 
-const MODELS = ['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded']
+// 后五项是 I3B（PR #69）之后 R1 工位要摆的程序化键鼠与三选一桌面小物；只补素材表，不放宽断言。
+const MODELS = ['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded',
+  'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']
 const loader = new GLTFLoader(), furn = {}
 for (const name of MODELS) {
   const bytes = readFileSync(new URL(`../assets/models/furniture/${name}.glb`, import.meta.url))

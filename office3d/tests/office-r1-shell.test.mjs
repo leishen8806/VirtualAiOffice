@@ -34,7 +34,7 @@ test('I2 excludes the old north garden only for the same strict R1 query', () =>
 test('I3 retains the old V3 module order and isolates R1 to its shell and furniture slots', () => {
   assert.deepEqual(officeV3Modules.map(([name]) => name), ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN_L2B).map(([name]) => name), officeV3Modules.map(([name]) => name))
-  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Decor'])
+  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza'])
 })
 
 test('I3 R4 provides registered R1 seats while retaining the stationary navigation adapter', () => {
@@ -65,7 +65,11 @@ test('I3 registers all workstation seats with the candidate C-01 coordinates and
   assert.notDeepEqual(candidate.seats.Architect, base.seats.Architect)
 })
 
-const r1Assets = THREE => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded'].map(name => [name, name])) })
+const r1Assets = THREE => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1'].map(name => {
+  const group = new THREE.Group()
+  for (const [name, color] of [['wood', 0xcdbb9c], ['metal', 0xc7cbcf]]) group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ name, color })))
+  return [name, group]
+})) })
 const r1PlaceFurniture = THREE => (_A, name, x, z, { y = 0, rotY = 0 } = {}) => {
   const group = new THREE.Group(), mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
   mesh.position.y = .5; group.add(mesh); group.position.set(x, y, z); group.rotation.y = rotY
@@ -74,12 +78,28 @@ const r1PlaceFurniture = THREE => (_A, name, x, z, { y = 0, rotY = 0 } = {}) => 
 
 test('I3 furniture bakes mapped assets into a few meshes, exposes desks and registers real-geometry collision', () => {
   const layout = createOfficeR1Layout(), root = new THREE.Group(), collision = createFurnitureCollision()
+  const deskGroups = [], originalAdd = collision.add
+  collision.add = (group, category) => { if (category === '办公桌') deskGroups.push(group); return originalAdd(group, category) }
   const calls = [], placeFurniture = (_A, ...args) => { calls.push({ name: args[0], x: args[1], z: args[2], options: args[3] }); return r1PlaceFurniture(THREE)(_A, ...args) }
   const furniture = buildR1Furniture({ THREE, root, layout, collision, A: r1Assets(THREE), placeFurniture, makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
   root.updateMatrixWorld(true)
   assert.ok(Object.keys(furniture.instanceIds).length >= 10)
-  assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category))).length)
-  for (const asset of ['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded']) assert.ok(calls.some(call => call.name === asset), asset)
+  // I6 起区 14 的室外长椅由 r1-plaza.js 重建，I3 不再画它的素色方块。
+  assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && item.id !== '11-CT-001' && !(item.regionId === '12' && item.category === '弧形沙发段') && !(item.regionId === '14' && item.category === '室外长椅')).length)
+  for (const asset of ['chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']) assert.ok(calls.some(call => call.name === asset), asset)
+  // R5 replaces only the office desk geometry; keep every other mapped asset and collision assertion.
+  assert.equal(calls.filter(call => call.name === 'desk').length, 0)
+  assert.equal(deskGroups.length, 78)
+  for (const group of deskGroups) {
+    const item = layout.r1.elements.find(item => item.id === group.userData.r1Id), box = new THREE.Box3().setFromObject(group), center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), yaw = -item.yawDeg * Math.PI / 180
+    assert.equal(group.children.length, 4, item.id)
+    assert.deepEqual(group.children.map(mesh => { const p = mesh.geometry.parameters; return [p.width, p.height, p.depth] }), [[1.4, .03, .7], [.025, .72, .7], [.025, .72, .7], [1.35, .4, .018]])
+    assert.ok(Math.abs(center.x - (item.xM - 26)) < 1e-6); assert.ok(Math.abs(center.z - (18 - item.yM)) < 1e-6)
+    assert.ok(Math.abs(size.x - (Math.abs(Math.cos(yaw)) * item.lengthM + Math.abs(Math.sin(yaw)) * item.widthM)) < 1e-6)
+    assert.ok(Math.abs(size.z - (Math.abs(Math.sin(yaw)) * item.lengthM + Math.abs(Math.cos(yaw)) * item.widthM)) < 1e-6)
+    assert.ok(Math.abs(box.min.y) < 1e-6); assert.ok(Math.abs(box.max.y - item.heightM) < 1e-6)
+    assert.ok(collision.hit(center.x, center.z), item.id)
+  }
   assert.ok(root.getObjectByName('r1-furniture-wood')); assert.ok(root.getObjectByName('r1-furniture-fabric')); assert.ok(root.getObjectByName('r1-furniture-screen'))
   for (const seat of Object.values(layout.seats)) assert.ok(furniture.deskAt(seat[1], seat[2]))
   for (const station of layout.r1.workstations) {
@@ -177,7 +197,7 @@ test('I2 R4 keeps the identity ledger addressable and batches its zones and clos
   assert.equal(root.children[0].name, 'r1-shell-root')
   assert.equal(root.children[0].userData.dynamic, true)
   assert.equal(shell.wallLedger.wallIds.length, 42); assert.equal(shell.wallLedger.faceIds.length, 84)
-  const front = root.getObjectByName('r1-front-slope-wall'), corners = root.getObjectByName('r1-corner-walls')
+  const front = root.getObjectByName('r1-collision-front'), corners = root.getObjectByName('r1-corner-walls')
   assert.equal(front.material.side, THREE.FrontSide); closedMesh(front); closedMesh(corners)
   const normal = front.geometry.attributes.normal, position = front.geometry.attributes.position
   for (let index = 0; index < position.count; index += 4) {

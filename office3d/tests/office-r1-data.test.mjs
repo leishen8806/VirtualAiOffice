@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_OVERRIDES, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -66,7 +66,11 @@ test('I1 converts millimetres and zone axes once, with source-width/depth invari
 test('I1 exposes the approved C-01 delta behind a single default-on candidate switch', () => {
   const r1 = createR1Layout({ candidateC01: false }), candidate = createR1Layout()
   assert.equal(candidate.candidateC01, true); assert.equal(r1.candidateC01, false)
-  assert.deepEqual(r1.elements, R1_DATA.elements); assert.deepEqual(r1.workstations, R1_DATA.workstations)
+  // I6C：董事会批准的 24 条位置偏离不受 candidateC01 开关影响，所以期望值是「登记值 + 偏离表」而不是裸登记值；
+  // 仍然是对全部 1132 条逐值深比较，强度不变（偏离表本身由 office-r1-plaza-fan.test.mjs 的 I6C-1 单独锁住）。
+  const boardPatch = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry.to]))
+  assert.deepEqual(r1.elements, R1_DATA.elements.map(row => boardPatch.has(row.id) ? { ...row, ...boardPatch.get(row.id) } : row))
+  assert.deepEqual(r1.workstations, R1_DATA.workstations)
   assert.deepEqual(r1.routes, candidate.routes)
   assert.deepEqual({ barEntryClearMm: r1.controls.barEntryClearMm, productSideClearMm: r1.controls.productSideClearMm, productBetweenColumnsMm: r1.controls.productBetweenColumnsMm }, { barEntryClearMm: 1200, productSideClearMm: 1250, productBetweenColumnsMm: 1400 })
   assert.deepEqual({ barEntryClearMm: candidate.controls.barEntryClearMm, productSideClearMm: candidate.controls.productSideClearMm, productBetweenColumnsMm: candidate.controls.productBetweenColumnsMm }, { barEntryClearMm: 1500, productSideClearMm: 1340, productBetweenColumnsMm: 1340 })
@@ -90,7 +94,7 @@ test('I1 retains clearance parameters needed to compare future route recomputati
 
 test('R1 runtime bridges are explicit and all other runtime modules stay isolated from the offline data module', () => {
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
-  const approved = new Set(['office-layout.js', 'office-layout-v3-scene.js', 'office-v3-modules.js', 'office-vis2/r1-site.js', 'office-vis2/r1-shell.js', 'office-vis2/r1-zones.js', 'office-vis2/r1-furniture.js', 'office-vis2/r1-island.js', 'office-vis2/r1-plants.js', 'tests/office-r1-data.test.mjs'])
+  const approved = new Set(['office-layout.js', 'office-layout-v3-scene.js', 'office-v3-modules.js', 'office-vis2/r1-site.js', 'office-vis2/r1-shell.js', 'office-vis2/r1-zones.js', 'office-vis2/r1-furniture.js', 'office-vis2/r1-island.js', 'office-vis2/r1-plants.js', 'office-vis2/r1-doors.js', 'office-vis2/r1-lounge.js', 'tests/office-r1-data.test.mjs'])
   for (const file of walk(repo).filter(file => /\\.(?:js|mjs)$/.test(file.replaceAll('/', '\\')))) {
     const repoFile = relative(repo, file).replaceAll('\\', '/')
     if (repoFile.startsWith('office-r1/') || repoFile === 'tests/office-r1-data.test.mjs') continue

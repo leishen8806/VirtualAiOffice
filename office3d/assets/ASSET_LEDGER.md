@@ -308,3 +308,23 @@
 | Assets/Animations/all_animations_max_motextr_static/f_drink_idle.max.fbx | 5017600 | 3e486b8aa0e5d4aac1907536ff04f1c8b55a350095496ad10e513d797f1e1f67 |
 | Assets/Animations/all_animations_max_motextr_static/f_cell_phone_textmessage.max.fbx | 3647440 | fec5b09446c1f097d87490005157979a49053cd2462547794b9bdeababdae97b |
 | Assets/Animations/all_animations_max_motextr_static/f_idle_stretch_arms_01.max.fbx | 2192688 | 731a81fb08987d4ff4adabdb2f205a90943fde19688d4bafafdd11178c43dcad |
+
+## R1 桌前坐姿补充（2026-10-28，OFFICE-R1-I3B）
+
+Microsoft Rocketbox，MIT。仅导入下列 13 项；原件来自已核对的隔离区 manifest3.json，目标文件名去除 .max，内容逐字节不变。
+
+| 本目录下目标路径 | 字节数 | SHA-256 |
+|---|---:|---|
+| models/people/anim/f_sit_table_idle_neutral_02.fbx | 3890336 | ee99f393f04211b71251b489db5d17265e2050cd1783e24528ac098d898336f9 |
+| models/people/anim/m_sit_table_idle_neutral_02.fbx | 5960992 | 76eddd55dcfcee98e7849ec769d412f1d91d369b78502baf40eeae09bee8e71c |
+| models/people/anim/f_sit_table_idle_relaxed_01.fbx | 4759104 | a7dbcae874c4964c64f19e21438b45214a8f059f2d89fbdf14b963b19898e70f |
+| models/people/anim/m_sit_table_idle_relaxed_01.fbx | 7158896 | f3c5f5d4b4f9a3fe9f6f103cf09f9fd898db4f06784129be9539f53ec1e6bcbd |
+| models/people/anim/f_sit_table_idle_waiting_01.fbx | 4450896 | 047ee274ea779ee413dbe29515c1b422010906d0be30446bcf46eb4ae9ca76c3 |
+| models/people/anim/m_sit_table_idle_waiting_01.fbx | 5398576 | b7453f9de0bbb6168f6df71b11fcf3813e5ab568fbf770ed846801592b72ba5e |
+| models/people/anim/m_sit_table_idle_nervous_01.fbx | 5712096 | afe96e6cba1e0b141b4f14b397d0f5584ecc5d8dee44d25ea569de2d8ad643e9 |
+| models/people/anim/f_sit_table_gestic_shrug_01.fbx | 1024144 | 05f9883101b3b05ad1b7195bbea8d280cc5748fc400c71cb8331439f3f3774a8 |
+| models/people/anim/m_sit_table_gestic_shrug_01.fbx | 1601936 | d69cf86c90b0851c6ef1bd8372c35198020d2ccb57c08f9c9dc5985c9dc791c2 |
+| models/people/anim/f_sit_table_idle_touch_hair.fbx | 1958544 | 2e89fa2557075fa24f6b92dad4d3991f9cca49b7645959e3d28674aa58abd36f |
+| models/people/anim/m_sit_table_idle_touch_hair.fbx | 2414176 | 60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314 |
+| models/people/anim/f_sit_table_idle_roll_head.fbx | 2153328 | 6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014 |
+| models/people/anim/m_sit_table_idle_roll_head.fbx | 2374048 | 8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d |

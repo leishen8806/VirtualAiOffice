@@ -18,8 +18,11 @@ const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
 const { placeFurniture } = await import('../assets3d.js')
 hooks.deregister()
 
+// 后四行是 R1 家具本身要用的素材：I3B（PR #69）之后工位会摆程序化键鼠与三选一桌面小物，
+// 缺任何一项 placeFurniture 都会抛「缺少家具 …」。这里只是把素材表补齐，没有放宽任何断言。
 const MODELS = ['coatRack', 'trashcan', 'speaker', 'lampSquareFloor', 'sideTable', 'rugRectangle',
-  'desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'pottedPlant']
+  'desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'pottedPlant',
+  'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']
 const loader = new GLTFLoader(), furn = {}
 for (const name of MODELS) {
   const bytes = readFileSync(new URL(`../assets/models/furniture/${name}.glb`, import.meta.url))
@@ -149,7 +152,7 @@ test('I6B-4 隔离：非 R1 入口拿不到小物件模块，V3 模块表逐值�
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3).map(([name]) => name), officeV3Modules.map(([name]) => name))
   const r1 = resolveOfficeLayout('?place=drlife-office&layout=3&align=1&officeSample=1&r1=1')
   assert.equal(r1.r1Phase, 'R1')
-  assert.deepEqual(officeV3ModulesFor(r1).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Decor'])
+  assert.deepEqual(officeV3ModulesFor(r1).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza'])
   // 非 R1 布局调用构造器时必须是空实现，不往场景里加东西
   const root = new THREE.Group()
   const empty = buildR1Decor({ THREE, root, layout: LAYOUT_V3, A, placeFurniture })

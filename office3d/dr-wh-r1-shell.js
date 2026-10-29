@@ -1,5 +1,5 @@
 import { WH_R1_DATA } from './wh-r1/data.js'
-import { whToWorld } from './wh-r1-layout.js'
+import { whToWorld, WH_R1_FLOOR_Y } from './wh-r1-layout.js'
 import { WH_R1_BUILDING, WH_R1_SITE, WH_R1_ZONES } from './dr-wh-r1-zones.js'
 
 const point = ([x, y]) => whToWorld(x, y)
@@ -64,7 +64,7 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
   const site = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_SITE.width, WH_R1_SITE.depth), floorMaterial)
   site.name = 'wh-r1-site-paving'; site.rotation.x = -Math.PI / 2; site.position.set(-123, -.595, 8); root.add(site)
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_BUILDING.width, WH_R1_BUILDING.depth), wallMaterial)
-  floor.name = 'wh-r1-building-floor'; floor.rotation.x = -Math.PI / 2; floor.position.set(-124, -.59, 6); root.add(floor)
+  floor.name = 'wh-r1-building-floor'; floor.rotation.x = -Math.PI / 2; floor.position.set(-124, WH_R1_FLOOR_Y, 6); root.add(floor)
 
   for (const wall of WH_R1_WALLS) {
     box(THREE, root, `wh-r1-wall-${wall.id}`, wall.length, wall.height, wall.thickness, wall.x, wall.height / 2 - .6, wall.z, wall.yaw, wallMaterial, {
