@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BACKWALL, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
@@ -24,6 +24,11 @@ const SHIFT = Object.freeze({ dxM: -6.5, dyM: 2.6 })
 // OFFICE-R1-RECEP（董事会 2026-10-28 批准）后来又往同一张偏离表加了 4 条接待椅平移；
 // I6C 这条测试只负责锁住自己这 24 条，接待椅的数值由 office-r1-recep-brand.test.mjs 的 RC-2 锁。
 const RECEP_SET = Object.freeze(['11-CH-001', '11-CH-001-BACK', '11-CH-001-BASE', '11-CH-001-SEAT'])
+// OFFICE-R1-AMBIENCE 补充 R2（董事会 2026-10-29 批准）又加了 12 条：三个预留座位的椅子推进桌下。
+// 同样不归 I6C 管，数值由 office-r1-ambience.test.mjs 的 AM-7c 锁。
+const RESERVED_SET = Object.freeze(['08-CH-011', '08-CH-012', '08-CH-013']
+  .flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`]))
+const LATER_SET = Object.freeze([...RECEP_SET, ...RESERVED_SET])
 // 代码基线 main a6aa91f3fb91a9e9158575977f69694582703ed7 上 office-r1/data.js 的 SHA-256：偏离表不得改登记数据文件。
 // 先把 CRLF 归一成 LF 再算：本机不同工作树的签出行尾不一致（pc-worktrees 是 CRLF、新建工作树是 LF），
 // 直接对原始字节取哈希会在换一个工作树复核时假失败。
@@ -38,14 +43,14 @@ const unit = ([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n] }
 test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved IDs and leaves office-r1/data.js untouched', () => {
   assert.equal(createHash('sha256').update(normalized(new URL('../office-r1/data.js', import.meta.url))).digest('hex'), DATA_SHA256)
   assert.ok(Object.isFrozen(R1_BOARD_OVERRIDES))
-  const ids = R1_BOARD_OVERRIDES.map(entry => entry.id), i6c = ids.filter(id => !RECEP_SET.includes(id))
+  const ids = R1_BOARD_OVERRIDES.map(entry => entry.id), i6c = ids.filter(id => !LATER_SET.includes(id))
   assert.deepEqual([...i6c].sort(), [...Object.keys(STALLS), ...UMBRELLA_SET].sort())
   assert.equal(new Set(i6c).size, 24)
   // 整张表不得有重复 ID，后加的条目也不许覆盖 I6C 的任何一条。
   assert.equal(new Set(ids).size, ids.length)
   for (const entry of R1_BOARD_OVERRIDES) {
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.from) && Object.isFrozen(entry.to), entry.id)
-    assert.equal(entry.date, '2026-10-28', entry.id)
+    assert.equal(entry.date, RESERVED_SET.includes(entry.id) ? '2026-10-29' : '2026-10-28', entry.id)
     assert.ok(typeof entry.reason === 'string' && entry.reason.length > 0, entry.id)
     // 原值必须与登记数据逐值相符，否则登记数据漂移了而偏离表没跟上。
     const raw = rawOf(entry.id)
@@ -65,14 +70,16 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
     // 伞桌整套只平移：朝向与角度不进偏离表。
     assert.deepEqual(Object.keys(to).sort(), ['xM', 'yM'])
   }
-  // 偏离只落在这 24 个 ID 上：其余 1108 条登记件逐值与 data.js 相同。
+  // 本表的偏离只落在这 24 个 ID 上：登记段其余 1106 条逐值与 data.js 相同（大门抬高的 2 片门扇走
+  // BACKWALL 补充 R2 的另一张表，尾部 4 片门扇是 BACKWALL 两樘新门新增的，都不属于本表）。
   const layout = createR1Layout({ candidateC01: false })
-  assert.equal(layout.elements.length, R1_DATA.elements.length)
-  for (const [index, item] of layout.elements.entries()) {
+  assert.equal(layout.elements.length, R1_DATA.elements.length + R1_BACKWALL.leaves.length)
+  for (const [index, item] of layout.elements.slice(0, R1_DATA.elements.length).entries()) {
     // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住。
-    if (byId.has(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id)) continue
+    if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id)) continue
     assert.deepEqual(item, R1_DATA.elements[index], item.id)
   }
+  assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves])
   // 非 R1 布局（稳定 V3 / L2B 对齐）不受偏离表影响。
   for (const other of [LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B]) assert.equal(other.r1Phase, undefined)
 })

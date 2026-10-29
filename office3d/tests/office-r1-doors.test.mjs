@@ -21,15 +21,15 @@ const bounds = (mesh, instance) => {
   return new THREE.Box3().setFromPoints(points)
 }
 
-test('I5 closed leaves match all 26 registered IDs, dimensions and floor; open widths meet all 13 targets after real merge', () => {
+test('I5 closed leaves match all 30 registered IDs, dimensions and floor; open widths meet all 15 targets after real merge', () => {
   const layout = createOfficeR1Layout(), root = new THREE.Group(), module = buildR1Doors({ THREE, root, layout })
-  assert.equal(module.records.length, 26); assert.equal(new Set(module.doors.ids).size, 26)
+  assert.equal(module.records.length, 30); assert.equal(new Set(module.doors.ids).size, 30)
   assert.ok(module.records.every(row => module.doors.state(row.id).state === 'open'))
   mergeStatic(root)
   assert.equal(module.root.children.length, 2)
   module.doors.setAll('closed'); module.onFrame(1.2)
   const glass = module.root.getObjectByName('r1-door-glass'), metal = module.root.getObjectByName('r1-door-metal')
-  assert.equal(metal.count, 26 * 4 + 15, 'two stacked doors have two separate parallel tracks each')
+  assert.equal(metal.count, 30 * 4 + 19 + 2, 'four stacked doors have two separate parallel tracks each, plus the two gate track posts')
   module.records.forEach((row, i) => {
     const source = layout.r1.elements.find(item => item.id === row.id), box = bounds(glass, i)
     for (let part = 0; part < 4; part++) box.union(bounds(metal, i * 4 + part))

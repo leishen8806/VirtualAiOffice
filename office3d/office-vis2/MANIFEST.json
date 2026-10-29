@@ -280,7 +280,7 @@
       "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "D98628AB51223B1AA376101238DA7BAF511F85DFFB386177591E17E225B482E7"
+      "sha256": "C2777AFD0FCF4141872A8467757C0BF6D23EB177E4AB487ED5CEC6A118CEF88D"
     },
     {
       "file": "office-vis2/r1-site.js",
@@ -291,10 +291,10 @@
     },
     {
       "file": "office-vis2/r1-furniture.js",
-      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; no downloaded assets",
+      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "44F4D71C48652902DB9643A414F4037962D56C740961C48423CC19FE1C39B622"
+      "sha256": "7AFD8D60E0DABDE0B0F7A81285815F88704881796F751DE4A581D0339291C625"
     },
     {
       "file": "office-vis2/r1-zones.js",
@@ -305,10 +305,10 @@
     },
     {
       "file": "office-vis2/r1-island.js",
-      "source": "R1 registered island, arc seats and fitted existing banyan; no downloaded assets",
-      "license": "Repository MIT; see ../../LICENSE",
+      "source": "R1 registered island, arc seats and fitted existing banyan; OFFICE-R1-FOOD adds the counter-top Kenney appliances (kitchenCoffeeMachine / toaster / kitchenBlender, already-approved CC0 copies recorded in assets/ASSET_LEDGER.md), a procedural cup rack and two glass food display cases, plus the low-poly procedural food shapes shared with r1-plaza.js; no downloaded assets",
+      "license": "Repository MIT for the source code; the counter-top appliance models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "742E77FB0724FBA110B87431CAC7FC36DFFFC63C94BD5DB8EC91224B1A7095BF"
+      "sha256": "9548FB16566AB6185E800E52EADD70CAAD46F84F196A010FA5265259128DAF13"
     },
     {
       "file": "office-vis2/r1-plants.js",
@@ -322,7 +322,7 @@
       "source": "R1 registered procedural r1-doors; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "69152743DBB387EBA3654A57CE5E90E5AE151B30567558C21798E667AB2F6C93"
+      "sha256": "49632C10D357E1B7429E0AEA786A44D5FBA6917C27377649AF85CC65D5E1ADA0"
     },
     {
       "file": "office-vis2/r1-lounge.js",
@@ -340,10 +340,10 @@
     },
     {
       "file": "office-vis2/r1-plaza.js",
-      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; no downloaded assets",
+      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; OFFICE-R1-FOOD adds the four themed stall food displays and one shared Canvas price-board atlas, reusing the procedural food shapes from r1-island.js; OFFICE-R1-AMBIENCE recolours the parasol canopy and truck roof cap and adds a flat DR.LIFE+ roof decal from assets/logo.png; procedural geometry and canvas text only, no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "010B1BB6C33ADCB281199FC269AF6C18EFD944075C005CFFDCC8C878D8E1A716"
+      "sha256": "7A96D21282C98088F33EE672AABB29D0005CF07B6E3F8C8BCD510347F3861E37"
     },
     {
       "file": "office-vis2/r1-lights.js",
@@ -354,10 +354,10 @@
     },
     {
       "file": "office-vis2/r1-brand.js",
-      "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; reuses the existing assets/logo.png; no downloaded assets",
+      "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; OFFICE-R1-AMBIENCE adds the courtyard-face emblem and planter, seven room nameplates, the gate welcome inlay, the meeting-room wall screen and the three reserved-seat desk plates, all procedural canvas art; reuses the existing assets/logo.png and the office-vis2 leaf geometry; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "B7E478699114D9236AA4ED2E90EC01F35D61F0F185F911AD10B570EDEAA53974"
+      "sha256": "1A471D36910858F4303E3E0ED21C28791655A0525F177CFEB031F0115C2588E4"
     },
     {
       "file": "office-vis2/r1-look.js",
@@ -385,7 +385,7 @@
       "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors and door sweeps; no source-register changes",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "AEF5576ABB2E6EF5429AB7187D3B342265C1418D5683DF3AA46E156AB6F7D8D8"
+      "sha256": "7105D38D6CD274754193A931B548D441AE8D3CAF60C2AD8707B418AF7A2B42B1"
     },
     {
       "file": "office-vis2/r1-tropical.js",

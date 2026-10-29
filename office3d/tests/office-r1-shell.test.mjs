@@ -136,7 +136,7 @@ test('I2 R3 selects R1 miniBounds without altering the non-R1 minimap expression
 
 test('I2 carries all registered wall and face identities through the R1 shell plan', () => {
   const plan = r1WallPlan(r1()), ids = new Set([...plan.straight.map(wall => wall.id), ...plan.front.map(wall => wall.id)])
-  assert.equal(ids.size, 42); assert.equal(r1().r1.data.wallFaces.length, 84)
+  assert.equal(ids.size, 44); assert.equal(r1().r1.data.wallFaces.length, 88)
   assert.ok(plan.straight.every(wall => wall.faceIds.length === 2))
   assert.deepEqual(r1CornerSpec.southeast, { center: [24.3, 32.5], radius: 1.5, from: [24.3, 31], to: [25.8, 32.5] })
   assert.deepEqual(r1CornerSpec.southwest, { center: [31.7, 32.5], radius: 1.5, from: [30.2, 32.5], to: [31.7, 31] })
@@ -184,7 +184,7 @@ test('I2 R4 makes the real collision engine block every registered wall sample b
       }
     }
   }
-  assert.equal(samples, 618)
+  assert.equal(samples, 624)
   for (const door of layout.r1.data.doors) assert.equal(collision.hit(door.xM - 26, 18 - door.yM), null, door.id)
   assert.equal(collision.hit(2, 18 - 31.5), null, '00-D-001 centre')
   assert.equal(collision.stats().contacts, samples)
@@ -196,7 +196,7 @@ test('I2 R4 keeps the identity ledger addressable and batches its zones and clos
   const shell = buildR1Shell({ THREE, root, layout: r1(), collision }); root.updateMatrixWorld(true)
   assert.equal(root.children[0].name, 'r1-shell-root')
   assert.equal(root.children[0].userData.dynamic, true)
-  assert.equal(shell.wallLedger.wallIds.length, 42); assert.equal(shell.wallLedger.faceIds.length, 84)
+  assert.equal(shell.wallLedger.wallIds.length, 44); assert.equal(shell.wallLedger.faceIds.length, 88)
   const front = root.getObjectByName('r1-collision-front'), corners = root.getObjectByName('r1-corner-walls')
   assert.equal(front.material.side, THREE.FrontSide); closedMesh(front); closedMesh(corners)
   const normal = front.geometry.attributes.normal, position = front.geometry.attributes.position
