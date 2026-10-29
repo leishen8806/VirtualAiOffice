@@ -431,9 +431,13 @@ test('AM-7b three reserved desk plates read the name plus 预留, sit on their o
     const monitor = furniture.itemBounds.get(plate.desk.replace('-T-', '-M-'))
     assert.ok(monitor, `${plate.desk} 的显示器`)
     assert.equal(plate.box.intersectsBox(monitor), false, `${plate.desk} 桌牌与显示器相交`)
-    const props = furniture.desktopItems.get(plate.desk).filter(detail => /\/(keyboard|mouse)$/.test(detail.id))
+    const desktop = furniture.desktopItems.get(plate.desk)
+    const props = desktop.filter(detail => /\/(keyboard|mouse)$/.test(detail.id))
     assert.equal(props.length, 2, plate.desk)
     for (const prop of props) assert.equal(plate.box.intersectsBox(prop.bounds), false, `${plate.desk} 桌牌与 ${prop.id} 相交`)
+    // 补充 R2：预留桌上不放个人物品，显示器 / 键盘 / 鼠标 / 鼠标垫照常保留。
+    assert.deepEqual(desktop.map(detail => detail.id.split('/')[1]).sort(), ['keyboard', 'mouse', 'pad'], `${plate.desk} 桌面散件`)
+    assert.ok(!desktop.some(detail => /\/small$/.test(detail.id)), `${plate.desk} 预留桌不应有个人物品`)
     // 约 0.24 × 0.08 m 的三角立牌：宽度照规格，立起来不超过 0.09 m，占地进深不超过 0.08 m。
     near(plate.box.max.x - plate.box.min.x, DP.width, 2 * MM)
     assert.ok(plate.box.max.y - plate.box.min.y <= .09, `${plate.desk} 桌牌高 ${plate.box.max.y - plate.box.min.y} m`)

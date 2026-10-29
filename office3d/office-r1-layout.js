@@ -35,8 +35,12 @@ export const R1_RESERVED_SEATS = Object.freeze([
   Object.freeze({ name: '大旺', chair: '08-CH-013', desk: '08-T-013', date: '2026-10-29', reason: RESERVED_REASON }),
 ])
 const RESERVED_CHAIRS = new Set(R1_RESERVED_SEATS.map(row => row.chair))
+const RESERVED_DESKS = new Set(R1_RESERVED_SEATS.map(row => row.desk))
 // 子件 ID（-BACK / -BASE / -SEAT）算同一个座位，所以消费方拿到哪一级 ID 都判得出来。
 export const isReservedSeat = chairId => RESERVED_CHAIRS.has(String(chairId ?? '').replace(/-(BACK|BASE|SEAT)$/, ''))
+// 配对的桌子：r1-furniture 用它决定这三张桌上不放个人物品（显示器与键盘照常保留）。
+// 桌面物件 ID 形如 `08-T-011/keyboard`，所以先把 `/…` 后缀切掉。
+export const isReservedDesk = deskId => RESERVED_DESKS.has(String(deskId ?? '').split('/')[0])
 // 推椅子是位置变更，所以照旧走偏离表一处覆盖；原值直接从登记行读，偏离表不会跟登记数据脱节。
 // 推进量 0.26 m 是上限内取的值：再往前椅心离邻桌 08-T-0{14,15,16} 就不足 1.2 m，I3B 的桌椅配对会多出一把椅子。
 const RESERVED_TUCK = R1_RESERVED_SEATS.flatMap(seat => ['', '-BACK', '-BASE', '-SEAT'].map(suffix => {
