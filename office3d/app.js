@@ -2177,19 +2177,20 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
         PEOPLE = loaded
         for (const v of views.values()) {
           if (v.char.avatar) continue
+          const personName = v.data?.name ?? v.name
           try {
-            const seatIdx = Object.keys(SEATS).indexOf(v.name), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[v.name] || CAST_OVERRIDE[v.name] || CAST[seatIdx % CAST.length]
-            const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(v.name), v.name)
-            if (!assets) { status.failed.push(v.name); continue }
+            const seatIdx = Object.keys(SEATS).indexOf(personName), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[personName] || CAST_OVERRIDE[personName] || CAST[seatIdx % CAST.length]
+            const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
+            if (!assets) { status.failed.push(personName); continue }
             const ch = createPerson(assets, avatar), previous = v.char
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home)
-            fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(v.name).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
+            fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(personName).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent(); v.char = ch
-            status.replaced.push(v.name)
-          } catch { status.failed.push(v.name) }
+            status.replaced.push(personName)
+          } catch { status.failed.push(personName) }
           await new Promise(resolve => requestAnimationFrame(resolve))
         }
         status.completedAt = performance.now()
