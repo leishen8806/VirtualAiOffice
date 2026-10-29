@@ -30,10 +30,17 @@ export const R1_BOARD_OVERRIDES = Object.freeze([
   shifted('14-CH-008', 15, -9.6), shifted('14-CH-008-BACK', 15, -9.822), shifted('14-CH-008-BASE', 15, -9.6), shifted('14-CH-008-SEAT', 15, -9.6),
 ])
 const BOARD_PATCH = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry.to]))
+export const R1_BOARD_ROUTE_OVERRIDES = Object.freeze([
+  Object.freeze({ id: 'Z14', date: '2026-10-29', reason: '董事会 2026-10-29 广场中心建喷泉',
+    from: Object.freeze([28, -10]), to: Object.freeze([28, -5]) }),
+])
+const ROUTE_PATCH = new Map(R1_BOARD_ROUTE_OVERRIDES.map(entry => [entry.id, entry.to]))
 
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：两张表的 ID 不相交，顺序只为可复现。
   const deviate = item => { const patch = BOARD_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
-  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze(R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item))), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes: R1_DATA.routes })
+  const routes = Object.freeze(R1_DATA.routes.map(route => ROUTE_PATCH.has(route.id)
+    ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
+  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze(R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item))), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }

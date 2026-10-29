@@ -109,7 +109,7 @@ test('I6-4 plain-mesh proxies block every registered plaza body in the real coll
   // 26 个登记实体 + 餐车与 3 座摊亭各一层腰部挡板（它们比 1.48 m 的直立胶囊高）。
   assert.equal(plaza.proxies.length, 30)
   assert.ok(plaza.proxies.every(mesh => mesh.isMesh && !mesh.isInstancedMesh))
-  assert.equal(collision.stats().bodies, 30)
+  assert.equal(collision.stats().bodies, 31) // 30 existing plaza bodies + the separately tested fountain.
   assert.equal(new Set(plaza.proxies.map(mesh => mesh.userData.r1Id)).size, 26)
   for (const category of PROXY_CATEGORIES) {
     const items = region14(layout, category)
@@ -117,7 +117,7 @@ test('I6-4 plain-mesh proxies block every registered plaza body in the real coll
     for (const item of items) assert.ok(collision.hit(item.xM - 26, 18 - item.yM), item.id)
   }
   const z14 = layout.r1.routes.find(route => route.id === 'Z14')
-  assert.deepEqual(z14.points_m, [[28, -1], [28, -4], [28, -10]])
+  assert.deepEqual(z14.points_m, [[28, -1], [28, -4], [28, -5]])
   for (let i = 0; i <= 60; i++) {
     const point = pointOnRoute(z14, i / 60)
     assert.equal(collision.hit(point.x, point.z), null, `Z14 ${point.x},${point.z}`)
@@ -171,7 +171,8 @@ test('I6-8 the plaza slot stays inside one merged draw call and its own triangle
     const root = new THREE.Group()
     const plaza = buildR1Plaza({ THREE, root, layout, low })
     const meshes = []
-    root.traverse(object => { if (object.isMesh) meshes.push(object) })
+    // Preserve the original plaza batch budget; FT-5 separately measures the new fountain.
+    root.traverse(object => { if (object.isMesh && object !== plaza.fountain.proxy && !plaza.fountain.root.getObjectById(object.id)) meshes.push(object) })
     assert.ok(meshes.length <= 4, `${low ? 'low' : 'high'} draw calls ${meshes.length}`)
     assert.ok(plaza.triangles() <= 25000, `${low ? 'low' : 'high'} triangles ${plaza.triangles()}`)
     assert.ok(plaza.triangles() > 0)
