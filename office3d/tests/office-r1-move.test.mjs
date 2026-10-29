@@ -148,7 +148,11 @@ test('a person sealing a destination pocket rejects that trip without rejecting 
   box(c, 'door-left', 1, -.975, .1, .45); box(c, 'door-right', 1, .975, .1, .45)
   const nav = createR1Navigation(layout()).attach(c); await nav.prepare()
   const start = { x: -3, z: 0 }, end = { x: 2, z: 0 }
-  assert.ok(nav.plan(start, end))
+  for (const [from, to] of [[start, end], [end, start]]) {
+    const path = nav.plan(from, to); assert.ok(path)
+    assert.deepEqual(path[0], from); assert.deepEqual(path.at(-1), to)
+    for (let i = 1; i < path.length; i++) assert.equal(nav.lineClear(path[i-1], path[i]), true)
+  }
   assert.equal(nav.plan(start, end, undefined, [{ x: 1, z: 0 }]), null)
   assert.ok(nav.plan(start, end, undefined, [{ x: -2, z: 2 }]))
 })
