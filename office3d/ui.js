@@ -48,9 +48,37 @@ const KIND = {
   task: { icon: '🛠️', label: '', go: '查看' },
 }
 const STATUS = { todo: '待开始', in_progress: '进行中', in_review: '待验收', blocked: '阻塞', done: '已完成', backlog: '待排期', cancelled: '已取消' }
+// 任务状态标签：颜色之外保留中文状态文字（色盲友好），配色见 index.html 的 .st-badge（用现有 --ok/--warn/--bad/--info 主题色）。
+// 只有 STATUS 里已知的状态才带状态类，未知状态只给默认文字色——这样服务端返回的任意字符串不会进到 class 属性里。
+export function statusBadge(status) {
+  const key = String(status ?? '')
+  const known = Object.prototype.hasOwnProperty.call(STATUS, key)
+  return `<span class="st-badge${known ? ` st-${key}` : ''}">${esc(known ? STATUS[key] : key)}</span>`
+}
 export function staleView(stale) {
   const active = stale?.active === true, minutes = Number.isFinite(stale?.ageMs) ? Math.max(0, Math.floor(stale.ageMs / 60000)) : null
   return { active, text: !active ? '' : stale.reason === 'STALE_DATA' ? `数据已过期 ${minutes === null ? '时间未知' : `${minutes} 分钟`}` : `数据来自 ${minutes === null ? '时间未知' : `${minutes} 分钟前`} · Paperclip 暂不可用` }
+}
+
+// ── 派发窗口 / 「交给」窗口的候选同事：纯函数，便于单测 ──
+const MONEY_OK = ['GoSenior', 'DBEngineer']
+const statusTag = (a, offDuty) => a.liveRun ? '执行中' : a.status === 'paused' ? (offDuty ? '已下班，上班后开始' : '已暂停') : a.status === 'error' ? '出错' : a.task ? '手上有任务' : '空闲'
+// query 只在列表上过滤：匹配中文名 / 英文名 / 岗位任一，不区分大小写；资金类限制、排序、状态标签照旧。
+// fixed 是「交给 Lead 拆解」「先放待排期」两项，永远保留；selected 为 '' 表示不显式选中（由浏览器取第一项）。
+export function dispatchChoices({ agents, names, money = false, lead = false, pick = '', query = '', offDuty = false } = {}) {
+  const roster = (Array.isArray(agents) ? agents : []).filter((a) => a && typeof a === 'object')
+  const cn = (a) => (names || {})[a.id] || a.name || ''
+  const q = String(query ?? '').trim().toLowerCase()
+  const people = roster.filter((a) => !money || MONEY_OK.includes(a.name))
+    .sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? '')))
+    .filter((a) => !q || [cn(a), a.name, a.title].filter(Boolean).join(' ').toLowerCase().includes(q))
+    .map((a) => ({ value: a.id, label: `${cn(a)}${cn(a) !== a.name ? ' / ' + a.name : ''} · ${a.title || ''} · ${statusTag(a, offDuty)}`, agent: a }))
+  const lead0 = roster.find((a) => a.name === 'Lead')
+  const fixed = []
+  if (lead && lead0 && !money) fixed.push({ value: `lead:${lead0.id}`, label: '交给 Lead 拆解后派发（推荐）' })
+  if (lead) fixed.push({ value: '', label: '先放「待排期」，不指派' })
+  const selected = people.some((p) => p.value === pick) ? pick : pick && people.length ? people[0].value : ''
+  return { fixed, people, options: fixed.concat(people), selected, empty: people.length === 0 }
 }
 
 export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
@@ -232,7 +260,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         <div class="note">取消后任务标为「已取消」；${esc(d.assignee || '负责人')}如果正在做，会立刻停下这次运行。需要恢复时可以在 Paperclip 里重新打开。</div>`
     }
     open(`<h2>${esc(d.identifier)} ${esc(d.title)}</h2>
-      <div class="meta">${projTag(d.projectId)}${esc(STATUS[d.status] || d.status)}${d.assignee ? ' · 负责人 ' + esc(d.assignee) : ''}</div>
+      <div class="meta">${projTag(d.projectId)}${statusBadge(d.status)}${d.assignee ? ' · 负责人 ' + esc(d.assignee) : ''}</div>
       <div class="sec">任务说明</div><div class="fold md">${md(d.description) || '<span class="note">无</span>'}</div>
       <div class="sec">最近的评论</div>${comments}${actions}`)
     const val = (id) => (modal.querySelector('#' + id) || {}).value || ''
@@ -294,6 +322,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       <div class="note" style="margin:6px 0">${esc(s.why)}</div>
       <div class="actions" style="margin-top:6px"><button class="btn" data-loc="${i}">定位到 TA</button>${s.task ? `<button class="btn" data-task="${i}">看任务</button>` : ''}${s.runId ? `<button class="btn bad" data-cancel="${i}">取消这次运行</button>` : ''}</div></div>`).join('')
     open(`<h2>⚠ 疑似卡住（${list.length}）</h2><div class="meta">「运行记录残留」= Paperclip 还记着在运行，但进程已经退出；「疑似卡住」= 进程还在，超过 5 分钟没有输出。取消这次运行不会删除任务，只是结束这次运行记录，agent 之后会按任务状态重新被唤醒。</div>${rows}`)
+    modal.querySelector('.meta').append('「正在执行长任务」= 后代进程持续消耗 CPU，暂不算卡住。')
     modal.querySelectorAll('[data-loc]').forEach((b) => (b.onclick = () => { close(); focusAgent(list[+b.dataset.loc].agentId) }))
     modal.querySelectorAll('[data-task]').forEach((b) => (b.onclick = () => openIssue(list[+b.dataset.task].task.issueId)))
     modal.querySelectorAll('[data-cancel]').forEach((b) => (b.onclick = async () => {
@@ -375,16 +404,41 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
 
   // ── 派发任务：新建任务 / 把「待排期」的任务指派给某位同事 ──
-  const MONEY_OK = ['GoSenior', 'DBEngineer']
   const PRIO = [['medium', '普通'], ['high', '高'], ['critical', '紧急'], ['low', '低']]
+  const AGENT_FIND = '搜索同事：中文名 / 英文名 / 岗位'
+  const choicesFor = (opts) => dispatchChoices({
+    agents: state.agents, names: state && state.names,
+    offDuty: state.world && state.world.duty && state.world.duty.on === false, ...opts,
+  })
+  // selected 为 null 时不写 selected 属性，交给浏览器取第一项（和加搜索框之前一致）
+  const optionsHtml = (result, selected) => result.options
+    .map((o) => `<option value="${esc(o.value)}"${selected !== null && o.value === selected ? ' selected' : ''}>${esc(o.label)}</option>`).join('')
   function agentOptions({ money = false, lead = false, pick = '' } = {}) {
-    const offDuty = state.world && state.world.duty && state.world.duty.on === false
-    const list = state.agents.filter((a) => !money || MONEY_OK.includes(a.name)).slice().sort((a, b) => a.name.localeCompare(b.name))
-    const tag = (a) => a.liveRun ? '执行中' : a.status === 'paused' ? (offDuty ? '已下班，上班后开始' : '已暂停') : a.status === 'error' ? '出错' : a.task ? '手上有任务' : '空闲'
-    const lead0 = state.agents.find((a) => a.name === 'Lead')
-    return (lead && lead0 && !money ? `<option value="lead:${lead0.id}">交给 Lead 拆解后派发（推荐）</option>` : '')
-      + (lead ? '<option value="">先放「待排期」，不指派</option>' : '')
-      + list.map((a) => `<option value="${a.id}"${a.id === pick ? ' selected' : ''}>${esc(agentName(a.id))}${agentName(a.id) !== a.name ? ' / ' + esc(a.name) : ''} · ${esc(a.title || '')} · ${tag(a)}</option>`).join('')
+    const result = choicesFor({ money, lead, pick })
+    return optionsHtml(result, result.selected || null)
+  }
+  // 搜索框与下拉联动：即时过滤、无匹配时提示并禁用按钮、↓ 进下拉、回车选中第一个匹配项
+  function wireAgentSearch({ find, select, none, submit, choices, selected = null }) {
+    let value = selected
+    const draw = () => {
+      const result = choices(find.value)
+      if (value !== null && !result.options.some((o) => o.value === value)) value = result.people.length ? result.people[0].value : null
+      select.innerHTML = optionsHtml(result, value)
+      none.hidden = !result.empty
+      submit.disabled = result.empty
+      return result
+    }
+    select.onchange = () => { value = select.value }
+    find.oninput = draw
+    find.onkeydown = (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); select.focus() }
+      else if (e.key === 'Enter') {
+        e.preventDefault()
+        const first = draw().people[0]
+        if (first) { value = first.value; select.value = first.value; select.focus() }
+      }
+    }
+    return draw
   }
   function openDispatch(agentId = '', tab = 'new') {
     const projects = state.projects || []
@@ -418,17 +472,28 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
           <label class="fl">风险等级<select data-contract-field="风险等级"><option value="">选择风险等级</option><option>低</option><option>中</option><option>高</option><option>资金</option></select></label>
         </div></details>
         <div class="row2"><div><label class="fl">优先级</label><select id="dPrio">${PRIO.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
-        <div><label class="fl">负责人</label><select id="dWho">${agentOptions({ lead: !agentId, pick: agentId })}</select></div></div>
+        <div><label class="fl">负责人</label>
+          <input type="text" id="dWhoFind" class="one" placeholder="${AGENT_FIND}" autocomplete="off">
+          <select id="dWho">${agentOptions({ lead: !agentId, pick: agentId })}</select>
+          <div class="note" id="dWhoNone" role="status" hidden>没有匹配的同事</div></div></div>
         <label class="chk"><input type="checkbox" id="dMoney"> 资金类（账务 / 提现 / 鉴权 / IAM / 迁移 / 密钥 / 入账队列）——只能交给 GoSenior / DBEngineer，PR 要过三道审查再由董事会过目</label>
         <div class="actions"><button class="btn gold" id="dCreate">派发</button></div>`
       const money = pane.querySelector('#dMoney'), who = pane.querySelector('#dWho')
       const risk = pane.querySelector('[data-contract-field="风险等级"]')
       const projectName = () => (projects.find((project) => String(project.id) === String(proj.value)) || {}).name || 'Virtual AI Office'
+      let lead = !agentId // 勾过「资金类」之后和原来一样，重新带上 Lead / 待排期两项
+      const find = pane.querySelector('#dWhoFind')
+      const draw = wireAgentSearch({
+        find, select: who, none: pane.querySelector('#dWhoNone'), submit: pane.querySelector('#dCreate'),
+        selected: agentId || null, choices: (query) => choicesFor({ money: money.checked, lead, pick: agentId, query }),
+      })
       money.onchange = () => {
-        who.innerHTML = agentOptions({ money: money.checked, lead: true, pick: agentId })
+        lead = true
         risk.value = money.checked ? '资金' : ''
         risk.disabled = money.checked
+        draw() // 保留搜索词，按资金类限制重新过滤
       }
+      if (!agentId) find.focus()
       pane.querySelector('#dCreate').onclick = async () => {
         const title = pane.querySelector('#dTitle').value.trim()
         if (!title) { toast('请填写任务标题', false); return }
@@ -487,14 +552,23 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const openDeps = d.blockedBy.filter((b) => b.status !== 'done' && b.status !== 'cancelled')
       const pre = d.description.indexOf('开工前必须满足')
       out.innerHTML = `<div class="sec">${esc(d.identifier)} ${esc(d.title)}${d.money ? ' <span class="tagm">资金类</span>' : ''}</div>
-        ${d.blockedBy.length ? `<div class="note">依赖：${d.blockedBy.map((b) => `${esc(b.identifier)} ${esc(b.title)}（${esc(STATUS[b.status] || b.status)}）`).join('；')}</div>` : ''}
+        ${d.blockedBy.length ? `<div class="note">依赖：${d.blockedBy.map((b) => `${esc(b.identifier)} ${esc(b.title)}（${statusBadge(b.status)}）`).join('；')}</div>` : ''}
         ${openDeps.length ? `<div class="warnbox">⚠️ 依赖还没完成：${openDeps.map((b) => esc(b.identifier)).join('、')}。现在派发，负责人很可能会卡住。</div>` : ''}
         ${pre >= 0 ? `<div class="warnbox md">${md(d.description.slice(pre, pre + 1200))}</div>` : ''}
         <details><summary class="note">看完整任务说明</summary><div class="fold md">${md(d.description)}</div></details>
-        <label class="fl">交给</label><select id="dWho2">${agentOptions({ money: d.money, pick: agentId })}</select>
+        <label class="fl">交给</label>
+        <input type="text" id="dWhoFind2" class="one" placeholder="${AGENT_FIND}" autocomplete="off">
+        <select id="dWho2">${agentOptions({ money: d.money, pick: agentId })}</select>
+        <div class="note" id="dWhoNone2" role="status" hidden>没有匹配的同事</div>
         ${d.money ? '<div class="note">资金类：只列出 GoSenior / DBEngineer。</div>' : ''}
         <div class="actions"><button class="btn gold" id="dAssign">${openDeps.length ? '依赖未完成，仍然派发' : '指派并开始'}</button></div>`
       const b = out.querySelector('#dAssign')
+      const find2 = out.querySelector('#dWhoFind2')
+      wireAgentSearch({
+        find: find2, select: out.querySelector('#dWho2'), none: out.querySelector('#dWhoNone2'), submit: b,
+        selected: agentId || null, choices: (query) => choicesFor({ money: d.money, pick: agentId, query }),
+      })
+      if (!agentId) find2.focus()
       b.onclick = async () => {
         if ((openDeps.length || pre >= 0) && !b.dataset.sure) { // 有依赖或开工前提时，先提示一次，再点才派发
           b.dataset.sure = '1'
@@ -568,11 +642,12 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         <div class="today-foot">数据来自 Paperclip 实时记录；金边时间${since}</div>
       </div>`
   }
-  function card(kind, head, title, meta, onClick, projectId, badge) {
+  // headTail 与 badge 一样是本文件自己生成的 HTML 片段（状态标签），不接受外部文字；head / title / meta 仍然照旧转义。
+  function card(kind, head, title, meta, onClick, projectId, badge, headTail) {
     const k = KIND[kind]
     const el = document.createElement('div')
     el.className = `card ${kind}`
-    el.innerHTML = `<div class="ic">${k.icon}</div><div class="t"><div class="k">${projTag(projectId)}${esc(head)}</div><div class="ti">${esc(title)}</div><div class="m">${esc(meta)}</div>${badge || ''}</div><div class="go">${k.go}</div>`
+    el.innerHTML = `<div class="ic">${k.icon}</div><div class="t"><div class="k">${projTag(projectId)}${esc(head)}${headTail || ''}</div><div class="ti">${esc(title)}</div><div class="m">${esc(meta)}</div>${badge || ''}</div><div class="go">${k.go}</div>`
     el.onclick = onClick
     return el
   }
@@ -1175,7 +1250,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       if (!tasks.length) tl.innerHTML = '<div class="empty">当前没有已派发的任务</div>'
       const contractBadge = (identifier) => { const v = (s.contractView?.items || []).find((x) => String(x.identifier) === String(identifier)); if (!v) return ''; const label = v.state === 'complete' ? '契约：完整' : v.state === 'incomplete' ? `契约：缺 ${v.errors.length} 项` : '契约：无'; const tip = v.errors.map((x) => `${x.field} / ${x.code}`).join('\n') || label; return `<span class="contract-badge" title="${esc(tip)}" style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:10.5px;line-height:1.6;color:var(--muted);border:1px solid var(--line)">${esc(label)}</span>` }
       for (const t of tasks) {
-        tl.appendChild(card('task', `${t.id} · ${STATUS[t.status] || t.status}`, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id)))
+        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
       }
     },
   }

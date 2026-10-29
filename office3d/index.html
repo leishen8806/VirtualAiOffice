@@ -123,6 +123,18 @@
   .card.task .ic { background:rgba(182,154,100,.18); } .card.task .k { color:var(--gold2); }
   .empty { color:var(--muted); padding:8px 6px; }
 
+  /* 任务状态彩色标签：任务列表卡片、任务详情 meta 行、「交给」窗口依赖共用。颜色只用现有主题色
+     （--bad 红 / --ok 绿 / --warn 琥珀 / --info 蓝），文字取同色系的浅色以保证深色背景下的对比度；
+     颜色之外始终保留中文状态名，色盲或单色显示时同样可读。未知状态只走 .st-badge 的默认文字色。 */
+  .st-badge { display:inline-block; padding:0 7px; border-radius:6px; font-size:10.5px; font-weight:700; letter-spacing:.3px; white-space:nowrap; vertical-align:1px; color:var(--text); background:rgba(255,255,255,.06); border:1px solid var(--line); }
+  .st-badge.st-blocked { color:#ffb4b4; background:rgba(255,93,93,.18); border-color:rgba(255,93,93,.5); }
+  .st-badge.st-in_progress { color:#8fe8b8; background:rgba(53,208,127,.18); border-color:rgba(53,208,127,.5); }
+  .st-badge.st-in_review { color:#ffcf6b; background:rgba(255,176,32,.18); border-color:rgba(255,176,32,.5); }
+  .st-badge.st-todo { color:#bcd6ff; background:rgba(111,168,255,.2); border-color:rgba(111,168,255,.5); }
+  .st-badge.st-backlog { color:var(--muted); background:rgba(163,167,176,.14); border-color:rgba(163,167,176,.4); }
+  .st-badge.st-done { color:#9fd8b8; background:rgba(53,208,127,.1); border-color:rgba(53,208,127,.32); }
+  .st-badge.st-cancelled { color:var(--muted); background:rgba(163,167,176,.1); border-color:rgba(163,167,176,.32); text-decoration:line-through; }
+
   /* 底部：镜头坞 + 工具 */
   /* 底部栏：左边工具栏、右边镜头坞，放在同一个横向容器里——镜头坞只占工具栏之外剩下的宽度，放不下就横向滚动，结构上不可能叠在一起；窄屏时镜头坞放到工具栏上一行 */
   #bottombar { position:fixed; z-index:6; left:14px; right:14px; bottom:14px; display:flex; gap:12px; align-items:center; pointer-events:none; }
