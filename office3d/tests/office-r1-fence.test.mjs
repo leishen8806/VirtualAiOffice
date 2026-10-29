@@ -47,13 +47,13 @@ test('FENCE R2 modern copper fins and strips retain the wall band and approved s
 
 }))
 
-test('FENCE real collision retains all 618 samples and blocks exterior-to-interior movement every 0.25m',()=>scene(({layout,collision,root})=>{
+test('FENCE real collision retains all 624 samples and blocks exterior-to-interior movement every 0.25m',()=>scene(({layout,collision,root})=>{
  let samples=0,pushes=0
  for(const wall of layout.r1.data.walls)for(let i=1;i<wall.geometry.points.length;i++){
   const a=wall.geometry.points[i-1],b=wall.geometry.points[i]
   for(const t of [.25,.5,.75]){assert.ok(collision.hit(a[0]+(b[0]-a[0])*t-26,18-a[1]-(b[1]-a[1])*t));samples++}
  }
- assert.equal(samples,618)
+ assert.equal(samples,624)
  for(const ids of [['00-W-005','00-W-006','00-W-009'],['00-W-010','00-W-007','00-W-008']]){
   const path=ids.flatMap((id,i)=>layout.r1.data.walls.find(w=>w.id===id).geometry.points.slice(i?1:0)),segs=[];let total=0
   for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);segs.push({a,b,l,s:total});total+=l}

@@ -46,8 +46,19 @@ test('AS2-0 output directories contain only registered textures for their produc
   for (const [line, directory] of Object.entries(locations)) {
     const actual = (await readdir(path.join(root, 'assets', 'textures', directory))).sort()
     const registered = manifest.textures.filter((entry) => entry.productLine === line).map((entry) => path.basename(entry.outputFile)).sort()
+    // LOOK R2 approves one additional owned atlas; the original fourteen AS2 entries stay frozen.
+    if (line === 'office') {
+      const office = JSON.parse(await readFile(path.join(root, 'office-vis2', 'MANIFEST.json'), 'utf8'))
+      const atlas = office.textures.find(entry => entry.file === 'assets/textures/office-v2/leaf-atlas-v2.png')
+      assert.ok(atlas)
+      const bytes = await readFile(path.join(root, atlas.file))
+      assert.equal(sha256(bytes), 'ABB107B0C9731E2351D17FF5FAE512D3D59007592630F8A453970FAE7EF53934')
+      assert.equal(atlas.sha256, sha256(bytes))
+      assert.deepEqual(dimensions(bytes), { width: 1774, height: 887 })
+      registered.push('leaf-atlas-v2.png'); registered.sort()
+    }
     assert.deepEqual(actual, registered)
-    assert.equal(actual.length, 7)
+    assert.equal(actual.length, line === 'office' ? 8 : 7)
     for (const entry of manifest.textures.filter((item) => item.productLine === line)) {
       assert.equal(entry.outputFile.startsWith(`assets/textures/${directory}/`), true, entry.outputFile)
     }

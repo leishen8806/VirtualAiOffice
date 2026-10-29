@@ -144,7 +144,7 @@ sun.shadow.bias = -0.0004
 sun.shadow.normalBias = 0.03
 sun.shadow.radius = 3
 scene.add(sun)
-const fill = new THREE.DirectionalLight(0xa9bfff, 0.35)
+const fill = new THREE.DirectionalLight(OFFICE_LAYOUT.r1Phase === 'R1' ? 0xffe6c8 : 0xa9bfff, OFFICE_LAYOUT.r1Phase === 'R1' ? .22 : .35)
 fill.position.set(18, 12, -10)
 scene.add(fill)
 
@@ -746,7 +746,7 @@ if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
 
-let latestState = null, foyerData = null, milestoneData = null
+let latestState = null, foyerData = null, milestoneData = null, dailyBoard = null
 function paintFoyerPanel(id, title, lines, visible = true) {
   const panel = foyerPanels.get(id)
   if (!panel) return
@@ -1008,6 +1008,7 @@ let selectedId = null
 let NAMES = {}
 function applyState(s) {
   latestState = s
+  updateR1WallScreen() // R1 会议室大屏：只用 today / agents / names 和 /daily 的完成列表
   if (LAYOUT3_MODE && (!OFFICE_SAMPLE_MODE || !officeV3?.get('furniture3')?.deskAt)) { NAMES = s.names || {}; updateFoyerPanels(); ui.render(s); return }
   NAMES = s.names || {}
   gossipThreads = s.gossip || []
@@ -2118,6 +2119,25 @@ async function pollMilestones() {
   updateFoyerPanels()
 }
 
+function updateR1WallScreen() {
+  if (OFFICE_LAYOUT.r1Phase !== 'R1' || !latestState) return
+  officeV3?.get('r1Brand')?.updateWallScreen?.(latestState, dailyBoard)
+}
+
+// 今日完成列表只给 R1 的会议室大屏用：页面可见时每 60 s 一次，读不到就保留上一帧。
+async function pollDailyBoard() {
+  if (document.hidden || OFFICE_LAYOUT.r1Phase !== 'R1') return
+  try {
+    const response = await fetch('/daily', { cache: 'no-store' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    dailyBoard = await response.json()
+  } catch (error) {
+    if (!pollDailyBoard.warned) { pollDailyBoard.warned = true; console.warn(`[r1-wall-screen] 今日完成读取失败，保留上一帧：${error.message}`) }
+    return
+  }
+  updateR1WallScreen()
+}
+
 async function poll() {
   try {
     const r = await fetch('/state', { cache: 'no-store' })
@@ -2171,10 +2191,11 @@ if (DR_MODE) {
 } else {
   poll().finally(()=>{if(!sceneQuality.prepared){sceneQuality.prepare(startupQualityPlan.current);applyQuality();qualityMetrics.qualityReadyMs=performance.now()-APP_STARTED}})
   setInterval(poll, POLL_MS)
-  pollFoyer(); pollMilestones()
+  pollFoyer(); pollMilestones(); pollDailyBoard()
   setInterval(pollFoyer, 30_000)
   setInterval(pollMilestones, 30_000)
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollFoyer(); pollMilestones() } })
+  setInterval(pollDailyBoard, 60_000)
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollFoyer(); pollMilestones(); pollDailyBoard() } })
 }
 if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时忽略）
   const rp = new URLSearchParams(location.search).get('replay')

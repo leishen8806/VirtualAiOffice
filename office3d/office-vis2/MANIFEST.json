@@ -58,6 +58,20 @@
       "generationModel": "unknown",
       "exactPerImagePrompt": "unknown",
       "usage": "tinted woven seating"
+    },
+    {
+      "file": "assets/textures/office-v2/leaf-atlas-v2.png",
+      "bytes": 1480608,
+      "sha256": "ABB107B0C9731E2351D17FF5FAE512D3D59007592630F8A453970FAE7EF53934",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "source": "Board-approved 2026-10-22 owned tropical leaf atlas; copied byte-for-byte from E:/VirtualAIOffice/paperclip-ops/asset-intake/gpt-textures/office/office-leaf-atlas-v2.png under OFFICE-R1-LOOK R2",
+      "licenseAsRecorded": "AI generated on board account; approved owned asset, no external download",
+      "usage": "R1 added Monstera, fiddle-leaf fig, money tree, variegated pothos; alphaTest .45",
+      "generationModel": "unknown",
+      "exactPerImagePrompt": "unknown"
     }
   ],
   "brandAsset": {
@@ -266,28 +280,28 @@
       "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "D98628AB51223B1AA376101238DA7BAF511F85DFFB386177591E17E225B482E7"
+      "sha256": "C2777AFD0FCF4141872A8467757C0BF6D23EB177E4AB487ED5CEC6A118CEF88D"
     },
     {
       "file": "office-vis2/r1-site.js",
       "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "84BA97EC3958C31C2CA3BBBA2FB270F8B18B5FD9EE20E06B58DEEBAD9653245B"
+      "sha256": "6E10EB19BBE4EDE9C0ED241BB1E390F2B98C8238468E942ACC386256A1B4B78D"
     },
     {
       "file": "office-vis2/r1-furniture.js",
-      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; no downloaded assets",
+      "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "44F4D71C48652902DB9643A414F4037962D56C740961C48423CC19FE1C39B622"
+      "sha256": "7AFD8D60E0DABDE0B0F7A81285815F88704881796F751DE4A581D0339291C625"
     },
     {
       "file": "office-vis2/r1-zones.js",
       "source": "OFFICE-R1-I2 R1-only data-driven floor-zone marks and labels; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "70D3F6E2C3B64539E52A8DD9B25B93C5714D1BFB516C950D6168D60C732F2F58"
+      "sha256": "674185729E2D74442DF0C47A6474B93F599004D351255FD1D8BB238ACF56C423"
     },
     {
       "file": "office-vis2/r1-island.js",
@@ -301,14 +315,14 @@
       "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "09414FA04257D2C9FAA042F49619839A1C1F6CFB45C8B9C1C00788A39AA21CCB"
+      "sha256": "633AA26D79B91D8C9E98163FF1FD9E0A17FAF5E8AADD48D659E3EEA629333DE7"
     },
     {
       "file": "office-vis2/r1-doors.js",
       "source": "R1 registered procedural r1-doors; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "69152743DBB387EBA3654A57CE5E90E5AE151B30567558C21798E667AB2F6C93"
+      "sha256": "49632C10D357E1B7429E0AEA786A44D5FBA6917C27377649AF85CC65D5E1ADA0"
     },
     {
       "file": "office-vis2/r1-lounge.js",
@@ -326,24 +340,31 @@
     },
     {
       "file": "office-vis2/r1-plaza.js",
-      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; OFFICE-R1-FOOD adds the four themed stall food displays and one shared Canvas price-board atlas, reusing the procedural food shapes from r1-island.js; procedural geometry and canvas text only, no downloaded assets",
+      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; OFFICE-R1-FOOD adds the four themed stall food displays and one shared Canvas price-board atlas, reusing the procedural food shapes from r1-island.js; OFFICE-R1-AMBIENCE recolours the parasol canopy and truck roof cap and adds a flat DR.LIFE+ roof decal from assets/logo.png; procedural geometry and canvas text only, no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "2D43160D3FC351C37FC96801CFF18A7A894DAEB39E9B6974C1EF3339D898EBBC"
+      "sha256": "7A96D21282C98088F33EE672AABB29D0005CF07B6E3F8C8BCD510347F3861E37"
     },
     {
       "file": "office-vis2/r1-lights.js",
       "source": "R1-only procedural zone and plaza lighting; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "043345D77C576A092F91480766D8A434B4939FB29C549FA8F338DDB6EB231B2F"
+      "sha256": "122C98078AAAA389FD5615106473FB0CD8B21A1693905CF546B955C5DB490B7C"
     },
     {
       "file": "office-vis2/r1-brand.js",
-      "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; reuses the existing assets/logo.png; no downloaded assets",
+      "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; OFFICE-R1-AMBIENCE adds the courtyard-face emblem and planter, seven room nameplates, the gate welcome inlay, the meeting-room wall screen and the three reserved-seat desk plates, all procedural canvas art; reuses the existing assets/logo.png and the office-vis2 leaf geometry; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "B7E478699114D9236AA4ED2E90EC01F35D61F0F185F911AD10B570EDEAA53974"
+      "sha256": "1A471D36910858F4303E3E0ED21C28791655A0525F177CFEB031F0115C2588E4"
+    },
+    {
+      "file": "office-vis2/r1-look.js",
+      "source": "R1-only procedural marble, registered-centre floor inlay and supplemental plant positions; existing leaf assets; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "0D863B8397F44D3094B6142CB5C12EFF109F5697AE1BA220FD38EFBAE70E97A9"
     },
     {
       "file": "office-vis2/r1-fountain.js",
@@ -351,6 +372,27 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "2740994857181F26F6B9AE4F2A5B23316EE5A75C34312A3794C60F1DB2E6DD43"
+    },
+    {
+      "file": "office-vis2/r1-dense-garden.js",
+      "source": "R1-only merged tropical pots, alpha-tested approved atlas leaves and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": true,
+      "sha256": "2C69F8AFCAB3C454D15F2BDCD1DD98E341A64020B95DD25D1832DA4302D27A38"
+    },
+    {
+      "file": "office-vis2/r1-landscape-plan.js",
+      "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors and door sweeps; no source-register changes",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "7105D38D6CD274754193A931B548D441AE8D3CAF60C2AD8707B418AF7A2B42B1"
+    },
+    {
+      "file": "office-vis2/r1-tropical.js",
+      "sha256": "8D98A29F0C91D5AC8F6168968F12799371C1D844CC460DE313E55F8A4DDFA610",
+      "source": "OFFICE-R1-LOOK R2: six indoor tropical species and four plaza species; deterministic procedural geometry and approved alpha atlas",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": true
     }
   ],
   "excluded": {

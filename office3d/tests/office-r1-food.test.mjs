@@ -236,7 +236,8 @@ test('FD-4 吧台与广场各只多一个绘制批次，两档新增三角都在
     plaza.root.traverse(object => { if (object.isMesh && object !== plaza.fountain.proxy && !plaza.fountain.root.getObjectById(object.id)) plazaMeshes.push(object.name) })
     // 食物与设备并进既有合批（+0 calls）；唯一的新批次是吧台玻璃和广场价目牌面（+2 calls 合计）。
     assert.deepEqual(barMeshes.sort(), ['r1-island-glass', 'r1-island-surfaces'], `low=${low}`)
-    assert.deepEqual(plazaMeshes.sort(), ['r1-plaza-stall-boards', 'r1-plaza-surfaces'], `low=${low}`)
+    // r1-plaza-logo-decals 是 OFFICE-R1-AMBIENCE 的伞面 / 车顶标志批次，不算本卡新增。
+    assert.deepEqual(plazaMeshes.sort(), ['r1-plaza-logo-decals', 'r1-plaza-stall-boards', 'r1-plaza-surfaces'], `low=${low}`)
     const triangles = bar.props.reduce((sum, record) => sum + record.triangles, 0) + plaza.props.reduce((sum, record) => sum + record.triangles, 0)
     counts[low ? 'low' : 'high'] = triangles
     assert.ok(triangles <= 40000, `low=${low} 新增三角 ${triangles}`)

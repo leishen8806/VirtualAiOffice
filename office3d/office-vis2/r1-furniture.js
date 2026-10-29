@@ -1,4 +1,4 @@
-import { r1ToWorld } from '../office-r1-layout.js'
+import { r1ToWorld, isReservedDesk } from '../office-r1-layout.js'
 import { monitorScreenFit, workstationDesktop } from '../office-furniture-v2.js'
 
 const FURNITURE = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'])
@@ -183,10 +183,14 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
       const pad = new THREE.Mesh(new THREE.BoxGeometry(.82, .012, .38)); pad.userData.r1Id = `${item.id}/pad`
       pad.position.set(world.x + c * .08 + s * .15, .756, world.z - s * .08 + c * .15); pad.rotation.y = yaw
       bake(THREE, buckets, pad, 'wood', new THREE.Color(COLOR.dark)); details.push({ id: `${item.id}/pad`, bounds: new THREE.Box3().setFromObject(pad) }); pad.geometry.dispose()
-      const choice = [...item.id].reduce((sum, value) => sum + value.charCodeAt(0), 0) % 3
-      if (choice === 0) prop('small', 'books', .55, -.17, .18, .06, .24)
-      if (choice === 1) prop('small', 'lampRoundTable', -.55, -.18, .18, .35, .18)
-      if (choice === 2) prop('small', 'plantSmall1', .55, -.18, .18, .24, .18)
+      // 预留座位（补充 R2，董事会 2026-10-29 授权）：这三张桌子不放个人物品，
+      // 显示器、键盘、鼠标与鼠标垫照常保留，桌面只少这一件散件。
+      if (!isReservedDesk(item.id)) {
+        const choice = [...item.id].reduce((sum, value) => sum + value.charCodeAt(0), 0) % 3
+        if (choice === 0) prop('small', 'books', .55, -.17, .18, .06, .24)
+        if (choice === 1) prop('small', 'lampRoundTable', -.55, -.18, .18, .35, .18)
+        if (choice === 2) prop('small', 'plantSmall1', .55, -.18, .18, .24, .18)
+      }
       desktopItems.set(item.id, details); continue
     }
     if (item.category === '圆桌') {
