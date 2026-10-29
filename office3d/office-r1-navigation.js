@@ -697,9 +697,10 @@ export function createR1Navigation(layout) {
     const meet = id => { const length = costs[id] + backCosts[id]; if (length < best) { best = length; meeting = id } }
     for (const [id] of starts) meet(id)
     const trim = (heap, done, distances) => { while (heap.rows.length && (done[heap.ids[0]] || heap.gs[0] > distances[heap.ids[0]])) heap.pop() }
+    // Stop at a certified 2% grid bound; independent any-angle acceptance remains capped at 5%.
     while (open.rows.length && backOpen.rows.length) {
       trim(open, closed, costs); trim(backOpen, backClosed, backCosts)
-      if (!open.rows.length || !backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best - 1e-9) break
+      if (!open.rows.length || !backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.02 - 1e-9) break
       // Alternate equal-cost frontiers so a broad open side cannot monopolize expansion.
       const reverse = (turn++ & 1) === 1, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
       const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; meet(id)
