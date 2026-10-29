@@ -378,7 +378,7 @@
       "source": "R1-only merged tropical pots, alpha-tested approved atlas leaves and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": true,
-      "sha256": "328430ACFE4CD06F4659231C79A794337C985BE0EB312572C7398AF23231FF8C"
+      "sha256": "2C69F8AFCAB3C454D15F2BDCD1DD98E341A64020B95DD25D1832DA4302D27A38"
     },
     {
       "file": "office-vis2/r1-landscape-plan.js",

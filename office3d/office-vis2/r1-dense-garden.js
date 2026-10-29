@@ -25,7 +25,7 @@ export function buildR1DenseGarden({ THREE, root, layout, collision, quality, lo
   const tiers = new Map(), proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
   let current, disposed = false
   function build(lowTier) {
-    const plan = lookOnly ? { plants: r1LookPlantPositions.map(([id,zone,x,z])=>({id,zone,x,z,r:.6,kind:'medium'})), troughs: [], gardens: [] } : r1DensePlan(layout, lowTier), host = new THREE.Group(), batch = createSampleBatch(THREE), beds = createSampleBatch(THREE), records = [], proxies = []
+    const plan = lookOnly ? { plants: r1LookPlantPositions.map(([id,zone,x,z])=>({id,zone,x,z,r:.6,kind:'medium'})), troughs: [], gardens: [] } : r1DensePlan(layout, lowTier), host = new THREE.Group(), batch = createSampleBatch(THREE), beds = batch, records = [], proxies = []
     const leaves = tropicalLeafBatch(THREE)
     const proxy = (row, geometry, y) => {
       const mesh = new THREE.Mesh(geometry, proxyMaterial); mesh.name = row.id
@@ -43,7 +43,7 @@ export function buildR1DenseGarden({ THREE, root, layout, collision, quality, lo
         geometry.rotateY(yaw); geometry.translate(...position); geometry.computeBoundingBox(); box.union(geometry.boundingBox)
         parts.push({ geometry, color: ['#D5B2AE', '#E7D7AA'].includes(color) ? ['#B94E54', '#D992AE', '#E2C65F', '#F1E8D7'][index % 4] : color, roughness, metalness })
       } }
-      appendOfficeGardenBed({ THREE, batch: capture, bed: { x: 0, z: 0, w: Math.max(.9, row.w), d: Math.max(.9, row.d) }, low: lowTier, seed: index + 31, organic: !trough })
+      appendOfficeGardenBed({ THREE, batch: capture, leafBatch: { add: (...args) => capture.add(...args) }, bed: { x: 0, z: 0, w: Math.max(.9, row.w), d: Math.max(.9, row.d) }, low: lowTier, seed: index + 31, organic: !trough })
       const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3()), measured = new THREE.Box3()
       let radialScale = 1, area = 0
       if (!trough) {
@@ -68,10 +68,10 @@ export function buildR1DenseGarden({ THREE, root, layout, collision, quality, lo
       }
       if (trough) { beds.add(new THREE.BoxGeometry(row.w, .35, row.d), '#C5BCA9', [row.x, .175, row.z]); proxy(row, new THREE.BoxGeometry(row.w, .35, row.d), .175) }
       else proxy(row, new THREE.CylinderGeometry(row.w / 2, row.w / 2, .18, 32), .09)
-      records.push({ ...row, species, area, startVertex, vertexCount: beds.triangles() * 3 - startVertex, batch: 'beds', renderHeight: measured.max.y, kind: trough ? 'trough' : 'flowerbed', bounds: measured, collision: 'ordinary Mesh', flowerColor: ['#B94E54', '#D992AE', '#E2C65F', '#F1E8D7'][index % 4] })
+      records.push({ ...row, species, area, startVertex, vertexCount: beds.triangles() * 3 - startVertex, batch: 'pots', renderHeight: measured.max.y, kind: trough ? 'trough' : 'flowerbed', bounds: measured, collision: 'ordinary Mesh', flowerColor: ['#B94E54', '#D992AE', '#E2C65F', '#F1E8D7'][index % 4] })
     }
     const built = [batch.build(host, 'r1-dense-pots'), leaves.build(host,'r1-tropical-leaves')]
-    if (!lookOnly) built.push(beds.build(host, 'r1-dense-beds'))
+    // Pots and beds share one opaque material; two-sided foliage needs no duplicate reverse triangles.
     built.forEach(b => { b.mesh.material.side = THREE.DoubleSide; b.mesh.userData.itemIds = records.map(r => r.id); b.mesh.castShadow = false })
     host.name = lowTier ? 'r1-dense-low' : 'r1-dense-high'; group.add(host)
     return { root: host, plan, records, proxies, built }
