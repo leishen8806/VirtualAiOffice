@@ -124,24 +124,28 @@ const FACE_CAMERAS = {
   '02-screen': [['会议人眼', -13.5, 1.65, -19], ['会议近景', -13.5, 3.6, -18]],
 }
 
-// 把装饰包围盒的角点沿机位射线投到展示面所在平面上，返回落点的横向 / 竖向范围；全部角点都在机位
-// 之后或面之后时返回 null（不可能遮挡）。角点跨过机位平面时按「可能遮挡」处理，交给调用方判定。
+// 把装饰包围盒的角点沿机位射线投到展示面所在平面上，返回落点的横向 / 竖向范围。
+// 只有落在「机位与展示面之间」这层板里的角点才可能遮挡：角点在面之后（dCorner <= 0）或在机位之后
+// （dCorner >= dCamera）都跳过；全部角点都被跳过就返回 null。
+// 盒子横跨机位平面时，剩下那部分的投影并不等于「在板内的角点」的凸包，这个算法会算少，所以单独记一个
+// straddle 标志让调用方直接判失败，而不是悄悄放过——本场景的装饰没有一件横跨机位平面（见 SL-B 的断言）。
 function projectToFace(face, camera, box) {
   const lateralOf = point => face.lateral === 'x' ? point.x : point.z
   const alongOf = point => face.axis === 'x' ? point.x : point.z
   const depth = point => (alongOf(point) - face.face) * face.sign
   const dCamera = depth(camera)
   if (dCamera <= 0) return null
-  let lateral0 = Infinity, lateral1 = -Infinity, y0 = Infinity, y1 = -Infinity, hits = 0
+  let lateral0 = Infinity, lateral1 = -Infinity, y0 = Infinity, y1 = -Infinity, hits = 0, behind = 0
   for (const sx of [box.min.x, box.max.x]) for (const sy of [box.min.y, box.max.y]) for (const sz of [box.min.z, box.max.z]) {
     const corner = new THREE.Vector3(sx, sy, sz), dCorner = depth(corner)
-    if (dCorner <= 0 || dCorner >= dCamera) continue
+    if (dCorner >= dCamera) { behind++; continue }
+    if (dCorner <= 0) continue
     const t = dCamera / (dCamera - dCorner)
     const hit = new THREE.Vector3().copy(camera).lerp(corner, t)
     lateral0 = Math.min(lateral0, lateralOf(hit)); lateral1 = Math.max(lateral1, lateralOf(hit))
     y0 = Math.min(y0, hit.y); y1 = Math.max(y1, hit.y); hits++
   }
-  return hits ? { lateral0, lateral1, y0, y1 } : null
+  return hits ? { lateral0, lateral1, y0, y1, straddle: behind > 0 } : null
 }
 
 const r1Fun = () => {
@@ -174,6 +178,7 @@ test('SL-B 规则 D：节日装饰在常用机位下的投影不压标志、标�
       for (const { mesh, box } of meshes) {
         const shadow = projectToFace(face, camera, box)
         if (!shadow) continue
+        assert.equal(shadow.straddle, false, `${style} / ${face.id} / ${name} 机位：装饰 ${mesh.name || mesh.geometry.type} 横跨机位平面，本投影算法会算少，需要先把它挪开或换算法`)
         const hit = shadow.lateral0 < face.span[1] && face.span[0] < shadow.lateral1 && shadow.y0 < face.y[1] && face.y[0] < shadow.y1
         assert.ok(!hit, `${style} / ${face.id} / ${name} 机位：装饰 ${mesh.name || mesh.geometry.type} 的投影 横向 ${shadow.lateral0.toFixed(2)}..${shadow.lateral1.toFixed(2)} 竖向 ${shadow.y0.toFixed(2)}..${shadow.y1.toFixed(2)} 压住展示内容 横向 ${face.span[0].toFixed(2)}..${face.span[1].toFixed(2)} 竖向 ${face.y[0].toFixed(2)}..${face.y[1].toFixed(2)}`)
       }
