@@ -185,8 +185,9 @@ test('RC-7 the brand backdrop covers the whole 00-W-036 entrance face and the th
     near(light.intensity, 10, MM)
   })
   // 不做可见灯具、光锥、墙面光斑：高档下除这 3 个网格外没有别的几何（标志贴图未加载时自身隐藏）。
+  // CMP-624 的氛围五项挂在同一模块里，统一用 r1-ambience- 前缀，和入口面的品牌件分开计数。
   const meshes = []
-  module.root.traverse(node => { if (node.isMesh) meshes.push(node.name) })
+  module.root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) meshes.push(node.name) })
   assert.deepEqual(meshes.sort(), ['r1-brand-logo', 'r1-brand-panel', 'r1-brand-slogan'])
   module.dispose(); assert.equal(root.children.length, 0)
 })
@@ -223,15 +224,15 @@ test('RC-10 the low tier drops the real spotlights for a glow texture and a miss
   const glow = low.module.root.getObjectByName('r1-brand-glow')
   assert.ok(glow?.isMesh, '低档应叠一张光晕贴图')
   assert.equal(glow.material.blending, THREE.AdditiveBlending)
-  // 两档合批：高档 3 个网格，低档 4 个。
-  const count = root => { let n = 0; root.traverse(node => { if (node.isMesh) n++ }); return n }
+  // 两档合批：入口面高档 3 个网格，低档 4 个（CMP-624 的氛围件另算，前缀 r1-ambience-）。
+  const count = root => { let n = 0; root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) n++ }); return n }
   assert.equal(count(low.module.root), 4)
   const high = brand()
   assert.equal(count(high.module.root), 3)
   // 两档三角数都要很小（≤ 200）。
   for (const built of [low, high]) {
     let triangles = 0
-    built.module.root.traverse(node => { if (node.isMesh) triangles += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 })
+    built.module.root.traverse(node => { if (node.isMesh && !node.name.startsWith('r1-ambience-')) triangles += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 })
     assert.ok(triangles <= 200, `三角数 ${triangles} 应 ≤ 200`)
   }
   // 标志贴图加载失败时不抛错，黑底、标语都还在，标志网格隐藏。
