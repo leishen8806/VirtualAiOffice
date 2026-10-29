@@ -375,9 +375,9 @@
     },
     {
       "file": "office-vis2/r1-dense-garden.js",
-      "source": "R1-only merged pottedPlant leaf layers and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
+      "source": "R1-only merged tropical pots, alpha-tested approved atlas leaves and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
-      "photographicTexture": false,
+      "photographicTexture": true,
       "sha256": "328430ACFE4CD06F4659231C79A794337C985BE0EB312572C7398AF23231FF8C"
     },
     {
