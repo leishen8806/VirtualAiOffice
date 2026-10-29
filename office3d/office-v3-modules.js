@@ -117,6 +117,8 @@ const isInside = (p, box, pad = 0) => p.x >= box.x0 - pad && p.x <= box.x1 + pad
 export function selectEnvironmentConflicts(environmentRoots, layout) {
   const site = layout?.site
   if (!site) return []
+  // align 和 R1 都要在判定前量一次没缓存的几何，否则整块 2,400 m 世界草地会因为拿不到包围盒被当成局部冲突删掉。
+  const measureFirst = layout.variant === 'align' || layout.variant === 'r1' || layout.r1Phase === 'R1'
   return [...(environmentRoots || [])].filter((object) => {
     if (!object || object.isLight || object.isCamera || object.userData?.dynamic || isEnvironmentBackdrop(object)) return false
     const name = String(object.name || '').toLowerCase()
@@ -124,7 +126,7 @@ export function selectEnvironmentConflicts(environmentRoots, layout) {
     const p = worldPosition(object)
     if (!isInside(p, site, Number(layout.greenBuffer?.width) || 0)) return false
     if (object.isGroup) return true // 环境树 / 棕榈树等局部组
-    if (layout.variant === 'align' && !object.geometry?.boundingBox) object.geometry?.computeBoundingBox?.()
+    if (measureFirst && !object.geometry?.boundingBox) object.geometry?.computeBoundingBox?.()
     const box = object.geometry?.boundingBox
     if (!box) return true
     const w = Math.abs((box.max.x - box.min.x) * (object.scale?.x || 1))
