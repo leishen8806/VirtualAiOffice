@@ -40,7 +40,7 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
   const potHeight=plaza?0:row.species==='花叶绿萝'?.55:height>1.3?.42:.22
   const add=(g,c,pos=[0,0,0])=>{g.translate(...pos);parts.push({g,c})}
   const stem=(a,b,r=.018,color='#75654E')=>{
-    const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),d=bv.clone().sub(av),g=new THREE.CylinderGeometry(r*.65,r,d.length(),5)
+    const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),d=bv.clone().sub(av),g=new THREE.CylinderGeometry(r*.65,r,d.length(),4)
     g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()));add(g,color,av.add(bv).multiplyScalar(.5).toArray())
   }
   // Folded lance leaves give palms and snake plants an actual silhouette, not a crown sphere.
@@ -52,7 +52,7 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
     if(edge){stem(a.toArray(),m.clone().add(side).toArray(),.008,'#D3BE58');stem(m.clone().add(side).toArray(),b.toArray(),.006,'#D3BE58')}
   }
   const leaf=(tile,x,y,z,w,h,yaw,lean)=>{
-    const g=new THREE.PlaneGeometry(w,h,2,3),p=g.attributes.position,uv=g.attributes.uv,rects=[[0,535],[535,925],[925,1455],[1455,1774]],rect=rects[tile]
+    const g=new THREE.PlaneGeometry(w,h,1,3),p=g.attributes.position,uv=g.attributes.uv,rects=[[0,535],[535,925],[925,1455],[1455,1774]],rect=rects[tile]
     for(let i=0;i<p.count;i++){p.setZ(i,.08*Math.sin(uv.getY(i)*Math.PI));uv.setXY(i,(rect[0]+uv.getX(i)*(rect[1]-rect[0]))/1774,.12+uv.getY(i)*.72)}
     g.computeVertexNormals();g.rotateX(lean);g.rotateY(yaw);g.translate(x,y,z);leafParts.push({g,c:new THREE.Color().setHSL(.22+rng()*.06,.18,.78+rng()*.12)})
   }
