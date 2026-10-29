@@ -48,6 +48,13 @@ const KIND = {
   task: { icon: '🛠️', label: '', go: '查看' },
 }
 const STATUS = { todo: '待开始', in_progress: '进行中', in_review: '待验收', blocked: '阻塞', done: '已完成', backlog: '待排期', cancelled: '已取消' }
+// 任务状态标签：颜色之外保留中文状态文字（色盲友好），配色见 index.html 的 .st-badge（用现有 --ok/--warn/--bad/--info 主题色）。
+// 只有 STATUS 里已知的状态才带状态类，未知状态只给默认文字色——这样服务端返回的任意字符串不会进到 class 属性里。
+export function statusBadge(status) {
+  const key = String(status ?? '')
+  const known = Object.prototype.hasOwnProperty.call(STATUS, key)
+  return `<span class="st-badge${known ? ` st-${key}` : ''}">${esc(known ? STATUS[key] : key)}</span>`
+}
 export function staleView(stale) {
   const active = stale?.active === true, minutes = Number.isFinite(stale?.ageMs) ? Math.max(0, Math.floor(stale.ageMs / 60000)) : null
   return { active, text: !active ? '' : stale.reason === 'STALE_DATA' ? `数据已过期 ${minutes === null ? '时间未知' : `${minutes} 分钟`}` : `数据来自 ${minutes === null ? '时间未知' : `${minutes} 分钟前`} · Paperclip 暂不可用` }
@@ -253,7 +260,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         <div class="note">取消后任务标为「已取消」；${esc(d.assignee || '负责人')}如果正在做，会立刻停下这次运行。需要恢复时可以在 Paperclip 里重新打开。</div>`
     }
     open(`<h2>${esc(d.identifier)} ${esc(d.title)}</h2>
-      <div class="meta">${projTag(d.projectId)}${esc(STATUS[d.status] || d.status)}${d.assignee ? ' · 负责人 ' + esc(d.assignee) : ''}</div>
+      <div class="meta">${projTag(d.projectId)}${statusBadge(d.status)}${d.assignee ? ' · 负责人 ' + esc(d.assignee) : ''}</div>
       <div class="sec">任务说明</div><div class="fold md">${md(d.description) || '<span class="note">无</span>'}</div>
       <div class="sec">最近的评论</div>${comments}${actions}`)
     const val = (id) => (modal.querySelector('#' + id) || {}).value || ''
@@ -544,7 +551,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const openDeps = d.blockedBy.filter((b) => b.status !== 'done' && b.status !== 'cancelled')
       const pre = d.description.indexOf('开工前必须满足')
       out.innerHTML = `<div class="sec">${esc(d.identifier)} ${esc(d.title)}${d.money ? ' <span class="tagm">资金类</span>' : ''}</div>
-        ${d.blockedBy.length ? `<div class="note">依赖：${d.blockedBy.map((b) => `${esc(b.identifier)} ${esc(b.title)}（${esc(STATUS[b.status] || b.status)}）`).join('；')}</div>` : ''}
+        ${d.blockedBy.length ? `<div class="note">依赖：${d.blockedBy.map((b) => `${esc(b.identifier)} ${esc(b.title)}（${statusBadge(b.status)}）`).join('；')}</div>` : ''}
         ${openDeps.length ? `<div class="warnbox">⚠️ 依赖还没完成：${openDeps.map((b) => esc(b.identifier)).join('、')}。现在派发，负责人很可能会卡住。</div>` : ''}
         ${pre >= 0 ? `<div class="warnbox md">${md(d.description.slice(pre, pre + 1200))}</div>` : ''}
         <details><summary class="note">看完整任务说明</summary><div class="fold md">${md(d.description)}</div></details>
@@ -634,11 +641,12 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         <div class="today-foot">数据来自 Paperclip 实时记录；金边时间${since}</div>
       </div>`
   }
-  function card(kind, head, title, meta, onClick, projectId, badge) {
+  // headTail 与 badge 一样是本文件自己生成的 HTML 片段（状态标签），不接受外部文字；head / title / meta 仍然照旧转义。
+  function card(kind, head, title, meta, onClick, projectId, badge, headTail) {
     const k = KIND[kind]
     const el = document.createElement('div')
     el.className = `card ${kind}`
-    el.innerHTML = `<div class="ic">${k.icon}</div><div class="t"><div class="k">${projTag(projectId)}${esc(head)}</div><div class="ti">${esc(title)}</div><div class="m">${esc(meta)}</div>${badge || ''}</div><div class="go">${k.go}</div>`
+    el.innerHTML = `<div class="ic">${k.icon}</div><div class="t"><div class="k">${projTag(projectId)}${esc(head)}${headTail || ''}</div><div class="ti">${esc(title)}</div><div class="m">${esc(meta)}</div>${badge || ''}</div><div class="go">${k.go}</div>`
     el.onclick = onClick
     return el
   }
@@ -1241,7 +1249,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       if (!tasks.length) tl.innerHTML = '<div class="empty">当前没有已派发的任务</div>'
       const contractBadge = (identifier) => { const v = (s.contractView?.items || []).find((x) => String(x.identifier) === String(identifier)); if (!v) return ''; const label = v.state === 'complete' ? '契约：完整' : v.state === 'incomplete' ? `契约：缺 ${v.errors.length} 项` : '契约：无'; const tip = v.errors.map((x) => `${x.field} / ${x.code}`).join('\n') || label; return `<span class="contract-badge" title="${esc(tip)}" style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:10.5px;line-height:1.6;color:var(--muted);border:1px solid var(--line)">${esc(label)}</span>` }
       for (const t of tasks) {
-        tl.appendChild(card('task', `${t.id} · ${STATUS[t.status] || t.status}`, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id)))
+        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
       }
     },
   }
