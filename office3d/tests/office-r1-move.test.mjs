@@ -172,14 +172,17 @@ test('a temporarily blocked departure yields its exit, restores the chair and re
     const changed = x !== dx || z !== dz || angle !== yaw; dx = x; dz = z; yaw = angle; c.poseNavigationBody(chair, home, x, z, angle); return changed
   }, chairMotion: () => ({ dx, dz, yaw }) }
   const v = { name: 'A', home, char: { group: new THREE.Group(), pose: { sit: 1, phase: 0 } } }
-  const director = createR1Director({ views: new Map([['A', v]]), layout: l, furnitureCollision: c, r1Furniture: furniture, r1Doors: { records: [] } })
+  const bystander = { name: 'waiting', home: { x: 3.4998, z: 3 }, char: { group: new THREE.Group(), pose: {} } }
+  const director = createR1Director({ views: new Map([['A', v], ['waiting', bystander]]), layout: l, furnitureCollision: c, r1Furniture: furniture, r1Doors: { records: [] } })
   await director.ready
   const plan = director.navigation.plan; let attempts = 0, returnedToQueue = false, completed = 0
   director.navigation.plan = (...args) => ++attempts <= 4 ? null : plan(...args)
   director.travel(v, [], { x: 3, z: 3 }, true, () => completed++)
   for (let i = 0; i < 3000 && !completed; i++) {
+    if (i === 900) bystander.home.x = 6
     director.update(1 / 30)
     const p = v.r1Position || v.home
+    assert.ok(Math.hypot(p.x - bystander.home.x, p.z - bystander.home.z) >= .5 - 1e-7)
     assert.equal(c.navigationHit(p.x, p.z, .25, null, [director.navigation.bodyFor('desk')]), null)
     if (attempts && v.act?.phase === 'queued') { returnedToQueue = true; assert.ok(Math.abs(dz) < 1e-9); assert.equal(v.char.pose.r1AtDesk, true) }
   }

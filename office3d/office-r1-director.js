@@ -154,7 +154,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   }
   function goStep(act, target, dt) {
     const v = act.v, pos = anchor(v), length = dist(pos, target), step = Math.min(length, 1.21 * dt)
-    if (length < .005) { put(v, target); return true }
+    if (length < 1e-9) return true
     const next = { x: pos.x + (target.x - pos.x) * step / length, z: pos.z + (target.z - pos.z) * step / length }
     openAhead(v, target)
     if (!peopleClear(v, next)) {

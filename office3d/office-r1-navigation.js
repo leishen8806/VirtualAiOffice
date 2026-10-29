@@ -522,7 +522,7 @@ export function createR1Navigation(layout) {
     // Warm the real search during initialization; report this cost separately and retain no routes.
     const probes = [...chosen].filter(id => !query(gridPoints[id]) && Number.isFinite(landmarkCosts[0][id]))
     const warmPeople = [...stations.values()].slice(0, 7).map(s => s.home), warmOwner = stations.keys().next().value
-    for (let i = 1; i < Math.min(25, probes.length * 2); i++) {
+    for (let i = 1; i < probes.length * 2; i++) {
       const start = performance.now(), path = plan(gridPoints[probes[(i - 1) % probes.length]], gridPoints[probes[i % probes.length]], i % 2 ? warmOwner : undefined, i % 2 ? warmPeople : [])
       preparation.searchWarmup.push({ reachable: !!path, milliseconds: performance.now() - start })
       await new Promise(resolve => setTimeout(resolve, 0))
