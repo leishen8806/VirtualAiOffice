@@ -22,7 +22,43 @@ export function holidayInfo(dateStr) {
   return { today: today ? { name: today[1], style: today[2] } : null, next: next ? { name: next[1], date: next[0], days } : null }
 }
 
+// ───────── R1 节日挂点（OFFICE-R1-I6B）─────────
+// R1 没有楼板：外墙高 4.5 m、内隔墙 2.7 m。卡面要求挂件最低点不低于 2.4 m，勘察 D 要求不得悬在
+// 2.7 m 隔墙顶之上，所以 R1 的挂件全部落在 2.40–2.70 m 这条带里，尺寸比旧版（挂在 3.25 m）小。
+// 彩旗一区一段，都在开敞区（10 咖啡 / 11 前台 / 12 休闲）框内，不横穿房间。
+export const R1_FESTIVE = Object.freeze({
+  minY: 2.4,
+  maxY: 2.7,
+  buntings: Object.freeze([
+    Object.freeze({ regionId: '10', x0: -19, x1: -6, z: 13, y: 2.56, sag: .06, flag: .16 }),
+    Object.freeze({ regionId: '11', x0: -4, x1: 8, z: 11, y: 2.56, sag: .06, flag: .16 }),
+    Object.freeze({ regionId: '12', x0: 10, x1: 23, z: 13, y: 2.56, sag: .06, flag: .16 }),
+  ]),
+  // 灯笼在入口内侧（区 11），落在 11-D-001 两侧门樘的扫掠盘之外
+  lanterns: Object.freeze({ regionId: '11', x0: -1.5, x1: 5.5, count: 7, z: 14.5, y: 2.53, radius: .09, cord: .05 }),
+  // 横幅挂在接待台上空、面朝入口
+  banner: Object.freeze({ regionId: '11', x: 2, y: 2.56, z: 13, width: 3.6, height: .26, canvasHeight: 74, font: 'bold 44px sans-serif' }),
+  // 莲花灯沿接待台前落地
+  lotus: Object.freeze({ regionId: '11', x0: .2, step: .45, count: 9, z: 11.6, y: .05 }),
+  // 奖杯放在获奖同事 R1 桌面上：座位朝向坐标系里的桌面偏移（避开显示器 / 键盘 / 鼠标）
+  trophy: Object.freeze({ dx: -.52, dz: -.12 }),
+})
+
+// R1 下猫关闭：这组接口与 app.js 里 emptyFun 的猫接口逐值一致（等 I7 接入导航后另做）。
+const CAT_OFF = Object.freeze({
+  pick: () => false,
+  catInfo: () => '关闭',
+  catDiag: () => [],
+  catDiagClear() {},
+  catReact: () => null,
+  catToggle: () => false,
+  catPlaying: () => false,
+  catAim: () => false,
+  debugCatPlan() {},
+})
+
 export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision, layout }) {
+  const r1 = layout?.r1Phase === 'R1' // R1 守卫：非 R1 的行为、坐标与几何逐值不变
   const { CAT_DESTINATIONS, aimCat, catDeskAnchor, catDeskTopPoint, catJumpSegmentSafe, catRoamPoints, catRoute, catTarget, classifyJump, createCatDiagBuffer, createCatPlayState, isCatGroundPoint, planHop, reactCat, toggleCatPlay, updateCatPlay } = { ...catPlay, ...catPlay.createCatNavigation(layout, furnitureCollision) }
   const root = new THREE.Group()
   root.name = 'fun'
@@ -85,6 +121,15 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
     return g
   }
   const trophies = new Map() // agentId -> group
+  // R1：桌子朝向各不相同，奖杯按座位朝向算桌面偏移；旧版仍用固定的「桌面右侧」偏移。
+  // 注意 views 的 home 是 workHome(seat)，即**椅位**（带 yaw），不是桌子中心；所以按椅位找工位。
+  const r1Stations = r1 ? Object.values(layout.seats).map(seat => ({ chair: seat[4], desk: { x: seat[1], z: seat[2] }, yaw: seat[4].yaw })) : null
+  function trophySpot(home) {
+    const station = r1Stations?.find(s => Math.hypot(s.chair.x - home.x, s.chair.z - home.z) < 0.01)
+    if (!station) return { x: home.x + 0.45, z: home.z - 1.0 } // 桌面右侧（左边是台灯）
+    const { dx, dz } = R1_FESTIVE.trophy, { yaw, desk } = station
+    return { x: desk.x + Math.cos(yaw) * dx + Math.sin(yaw) * dz, z: desk.z - Math.sin(yaw) * dx + Math.cos(yaw) * dz }
+  }
   function deskTop(x, z) {
     ray.set(new THREE.Vector3(x, 3, z), new THREE.Vector3(0, -1, 0))
     const hit = ray.intersectObjects(scene.children, true).find((h) => chainVisible(h.object) && !h.object.userData.agentId && h.point.y < 1.3 && !isUnder(h.object, root))
@@ -105,7 +150,7 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
       v.awards = list
       if (trophies.has(id)) continue
       const g = makeTrophy()
-      const x = v.home.x + 0.45, z = v.home.z - 1.0 // 桌面右侧（左边是台灯）
+      const { x, z } = trophySpot(v.home)
       g.position.set(x, deskTop(x, z), z)
       root.add(g)
       trophies.set(id, g)
@@ -160,18 +205,19 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
   }
   cat.add(body, belly, headG, ...legs)
   cat.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.userData.isCat = true } })
-  root.add(cat)
+  // R1 下猫关闭（等 I7 接入路线）：不进场景、不挂标签、不参与更新，接口返回「关闭」。
+  if (!r1) root.add(cat)
   cat.position.set(2, 0, 4)
   const spawnAt = performance.now()
   const catLabel = document.createElement('div')
   catLabel.className = 'catTag'
   catLabel.textContent = '🐱 小橘'
-  document.body.appendChild(catLabel)
+  if (!r1) document.body.appendChild(catLabel)
   const play = createCatPlayState(performance.now())
   const toy = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.17, 8), new THREE.MeshBasicMaterial({ color: 0xe7bf68, transparent: true, opacity: 0.9, depthWrite: false }))
-  toy.rotation.x = -Math.PI / 2; toy.position.y = 0.035; toy.visible = false; toy.userData.dynamic = true; root.add(toy)
+  toy.rotation.x = -Math.PI / 2; toy.position.y = 0.035; toy.visible = false; toy.userData.dynamic = true; if (!r1) root.add(toy)
   const ball = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 7), new THREE.MeshBasicMaterial({ color: 0xd95f59 }))
-  ball.position.y = 0.11; ball.visible = false; ball.userData.dynamic = true; root.add(ball)
+  ball.position.y = 0.11; ball.visible = false; ball.userData.dynamic = true; if (!r1) root.add(ball)
   let reaction = null, ballLast = null
 
   const C = { mode: 'idle', path: [], goal: null, until: 0, y: 0, hop: null, purr: 0, target: null, why: '', deskHome: null, afterHop: null }
@@ -353,36 +399,40 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
   const fwGeo = new THREE.BufferGeometry()
   const FW_N = 180
   function clearDeco() { while (deco.children.length) deco.children[0].removeFromParent() }
-  function bunting(z, colors) {
+  // 启动时 mergeStatic 会「删掉合并后变空的分组」（merge.js），装饰分组平时是空的，所以会被一起摘掉。
+  // R1 下在真正要挂装饰之前把它接回来；非 R1 不做这件事，旧版行为与 main 逐值一致（另见交付回执里的遗留缺陷登记）。
+  function ensureDeco() { if (r1 && deco.parent !== root) root.add(deco) }
+  // 旧版（布局 1 / 2）的默认值与原来逐值相同；R1 另给一组挂点参数（见 R1_FESTIVE）。
+  function bunting(z, colors, { x0 = -20, x1 = 20, y = 3.25, sagMax = 0.35, flag = 0.32, radius = 0.16 } = {}) {
     const n = 34
     for (let i = 0; i < n; i++) {
-      const x = -20 + (40 * i) / (n - 1)
-      const sag = 0.35 * Math.sin((Math.PI * i) / (n - 1))
-      const tri = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.32, 3), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.8, side: THREE.DoubleSide }))
+      const x = x0 + ((x1 - x0) * i) / (n - 1)
+      const sag = sagMax * Math.sin((Math.PI * i) / (n - 1))
+      const tri = new THREE.Mesh(new THREE.ConeGeometry(radius, flag, 3), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.8, side: THREE.DoubleSide }))
       tri.rotation.x = Math.PI
-      tri.position.set(x, 3.25 - sag, z)
+      tri.position.set(x, y - sag, z)
       deco.add(tri)
     }
   }
-  function lanterns(colors) {
-    for (let i = 0; i < 12; i++) {
-      const x = -19 + i * 3.4
-      const l = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], emissive: colors[i % colors.length], emissiveIntensity: 0.9, roughness: 0.6 }))
+  function lanterns(colors, { x0 = -19, step = 3.4, count = 12, z = -12.4, y = 3.0, radius = 0.22, cord = 0.5, cordY = 3.5 } = {}) {
+    for (let i = 0; i < count; i++) {
+      const x = x0 + i * step
+      const l = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), new THREE.MeshStandardMaterial({ color: colors[i % colors.length], emissive: colors[i % colors.length], emissiveIntensity: 0.9, roughness: 0.6 }))
       l.scale.y = 1.25
-      l.position.set(x, 3.0, -12.4)
-      const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.5, 4), new THREE.MeshBasicMaterial({ color: 0x333333 }))
-      cord.position.set(x, 3.5, -12.4)
-      deco.add(l, cord)
+      l.position.set(x, y, z)
+      const strap = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, cord, 4), new THREE.MeshBasicMaterial({ color: 0x333333 }))
+      strap.position.set(x, cordY, z)
+      deco.add(l, strap)
     }
   }
-  function lotusCandles() {
-    for (let i = 0; i < 9; i++) {
-      const x = -2 + i * 0.5
+  function lotusCandles({ x0 = -2, step = 0.5, count = 9, z = 11.6, y = 0.05 } = {}) {
+    for (let i = 0; i < count; i++) {
+      const x = x0 + i * step
       const lotus = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.08, 8, 1, true), new THREE.MeshStandardMaterial({ color: 0xf4c6d0, roughness: 0.7, side: THREE.DoubleSide }))
       lotus.rotation.x = Math.PI
-      lotus.position.set(x, 0.05, 11.6)
+      lotus.position.set(x, y, z)
       const flame = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffc46b }))
-      flame.position.set(x, 0.13, 11.6)
+      flame.position.set(x, y + 0.08, z)
       flame.userData.flicker = Math.random() * 6
       deco.add(lotus, flame)
     }
@@ -406,18 +456,18 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
       deco.add(b)
     }
   }
-  function banner(text) {
+  function banner(text, { width = 6.4, height = 1.0, x = 0.5, y = 3.7, z = -12.6, canvasHeight = 160, font = 'bold 72px sans-serif' } = {}) {
     const c = document.createElement('canvas')
-    c.width = 1024; c.height = 160
+    c.width = 1024; c.height = canvasHeight
     const g = c.getContext('2d')
-    g.fillStyle = '#202326'; g.fillRect(0, 0, 1024, 160)
-    g.strokeStyle = '#b69a64'; g.lineWidth = 8; g.strokeRect(8, 8, 1008, 144)
-    g.fillStyle = '#e0c88f'; g.font = 'bold 72px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'
-    g.fillText(text, 512, 84)
+    g.fillStyle = '#202326'; g.fillRect(0, 0, 1024, canvasHeight)
+    g.strokeStyle = '#b69a64'; g.lineWidth = 8; g.strokeRect(8, 8, 1008, canvasHeight - 16)
+    g.fillStyle = '#e0c88f'; g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'
+    g.fillText(text, 512, canvasHeight / 2 + 4)
     const tex = new THREE.CanvasTexture(c)
     tex.colorSpace = THREE.SRGBColorSpace
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 1.0), new THREE.MeshBasicMaterial({ map: tex }))
-    m.position.set(0.5, 3.7, -12.6)
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: tex }))
+    m.position.set(x, y, z)
     deco.add(m)
   }
   const KH = [0x032ea1, 0xe00025, 0xffffff] // 柬埔寨国旗的蓝、红、白
@@ -430,7 +480,22 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
     decoStyle = key
     clearDeco()
     if (!style) return
-    banner(info.today.name + (style === 'solemn' ? '' : ' 快乐'))
+    ensureDeco()
+    const title = info.today.name + (style === 'solemn' ? '' : ' 快乐')
+    if (r1) {
+      const { buntings, lanterns: lamp, banner: strip, lotus } = R1_FESTIVE
+      banner(title, strip)
+      if (style === 'festive' || style === 'water') {
+        const palettes = [KH, [0xd4af37, 0xe00025, 0x032ea1], KH]
+        buntings.forEach((anchor, index) => bunting(anchor.z, palettes[index % palettes.length], { x0: anchor.x0, x1: anchor.x1, y: anchor.y, sagMax: anchor.sag, flag: anchor.flag, radius: anchor.flag / 2 }))
+        const half = lamp.radius * 1.25
+        lanterns([0xe00025, 0xd4af37], { x0: lamp.x0, step: (lamp.x1 - lamp.x0) / (lamp.count - 1), count: lamp.count, z: lamp.z, y: lamp.y, radius: lamp.radius, cord: lamp.cord, cordY: lamp.y + half + lamp.cord / 2 })
+      }
+      if (style === 'water') boats()
+      if (style === 'solemn') lotusCandles(lotus)
+      return
+    }
+    banner(title)
     if (style === 'festive' || style === 'water') { bunting(-6, KH); bunting(0.5, [0xd4af37, 0xe00025, 0x032ea1]); bunting(7, KH); lanterns([0xe00025, 0xd4af37]) }
     if (style === 'water') boats()
     if (style === 'solemn') lotusCandles()
@@ -540,12 +605,15 @@ export function createFun({ scene, views, boardViews, LOUNGE, furnitureCollision
     update(dt, t, ctx, project) {
       updateConfetti(dt)
       fixTrophies()
-      updatePlay(dt, performance.now())
-      updateCat(dt, t, ctx)
+      // R1 下猫关闭：跳过猫的更新与标签投影；其余顺序与旧版逐步相同（随机数消耗顺序也不变）。
+      if (!r1) { updatePlay(dt, performance.now()); updateCat(dt, t, ctx) }
       updateDeco(dt, t, ctx)
+      if (r1) return
       tmp.copy(cat.position); tmp.y += 0.45
       project(tmp, catLabel)
     },
     debug: () => ({ cat: { ...C, play: { ...play }, path: C.path.length, pos: cat.position.toArray().map((x) => +x.toFixed(2)), maxStepDist }, parts: parts.length, deco: decoStyle, trophies: [...trophies.keys()] }),
+    // 必须放在最后：R1 下用「关闭」的猫接口覆盖上面那组
+    ...(r1 ? CAT_OFF : null),
   }
 }

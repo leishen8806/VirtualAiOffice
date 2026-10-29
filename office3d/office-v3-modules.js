@@ -14,6 +14,7 @@ import { facingSample, facingHome, posedPoint } from './office-vis2/furniture-sa
 import { buildR1Furniture } from './office-vis2/r1-furniture.js'
 import { buildR1Island } from './office-vis2/r1-island.js'
 import { buildR1Plants } from './office-vis2/r1-plants.js'
+import { buildR1Decor } from './office-vis2/r1-decor.js'
 import { buildR1Doors } from './office-vis2/r1-doors.js'
 import { buildR1Lounge } from './office-vis2/r1-lounge.js'
 import { buildR1Plaza } from './office-vis2/r1-plaza.js'
@@ -88,7 +89,7 @@ export const officeV3Modules = Object.freeze([
 ])
 
 export const officeV3ModulesFor = layout => layout?.r1Phase === 'R1'
-  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture], ['r1Island', buildR1Island], ['r1Plants', buildR1Plants], ['r1Doors', buildR1Doors], ['r1Lounge', buildR1Lounge], ['r1Plaza', buildR1Plaza], ['r1Lights', buildR1Lights]])
+  ? Object.freeze([['shell3', buildOfficeShellV3], ['furniture3', buildR1Furniture], ['r1Island', buildR1Island], ['r1Plants', buildR1Plants], ['r1Doors', buildR1Doors], ['r1Lounge', buildR1Lounge], ['r1Decor', buildR1Decor], ['r1Plaza', buildR1Plaza], ['r1Lights', buildR1Lights]])
   : officeV3Modules
 
 export function startOfficeV3(shared) {
