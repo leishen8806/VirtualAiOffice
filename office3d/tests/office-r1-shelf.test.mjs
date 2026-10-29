@@ -114,6 +114,13 @@ test('FD-6c 两个书架每层都约九成满，每本书都落在真实层板�
   const metrics = r1BookcaseMetrics(THREE, A.furn.bookcaseOpen)
   assert.deepEqual(metrics.levels.map(level => Number(level.y.toFixed(3))), [.13, .37, .61, .85])
   assert.equal(metrics.levels.filter(level => Number.isFinite(level.clearHeight)).length, 3)
+  // 可用范围是**以模型包围盒中心为原点**的局部坐标（placeFurniture 按中心对齐）：x / z 必须跨过 0，
+  // 否则就是把中心算错了，书会整体挪到书架前面或背后（素材 z 从 −0.25 到 0，用 size/2 当中心就会这样）。
+  for (const level of metrics.levels) {
+    assert.ok(level.minX < 0 && level.maxX > 0, `层 ${level.y} 的可用 x [${level.minX}, ${level.maxX}] 没跨过中心`)
+    assert.ok(level.minZ < 0 && level.maxZ > 0, `层 ${level.y} 的可用 z [${level.minZ}, ${level.maxZ}] 没跨过中心`)
+    assert.ok(Math.abs(level.minZ) <= metrics.size.z / 2 && Math.abs(level.maxZ) <= metrics.size.z / 2, `层 ${level.y} 的可用 z 超出素材进深`)
+  }
   const report = []
   for (const shelf of built.shelves) {
     assert.equal(shelf.levels.length, 3, shelf.id)
@@ -139,6 +146,11 @@ test('FD-6c 两个书架每层都约九成满，每本书都落在真实层板�
       assert.ok(v >= level.minV - .01 && v <= level.maxV + .01, `${item.shelfId} 第 ${index} 件 v = ${v}`)
       assert.ok(corner.y >= level.y - .0015, `${item.shelfId} 第 ${index} 件底面 ${corner.y} 低于层板 ${level.y}`)
       assert.ok(corner.y <= level.y + level.clearHeight + 1e-6, `${item.shelfId} 第 ${index} 件顶面 ${corner.y} 穿过上层板`)
+      // 与 level 的可用范围无关的独立判据：直接按登记件的外轮廓（长 lengthM × 深 widthM）核，
+      // 这样即使层板范围算错，书跑到书架前面或背后也会被抓住。
+      assert.ok(Math.abs(u) <= row.lengthM / 2 + 1e-6, `${item.shelfId} 第 ${index} 件 u = ${u} 超出登记长度`)
+      assert.ok(Math.abs(v) <= row.widthM / 2 + 1e-6, `${item.shelfId} 第 ${index} 件 v = ${v} 超出登记进深 ${row.widthM}`)
+      assert.ok(corner.y <= row.heightM + 1e-6, `${item.shelfId} 第 ${index} 件高过书架 ${row.heightM} m`)
     }
   })
   built.dispose()

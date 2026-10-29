@@ -94,7 +94,10 @@ const lerp = (range, k) => range[0] + (range[1] - range[0]) * k
 // 返回模型自身单位（素材 0.4 × 0.88 × 0.25 m），由调用方按登记尺寸缩放。
 export function r1BookcaseMetrics(THREE, model) {
   model.updateWorldMatrix(true, true)
-  const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3())
+  const box = new THREE.Box3().setFromObject(model), size = box.getSize(new THREE.Vector3())
+  // placeFurniture 把模型按包围盒中心对齐到 (x, z)、底面落到 y = 0，所以这里要减的是**包围盒中心**，
+  // 不是 size / 2：bookcaseOpen 的 z 从 −0.25 到 0，中心是 −0.125，用 +0.125 会把书整体挪到书架背后。
+  const centre = box.getCenter(new THREE.Vector3())
   const up = new Map(), down = new Map(), corner = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]
   model.traverse(mesh => {
     if (!mesh.isMesh || !mesh.geometry?.attributes.position) return
@@ -122,7 +125,6 @@ export function r1BookcaseMetrics(THREE, model) {
   const biggest = planes.reduce((max, row) => Math.max(max, row.area), 0)
   const planks = planes.filter(row => row.area >= biggest * .5)
   const ceilings = [...down.values()].map(row => row.y).sort((a, b) => a - b)
-  const centre = { x: size.x / 2, z: size.z / 2 }
   const levels = planks.map(plank => {
     const ceiling = ceilings.find(y => y > plank.y + 1e-4)
     // 层板厚：顶面到自己底面的距离，书的可用宽 / 进深按它内缩，保证落在层板里而不是贴着侧板。
