@@ -13,7 +13,7 @@ function zoneGround(THREE, zones) {
   })
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3)); geometry.setIndex(indices)
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .93, transparent: true, opacity: .3 })
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .93, transparent: true, opacity: .06 })
   const mesh = new THREE.Mesh(geometry, material); mesh.name = 'r1-zones-ground'; mesh.userData.dynamic = true; mesh.userData.zoneIds = zoneIds
   return { mesh, dispose: () => { geometry.dispose(); material.dispose() } }
 }
