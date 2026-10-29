@@ -138,7 +138,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     history.push({ name: stationName(v), kind: act.options.kind || (act.back ? 'return' : act.seat.zone || 'travel'), duration: act.total, end: { ...anchor(v) } })
   }
   function beginWalk(act, target, next) {
-    if (chairsMoving) { act.phase = 'wait-chair'; act.retryTarget = target; act.next = next; act.t = 0; return }
+    if (chairsMoving || chairMoves.has(stationName(act.v))) { act.phase = 'wait-chair'; act.retryTarget = target; act.next = next; act.t = 0; return }
     const path = pathTo(act.v, target)
     if (!path) { act.phase = 'blocked'; act.retryTarget = target; act.next = next; act.t = 0; return }
     act.path = nav.smoothPath(path, stationName(act.v)); act.i = 1; act.phase = 'walk'; act.next = next; act.t = 0
@@ -167,7 +167,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       const state = doors.doors.state(row.id), normal = row.normal, axis = row.axis
       return state.state === 'moving' && Math.abs(next[normal] - row.closed[normal]) < .6 + row.thickness / 2 && Math.abs(next[axis] - row.closed[axis]) < row.width / 2 + .6
     })
-    if (movingDoor || nav.query(next, stationName(v))) { act.stall += dt; blockedFrames++; v.char.pose.walk = 0; return false }
+    const ownChair = nav.bodyFor(nav.parameters.get(stationName(v)).chairId)
+    if (movingDoor || nav.query(next, stationName(v)) || collision.navigationHit(next.x, next.z, .24, null, [ownChair])) { act.stall += dt; blockedFrames++; v.char.pose.walk = 0; return false }
     act.stall = 0; const yaw = Math.atan2(-(next.x - pos.x), -(next.z - pos.z)), diff = Math.atan2(Math.sin(yaw - v.char.group.rotation.y), Math.cos(yaw - v.char.group.rotation.y))
     v.char.group.rotation.y += diff * Math.min(1, dt * 10); put(v, next); v.char.pose.phase += step * 4.6; v.char.pose.walk = 1
     return step === length
@@ -295,7 +296,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       const center = nav.parameters.get(stationName(v)).exit
       for (let radius = 1; radius <= 5; radius += .25) for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
         const a = { x: center.x + Math.cos(angle) * radius, z: center.z + Math.sin(angle) * radius }, b = { x: a.x - Math.sin(angle) * 1.05, z: a.z + Math.cos(angle) * 1.05 }
-        if (nav.query(a, stationName(v)) || nav.query(b, stationName(other)) || !peopleClear(v, a) || !peopleClear(other, b)) continue
+        // Chat destinations must stay outside both chairs' complete slide envelopes.
+        if (dist(a, v.home) < nav.parameters.get(stationName(v)).slide + 1 || dist(b, other.home) < nav.parameters.get(stationName(other)).slide + 1 || nav.query(a, stationName(v)) || nav.query(b, stationName(other)) || !peopleClear(v, a) || !peopleClear(other, b)) continue
         start(v, a, { chat: other, text: ev.text, kind: 'chat' }); start(other, b, { chat: v, kind: 'chat' }); return
       }
       bubble(v, ev.text)

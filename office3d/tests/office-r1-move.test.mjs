@@ -96,9 +96,11 @@ test('public seats use a 0.25 m body and exclude only their chair during the las
   assert.deepEqual(director.publicTransitions.get('public-chair').excluded, ['public-chair'])
   // 0.65 m behind the fully open chair is clear; a 1.04 m centre-radius approximation is not.
   views.set('bystander', { name: 'bystander', home: { x: 0, z: 1.75 }, char: { group: new THREE.Group(), pose: {} } })
+  const plan = director.navigation.plan; let returnPlans = 0
+  director.navigation.plan = (...args) => { returnPlans++; assert.ok(Math.abs(dz - director.navigation.parameters.get('A').slide) < 1e-9, 'plan after the return chair finishes sliding'); return plan(...args) }
   assert.equal(director.travel(v, [], home, false, () => { returned = true }), true)
   for (let i = 0; i < 3000 && !returned; i++) director.update(1 / 30)
-  assert.equal(returned, true); assert.equal(v.char.pose.r1AtDesk, true)
+  assert.equal(returned, true); assert.ok(returnPlans > 0); assert.equal(v.char.pose.r1AtDesk, true)
   assert.ok(Math.hypot(dx, dz) < 1e-9); assert.equal(yaw, 0)
   assert.equal(director.travel(v, [], { id: '08-CH-011', x: 1, z: 1 }, true), false)
 })
