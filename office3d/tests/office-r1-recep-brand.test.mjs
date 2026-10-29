@@ -263,3 +263,9 @@ test('RC-6 r1Brand is registered only for the R1 layout and marks its node dynam
   buildR1Brand({ THREE, root, layout: { plan1Phase: 'L2B' }, canvasTex: fakeCanvasTex }).dispose()
   assert.equal(root.children.length, 0)
 })
+
+// MOVE R5 changes one coordinate in the existing four-entry bench table; no new data rows.
+test('MOVE R5 bench override count and exact positional exception remain frozen', () => {
+  assert.equal(R1_BOARD_FACING_OVERRIDES.length, 4)
+  assert.deepEqual(R1_BOARD_FACING_OVERRIDES.filter(e => 'xM' in e.to).map(e => [e.id, e.from.xM, e.to.xM]), [['14-BN-003', 49, 48.5]])
+})

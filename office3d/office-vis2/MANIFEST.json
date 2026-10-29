@@ -309,7 +309,7 @@
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; OFFICE-R1-DESKSTATUS adds the brass desk-corner status lamps (two instanced batches, colour by instanceColor); no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "9394885894F69DEE41285207F873C3C8E64152BEE1F551EA6B81673741F165DF"
+      "sha256": "70EF3D6A2CAB5A8FD000B02A46FD9121A10FE7CB6388E0F02EF5B9F005305C25"
     },
     {
       "file": "office-vis2/r1-zones.js",

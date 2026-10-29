@@ -38,13 +38,15 @@ test('I3 retains the old V3 module order and isolates R1 to its shell and furnit
   assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Books', 'r1Plaza', 'r1Lights', 'r1Brand'])
 })
 
-test('I3 R4 provides registered R1 seats while retaining the stationary navigation adapter', () => {
+test('MOVE preserves registered seats and old navigation while exposing R1 destinations', () => {
   const layout = r1(), nav = createOfficeNavigation(layout), home = { x: 1, z: 2 }
   assert.equal(Object.keys(officeSeats(layout)).length, 25)
   assert.deepEqual(officeSeats(layout), layout.seats)
-  assert.deepEqual(nav.officeExit(home), [home]); assert.deepEqual(nav.corridorPath(home, { x: 4, z: 5 }), [home])
-  assert.deepEqual(nav.loungeTrip(home, { x: 4, z: 5 }), [home]); assert.deepEqual(nav.meetingTrip(home, { x: 4, z: 5 }), [home])
-  assert.deepEqual(nav.standAt(home), home); assert.deepEqual(nav.LOUNGE_SEATS, []); assert.deepEqual(nav.consumerQueues, { waiting: [] })
+  assert.equal(nav.ready(), false); assert.equal(nav.prepared(), false)
+  assert.throws(() => nav.plan(home, { x: 4, z: 5 }), /not attached/)
+  assert.equal(nav.LOUNGE_SEATS.filter(s => s.meeting).length, 14)
+  assert.equal(nav.LOUNGE_SEATS.some(s => ['08-CH-011', '08-CH-012', '08-CH-013'].includes(s.id)), false)
+  assert.deepEqual(nav.standAt(home), home); assert.deepEqual(nav.consumerQueues, { waiting: [] })
   const frozen = createOfficeNavigation(LAYOUT_V3_ALIGN_L2B), legacyHome = workHome(LAYOUT_V3_ALIGN_L2B.seats.OpsLead)
   const snapshot = { seats: LAYOUT_V3_ALIGN_L2B.seats, entrance: frozen.ENTRANCE, lounge: frozen.LOUNGE_SEATS, queues: frozen.consumerQueues, exit: frozen.officeExit(legacyHome), corridor: frozen.corridorPath(legacyHome, frozen.ENTRANCE.inner), stand: frozen.standAt(legacyHome) }
   assert.equal(crypto.createHash('sha256').update(JSON.stringify(snapshot)).digest('hex'), '20225f85b3da10410659dbba819f3465b9db5aa2909b158f70b2725f14a5ba54')
@@ -120,13 +122,8 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   furniture.dispose()
 })
 
-test('I3 seated-only director rejects every R1 walking entry point without changing other layouts', () => {
-  const director = createDirector({ views: new Map(), board: {}, layer: { appendChild() {} }, project: { tmp: new THREE.Vector3(), fn() {} }, layout: r1() })
-  const view = { act: null, home: { x: 1, z: 2 }, char: { group: new THREE.Group(), pose: {} } }
-  assert.equal(director.travel(view, [{ x: 2, z: 2 }], view.home, false), false)
-  assert.equal(director.goHome(view), false); assert.equal(director.arrive(view), false)
-  director.enqueue({ kind: 'report', from: 'x', to: 'y' })
-  assert.equal(director.stats().queued, 0)
+test('MOVE refuses to create an R1 director without the real collision and furniture wiring', () => {
+  assert.throws(() => createDirector({ views: new Map(), board: {}, layer: { appendChild() {} }, project: { tmp: new THREE.Vector3(), fn() {} }, layout: r1() }), /requires real collision, furniture and doors/)
 })
 
 test('I2 R3 selects R1 miniBounds without altering the non-R1 minimap expression', () => {

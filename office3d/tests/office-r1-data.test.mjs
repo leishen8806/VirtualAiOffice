@@ -112,3 +112,9 @@ test('R1 runtime bridges are explicit and all other runtime modules stay isolate
     assert.ok(!importsR1 || approved.has(repoFile), repoFile)
   }
 })
+
+// MOVE R5 changes one coordinate in the existing four-entry bench table; no new data rows.
+test('MOVE R5 bench override count and exact positional exception remain frozen', () => {
+  assert.equal(R1_BOARD_FACING_OVERRIDES.length, 4)
+  assert.deepEqual(R1_BOARD_FACING_OVERRIDES.filter(e => 'xM' in e.to).map(e => [e.id, e.from.xM, e.to.xM]), [['14-BN-003', 49, 48.5]])
+})

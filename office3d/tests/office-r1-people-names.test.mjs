@@ -26,7 +26,7 @@ async function replace(nicknames, phase = 'R1') {
     SEATS: Object.fromEntries(names.map(n => [n, []])), CAST, CAST_OVERRIDE,
     PEOPLE: null, scene: { userData: {}, add() {} }, performance: { now: () => 1 },
     setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn),
-    loadPeople: async () => ({}), loadR1Extras: async () => {},
+    loadPeople: async () => ({}), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {},
     officeV3: { get: () => ({ seatedProfile: name => { lookups.push(name); return R1_SEATED_PROFILES[name] }, chairAt: () => ({}) }) },
     r1SeatedAssets: (loaded, avatar, profile, name) => profile ? { profile, name } : null,
     createPerson: (assets, avatar) => { builds++; return { avatar, assets, group: group(), pose: {} } },
