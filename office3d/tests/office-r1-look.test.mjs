@@ -48,20 +48,22 @@ test('LOOK wall strips touch the solid band; bar accents retain the entry; floor
   module.dispose();assert.equal(root.children.length,0)
 })
 
-test('LOOK adds 12 atrium and 12 corner plants from the actual leaf asset, with ordinary collision meshes and unchanged registered plants', () => {
+test('LOOK adds 12 atrium and 12 corner plants from six approved tropical species, with ordinary collision meshes and unchanged registered plants', () => {
   assert.equal(r1LookPlantPositions.length,24);assert.equal(r1LookPlantPositions.filter(r=>r[1]==='07').length,12)
   for(const zone of ['04','06','08','10','11','12'])assert.equal(r1LookPlantPositions.filter(r=>r[1]===zone).length,2)
   for(const low of [false,true]){
     const root=new THREE.Group(),collision=createFurnitureCollision(),plants=buildR1Plants({THREE,root,layout,A,low,collision})
     assert.equal(plants.records.length,35);assert.equal(plants.look.records.length,24);assert.equal(collision.stats().bodies,59 + plants.dense.proxies.length)
     for(const record of plants.look.records){
-      assert.ok(collision.hit(record.position.x,record.position.z));assert.equal(record.parts.CR.layers.length,low?1:2)
-      const v=record.parts.CR.vertices
-      for(let i=0;i<v.length;i+=3)assert.ok(Math.hypot(v[i]-record.position.x,v[i+2]-record.position.z)<=.6,record.id)
+      assert.ok(collision.hit(record.position.x,record.position.z))
+      const tier=plants.look.root.getObjectByName(low?'r1-dense-low':'r1-dense-high')
+      for(const [name,start,count] of [['r1-dense-pots',record.startVertex,record.vertexCount],['r1-tropical-leaves',record.leafStart,record.leafCount]]) {
+        const v=tier.getObjectByName(name).geometry.attributes.position
+        for(let i=start;i<start+count;i++)assert.ok(Math.hypot(v.getX(i)-record.position.x,v.getZ(i)-record.position.z)<=.60001,record.id)
+      }
     }
     assert.ok(plants.look.proxies.every(p=>p.isMesh&&!p.isInstancedMesh));assert.equal(plants.look.root.children.length,1)
-    // The same source has leaf normals and branches, not substitute crown spheres.
-    assert.ok(plants.look.records.every(r=>r.parts.CR.vertices.length>1000))
+    assert.equal(new Set(plants.look.records.map(r=>r.species)).size,6)
     plants.dispose();plants.dispose();assert.equal(collision.stats().bodies,0);assert.equal(root.children.length,0)
   }
 })

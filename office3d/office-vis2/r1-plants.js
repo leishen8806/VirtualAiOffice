@@ -2,7 +2,6 @@ import { buildR1DenseGarden } from './r1-dense-garden.js'
 import { r1ToWorld } from '../office-r1-layout.js'
 import { createOfficePottedFoliage } from './plants.js'
 import { createSampleBatch } from './batch.js'
-import { r1LookPlantElements } from './r1-look.js'
 
 // 裁定 D（dispatch/OFFICE-R1-I6B-20261028/裁定-绿植外形-R2.md）：登记冠包络、盆尺寸与总高都不动，
 // 只在包络内加密叶片。外层正好顶到登记冠包络；内层复用同一叶源，缩到 CROWN_FILL 并绕竖轴转过一个
@@ -76,7 +75,7 @@ export function buildR1Plants(context) {
   const registered = buildPlantSet(context)
   if (!registered.root) return registered
   let look, dense
-  try { look = buildPlantSet({ ...context, elements: r1LookPlantElements(), name: 'r1-look-plants' }); dense = buildR1DenseGarden(context) }
+  try { look = buildR1DenseGarden({ ...context, lookOnly: true }); dense = buildR1DenseGarden(context) }
   catch (error) { registered.dispose(); look?.dispose(); throw error }
-  return { ...registered, look, dense, onFrame() { dense.onFrame() }, dispose() { registered.dispose(); look.dispose(); dense.dispose() } }
+  return { ...registered, look, dense, onFrame() { look.onFrame(); dense.onFrame() }, dispose() { registered.dispose(); look.dispose(); dense.dispose() } }
 }

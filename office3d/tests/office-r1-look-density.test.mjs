@@ -39,10 +39,29 @@ test('LOOK R2 real leaf geometry stays inside certified envelopes; actual collis
  const root=new THREE.Group(),collision=createFurnitureCollision(),quality={tier:'high'},module=buildR1DenseGarden({THREE,root,layout,A,collision,quality})
  for(const tier of ['high','low','high']){quality.tier=tier;module.onFrame();const low=tier==='low',p=r1DensePlan(layout,low);assert.equal(collision.stats().bodies,p.plants.length+p.troughs.length+p.gardens.length);assert.equal(module.records.length,collision.stats().bodies)
  for(const r of module.records){assert.ok(collision.hit(r.x,r.z),r.id+' actual collider');assert.ok(module.proxies.find(p=>p.name===r.id).isMesh);assert.ok(!module.proxies.find(p=>p.name===r.id).isInstancedMesh);const mesh=module.root.getObjectByName(`r1-dense-${tier}`).getObjectByName('r1-dense-'+r.batch),vertices=mesh.geometry.attributes.position;for(let i=r.startVertex;i<r.startVertex+r.vertexCount;i++){const x=vertices.getX(i)-r.x,z=vertices.getZ(i)-r.z;if(r.wall){assert.ok(Math.abs(x)<=r.w/2+1e-5&&Math.abs(z)<=r.d/2+1e-5,r.id+' vertex envelope')}else assert.ok(Math.hypot(x,z)<=(r.r??r.w/2)+1e-5,r.id+' vertex disk')}
- if(r.r){assert.ok(r.bounds.max.y<=r.height+1e-5);assert.ok(r.bounds.min.y>=-1e-5)}}
- let triangles=0,calls=0;module.root.traverseVisible(m=>{if(m.isMesh){calls++;triangles+=(m.geometry.index?.count??m.geometry.attributes.position.count)/3;assert.equal(m.castShadow,false);assert.notEqual(m.geometry.type,'SphereGeometry')}});assert.equal(calls,2);assert.ok(triangles<190000,`${tier}: ${triangles}`)
+ if(r.r){const leaf=module.root.getObjectByName('r1-dense-'+tier).getObjectByName('r1-tropical-leaves').geometry.attributes.position;for(let i=r.leafStart;i<r.leafStart+r.leafCount;i++)assert.ok(Math.hypot(leaf.getX(i)-r.x,leaf.getZ(i)-r.z)<=r.r+1e-5,r.id+' actual atlas leaf envelope');assert.ok(r.bounds.max.y<=r.height+1e-5);assert.ok(r.bounds.min.y>=-1e-5)}}
+ let triangles=0,calls=0;module.root.traverseVisible(m=>{if(m.isMesh){calls++;triangles+=(m.geometry.index?.count??m.geometry.attributes.position.count)/3;assert.equal(m.castShadow,false);assert.notEqual(m.geometry.type,'SphereGeometry')}});assert.equal(calls,3);assert.ok(triangles<190000,`${tier}: ${triangles}`)
  const beds=module.records.filter(r=>r.kind==='flowerbed');assert.ok(beds.reduce((n,r)=>n+r.area,0)>=120*(low?.6:1));assert.equal(new Set(beds.map(r=>r.flowerColor)).size,4)
  }
  module.dispose();module.dispose();assert.equal(collision.stats().bodies,0);assert.equal(root.children.length,0)
  const legacy=new THREE.Group();buildR1DenseGarden({THREE,root:legacy,layout:{r1Phase:'L2B'},A,collision});assert.equal(legacy.children.length,0)
+})
+
+test('LOOK R2 tropical diversity, deterministic variation, approved atlas, and legacy asset exclusion',()=>{
+ const sets=[]
+ for(const low of [false,true]){
+  const root=new THREE.Group(),dense=buildR1DenseGarden({THREE,root,layout,low}),look=buildR1DenseGarden({THREE,root,layout,low,lookOnly:true})
+  const rows=[...dense.records.filter(r=>r.r),...look.records],counts={}
+  for(const r of rows){counts[r.species]=(counts[r.species]||0)+1;assert.ok(r.scale>=.85&&r.scale<=1.15);assert.ok(r.yaw>=0&&r.yaw<Math.PI*2)}
+  assert.equal(Object.keys(counts).length,6);for(const n of Object.values(counts))assert.ok(n/rows.length<=.3)
+  assert.equal(new Set(dense.records.filter(r=>r.kind==='flowerbed').map(r=>r.species)).size,4)
+  assert.ok(rows.filter(r=>r.species==='散尾葵'||r.species==='虎尾兰').every(r=>r.leafCount===0))
+  assert.ok(rows.filter(r=>['龟背竹','琴叶榕','发财树','花叶绿萝'].includes(r.species)).every(r=>r.leafCount>0))
+  root.traverse(o=>{if(o.name==='r1-tropical-leaves'){assert.equal(o.material.alphaTest,.45);assert.equal(o.material.transparent,false)}})
+  sets.push(new Map(rows.map(r=>[r.id,{species:r.species,yaw:r.yaw,scale:r.scale,height:r.height}])))
+  dense.dispose();look.dispose()
+ }
+ for(const[id,s]of sets[1])assert.deepEqual(s,sets[0].get(id))
+ const source=readFileSync(new URL('../office-vis2/r1-dense-garden.js',import.meta.url),'utf8')
+ assert.doesNotMatch(source,/pottedPlant|createOfficePottedFoliage|SphereGeometry/)
 })

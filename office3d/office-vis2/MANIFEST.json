@@ -58,6 +58,20 @@
       "generationModel": "unknown",
       "exactPerImagePrompt": "unknown",
       "usage": "tinted woven seating"
+    },
+    {
+      "file": "assets/textures/office-v2/leaf-atlas-v2.png",
+      "bytes": 1480608,
+      "sha256": "ABB107B0C9731E2351D17FF5FAE512D3D59007592630F8A453970FAE7EF53934",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "source": "Board-approved 2026-10-22 owned tropical leaf atlas; copied byte-for-byte from E:/VirtualAIOffice/paperclip-ops/asset-intake/gpt-textures/office/office-leaf-atlas-v2.png under OFFICE-R1-LOOK R2",
+      "licenseAsRecorded": "AI generated on board account; approved owned asset, no external download",
+      "usage": "R1 added Monstera, fiddle-leaf fig, money tree, variegated pothos; alphaTest .45",
+      "generationModel": "unknown",
+      "exactPerImagePrompt": "unknown"
     }
   ],
   "brandAsset": {
@@ -301,7 +315,7 @@
       "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "1F99A99DDC93E1412ACD4E36EC1EA7E21EC0FB4EEB6C677A5ADDD8E5E78CC2D6"
+      "sha256": "633AA26D79B91D8C9E98163FF1FD9E0A17FAF5E8AADD48D659E3EEA629333DE7"
     },
     {
       "file": "office-vis2/r1-doors.js",
@@ -364,7 +378,7 @@
       "source": "R1-only merged pottedPlant leaf layers and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7151946884EC9B2A81E52A410717E314D512D1268F8E997E37E9C95DD9133C9A"
+      "sha256": "328430ACFE4CD06F4659231C79A794337C985BE0EB312572C7398AF23231FF8C"
     },
     {
       "file": "office-vis2/r1-landscape-plan.js",
@@ -372,6 +386,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "AEF5576ABB2E6EF5429AB7187D3B342265C1418D5683DF3AA46E156AB6F7D8D8"
+    },
+    {
+      "file": "office-vis2/r1-tropical.js",
+      "sha256": "7CFDD9F6863B7D2AF0F0286330B6C25C9C799A813C4A06A04380E4DB72773D42",
+      "source": "OFFICE-R1-LOOK R2: six indoor tropical species and four plaza species; deterministic procedural geometry and approved alpha atlas",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": true
     }
   ],
   "excluded": {
