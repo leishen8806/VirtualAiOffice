@@ -219,3 +219,28 @@ test('neighbouring arrivals reserve their shared return corridor until each pers
   assert.equal(d.history.length, 2)
   for (const motion of motions.values()) assert.ok(Object.values(motion).every(value => value === 0))
 })
+
+test('a temporary people sidestep cannot enter the walkers own open chair', async () => {
+  const l = layout(); l.site = { x0: 10, x1: 18, z0: -2, z1: 8 }
+  const home = { x: 13.54, z: 2, yaw: -Math.PI / 2 }, name = 'ReactSenior'
+  l.seats[name] = ['08', 14.35, 2, 0, home]; l.r1.workstations = [{ business_id: name, desk_id: 'desk', chair_id: 'chair' }]
+  const c = createFurnitureCollision(); box(c, 'desk', 14.35, 2, .7, 1.4); const chair = box(c, 'chair', 13.54, 2, .4, .4)
+  let motion = { dx: 0, dz: 0, yaw: 0 }
+  const f = { chairFacings: new Map(), chairMotion: () => motion, moveChair(id, dx, dz, yaw) { const changed = dx !== motion.dx || dz !== motion.dz || yaw !== motion.yaw; motion = { dx, dz, yaw }; c.poseNavigationBody(chair, home, dx, dz, yaw); return changed } }
+  const v = { name, home, char: { group: new THREE.Group(), pose: { sit: 1, phase: 0 } } }, views = new Map([[name, v]])
+  const d = createR1Director({ views, layout: l, furnitureCollision: c, r1Furniture: f, r1Doors: { records: [] } }); await d.ready
+  let arrived = false
+  d.visitConsumer(v, { ok: true, stand: { x: 13.29, z: 2.3 } }, { onArrive() { arrived = true } })
+  for (let frame = 0; frame < 1000 && v.act?.phase !== 'walk'; frame++) d.update(1 / 30)
+  assert.equal(v.act.phase, 'walk')
+  const passer = { name: 'passer', home: { x: 13.29, z: 2.55 }, char: { group: new THREE.Group(), pose: {} } }; views.set('passer', passer)
+  for (let frame = 0; frame < 1000 && !arrived; frame++) {
+    if (frame === 90) passer.away = true
+    d.update(1 / 30)
+    if (v.act?.phase === 'walk') {
+      const a = v.r1Position || v.home, b = v.act.path[v.act.i], n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / .005)
+      for (let j = 0; j <= n; j++) assert.equal(c.navigationHit(a.x + (b.x - a.x) * j / n, a.z + (b.z - a.z) * j / n, .24, null, [d.navigation.bodyFor('chair')]), null)
+    }
+  }
+  assert.equal(arrived, true)
+})

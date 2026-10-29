@@ -164,7 +164,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       act.stall += dt; v.char.pose.walk = 0
       if (act.stall > .4) for (const side of [1, -1]) {
         const avoid = { x: pos.x - (target.z - pos.z) / length * .65 * side, z: pos.z + (target.x - pos.x) / length * .65 * side }
-        if (peopleClear(v, avoid) && nav.clear(pos, avoid, stationName(v))) { act.path.splice(act.i, 0, avoid); act.stall = 0; break }
+        if (peopleClear(v, avoid) && nav.clear(pos, avoid, stationName(v)) && nav.lineClear(pos, avoid, stationName(v))) { act.path.splice(act.i, 0, avoid); act.stall = 0; break }
       }
       return false
     }
