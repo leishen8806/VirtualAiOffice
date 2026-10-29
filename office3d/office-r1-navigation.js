@@ -404,6 +404,8 @@ export function createR1Navigation(layout) {
           if (Math.max(Math.abs(dx), Math.abs(dz)) < 3 || dx * dx + dz * dz > 100) continue
           const x = ix + dx, z = iz + dz, next = z * width + x
           if (x < 0 || z < 0 || x >= width || z >= height || staticBlocked[next]) continue
+          // Interior grid cells already have all eight local links; shortcuts join obstacle boundaries.
+          if ((edges[next] & 255) === 255) continue
           const b = point(x, z)
           if (staticClear(a, b)) {
             const edge = jumpSegments.length
