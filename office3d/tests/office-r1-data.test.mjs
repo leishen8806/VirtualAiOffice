@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BOARD_OVERRIDES, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_OVERRIDES, R1_BOARD_ADDED_ELEMENTS, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -67,9 +67,11 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   const r1 = createR1Layout({ candidateC01: false }), candidate = createR1Layout()
   assert.equal(candidate.candidateC01, true); assert.equal(r1.candidateC01, false)
   // I6C：董事会批准的 24 条位置偏离不受 candidateC01 开关影响，所以期望值是「登记值 + 偏离表」而不是裸登记值；
-  // 仍然是对全部 1132 条逐值深比较，强度不变（偏离表本身由 office-r1-plaza-fan.test.mjs 的 I6C-1 单独锁住）。
+  // R2：董事会新增件（新增表 R1_BOARD_ADDED_ELEMENTS）追加在末尾，同样不受开关影响。
+  // 仍然是对全部 1132 + 新增条逐值深比较，强度不变
+  //（偏离表由 office-r1-plaza-fan.test.mjs 的 I6C-1 锁住，新增表由 office-r1-food.test.mjs 的 FD-6 锁住）。
   const boardPatch = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry.to]))
-  assert.deepEqual(r1.elements, R1_DATA.elements.map(row => boardPatch.has(row.id) ? { ...row, ...boardPatch.get(row.id) } : row))
+  assert.deepEqual(r1.elements, [...R1_DATA.elements.map(row => boardPatch.has(row.id) ? { ...row, ...boardPatch.get(row.id) } : row), ...R1_BOARD_ADDED_ELEMENTS])
   assert.deepEqual(r1.workstations, R1_DATA.workstations)
   assert.deepEqual(r1.routes, candidate.routes)
   assert.deepEqual({ barEntryClearMm: r1.controls.barEntryClearMm, productSideClearMm: r1.controls.productSideClearMm, productBetweenColumnsMm: r1.controls.productBetweenColumnsMm }, { barEntryClearMm: 1200, productSideClearMm: 1250, productBetweenColumnsMm: 1400 })

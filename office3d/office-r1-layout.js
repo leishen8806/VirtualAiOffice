@@ -40,11 +40,29 @@ export const R1_BOARD_ROUTE_OVERRIDES = Object.freeze([
 ])
 const ROUTE_PATCH = new Map(R1_BOARD_ROUTE_OVERRIDES.map(entry => [entry.id, entry.to]))
 
+// ── 董事会新增件表（冻结）──
+// 和上面的偏离表同一个道理：登记数值不得改，所以董事会在验收里新加的实体也不进 office-r1/data.js，
+// 只在这里登记，每条带尺寸 / 位置 / 朝向 / 原因 / 日期；createR1Layout 把它们追加到 elements 末尾，
+// 字段与 data.js 的登记行一致，消费方（r1-furniture 等）照常按 category 读，不用改算法。
+const ADDED_SHELF_REASON = '董事会 2026-10-29："这面墙可以摆放一个书架（堆满互联网、AI 相关书籍）"，指 Dr.life+ 工作室（区 08）东侧外墙 00-W-002 内侧那段空墙'
+export const R1_BOARD_ADDED_ELEMENTS = Object.freeze([
+  Object.freeze({
+    category: '书架', facingLocal: Object.freeze([-1, 0]), geometry: null, heightM: 2.2, id: '08-BK-002',
+    lengthM: 6, parentId: null, regionId: '08', status: 'BOARD_ADDED', unknown: false, widthM: .4,
+    // 背面与墙内侧面贴平：00-W-002 登记 X = 56、厚 .2，内侧面在 X = 55.9，深 .4 ⇒ 中心 X = 55.9 − .2 = 55.7。
+    // 补充卡写的是"约 55.65"，那样背面离墙 5 cm，超过"≤ 2 cm"的硬判据，所以取 55.7，差 5 cm 在"约"的范围内。
+    xM: 55.7, yM: 15.6,
+    // 长边沿 Y、正面朝西（朝办公区）：yawFor 取 −yawDeg，yawDeg = 90 把局部长度轴转到世界 Z、深度轴转向 −X。
+    yawDeg: 90, zM: 0,
+    date: '2026-10-29', reason: ADDED_SHELF_REASON,
+  }),
+])
+
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：两张表的 ID 不相交，顺序只为可复现。
   const deviate = item => { const patch = BOARD_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
   const routes = Object.freeze(R1_DATA.routes.map(route => ROUTE_PATCH.has(route.id)
     ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
-  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze(R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item))), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
+  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze([...R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item)), ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }
