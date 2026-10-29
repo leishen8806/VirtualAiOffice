@@ -369,8 +369,9 @@ test('AMB-10 the R1 module list is unchanged and both tiers stay inside the draw
   const triangles = root => { let n = 0; root.traverse(node => { if (node.isMesh) n += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 }); return n }
   for (const built of [high, low]) assert.ok(triangles(built.module.root) <= 30_000, `三角数 ${triangles(built.module.root)} 应 ≤ 30000`)
   const plazaHigh = plaza(), plazaLow = plaza({ quality: { tier: 'low' } })
-  assert.ok(meshCount(plazaHigh.module.root) <= 2, '广场只多一个贴图网格')
-  assert.ok(meshCount(plazaLow.module.root) <= 2)
+  // 喷泉子树归 OFFICE-R1-FOUNTAIN、价目牌网格归 OFFICE-R1-FOOD，不算进本卡的广场预算。
+  const plazaMeshes = built => { const names = []; built.module.root.traverse(node => { if (node.isMesh && node !== built.module.fountain.proxy && !built.module.fountain.root.getObjectById(node.id)) names.push(node.name) }); return names.sort() }
+  for (const built of [plazaHigh, plazaLow]) assert.deepEqual(plazaMeshes(built), ['r1-plaza-logo-decals', 'r1-plaza-stall-boards', 'r1-plaza-surfaces'], '广场只多一个贴图网格')
   for (const built of [high, low]) built.module.dispose()
   for (const built of [plazaHigh, plazaLow]) built.module.dispose()
   // 非 R1 布局一件都不建。
