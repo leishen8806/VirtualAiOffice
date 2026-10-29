@@ -183,7 +183,7 @@ test('I6C-3 every moved body keeps 0.6 m of real-mesh clearance and the stalls b
   assert.equal(collision.stats().bodies, 0)
 })
 
-const fanAssets = () => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded'].map(name => [name, name])) })
+const fanAssets = () => ({ furn: Object.fromEntries(['desk', 'chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded'].map(name => [name, Object.assign(new THREE.Group(), { name })])) })
 const fanPlaceFurniture = (_A, name, x, z, { y = 0, rotY = 0 } = {}) => {
   const group = new THREE.Group(), mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial())
   mesh.position.y = .5; group.add(mesh); group.position.set(x, y, z); group.rotation.y = rotY
