@@ -120,63 +120,93 @@ function frontGeometry(THREE, walls) {
 }
 
 
-export const r1FenceSpec = Object.freeze({ baseHeight: .3, thickness: .2, barWidth: .025, barSpacing: .125, railHeight: .05, railDepth: .03, bottomRail: .4, topInset: .05, maxRailGap: 1.5, postWidth: .1, maxPostGap: 3 })
+export const r1FenceSpec = Object.freeze({ baseHeight: .3, thickness: .2, finWidth: .012, finDepth: .06, spacing: .18, bottomRailHeight: .03, bottomRailDepth: .07, topRailHeight: .04, topRailDepth: .08, pillarZ: 18.15, planterGap: .02, seed: 7 })
+export const r1FenceSigns = Object.freeze([
+  Object.freeze({ text: '吴哥远望启新程', localX: 24.25, y: 2.1, width: .38, height: 2.4, vertical: true }),
+  Object.freeze({ text: '湄水长流通四海', localX: 31.75, y: 2.1, width: .38, height: 2.4, vertical: true }),
+  Object.freeze({ text: '智序工场', localX: 28, y: 3.8, width: 2.2, height: .34, vertical: false }),
+])
+export function r1FenceHeight(localX, walls) {
+  const t = Math.max(0, Math.min(1, (r1FrontHeight(localX, walls) - 1.2) / 3.3))
+  return 1.2 + 1.8 * t * t * (3 - 2 * t)
+}
 
-function buildFrontFence(THREE, shell, front, faces, walls, opaque) {
-  const spec = r1FenceSpec, metal = new THREE.MeshStandardMaterial({ color: '#2E2F31', metalness: .6, roughness: .45 })
-  const base = new THREE.Mesh(thickPathsGeometry(THREE, front.paths, spec.thickness, () => spec.baseHeight), opaque)
-  base.name = 'r1-fence-base'
-  const entries = { bars: [], rails: [], posts: [] }, height = x => r1FrontHeight(x + 26, walls)
-  for (const path of front.paths) {
-    const nodes = path.points.map(localPoint), segments = []; let length = 0
-    for (let i = 1; i < nodes.length; i++) {
-      const a = nodes[i - 1], b = nodes[i], span = Math.hypot(b.x - a.x, b.z - a.z)
-      segments.push({ a, b, start: length, span, dx: (b.x - a.x) / span, dz: (b.z - a.z) / span }); length += span
-    }
-    const at = distance => {
-      const segment = segments.find(s => distance <= s.start + s.span + 1e-9) || segments.at(-1)
-      return { ...segment, x: segment.a.x + segment.dx * (distance - segment.start), z: segment.a.z + segment.dz * (distance - segment.start) }
-    }
-    const upright = (distance, width, kind) => {
-      const p = at(distance), top = height(p.x), h = top - spec.baseHeight, matrix = new THREE.Matrix4()
-      matrix.set(p.dx * width, 0, -p.dz * width, p.x, 0, h, 0, spec.baseHeight, p.dz * width, 0, p.dx * width, p.z, 0, 0, 0, 1)
-      const tilt = [[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => (height(p.x + width / 2 * (p.dx * x - p.dz * z)) - top) / h)
-      entries[kind].push({ matrix, tilt, distance, path: front.paths.indexOf(path) })
-    }
-    // Endpoint posts finish at the original end planes, never protruding into the doorway.
-    const postCount = Math.ceil((length - spec.postWidth) / spec.maxPostGap)
-    for (let i = 0; i <= postCount; i++) upright(spec.postWidth / 2 + i * (length - spec.postWidth) / postCount, spec.postWidth, 'posts')
-    const barCount = Math.ceil((length - spec.barWidth) / spec.barSpacing)
-    for (let i = 0; i <= barCount; i++) upright(spec.barWidth / 2 + i * (length - spec.barWidth) / barCount, spec.barWidth, 'bars')
-    const railGaps = Math.ceil((4.5 - spec.topInset - spec.bottomRail) / spec.maxRailGap)
-    for (const p of segments) for (let level = 0; level <= railGaps; level++) {
-      const y = x => spec.bottomRail + level / railGaps * (height(x) - spec.topInset - spec.bottomRail)
-      const ya = y(p.a.x), yb = y(p.b.x), matrix = new THREE.Matrix4()
-      matrix.set(p.dx * p.span, 0, -p.dz * spec.railDepth, (p.a.x + p.b.x) / 2,
-        yb - ya, spec.railHeight, 0, (ya + yb) / 2 - spec.railHeight / 2,
-        p.dz * p.span, 0, p.dx * spec.railDepth, (p.a.z + p.b.z) / 2, 0, 0, 0, 1)
-      entries.rails.push({ matrix, tilt: [0,0,0,0], level, path: front.paths.indexOf(path) })
-    }
+function buildFrontFence(THREE, shell, front, faces, walls, opaque, collision) {
+  const spec = r1FenceSpec, height = x => r1FenceHeight(x + 26, walls)
+  const bronze = new THREE.MeshStandardMaterial({ color: '#9A7B52', metalness: .75, roughness: .32 })
+  const stone = new THREE.MeshStandardMaterial({ color: '#BDB3A3', roughness: .85 })
+  const plants = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .85, flatShading: true })
+  const concrete = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 })
+  const metalRows = [], stoneParts = [], planterParts = [], shrubs = [], proxies = [], meshes = [], boxes = []
+  const matrix = (x, y, z, w, h, d, dx = 1, dz = 0) => new THREE.Matrix4().set(dx*w,0,-dz*d,x,0,h,0,y,dz*w,0,dx*d,z,0,0,0,1)
+  const unit = new THREE.BoxGeometry(1, 1, 1).translate(0, .5, 0)
+  const proxy = (name, geometry) => { const m = new THREE.Mesh(geometry, opaque); m.name = name; m.visible = false; m.userData = { dynamic: true, wallIds: front.ids, faceIds: faces }; shell.add(m); proxies.push(m) }
+  const stoneBox = (id, x, y, z, w, h, d, collide = false) => {
+    const geometry = unit.clone().applyMatrix4(matrix(x,y,z,w,h,d)); stoneParts.push({ id, geometry })
+    boxes.push({ id, min: [x-w/2,y,z-d/2], max: [x+w/2,y+h,z+d/2] })
+    if (collide) proxy('r1-collision-'+id, geometry.clone())
   }
-  const geometry = new THREE.BoxGeometry(1, 1, 1).translate(0, .5, 0), position = geometry.attributes.position
-  // Four top-corner morphs keep flat feet and profile-cut tops in a single instanced batch.
-  geometry.morphTargetsRelative = true
-  geometry.morphAttributes.position = [[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,z]) => {
-    const values = new Float32Array(position.count * 3)
-    for (let i = 0; i < position.count; i++) if (position.getY(i) > .5 && Math.sign(position.getX(i)) === x && Math.sign(position.getZ(i)) === z) values[i * 3 + 1] = 1
-    return new THREE.Float32BufferAttribute(values, 3)
+  // Crop only the visible fence: the original closed front collision profile stays intact.
+  const cropped = front.paths.map((path, side) => ({ points: path.points.filter(([x]) => side === 0 ? x < 24 : x > 32).map(p => [...p]) }))
+  cropped[0].points.push([24,0]); cropped[1].points.unshift([32,0])
+  stoneParts.push({ id: 'plinth', geometry: thickPathsGeometry(THREE, cropped, .2, () => .3) })
+  const corners = [-1,1].flatMap(x => [-1,1].flatMap(z => [0,1].map(y => ({x,y,z}))))
+  const metalBox = (kind, p, w, h, d, bottom, top, extra = {}) => {
+    const m = matrix(p.x,bottom,p.z,w,h,d,p.dx,p.dz), tilt = corners.map(c => {
+      if (!top) return 0
+      const x = p.x + p.dx*w*c.x/2 - p.dz*d*c.z/2
+      const target = c.y ? top(x) : kind === 'top' ? top(x)-h : bottom
+      return (target - bottom - c.y*h) / h
+    })
+    metalRows.push({ kind, matrix:m, tilt, ...extra })
+  }
+  let seed=spec.seed; const random=()=> (seed=seed*16807%2147483647)/2147483647
+  const greens=['#3F7A3A','#4E8B41','#2F6B3A','#5C9447','#6FA052']
+  for (const [side,path] of cropped.entries()) {
+    const nodes=path.points.map(localPoint), segments=[]; let length=0
+    for(let i=1;i<nodes.length;i++){const a=nodes[i-1],b=nodes[i],span=Math.hypot(b.x-a.x,b.z-a.z);segments.push({a,b,span,start:length,dx:(b.x-a.x)/span,dz:(b.z-a.z)/span});length+=span}
+    const at = distance => {const s=segments.find(s=>distance<=s.start+s.span+1e-9)||segments.at(-1);return {...s,x:s.a.x+s.dx*(distance-s.start),z:s.a.z+s.dz*(distance-s.start)}}
+    const count=Math.round((length-.04)/spec.spacing)
+    for(let i=0;i<=count;i++){const distance=.02+i*(length-.04)/count,p=at(distance);metalBox('fin',p,spec.finWidth,height(p.x)-.34,spec.finDepth,.3,x=>height(x)-.04,{path:side,distance})}
+    for(const s of segments){const p={...s,x:(s.a.x+s.b.x)/2,z:(s.a.z+s.b.z)/2};metalBox('bottom',p,s.span,.03,.07,.315,null,{path:side});metalBox('top',p,s.span,.04,.08,height(p.x)-.04,height,{path:side})}
+    // Offset a continuous path outwards; retain a 20 mm gap at the gate-pillar outer edge.
+    const bedPath=path.points.map(p=>[...p]); if(side===0)bedPath.at(-1)[0]-=.02;else bedPath[0][0]+=.02
+    const bedNodes=bedPath.map(localPoint), offset=bedNodes.map((p,i)=>{const a=bedNodes[Math.max(0,i-1)],b=bedNodes[Math.min(i+1,bedNodes.length-1)],l=Math.hypot(b.x-a.x,b.z-a.z);return {x:-(b.z-a.z)/l,z:(b.x-a.x)/l}})
+    const shifted={points:bedPath.map(([x,y],i)=>[x+offset[i].x*.5,y-offset[i].z*.5])}
+    const body=thickPathsGeometry(THREE,[shifted],.6,()=>.42), soil=thickPathsGeometry(THREE,[shifted],.5,()=>.02).translate(0,.42,0)
+    for(const [id,geometry,color] of [['planter-'+side,body,'#8E877C'],['soil-'+side,soil,'#4A3A2C']]){
+      const source=geometry.index?geometry.toNonIndexed():geometry, c=new THREE.Color(color), colors=new Float32Array(source.attributes.position.count*3)
+      for(let i=0;i<colors.length;i+=3){colors[i]=c.r;colors[i+1]=c.g;colors[i+2]=c.b}
+      source.setAttribute('color',new THREE.BufferAttribute(colors,3));planterParts.push({id,geometry:source});if(source!==geometry)geometry.dispose()
+    }
+    // Ordinary Mesh segments keep the curved planter solid for the capsule collision library.
+    const shiftedNodes=shifted.points.map(localPoint)
+    for(let i=1;i<shiftedNodes.length;i++){const a=shiftedNodes[i-1],b=shiftedNodes[i],l=Math.hypot(b.x-a.x,b.z-a.z),m=matrix((a.x+b.x)/2,0,(a.z+b.z)/2,l,.42,.6,(b.x-a.x)/l,(b.z-a.z)/l);proxy(`fence-planter-${side}-${i}`,unit.clone().applyMatrix4(m))}
+    for(let distance=.3;distance<length-.5;distance+=.5+random()*.25){const p=at(distance),r=.26+random()*.16,off=.5+(random()-.5)*.12,m=new THREE.Matrix4().compose(new THREE.Vector3(p.x-p.dz*off,.44+r*.55,p.z+p.dx*off),new THREE.Quaternion().setFromEuler(new THREE.Euler(random(),random()*6,random())),new THREE.Vector3(r,r*(.75+random()*.3),r));shrubs.push({matrix:m,color:greens[Math.floor(random()*greens.length)]})}
+  }
+  for(const x of [-1.75,5.75]){stoneBox('fence-pillar-'+x,x,0,spec.pillarZ,.5,3.6,.5,true);metalBox('cap',{x,z:spec.pillarZ,dx:1,dz:0},.62,.12,.62,4,null)}
+  stoneBox('fence-lintel',2,3.6,spec.pillarZ,8,.4,.5)
+  const joined = joinedSurfaces(THREE,stoneParts), stoneMesh = new THREE.Mesh(joined.geometry,stone)
+  stoneMesh.name='r1-fence-stone';stoneMesh.userData.ranges=joined.ranges;stoneMesh.userData.boxes=boxes;meshes.push(stoneMesh)
+  // Eight corner offsets cut both faces of each top strip to the smooth profile in one batch.
+  const position=unit.attributes.position;unit.morphTargetsRelative=true
+  unit.morphAttributes.position=corners.map(c=>{const values=new Float32Array(position.count*3);for(let i=0;i<position.count;i++)if(Math.sign(position.getX(i))===c.x&&Math.sign(position.getZ(i))===c.z&&Math.round(position.getY(i))===c.y)values[i*3+1]=1;return new THREE.Float32BufferAttribute(values,3)})
+  const metal=new THREE.InstancedMesh(unit,bronze,metalRows.length);metal.name='r1-fence-metal';metalRows.forEach((r,i)=>{metal.setMatrixAt(i,r.matrix);metal.setMorphAt(i,{morphTargetInfluences:r.tilt})});metal.morphTexture.needsUpdate=true;metal.userData.parts=metalRows.map(({matrix,...r})=>r);meshes.push(metal)
+  const planterGeometry=new THREE.BufferGeometry()
+  for(const attr of ['position','normal','color']){const values=[];for(const row of planterParts)values.push(...row.geometry.attributes[attr].array);planterGeometry.setAttribute(attr,new THREE.Float32BufferAttribute(values,3))}
+  planterParts.forEach(p=>p.geometry.dispose());const planter=new THREE.Mesh(planterGeometry,concrete);planter.name='r1-fence-planters';meshes.push(planter)
+  const leaves=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),plants,shrubs.length);leaves.name='r1-fence-shrubs';shrubs.forEach((r,i)=>{leaves.setMatrixAt(i,r.matrix);leaves.setColorAt(i,new THREE.Color(r.color))});meshes.push(leaves)
+  const canvas=document.createElement('canvas');canvas.width=2048;canvas.height=2048;const ctx=canvas.getContext('2d'),rects=[[0,0,256,1600],[256,0,256,1600],[512,0,1536,240]],pos=[],uv=[],normal=[],indices=[]
+  r1FenceSigns.forEach((sign,i)=>{
+    const [x,y,w,h]=rects[i];ctx.fillStyle='#3A2E26';ctx.fillRect?.(x,y,w,h);ctx.strokeStyle='#B8955A';ctx.lineWidth=8;ctx.strokeRect?.(x+8,y+8,w-16,h-16);ctx.fillStyle='#E2C07A';ctx.font=`bold ${sign.vertical?190:180}px "KaiTi", "STKaiti", "Kaiti SC", serif`;ctx.textAlign='center';ctx.textBaseline='middle'
+    ;[...sign.text].forEach((ch,j)=>ctx.fillText(ch,sign.vertical?x+w/2:x+w*(j+.5)/sign.text.length,sign.vertical?y+h*(j+.5)/sign.text.length:y+h/2))
+    const cx=sign.localX-26,cy=sign.y,z=spec.pillarZ+.251,b=pos.length/3;pos.push(cx-sign.width/2,cy-sign.height/2,z,cx+sign.width/2,cy-sign.height/2,z,cx+sign.width/2,cy+sign.height/2,z,cx-sign.width/2,cy+sign.height/2,z);normal.push(0,0,1,0,0,1,0,0,1,0,0,1);uv.push(x/2048,1-(y+h)/2048,(x+w)/2048,1-(y+h)/2048,(x+w)/2048,1-y/2048,x/2048,1-y/2048);indices.push(b,b+1,b+2,b,b+2,b+3)
   })
-  const meshes = [base]
-  for (const [kind, rows] of Object.entries(entries)) {
-    const mesh = new THREE.InstancedMesh(geometry, metal, rows.length)
-    mesh.name = 'r1-fence-' + kind
-    rows.forEach((row, index) => { mesh.setMatrixAt(index, row.matrix); mesh.setMorphAt(index, { morphTargetInfluences: row.tilt }) })
-    mesh.instanceMatrix.needsUpdate = true; mesh.morphTexture.needsUpdate = true
-    mesh.userData.parts = rows.map(({ matrix, ...row }) => row)
-    meshes.push(mesh)
-  }
-  for (const mesh of meshes) { Object.assign(mesh.userData, { dynamic: true, wallIds: front.ids, faceIds: faces }); shell.add(mesh) }
-  return { dispose() { base.geometry.dispose(); geometry.dispose(); metal.dispose(); meshes.slice(1).forEach(m => m.dispose()) } }
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8
+  const signGeometry=new THREE.BufferGeometry();signGeometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));signGeometry.setAttribute('normal',new THREE.Float32BufferAttribute(normal,3));signGeometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));signGeometry.setIndex(indices)
+  const signMaterial=new THREE.MeshStandardMaterial({map:texture,metalness:.35,roughness:.5}),signs=new THREE.Mesh(signGeometry,signMaterial);signs.name='r1-fence-signs';signs.userData.signs=r1FenceSigns;meshes.push(signs)
+  for(const mesh of meshes){Object.assign(mesh.userData,{dynamic:true,wallIds:front.ids,faceIds:faces});mesh.castShadow=true;mesh.receiveShadow=true;shell.add(mesh)}
+  return {proxies, dispose(){proxies.forEach(p=>{collision?.remove?.(p);p.geometry.dispose();p.removeFromParent()});meshes.forEach(m=>{m.geometry.dispose();if(m.isInstancedMesh)m.dispose()});for(const m of [bronze,stone,plants,concrete,signMaterial])m.dispose();texture.dispose()}}
 }
 
 export function r1WallPlan(layout) {
@@ -264,7 +294,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const front = frontGeometry(THREE, plan.front)
   const frontWall = new THREE.Mesh(front.geometry, opaque)
   frontWall.name = 'r1-collision-front'; frontWall.visible = false; frontWall.userData.dynamic = true; frontWall.userData.wallIds = front.ids; frontWall.userData.faceIds = plan.front.flatMap(wall => plan.faces[wall.id].map(face => face.id)); shell.add(frontWall)
-  const fence = buildFrontFence(THREE, shell, front, frontWall.userData.faceIds, plan.front, opaque)
+  const fence = buildFrontFence(THREE, shell, front, frontWall.userData.faceIds, plan.front, opaque, collision)
   const cornerPaths = [
     { points: curvePoints(r1CornerSpec.southeast.center, r1CornerSpec.southeast.from, r1CornerSpec.southeast.to) },
     { points: curvePoints(r1CornerSpec.southwest.center, r1CornerSpec.southwest.from, r1CornerSpec.southwest.to) },
@@ -297,6 +327,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const cornerProxy = new THREE.Mesh(thickPathsGeometry(THREE, cornerPaths, .1), opaque)
   cornerProxy.name = 'r1-collision-corners'; cornerProxy.visible = false; cornerProxy.userData = { dynamic: true, wallIds: cornerWall.userData.wallIds, faceIds: cornerWall.userData.faceIds }; shell.add(cornerProxy)
   for (const collider of [frontWall, cornerProxy]) { collision?.add?.(collider, 'r1-wall'); collisions.push(collider) }
+  for (const proxy of fence.proxies) collision?.add?.(proxy, 'r1-wall')
   root.add(shell)
   const allWallIds = [...new Set([...plan.straight.map(entry => entry.id), ...front.ids, '00-W-021', '00-W-016'])]
   return {

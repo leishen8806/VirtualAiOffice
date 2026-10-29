@@ -266,7 +266,7 @@
       "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "B445FBCA9ED4793225D96A697110F5C578A9EAD6ACD1CCC70C2D7ACCB71883B0"
+      "sha256": "D98628AB51223B1AA376101238DA7BAF511F85DFFB386177591E17E225B482E7"
     },
     {
       "file": "office-vis2/r1-site.js",

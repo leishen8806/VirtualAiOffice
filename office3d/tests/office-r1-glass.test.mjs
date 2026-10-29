@@ -37,7 +37,7 @@ test('I2B glazing keeps only the reception background opaque; exterior has no tr
   assert.equal(outer.count, 4); assert.ok(outer.material.opacity >= .45 && outer.material.opacity <= .55)
   assert.equal(outer.material.roughness, .65); assert.equal(outer.material.transmission, 0)
   assert.equal(get('r1-low-glass').material.opacity, .24)
-  for (const name of ['r1-interior-walls', 'r1-fence-bars', 'r1-top-bands']) assert.equal(get(name).material.transparent, false)
+  for (const name of ['r1-interior-walls', 'r1-fence-metal', 'r1-top-bands']) assert.equal(get(name).material.transparent, false)
   assert.ok(Object.isFrozen(r1Glazing))
 }))
 
