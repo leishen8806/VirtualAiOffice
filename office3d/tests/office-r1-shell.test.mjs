@@ -197,7 +197,7 @@ test('I2 R4 keeps the identity ledger addressable and batches its zones and clos
   assert.equal(root.children[0].name, 'r1-shell-root')
   assert.equal(root.children[0].userData.dynamic, true)
   assert.equal(shell.wallLedger.wallIds.length, 42); assert.equal(shell.wallLedger.faceIds.length, 84)
-  const front = root.getObjectByName('r1-front-slope-wall'), corners = root.getObjectByName('r1-corner-walls')
+  const front = root.getObjectByName('r1-collision-front'), corners = root.getObjectByName('r1-corner-walls')
   assert.equal(front.material.side, THREE.FrontSide); closedMesh(front); closedMesh(corners)
   const normal = front.geometry.attributes.normal, position = front.geometry.attributes.position
   for (let index = 0; index < position.count; index += 4) {
