@@ -71,21 +71,26 @@ test('FD-6a 新书架与圆桌椅、协作桌椅、端柜和南墙的净距逐�
   near(size.z, 6, .01); near(size.x, .4, .01); near(size.y, 2.2, .01)
   const expected = r1ToWorld(55.7, 15.6), centre = shelf.getCenter(new THREE.Vector3())
   near(centre.x, expected.x, .01); near(centre.z, expected.z, .01)
-  const neighbours = ['08-CH-027', '08-T-018', '08-CH-024', '08-T-017', '08-CT-020', '08-CT-021']
+  // 补充卡点名的邻件：圆桌椅（08-CH-025/026/027 与圆桌 08-T-018）、协作桌椅（08-T-017 / 08-CH-024）、
+  // 端柜（离书架最近的一只是区 13 的 13-CB-002）。每一件都必须真的在布局里，缺件算失败。
+  const neighbours = ['08-CH-027', '08-CH-025', '08-T-018', '08-CH-026', '08-CH-024', '08-T-017', '13-CB-002']
   const list = []
   for (const id of neighbours) {
     const other = furniture.itemBounds.get(id)
-    if (!other) continue
+    assert.ok(other, `${id} 不在布局里，净距清单对不上`)
     const dx = Math.max(shelf.min.x - other.max.x, other.min.x - shelf.max.x, 0)
     const dz = Math.max(shelf.min.z - other.max.z, other.min.z - shelf.max.z, 0)
     const distance = Math.hypot(dx, dz)
     list.push([id, Number(distance.toFixed(3))])
     assert.ok(distance >= .6, `${id} 净距 ${distance} m < 0.6 m`)
   }
-  assert.ok(list.length >= 4, `邻件清单只量到 ${list.length} 件`)
+  assert.equal(list.length, neighbours.length)
+  // 最近的一件是圆桌椅 08-CH-027：2.10 m，远在 0.6 m（含 0.1 m 余量）之上。
+  assert.equal(list[0][0], '08-CH-027')
+  assert.ok(list[0][1] >= 2 && list[0][1] <= 2.2, `最近邻件净距 ${list[0][1]} m`)
   // 南墙 00-W-033 在 R1 的 Y = 9.5：书架南端 Y = 12.6，净距 3.1 m。
   const south = 18 - 9.5
-  assert.ok(south - shelf.max.z >= .6, `南墙净距 ${south - shelf.max.z} m`)
+  near(south - shelf.max.z, 3.1, .01)
   furniture.dispose()
 })
 
