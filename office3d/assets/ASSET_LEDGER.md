@@ -336,3 +336,22 @@ Microsoft Rocketbox，MIT。仅导入下列 13 项；原件来自已核对的隔
 | models/people/anim/m_sit_table_idle_touch_hair.fbx | 2414176 | 60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314 |
 | models/people/anim/f_sit_table_idle_roll_head.fbx | 2153328 | 6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014 |
 | models/people/anim/m_sit_table_idle_roll_head.fbx | 2374048 | 8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d |
+
+## R1 工位屏幕空闲画面（2026-10-29，OFFICE-R1-DESKSTATUS）
+
+**第三方商标素材，与上面各批 CC0 / MIT 素材性质不同，单独成节。**
+
+| 项 | 内容 |
+|---|---|
+| 本目录下目标路径 | `win98-idle.png` |
+| 字节数 | 81629 |
+| SHA-256 | 1685f3448b076fbbb68a699aa31acce42b1826adbc94cf74e85dcd2d1ef589ff |
+| 尺寸 | 640 × 400 |
+| 来源 | **董事会提供**（2026-10-29 指定"请使用 windows98 图片"）；原件在需求目录 `E:/VirtualAIOffice/dispatch/OFFICE-R1-DESKSTATUS-20261029/素材-windows98.png`，逐字节复制，哈希与该目录 `SHA256SUMS.txt` 登记值一致 |
+| 许可 | **第三方商标图片，董事会决定仅用于内部展示** |
+| 用途 | R1 工位屏幕在"无任务且非暂停"时显示的空闲画面（等比放大铺满、居中裁切） |
+| 代码引用处 | `app.js` 的常量 `WIN98_IDLE_IMAGE`（**全仓库仅此一处**，便于日后整体替换） |
+| 是否改动 | 否，逐字节与董事会给的原件一致 |
+
+注意：该图含 Microsoft 商标，**不得**用于对外演示、宣传物料或任何公开发布的截图；
+如需对外展示，先向董事会申请替换为自有素材（换掉 `WIN98_IDLE_IMAGE` 指向的文件即可）。
