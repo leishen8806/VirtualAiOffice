@@ -389,7 +389,7 @@
     },
     {
       "file": "office-vis2/r1-tropical.js",
-      "sha256": "7CFDD9F6863B7D2AF0F0286330B6C25C9C799A813C4A06A04380E4DB72773D42",
+      "sha256": "796A5292AB84A315BE48C7DA72C860AF6141556A071098376BE8F07471C5ECBE",
       "source": "OFFICE-R1-LOOK R2: six indoor tropical species and four plaza species; deterministic procedural geometry and approved alpha atlas",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": true

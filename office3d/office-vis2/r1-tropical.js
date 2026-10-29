@@ -25,7 +25,7 @@ export function tropicalLeafBatch(THREE) {
     build(root,name) {
       const g=new THREE.BufferGeometry();for(const k of Object.keys(values))g.setAttribute(k,new THREE.Float32BufferAttribute(values[k],k==='uv'?2:3))
       g.computeBoundingBox();g.computeBoundingSphere()
-      const texture=typeof document==='undefined'?new THREE.Texture():new THREE.TextureLoader().load(new URL('../assets/textures/office-v2/leaf-atlas-v2.png',import.meta.url).href)
+      const texture=typeof globalThis.document?.createElementNS!=='function'?new THREE.Texture():new THREE.TextureLoader().load(new URL('../assets/textures/office-v2/leaf-atlas-v2.png',import.meta.url).href)
       texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=4
       const material=new THREE.MeshStandardMaterial({map:texture,alphaTest:.45,side:THREE.DoubleSide,vertexColors:true,roughness:.78})
       const mesh=new THREE.Mesh(g,material);mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=true;root.add(mesh)
