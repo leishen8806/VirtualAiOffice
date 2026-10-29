@@ -2121,6 +2121,13 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     v.ring.rotation.z += dt * (v.mode === 'run' ? 2.4 : 0.6)
     v.ring.position.set(0, (ch.ringY || 1.82) + Math.sin(t * 2 + v.phase) * 0.02, 0)
     if (redraw) drawScreen(v.desk.scr, v.mode === 'run' ? 'run' : v.mode === 'err' ? 'err' : v.mode === 'stall' ? 'stall' : 'idle', tick, v)
+    // 桌角状态灯：和头顶状态环同一套颜色、同一个 deskStatus()。疑似卡住按 2.5 Hz 在琥珀与暗琥珀之间闪，
+    // 只改 instanceColor、不加真实光源；颜色没变就不碰 GPU 缓冲。
+    if (v.desk.setStatusLight) {
+      const state = deskStatus(v)
+      const colour = state === 'stall' ? (Math.sin(t * 5) > 0 ? DESK_STATE_COLOR.stall : '#6b4a12') : DESK_STATE_COLOR[state]
+      if (v.lampColour !== colour) { v.lampColour = colour; v.desk.setStatusLight(colour) }
+    }
     ch.body.head.getWorldPosition(v.headPos)
     v.headPos.y += ch.labelDY || 0.62
     if (v.away) v.label.style.display = 'none'

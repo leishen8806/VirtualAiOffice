@@ -98,6 +98,46 @@ function badgeBatch(THREE, stations) {
   mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true
   return mesh
 }
+// 桌角状态灯（卡面 E / F 行）。**不挪用上面 badgeBatch 的模型圆片**：那一片表示的是模型家族，
+// 这里另起细铜杆 + 发光灯头。杆和灯头各合一个 InstancedMesh，共 +2 draw calls（预算 +≤2）；
+// 灯头颜色走 instanceColor，闪烁只改颜色、不加真实光源。
+const LAMP = { postTop: .012, postBottom: .018, postHeight: .16, cap: .035, deskTop: .76, capY: .18, insetX: .6, insetZ: .26 }
+// 两个轴对齐盒之间的最小距离；相交时为 0。
+const boxGap = (a, b) => Math.hypot(
+  Math.max(b.min.x - a.max.x, a.min.x - b.max.x, 0),
+  Math.max(b.min.y - a.max.y, a.min.y - b.max.y, 0),
+  Math.max(b.min.z - a.max.z, a.min.z - b.max.z, 0))
+// 灯放在桌面靠里的一角。个人物品（书 / 台灯 / 绿植）只占其中一个后角，所以两个后角各试一次，
+// 取离桌面件最远的那个；并列时固定选左手边，保证确定性。
+function lampSpot(THREE, deskWorld, yaw, obstacles) {
+  const c = Math.cos(yaw), s = Math.sin(yaw)
+  let best = null
+  for (const side of [-1, 1]) {
+    const x = deskWorld.x + c * (side * LAMP.insetX) + s * -LAMP.insetZ, z = deskWorld.z - s * (side * LAMP.insetX) + c * -LAMP.insetZ
+    const box = new THREE.Box3(
+      new THREE.Vector3(x - LAMP.cap, LAMP.deskTop, z - LAMP.cap),
+      new THREE.Vector3(x + LAMP.cap, LAMP.deskTop + LAMP.capY + LAMP.cap, z + LAMP.cap))
+    let clear = Infinity
+    for (const obstacle of obstacles) clear = Math.min(clear, boxGap(box, obstacle))
+    if (!best || clear > best.clear + 1e-9) best = { x, z, side, clear }
+  }
+  return best
+}
+function statusLampBatch(THREE, spots) {
+  const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(LAMP.postTop, LAMP.postBottom, LAMP.postHeight, 10),
+    new THREE.MeshStandardMaterial({ color: '#8a6d3b', metalness: .6, roughness: .35 }), spots.length)
+  const caps = new THREE.InstancedMesh(new THREE.SphereGeometry(LAMP.cap, 16, 12),
+    new THREE.MeshBasicMaterial({ toneMapped: false }), spots.length)
+  posts.name = 'r1-workstation-status-posts'; caps.name = 'r1-workstation-status-lamps'
+  const transform = new THREE.Object3D(), white = new THREE.Color('#d8dde2')
+  spots.forEach((spot, index) => {
+    transform.position.set(spot.x, LAMP.deskTop + LAMP.postHeight / 2, spot.z); transform.updateMatrix(); posts.setMatrixAt(index, transform.matrix)
+    transform.position.set(spot.x, LAMP.deskTop + LAMP.capY, spot.z); transform.updateMatrix(); caps.setMatrixAt(index, transform.matrix)
+    caps.setColorAt(index, white)
+  })
+  posts.instanceMatrix.needsUpdate = true; caps.instanceMatrix.needsUpdate = true; caps.instanceColor.needsUpdate = true
+  return { posts, caps }
+}
 
 // R1 furniture is baked by material bucket: detailed GLB assets without a draw call per record.
 export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture, A, placeFurniture }) {
@@ -216,13 +256,27 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
     mesh.name = `r1-furniture-${bucket}`; mesh.userData.itemIds = items.filter(item => bucketFor(item) === bucket).map(item => item.id); group.add(mesh); materials.push(material); merged.push(mesh)
   }
   const stations = layout.r1.workstations, screens = screenAtlas(THREE, stations, makeScreenTexture), badges = badgeBatch(THREE, stations), handles = new Map()
-  group.add(screens.mesh, badges)
+  // 状态灯落位：避让本桌的桌面件（键盘 / 鼠标 / 鼠标垫 / 个人物品）和显示器。
+  const monitorByDesk = new Map(items.filter(item => item.category === '显示器' && item.parentId).map(item => [item.parentId, item.id]))
+  const lampSpots = stations.map(station => {
+    const desk = r1ToWorld(station.xM, station.yM), yaw = deskYaw.get(station.desk_id) ?? 0
+    const obstacles = (desktopItems.get(station.desk_id) || []).map(detail => detail.bounds)
+    const monitorBounds = itemBounds.get(monitorByDesk.get(station.desk_id))
+    if (monitorBounds) obstacles.push(monitorBounds)
+    return lampSpot(THREE, desk, yaw, obstacles)
+  })
+  const lamps = statusLampBatch(THREE, lampSpots)
+  group.add(screens.mesh, badges, lamps.posts, lamps.caps)
   stations.forEach((station, index) => {
     const desk = r1ToWorld(station.xM, station.yM), chair = r1ToWorld(station.chairXM, station.chairYM), anchor = new THREE.Group(), scr = makeScreenTexture()
     anchor.name = `r1-desk-${station.business_id}`; anchor.position.set(desk.x, 0, desk.z); anchor.userData = { r1DeskId: station.desk_id, r1ChairId: station.chair_id }; group.add(anchor); screens.connect(scr, index)
     const chairAnchor = new THREE.Group(); chairAnchor.name = `r1-chair-${station.chair_id}`; chairAnchor.position.set(chair.x, 0, chair.z); chairAnchor.rotation.y = chairYaw.get(station.chair_id) ?? 0
-    handles.set(key(desk.x, desk.z), { group: anchor, scr, chair: chairAnchor, setBadge(color) { badges.setColorAt(index, new THREE.Color(color)); badges.instanceColor.needsUpdate = true } })
+    handles.set(key(desk.x, desk.z), { group: anchor, scr, chair: chairAnchor, lamp: lampSpots[index],
+      setBadge(color) { badges.setColorAt(index, new THREE.Color(color)); badges.instanceColor.needsUpdate = true },
+      // 状态灯只改灯头颜色（卡面 F 行：闪烁只改颜色，不加真实光源）。
+      setStatusLight(color) { lamps.caps.setColorAt(index, new THREE.Color(color)); lamps.caps.instanceColor.needsUpdate = true } })
   })
   root.add(group); let disposed = false
-  return { root: group, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings, seatedProfile(name) { return R1_SEATED_PROFILES[name] || null }, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
+  return { root: group, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings,
+    statusLamps: { posts: lamps.posts, caps: lamps.caps, spots: lampSpots, metrics: LAMP, monitorByDesk }, seatedProfile(name) { return R1_SEATED_PROFILES[name] || null }, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); lamps.posts.geometry.dispose(); lamps.posts.material.dispose(); lamps.caps.geometry.dispose(); lamps.caps.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
 }

@@ -4,6 +4,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
+import { registerHooks } from 'node:module'
+import * as THREE from '../vendor/three/three.module.js'
+import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
+import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
+import { createFurnitureCollision } from '../furniture-collision.js'
+import { r1ToWorld } from '../office-r1-layout.js'
 
 const appURL = new URL('../app.js', import.meta.url)
 const source = await readFile(appURL, 'utf8')
@@ -194,4 +201,108 @@ test('DS-5 旧布局的屏幕分支逐值不变，只多了一个可选参数', 
   }
   // 旧布局的去重键没被动过。
   assert.match(source, /const key = mode \+ \(\(mode === 'run' \|\| mode === 'idle'\) \? tick : ''\) \+ \(markTex\.image \? 'm' : ''\)/)
+})
+
+// ───────────── DS-4 桌角状态灯 ─────────────
+// 这一段要真的把 R1 家具建出来，所以按既有 R1 测试的做法加载 GLB。
+const hooks = registerHooks({ resolve(s, c, next) { return s === 'three' ? { url: new URL('../vendor/three/three.module.js', import.meta.url).href, shortCircuit: true } : next(s, c) } })
+const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
+const { placeFurniture } = await import('../assets3d.js')
+hooks.deregister()
+const glb = async name => {
+  const b = readFileSync(new URL(`../assets/models/furniture/${name}.glb`, import.meta.url))
+  return (await new GLTFLoader().parseAsync(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength), '')).scene
+}
+const FURN = {}
+for (const name of ['computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'desk', 'chairDesk']) FURN[name] = await glb(name)
+const A = { furn: FURN }
+
+const buildFurniture = (layout = createOfficeR1Layout()) => {
+  const root = new THREE.Group(), collision = createFurnitureCollision()
+  return { root, collision, f: buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture: fakeScreenTexture, A, placeFurniture }) }
+}
+// buildR1Furniture 要一个能当画布用的屏幕纹理；这里给个最小实现。
+function fakeScreenTexture() {
+  const ctx = fakeCtx(256, 144)
+  return { ctx, scroll: 0, last: '', tex: { needsUpdate: false, dispose() {} } }
+}
+const gap = (a, b) => Math.hypot(
+  Math.max(b.min.x - a.max.x, a.min.x - b.max.x, 0),
+  Math.max(b.min.y - a.max.y, a.min.y - b.max.y, 0),
+  Math.max(b.min.z - a.max.z, a.min.z - b.max.z, 0))
+
+test('DS-4 25 盏状态灯逐盏：在本桌桌面范围内、底面贴桌面、不与桌面件相交', () => {
+  const { f } = buildFurniture(), lamps = f.statusLamps, M = lamps.metrics
+  const stations = createOfficeR1Layout().r1.workstations
+  assert.equal(stations.length, 25)
+  assert.equal(lamps.posts.count, 25)
+  assert.equal(lamps.caps.count, 25)
+  const m = new THREE.Matrix4(), pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scl = new THREE.Vector3()
+  stations.forEach((station, i) => {
+    // 杆：底面正好贴桌面 y=.76。
+    lamps.posts.getMatrixAt(i, m); m.decompose(pos, quat, scl)
+    // instanceMatrix 是 Float32Array，容差按 float32 取 1e-6。
+    const postBottom = pos.y - M.postHeight / 2
+    assert.ok(Math.abs(postBottom - M.deskTop) < 1e-6, `第 ${i} 盏杆底没贴桌面：${postBottom}`)
+    // 灯头：离桌面 0.12–0.2 m（卡面 E 行）。
+    lamps.caps.getMatrixAt(i, m); m.decompose(pos, quat, scl)
+    const above = pos.y - M.deskTop
+    assert.ok(above >= .12 && above <= .2, `第 ${i} 盏灯头离桌面 ${above}，不在 0.12–0.2 m`)
+    // 杆与灯头在同一条竖线上。
+    const spot = lamps.spots[i]
+    assert.ok(Math.abs(pos.x - spot.x) < 1e-5 && Math.abs(pos.z - spot.z) < 1e-5)
+    // 在本桌桌面范围内。
+    const deskBox = f.itemBounds.get(station.desk_id)
+    assert.ok(deskBox, `第 ${i} 盏找不到本桌包围盒`)
+    assert.ok(spot.x >= deskBox.min.x && spot.x <= deskBox.max.x, `第 ${i} 盏 x 出了桌面范围`)
+    assert.ok(spot.z >= deskBox.min.z && spot.z <= deskBox.max.z, `第 ${i} 盏 z 出了桌面范围`)
+    // 与本桌所有桌面件（键盘 / 鼠标 / 鼠标垫 / 个人物品）和显示器都不相交。
+    const lampBox = new THREE.Box3(
+      new THREE.Vector3(spot.x - M.cap, M.deskTop, spot.z - M.cap),
+      new THREE.Vector3(spot.x + M.cap, M.deskTop + M.capY + M.cap, spot.z + M.cap))
+    const obstacles = (f.desktopItems.get(station.desk_id) || []).map(d => ({ id: d.id, box: d.bounds }))
+    const monitor = f.itemBounds.get(lamps.monitorByDesk.get(station.desk_id))
+    if (monitor) obstacles.push({ id: `${station.desk_id}/monitor`, box: monitor })
+    assert.ok(obstacles.length >= 3, `第 ${i} 盏没取到桌面件，断言会变成空转`)
+    for (const o of obstacles) assert.ok(gap(lampBox, o.box) > 0, `第 ${i} 盏与 ${o.id} 相交`)
+  })
+  f.dispose()
+})
+
+test('DS-4 状态灯是新增批次，没挪用模型颜色圆片，且只多 2 个 draw call', () => {
+  const { f } = buildFurniture()
+  const batches = f.root.children.filter(n => (n.isMesh || n.isInstancedMesh) && n.visible)
+  const lamps = batches.filter(n => n.name.startsWith('r1-workstation-status-'))
+  assert.equal(lamps.length, 2, '状态灯应当是 2 个批次（杆 + 灯头）')
+  assert.ok(lamps.every(n => n.isInstancedMesh && n.count === 25), '两个批次都要是 25 实例的 InstancedMesh')
+  // 模型颜色圆片还在，且没被状态灯接管。
+  const badges = batches.find(n => n.name === 'r1-workstation-badges')
+  assert.ok(badges && badges.isInstancedMesh && badges.count === 25, '原来的模型圆片不该被动')
+  assert.ok(!lamps.includes(badges))
+  f.dispose()
+})
+
+test('DS-4 灯头颜色走 instanceColor，与头顶状态环同一套色', () => {
+  const { f } = buildFurniture()
+  const { DESK_STATE_COLOR } = loadScreenModule(null)
+  const handle = f.deskAt(...(() => { const s = createOfficeR1Layout().r1.workstations[0]; const w = r1ToWorld(s.xM, s.yM); return [w.x, w.z] })())
+  assert.ok(handle && typeof handle.setStatusLight === 'function', '每张桌要有 setStatusLight')
+  const read = i => { const c = new THREE.Color(); f.statusLamps.caps.getColorAt(i, c); return '#' + c.getHexString() }
+  // 默认是空闲白。
+  assert.equal(read(0), DESK_STATE_COLOR.idle.toLowerCase())
+  for (const state of ['run', 'err', 'stall', 'wait', 'todo', 'idle', 'pause']) {
+    handle.setStatusLight(DESK_STATE_COLOR[state])
+    assert.equal(read(0), DESK_STATE_COLOR[state].toLowerCase(), `${state} 颜色没写进 instanceColor`)
+  }
+  // 只动这一盏，别的不受影响。
+  assert.equal(read(1), DESK_STATE_COLOR.idle.toLowerCase())
+  f.dispose()
+})
+
+test('DS-5 非 R1 入口不建状态灯', () => {
+  const root = new THREE.Group()
+  const none = buildR1Furniture({ THREE, root, layout: undefined, collision: createFurnitureCollision(), makeScreenTexture: fakeScreenTexture, A, placeFurniture })
+  assert.equal(none.statusLamps, undefined)
+  assert.equal(root.children.length, 0)
+  none.dispose()
 })
