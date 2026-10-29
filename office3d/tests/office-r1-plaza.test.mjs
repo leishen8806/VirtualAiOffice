@@ -131,7 +131,7 @@ test('I6-6 the plaza slot is appended last for R1 only and builds nothing for an
   assert.deepEqual(officeV3Modules.map(([name]) => name), ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN_L2B).map(([name]) => name), officeV3Modules.map(([name]) => name))
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN).map(([name]) => name), officeV3Modules.map(([name]) => name))
-  assert.deepEqual(officeV3ModulesFor(createOfficeR1Layout()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza', 'r1Lights'])
+  assert.deepEqual(officeV3ModulesFor(createOfficeR1Layout()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza', 'r1Lights', 'r1Brand'])
   for (const layout of [LAYOUT_V3_ALIGN_L2B, LAYOUT_V3_ALIGN, undefined]) {
     const root = new THREE.Group(), collision = createFurnitureCollision()
     const plaza = buildR1Plaza({ THREE, root, layout, collision })

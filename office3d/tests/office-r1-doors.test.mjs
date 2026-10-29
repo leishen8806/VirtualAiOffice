@@ -131,14 +131,18 @@ test('I5 curved furniture fits source bounds within 5 mm, leaves four gaps and h
     assert.equal(ray.intersectObject(mesh).length, 0)
   }
   for (const id of ['12-T-001', '12-T-002']) { const row = layout.r1.elements.find(r => r.id === id); assert.ok(Math.hypot(row.xM - 42, row.yM - 4.8) + row.lengthM / 2 < r1LoungeSpec.inner) }
-  const chair = layout.r1.elements.find(r => r.id === '11-CH-001'), centerToEdge = chair.yM - r1ReceptionCenter[1] - 2.7
-  assert.ok(centerToEdge >= .3 && centerToEdge <= .6); near(centerToEdge, .4)
+  // OFFICE-R1-RECEP：台子翻转后凸面朝入口，接待员坐进凹面，所以余量是从圆心往内半径量。
+  const chair = layout.r1.elements.find(r => r.id === '11-CH-001'), centerToEdge = 1.8 - (r1ReceptionCenter[1] - chair.yM)
+  assert.ok(centerToEdge >= .3 && centerToEdge <= .6); near(centerToEdge, .4, .02)
   // The card's 0.4 m refers to the registered chair centre; the physical chair front gap is 0.1 m.
-  near(centerToEdge - chair.widthM / 2, .1)
-  const queue = layout.r1.controls.queue; assert.ok(queue.cy + queue.width / 2 < r1ReceptionCenter[1] + 1.8 * .5)
-  for (const degrees of [40, 60, 90, 120, 140]) {
-    const a = degrees * Math.PI / 180, ray = new THREE.Raycaster(new THREE.Vector3(2 + 2.25 * Math.cos(a), 3, 15.3 - 2.25 * Math.sin(a)), new THREE.Vector3(0, -1, 0)), hit = ray.intersectObject(mesh)[0]
-    assert.ok(hit); near(Math.hypot(hit.point.x - 2, hit.point.z - 15.3), 2.25)
+  near(centerToEdge - chair.widthM / 2, .1, .02)
+  // 排队区后沿必须留在台子凸面最前点（圆心 − 外半径）之前。
+  const queue = layout.r1.controls.queue; assert.ok(queue.cy + queue.width / 2 < r1ReceptionCenter[1] - 2.7)
+  // 机位随翻转后的圆心 (28, 6.3) → 世界 (2, 11.7) 与角度 [210, 330] 一起走。
+  const deskWorld = { x: r1ReceptionCenter[0] - 26, z: 18 - r1ReceptionCenter[1] }
+  for (const degrees of [220, 250, 270, 300, 320]) {
+    const a = degrees * Math.PI / 180, ray = new THREE.Raycaster(new THREE.Vector3(deskWorld.x + 2.25 * Math.cos(a), 3, deskWorld.z - 2.25 * Math.sin(a)), new THREE.Vector3(0, -1, 0)), hit = ray.intersectObject(mesh)[0]
+    assert.ok(hit, `${degrees}°`); near(Math.hypot(hit.point.x - deskWorld.x, hit.point.z - deskWorld.z), 2.25)
   }
   assert.equal(collision.stats().bodies, 5); module.dispose(); assert.equal(collision.stats().bodies, 0)
 })

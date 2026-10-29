@@ -8,6 +8,7 @@ import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Furniture, R1_SEATED_PROFILES } from '../office-vis2/r1-furniture.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { r1ToWorld } from '../office-r1-layout.js'
+import { r1ReceptionCenter } from '../office-vis2/r1-lounge.js'
 const hooks = registerHooks({ resolve(s,c,next) { return s === 'three' ? {url:new URL('../vendor/three/three.module.js',import.meta.url).href,shortCircuit:true}:next(s,c) } })
 const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
 const { placeFurniture } = await import('../assets3d.js')
@@ -72,7 +73,15 @@ test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjus
  const f=build();assert.equal(f.desktopItems.size,78);assert.equal(f.chairFacings.size,154)
  for(const [id,items] of f.desktopItems){assert.equal(items.length,4);assert.equal(new Set(items.map(i=>i.id.split('/')[1])).size,4);const box=f.itemBounds.get(id);for(const d of items)for(const axis of ['x','z']){assert.ok(d.bounds.min[axis]>=box.min[axis]-.001,d.id);assert.ok(d.bounds.max[axis]<=box.max[axis]+.001,d.id)}}
  const groups={}
- for(const [id,facing] of f.chairFacings){const item=layout.r1.elements.find(i=>i.id===id),p=r1ToWorld(item.xM,item.yM),source=sources.find(g=>g.userData.r1Id===id),yaw=source?.rotation.y??facing.yaw
+ // OFFICE-R1-RECEP：接待台翻转后接待椅坐进凹面，椅心落在 11-CT-001 的登记占地框之内，
+ // 「把椅心夹进桌子 AABB」这个最近点代理就退化成椅心本身（距离 0）。弧形台改按内半径弧面取最近点，
+ // 断言强度不变：仍要求椅子朝向台面且距离 < 1 m。
+ const arcFacing=(facing,p)=>{if(facing.category!=='弧形接待台'||facing.distance>1e-9)return facing
+  const c=r1ToWorld(...r1ReceptionCenter),d=Math.hypot(p.x-c.x,p.z-c.z)
+  const edge={x:c.x+(p.x-c.x)/d*1.8,z:c.z+(p.z-c.z)/d*1.8}
+  return{...facing,edge,distance:Math.hypot(edge.x-p.x,edge.z-p.z)}}
+ for(const [id,raw] of f.chairFacings){const item=layout.r1.elements.find(i=>i.id===id),p=r1ToWorld(item.xM,item.yM),source=sources.find(g=>g.userData.r1Id===id)
+ const facing=arcFacing(raw,p),yaw=source?.rotation.y??raw.yaw
  const dot=(Math.sin(yaw)*(facing.edge.x-p.x)+Math.cos(yaw)*(facing.edge.z-p.z))/facing.distance;assert.ok(dot>.9,id);assert.ok(facing.distance<1,id);groups[facing.category]=(groups[facing.category]||0)+1}
  assert.deepEqual(groups,{'办公桌':78,'会议桌':14,'圆桌':34,'环形吧台':14,'协作桌':8,'咖啡台':5,'弧形接待台':1})
  for(const id of ['02-CH-013','02-CH-014','08-CH-023','08-CH-024','10-CH-001']){const row=layout.r1.elements.find(i=>i.id===id),actual=f.chairFacings.get(id).yaw,registered=row.facingLocal;assert.ok(Math.sin(actual)*registered[0]+Math.cos(actual)*registered[1]>.9,id+' already-facing chair preserved')}
