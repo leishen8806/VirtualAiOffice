@@ -298,7 +298,7 @@ export function createR1Navigation(layout) {
   let edges = null, staticBlocked = null, integral = null, prepared = false
   const jumpSegments = []
   const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
-  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap() }
+  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap() }
   const preparation = { milliseconds: 0, searchWarmup: [] }
   const bodyMasks = new Map()
   const currentMasks = new WeakMap()
@@ -462,8 +462,9 @@ export function createR1Navigation(layout) {
     }
     // Warm the real search during initialization; report this cost separately and retain no routes.
     const probes = [...chosen].filter(id => !query(gridPoints[id]) && Number.isFinite(landmarkCosts[0][id]))
-    for (let i = 1; i < Math.min(9, probes.length); i++) {
-      const start = performance.now(), path = plan(gridPoints[probes[i - 1]], gridPoints[probes[i]])
+    const warmPeople = [...stations.values()].slice(0, 7).map(s => s.home), warmOwner = stations.keys().next().value
+    for (let i = 1; i < Math.min(25, probes.length * 2); i++) {
+      const start = performance.now(), path = plan(gridPoints[probes[(i - 1) % probes.length]], gridPoints[probes[i % probes.length]], i % 2 ? warmOwner : undefined, i % 2 ? warmPeople : [])
       preparation.searchWarmup.push({ reachable: !!path, milliseconds: performance.now() - start })
       await new Promise(resolve => setTimeout(resolve, 0))
     }
@@ -673,7 +674,7 @@ export function createR1Navigation(layout) {
     const bounds = connectors => [landmarkCosts, reverseCosts].map(fields => fields.map(costs => Math.min(...connectors.map(([id, length]) => costs[id] + length))))
     const [goalFrom, goalTo] = bounds(goals), [startFrom, startTo] = bounds(starts)
     const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,4).map(row => row.i)
-    const estimates = search.estimates; estimates.fill(NaN)
+    const estimates = search.estimates, forwardEstimates = search.forwardEstimates, bidirectional = people.length > 0; estimates.fill(NaN)
     // Balanced landmark potentials let both frontiers meet without searching a whole room behind a narrow goal.
     const potential = id => {
       if (!Number.isNaN(estimates[id])) return estimates[id]
@@ -689,29 +690,33 @@ export function createR1Navigation(layout) {
           if (Number.isFinite(startTo[i])) backward = Math.max(backward, startTo[i] - to)
         }
       }
+      forwardEstimates[id] = forward
       return estimates[id] = (forward - backward) / 2
     }
+    // Without temporary person obstacles, ordinary ALT A* avoids the second frontier's overhead.
+    const priority = (id, reverse = false) => { const p = potential(id); return bidirectional ? (reverse ? -p : p) : 1.02 * forwardEstimates[id] }
     const { costs, previous, closed, open, backCosts, next: following, backClosed, backOpen } = search
     costs.fill(Infinity); backCosts.fill(Infinity); previous.fill(-2); following.fill(-2); closed.fill(0); backClosed.fill(0); open.rows.length = 0; backOpen.rows.length = 0
-    for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + potential(id)) }
-    for (const [id, length] of goals) { backCosts[id] = length; following[id] = -1; backOpen.push(id, length, length - potential(id)) }
+    for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + priority(id)) }
+    for (const [id, length] of goals) { backCosts[id] = length; following[id] = -1; backOpen.push(id, length, length + priority(id, true)) }
     let best = Infinity, meeting = -1, turn = 0
     const meet = id => { const length = costs[id] + backCosts[id]; if (length < best) { best = length; meeting = id } }
     for (const [id] of starts) meet(id)
     const trim = (heap, done, distances) => { while (heap.rows.length && (done[heap.ids[0]] || heap.gs[0] > distances[heap.ids[0]])) heap.pop() }
     // Stop at a certified 2% grid bound; independent any-angle acceptance remains capped at 5%.
     while (open.rows.length && backOpen.rows.length) {
-      trim(open, closed, costs); trim(backOpen, backClosed, backCosts)
-      if (!open.rows.length || !backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.02 - 1e-9) break
+      trim(open, closed, costs); if (bidirectional) trim(backOpen, backClosed, backCosts)
+      if (!open.rows.length || bidirectional && (!backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.02 - 1e-9)) break
       // Alternate equal-cost frontiers so a broad open side cannot monopolize expansion.
-      const reverse = (turn++ & 1) === 1, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
+      const reverse = bidirectional && (turn++ & 1) === 1, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
       const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; meet(id)
+      if (!bidirectional && following[id] === -1) { meeting = id; break }
       const relax = (other, length, edge) => {
         if (done[other] || blocked[other] || edge !== undefined && jumpBlocked[edge]) return
         const g = g0 + length; if (g >= distances[other]) return
         const p = gridPoints[other], a = reverse ? p : here, b = reverse ? here : p, from = reverse ? other : id
         if (!edgePeopleClear(from, a, b) || uncached.length && !movingClear(a, b, name, uncached)) return
-        distances[other] = g; parent[other] = id; heap.push(other, g, g + (reverse ? -1 : 1) * potential(other)); meet(other)
+        distances[other] = g; parent[other] = id; heap.push(other, g, g + priority(other, reverse)); meet(other)
       }
       for (const [other, length, edge] of (reverse ? reverseJumps : jumpEdges).get(id) || []) relax(other, length, edge)
       const x = id % width, z = Math.floor(id / width)
