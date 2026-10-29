@@ -93,10 +93,27 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   }
   joined('r1-fountain-jets', jets, new THREE.MeshBasicMaterial({ color: '#EAF8FF', transparent: true, opacity: .28, depthWrite: false }))
   const foam = joined('r1-fountain-foam', foamParts, new THREE.MeshBasicMaterial({ map: textures.foam, transparent: true, opacity: .9, depthWrite: false }))
-  const particleCount = 2380, positions = new Float32Array(particleCount * 3), seeds = new Float32Array(particleCount * 3)
+  const particleCount = 2380, positions = new Float32Array(particleCount * 3), trajectories = new Float32Array(particleCount * 9)
   let seed = 11
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 }
-  for (let i = 0; i < seeds.length; i++) seeds[i] = random()
+  // phase, speed, cos, sin, radius, radial slope, height, arc height, vertical slope.
+  for (let i = 0; i < particleCount; i++) {
+    const a = random(), b = random(), d = random()
+    let angle, speed, r, dr, y, arc, dy = 0
+    if (i < 1280) {
+      angle = Math.floor(i / 80) * Math.PI / 8; speed = .65; r = 3.5; dr = -1.45
+      y = .4 + (b - .5) * .025; arc = 1.15; dy = -.06
+    } else if (i < 1600) {
+      angle = Math.floor((i - 1280) / 20) * Math.PI / 8 + (b - .5) * .09; speed = 1.6
+      r = 2.05; dr = (d - .5) * .25; y = .35; arc = .25
+    } else if (i < 2020) {
+      angle = b * Math.PI * 2; speed = .9; r = 0; dr = (i < 1780 ? .05 : .32) * d
+      y = 2.72; arc = i < 1780 ? 1.05 : .65
+    } else {
+      angle = b * Math.PI * 2; speed = 1.2; r = 1.62 + (d - .5) * .3; dr = 0; y = .35; arc = .18
+    }
+    trajectories.set([a, speed, Math.cos(angle), Math.sin(angle), r, dr, y, arc, dy], i * 9)
+  }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage))
   geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 2, 0), 4.2)
@@ -108,25 +125,11 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   let elapsed = 0, lastStamp = null, disposed = false
   const updateDrops = () => {
     for (let i = 0; i < particleCount; i++) {
-      const k = i * 3, a = seeds[k], b = seeds[k + 1], d = seeds[k + 2]
-      let r, y, angle
-      if (i < 1280) {
-        const t = (a + elapsed * .65) % 1
-        angle = Math.floor(i / 80) * Math.PI / 8
-        r = 3.5 - 1.45 * t; y = .4 + Math.sin(Math.PI * t) * 1.15 - .06 * t + (b - .5) * .025
-      } else if (i < 1600) {
-        const t = (a + elapsed * 1.6) % 1
-        angle = Math.floor((i - 1280) / 20) * Math.PI / 8 + (b - .5) * .09
-        r = 2.05 + (d - .5) * .25 * t; y = .35 + .25 * Math.sin(Math.PI * t)
-      } else if (i < 2020) {
-        const t = (a + elapsed * .9) % 1
-        angle = b * Math.PI * 2; r = (i < 1780 ? .05 : .32) * t * d
-        y = 2.72 + (i < 1780 ? 1.05 : .65) * Math.sin(Math.PI * t)
-      } else {
-        const t = (a + elapsed * 1.2) % 1
-        angle = b * Math.PI * 2; r = 1.62 + (d - .5) * .3; y = .35 + Math.sin(Math.PI * t) * .18
-      }
-      positions[k] = Math.cos(angle) * r; positions[k + 1] = y; positions[k + 2] = Math.sin(angle) * r
+      const k = i * 3, j = i * 9, t = (trajectories[j] + elapsed * trajectories[j + 1]) % 1
+      const r = trajectories[j + 4] + trajectories[j + 5] * t
+      positions[k] = trajectories[j + 2] * r
+      positions[k + 1] = trajectories[j + 6] + trajectories[j + 7] * Math.sin(Math.PI * t) + trajectories[j + 8] * t
+      positions[k + 2] = trajectories[j + 3] * r
     }
     geometry.attributes.position.needsUpdate = true
   }
