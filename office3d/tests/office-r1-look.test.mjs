@@ -96,7 +96,8 @@ test('LOOK original 24-plant geometry stays inside its 60k triangle budget and d
 
 test('LOOK keeps source register, exposure defaults, brightness control and legacy fill intact', () => {
   const source=f=>readFileSync(new URL('../'+f,import.meta.url),'utf8')
-  assert.equal(createHash('sha256').update(readFileSync(new URL('../office-r1/data.js',import.meta.url))).digest('hex'),'76e018bb8ddf1dcd6ded05242a673989fd2a19928c51832b9db6bc299c597dc9')
+  // Hash LF-normalized text so the Windows CRLF checkout and Linux CI agree (same as office-r1-plaza-fan.test.mjs).
+  assert.equal(createHash('sha256').update(source('office-r1/data.js').replace(/\r\n/g,'\n'),'utf8').digest('hex'),'ac78918393e78a943a884323e5db2bcd3cf61641e24bccc05428417cc6c084bf')
   assert.ok(source('app.js').includes("const BRIGHT = [['柔和', 0.85], ['标准', 1.0], ['明亮', 1.2]]"))
   assert.ok(source('app.js').includes('renderer.toneMappingExposure = 0.85'))
   assert.ok(source('app.js').includes('renderer.toneMappingExposure = BRIGHT[brightIdx][1]'))
