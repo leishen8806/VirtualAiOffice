@@ -1,7 +1,9 @@
 import { r1ToWorld } from '../office-r1-layout.js'
 import { createSampleBatch } from './batch.js'
 
-export const r1ReceptionCenter = Object.freeze([28, 2.7])
+// 董事会 2026-10-28："前台的桌子反了。" 圆心移到台子后方、角度转到圆心的 −Y 侧，
+// 凸面（外半径）因此朝入口，接待员坐进凹面里。占地框不变，仍等于登记 11-CT-001。
+export const r1ReceptionCenter = Object.freeze([28, 6.3])
 export const r1LoungeSpec = Object.freeze({ center: Object.freeze([42, 4.8]), inner: 1.9, outer: 2.7, angles: Object.freeze([[130, 190], [198, 258], [266, 326], [334, 410]].map(Object.freeze)) })
 
 function arc(THREE, inner, outer, start, end, height) {
@@ -25,7 +27,7 @@ export function buildR1Lounge({ THREE, root, layout, collision }) {
     collision?.add(proxy, id); proxies.push(proxy)
     items.push({ id, center, inner, outer, angles, startVertex, count: batch.triangles() * 3 - startVertex })
   }
-  add('11-CT-001', r1ReceptionCenter, 1.8, 2.7, [30, 150], [[1.8, 2.7, 0, .94, '#b18a61', 'wood'], [1.8, 2.7, .94, .06, '#dfd6c6', 'stone']])
+  add('11-CT-001', r1ReceptionCenter, 1.8, 2.7, [210, 330], [[1.8, 2.7, 0, .94, '#b18a61', 'wood'], [1.8, 2.7, .94, .06, '#dfd6c6', 'stone']])
   r1LoungeSpec.angles.forEach((angles, i) => add(`12-SF-00${i + 1}`, r1LoungeSpec.center, 1.9, 2.7, angles,
     [[1.9, 2.7, 0, .35, '#42534c', 'fabric'], [1.9, 2.7, .35, .1, '#718272', 'fabric'], [2.52, 2.7, .45, .4, '#506a5a', 'fabric']]))
   const built = batch.build(group, 'r1-lounge-surfaces'); built.mesh.userData.itemIds = items.map(item => item.id); built.mesh.userData.items = items
