@@ -3,7 +3,8 @@ import { GLTFLoader } from './vendor/three/jsm/loaders/GLTFLoader.js'
 import * as SkeletonUtils from './vendor/three/jsm/utils/SkeletonUtils.js'
 
 // 素材：Kenney Furniture Kit、Quaternius Universal Base Characters / Universal Animation Library（均为 CC0，见 assets/ASSET_LEDGER.md）
-const FURN = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'laptop', 'pottedPlant', 'plantSmall1', 'plantSmall2', 'bookcaseClosed', 'bookcaseOpen', 'books', 'lampRoundTable', 'lampSquareFloor', 'loungeSofa', 'loungeSofaLong', 'loungeChair', 'tableCoffee', 'rugRectangle', 'sideTable', 'trashcan', 'table', 'chairModernCushion', 'chairRounded', 'coatRack', 'speaker', 'cabinetTelevision']
+// 末三件（咖啡机 / 面包机 / 搅拌机）给 R1 中央吧台台面用，OFFICE-R1-FOOD（CMP-626）经董事会审批后加入。
+const FURN = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'laptop', 'pottedPlant', 'plantSmall1', 'plantSmall2', 'bookcaseClosed', 'bookcaseOpen', 'books', 'lampRoundTable', 'lampSquareFloor', 'loungeSofa', 'loungeSofaLong', 'loungeChair', 'tableCoffee', 'rugRectangle', 'sideTable', 'trashcan', 'table', 'chairModernCushion', 'chairRounded', 'coatRack', 'speaker', 'cabinetTelevision', 'kitchenCoffeeMachine', 'toaster', 'kitchenBlender']
 export const HAIRS = ['Hair_Beard', 'Hair_Buns', 'Hair_Buzzed', 'Hair_BuzzedFemale', 'Hair_Long', 'Hair_SimpleParted']
 export const FURN_SCALE = 2 // Kenney 家具约为真实尺寸的一半
 const STRIDE = 1.5 // 走路动画一个循环大约走多远（米），用来让脚步和移动速度对上

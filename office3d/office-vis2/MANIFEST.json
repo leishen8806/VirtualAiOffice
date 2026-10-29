@@ -305,10 +305,10 @@
     },
     {
       "file": "office-vis2/r1-island.js",
-      "source": "R1 registered island, arc seats and fitted existing banyan; no downloaded assets",
-      "license": "Repository MIT; see ../../LICENSE",
+      "source": "R1 registered island, arc seats and fitted existing banyan; OFFICE-R1-FOOD adds the counter-top Kenney appliances (kitchenCoffeeMachine / toaster / kitchenBlender, already-approved CC0 copies recorded in assets/ASSET_LEDGER.md), a procedural cup rack and two glass food display cases, plus the low-poly procedural food shapes shared with r1-plaza.js; no downloaded assets",
+      "license": "Repository MIT for the source code; the counter-top appliance models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "742E77FB0724FBA110B87431CAC7FC36DFFFC63C94BD5DB8EC91224B1A7095BF"
+      "sha256": "9548FB16566AB6185E800E52EADD70CAAD46F84F196A010FA5265259128DAF13"
     },
     {
       "file": "office-vis2/r1-plants.js",
@@ -340,10 +340,10 @@
     },
     {
       "file": "office-vis2/r1-plaza.js",
-      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; no downloaded assets",
+      "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; OFFICE-R1-FOOD adds the four themed stall food displays and one shared Canvas price-board atlas, reusing the procedural food shapes from r1-island.js; procedural geometry and canvas text only, no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "010B1BB6C33ADCB281199FC269AF6C18EFD944075C005CFFDCC8C878D8E1A716"
+      "sha256": "9FED2F0D4181444A99459640C3ACF38A890247FA7DABB8FE29F90497A50F6062"
     },
     {
       "file": "office-vis2/r1-lights.js",
