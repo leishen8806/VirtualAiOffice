@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -68,13 +68,15 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   assert.equal(candidate.candidateC01, true); assert.equal(r1.candidateC01, false)
   // I6C：董事会批准的 24 条位置偏离不受 candidateC01 开关影响，所以期望值是「登记值 + 偏离表」而不是裸登记值；
   // BACKWALL：再叠上大门抬高的 2 条门扇高度偏离，并在尾部接上两樘新门的 4 片门扇；长椅转向表一并计入。
-  // 仍然是对全部 1136 条逐值深比较，强度不变（偏离表本身由 office-r1-plaza-fan.test.mjs 的 I6C-1、
-  // office-r1-bench-facing.test.mjs 与 office-r1-backwall.test.mjs 的 BW-4 / BW-7 单独锁住）。
+  // R2：董事会新增件（新增表 R1_BOARD_ADDED_ELEMENTS）再接在门扇之后，同样不受开关影响。
+  // 仍然是对全部 1136 + 新增条逐值深比较，强度不变（偏离表本身由 office-r1-plaza-fan.test.mjs 的 I6C-1、
+  // office-r1-bench-facing.test.mjs 与 office-r1-backwall.test.mjs 的 BW-4 / BW-7 单独锁住，
+  // 新增表由 office-r1-shelf.test.mjs 的 FD-6 锁住）。
   const boardPatch = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES].map(entry => [entry.id, entry.to]))
   const gatePatch = new Map(R1_GATE.leafIds.map(id => [id, { heightM: R1_GATE.heightM }]))
   const patch = row => boardPatch.get(row.id) || gatePatch.get(row.id)
-  assert.deepEqual(r1.elements, [...R1_DATA.elements.map(row => patch(row) ? { ...row, ...patch(row) } : row), ...R1_BACKWALL.leaves])
-  assert.equal(r1.elements.length, R1_DATA.elements.length + 4)
+  assert.deepEqual(r1.elements, [...R1_DATA.elements.map(row => patch(row) ? { ...row, ...patch(row) } : row), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
+  assert.equal(r1.elements.length, R1_DATA.elements.length + 4 + R1_BOARD_ADDED_ELEMENTS.length)
   assert.deepEqual(r1.workstations, R1_DATA.workstations)
   assert.deepEqual(r1.routes, candidate.routes)
   assert.deepEqual({ barEntryClearMm: r1.controls.barEntryClearMm, productSideClearMm: r1.controls.productSideClearMm, productBetweenColumnsMm: r1.controls.productBetweenColumnsMm }, { barEntryClearMm: 1200, productSideClearMm: 1250, productBetweenColumnsMm: 1400 })

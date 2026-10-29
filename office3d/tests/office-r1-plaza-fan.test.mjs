@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
@@ -71,15 +71,16 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
     assert.deepEqual(Object.keys(to).sort(), ['xM', 'yM'])
   }
   // 本表的偏离只落在这 24 个 ID 上：登记段其余 1106 条逐值与 data.js 相同（大门抬高的 2 片门扇走
-  // BACKWALL 补充 R2 的另一张表，尾部 4 片门扇是 BACKWALL 两樘新门新增的，都不属于本表）。
+  // BACKWALL 补充 R2 的另一张表，尾部 4 片门扇是 BACKWALL 两樘新门新增的，书架 08-BK-002 是本卡
+  // R2 的董事会新增件，都不属于本表）。
   const layout = createR1Layout({ candidateC01: false })
-  assert.equal(layout.elements.length, R1_DATA.elements.length + R1_BACKWALL.leaves.length)
+  assert.equal(layout.elements.length, R1_DATA.elements.length + R1_BACKWALL.leaves.length + R1_BOARD_ADDED_ELEMENTS.length)
   for (const [index, item] of layout.elements.slice(0, R1_DATA.elements.length).entries()) {
     // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住。
     if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id)) continue
     assert.deepEqual(item, R1_DATA.elements[index], item.id)
   }
-  assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves])
+  assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
   // 非 R1 布局（稳定 V3 / L2B 对齐）不受偏离表影响。
   for (const other of [LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B]) assert.equal(other.r1Phase, undefined)
 })
