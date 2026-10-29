@@ -28,7 +28,7 @@ function bounds(mesh, index, start = 0, count = mesh.geometry.attributes.positio
 
 test('I2B glazing keeps only the reception background opaque; exterior has no transmission', () => scene(({ get }) => {
   assert.deepEqual(get('r1-interior-walls').userData.wallIds, ['00-W-036'])
-  assert.equal(get('r1-interior-glass').count, 27)
+  assert.equal(get('r1-interior-glass').count, 31)
   for (const name of ['r1-interior-glass', 'r1-corner-walls']) {
     const material = get(name).material
     assert.equal(material.transparent, true); assert.equal(material.opacity, .2); assert.equal(material.transmission, 0)
@@ -43,10 +43,15 @@ test('I2B glazing keeps only the reception background opaque; exterior has no tr
 
 test('I2B each glass, frame and band remains inside its original wall bounds with exact vertical layers', () => scene(({ root, get }) => {
   const originals = new Map()
-  root.traverse(mesh => { if (/^r1-collision-00-W-/.test(mesh.name)) originals.set(mesh.name.slice('r1-collision-'.length), bounds(mesh, null)) })
+  // 带门洞的墙被切成 -P1 / -P2 两段代理，台账仍按整墙记，所以分段先并回母墙再比对。
+  root.traverse(mesh => {
+    if (!/^r1-collision-00-W-/.test(mesh.name)) return
+    const id = mesh.name.slice('r1-collision-'.length).replace(/-P\d+$/, ''), box = bounds(mesh, null)
+    originals.set(id, originals.has(id) ? originals.get(id).union(box) : box)
+  })
   const corners = get('r1-collision-corners'), size = corners.geometry.attributes.position.count / 2
   corners.userData.wallIds.forEach((id, index) => originals.get(id).union(bounds(corners, null, index * size, size)))
-  const contains = (id, box, label) => assert.ok(originals.get(id).clone().expandByScalar(.001).containsBox(box), `${label}: ${id}`)
+  const contains = (id, box, label) => assert.ok(originals.get(id.replace(/-P\d+$/, '')).clone().expandByScalar(.001).containsBox(box), `${label}: ${id}`)
   for (const name of ['r1-interior-glass', 'r1-exterior-glass', 'r1-interior-frames']) {
     const mesh = get(name)
     for (let index = 0; index < mesh.count; index++) {
@@ -58,7 +63,7 @@ test('I2B each glass, frame and band remains inside its original wall bounds wit
   const visibleCorners = get('r1-corner-walls')
   visibleCorners.userData.wallIds.forEach((id, index) => contains(id, bounds(visibleCorners, null, index * size, size), 'corner'))
   const bands = get('r1-top-bands')
-  assert.equal(bands.userData.ranges.length, 33)
+  assert.equal(bands.userData.ranges.length, 37)
   for (const range of bands.userData.ranges) {
     const box = bounds(bands, null, range.start, range.count), exterior = ['00-W-001', '00-W-002', '00-W-003', '00-W-004'].includes(range.id)
     contains(range.id, box, 'band'); assert.ok(Math.abs(box.min.y - (exterior ? 3.7 : 2.4)) < .001)
@@ -87,15 +92,15 @@ test('I2B straight upright gaps are at most 1.5 m with clipped end posts and a b
   }
 }))
 
-test('I2B actual full merge and low-tier second merge retain 42 walls / 84 faces / 13 doors and block all 618 samples', () => scene(({ root, layout, collision, shell }) => {
+test('I2B actual full merge and low-tier second merge retain 44 walls / 88 faces / 15 doors and block all 624 samples', () => scene(({ root, layout, collision, shell }) => {
   mergeStatic(root, snapshot(root)); mergeStatic(root)
-  assert.equal(new Set(shell.wallLedger.wallIds).size, 42); assert.equal(new Set(shell.wallLedger.faceIds).size, 84); assert.equal(new Set(shell.wallLedger.doorIds).size, 13)
+  assert.equal(new Set(shell.wallLedger.wallIds).size, 44); assert.equal(new Set(shell.wallLedger.faceIds).size, 88); assert.equal(new Set(shell.wallLedger.doorIds).size, 15)
   for (const name of ['r1-interior-glass', 'r1-interior-frames', 'r1-top-bands', 'r1-collision-corners']) assert.ok(root.getObjectByName(name).userData.wallIds.length)
   let count = 0
   for (const wall of layout.r1.data.walls) for (let i = 1; i < wall.geometry.points.length; i++) {
     const [a, b] = [wall.geometry.points[i - 1], wall.geometry.points[i]]
     for (const fraction of [.25, .5, .75]) { count++; assert.ok(collision.hit(a[0] + (b[0] - a[0]) * fraction - 26, 18 - a[1] - (b[1] - a[1]) * fraction), wall.id) }
   }
-  assert.equal(count, 618)
+  assert.equal(count, 624)
   for (const door of layout.r1.data.doors) assert.equal(collision.hit(door.xM - 26, 18 - door.yM), null, door.id)
 }))

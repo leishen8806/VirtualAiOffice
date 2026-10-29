@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Lounge, r1ReceptionCenter } from '../office-vis2/r1-lounge.js'
-import { createR1Layout, R1_BOARD_OVERRIDES, r1ToWorld } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_OVERRIDES, R1_GATE, r1ToWorld } from '../office-r1-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { buildR1Brand, drawR1BrandSlogan, r1BrandSpec, R1_BRAND_SLOGAN, R1_BRAND_LOGO_URL, R1_BRAND_LOGO_ASPECT } from '../office-vis2/r1-brand.js'
@@ -110,9 +110,11 @@ test('RC-2 the board table adds exactly the four approved reception-chair rows a
   }
   // I6C 的 24 条一条不改。
   assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES)).length, 24)
-  // 关掉 C-01 候选后，与裸登记值有差异的行只能是偏离表这 28 条，别的一行都不许动。
+  // 关掉 C-01 候选后，登记段里与裸登记值有差异的行只能是偏离表这 28 条，加上 BACKWALL 补充 R2
+  // 抬高的大门 2 片门扇；别的一行都不许动。
   const applied = createR1Layout({ candidateC01: false }).elements
-  assert.deepEqual(applied.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids].sort())
+  const registered = applied.slice(0, R1_DATA.elements.length)
+  assert.deepEqual(registered.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids, ...R1_GATE.leafIds].sort())
   for (const id of Object.keys(RECEP_OVERRIDES)) {
     assert.equal(applied.find(row => row.id === id).yawDeg, rawOf(id).yawDeg, `${id} 朝向不变`)
     assert.deepEqual(applied.find(row => row.id === id).facingLocal, rawOf(id).facingLocal, `${id} facing 不变`)
