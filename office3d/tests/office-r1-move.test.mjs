@@ -156,3 +156,27 @@ test('a person sealing a destination pocket rejects that trip without rejecting 
   assert.equal(nav.plan(start, end, undefined, [{ x: 1, z: 0 }]), null)
   assert.ok(nav.plan(start, end, undefined, [{ x: -2, z: 2 }]))
 })
+
+
+test('a temporarily blocked departure yields its exit, restores the chair and retries without losing the request', async () => {
+  const l = layout(), home = { x: 0, z: 0, yaw: 0 }; l.seats.A = ['a', 0, -.81, 0, home]
+  l.r1.workstations = [{ business_id: 'A', desk_id: 'desk', chair_id: 'chair' }]
+  const c = createFurnitureCollision(); const desk = box(c, 'desk', 0, -.81, 1.4, .7), chair = box(c, 'chair', 0, 0, .62, .6)
+  let dx = 0, dz = 0, yaw = 0
+  const furniture = { chairFacings: new Map(), moveChair(id, x, z, angle) {
+    const changed = x !== dx || z !== dz || angle !== yaw; dx = x; dz = z; yaw = angle; c.poseNavigationBody(chair, home, x, z, angle); return changed
+  }, chairMotion: () => ({ dx, dz, yaw }) }
+  const v = { name: 'A', home, char: { group: new THREE.Group(), pose: { sit: 1, phase: 0 } } }
+  const director = createR1Director({ views: new Map([['A', v]]), layout: l, furnitureCollision: c, r1Furniture: furniture, r1Doors: { records: [] } })
+  await director.ready
+  const plan = director.navigation.plan; let attempts = 0, returnedToQueue = false, completed = 0
+  director.navigation.plan = (...args) => ++attempts <= 4 ? null : plan(...args)
+  director.travel(v, [], { x: 3, z: 3 }, true, () => completed++)
+  for (let i = 0; i < 3000 && !completed; i++) {
+    director.update(1 / 30)
+    const p = v.r1Position || v.home
+    assert.equal(c.navigationHit(p.x, p.z, .25, null, [director.navigation.bodyFor('desk')]), null)
+    if (attempts && v.act?.phase === 'queued') { returnedToQueue = true; assert.ok(Math.abs(dz) < 1e-9); assert.equal(v.char.pose.r1AtDesk, true) }
+  }
+  assert.equal(returnedToQueue, true); assert.equal(completed, 1); assert.ok(attempts > 4)
+})

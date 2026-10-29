@@ -141,7 +141,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     if (chairsMoving || chairMoves.has(stationName(act.v))) { act.phase = 'wait-chair'; act.retryTarget = target; act.next = next; act.t = 0; return }
     const path = pathTo(act.v, target)
     if (!path) { act.phase = 'blocked'; act.retryTarget = target; act.next = next; act.t = 0; return }
-    act.path = nav.smoothPath(path, stationName(act.v)); act.i = 1; act.phase = 'walk'; act.next = next; act.t = 0
+    act.blockedFor = 0; act.path = nav.smoothPath(path, stationName(act.v)); act.i = 1; act.phase = 'walk'; act.next = next; act.t = 0
   }
   function openAhead(v, target) {
     const pos = anchor(v)
@@ -212,14 +212,23 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     } else if (act.phase === 'wait-chair') {
       if (!chairsMoving) beginWalk(act, act.retryTarget, act.next)
     } else if (act.phase === 'blocked') {
-      if (act.t > 1 && act.retryTarget) beginWalk(act, act.retryTarget, act.next)
+      act.blockedFor = (act.blockedFor || 0) + dt
+      // Yield the exit back to a neighbour's restoring chair instead of holding it indefinitely.
+      if (!act.back && act.blockedFor > 3 && dist(anchor(v), p.exit) < .01) {
+        act.yielding = true; act.phase = 'return-transition'; act.t = 0
+      } else if (act.t > 1 && act.retryTarget) beginWalk(act, act.retryTarget, act.next)
     } else if (act.phase === 'leave') {
       v.away = true; v.char.group.visible = false; reserveChair(v, false); finish(act)
     } else if (act.phase === 'sit') {
       const k = smooth(clamp(act.t / .8))
       if (!safeChairMove(v, 1 - k)) { act.t -= dt; return }
       chair(v, 1 - k); pose.sit = k; pose.walk = 0; put(v, v.home); v.char.group.rotation.y = v.home.yaw
-      if (k === 1) { pose.r1AtDesk = true; v.r1Standing = false; v.r1AwayFromDesk = false; v.r1Position = null; v.arriving = false; finish(act) }
+      if (k === 1) {
+        pose.r1AtDesk = true; v.r1Standing = false; v.r1AwayFromDesk = false; v.r1Position = null; v.arriving = false
+        if (act.yielding) {
+          act.yielding = false; act.blockedFor = 0; act.phase = 'queued'; act.t = 0; act.retryAfter = elapsed + 2; pending.push(act)
+        } else finish(act)
+      }
     } else if (act.phase === 'public-rise') {
       const k = smooth(clamp(act.t / .8)); pose.sit = 1 - k; pose.walk = 0
       if (k === 1) { act.phase = 'public-exit'; act.t = 0; act.from = { ...anchor(v) } }
@@ -270,7 +279,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     }
     for (let i = 0; i < pending.length;) {
       const a = pending[i], v = a.v
-      if ((v.away || !v.r1AwayFromDesk) && countAway() >= 8 || !a.back && transitionOccupied(v)) { i++; continue }
+      if (elapsed < (a.retryAfter || 0) || (v.away || !v.r1AwayFromDesk) && countAway() >= 8 || !a.back && transitionOccupied(v)) { i++; continue }
       pending.splice(i, 1); a.t = 0
       if (a.options.commute === 'arrive') { const gate = nav.ENTRANCE.gate[1]; if (!peopleClear(v, gate)) { pending.push(a); break }; v.away = false; v.char.group.visible = true; put(v, gate); v.char.pose.sit = 0; v.char.pose.r1AtDesk = false; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).exit, 'return-transition') }
       else if (v.r1PublicSeat) a.phase = 'public-rise'

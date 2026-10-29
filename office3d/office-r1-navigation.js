@@ -435,7 +435,7 @@ export function createR1Navigation(layout) {
       }
       return costs
     }
-    for (let k = 0; k < 24 && k < freeIds.length; k++) {
+    for (let k = 0; k < 48 && k < freeIds.length; k++) {
       let source = freeIds[0], farthest = -1
       for (const id of freeIds) {
         if (chosen.has(id)) continue
