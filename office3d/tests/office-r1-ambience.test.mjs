@@ -336,10 +336,14 @@ test('AMB-10 the R1 module list is unchanged and both tiers stay inside the draw
   assert.deepEqual(officeV3ModulesFor(layout).map(([name]) => name),
     ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza', 'r1Lights', 'r1Brand'])
   assert.ok(!officeV3ModulesFor({}).some(([name]) => name === 'r1Brand'))
-  // 高档 3 + 氛围 5 件；低档多一张光晕贴图。两档都不超过基线 + 8 个网格。
+  // 高档走 env.js 的 GTAO composer，整个场景每帧渲染两遍，一个网格就是两次 draw call；
+  // AM-5 的 +8 call 上限换算过来就是「两个模块合计最多 4 个新网格」。
   const high = brand(), low = brand({ quality: { tier: 'low' } })
-  assert.ok(meshCount(high.module.root) <= 3 + 6, `高档网格 ${meshCount(high.module.root)}`)
-  assert.ok(meshCount(low.module.root) <= 4 + 6, `低档网格 ${meshCount(low.module.root)}`)
+  assert.equal(meshCount(high.module.root), 3 + 3, '入口面 3 个 + 氛围 3 个')
+  assert.equal(meshCount(low.module.root), 4 + 3)
+  const names = []
+  high.module.root.traverse(node => { if (node.isMesh && node.name.startsWith('r1-ambience-')) names.push(node.name) })
+  assert.deepEqual(names.sort(), ['r1-ambience-art', 'r1-ambience-screen', 'r1-ambience-surfaces'])
   const triangles = root => { let n = 0; root.traverse(node => { if (node.isMesh) n += node.geometry.index ? node.geometry.index.count / 3 : node.geometry.attributes.position.count / 3 }); return n }
   for (const built of [high, low]) assert.ok(triangles(built.module.root) <= 30_000, `三角数 ${triangles(built.module.root)} 应 ≤ 30000`)
   const plazaHigh = plaza(), plazaLow = plaza({ quality: { tier: 'low' } })

@@ -121,15 +121,15 @@ export function drawR1AmbienceSlogan(ctx, width, height, top = 0) {
   ctx.fillText(R1_AMBIENCE_SLOGAN, width / 2, top + height / 2)
 }
 
-export function drawR1Welcome(ctx, width, height) {
-  ctx.clearRect(0, 0, width, height)
+export function drawR1Welcome(ctx, width, height, top = 0) {
+  ctx.clearRect(0, top, width, height)
   ctx.fillStyle = r1AmbienceSpec.welcome.color
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
   ctx.font = `bold ${Math.round(height * .53)}px "KaiTi", "STKaiti", serif`
-  ctx.fillText('欢 迎 光 临', width / 2, height * .375)
+  ctx.fillText('欢 迎 光 临', width / 2, top + height * .375)
   ctx.font = `600 ${Math.round(height * .22)}px Inter, Arial, sans-serif`
   ctx.letterSpacing = `${Math.round(height * .075)}px`
-  ctx.fillText('WELCOME', width / 2, height * .8)
+  ctx.fillText('WELCOME', width / 2, top + height * .8)
 }
 
 // 上游取不到的字段会变成 { value: null, reason }；大屏一律读成空值，不抛错也不显示原因码。
@@ -242,21 +242,36 @@ const canvasTexture = (THREE, canvasTex, width, height, draw) => {
   return texture
 }
 
-// 图集：7 块名牌各 1024 × 208，最后再放一条 1024 × 128 的标语，全部共用一张贴图和一个网格。
-const ATLAS_WIDTH = r1AmbienceSpec.plate.canvas[0]
-const ATLAS_SLOGAN = ATLAS_WIDTH / 8
-const ATLAS_HEIGHT = R1_ROOM_PLATES.length * r1AmbienceSpec.plate.canvas[1] + ATLAS_SLOGAN
-const atlasRect = index => {
-  const cell = r1AmbienceSpec.plate.canvas[1]
-  const top = index < 0 ? R1_ROOM_PLATES.length * cell : index * cell
-  const bottom = top + (index < 0 ? ATLAS_SLOGAN : cell)
-  return [0, 1 - bottom / ATLAS_HEIGHT, 1, 1 - top / ATLAS_HEIGHT]
+// 高档走 EffectComposer 的 GTAO 管线，整个场景每帧渲染两遍，所以每多一个网格就多两次
+// draw call。氛围五项因此只留三个网格：实心件一个合批、带字的件一张图集、大屏自己一张画布。
+// 图集自上而下：7 块名牌、形象墙标语、欢迎光临、DR.LIFE+ 标志、一条暖光色块。
+export const ATLAS_WIDTH = r1AmbienceSpec.plate.canvas[0]
+export const R1_AMBIENCE_ATLAS = (() => {
+  const cells = {}
+  let top = 0
+  const put = (name, height) => { cells[name] = { top, height }; top += height }
+  R1_ROOM_PLATES.forEach((row, index) => put(`plate${index}`, r1AmbienceSpec.plate.canvas[1]))
+  put('slogan', ATLAS_WIDTH / 8)
+  put('welcome', Math.round(ATLAS_WIDTH * r1AmbienceSpec.welcome.canvas[1] / r1AmbienceSpec.welcome.canvas[0]))
+  put('logo', Math.round(ATLAS_WIDTH * R1_BRAND_LOGO_ASPECT[1] / R1_BRAND_LOGO_ASPECT[0]))
+  put('warm', 32)
+  return Object.freeze({ width: ATLAS_WIDTH, height: top, cells: Object.freeze(cells) })
+})()
+// 竖向缩进 2 px：相邻格在低层 mipmap 上不互相渗色。
+const atlasRect = name => {
+  const cell = R1_AMBIENCE_ATLAS.cells[name], height = R1_AMBIENCE_ATLAS.height
+  return [0, 1 - (cell.top + cell.height - 2) / height, 1, 1 - (cell.top + 2) / height]
 }
+const atlasAspect = name => R1_AMBIENCE_ATLAS.cells[name].height / ATLAS_WIDTH
 
 export function drawR1AmbienceAtlas(ctx, width, height) {
-  const [cellWidth, cellHeight] = r1AmbienceSpec.plate.canvas
-  R1_ROOM_PLATES.forEach((row, index) => drawR1Nameplate(ctx, cellWidth, cellHeight, row.text, index * cellHeight))
-  drawR1AmbienceSlogan(ctx, cellWidth, ATLAS_SLOGAN, R1_ROOM_PLATES.length * cellHeight)
+  const cells = R1_AMBIENCE_ATLAS.cells
+  R1_ROOM_PLATES.forEach((row, index) => drawR1Nameplate(ctx, width, cells[`plate${index}`].height, row.text, cells[`plate${index}`].top))
+  drawR1AmbienceSlogan(ctx, width, cells.slogan.height, cells.slogan.top)
+  drawR1Welcome(ctx, width, cells.welcome.height, cells.welcome.top)
+  // 暖光色块给形象墙的光环和大屏底边光带取色；标志那一格等 logo.png 到了再画上去。
+  ctx.fillStyle = r1AmbienceSpec.emblem.warm
+  ctx.fillRect(0, cells.warm.top, width, cells.warm.height)
 }
 
 const mergeGeometries = (THREE, geometries, withUv = false) => {
@@ -271,6 +286,13 @@ const mergeGeometries = (THREE, geometries, withUv = false) => {
   parts.forEach((part, index) => { if (part !== geometries[index]) part.dispose(); geometries[index].dispose() })
   merged.computeBoundingBox(); merged.computeBoundingSphere()
   return merged
+}
+
+// 整块几何取同一个颜色：把所有 UV 压到图集某一格的中心。
+const paintUv = (geometry, [u0, v0, u1, v1]) => {
+  const uv = geometry.attributes.uv, u = (u0 + u1) / 2, v = (v0 + v1) / 2
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, u, v)
+  return geometry
 }
 
 // 带 UV 子矩形的平面：图集里的一格贴到一块牌子上。
@@ -333,20 +355,17 @@ export function buildR1Brand({ THREE, root, layout, quality, low = false, canvas
   slogan.position.set(centre.x, S.centerY, face + gap.art)
   group.add(logo, slogan)
 
-  const ambienceParts = buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, canvasSurface, lowTier, clock, owned })
+  const ambienceParts = buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface, lowTier, clock, owned })
 
   const loader = textureLoader || (typeof document === 'undefined' ? null : new THREE.TextureLoader())
-  // 一次请求喂两处标志（入口面与中庭形象墙）；失败路径只关掉标志，不抛错（验收要求 pageerror 为 0）。
-  const logoTargets = [{ mesh: logo, material: logoMaterial, emissive: true }, ...ambienceParts.logoTargets]
+  // 一次请求喂两处标志：入口面用贴图，中庭形象墙把同一张图画进氛围图集。
+  // 失败路径只关掉标志（图集那一格始终全透明，alphaTest 直接丢掉），不抛错（验收要求 pageerror 为 0）。
   loader?.load(R1_BRAND_LOGO_URL, texture => {
     texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 8
-    for (const target of logoTargets) {
-      target.material.map = texture
-      if (target.emissive) target.material.emissiveMap = texture
-      target.material.needsUpdate = true; target.mesh.visible = true
-    }
-    owned.push(texture)
-  }, undefined, () => { for (const target of logoTargets) target.mesh.visible = false })
+    logoMaterial.map = texture; logoMaterial.emissiveMap = texture; logoMaterial.needsUpdate = true
+    logo.visible = true; owned.push(texture)
+    ambienceParts.onLogoTexture(texture)
+  }, undefined, () => { logo.visible = false })
 
   if (lowTier) {
     // 低档：不开实时聚光灯，改叠一张三团径向渐变的发光贴图。
@@ -388,7 +407,7 @@ export function buildR1Brand({ THREE, root, layout, quality, low = false, canvas
 }
 
 // 氛围五项的几何、碰撞代理与大屏重绘；实心件进一个合批，带字的件共用一张图集。
-function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, canvasSurface, lowTier, clock, owned }) {
+function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface, lowTier, clock, owned }) {
   const { emblem: E, planter: PL, plate: PT, welcome: W, screen: SC } = r1AmbienceSpec
   const centre = r1ToWorld(wall.xM, wall.yM), atriumFace = centre.z - wall.widthM / 2
   const emblemX = r1ToWorld(E.centerXM, wall.yM).x
@@ -408,20 +427,19 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, can
     disc: emit(new THREE.CircleGeometry(E.discRadius, radial), E.disc, [emblemX, E.centerY, atriumFace - E.gap.disc], Math.PI, .45, .2),
     ring: emit(new THREE.TorusGeometry(E.ringRadius, E.ringTube, lowTier ? 8 : 12, radial / 2), E.bronze, [emblemX, E.centerY, atriumFace - E.gap.ring], 0, .35, .7),
   }
+  // 暖光环与大屏底边光带取图集里的暖色块：整块 UV 压到色块中心，跟着图集一起画。
   const halo = new THREE.TorusGeometry(E.haloRadius, E.haloTube, 6, radial / 2)
   halo.translate(emblemX, E.centerY, atriumFace - E.gap.halo); halo.computeBoundingBox()
-  parts.halo = halo.boundingBox.clone(); glowPieces.push(halo)
+  parts.halo = halo.boundingBox.clone(); glowPieces.push(paintUv(halo, atlasRect('warm')))
 
+  // 标志与标语都是图集里的一格，转过半圈朝中庭；字序从中庭看仍然正确（像把牌子翻个面）。
   const emblemLogoHeight = E.logoWidth * R1_BRAND_LOGO_ASPECT[1] / R1_BRAND_LOGO_ASPECT[0]
-  const emblemLogoMaterial = new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, metalness: .3, roughness: .35 })
-  const emblemLogo = new THREE.Mesh(new THREE.PlaneGeometry(E.logoWidth, emblemLogoHeight), emblemLogoMaterial)
-  emblemLogo.name = 'r1-ambience-logo'; emblemLogo.visible = false
-  emblemLogo.position.set(emblemX, E.centerY + E.logoRise, atriumFace - E.gap.art); emblemLogo.rotation.y = Math.PI
-  parts.logo = new THREE.Box3().setFromCenterAndSize(emblemLogo.position.clone(), new THREE.Vector3(E.logoWidth, emblemLogoHeight, 0))
-  // 标语取图集最后一格（1024 × 128，正好 8 : 1），转过半圈朝中庭，字序从中庭看仍然正确。
-  const sloganHeight = E.sloganWidth * ATLAS_SLOGAN / ATLAS_WIDTH
+  const logoCentre = [emblemX, E.centerY + E.logoRise, atriumFace - E.gap.art]
+  quads.push({ width: E.logoWidth, height: emblemLogoHeight, uv: atlasRect('logo'), position: logoCentre, yaw: Math.PI })
+  parts.logo = boxOf(THREE, { x: logoCentre[0], y: logoCentre[1], z: logoCentre[2] }, [E.logoWidth, emblemLogoHeight, 0])
+  const sloganHeight = E.sloganWidth * atlasAspect('slogan')
   const sloganCentre = [emblemX, E.centerY - E.sloganDrop, atriumFace - E.gap.art]
-  quads.push({ width: E.sloganWidth, height: sloganHeight, uv: atlasRect(-1), position: sloganCentre, yaw: Math.PI })
+  quads.push({ width: E.sloganWidth, height: sloganHeight, uv: atlasRect('slogan'), position: sloganCentre, yaw: Math.PI })
   parts.slogan = boxOf(THREE, { x: sloganCentre[0], y: sloganCentre[1], z: sloganCentre[2] }, [E.sloganWidth, sloganHeight, 0])
 
   // ── 1b 半圆矮花池：θ 从 π/2 到 3π/2 正好是朝中庭的那半圈，贴墙的弦落在墙面上 ──
@@ -461,7 +479,7 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, can
     emit(new THREE.BoxGeometry(PT.width, PT.height, PT.depth), PT.frame, position, yaw, .4, .65)
     // 牌面与铜框前表面共面，靠 polygonOffset 压住 z-fighting；名牌包围盒因此就是铜框本身。
     const facing = [Math.sin(yaw) * PT.depth / 2, 0, Math.cos(yaw) * PT.depth / 2]
-    quads.push({ width: PT.width, height: PT.height, uv: atlasRect(index), yaw, position: position.map((value, axis) => value + facing[axis]) })
+    quads.push({ width: PT.width, height: PT.height, uv: atlasRect(`plate${index}`), yaw, position: position.map((value, axis) => value + facing[axis]) })
     plates.push({ id: `${row.doorId}-PLATE`, doorId: row.doorId, text: row.text, center: plateCentre, yaw,
       box: boxOf(THREE, plateCentre, leaf.vertical ? [PT.depth, PT.height, PT.width] : [PT.width, PT.height, PT.depth]) })
   })
@@ -475,30 +493,25 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, can
   glow.translate(screenX, SC.glowY, inner + SC.gap.glow); glow.computeBoundingBox()
   const glowBox = glow.boundingBox.clone(); glowPieces.push(glow)
 
+  // ── 3 欢迎光临：大门外地面的铜色嵌字，高出铺装 2.5 mm 并开 polygonOffset ──
+  const welcomeHeight = W.width * atlasAspect('welcome'), welcomeAt = r1ToWorld(...W.at)
+  const welcomeCentre = [welcomeAt.x, W.lift, welcomeAt.z]
+  quads.push({ width: W.width, height: welcomeHeight, uv: atlasRect('welcome'), position: welcomeCentre, tilt: -Math.PI / 2 })
+  const welcomeBox = boxOf(THREE, { x: welcomeAt.x, y: W.lift, z: welcomeAt.z }, [W.width, 0, welcomeHeight])
+
   const built = batch.build(group, 'r1-ambience-surfaces')
   built.mesh.material.side = THREE.DoubleSide
 
-  // 图集：7 块牌面 + 形象墙标语共用一张贴图、一个网格。
-  const atlasTexture = canvasTexture(THREE, canvasTex, ATLAS_WIDTH, ATLAS_HEIGHT, drawR1AmbienceAtlas)
-  if (atlasTexture) owned.push(atlasTexture)
-  const atlasMesh = new THREE.Mesh(mergeGeometries(THREE, quads.map(quad => atlasQuad(THREE, quad)), true),
-    new THREE.MeshStandardMaterial({ map: atlasTexture, roughness: .5, metalness: .25, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }))
+  // 一张图集一个网格：7 块牌面、形象墙标志与标语、地面嵌字、暖光环与大屏光带全在里面。
+  // 字面是实心的、嵌字背景是全透明的，所以用 alphaTest 切边，不进半透明排序。
+  const atlas = screenSurface(THREE, canvasSurface, R1_AMBIENCE_ATLAS.width, R1_AMBIENCE_ATLAS.height)
+  if (atlas?.ctx) drawR1AmbienceAtlas(atlas.ctx, R1_AMBIENCE_ATLAS.width, R1_AMBIENCE_ATLAS.height)
+  if (atlas?.texture) owned.push(atlas.texture)
+  const atlasMaterial = new THREE.MeshStandardMaterial({ map: atlas?.texture || null, alphaTest: .5, roughness: .45, metalness: .3,
+    emissive: new THREE.Color('#ffffff'), emissiveMap: atlas?.texture || null, emissiveIntensity: .35,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  const atlasMesh = new THREE.Mesh(mergeGeometries(THREE, [...quads.map(quad => atlasQuad(THREE, quad)), ...glowPieces], true), atlasMaterial)
   atlasMesh.name = 'r1-ambience-art'
-
-  // ── 3 欢迎光临：大门外地面的铜色嵌字，高出铺装 2.5 mm 并开 polygonOffset ──
-  const welcomeTexture = canvasTexture(THREE, canvasTex, ...W.canvas, drawR1Welcome)
-  if (welcomeTexture) owned.push(welcomeTexture)
-  const welcomeHeight = W.width * W.canvas[1] / W.canvas[0], welcomeAt = r1ToWorld(...W.at)
-  const welcomeMaterial = new THREE.MeshStandardMaterial({ map: welcomeTexture, transparent: true, depthWrite: false,
-    metalness: .6, roughness: .35, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
-  const welcomeGeometry = new THREE.PlaneGeometry(W.width, welcomeHeight)
-  welcomeGeometry.rotateX(-Math.PI / 2); welcomeGeometry.translate(welcomeAt.x, W.lift, welcomeAt.z); welcomeGeometry.computeBoundingBox()
-  const welcome = new THREE.Mesh(welcomeGeometry, welcomeMaterial)
-  welcome.name = 'r1-ambience-welcome'
-
-  const emissive = new THREE.Mesh(mergeGeometries(THREE, glowPieces),
-    new THREE.MeshBasicMaterial({ color: E.warm, toneMapped: false }))
-  emissive.name = 'r1-ambience-emissive'
 
   const surface = screenSurface(THREE, canvasSurface, ...SC.canvas)
   const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(SC.width, SC.height),
@@ -506,7 +519,7 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, can
   screenMesh.name = 'r1-ambience-screen'
   screenMesh.position.set(screenX, SC.centerY, inner + SC.gap.face)
   const faceBox = boxOf(THREE, screenMesh.position, [SC.width, SC.height, 0])
-  group.add(atlasMesh, welcome, emblemLogo, emissive, screenMesh)
+  group.add(atlasMesh, screenMesh)
 
   // 大屏只在数据变化时重绘，且两帧之间至少 5 s；读不到 /daily 就保留上一帧。
   const now = clock || (() => Date.now())
@@ -528,15 +541,26 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasTex, can
     }
   }
 
+  // 形象墙的标志就画进图集那一格：和入口面共用同一次 logo.png 请求，不再多一个网格。
+  const onLogoTexture = texture => {
+    const image = texture?.image
+    if (!atlas?.ctx || !image) return
+    const cell = R1_AMBIENCE_ATLAS.cells.logo
+    try {
+      atlas.ctx.drawImage(image, 0, cell.top, R1_AMBIENCE_ATLAS.width, cell.height)
+      if (atlas.texture) atlas.texture.needsUpdate = true
+    } catch (error) { console.warn(`[r1-ambience] 形象墙标志未能合入图集：${error.message}`) }
+  }
+
   return {
-    logoTargets: [{ mesh: emblemLogo, material: emblemLogoMaterial }],
+    onLogoTexture,
     updateWallScreen,
     ambience: {
-      atriumFace,
+      atriumFace, atlas: atlas?.texture || null,
       emblem: { center: { x: emblemX, y: E.centerY, z: atriumFace }, parts },
       planter: { radius: PL.radius, height: PL.height, center: { x: emblemX, y: PL.height / 2, z: atriumFace }, box: planterBox, proxy: planterProxy },
       plates,
-      welcome: { center: { x: welcomeAt.x, y: W.lift, z: welcomeAt.z }, box: welcomeGeometry.boundingBox.clone(), material: welcomeMaterial },
+      welcome: { center: { x: welcomeAt.x, y: W.lift, z: welcomeAt.z }, box: welcomeBox, material: atlasMaterial },
       screen: { center: { x: screenX, y: SC.centerY, z: inner }, inner, face: faceBox, bezel: bezelBox, glow: glowBox,
         box: bezelBox.clone().union(faceBox).union(glowBox), backing: built.mesh.material, texture: surface?.texture || null },
       redraws: () => redraws,
