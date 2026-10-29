@@ -98,6 +98,31 @@ export const R1_BOARD_ADDED_ELEMENTS = Object.freeze([
   }),
 ])
 
+// ── 董事会批准的室内绿植树干改细（冻结）── OFFICE-R1-TRUNK
+// 和上面几张表同一个道理：登记数值不得改，所以树干直径也只在这里一处覆盖。
+// 覆盖面是 35 株室内登记绿植的 <id>-TR，判据与 r1-plants.js 第 27 行完全相同
+// （category 为「植物总成」，排除区 14 广场的 10 株景观树与中央大榕树 07-PL-001）。
+// 只进 lengthM / widthM 这两项（圆柱直径）；高度 1.0 m 与底高 0.45 m（盆顶）都不动，
+// 树干照旧从盆顶接进冠里。盆、冠不进表；碰撞只挂在盆上（-POT 代理），树干本来就不进碰撞，
+// 所以通行判定逐值不变。r1-plants.js 读的是合并后的元素，改这张表即可生效，渲染代码不用动。
+const TRUNK_DATE = '2026-10-29'
+const TRUNK_REASON = '董事会 2026-10-29："树干改细，走偏离表另开小卡"；室内 35 株登记绿植的树干由 Ø0.16 m 改细到 Ø0.05 m，高度、底高、冠、盆、位置与碰撞都不变'
+// 0.05 m 是在近景机位上把 0.03 / 0.04 / 0.05 / 0.06 四档同机位拍出来实测选的：近景树干像素宽
+// 由 0.16 m 的 24 px 降到 6 px，看得出是一根木质的茎，但不再是原来那根挡视线的深色柱子。
+// 不取 0.03：区域远景里几乎看不见，绿植会变成「浮在空中的叶子」。
+// 候选对比图与逐档像素量测见 review-artifacts/OFFICE-R1-TRUNK-R1-01/（对比-候选直径-tight.png）。
+export const R1_TRUNK_DIAMETER_M = .05
+// 株数不写死：按与 r1-plants.js 相同的判据从登记数据派生，登记数据若增减绿植这张表会跟着走；
+// 条数恰好 35 条由 office-r1-trunk.test.mjs 的 TK-2 锁住。
+const INDOOR_TRUNK_PLANTS = R1_DATA.elements.filter(row => row.category === '植物总成' && row.regionId !== '14' && row.id !== '07-PL-001')
+export const R1_BOARD_TRUNK_OVERRIDES = Object.freeze(INDOOR_TRUNK_PLANTS.map(plant => {
+  const raw = R1_DATA.elements.find(row => row.id === `${plant.id}-TR`)
+  if (!raw) throw new Error(`R1 室内绿植 ${plant.id}: 登记数据里没有树干行 ${plant.id}-TR`)
+  return override(raw.id, { lengthM: raw.lengthM, widthM: raw.widthM },
+    { lengthM: R1_TRUNK_DIAMETER_M, widthM: R1_TRUNK_DIAMETER_M }, TRUNK_REASON, TRUNK_DATE)
+}))
+const TRUNK_PATCH = new Map(R1_BOARD_TRUNK_OVERRIDES.map(entry => [entry.id, entry.to]))
+
 // ── 董事会批准的后墙与门新增（冻结）── OFFICE-R1-BACKWALL
 // R1 登记数据只在区 11 背后有墙（00-W-034…038，Y = 9），区 10（咖啡与交流）与区 12（休闲会客）
 // 的后沿 Y = 9.5 是空的。这里按相邻隔墙 00-W-032 / 033 的规格补两段玻璃隔墙，各开一樘 2.0 m
@@ -195,7 +220,8 @@ const mergedData = Object.freeze({
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：各张偏离表的 ID 互不相交，顺序只为可复现。
-  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
+  // 树干表只落在 <id>-TR 上，与位置表 / 门扇表的 ID 不相交。
+  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
   // 背墙改道（Z09 / Z13）已并进 mergedData.routes；喷泉只改 Z14 终点，两者不重叠。
   const routes = Object.freeze(mergedData.routes.map(route => ROUTE_PATCH.has(route.id)
     ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))

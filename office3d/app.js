@@ -132,6 +132,10 @@ const loader = new THREE.TextureLoader()
 function loadTex(url) { const t = loader.load(url); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t }
 const logoTex = loadTex('./assets/logo.png') // 设计师提供的标志位图（VI 手册）
 const markTex = loadTex('./assets/logo-mark.png')
+// 董事会 2026-10-29 指定的工位空闲画面。第三方商标图片，仅用于内部展示，
+// 登记见 assets/ASSET_LEDGER.md。**全仓库只有这一处引用**，换图只改这一行。
+const WIN98_IDLE_IMAGE = './assets/win98-idle.png'
+const win98Tex = loadTex(WIN98_IDLE_IMAGE)
 
 // ───────────────────────── 光照（阳光 + 天光）─────────────────────────
 const hemi = new THREE.HemisphereLight(0xdfe9ff, 0x6b5d4c, 0.45)
@@ -362,7 +366,80 @@ function makeScreenTexture() {
   t.colorSpace = THREE.SRGBColorSpace
   return { ctx: c.getContext('2d'), tex: t, scroll: 0, last: '' }
 }
-function drawScreen(scr, mode, tick) {
+// 工位状态：屏幕左上角的色点和桌角状态灯必须永远一致，所以判定只写这一处，两边都从这里取。
+// 优先级按卡面 F 行：出错 > 疑似卡住 > 有等你处理的事 > 执行中 > 有任务未开始 > 空闲；暂停 / 下班单独在最前。
+const DESK_STATE_COLOR = { err: '#ff5d5d', stall: '#ffb020', wait: '#ffb020', run: '#35d07f', todo: '#6fa8ff', idle: '#d8dde2', pause: '#3a3f44' }
+const DESK_STATE_TEXT = { err: '出错', stall: '疑似卡住', wait: '等你处理', run: '执行中', todo: '待开始', idle: '空闲', pause: '已暂停' }
+function deskStatus(v) {
+  if (!v) return 'idle'
+  if (v.mode === 'pause') return 'pause'
+  if (v.mode === 'err') return 'err'
+  if (v.mode === 'stall') return 'stall'
+  if (v.waits && v.waits.length > 0) return 'wait'
+  if (v.mode === 'run') return 'run'
+  return v.data && v.data.task ? 'todo' : 'idle'
+}
+// 中文没有词间空格，按字贪心断行；排不下就在最后一行末尾收省略号。
+function wrapCJK(g, text, maxWidth, maxLines) {
+  const chars = [...String(text)], lines = []
+  let line = ''
+  for (let i = 0; i < chars.length; i++) {
+    const next = line + chars[i]
+    if (line && g.measureText(next).width > maxWidth) {
+      lines.push(line); line = chars[i]
+      if (lines.length === maxLines) {
+        // 还有剩余字符，最后一行退字直到容得下省略号。
+        let tail = lines[maxLines - 1]
+        while (tail && g.measureText(tail + '…').width > maxWidth) tail = tail.slice(0, -1)
+        lines[maxLines - 1] = tail + '…'
+        return lines
+      }
+    } else line = next
+  }
+  if (line) lines.push(line)
+  return lines
+}
+function drawWin98(g, w, h) {
+  g.fillStyle = '#008080'; g.fillRect(0, 0, w, h) // 图还没加载出来时的兜底：Win98 经典青绿桌面
+  const img = win98Tex.image
+  if (!img || !img.width || !img.height) return
+  // 等比放大铺满、居中裁切（cover）。
+  const scale = Math.max(w / img.width, h / img.height), dw = img.width * scale, dh = img.height * scale
+  g.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
+}
+// R1 工位屏幕：有任务显示任务编号与中文任务名，没任务显示董事会指定的 Win98 画面，暂停 / 下班黑屏。
+function drawR1Screen(scr, tick, view) {
+  const g = scr.ctx, w = g.canvas.width, h = g.canvas.height, s = w / 256
+  const state = deskStatus(view), task = (view && view.data && view.data.task) || null
+  // 去重键带上任务编号与标题：任务不变就不重画（执行中只让底部活动条动）。
+  const key = `r1|${state}|${task ? task.id + '|' + task.title : '-'}|${state === 'run' ? tick : ''}|${win98Tex.image ? 'w' : ''}`
+  if (scr.last === key) return
+  scr.last = key
+  if (state === 'pause') { g.fillStyle = '#05070a'; g.fillRect(0, 0, w, h); scr.tex.needsUpdate = true; return } // 暂停 / 下班：黑屏
+  if (!task) { drawWin98(g, w, h); scr.tex.needsUpdate = true; return }
+  const colour = DESK_STATE_COLOR[state] || DESK_STATE_COLOR.idle
+  g.fillStyle = '#0a1018'; g.fillRect(0, 0, w, h)
+  g.fillStyle = '#182533'; g.fillRect(0, 0, w, 22 * s)
+  g.fillStyle = colour; g.beginPath(); g.arc(12 * s, 11 * s, 4 * s, 0, Math.PI * 2); g.fill()
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic'
+  g.fillStyle = '#dce8ee'; g.font = `bold ${11 * s}px "Microsoft YaHei", sans-serif`
+  g.fillText(task.id, 22 * s, 15 * s)
+  const idWidth = g.measureText(task.id).width
+  g.fillStyle = colour; g.font = `${10 * s}px "Microsoft YaHei", sans-serif`
+  g.fillText(DESK_STATE_TEXT[state] || '', 28 * s + idWidth, 15 * s)
+  g.fillStyle = '#e8eef2'; g.font = `${15 * s}px "Microsoft YaHei", sans-serif`
+  const lines = wrapCJK(g, task.title || '', w - 24 * s, 4)
+  lines.forEach((line, i) => g.fillText(line, 12 * s, 48 * s + i * 20 * s))
+  // 底部活动条：执行中缓慢流动，其余状态是静态的进度底色。
+  const barY = h - 16 * s, barW = w - 24 * s
+  g.fillStyle = '#1b2b35'; g.fillRect(12 * s, barY, barW, 5 * s)
+  g.fillStyle = colour
+  if (state === 'run') { scr.scroll = (scr.scroll + 4) % 100; g.fillRect(12 * s + barW * scr.scroll / 100 * .7, barY, barW * .3, 5 * s) }
+  else g.fillRect(12 * s, barY, barW * .28, 5 * s)
+  scr.tex.needsUpdate = true
+}
+function drawScreen(scr, mode, tick, view) {
+  if (OFFICE_LAYOUT.r1Phase === 'R1') return drawR1Screen(scr, tick, view)
   const g = scr.ctx, w = 256, h = 144
   const key = mode + ((mode === 'run' || mode === 'idle') ? tick : '') + (markTex.image ? 'm' : '')
   if (scr.last === key) return
@@ -2043,7 +2120,14 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     v.ring.material.opacity = v.mode === 'stall' ? 0.5 + 0.5 * Math.sin(t * 5) : 0.95
     v.ring.rotation.z += dt * (v.mode === 'run' ? 2.4 : 0.6)
     v.ring.position.set(0, (ch.ringY || 1.82) + Math.sin(t * 2 + v.phase) * 0.02, 0)
-    if (redraw) drawScreen(v.desk.scr, v.mode === 'run' ? 'run' : v.mode === 'err' ? 'err' : v.mode === 'stall' ? 'stall' : 'idle', tick)
+    if (redraw) drawScreen(v.desk.scr, v.mode === 'run' ? 'run' : v.mode === 'err' ? 'err' : v.mode === 'stall' ? 'stall' : 'idle', tick, v)
+    // 桌角状态灯：和头顶状态环同一套颜色、同一个 deskStatus()。疑似卡住按 2.5 Hz 在琥珀与暗琥珀之间闪，
+    // 只改 instanceColor、不加真实光源；颜色没变就不碰 GPU 缓冲。
+    if (v.desk.setStatusLight) {
+      const state = deskStatus(v)
+      const colour = state === 'stall' ? (Math.sin(t * 5) > 0 ? DESK_STATE_COLOR.stall : '#6b4a12') : DESK_STATE_COLOR[state]
+      if (v.lampColour !== colour) { v.lampColour = colour; v.desk.setStatusLight(colour) }
+    }
     ch.body.head.getWorldPosition(v.headPos)
     v.headPos.y += ch.labelDY || 0.62
     if (v.away) v.label.style.display = 'none'
