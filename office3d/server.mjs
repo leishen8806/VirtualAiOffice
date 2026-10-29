@@ -54,7 +54,7 @@ import { createCommandLiveWiring } from './command-view-wiring.mjs'
 import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
 import { createLastGoodState, loadStateComponents, createBackgroundHealth } from './state-last-good.mjs'
-import { readProcessTable, runAlive, shouldBlockCancel } from './run-liveness.mjs'
+import { readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel } from './run-liveness.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
@@ -957,12 +957,13 @@ async function state() {
   }
   const lastRun = new Map()
   const liveRun = new Map()
-  const processTable = await readProcessTable({ wait: false })
+  const processTables = await readProcessTables({ wait: false })
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
     if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      const liveness = runAlive(r, processTable)
-      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via })
+      const liveness = runAlive(r, processTables.current)
+      const busy = runBusy(r, processTables.previous, processTables.current)
+      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via, busy: busy.busy, busyName: busy.busyName })
     }
   }
   // 休息区八卦：上班时间、空闲（不在跑、没在等董事会、没暂停）的同事够两位就后台生成一段（不等它）

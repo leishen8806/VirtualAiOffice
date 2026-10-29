@@ -30,6 +30,7 @@ function context(extra = {}) {
       : p.endsWith('/agents') ? [{ id: 'demo-agent', name: 'demo-name', status: 'idle' }] : [],
     backlogRows: async () => [], world: () => ({ duty: { on: false, days: [1] } }),
     readNames: empty, pidAlive: () => null, readProcessTable: async () => null,
+    readProcessTables: async () => ({ previous: null, current: null }), runBusy: () => ({ busy: false, busyName: null }),
     runAlive: run => ({ alive: null, via: null, descendants: [] }), gossip: { maybeGenerate() {}, recent: () => [] },
     stats: { ingest() {}, daily: () => ({ done: [] }), awards: () => [] },
     telegram: { view: empty, onState: async () => {} }, committee: view, standup: view, acceptance: { ...view, onState() {} },

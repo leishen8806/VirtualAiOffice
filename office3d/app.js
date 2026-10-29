@@ -64,6 +64,16 @@ const WAIT_HINT = {
   question: 'agent 提了问题，在任务页回答后它才会继续',
   undelivered: '你的回答没能送达 agent（它当时没有在运行），需要在任务里重发或唤醒它',
 }
+/* RUN_STATUS_START */
+function runStatus(liveRun, lastOutputAge) {
+  if (liveRun?.alive === false) return { kind: 'residual' }
+  if (liveRun && lastOutputAge > STALL_MS) {
+    if (liveRun.busy && lastOutputAge < 60 * 60 * 1000) return { kind: 'busy' }
+    return { kind: 'stall' }
+  }
+  return { kind: 'running' }
+}
+/* RUN_STATUS_END */
 function ago(ms) {
   const s = Math.max(0, Math.round(ms / 1000))
   if (s < 90) return `${s} 秒`
@@ -1017,14 +1027,21 @@ function applyState(s) {
     // 「在跑」要看有没有真实输出：状态是 running 但进程已退出 / 很久没有输出，不能算执行中
     const lr = a.liveRun
     const lastOut = lr ? Date.now() - Date.parse(lr.lastOutputAt) : 0
+    const runState = runStatus(lr, lastOut)
     const failed = a.lastRun && a.lastRun.status === 'failed' && Date.now() - Date.parse(a.lastRun.at) < 20 * 60 * 1000 && a.lastRun.error && a.lastRun.error !== 'cancelled'
     let chip = ''
+    if (runState.kind === 'busy') {
+      v.mode = 'run'
+      chip = `正在执行长任务：${ago(lastOut)}无输出（${lr.busyName} 在运行）`
+      v.why = '后代进程仍在消耗 CPU，长时间无输出不计为疑似卡住。'
+    } else {
     if (a.status === 'paused') { v.mode = 'pause'; chip = s.world && s.world.duty && !s.world.duty.on ? '已下班' : '已暂停' }
     else if (lr && lr.alive === false) { v.mode = 'stall'; chip = `运行记录残留：进程已退出，${ago(lastOut)}无输出`; v.why = '这次运行的进程已经不在了，但 Paperclip 还把它记为「运行中」。需要在 Paperclip 里处理掉这条运行记录。' }
     else if (lr && lastOut > STALL_MS) { v.mode = 'stall'; chip = `疑似卡住：${ago(lastOut)}无输出`; v.why = '进程还在，但很久没有新输出，可能在等回复或已挂起。' }
     else if (lr || a.status === 'running') { v.mode = 'run'; chip = lr ? `执行中 · ${ago(lastOut)}前有输出` : '执行中'; v.why = '' }
     else if (a.status === 'error' || failed) { v.mode = 'err'; chip = `出错${a.lastRun && a.lastRun.error ? '：' + a.lastRun.error : ''}`; v.why = '' }
     else { v.mode = 'idle'; v.why = '' }
+    }
     v.chip = chip
     const mine = (s.waiting || []).filter((w) => w.agentId === a.id)
     v.waits = mine

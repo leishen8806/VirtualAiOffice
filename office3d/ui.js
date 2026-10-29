@@ -322,6 +322,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       <div class="note" style="margin:6px 0">${esc(s.why)}</div>
       <div class="actions" style="margin-top:6px"><button class="btn" data-loc="${i}">定位到 TA</button>${s.task ? `<button class="btn" data-task="${i}">看任务</button>` : ''}${s.runId ? `<button class="btn bad" data-cancel="${i}">取消这次运行</button>` : ''}</div></div>`).join('')
     open(`<h2>⚠ 疑似卡住（${list.length}）</h2><div class="meta">「运行记录残留」= Paperclip 还记着在运行，但进程已经退出；「疑似卡住」= 进程还在，超过 5 分钟没有输出。取消这次运行不会删除任务，只是结束这次运行记录，agent 之后会按任务状态重新被唤醒。</div>${rows}`)
+    modal.querySelector('.meta').append('「正在执行长任务」= 后代进程持续消耗 CPU，暂不算卡住。')
     modal.querySelectorAll('[data-loc]').forEach((b) => (b.onclick = () => { close(); focusAgent(list[+b.dataset.loc].agentId) }))
     modal.querySelectorAll('[data-task]').forEach((b) => (b.onclick = () => openIssue(list[+b.dataset.task].task.issueId)))
     modal.querySelectorAll('[data-cancel]').forEach((b) => (b.onclick = async () => {
