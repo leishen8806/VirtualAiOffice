@@ -55,9 +55,9 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   solid.mesh.material.userData.officeFineStone = true
   solid.mesh.material.side = THREE.DoubleSide
   const meshes = []
-  const joined = (name, parts, material) => {
+  const mergeParts = (parts, keys = ['position', 'normal', 'uv']) => {
     const geometry = new THREE.BufferGeometry(), expanded = parts.map(g => g.toNonIndexed())
-    for (const key of ['position', 'normal', 'uv']) {
+    for (const key of keys) {
       const size = expanded[0].attributes[key].itemSize
       const data = new Float32Array(expanded.reduce((sum, g) => sum + g.attributes[key].array.length, 0))
       let offset = 0
@@ -65,8 +65,11 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
       geometry.setAttribute(key, new THREE.BufferAttribute(data, size))
     }
     ;[...parts, ...expanded].forEach(g => g.dispose())
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.name = name; group.add(mesh); meshes.push(mesh)
+    return geometry
+  }
+  const joined = (name, parts, material, parent = group, keys) => {
+    const mesh = new THREE.Mesh(mergeParts(parts, keys), material)
+    mesh.name = name; parent.add(mesh); meshes.push(mesh)
     return mesh
   }
   const water = joined('r1-fountain-water', [disk(3.6, .34), disk(1.36, 1.67), disk(.66, 2.5)],
@@ -93,6 +96,111 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   }
   joined('r1-fountain-jets', jets, new THREE.MeshBasicMaterial({ color: '#EAF8FF', transparent: true, opacity: .28, depthWrite: false }))
   const foam = joined('r1-fountain-foam', foamParts, new THREE.MeshBasicMaterial({ map: textures.foam, transparent: true, opacity: .9, depthWrite: false }))
+  // OFFICE-R1-POND：落水点与池壁之间的开阔外环放荷叶与荷花，水面下放慢游的锦鲤。
+  // 三个合批挂在 r1-fountain-life 子组里，既不进碰撞，也不改水池本身的可见批次数。
+  const life = new THREE.Group(); life.name = 'r1-fountain-life'; group.add(life)
+  const WATER_Y = .34, POND_KEYS = ['position', 'normal', 'uv', 'color']
+  const FOAM_EDGE = 2.05 + .24 + .05, PAD_EDGE = 3.35
+  let pondSeed = 20261029
+  const pondRandom = () => { pondSeed = (Math.imul(pondSeed, 1664525) + 1013904223) >>> 0; return pondSeed / 4294967296 }
+  // 把颜色烤进顶点色：锦鲤用无光材质，靠 lit 的法线项补出背亮腹暗，省一个光照批次。
+  const paint = (geometry, colour, lit = 0) => {
+    const position = geometry.attributes.position, normal = geometry.attributes.normal
+    const base = new THREE.Color(colour), data = new Float32Array(position.count * 3)
+    for (let i = 0; i < position.count; i++) {
+      const shade = 1 - lit + lit * Math.max(0, normal.getY(i))
+      data.set([base.r * shade, base.g * shade, base.b * shade], i * 3)
+    }
+    geometry.setAttribute('color', new THREE.BufferAttribute(data, 3))
+    return geometry
+  }
+  const onRing = (r, angle) => ({ x: Math.cos(angle) * r, z: Math.sin(angle) * r })
+  // 簇心取在相邻两道喷射弧的中线上（喷射弧在 j·π/8）。
+  const padClusters = [1.5, 6.5, 9.5, 13.5].map(j => j * Math.PI / 8)
+  const padGreens = ['#3F7F3A', '#4F9244', '#336B35']
+  const pads = [], padParts = []
+  for (const centre of padClusters) {
+    const base = 2.62 + pondRandom() * .32
+    for (let k = 0; k < 7; k++) {
+      const radius = .16 + pondRandom() * .16
+      const low = Math.max(2.35, FOAM_EDGE + radius), high = Math.min(3.4, PAD_EDGE - radius)
+      const r = Math.min(high, Math.max(low, base + (pondRandom() - .5) * .6))
+      const spot = onRing(r, centre + (pondRandom() - .5) * .52)
+      const pad = { ...spot, y: WATER_Y + .006 + pondRandom() * .005, radius }
+      pads.push(pad)
+      // 带缺口、略微内凹的圆盘；缺口朝向随机，贴着水面但留出毫米级高差。
+      const leaf = new THREE.CircleGeometry(radius, 24, pondRandom() * Math.PI * 2, Math.PI * 2 - .5)
+      const p = leaf.attributes.position
+      for (let i = 0; i < p.count; i++) { const d = Math.hypot(p.getX(i), p.getY(i)) / radius; p.setZ(i, d * d * .03) }
+      leaf.rotateX(-Math.PI / 2); leaf.computeVertexNormals()
+      leaf.translate(pad.x, pad.y, pad.z)
+      padParts.push(paint(leaf, padGreens[Math.floor(pondRandom() * padGreens.length)]))
+    }
+  }
+  const padMesh = joined('r1-fountain-lotus-pads', padParts,
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .55, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), life, POND_KEYS)
+  padMesh.receiveShadow = true
+  const petalTemplate = new THREE.SphereGeometry(1, 8, 5)
+  const flowers = [], buds = [], bloomParts = []
+  for (let i = 0; i < padClusters.length; i++) {
+    for (let k = 0; k < 2; k++) {
+      const spot = onRing(2.6 + pondRandom() * .38, padClusters[i] + (pondRandom() - .5) * .34)
+      const bloom = { ...spot, height: .1 + pondRandom() * .13, radius: .16, crown: .16 }
+      flowers.push(bloom)
+      for (const [count, tilt, colour, size] of [[8, .72, '#F2A4BE', 1], [6, .34, '#FBE3EC', .82]]) {
+        for (let n = 0; n < count; n++) {
+          const petal = petalTemplate.clone()
+          petal.scale(.03 * size, .094 * size, .055 * size); petal.translate(0, .085 * size, 0)
+          petal.rotateX(tilt); petal.rotateY(n / count * Math.PI * 2 + (size < 1 ? .35 : 0))
+          petal.translate(bloom.x, WATER_Y + bloom.height, bloom.z)
+          bloomParts.push(paint(petal, colour))
+        }
+      }
+      bloomParts.push(paint(new THREE.CylinderGeometry(.032, .026, .026, 10).translate(bloom.x, WATER_Y + bloom.height + .062, bloom.z), '#E8C24A'))
+      bloomParts.push(paint(new THREE.CylinderGeometry(.009, .013, bloom.height, 6).translate(bloom.x, WATER_Y + bloom.height / 2, bloom.z), '#3C7A41'))
+    }
+  }
+  for (const centre of [padClusters[0], padClusters[2]]) {
+    const spot = onRing(2.62 + pondRandom() * .3, centre + (pondRandom() - .5) * .3)
+    const bud = { ...spot, height: .09 + pondRandom() * .07, radius: .07, crown: .11 }
+    buds.push(bud)
+    bloomParts.push(paint(new THREE.SphereGeometry(1, 8, 6).scale(.042, .078, .042).translate(bud.x, WATER_Y + bud.height + .05, bud.z), '#EFA3BD'))
+    bloomParts.push(paint(new THREE.CylinderGeometry(.009, .013, bud.height, 6).translate(bud.x, WATER_Y + bud.height / 2, bud.z), '#3C7A41'))
+  }
+  petalTemplate.dispose()
+  const flowerMesh = joined('r1-fountain-lotus-blooms', bloomParts,
+    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .5, side: THREE.DoubleSide }), life, POND_KEYS)
+  // 锦鲤：一套几何按体长归一到 1 m，实例矩阵带朝向与缩放，实例色给出五种花色。
+  const koiBody = new THREE.SphereGeometry(1, 10, 6); koiBody.scale(.34, .085, .115); koiBody.translate(.08, 0, 0)
+  const koiCrest = new THREE.SphereGeometry(1, 6, 4); koiCrest.scale(.13, .085, .085); koiCrest.translate(.1, .014, 0)
+  const koiFleck = new THREE.SphereGeometry(1, 6, 4); koiFleck.scale(.07, .07, .07); koiFleck.translate(-.1, .012, 0)
+  const koiTail = new THREE.ConeGeometry(.11, .2, 3); koiTail.rotateZ(-Math.PI / 2); koiTail.scale(1, 1, .32); koiTail.translate(-.3, 0, 0)
+  const koiGeometry = mergeParts([paint(koiBody, '#FFFFFF', .26), paint(koiCrest, '#D4663F', .26), paint(koiFleck, '#C9573A', .26), paint(koiTail, '#F3E7DF', .26)], POND_KEYS)
+  koiGeometry.computeBoundingBox()
+  const span = koiGeometry.boundingBox.max.x - koiGeometry.boundingBox.min.x
+  koiGeometry.translate(-(koiGeometry.boundingBox.max.x + koiGeometry.boundingBox.min.x) / 2, 0, 0)
+  koiGeometry.scale(1 / span, 1 / span, 1 / span)
+  const koi = []
+  for (let i = 0; i < 9; i++) koi.push({
+    radius: 2.32 + pondRandom() * .56, amplitude: .08 + pondRandom() * .07,
+    harmonic: 2 + Math.floor(pondRandom() * 2), speed: .13 + pondRandom() * .12,
+    direction: pondRandom() > .5 ? 1 : -1, phase: pondRandom() * Math.PI * 2,
+    depth: .238 + pondRandom() * .03, length: .29 + pondRandom() * .12,
+    beat: 2.4 + pondRandom() * 1.2, bob: .5 + pondRandom() * .4,
+  })
+  const koiMesh = new THREE.InstancedMesh(koiGeometry, new THREE.MeshBasicMaterial({ vertexColors: true }), koi.length)
+  koiMesh.name = 'r1-fountain-koi'; koiMesh.frustumCulled = false
+  const koiColours = ['#FFFFFF', '#F7933C', '#F4C442', '#FFF0DA', '#F0663A'], tint = new THREE.Color()
+  koi.forEach((_, i) => koiMesh.setColorAt(i, tint.set(koiColours[i % koiColours.length])))
+  life.add(koiMesh); meshes.push(koiMesh)
+  const koiMatrix = new THREE.Matrix4(), koiSpin = new THREE.Quaternion(), koiUp = new THREE.Vector3(0, 1, 0)
+  const koiScale = new THREE.Vector3(), koiHere = new THREE.Vector3(), koiAhead = new THREE.Vector3()
+  // r(θ) = R + A·sin(kθ)，k 取整数，整条路径闭合；朝向取路径切线。
+  const koiPoint = (fish, time, out) => {
+    const theta = fish.phase + fish.direction * fish.speed / fish.radius * time
+    const r = fish.radius + fish.amplitude * Math.sin(fish.harmonic * theta)
+    return out.set(Math.cos(theta) * r, 0, Math.sin(theta) * r)
+  }
   const particleCount = 2380, positions = new Float32Array(particleCount * 3), trajectories = new Float32Array(particleCount * 9)
   let seed = 11
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 }
@@ -123,6 +231,17 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
   proxy.position.y = .25; proxy.name = 'r1-collision-fountain'; proxy.userData.collisionProxy = true
   group.add(proxy); group.updateWorldMatrix(true, true); collision?.add(proxy, 'r1-fountain')
   let elapsed = 0, lastStamp = null, disposed = false
+  const updateKoi = () => {
+    for (let i = 0; i < koi.length; i++) {
+      const fish = koi[i]
+      koiPoint(fish, elapsed, koiHere); koiPoint(fish, elapsed + .05, koiAhead)
+      const heading = Math.atan2(-(koiAhead.z - koiHere.z), koiAhead.x - koiHere.x)
+      koiHere.y = fish.depth + Math.sin(elapsed * fish.bob + fish.phase) * .006
+      koiSpin.setFromAxisAngle(koiUp, heading + Math.sin(elapsed * fish.beat + fish.phase) * .13)
+      koiMesh.setMatrixAt(i, koiMatrix.compose(koiHere, koiSpin, koiScale.setScalar(fish.length)))
+    }
+    koiMesh.instanceMatrix.needsUpdate = true
+  }
   const updateDrops = () => {
     for (let i = 0; i < particleCount; i++) {
       const k = i * 3, j = i * 9, t = (trajectories[j] + elapsed * trajectories[j + 1]) % 1
@@ -144,11 +263,13 @@ export function buildR1Fountain({ THREE, root, layout, collision, quality, low =
     elapsed += Math.max(0, Math.min(delta, .1))
     textures.streak.offset.y = elapsed * .7 % 1
     textures.normal.offset.set(elapsed * .008 % 1, elapsed * .005 % 1)
-    updateDrops()
+    updateDrops(); updateKoi()
   }
-  updateDrops(); onFrame(0)
+  updateDrops(); updateKoi(); onFrame(0)
   return {
     root: group, water, curtains, foam, particles, proxy, particleCount, onFrame,
+    // 低档选择：锦鲤静止（保持可见，不再更新实例矩阵），与泡沫、水滴一起停在 onFrame 的同一个分支上。
+    pond: { group: life, padMesh, flowerMesh, koiMesh, pads, flowers, buds, koi, padClusters },
     dispose() {
       if (disposed) return
       disposed = true; collision?.remove?.(proxy); solid.dispose()
