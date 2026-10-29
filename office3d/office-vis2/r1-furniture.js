@@ -75,8 +75,11 @@ function fallbackBox(THREE, x, z, size, yaw, bucket, color, target) {
   mesh.position.set(x, size.y / 2, z); mesh.rotation.y = yaw; bake(THREE, target, mesh, bucket, color)
   return mesh
 }
+// 每格 512×288（5×5 图集共 2560×1440，卡面 D 行允许的上限）：256×144 下中文任务名
+// 在真实显示器尺寸上糊得认不出，提到 512×288 后正文 15px 等比放大到 30px。
+const SCREEN_CELL = { width: 512, height: 288 }
 function screenAtlas(THREE, stations, makeScreenTexture) {
-  const atlas = makeScreenTexture(), grid = Math.ceil(Math.sqrt(stations.length)), width = 256, height = 144
+  const atlas = makeScreenTexture(), grid = Math.ceil(Math.sqrt(stations.length)), { width, height } = SCREEN_CELL
   if (atlas.ctx?.canvas) { atlas.ctx.canvas.width = grid * width; atlas.ctx.canvas.height = grid * height; atlas.tex.needsUpdate = true }
   const positions = [], uvs = [], indices = []
   stations.forEach((station, index) => {
@@ -88,7 +91,12 @@ function screenAtlas(THREE, stations, makeScreenTexture) {
   })
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals()
   const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: atlas.tex, toneMapped: false })); mesh.name = 'r1-workstation-screen-atlas'
-  const connect = (scr, index) => { scr.tex.dispose?.(); const col = index % grid, row = Math.floor(index / grid); scr.tex = { set needsUpdate(value) { if (value && atlas.ctx?.drawImage) { atlas.ctx.drawImage(scr.ctx.canvas, col * width, row * height); atlas.tex.needsUpdate = true } }, dispose() {} } }
+  // 把单屏画布也放大到一格的尺寸；改尺寸会清空画布，所以同时清掉去重键，保证下一轮重画一次。
+  const connect = (scr, index) => {
+    scr.tex.dispose?.(); const col = index % grid, row = Math.floor(index / grid)
+    if (scr.ctx?.canvas && (scr.ctx.canvas.width !== width || scr.ctx.canvas.height !== height)) { scr.ctx.canvas.width = width; scr.ctx.canvas.height = height; scr.last = '' }
+    scr.tex = { set needsUpdate(value) { if (value && atlas.ctx?.drawImage) { atlas.ctx.drawImage(scr.ctx.canvas, col * width, row * height); atlas.tex.needsUpdate = true } }, dispose() {} }
+  }
   return { atlas, mesh, connect }
 }
 function badgeBatch(THREE, stations) {
@@ -123,10 +131,12 @@ function lampSpot(THREE, deskWorld, yaw, obstacles) {
   }
   return best
 }
+// 分段数压到 DS-3 的三角形预算内：25 盏合计 600（杆）+ 2,000（灯头）= 2,600 ≤ 3,000。
+// 杆直径 24–36 mm、灯头直径 70 mm，都是远景里的小件，低分段看不出棱。
 function statusLampBatch(THREE, spots) {
-  const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(LAMP.postTop, LAMP.postBottom, LAMP.postHeight, 10),
+  const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(LAMP.postTop, LAMP.postBottom, LAMP.postHeight, 6),
     new THREE.MeshStandardMaterial({ color: '#8a6d3b', metalness: .6, roughness: .35 }), spots.length)
-  const caps = new THREE.InstancedMesh(new THREE.SphereGeometry(LAMP.cap, 16, 12),
+  const caps = new THREE.InstancedMesh(new THREE.SphereGeometry(LAMP.cap, 8, 6),
     new THREE.MeshBasicMaterial({ toneMapped: false }), spots.length)
   posts.name = 'r1-workstation-status-posts'; caps.name = 'r1-workstation-status-lamps'
   const transform = new THREE.Object3D(), white = new THREE.Color('#d8dde2')

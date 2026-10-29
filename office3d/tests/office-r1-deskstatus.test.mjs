@@ -282,6 +282,17 @@ test('DS-4 状态灯是新增批次，没挪用模型颜色圆片，且只多 2 
   f.dispose()
 })
 
+test('DS-3 状态灯三角形在预算内（25 盏合计 ≤ 3,000）', () => {
+  const { f } = buildFurniture()
+  const tris = m => { const g = m.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3; return n * m.count }
+  const posts = tris(f.statusLamps.posts), caps = tris(f.statusLamps.caps)
+  // 浏览器里用 renderer.info 实测的增量要和这里逐几何算出来的对得上（实测 2,600）。
+  assert.equal(posts, 600, `杆 ${posts} 三角`)
+  assert.equal(caps, 2000, `灯头 ${caps} 三角`)
+  assert.ok(posts + caps <= 3000, `状态灯合计 ${posts + caps} 三角，超出 DS-3 的 +3,000 预算`)
+  f.dispose()
+})
+
 test('DS-4 灯头颜色走 instanceColor，与头顶状态环同一套色', () => {
   const { f } = buildFurniture()
   const { DESK_STATE_COLOR } = loadScreenModule(null)
