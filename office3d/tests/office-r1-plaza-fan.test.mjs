@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
@@ -74,10 +74,15 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
   // BACKWALL 补充 R2 的另一张表，尾部 4 片门扇是 BACKWALL 两樘新门新增的，书架 08-BK-002 是本卡
   // R2 的董事会新增件，都不属于本表）。
   const layout = createR1Layout({ candidateC01: false })
+  const TRUNK_IDS = new Set(R1_BOARD_TRUNK_OVERRIDES.map(entry => entry.id))
+  assert.equal(TRUNK_IDS.size, 35)
+  // 树干表只碰 <id>-TR，与本表的 ID 不相交。
+  assert.equal(ids.filter(id => TRUNK_IDS.has(id)).length, 0)
   assert.equal(layout.elements.length, R1_DATA.elements.length + R1_BACKWALL.leaves.length + R1_BOARD_ADDED_ELEMENTS.length)
   for (const [index, item] of layout.elements.slice(0, R1_DATA.elements.length).entries()) {
-    // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住。
-    if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id)) continue
+    // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住；
+    // 室内绿植树干改细同样另有一张表（R1_BOARD_TRUNK_OVERRIDES），由 office-r1-trunk.test.mjs 的 TK-2 单独锁住。
+    if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id) || TRUNK_IDS.has(item.id)) continue
     assert.deepEqual(item, R1_DATA.elements[index], item.id)
   }
   assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
