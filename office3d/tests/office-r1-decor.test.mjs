@@ -152,7 +152,8 @@ test('I6B-4 隔离：非 R1 入口拿不到小物件模块，V3 模块表逐值�
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3).map(([name]) => name), officeV3Modules.map(([name]) => name))
   const r1 = resolveOfficeLayout('?place=drlife-office&layout=3&align=1&officeSample=1&r1=1')
   assert.equal(r1.r1Phase, 'R1')
-  assert.deepEqual(officeV3ModulesFor(r1).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Plaza', 'r1Lights', 'r1Brand'])
+  // r1Books（OFFICE-R1-FOOD 补充 R2 的书架书籍）排在 r1Decor 之后；非 R1 入口照旧拿不到任何 r1 模块。
+  assert.deepEqual(officeV3ModulesFor(r1).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Books', 'r1Plaza', 'r1Lights', 'r1Brand'])
   // 非 R1 布局调用构造器时必须是空实现，不往场景里加东西
   const root = new THREE.Group()
   const empty = buildR1Decor({ THREE, root, layout: LAYOUT_V3, A, placeFurniture })

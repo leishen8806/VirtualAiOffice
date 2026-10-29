@@ -371,7 +371,7 @@
       "source": "R1-only procedural fountain, deterministic water textures and droplets; outer-ring lotus pads, blooms and instanced koi are procedural geometry with baked vertex colours; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "F17BB9262A8E2B30B8532D722A278DF0F043F510A6077A47DF198E7BCCCB40F2"
+      "sha256": "C5D5D064D727DABDD55429370802E8208D09C3620EBFCC3C4529441204EF45CF"
     },
     {
       "file": "office-vis2/r1-dense-garden.js",
