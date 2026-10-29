@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BOARD_OVERRIDES, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
@@ -69,7 +69,8 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
   const layout = createR1Layout({ candidateC01: false })
   assert.equal(layout.elements.length, R1_DATA.elements.length)
   for (const [index, item] of layout.elements.entries()) {
-    if (byId.has(item.id)) continue
+    // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住。
+    if (byId.has(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id)) continue
     assert.deepEqual(item, R1_DATA.elements[index], item.id)
   }
   // 非 R1 布局（稳定 V3 / L2B 对齐）不受偏离表影响。

@@ -329,7 +329,7 @@
       "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "ED0E295CD3ACA7CDCDD5EDD0D8A07ADBDB3A6D25DC42CF61A173DC06AE3B91F7"
+      "sha256": "010B1BB6C33ADCB281199FC269AF6C18EFD944075C005CFFDCC8C878D8E1A716"
     },
     {
       "file": "office-vis2/r1-lights.js",
@@ -351,6 +351,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "0D863B8397F44D3094B6142CB5C12EFF109F5697AE1BA220FD38EFBAE70E97A9"
+    },
+    {
+      "file": "office-vis2/r1-fountain.js",
+      "source": "R1-only procedural fountain, deterministic water textures and droplets; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "2740994857181F26F6B9AE4F2A5B23316EE5A75C34312A3794C60F1DB2E6DD43"
     }
   ],
   "excluded": {

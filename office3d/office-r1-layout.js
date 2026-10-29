@@ -33,11 +33,28 @@ export const R1_BOARD_OVERRIDES = Object.freeze([
   shifted('14-CH-008', 15, -9.6), shifted('14-CH-008-BACK', 15, -9.822), shifted('14-CH-008-BASE', 15, -9.6), shifted('14-CH-008-SEAT', 15, -9.6),
   reception('11-CH-001', 28, 5.8), reception('11-CH-001-BASE', 28, 5.8), reception('11-CH-001-SEAT', 28, 5.8), reception('11-CH-001-BACK', 28, 6.022),
 ])
-const BOARD_PATCH = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry.to]))
+// 董事会 2026-10-29："广场的长椅子方向反了"。登记朝向背对广场圆环，原地转 180°，面向广场；占地不变。
+// 单独成表，不并入上面的 I6C / RECEP 表（那两张表的条数与日期有冻结测试）。
+const BENCH_REASON = '董事会 2026-10-29："广场的长椅子方向反了"；原地转 180°，面向广场圆环与喷泉'
+const benchFlip = (id, from, to) => Object.freeze({ id, date: '2026-10-29', reason: BENCH_REASON, from: Object.freeze(from), to: Object.freeze(to) })
+export const R1_BOARD_FACING_OVERRIDES = Object.freeze([
+  benchFlip('14-BN-001', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
+  benchFlip('14-BN-002', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
+  benchFlip('14-BN-003', { yawDeg: 90, facingLocal: [1, 0] }, { yawDeg: 270, facingLocal: Object.freeze([-1, 0]) }),
+  benchFlip('14-BN-004', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
+])
+const BOARD_PATCH = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES].map(entry => [entry.id, entry.to]))
+export const R1_BOARD_ROUTE_OVERRIDES = Object.freeze([
+  Object.freeze({ id: 'Z14', date: '2026-10-29', reason: '董事会 2026-10-29 广场中心建喷泉',
+    from: Object.freeze([28, -10]), to: Object.freeze([28, -5]) }),
+])
+const ROUTE_PATCH = new Map(R1_BOARD_ROUTE_OVERRIDES.map(entry => [entry.id, entry.to]))
 
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：两张表的 ID 不相交，顺序只为可复现。
   const deviate = item => { const patch = BOARD_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
-  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze(R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item))), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes: R1_DATA.routes })
+  const routes = Object.freeze(R1_DATA.routes.map(route => ROUTE_PATCH.has(route.id)
+    ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
+  return Object.freeze({ candidateC01, data: R1_DATA, elements: Object.freeze(R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item))), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }
