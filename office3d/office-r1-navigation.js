@@ -267,9 +267,11 @@ const cache = new WeakMap()
 class Heap {
   rows = { length: 0 }
   first = { id: 0, g: 0, f: 0 }
-  ids = new Int32Array(4096)
-  gs = new Float64Array(4096)
-  fs = new Float64Array(4096)
+  constructor(capacity = 4096) {
+    this.ids = new Int32Array(capacity)
+    this.gs = new Float64Array(capacity)
+    this.fs = new Float64Array(capacity)
+  }
   push(id, g, f) {
     let i = this.rows.length++
     if (i === this.ids.length) for (const key of ['ids', 'gs', 'fs']) { const next = new this[key].constructor(i * 2); next.set(this[key]); this[key] = next }
@@ -299,7 +301,7 @@ export function createR1Navigation(layout) {
   let edges = null, staticBlocked = null, integral = null, prepared = false, graphs
   const jumpSegments = []
   const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
-  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap() }
+  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(size), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap(size) }
   const preparation = { milliseconds: 0, searchWarmup: [] }
   const bodyMasks = new Map(), sweepMasks = new Map()
   const currentMasks = new WeakMap()
@@ -769,7 +771,7 @@ export function createR1Navigation(layout) {
       return estimates[id] = (forward - backward) / 2
     }
     // Without temporary person obstacles, ordinary ALT A* avoids the second frontier's overhead.
-    const priority = (id, reverse = false) => { const p = potential(id); return bidirectional ? (reverse ? -p : p) : 1.02 * forwardEstimates[id] }
+    const priority = (id, reverse = false) => { const p = potential(id); return bidirectional ? (reverse ? -p : p) : 1.03 * forwardEstimates[id] }
     const { costs, previous, closed, open, backCosts, next: following, backClosed, backOpen } = search
     costs.fill(Infinity); backCosts.fill(Infinity); previous.fill(-2); following.fill(-2); closed.fill(0); backClosed.fill(0); open.rows.length = 0; backOpen.rows.length = 0
     for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + priority(id)) }
