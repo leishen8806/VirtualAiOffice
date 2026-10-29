@@ -139,3 +139,16 @@ test('moving a workstation chair invalidates cached visible edges and preserves 
   c.translateNavigationBody(nav.bodyFor('B-chair').group, 0, -1.6); nav.refreshChairs()
   assert.equal(nav.plan(from, to, 'A').length, 2)
 })
+
+
+test('a person sealing a destination pocket rejects that trip without rejecting the reopened route', async () => {
+  const c = createFurnitureCollision()
+  box(c, 'right', 3, 0, .1, 2.4)
+  box(c, 'top', 2, -1.2, 2, .1); box(c, 'bottom', 2, 1.2, 2, .1)
+  box(c, 'door-left', 1, -.975, .1, .45); box(c, 'door-right', 1, .975, .1, .45)
+  const nav = createR1Navigation(layout()).attach(c); await nav.prepare()
+  const start = { x: -3, z: 0 }, end = { x: 2, z: 0 }
+  assert.ok(nav.plan(start, end))
+  assert.equal(nav.plan(start, end, undefined, [{ x: 1, z: 0 }]), null)
+  assert.ok(nav.plan(start, end, undefined, [{ x: -2, z: 2 }]))
+})

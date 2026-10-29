@@ -297,8 +297,8 @@ export function createR1Navigation(layout) {
   const directionLengths = directions.map(([x, z]) => Math.hypot(x, z) * R1_GRID)
   let edges = null, staticBlocked = null, integral = null, prepared = false
   const jumpSegments = []
-  const jumpEdges = new Map(), landmarkCosts = [], reverseCosts = []
-  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size) }
+  const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
+  const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(), peopleFlags: new Uint32Array(size), reached: new Uint8Array(size), queue: new Int32Array(size) }
   const preparation = { milliseconds: 0, searchWarmup: [] }
   const bodyMasks = new Map()
   const currentMasks = new WeakMap()
@@ -416,10 +416,10 @@ export function createR1Navigation(layout) {
     }
     search.jumpBlocked = new Uint8Array(jumpSegments.length)
     // Directed landmark distances bound the search without prescribing waypoints.
-    const reverseJumps = new Map(), freeIds = [], chosen = new Set()
-    for (const [id, jumps] of jumpEdges) for (const [next, length] of jumps) {
+    const freeIds = [], chosen = new Set()
+    for (const [id, jumps] of jumpEdges) for (const [next, length, edge] of jumps) {
       if (!reverseJumps.has(next)) reverseJumps.set(next, [])
-      reverseJumps.get(next).push([id, length])
+      reverseJumps.get(next).push([id, length, edge])
     }
     for (let id = 0; id < size; id++) if (!staticBlocked[id]) freeIds.push(id)
     const fields = (source, reverse) => {
@@ -683,6 +683,26 @@ export function createR1Navigation(layout) {
       if (x < 0 || z < 0 || x >= width || z >= height || !free(id, p) || !visible(start, p, true)) continue
       costs[id] = distance(start, p); previous[id] = -1; open.push(id, costs[id], costs[id] + 1.02 * heuristic(id))
     }
+    // A temporarily sealed destination must not trigger an exhaustive search of the whole site.
+    const { reached, queue } = search; reached.fill(0); let head = 0, tail = 0, connected = false
+    for (const [id] of goals) { reached[id] = 1; queue[tail++] = id }
+    while (head < tail && head < 128 && !connected) {
+      const id = queue[head++], here = gridPoints[id]
+      if (Number.isFinite(costs[id])) { connected = true; break }
+      const visit = (from, edge) => {
+        if (blocked[from] || reached[from] || edge !== undefined && jumpBlocked[edge]) return
+        const p = gridPoints[from]
+        if (!edgePeopleClear(from,p,here) || uncached.length && !movingClear(p,here,name,uncached)) return
+        reached[from] = 1; queue[tail++] = from
+      }
+      for (const [from, , edge] of reverseJumps.get(id) || []) visit(from,edge)
+      const x = id % width, z = Math.floor(id / width)
+      for (let bit = 0; bit < directions.length; bit++) {
+        const [dx,dz] = directions[bit], px=x-dx, pz=z-dz, from=id-dz*width-dx
+        if (px>=0 && px<width && pz>=0 && pz<height && links[from] & (1<<bit)) visit(from)
+      }
+    }
+    if (!connected && head === tail) return null
     while (open.rows.length) {
       const row = open.pop(), id = row.id
       if (closed[id] || row.g > costs[id]) continue
