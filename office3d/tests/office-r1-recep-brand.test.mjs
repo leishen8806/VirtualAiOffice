@@ -92,7 +92,8 @@ test('RC-1 the receptionist sits in the concave bay 0.4 m clear of the inner arc
 test('RC-2 the board table adds exactly the four approved reception-chair rows and leaves I6C and data.js alone', () => {
   const ids = R1_BOARD_OVERRIDES.map(entry => entry.id)
   assert.equal(new Set(ids).size, ids.length)
-  assert.equal(ids.length, 28)
+  // 24 条 I6C + 4 条接待椅 + 12 条 OFFICE-R1-AMBIENCE 补充 R2 的预留座位推椅（数值由 AM-7c 锁）。
+  assert.equal(ids.length, 40)
   const byId = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry]))
   for (const [id, want] of Object.entries(RECEP_OVERRIDES)) {
     const entry = byId.get(id)
@@ -108,9 +109,10 @@ test('RC-2 the board table adds exactly the four approved reception-chair rows a
     assert.equal(entry.date, '2026-10-28', id)
     assert.ok(/前台|翻转/.test(entry.reason), id)
   }
-  // I6C 的 24 条一条不改。
-  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES)).length, 24)
-  // 关掉 C-01 候选后，与裸登记值有差异的行只能是偏离表这 28 条，别的一行都不许动。
+  // I6C 的 24 条一条不改（补充 R2 的 12 条预留座位推椅由 AM-7c 锁，不归 RC-2 管）。
+  const RESERVED_SET = ['08-CH-011', '08-CH-012', '08-CH-013'].flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`])
+  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES) && !RESERVED_SET.includes(id)).length, 24)
+  // 关掉 C-01 候选后，与裸登记值有差异的行只能是偏离表这 40 条，别的一行都不许动。
   const applied = createR1Layout({ candidateC01: false }).elements
   assert.deepEqual(applied.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids].sort())
   for (const id of Object.keys(RECEP_OVERRIDES)) {

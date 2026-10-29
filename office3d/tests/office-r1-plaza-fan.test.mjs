@@ -24,6 +24,11 @@ const SHIFT = Object.freeze({ dxM: -6.5, dyM: 2.6 })
 // OFFICE-R1-RECEP（董事会 2026-10-28 批准）后来又往同一张偏离表加了 4 条接待椅平移；
 // I6C 这条测试只负责锁住自己这 24 条，接待椅的数值由 office-r1-recep-brand.test.mjs 的 RC-2 锁。
 const RECEP_SET = Object.freeze(['11-CH-001', '11-CH-001-BACK', '11-CH-001-BASE', '11-CH-001-SEAT'])
+// OFFICE-R1-AMBIENCE 补充 R2（董事会 2026-10-29 批准）又加了 12 条：三个预留座位的椅子推进桌下。
+// 同样不归 I6C 管，数值由 office-r1-ambience.test.mjs 的 AM-7c 锁。
+const RESERVED_SET = Object.freeze(['08-CH-011', '08-CH-012', '08-CH-013']
+  .flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`]))
+const LATER_SET = Object.freeze([...RECEP_SET, ...RESERVED_SET])
 // 代码基线 main a6aa91f3fb91a9e9158575977f69694582703ed7 上 office-r1/data.js 的 SHA-256：偏离表不得改登记数据文件。
 // 先把 CRLF 归一成 LF 再算：本机不同工作树的签出行尾不一致（pc-worktrees 是 CRLF、新建工作树是 LF），
 // 直接对原始字节取哈希会在换一个工作树复核时假失败。
@@ -38,14 +43,14 @@ const unit = ([x, y]) => { const n = Math.hypot(x, y); return [x / n, y / n] }
 test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved IDs and leaves office-r1/data.js untouched', () => {
   assert.equal(createHash('sha256').update(normalized(new URL('../office-r1/data.js', import.meta.url))).digest('hex'), DATA_SHA256)
   assert.ok(Object.isFrozen(R1_BOARD_OVERRIDES))
-  const ids = R1_BOARD_OVERRIDES.map(entry => entry.id), i6c = ids.filter(id => !RECEP_SET.includes(id))
+  const ids = R1_BOARD_OVERRIDES.map(entry => entry.id), i6c = ids.filter(id => !LATER_SET.includes(id))
   assert.deepEqual([...i6c].sort(), [...Object.keys(STALLS), ...UMBRELLA_SET].sort())
   assert.equal(new Set(i6c).size, 24)
   // 整张表不得有重复 ID，后加的条目也不许覆盖 I6C 的任何一条。
   assert.equal(new Set(ids).size, ids.length)
   for (const entry of R1_BOARD_OVERRIDES) {
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.from) && Object.isFrozen(entry.to), entry.id)
-    assert.equal(entry.date, '2026-10-28', entry.id)
+    assert.equal(entry.date, RESERVED_SET.includes(entry.id) ? '2026-10-29' : '2026-10-28', entry.id)
     assert.ok(typeof entry.reason === 'string' && entry.reason.length > 0, entry.id)
     // 原值必须与登记数据逐值相符，否则登记数据漂移了而偏离表没跟上。
     const raw = rawOf(entry.id)

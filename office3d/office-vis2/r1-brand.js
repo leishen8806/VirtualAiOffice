@@ -1,4 +1,4 @@
-import { r1ToWorld } from '../office-r1-layout.js'
+import { r1ToWorld, R1_RESERVED_SEATS } from '../office-r1-layout.js'
 import { createSampleBatch } from './batch.js'
 import { officeLeafGeometry } from './plants.js'
 import { r1DoorPlan } from './r1-doors.js'
@@ -72,6 +72,13 @@ export const r1AmbienceSpec = Object.freeze({
     at: Object.freeze([28, -1.6]), width: 7, lift: .0025,
     canvas: Object.freeze([2048, 320]), color: '#C9A15E',
   }),
+  // 预留座位桌牌（补充 R2）：0.24 × 0.08 m 的三角立牌，深底铜框金字，上行名字下行「预留」。
+  // 桌面局部坐标取前缘偏左：前缘正中被鼠标垫与键盘占着，左段是这一排桌面唯一空出来的前缘位置。
+  deskPlate: Object.freeze({
+    width: .24, height: .08, panel: .01, tilt: 20 * Math.PI / 180,
+    localX: -.52, localZ: .28, deskTop: .75, second: '预留',
+    frame: '#B8955A', face: '#1E1B19', text: '#E2C07A',
+  }),
   screen: Object.freeze({
     wallId: '00-W-003', centerXM: 12.5, centerY: 2.18, width: 4.2, height: 4.2 * 9 / 16,
     bezelWidth: 4.42, bezelHeight: 2.56, bezelDepth: .07, bezel: '#111418',
@@ -110,6 +117,19 @@ export function drawR1Nameplate(ctx, width, height, text, top = 0) {
   ctx.fillStyle = S.text; ctx.font = `bold ${Math.round(height * .46)}px "Microsoft YaHei", sans-serif`
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
   ctx.fillText(text, width / 2, top + height / 2 + height * .02)
+}
+
+// 预留座位桌牌：和房间名牌同一套画法（铜框四条 fillRect + 深色牌面），只是分两行字。
+export function drawR1DeskPlate(ctx, width, height, name, top = 0) {
+  const S = r1AmbienceSpec.deskPlate, edge = Math.round(height * .07)
+  ctx.fillStyle = S.frame; ctx.fillRect(0, top, width, height)
+  ctx.fillStyle = S.face; ctx.fillRect(edge, top + edge, width - edge * 2, height - edge * 2)
+  ctx.fillStyle = S.text; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.font = `bold ${Math.round(height * .34)}px "Microsoft YaHei", sans-serif`
+  ctx.fillText(name, width / 2, top + height * .38)
+  ctx.font = `600 ${Math.round(height * .19)}px "Microsoft YaHei", sans-serif`
+  ctx.letterSpacing = `${Math.round(height * .06)}px`
+  ctx.fillText(S.second, width / 2, top + height * .72)
 }
 
 export function drawR1AmbienceSlogan(ctx, width, height, top = 0) {
@@ -244,13 +264,16 @@ const canvasTexture = (THREE, canvasTex, width, height, draw) => {
 
 // 高档走 EffectComposer 的 GTAO 管线，整个场景每帧渲染两遍，所以每多一个网格就多两次
 // draw call。氛围五项因此只留三个网格：实心件一个合批、带字的件一张图集、大屏自己一张画布。
-// 图集自上而下：7 块名牌、形象墙标语、欢迎光临、DR.LIFE+ 标志、一条暖光色块。
+// 图集自上而下：7 块名牌、形象墙标语、欢迎光临、DR.LIFE+ 标志、一条暖光色块、3 块预留桌牌。
 export const ATLAS_WIDTH = r1AmbienceSpec.plate.canvas[0]
 export const R1_AMBIENCE_ATLAS = (() => {
   const cells = {}
   let top = 0
   const put = (name, height) => { cells[name] = { top, height }; top += height }
   R1_ROOM_PLATES.forEach((row, index) => put(`plate${index}`, r1AmbienceSpec.plate.canvas[1]))
+  // 桌牌那几格按牌面的真实长宽比开，字不会被拉长。
+  R1_RESERVED_SEATS.forEach((seat, index) => put(`desk${index}`,
+    Math.round(ATLAS_WIDTH * r1AmbienceSpec.deskPlate.height / r1AmbienceSpec.deskPlate.width)))
   put('slogan', ATLAS_WIDTH / 8)
   put('welcome', Math.round(ATLAS_WIDTH * r1AmbienceSpec.welcome.canvas[1] / r1AmbienceSpec.welcome.canvas[0]))
   put('logo', Math.round(ATLAS_WIDTH * R1_BRAND_LOGO_ASPECT[1] / R1_BRAND_LOGO_ASPECT[0]))
@@ -267,6 +290,7 @@ const atlasAspect = name => R1_AMBIENCE_ATLAS.cells[name].height / ATLAS_WIDTH
 export function drawR1AmbienceAtlas(ctx, width, height) {
   const cells = R1_AMBIENCE_ATLAS.cells
   R1_ROOM_PLATES.forEach((row, index) => drawR1Nameplate(ctx, width, cells[`plate${index}`].height, row.text, cells[`plate${index}`].top))
+  R1_RESERVED_SEATS.forEach((seat, index) => drawR1DeskPlate(ctx, width, cells[`desk${index}`].height, seat.name, cells[`desk${index}`].top))
   drawR1AmbienceSlogan(ctx, width, cells.slogan.height, cells.slogan.top)
   drawR1Welcome(ctx, width, cells.welcome.height, cells.welcome.top)
   // 暖光色块给形象墙的光环和大屏底边光带取色；标志那一格等 logo.png 到了再画上去。
@@ -484,6 +508,32 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface,
       box: boxOf(THREE, plateCentre, leaf.vertical ? [PT.depth, PT.height, PT.width] : [PT.width, PT.height, PT.depth]) })
   })
 
+  // ── 2b 预留座位桌牌 3 块：Dr.life+ 工作室东侧三张桌子，三角立牌立在桌面前缘偏左 ──
+  // 两片牌面相互倚靠成「人」字：前片顶边往桌里倒，后片顶边往外倒，两片在顶上交会。
+  // 局部坐标照抄 r1-furniture 的桌面物件公式，所以牌子跟着桌子朝向走；牌子不另加碰撞（桌子已经有）。
+  const DP = r1AmbienceSpec.deskPlate, deskPlates = []
+  const officeChairs = layout.r1.elements.filter(item => item.category === '办公椅')
+  const rise = Math.cos(DP.tilt) * DP.height / 2 + Math.sin(DP.tilt) * DP.panel / 2
+  const lean = Math.sin(DP.tilt) * DP.height / 2
+  R1_RESERVED_SEATS.forEach((seat, index) => {
+    const deskRow = layout.r1.elements.find(item => item.id === seat.desk), chairRow = officeChairs.find(item => item.id === seat.chair)
+    if (!deskRow || !chairRow) return
+    const d = r1ToWorld(deskRow.xM, deskRow.yM), c = r1ToWorld(chairRow.xM, chairRow.yM)
+    const yaw = Math.atan2(c.x - d.x, c.z - d.z), cos = Math.cos(yaw), sin = Math.sin(yaw)
+    const at = (x, z, y) => [d.x + cos * x + sin * z, y, d.z - sin * x + cos * z]
+    // 倾角烤进几何体，再由合批器绕 Y 转 yaw：等于「先在桌面局部坐标里倒，再整块跟桌子转」。
+    const leaf = sign => { const g = new THREE.BoxGeometry(DP.width, DP.height, DP.panel); g.rotateX(sign * DP.tilt); return g }
+    const box = emit(leaf(-1), DP.frame, at(DP.localX, DP.localZ + lean, DP.deskTop + rise), yaw, .4, .65)
+    box.union(emit(leaf(1), DP.frame, at(DP.localX, DP.localZ - lean, DP.deskTop + rise), yaw, .4, .65))
+    // 字贴在前片的外表面上，沿前片法向抬半个板厚，靠 polygonOffset 压住 z-fighting。
+    const normalY = Math.sin(DP.tilt), normalZ = Math.cos(DP.tilt)
+    quads.push({ width: DP.width, height: DP.height, uv: atlasRect(`desk${index}`), yaw, tilt: -DP.tilt,
+      position: at(DP.localX, DP.localZ + lean + normalZ * DP.panel / 2, DP.deskTop + rise + normalY * DP.panel / 2) })
+    const centre = at(DP.localX, DP.localZ, DP.deskTop + rise)
+    deskPlates.push({ id: `${seat.chair}-PLATE`, name: seat.name, chair: seat.chair, desk: seat.desk,
+      text: Object.freeze([seat.name, DP.second]), centre: { x: centre[0], y: centre[1], z: centre[2] }, yaw, box })
+  })
+
   // ── 4 会议室大屏：黑边框 + 不透明背板 + 底边暖光带，贴北墙内侧朝会议桌 ──
   const screenWall = layout.r1.elements.find(item => item.id === SC.wallId)
   const screenX = r1ToWorld(SC.centerXM, 0).x, inner = screenWall ? r1ToWorld(screenWall.xM, screenWall.yM).z + screenWall.widthM / 2 : 0
@@ -559,7 +609,7 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface,
       atriumFace, atlas: atlas?.texture || null,
       emblem: { center: { x: emblemX, y: E.centerY, z: atriumFace }, parts },
       planter: { radius: PL.radius, height: PL.height, center: { x: emblemX, y: PL.height / 2, z: atriumFace }, box: planterBox, proxy: planterProxy },
-      plates,
+      plates, deskPlates,
       welcome: { center: { x: welcomeAt.x, y: W.lift, z: welcomeAt.z }, box: welcomeBox, material: atlasMaterial },
       screen: { center: { x: screenX, y: SC.centerY, z: inner }, inner, face: faceBox, bezel: bezelBox, glow: glowBox,
         box: bezelBox.clone().union(faceBox).union(glowBox), backing: built.mesh.material, texture: surface?.texture || null },

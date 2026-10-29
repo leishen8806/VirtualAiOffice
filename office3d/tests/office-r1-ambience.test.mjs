@@ -1,16 +1,38 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { registerHooks } from 'node:module'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
-import { r1ToWorld } from '../office-r1-layout.js'
+import { r1ToWorld, R1_RESERVED_SEATS, R1_RESERVED_TUCK_M, isReservedSeat } from '../office-r1-layout.js'
+import { R1_DATA } from '../office-r1/data.js'
 import { r1DoorPlan } from '../office-vis2/r1-doors.js'
 import { buildR1Plaza, r1PlazaBrand } from '../office-vis2/r1-plaza.js'
+import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
 import { officeV3ModulesFor } from '../office-v3-modules.js'
 import {
-  buildR1Brand, r1AmbienceSpec, R1_ROOM_PLATES, r1PlateStandoff,
-  drawR1Nameplate, drawR1Welcome, drawR1WallScreen, r1WallScreenModel,
+  buildR1Brand, r1AmbienceSpec, R1_ROOM_PLATES, r1PlateStandoff, ATLAS_WIDTH, R1_AMBIENCE_ATLAS,
+  drawR1Nameplate, drawR1Welcome, drawR1WallScreen, r1WallScreenModel, drawR1DeskPlate,
 } from '../office-vis2/r1-brand.js'
+
+// AM-7 要拿真实家具的包围盒来对桌牌，所以按 R5 的办法加载 GLB：只加载办公桌 / 办公椅 / 显示器
+// 这三类及其桌面物件用到的 8 个模型，别的类别由过滤后的布局挡掉。
+const hooks = registerHooks({ resolve(s, c, next) { return s === 'three' ? { url: new URL('../vendor/three/three.module.js', import.meta.url).href, shortCircuit: true } : next(s, c) } })
+const { GLTFLoader } = await import('../vendor/three/jsm/loaders/GLTFLoader.js')
+const { placeFurniture } = await import('../assets3d.js')
+hooks.deregister()
+const loadModel = async name => {
+  const bytes = readFileSync(new URL(`../assets/models/furniture/${name}.glb`, import.meta.url))
+  return (await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')).scene
+}
+const FURNITURE_MODELS = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']
+const A = { furn: Object.fromEntries(await Promise.all(FURNITURE_MODELS.map(async name => [name, await loadModel(name)]))) }
+const deskFurniture = () => {
+  const base = createOfficeR1Layout()
+  const layout = { ...base, r1: { ...base.r1, elements: base.r1.elements.filter(item => ['办公桌', '办公椅', '显示器'].includes(item.category)) } }
+  return buildR1Furniture({ THREE, root: new THREE.Group(), layout, A, placeFurniture, makeScreenTexture: () => ({ ctx: {}, tex: new THREE.Texture() }) })
+}
 
 const MM = .001, CM = .01
 const near = (a, b, tolerance = 1e-5) => assert.ok(Math.abs(a - b) <= tolerance, `${a} != ${b}`)
@@ -355,4 +377,109 @@ test('AMB-10 the R1 module list is unchanged and both tiers stay inside the draw
   const root = new THREE.Group()
   buildR1Brand({ THREE, root, layout: { plan1Phase: 'L2B' }, canvasTex: fakeCanvasTex }).dispose()
   assert.equal(root.children.length, 0)
+})
+
+// ───────────────── AM-7 预留座位：Dr、苏晨、大旺（补充 R2）─────────────────
+// 25 位同事的工位映射（I3B 冻结的 chair_id 顺序）；预留座位不得挤进这张表。
+const WORKSTATION_CHAIRS = Object.freeze([
+  '04-CH-003', '04-CH-009', '04-CH-010', '04-CH-008', '08-CH-004', '04-CH-006', '04-CH-007', '04-CH-005',
+  '08-CH-002', '08-CH-003', '08-CH-001', '04-CH-011', '04-CH-001', '08-CH-005', '08-CH-008', '06-CH-002',
+  '06-CH-001', '04-CH-002', '06-CH-003', '08-CH-007', '08-CH-006', '06-CH-004', '06-CH-005', '06-CH-006', '04-CH-004',
+])
+
+test('AM-7a the reserved-seat table is frozen, matches the board list and leaves the 25 workstations alone', () => {
+  assert.ok(Object.isFrozen(R1_RESERVED_SEATS))
+  assert.deepEqual(R1_RESERVED_SEATS.map(row => [row.name, row.chair, row.desk]),
+    [['苏晨', '08-CH-011', '08-T-011'], ['Dr', '08-CH-012', '08-T-012'], ['大旺', '08-CH-013', '08-T-013']])
+  for (const row of R1_RESERVED_SEATS) {
+    assert.ok(Object.isFrozen(row), row.chair)
+    assert.equal(row.date, '2026-10-29', row.chair)
+    assert.ok(typeof row.reason === 'string' && row.reason.length > 0, row.chair)
+  }
+  // 导出判定：父件与三个子件都算同一个座位，别的椅子一律 false。
+  for (const row of R1_RESERVED_SEATS) for (const suffix of ['', '-BACK', '-BASE', '-SEAT']) {
+    assert.equal(isReservedSeat(`${row.chair}${suffix}`), true, `${row.chair}${suffix}`)
+  }
+  for (const id of ['08-CH-010', '08-CH-014', '08-CH-0110', '04-CH-001', '08-T-011', '', null, undefined]) {
+    assert.equal(isReservedSeat(id), false, String(id))
+  }
+  // 三个预留座位不坐人：25 位同事的工位映射一条都不动。
+  const layout = createOfficeR1Layout()
+  assert.equal(layout.r1.workstations.length, 25)
+  assert.deepEqual(layout.r1.workstations.map(station => station.chair_id), WORKSTATION_CHAIRS)
+  for (const station of layout.r1.workstations) assert.equal(isReservedSeat(station.chair_id), false, station.chair_id)
+})
+
+test('AM-7b three reserved desk plates read the name plus 预留, sit on their own desk top and clear the monitor, keyboard and mouse', () => {
+  const { module, ambience, collision } = brand()
+  const plates = ambience.deskPlates, DP = r1AmbienceSpec.deskPlate
+  assert.deepEqual(plates.map(plate => plate.text), [['苏晨', '预留'], ['Dr', '预留'], ['大旺', '预留']])
+  assert.deepEqual(plates.map(plate => plate.desk), ['08-T-011', '08-T-012', '08-T-013'])
+  assert.deepEqual(plates.map(plate => plate.id), ['08-CH-011-PLATE', '08-CH-012-PLATE', '08-CH-013-PLATE'])
+  const furniture = deskFurniture()
+  for (const plate of plates) {
+    const deskBox = furniture.itemBounds.get(plate.desk)
+    assert.ok(deskBox, plate.desk)
+    // 贴在本桌桌面上：底边与桌面高差 ≤ 3 mm。
+    assert.ok(Math.abs(plate.box.min.y - deskBox.max.y) <= 3 * MM, `${plate.desk} 桌牌高差 ${plate.box.min.y - deskBox.max.y} m`)
+    // 整块留在本桌占地之内。
+    for (const axis of ['x', 'z']) {
+      assert.ok(plate.box.min[axis] >= deskBox.min[axis] - MM, `${plate.desk} 桌牌越出桌面 ${axis} 近端`)
+      assert.ok(plate.box.max[axis] <= deskBox.max[axis] + MM, `${plate.desk} 桌牌越出桌面 ${axis} 远端`)
+    }
+    // 不与显示器、键盘、鼠标相交。
+    const monitor = furniture.itemBounds.get(plate.desk.replace('-T-', '-M-'))
+    assert.ok(monitor, `${plate.desk} 的显示器`)
+    assert.equal(plate.box.intersectsBox(monitor), false, `${plate.desk} 桌牌与显示器相交`)
+    const props = furniture.desktopItems.get(plate.desk).filter(detail => /\/(keyboard|mouse)$/.test(detail.id))
+    assert.equal(props.length, 2, plate.desk)
+    for (const prop of props) assert.equal(plate.box.intersectsBox(prop.bounds), false, `${plate.desk} 桌牌与 ${prop.id} 相交`)
+    // 约 0.24 × 0.08 m 的三角立牌：宽度照规格，立起来不超过 0.09 m，占地进深不超过 0.08 m。
+    near(plate.box.max.x - plate.box.min.x, DP.width, 2 * MM)
+    assert.ok(plate.box.max.y - plate.box.min.y <= .09, `${plate.desk} 桌牌高 ${plate.box.max.y - plate.box.min.y} m`)
+    assert.ok(plate.box.max.z - plate.box.min.z <= .08, `${plate.desk} 桌牌进深 ${plate.box.max.z - plate.box.min.z} m`)
+    // 桌牌不另加碰撞代理：桌子自己已经有碰撞，牌心处读不到新增碰撞体。
+    assert.equal(collision.hit(plate.centre.x, plate.centre.z), null, `${plate.desk} 桌牌不应新增碰撞`)
+  }
+  // 深底、铜框、金字，上行名字下行「预留」。
+  const context = recordingContext()
+  drawR1DeskPlate(context, ATLAS_WIDTH, R1_AMBIENCE_ATLAS.cells.desk0.height, '苏晨')
+  assert.deepEqual(context.texts, ['苏晨', '预留'])
+  for (const colour of [DP.frame, DP.face, DP.text]) assert.ok(context.fills.includes(colour), colour)
+  // 图集里三块桌牌各占一格，格子按牌面长宽比开（3 : 1），字不会被拉长。
+  for (let index = 0; index < 3; index++) {
+    near(ATLAS_WIDTH / R1_AMBIENCE_ATLAS.cells[`desk${index}`].height, DP.width / DP.height, .01)
+  }
+  furniture.dispose(); module.dispose()
+})
+
+test('AM-7c the three reserved chairs are tucked under their desks and every desk still owns exactly one chair', () => {
+  const layout = createOfficeR1Layout()
+  const desks = layout.r1.elements.filter(item => item.category === '办公桌'), chairs = layout.r1.elements.filter(item => item.category === '办公椅')
+  assert.equal(desks.length, 78); assert.equal(chairs.length, 78)
+  // I3B 的「1.2 m 内恰有一把办公椅」对全部 78 张桌子仍然成立：推椅子不得让邻桌多出一把。
+  for (const desk of desks) {
+    assert.equal(chairs.filter(chair => Math.hypot(chair.xM - desk.xM, chair.yM - desk.yM) <= 1.2).length, 1, desk.id)
+  }
+  const rawOf = id => R1_DATA.elements.find(item => item.id === id)
+  for (const seat of R1_RESERVED_SEATS) {
+    const chair = chairs.find(item => item.id === seat.chair), desk = desks.find(item => item.id === seat.desk)
+    near(chair.xM, rawOf(seat.chair).xM, 1e-9)
+    near(chair.yM - rawOf(seat.chair).yM, R1_RESERVED_TUCK_M, 1e-9)
+    // 椅子前沿压进桌面占地 ≥ 9.5 cm，椅背仍留在桌子之外（不许整把埋进桌子）。
+    const front = chair.yM + chair.widthM / 2, edge = desk.yM - desk.widthM / 2
+    assert.ok(front - edge >= .095, `${seat.chair} 只推进 ${front - edge} m`)
+    assert.ok(chair.yM - chair.widthM / 2 < edge, `${seat.chair} 椅背埋进了桌子`)
+    // 子件（椅背 / 底座 / 座面）跟着父件同样平移，相对偏移不变。
+    for (const suffix of ['-BACK', '-BASE', '-SEAT']) {
+      const part = layout.r1.elements.find(item => item.id === `${seat.chair}${suffix}`)
+      near(part.yM - rawOf(`${seat.chair}${suffix}`).yM, R1_RESERVED_TUCK_M, 1e-9)
+      near(part.xM, rawOf(`${seat.chair}${suffix}`).xM, 1e-9)
+    }
+  }
+  // 预留之外的办公椅一律停在原处（接待椅 11-CH-001 由 OFFICE-R1-RECEP 另行平移）。
+  for (const chair of chairs) {
+    if (isReservedSeat(chair.id) || chair.id === '11-CH-001') continue
+    near(chair.yM, rawOf(chair.id).yM, 1e-9)
+  }
 })
