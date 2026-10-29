@@ -3,9 +3,11 @@ import { createOfficePottedFoliage } from './plants.js'
 import { createSampleBatch } from './batch.js'
 
 // 裁定 D（dispatch/OFFICE-R1-I6B-20261028/裁定-绿植外形-R2.md）：登记冠包络、盆尺寸与总高都不动，
-// 只在包络内加密叶片。外层正好顶到登记冠包络；内层复用同一叶源，缩到 72 % 并绕竖轴转过一个角度后
-// 在包络内居中，把源模型稀疏的叶片填实。低档只保留外层，不增加面数。
-const CROWN_FILL = .72
+// 只在包络内加密叶片。外层正好顶到登记冠包络；内层复用同一叶源，缩到 CROWN_FILL 并绕竖轴转过一个
+// 角度后在包络内居中，把源模型稀疏的叶片填实。低档只保留外层，不增加面数。
+// 比例取 .92（Q-V1 2026-10-29 裁决，裁定 D 的「或等效做法」内）：.72 的同心副本几乎整层藏在外层
+// 叶片与树干后面，椅子视角只多 6.7 % 叶片像素；.92 同样满足全部硬约束且面数增量不变。
+const CROWN_FILL = .92
 
 export function buildR1Plants({ THREE, root, layout, A, quality, low = false, collision }) {
   if (layout?.r1Phase !== 'R1' || !A?.furn?.pottedPlant) return { dispose() {} }

@@ -72,7 +72,7 @@ test('I6B-2 35 株绿植的盆尺寸、冠包络与总高仍逐值等于登记�
   }
 })
 
-test('I6B-2 冠包络内加密一层叶片：高档两层（内层 72% 并绕竖轴旋转），低档只保留外层', () => {
+test('I6B-2 冠包络内加密一层叶片：高档两层（内层 92% 并绕竖轴旋转），低档只保留外层', () => {
   for (const low of [false, true]) {
     const root = new THREE.Group(), layout = createOfficeR1Layout()
     const plants = buildR1Plants({ THREE, root, layout, A, low })
@@ -89,13 +89,13 @@ test('I6B-2 冠包络内加密一层叶片：高档两层（内层 72% 并绕竖
       for (const layer of layers) assert.equal(layer.triangles, crown.triangles, `${part.id} 每层面数应等于叶源`)
       assert.equal(part.count / 3, crown.triangles * (low ? 1 : 2), `${part.id} 冠面数加密倍数`)
       if (low) continue
-      // 内层：缩到 72 %、绕竖轴转过一个角度，整体仍在登记冠包络之内
+      // 内层：缩到 92 %（Q-V1 2026-10-29 裁决）、绕竖轴转过一个角度，整体仍在登记冠包络之内
       const inner = layers[1], size = inner.bounds.getSize(new THREE.Vector3()), center = inner.bounds.getCenter(new THREE.Vector3())
-      near(inner.shrink, .72, 1e-9, `${part.id} 内层缩放`)
+      near(inner.shrink, .92, 1e-9, `${part.id} 内层缩放`)
       assert.ok(Math.abs(inner.yaw) > .1, `${part.id} 内层应绕竖轴旋转，实际 ${inner.yaw}`)
-      near(size.x, row.lengthM * .72, .005, `${part.id} 内层 x`)
-      near(size.z, row.widthM * .72, .005, `${part.id} 内层 z`)
-      near(size.y, row.heightM * .72, .005, `${part.id} 内层 y`)
+      near(size.x, row.lengthM * .92, .005, `${part.id} 内层 x`)
+      near(size.z, row.widthM * .92, .005, `${part.id} 内层 z`)
+      near(size.y, row.heightM * .92, .005, `${part.id} 内层 y`)
       near(center.x, row.xM - 26, .005, `${part.id} 内层 cx`)
       near(center.z, 18 - row.yM, .005, `${part.id} 内层 cz`)
       near(center.y, row.zM + row.heightM / 2, .005, `${part.id} 内层应在冠包络内居中`)
