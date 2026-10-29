@@ -371,7 +371,7 @@
       "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors and door sweeps; no source-register changes",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E7E1BFEEE18552D87E99E12B6D7F2DCA81C52602421E965BC76DB8FB84A5E686"
+      "sha256": "AEF5576ABB2E6EF5429AB7187D3B342265C1418D5683DF3AA46E156AB6F7D8D8"
     }
   ],
   "excluded": {
