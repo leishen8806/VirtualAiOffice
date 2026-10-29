@@ -323,6 +323,13 @@
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
       "sha256": "3E1B34CC8D211EA5468B3B44A1FAB49539614E1413430664C1359C7D5DFEF861"
+    },
+    {
+      "file": "office-vis2/r1-lights.js",
+      "source": "R1-only procedural zone and plaza lighting; no downloaded assets",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "043345D77C576A092F91480766D8A434B4939FB29C549FA8F338DDB6EB231B2F"
     }
   ],
   "excluded": {
