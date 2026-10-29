@@ -34,20 +34,23 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   function peopleClear(v, p) {
     return [...views.values()].every(other => other === v || other.away || !other.char.group.visible || dist(anchor(other), p) >= .5 - 1e-7)
   }
-  function transitionOccupied(v) {
+  function transitionOccupied(v, returning = false) {
     const p = nav.parameters.get(stationName(v)), a = p.standing, b = p.exit
     const pointDistance = (p, a, b) => { const dx = b.x - a.x, dz = b.z - a.z, t = clamp(((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz || 1)); return Math.hypot(p.x - a.x - dx * t, p.z - a.z - dz * t) }
     const cross = (a, b, c) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)
     for (const other of views.values()) {
       if (other === v || other.away || !other.char.group.visible) continue
       const otherParams = nav.parameters.get(stationName(other))
-      if ((other.r1AwayFromDesk || other.act && other.act.phase !== 'queued') && otherParams && dist(p.exit, otherParams.exit) < .5) return true
-      if ((other.r1AwayFromDesk || other.act && other.act.phase !== 'queued') && otherParams) {
+      // Returning neighbours reserve their shared approach until seated, not while idle elsewhere.
+      const reserved = returning ? other.act && other.act.phase !== 'queued' : other.r1AwayFromDesk || other.act && other.act.phase !== 'queued'
+      if (reserved && otherParams && dist(p.exit, otherParams.exit) < .5) return true
+      if (reserved && otherParams) {
         const end = { x: v.home.x + p.back.x * p.slide, z: v.home.z + p.back.z * p.slide }
         const otherEnd = { x: other.home.x + otherParams.back.x * otherParams.slide, z: other.home.z + otherParams.back.z * otherParams.slide }
         // Adjacent exits can cross a neighbour's parked chair even when the people have left.
         if (Math.min(pointDistance(p.exit, other.home, otherEnd), pointDistance(otherParams.exit, v.home, end)) < 1.04) return true
       }
+      if (returning) continue // Actual return-chair clearance is checked by safeChairMove, without the departure approximation.
       // Reserve the entire chair sweep before rising; pausing halfway can trap a passing colleague.
       const end = { x: v.home.x + p.back.x * p.slide, z: v.home.z + p.back.z * p.slide }
       if (pointDistance(anchor(other), v.home, end) < 1.04) return true
@@ -283,7 +286,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     }
     for (let i = 0; i < pending.length;) {
       const a = pending[i], v = a.v
-      if (elapsed < (a.retryAfter || 0) || (v.away || !v.r1AwayFromDesk) && countAway() >= 8 || !a.back && transitionOccupied(v)) { i++; continue }
+      if (elapsed < (a.retryAfter || 0) || (v.away || !v.r1AwayFromDesk) && countAway() >= 8 || transitionOccupied(v, a.back)) { i++; continue }
       pending.splice(i, 1); a.t = 0
       if (a.options.commute === 'arrive') { const gate = nav.ENTRANCE.gate[1]; if (!peopleClear(v, gate)) { pending.push(a); break }; v.away = false; v.char.group.visible = true; put(v, gate); v.char.pose.sit = 0; v.char.pose.r1AtDesk = false; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).exit, 'return-transition') }
       else if (v.r1PublicSeat) a.phase = 'public-rise'

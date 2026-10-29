@@ -188,3 +188,34 @@ test('a temporarily blocked departure yields its exit, restores the chair and re
   }
   assert.equal(returnedToQueue, true); assert.equal(completed, 1); assert.ok(attempts > 4)
 })
+
+test('neighbouring arrivals reserve their shared return corridor until each person is seated', async () => {
+  const l = layout(); l.site = { x0: -27, x1: -18, z0: -1, z1: 10 }
+  const c = createFurnitureCollision(), views = new Map(), chairs = new Map(), motions = new Map()
+  for (const [name, z] of [['Reviewer1', 5.4], ['Reviewer2', 4]]) {
+    const home = { x: -22.76, z, yaw: -Math.PI / 2 }
+    l.seats[name] = ['06', home.x + .81, z, 0, home]
+    l.r1.workstations.push({ business_id: name, desk_id: name + '-desk', chair_id: name + '-chair' })
+    box(c, name + '-desk', home.x + .81, z, .7, 1.4)
+    chairs.set(name + '-chair', { mesh: box(c, name + '-chair', home.x, z, .4, .4), home })
+    motions.set(name + '-chair', { dx: 0, dz: 0, yaw: 0 })
+    const group = new THREE.Group(); group.visible = false
+    views.set(name, { name, home, away: true, r1AwayFromDesk: true, char: { group, pose: { sit: 0, phase: 0 } } })
+  }
+  const furniture = { chairFacings: new Map(), chairMotion: id => motions.get(id), moveChair(id, dx, dz, yaw) {
+    const before = motions.get(id), changed = before.dx !== dx || before.dz !== dz || before.yaw !== yaw
+    motions.set(id, { dx, dz, yaw }); const { mesh, home } = chairs.get(id); c.poseNavigationBody(mesh, home, dx, dz, yaw); return changed
+  } }
+  const d = createR1Director({ views, layout: l, furnitureCollision: c, r1Furniture: furniture, r1Doors: { records: [] } }); await d.ready
+  d.navigation.ENTRANCE.gate[1] = { x: -20, z: 8 }
+  for (const v of views.values()) d.arrive(v)
+  let bothActive = false
+  for (let frame = 0; frame < 9000 && [...views.values()].some(v => v.away || v.act); frame++) {
+    d.update(1 / 30)
+    bothActive ||= [...views.values()].every(v => !v.away && v.act?.phase !== 'queued' && v.act)
+  }
+  assert.equal(bothActive, false)
+  assert.ok([...views.values()].every(v => !v.away && !v.act && !v.r1AwayFromDesk))
+  assert.equal(d.history.length, 2)
+  for (const motion of motions.values()) assert.ok(Object.values(motion).every(value => value === 0))
+})
