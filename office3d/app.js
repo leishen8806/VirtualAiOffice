@@ -1445,7 +1445,7 @@ function focusAgent(id) {
   setGoal({ az: 8, el: 30, r: 9, t: [p.x, 0, p.z] })
 }
 const ui = createUI({ refresh: () => poll(), refreshFoyer: () => pollFoyer(), focusAgent: (id) => focusAgent(id), setGoal: (p) => setGoal(p) })
-const emptyFun = { burst() {}, celebrate() {}, setAwards() {}, setHoliday() {}, preview() {}, pick() { return false }, catInfo: () => '关闭', catDiag: () => [], catDiagClear() {}, catReact() { return null }, catToggle() { return false }, catPlaying: () => false, catAim() { return false }, debugCatPlan() {}, update() {}, debug: () => ({}) }; const fun = LAYOUT3_MODE ? emptyFun : createFun({ scene, views, boardViews, LOUNGE, furnitureCollision: activeCollision }) // 彩纸、猫、节日装饰、奖杯（见 fun.js）
+const emptyFun = { burst() {}, celebrate() {}, setAwards() {}, setHoliday() {}, preview() {}, pick() { return false }, catInfo: () => '关闭', catDiag: () => [], catDiagClear() {}, catReact() { return null }, catToggle() { return false }, catPlaying: () => false, catAim() { return false }, debugCatPlan() {}, update() {}, debug: () => ({}) }; const fun = LAYOUT3_MODE && OFFICE_LAYOUT.r1Phase !== 'R1' ? emptyFun : createFun({ scene, views, boardViews, LOUNGE, furnitureCollision: activeCollision }) // 彩纸、猫、节日装饰、奖杯（见 fun.js）；只为 R1 放行，其余 layout=3 页面仍是 emptyFun
 const officeSceneRoots = DR_MODE ? isolateDrPlace({ scene, campusRoot: campusRegistry?.root, keepRoots: controlRoom ? [controlRoom.root] : [], environmentRoots, labels: labelsEl, bubbles: bubblesEl, zones: CAMPUS_ZONES, setGoal }) : []
 const catPlayBtn = $('catPlay'), catPlayStatus = $('catPlayStatus')
 function syncCatPlay() {
