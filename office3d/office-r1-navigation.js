@@ -670,12 +670,13 @@ export function createR1Navigation(layout) {
     if (!starts.length) return null
     const bounds = connectors => [landmarkCosts, reverseCosts].map(fields => fields.map(costs => Math.min(...connectors.map(([id, length]) => costs[id] + length))))
     const [goalFrom, goalTo] = bounds(goals), [startFrom, startTo] = bounds(starts)
+    const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,4).map(row => row.i)
     const estimates = search.estimates; estimates.fill(NaN)
     // Balanced landmark potentials let both frontiers meet without searching a whole room behind a narrow goal.
     const potential = id => {
       if (!Number.isNaN(estimates[id])) return estimates[id]
       let forward = distance(gridPoints[id], end), backward = distance(start, gridPoints[id])
-      for (let i = 0; i < landmarkCosts.length; i++) {
+      for (const i of selected) {
         const from = landmarkCosts[i][id], to = reverseCosts[i][id]
         if (Number.isFinite(from)) {
           if (Number.isFinite(goalFrom[i])) forward = Math.max(forward, goalFrom[i] - from)
@@ -692,14 +693,15 @@ export function createR1Navigation(layout) {
     costs.fill(Infinity); backCosts.fill(Infinity); previous.fill(-2); following.fill(-2); closed.fill(0); backClosed.fill(0); open.rows.length = 0; backOpen.rows.length = 0
     for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + potential(id)) }
     for (const [id, length] of goals) { backCosts[id] = length; following[id] = -1; backOpen.push(id, length, length - potential(id)) }
-    let best = Infinity, meeting = -1
+    let best = Infinity, meeting = -1, turn = 0
     const meet = id => { const length = costs[id] + backCosts[id]; if (length < best) { best = length; meeting = id } }
     for (const [id] of starts) meet(id)
     const trim = (heap, done, distances) => { while (heap.rows.length && (done[heap.ids[0]] || heap.gs[0] > distances[heap.ids[0]])) heap.pop() }
     while (open.rows.length && backOpen.rows.length) {
       trim(open, closed, costs); trim(backOpen, backClosed, backCosts)
       if (!open.rows.length || !backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best - 1e-9) break
-      const reverse = backOpen.fs[0] < open.fs[0], heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
+      // Alternate equal-cost frontiers so a broad open side cannot monopolize expansion.
+      const reverse = (turn++ & 1) === 1, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
       const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; meet(id)
       const relax = (other, length, edge) => {
         if (done[other] || blocked[other] || edge !== undefined && jumpBlocked[edge]) return
