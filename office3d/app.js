@@ -2060,7 +2060,7 @@ function frame(rafTime) {
   if(document.hidden){animationFrame=0;return}
   animationFrame=requestAnimationFrame(frame)
   const ds=director.stats(),active=ds.active>0||ds.queued>0||ds.bubbles>0||!!meet||!!voteMeet||fun.catPlaying()||[...views.values()].some(v=>!!v.act||v.mode==='run')||camMode.tour||!!camMode.follow||moveKeys.size>0||goal.t.distanceTo(cam.t)>.02||Math.abs(goal.az-cam.az)>.1||Math.abs(goal.r-cam.r)>.05
-  const limit=renderLimit({tier:qualityPolicy.tier,wall:WALL_MODE,idleMs:t0-lastInput,active})
+  const limit=renderLimit({tier:qualityPolicy.tier,wall:WALL_MODE,idleMs:t0-lastInput,active,locked:qualityPolicy.locked})
   const interval=1000/limit
   if(nextRender&&tickTime<nextRender-.5)return
   nextRender=!nextRender||tickTime-nextRender>interval*2?tickTime+interval:nextRender+interval
@@ -2079,7 +2079,7 @@ function frame(rafTime) {
   else if (!document.hidden && !FIXED_DPR && t0 - perf.since > 2000) {
     const avg = (t0 - perf.since) / perf.n
     let next = dpr
-    if (avg > (limit===30?45:30) && dpr > 0.6) next = Math.max(0.6, dpr * 0.85)
+    if (avg > (limit===30?45:30) && dpr > 0.6 && !qualityPolicy.locked) next = Math.max(0.6, dpr * 0.85) // 锁定"高"时不降分辨率
     const ceiling=cappedDpr(qualityPolicy.tier,DPR_MAX,innerWidth,innerHeight)
     if(avg<18&&dpr<ceiling)next=Math.min(ceiling,dpr*1.08)
     next=Math.min(next,ceiling)
