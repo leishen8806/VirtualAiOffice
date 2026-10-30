@@ -274,7 +274,15 @@ API_PATHS.add('/command-view/scenarios')
 // 静态文件白名单：页面、脚本、样式、图片、模型。目录里的 json / log / dpapi / md / mjs（访问码、Telegram 配置、审计日志、委员会数据……）一律不对外
 const STATIC_EXT = new Set(['.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.glb', '.gltf', '.bin', '.fbx'])
 const staticOk = (rel) => STATIC_EXT.has(path.extname(rel).toLowerCase()) && !rel.split('/').some((seg) => seg.startsWith('.')) && !/^\/(tests|codex-prompts|_ref)\//.test(rel)
-let wallCache = { at: 0, data: null }, issuesCache = { at: 0, list: [] }
+let wallCache = { at: 0, data: null }, issuesCache = { at: 0, list: [] }, stateResponseCache = new Map()
+// /state 的轮询会持续遇到新任务、交互和版本号。缓存只用于短时间的展示加速，
+// 不能随着看板历史无限保留，否则 Node 常驻进程会把旧对象一直挂在堆上。
+function boundedCacheSet(cache, key, value, limit) {
+  if (cache.has(key)) cache.delete(key)
+  cache.set(key, value)
+  while (cache.size > limit) cache.delete(cache.keys().next().value)
+  return value
+}
 // 「待董事会提供 / 决定」：① 阻塞类型为「待授权或业务决定」的任务（读最近一条「阻塞：」评论，按更新时间缓存）；
 // ② roadmap.json 的 boardItems 里登记、且对应任务还没结束的事项（任务一结束就自动消失，不会留下过期的红灯）。只读。
 const blockedTypeCache = new Map() // issueId -> { updatedAt, type, condition }
@@ -290,7 +298,7 @@ async function wallBoardItems(roadmap) {
     let c = blockedTypeCache.get(i.id)
     if (!c || c.updatedAt !== i.updatedAt) {
       try { const cs = await get(`/api/issues/${i.id}/comments`); c = { updatedAt: i.updatedAt, ...blockedReason(Array.isArray(cs) ? cs : cs.comments || []) } } catch { c = { updatedAt: i.updatedAt, type: '未说明', condition: '' } }
-      blockedTypeCache.set(i.id, c)
+      boundedCacheSet(blockedTypeCache, i.id, c, 200)
     }
     if (c.type === '待授权或业务决定') out.push({ kind: 'board_blocked', ident: i.ident, title: `${i.title}${c.condition ? '：' + c.condition : ''}`.slice(0, 200), since: i.updatedAt })
   }
@@ -513,8 +521,7 @@ async function issueInfo(id) {
   try {
     const i = await get(`/api/issues/${id}`)
     const v = { identifier: i.identifier, title: i.title, createdByAgentId: i.createdByAgentId || null, createdByUserId: i.createdByUserId || null, assigneeAgentId: i.assigneeAgentId || null, projectId: i.projectId || null }
-    issueCache.set(id, v)
-    return v
+    return boundedCacheSet(issueCache, id, v, 400)
   } catch {
     return null
   }
@@ -631,8 +638,7 @@ async function interactionInfo(issueId, interactionId) {
         })),
       },
     }
-    interactionCache.set(interactionId, v)
-    return v
+    return boundedCacheSet(interactionCache, interactionId, v, 200)
   } catch {
     return null
   }
@@ -644,8 +650,7 @@ async function issuePolicy(id, updatedAt) {
   if (policyCache.has(key)) return policyCache.get(key)
   try {
     const i = await get(`/api/issues/${id}`)
-    policyCache.set(key, i.executionPolicy || null)
-    return i.executionPolicy || null
+    return boundedCacheSet(policyCache, key, i.executionPolicy || null, 400)
   } catch {
     return null
   }
@@ -1070,7 +1075,7 @@ async function state() {
   })
 }
 
-http
+const server = http
   .createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://x')
@@ -1263,6 +1268,12 @@ http
         return json(200, await issueDetail(id))
       }
       if (url.pathname === '/state') {
+        const cacheKey = wallScope ? 'wall' : lanUser ? 'lan' : 'local'
+        const cached = typeof stateResponseCache === 'undefined' ? null : stateResponseCache.get(cacheKey)
+        if (cached && Date.now() - cached.at < 1000) {
+          res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(cached.body)
+          return
+        }
         let st
         try { st = await state() } catch (error) {
           return json(503, { error: 'STATE_UNAVAILABLE_NO_SNAPSHOT', reason: 'UPSTREAM_UNAVAILABLE' })
@@ -1273,6 +1284,7 @@ http
         const restricted = lanUser || wallScope
         const view = restricted ? { ...st, world: restrictedWorld(st.world) } : st
         const body = JSON.stringify(wallScope ? redactState(view) : view)
+        if (typeof stateResponseCache !== 'undefined') stateResponseCache.set(cacheKey, { at: Date.now(), body })
         res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(body)
         return
       }
@@ -1419,3 +1431,14 @@ http
       console.log(`局域网：${ips.map((ip) => `http://${ip}:${PORT}/`).join('  ') || '（没有找到私网地址）'}  访问码在 ${LAN_FILE} 里；局域网设备${LAN.write ? '可以操作（write: true）' : '只读'}`)
     }
   })
+
+let shuttingDown = false
+function shutdown() {
+  if (shuttingDown) return
+  shuttingDown = true
+  server.close(() => process.exit(0))
+  setTimeout(() => process.exit(1), 5000).unref()
+}
+process.once('SIGINT', shutdown)
+process.once('SIGTERM', shutdown)
+process.on('message', (message) => { if (message === 'shutdown') shutdown() })

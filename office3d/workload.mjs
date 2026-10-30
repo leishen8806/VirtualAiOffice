@@ -100,7 +100,7 @@ export function buildWorkload({ now = Date.now(), days = 14, ledger = {}, db = {
 
 export function createWorkload({ dir, company, get, stats, dutyOn, notify, now = Date.now, workhoursFile = path.join(dir, '..', 'workhours', 'workhours.json') }) {
   const file = path.join(dir, 'workload.json'), boot = now()
-  let db, error = null, running = false, timer = null, delay = null
+  let db, error = null, running = false, timer = null, delay = null, viewCache = null
   const empty = () => ({ enabled: false, thresholds: { ...DEFAULT_THRESHOLDS }, agents: {}, observations: {}, tasks: {}, reworks: {}, daily: {}, reports: {} })
   function load() {
     try {
@@ -133,8 +133,13 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     return { ...buildWorkload({ now: now(), days, ledger: { ...l, runs: { ...l.runs, ...db.timedRuns } }, db, schedule: schedule() }), error }
   }
   function view() {
-    try { const r = reportView(); return { enabled: db.enabled === true, effectiveDays: Math.max(0, ...r.roles.map(a => a.observedDays)), snapshotDays: Math.max(0, ...r.roles.map(a => a.snapshotDays)), suggestionCount: r.suggestions.length, lastReport: db.lastReport?.path || null, error } }
-    catch (e) { return { enabled: db.enabled === true, effectiveDays: 0, snapshotDays: 0, suggestionCount: 0, lastReport: null, error: e.message } }
+    if (viewCache && now() - viewCache.at < 60000) return { ...viewCache.value }
+    try {
+      const r = reportView()
+      const value = { enabled: db.enabled === true, effectiveDays: Math.max(0, ...r.roles.map(a => a.observedDays)), snapshotDays: Math.max(0, ...r.roles.map(a => a.snapshotDays)), suggestionCount: r.suggestions.length, lastReport: db.lastReport?.path || null, error }
+      viewCache = { at: now(), value }
+      return { ...value }
+    } catch (e) { return { enabled: db.enabled === true, effectiveDays: 0, snapshotDays: 0, suggestionCount: 0, lastReport: null, error: e.message } }
   }
   async function collect() {
     const s = schedule(), current = now(), day = dateKey(current), time = localParts(new Date(current), s.timezone)
@@ -224,7 +229,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
       error = null
       return { ok: true }
     } catch (e) { error = '工作量统计未完成：' + redactText(e.message); return { error } }
-    finally { running = false }
+    finally { running = false; viewCache = null }
   }
   function start() { if (delay || timer) return; delay = setTimeout(() => { delay = null; tick(); timer = setInterval(() => tick(), 60000); timer.unref() }, 120000); delay.unref() }
   function stop() { clearTimeout(delay); clearInterval(timer); delay = timer = null }
