@@ -117,3 +117,131 @@ export function r1NpcStations(layout) {
     }
   })
 }
+
+// ---- 场景层 ----------------------------------------------------------------
+// 在 25 位同事替换完成之后调用；低配极速模式不调用（见 app.js）。
+
+const WALK_SPEED = 0.5          // m/s，服务人员在自己的活动范围内慢走
+const PHASE_PER_M = 4.6         // 与 app.js / people.js 的走路相位换算一致
+const DWELL = [5, 13]           // 到达端点后停留的秒数区间
+
+function makeWalker(station, seed) {
+  const route = station.patrol && station.patrol.length >= 2 ? station.patrol : null
+  return {
+    route,
+    leg: 0,
+    t: 0,
+    dwell: DWELL[0] + (seed % 1) * (DWELL[1] - DWELL[0]),
+    forward: true,
+    x: station.x,
+    z: station.z,
+    yaw: station.yaw,
+    walking: 0,
+  }
+}
+
+function stepWalker(w, dt) {
+  if (!w.route) return
+  if (w.dwell > 0) { w.dwell -= dt; w.walking = 0; return }
+  const from = w.route[w.leg]
+  const to = w.route[w.leg + (w.forward ? 1 : -1)]
+  if (!to) { // 走到一端，掉头并停一会儿
+    w.forward = !w.forward
+    w.dwell = DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])
+    return
+  }
+  const span = Math.hypot(to.x - from.x, to.z - from.z)
+  if (span < 1e-4) { w.leg += w.forward ? 1 : -1; return }
+  w.t += (dt * WALK_SPEED) / span
+  w.walking = 1
+  if (w.t >= 1) {
+    w.t = 0
+    w.leg += w.forward ? 1 : -1
+    w.x = to.x; w.z = to.z
+    if (w.leg <= 0 || w.leg >= w.route.length - 1) {
+      w.forward = w.leg <= 0
+      w.dwell = DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])
+    }
+    return
+  }
+  w.x = from.x + (to.x - from.x) * w.t
+  w.z = from.z + (to.z - from.z) * w.t
+  w.yaw = yawTo(to.x - from.x, to.z - from.z)
+}
+
+export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPerson, document: doc = globalThis.document }) {
+  const stations = r1NpcStations(layout)
+  const members = []
+  const head = new THREE.Vector3()
+
+  for (const station of stations) {
+    const ch = createPerson(people, station.avatar)
+    ch.group.position.set(station.x, 0, station.z)
+    ch.group.rotation.y = station.yaw
+    ch.pose.sit = station.seated ? 1 : 0
+    // 只打 NPC 标记，不写 agentId：pick() 只在 views / boardViews 里取网格，
+    // 所以 NPC 既点不开同事卡片，也不会被当成同事统计。
+    ch.group.traverse((o) => { o.userData.r1NpcId = station.id })
+    scene.add(ch.group)
+
+    let label = null
+    if (labelsEl && doc) {
+      label = doc.createElement('div')
+      label.className = 'lab npc'
+      label.dataset.npc = station.id
+      const nm = doc.createElement('span')
+      nm.className = 'nm'
+      nm.textContent = station.label // 名牌只写角色
+      label.appendChild(nm)
+      labelsEl.appendChild(label)
+    }
+
+    members.push({ station, char: ch, label, walker: makeWalker(station, ch.pose.seed), lookT: 2 + Math.random() * 6 })
+  }
+
+  function update(dt, t, project) {
+    for (const m of members) {
+      const { station, char, walker } = m
+      const p = char.pose
+      stepWalker(walker, dt)
+      if (walker.route) {
+        const moved = Math.hypot(char.group.position.x - walker.x, char.group.position.z - walker.z)
+        char.group.position.set(walker.x, 0, walker.z)
+        p.phase += moved * PHASE_PER_M
+        p.walk += (walker.walking - p.walk) * Math.min(1, dt * 6)
+        if (walker.walking) char.group.rotation.y = walker.yaw
+        else char.group.rotation.y = station.yaw
+      }
+      p.sit += ((station.seated ? 1 : 0) - p.sit) * Math.min(1, dt * 6)
+      // 前台偶尔看向大门方向；其余人原地小幅转头
+      m.lookT -= dt
+      if (m.lookT <= 0) { m.lookT = 4 + Math.random() * 9; m.lookTarget = (Math.random() - 0.5) * 0.9 }
+      p.yaw += ((m.lookTarget || 0) - p.yaw) * Math.min(1, dt * 1.6)
+      char.solve(dt)
+      if (m.label && project) {
+        char.body.head.getWorldPosition(head)
+        head.y += char.labelDY || 0.62
+        project(head, m.label, 0)
+      }
+    }
+  }
+
+  function summary() {
+    return {
+      count: members.length,
+      posts: members.reduce((acc, m) => { acc[m.station.post] = (acc[m.station.post] || 0) + 1; return acc }, {}),
+      members: members.map((m) => ({
+        id: m.station.id, post: m.station.post, label: m.station.label, avatar: m.station.avatar,
+        x: +m.char.group.position.x.toFixed(3), z: +m.char.group.position.z.toFixed(3),
+        yaw: +m.char.group.rotation.y.toFixed(4), walking: m.walker.walking > 0.5,
+      })),
+    }
+  }
+
+  function dispose() {
+    for (const m of members) { m.char.group.removeFromParent(); m.label?.remove() }
+    members.length = 0
+  }
+
+  return { members, stations, update, summary, dispose }
+}

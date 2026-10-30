@@ -138,6 +138,25 @@ test('NPC-1 保安：站在大门内侧一旁，不占门洞净宽、不进门�
   }
 })
 
+test('NPC-3 / 性能：app.js 把 NPC 排在 25 位同事之后，极速模式不加载', () => {
+  const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
+  const liteBlock = app.indexOf("OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite")
+  const fullBlock = app.indexOf("OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite")
+  const npcCall = app.indexOf('createR1Npcs({')
+  assert.ok(liteBlock > 0 && fullBlock > 0 && npcCall > 0)
+  // NPC 只在「非极速」那一段里建
+  assert.ok(npcCall > fullBlock, 'NPC 必须建在非极速模式的 R1 替换块内')
+  // 必须排在同事替换完成（status.completedAt）之后
+  assert.ok(npcCall > app.indexOf('status.completedAt = performance.now()', fullBlock), 'NPC 必须排在 25 位同事替换完成之后')
+  // 不得推迟「人物就绪」：NPC 在 completedAt 之后、且放在独立的 setTimeout 里
+  assert.match(app.slice(fullBlock, npcCall), /setTimeout\(async \(\) => \{[\s\S]*$/)
+  // 极速模式那一段里不得出现 NPC
+  assert.ok(!app.slice(liteBlock, fullBlock).includes('createR1Npcs'), '极速模式不得加载 NPC')
+  // 名牌要跟着同事一起参与避让，并且 NPC 不进 views
+  const declutter = app.slice(app.indexOf('declutter(['), app.indexOf('declutter([') + 400)
+  assert.ok(declutter.includes('r1Npcs.members.map'), '名牌应与同事一起参与 declutter 避让')
+})
+
 test('NPC-4 不挡路：所有站位与巡逻点都不压 R1 登记路线', () => {
   const routes = layout.data.routes || layout.routes || []
   assert.ok(routes.length >= 17, `应读到 R1 的登记路线，实际 ${routes.length} 条`)

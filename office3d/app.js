@@ -8,7 +8,8 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
 import { createFurnitureCollision } from './furniture-collision.js'
 import { startOfficeV2, OFFICE_LAYOUT, SEATS, buildWing, ROOMS, buildOfficePartitions, createDirector, createFun, holidayInfo, officeStand, officeExit, corridorPath, LOUNGE_AREA, LOUNGE_SEATS, loungeTrip, meetingTrip, createWaitingBoard, waitingPlan } from './office-v2-modules.js'
 import { buildWarehouseShell } from './warehouse-shell.js'
@@ -966,6 +967,7 @@ let board = officeFurnitureV2?.board || (() => {
 
 // ───────────────────────── 人物视图 ─────────────────────────
 const labelsEl = $('labels')
+let r1Npcs = null // 服务人员 NPC（OFFICE-R1-I7B-A）：同事替换完成后才建；极速模式保持 null
 const bubblesEl = $('bubbles')
 const views = new Map() // agentId -> view
 const boardViews = {}
@@ -2182,8 +2184,9 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     bv.headPos.y += bv.char.labelDY || 0.5
     projectTo(bv.headPos, bv.label, 0)
   })
+  if (r1Npcs) r1Npcs.update(dt, t, projectTo)
   for (const z of zoneLabels) projectTo(z.pos, z.el)
-  declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label)])
+  declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
   sceneQuality.update()
   renderer.info.autoReset=false;renderer.info.reset()
@@ -2348,6 +2351,16 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
         status.completedAt = performance.now()
         // Movement extras are optional: seated people and the first frame never wait for them.
         setTimeout(() => { status.movementStartedAt = performance.now(); loadR1MovementExtras(loaded).then(() => { status.movementReadyAt = performance.now() }).catch(() => { status.movementLoadFailed = true }) }, 0)
+        // 服务人员 NPC（OFFICE-R1-I7B-A）：排在 25 位同事之后，不推迟「人物就绪」；极速模式不加载。
+        setTimeout(async () => {
+          const npcStatus = scene.userData.r1Npcs = { startedAt: performance.now() }
+          try {
+            await loadExtraAvatars(loaded, R1_NPC_AVATARS)
+            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson })
+            npcStatus.count = r1Npcs.members.length
+            npcStatus.completedAt = performance.now()
+          } catch (e) { npcStatus.loadFailed = String(e && e.message || e) }
+        }, 0)
       } catch { status.loadFailed = true }
     }, 0)))
   }
@@ -2355,6 +2368,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
 }
 window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
+window.__office.r1Npcs = () => (r1Npcs ? r1Npcs.summary() : { count: 0, lite: !!LITE.lite })
 window.__office.lite = LITE
 if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
   const btn = $('liteToggle')
