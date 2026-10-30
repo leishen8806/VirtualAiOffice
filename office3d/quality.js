@@ -16,6 +16,8 @@ export function chooseQuality({ averageMs = 0, cores, memory, gpu = '' } = {}) {
 export function createQualityPolicy({ selection, signals = {}, wall = false } = {}) {
   let tier = selection.tier, source = selection.source, reason = selection.forced ? 'URL强制' : source === 'storage' ? '已保存选择' : wall ? '大屏默认高档' : '等待6秒预热'
   let started = null, windowAt = null, samples = [], warm = [], slowSince = null, initialized = false, downgraded = false
+  // 用户明确选了"高"（本次手动选、上次保存、或网址指定）：锁定完整效果，不自动降档、不节能（董事会 2026-10-30）。
+  let locked = tier === 'high' && ['url', 'storage'].includes(source)
   function observe(ms, time, eligible = true) {
     if (!eligible || !Number.isFinite(ms) || ms <= 0) { slowSince = null; samples = []; windowAt = null; return false }
     if (started === null) { started = time; return false }
@@ -28,7 +30,7 @@ export function createQualityPolicy({ selection, signals = {}, wall = false } = 
         const changed = next !== tier; tier = next; source = 'auto'; reason = '6秒预热与设备信号'; return changed
       }
     }
-    if (selection.forced) return false
+    if (selection.forced || locked) return false
     if (windowAt === null) windowAt = time
     samples.push(ms)
     if (time - windowAt < 1000) return false
@@ -42,14 +44,15 @@ export function createQualityPolicy({ selection, signals = {}, wall = false } = 
   }
   function select(q, storage) {
     if (!valid(q) || selection.forced) return false
-    tier = q; source = 'manual'; reason = '手动选择'; initialized = true; slowSince = null; samples = []
+    tier = q; source = 'manual'; reason = q === 'high' ? '手动选择：完整效果，不节能' : '手动选择'; locked = q === 'high'; initialized = true; slowSince = null; samples = []
     try { storage?.setItem(QUALITY_KEY, q) } catch {}
     return true
   }
-  return { observe, select, resetWindow() { slowSince = null; samples = []; windowAt = null }, get tier() { return tier }, get source() { return source }, get reason() { return reason }, get downgraded() { return downgraded }, forced: selection.forced }
+  return { observe, select, resetWindow() { slowSince = null; samples = []; windowAt = null }, get tier() { return tier }, get locked() { return locked }, get source() { return source }, get reason() { return reason }, get downgraded() { return downgraded }, forced: selection.forced }
 }
-export function renderLimit({ tier, wall = false, idleMs = 0, active = false, hidden = false }) {
+export function renderLimit({ tier, wall = false, idleMs = 0, active = false, hidden = false, locked = false }) {
   if (hidden) return 0
+  if (locked) return TIERS[tier].fps // 锁定"高"：闲置也不降到 10 帧
   if (!wall && !active && idleMs >= 30000) return 10
   return TIERS[tier].fps
 }

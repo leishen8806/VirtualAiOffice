@@ -1183,7 +1183,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   return {
     toast,
     openQuality(options) {
-      const names={low:'低：省电与低配',medium:'中：均衡',high:'高：完整效果'}
+      const names={low:'低：省电与低配',medium:'中：均衡',high:'高：完整效果，不节能'}
       open(`<h2>画质</h2><p id="qualityStats" role="status" style="overflow-wrap:anywhere">${esc(options.status)}</p><div class="tabs">${Object.entries(names).map(([key,name])=>`<button class="btn ${options.tier===key?'gold':''}" data-quality="${esc(key)}" aria-pressed="${options.tier===key}" ${options.forced?'disabled':''}>${esc(name)}</button>`).join('')}</div><p class="note">${esc(options.forced?'URL参数锁定档位；移除q参数后可手动切换。':'选择保存在本机。持续低帧时只自动降档，不自动升回。低档关闭实时阴影、环境光遮蔽、雨丝和闪电，远处空闲人物动画降频。')}</p>`)
       modal.querySelectorAll('[data-quality]').forEach(b=>b.onclick=()=>{options.tier=b.dataset.quality;options.select(options.tier);modal.querySelectorAll('[data-quality]').forEach(el=>{const on=el===b;el.classList.toggle('gold',on);el.setAttribute('aria-pressed',String(on))})})
     },

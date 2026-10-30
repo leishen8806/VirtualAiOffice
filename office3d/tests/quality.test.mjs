@@ -21,13 +21,14 @@ test('6秒预热后自动选档，预热期不作连续低帧降级',()=>{
   for(let t=0;t<6000;t+=100)assert.equal(p.observe(100,t),false)
   assert.equal(p.tier,'medium');assert.equal(p.observe(100,6000),true);assert.equal(p.tier,'low')
 })
+// 保存的"高"现在锁定不降档（董事会 2026-10-30，见 quality-high-locked.test.mjs）；降档机制用保存的"中"来测。
 test('连续10秒低于24FPS才降档，恢复帧率重置累计，同会话永不自动升回',()=>{
-  const p=createQualityPolicy({selection:{tier:'high',source:'storage',forced:false}})
+  const p=createQualityPolicy({selection:{tier:'medium',source:'storage',forced:false}})
   for(let t=0;t<=6000;t+=50)p.observe(50,t)
   for(let t=6050;t<16000;t+=50)p.observe(50,t)
-  assert.equal(p.tier,'high');p.observe(50,16000);assert.equal(p.tier,'medium')
+  assert.equal(p.tier,'medium');p.observe(50,16000);assert.equal(p.tier,'low')
   for(let t=16050;t<18000;t+=16)p.observe(16,t)
-  assert.equal(p.tier,'medium');assert.equal(p.downgraded,true)
+  assert.equal(p.tier,'low');assert.equal(p.downgraded,true)
 })
 test('中间正常帧中止低帧连续期，不按总坏帧数凑10秒',()=>{
   const p=createQualityPolicy({selection:{tier:'high',source:'storage',forced:false}})
@@ -37,9 +38,9 @@ test('中间正常帧中止低帧连续期，不按总坏帧数凑10秒',()=>{
   assert.equal(p.tier,'high')
 })
 test('软件渲染前台帧超过2.5秒时仍能持续降档',()=>{
-  const p=createQualityPolicy({selection:{tier:'high',source:'storage',forced:false}})
+  const p=createQualityPolicy({selection:{tier:'medium',source:'storage',forced:false}})
   for(let t=0;t<=24000;t+=3000)p.observe(3000,t)
-  assert.equal(p.tier,'medium')
+  assert.equal(p.tier,'low')
 })
 test('后台/闲置限帧不计低帧；大屏默认高但保留持续低帧保护',()=>{
   const p=createQualityPolicy({selection:initialQuality({wall:true}),wall:true})
