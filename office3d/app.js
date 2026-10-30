@@ -22,6 +22,7 @@ import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendin
 import { createReplay } from './replay.js' // T11 今日回放（真实事件账本）：回放入口 / 回放期间暂停实时事件的最小挂钩
 import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
+import { runStatus } from './run-liveness.mjs'
 const APP_STARTED = performance.now()
 
 // ───────────────────────── 品牌色（DR.LIFE+ VI 1.0 · 标准色）─────────────────────────
@@ -57,7 +58,6 @@ const HAIR_TINT =[0xffffff, 0xd9c2a6, 0xa89886, 0x7a6e66, 0xe8d6b8, 0x9a8f88]
 const SHIRTS = [0x2b3038, 0x3a3f4a, 0x4a443c, 0x2f3b3a, 0x34303c, 0x454b55]
 const ZONE_BADGE ={ product: 0x8b6cff, eng: 0x28b4d6, quality: 0xe8963a, drlife: 0xb69a64, ops: 0x3fbf8f, kb: 0x6c8cff }
 
-const STALL_MS = 5 * 60 * 1000 // 超过 5 分钟没有任何输出，就不再算「执行中」
 const WAIT_LABEL = { review: '待人工审核', question: '待你回答', undelivered: '回答未送达' }
 const WAIT_HINT = {
   review: '任务已提交审查，在 Paperclip 里打开任务评审：通过 / 要求修改',
@@ -1010,15 +1010,17 @@ function applyState(s) {
     if (!v) { v = createAgentView(a, views.size + i); if (!v) return; views.set(a.id, v) }
     v.data = a
     v.chat = s.chat?.agents?.[a.id] || null
-    // 「在跑」要看有没有真实输出：状态是 running 但进程已退出 / 很久没有输出，不能算执行中
+    // 活性只看 heartbeat-runs 的状态和推进时间，不能用 agent.updatedAt。
     const lr = a.liveRun
-    const lastOut = lr ? Date.now() - Date.parse(lr.lastOutputAt) : 0
+    const runState = runStatus(lr)
+    const lastOut = lr ? runState.ageMs : 0
     const failed = a.lastRun && a.lastRun.status === 'failed' && Date.now() - Date.parse(a.lastRun.at) < 20 * 60 * 1000 && a.lastRun.error && a.lastRun.error !== 'cancelled'
     let chip = ''
     if (a.status === 'paused') { v.mode = 'pause'; chip = s.world && s.world.duty && !s.world.duty.on ? '已下班' : '已暂停' }
-    else if (lr && lr.alive === false) { v.mode = 'stall'; chip = `运行记录残留：进程已退出，${ago(lastOut)}无输出`; v.why = '这次运行的进程已经不在了，但 Paperclip 还把它记为「运行中」。需要在 Paperclip 里处理掉这条运行记录。' }
-    else if (lr && lastOut > STALL_MS) { v.mode = 'stall'; chip = `疑似卡住：${ago(lastOut)}无输出`; v.why = '进程还在，但很久没有新输出，可能在等回复或已挂起。' }
-    else if (lr || a.status === 'running') { v.mode = 'run'; chip = lr ? `执行中 · ${ago(lastOut)}前有输出` : '执行中'; v.why = '' }
+    else if (runState.kind === 'ended') { v.mode = 'stall'; chip = `运行记录残留：heartbeat 已${lr.status}，${ago(lastOut)}未推进`; v.why = 'heartbeat-runs 已不是 running，但 agent 仍显示运行中；需要在 Paperclip 里核对该运行记录。' }
+    else if (runState.kind === 'stalled') { v.mode = 'stall'; chip = `疑似卡住：heartbeat ${ago(lastOut)}未推进`; v.why = 'heartbeat-runs 仍为 running，但超过 90 分钟没有推进。已完成只读核对，建议再查运行日志后按 medium 跟进。' }
+    else if (lr) { v.mode = 'run'; chip = `执行中 · heartbeat ${ago(lastOut)}前推进`; v.why = '' }
+    else if (a.status === 'running') { v.mode = 'stall'; chip = '疑似卡住：未获取到 heartbeat 运行记录'; v.why = '无法用 heartbeat-runs 验证活性；建议按 medium 做只读核对。' }
     else if (a.status === 'error' || failed) { v.mode = 'err'; chip = `出错${a.lastRun && a.lastRun.error ? '：' + a.lastRun.error : ''}`; v.why = '' }
     else { v.mode = 'idle'; v.why = '' }
     v.chip = chip

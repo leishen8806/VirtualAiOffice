@@ -10,6 +10,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { onDuty, nextChange, localParts } from '../workhours/schedule.mjs'
+import { latestHeartbeatByAgent } from './run-liveness.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
@@ -959,18 +960,15 @@ async function state() {
     if (!cur || rank < cur.rank) byAgent.set(i.assigneeAgentId, { rank, id: i.identifier, issueId: i.id, projectId: i.projectId || null, title: i.title, status: i.status, since: i.updatedAt })
   }
   const lastRun = new Map()
-  const liveRun = new Map()
+  const heartbeatRun = latestHeartbeatByAgent(runs.map((r) => ({ id: r.id, agentId: r.agentId, status: r.status, updatedAt: r.updatedAt, lastOutputAt: r.lastOutputAt, finishedAt: r.finishedAt, startedAt: r.startedAt, createdAt: r.createdAt })))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
-    if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: pidAlive(r.processPid) })
-    }
   }
   // 休息区八卦：上班时间、空闲（不在跑、没在等董事会、没暂停）的同事够两位就后台生成一段（不等它）
   const w = world()
   const waitingAgents = new Set(issueList.filter((i) => ['in_review', 'blocked'].includes(i.status)).map((i) => i.assigneeAgentId))
   const names = readNames()
-  const idle = agents.filter((a) => a.status === 'idle' && !liveRun.has(a.id) && !waitingAgents.has(a.id)).map((a) => ({ id: a.id, name: names[a.id] || a.name, title: a.title }))
+  const idle = agents.filter((a) => a.status === 'idle' && heartbeatRun.get(a.id)?.status !== 'running' && !waitingAgents.has(a.id)).map((a) => ({ id: a.id, name: names[a.id] || a.name, title: a.title }))
   if (!gaps.some(gap => gap.source === 'runs')) gossip.maybeGenerate({ onDuty: !!(w.duty && w.duty.on), people: idle })
   stats.ingest({ runs, activity })
   const daily = stats.daily()
@@ -1002,7 +1000,7 @@ async function state() {
         model: (a.adapterConfig && a.adapterConfig.model) || null,
         task: byAgent.get(a.id) || null,
         lastRun: lastRun.get(a.id) || null,
-        liveRun: liveRun.get(a.id) || null,
+        liveRun: (a.status === 'running' || heartbeatRun.get(a.id)?.status === 'running') ? heartbeatRun.get(a.id) || null : null,
       })),
     waiting: await buildWaiting(activity, issueList),
     assigned: issueList.filter((i) => i.assigneeAgentId).map((i) => ({ id: i.identifier, issueId: i.id, projectId: i.projectId || null, title: i.title, status: i.status, agentId: i.assigneeAgentId, at: i.updatedAt })),
