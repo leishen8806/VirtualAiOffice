@@ -8,7 +8,8 @@ const clamp = n => Math.max(0, Math.min(1, n))
 // R1 owns its lifecycle; no L2B routes, meetingAccess, or legacy phase mutations.
 export function createR1Director({ views, layer, project, layout, furnitureCollision: collision, r1Furniture: furniture, r1Doors: doors }) {
   if (!collision?.navigationBodies || !furniture?.moveChair || !doors?.records) throw new Error('R1 movement requires real collision, furniture and doors')
-  const nav = createR1Navigation(layout), actions = new Set(), pending = [], chairMoves = new Map(), bubbles = new Set(), history = []
+  let nav = createR1Navigation(layout)
+  const actions = new Set(), pending = [], chairMoves = new Map(), bubbles = new Set(), history = []
   const doorBodies = [], activeDoors = new Set(), publicTransitions = new Map(), geometry = new THREE.BoxGeometry(1, 1, 1)
   let elapsed = 0, planningMs = 0, blockedFrames = 0, preparationError = null, chairsMoving = false
   for (const row of doors.records) {
@@ -17,7 +18,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     mesh.position.set(p.x, row.height / 2, p.z); mesh.scale.set(row.vertical ? row.thickness : row.width, row.height, row.vertical ? row.width : row.thickness)
     collision.add(mesh, 'r1-moving-door'); doorBodies.push({ row, mesh, p })
   }
-  const ready = nav.attachAsync(collision).then(() => nav.prepare()).catch(error => { preparationError = error.message; console.error('R1 navigation:', error.message) })
+  const prepare = () => nav.attachAsync(collision).then(() => nav.prepare()).catch(error => { preparationError = error.message; console.error('R1 navigation:', error.message) })
+  let ready = prepare()
   const anchor = v => v.r1Position || v.home
   const countAway = () => [...views.values()].filter(v => !v.away && (v.r1AwayFromDesk || v.act && v.act.phase !== 'queued')).length
   const put = (v, p) => { v.r1Position = { x: p.x, z: p.z }; v.char.group.position.set(p.x, 0, p.z) }
@@ -346,7 +348,13 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     for (const b of [...bubbles]) { if (elapsed >= b.until) { b.el.remove(); bubbles.delete(b) } else if (project) { b.v.char.body.head.getWorldPosition(project.tmp); project.fn(project.tmp, b.el, .35) } }
   }
   return {
-    r1: true, ready, navigation: nav, history, publicTransitions,
+    r1: true, get ready() { return ready }, get navigation() { return nav }, history, publicTransitions,
+    canRefreshSeats() { return nav.prepared() && !actions.size && !chairMoves.size && !countAway() },
+    refreshSeats() {
+      if (actions.size || chairMoves.size || countAway()) throw new Error('R1 seats may refresh only while everyone is at their workstation')
+      nav = createR1Navigation({ ...layout }); publicTransitions.clear(); preparationError = null
+      return ready = prepare()
+    },
     travel(v, pts, seat, lounge, onDone) { return start(v, seat, { back: !lounge && dist(seat, v.home) < .01, onDone }) },
     goHome(v, onDone) { return start(v, nav.ENTRANCE.gate[1], { commute: 'leave', onDone }) },
     arrive(v) { return start(v, v.home, { back: true, commute: 'arrive' }) },

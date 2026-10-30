@@ -1,3 +1,5 @@
+import { r1RegisteredStation } from './office-r1-seating.js'
+import { R1_CLUSTER_PLANTS } from './office-vis2/r1-cluster-plan.js'
 import { C01_DELTA, R1_DATA } from './office-r1/data.js'
 
 export const DEFAULT_CANDIDATE_C01 = true
@@ -217,14 +219,29 @@ const mergedData = Object.freeze({
   routes: Object.freeze(R1_DATA.routes.map(route => R1_BACKWALL.routes.has(route.id) ? Object.freeze({ ...route, points_m: R1_BACKWALL.routes.get(route.id) }) : route)),
 })
 
+// SEAT26 R1b: use five registered empty desks; the original 25 mappings remain byte-for-byte unchanged.
+export const R1_BOARD_ADDED_WORKSTATIONS = Object.freeze([
+  ['Reviewer3', '06-T-011', 'ops', 'O2'], ['SecurityReviewer2', '06-T-012', 'ops', 'O2'],
+  ['Lead2', '04-T-012', 'product', 'P3'], ['GoSenior2', '08-T-009', 'drlife', 'D2'], ['React2', '08-T-010', 'drlife', 'D2'],
+].map(([name, id, group, island]) => r1RegisteredStation(name, R1_DATA.elements.find(e => e.id === id), R1_DATA.elements.find(e => e.id === id.replace('-T-', '-CH-')), group, {
+  island, status: 'BOARD_APPROVED', date: '2026-10-30', reason: 'SEAT26 R1b: use an unoccupied registered desk in the same department; P1 and D1 are already fully occupied',
+})))
+
+// LOOK R3 explicitly permits moving registered plants, including their children, without editing data.js.
+export const R1_PLANT_POSITION_OVERRIDES = Object.freeze(R1_CLUSTER_PLANTS.filter(p => p.registered).map(p => {
+  const from = R1_DATA.elements.find(e => e.id === p.id)
+  return Object.freeze({ id:p.id, date:'2026-10-30', reason:'LOOK R3: cluster planting and door/display clearance', from:Object.freeze({xM:from.xM,yM:from.yM}), to:Object.freeze({xM:p.x+26,yM:18-p.z}) })
+}))
+const plantPositions = new Map(R1_PLANT_POSITION_OVERRIDES.map(p => [p.id,p]))
+
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：各张偏离表的 ID 互不相交，顺序只为可复现。
   // 树干表只落在 <id>-TR 上，与位置表 / 门扇表的 ID 不相交。
-  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
+  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id), plant = plantPositions.get(item.id) || plantPositions.get(item.parentId); return patch || plant ? Object.freeze({ ...item, ...patch, ...(plant ? { xM: coordinate(item.xM + plant.to.xM - plant.from.xM), yM: coordinate(item.yM + plant.to.yM - plant.from.yM) } : {}) }) : item }
   // 背墙改道（Z09 / Z13）已并进 mergedData.routes；喷泉只改 Z14 终点，两者不重叠。
   const routes = Object.freeze(mergedData.routes.map(route => ROUTE_PATCH.has(route.id)
     ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
   // 追加顺序固定：登记行 → 背墙门扇（OFFICE-R1-BACKWALL）→ 董事会新增件（本卡 R2）。
-  return Object.freeze({ candidateC01, data: mergedData, elements: Object.freeze([...R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item)), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
+  return Object.freeze({ candidateC01, data: mergedData, elements: Object.freeze([...R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item)), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze([...(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), ...R1_BOARD_ADDED_WORKSTATIONS.map(w => candidateC01 ? r1RegisteredStation(w.business_id, replacements.get(w.desk_id) || R1_DATA.elements.find(e => e.id === w.desk_id), replacements.get(w.chair_id) || R1_DATA.elements.find(e => e.id === w.chair_id), w.group, { island: w.island, status: w.status, date: w.date, reason: w.reason }) : w)]), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }

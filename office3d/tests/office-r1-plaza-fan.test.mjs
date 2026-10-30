@@ -1,3 +1,4 @@
+import { withApprovedPlantMove } from './helpers/r1-plant-footprints.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -83,7 +84,7 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
     // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住；
     // 室内绿植树干改细同样另有一张表（R1_BOARD_TRUNK_OVERRIDES），由 office-r1-trunk.test.mjs 的 TK-2 单独锁住。
     if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id) || TRUNK_IDS.has(item.id)) continue
-    assert.deepEqual(item, R1_DATA.elements[index], item.id)
+    assert.deepEqual(item, withApprovedPlantMove(R1_DATA.elements[index]), item.id)
   }
   assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
   // 非 R1 布局（稳定 V3 / L2B 对齐）不受偏离表影响。

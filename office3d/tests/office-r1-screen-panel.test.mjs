@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import { resolveOfficeLayout } from '../office-layout.js'
 import { r1ToWorld } from '../office-r1-layout.js'
 import { MONITOR_PANEL_SOURCE, MONITOR_PANEL_BORDER_MAX, monitorPanelFit, workstationDesktop } from '../office-furniture-v2.js'
-import { R1_SCREEN_CELL } from '../office-vis2/r1-furniture.js'
+import { R1_SCREEN_CELL, r1ScreenAtlasSize } from '../office-vis2/r1-furniture.js'
 
 const MONITOR_SIZE = { width: .66, height: .46, depth: .16 } // r1-furniture.js 里 computerScreen 的缩放
 const DESK_TOP_Y = .76
@@ -67,7 +67,7 @@ const toWorld = (local, monitor, yaw) => {
 }
 
 test('R2-B 逐台：贴片四角落在面板范围内，四周边框 ≤ 1.5 cm', () => {
-  assert.equal(stations.length, 25)
+  assert.equal(stations.length, Object.keys(layout.seats).length)
   for (const station of stations) {
     const { fit } = fitFor(station)
     const label = station.business_id
@@ -135,8 +135,10 @@ test('R2-E 画布宽高比跟贴片走（不拉伸），图集仍在 2560×1440 
     const { fit } = fitFor(station)
     assert.ok(Math.abs(fit.width / fit.height - cellAspect) < 1e-9, `${station.business_id} 贴片宽高比与画布不一致，会被拉伸`)
   }
-  const grid = Math.ceil(Math.sqrt(stations.length))
-  assert.ok(grid * R1_SCREEN_CELL.width <= 2560 && grid * R1_SCREEN_CELL.height <= 1440)
+  const atlas = r1ScreenAtlasSize(stations.length)
+  assert.ok(atlas.width <= 2560 && atlas.height <= 1440)
+  assert.ok(atlas.columns * atlas.rows >= stations.length)
+  assert.deepEqual(r1ScreenAtlasSize(25), { columns: 5, rows: 5, width: 2560, height: 1440 })
 })
 
 test('R2-G 回归：老的「竖直矩形」贴法下半片确实被外壳挡住（这条守住修复不被改回去）', () => {

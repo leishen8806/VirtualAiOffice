@@ -407,8 +407,8 @@ test('AM-7a the reserved-seat table is frozen, matches the board list and leaves
   }
   // 三个预留座位不坐人：25 位同事的工位映射一条都不动。
   const layout = createOfficeR1Layout()
-  assert.equal(layout.r1.workstations.length, 25)
-  assert.deepEqual(layout.r1.workstations.map(station => station.chair_id), WORKSTATION_CHAIRS)
+  assert.equal(layout.r1.workstations.length, WORKSTATION_CHAIRS.length + 5)
+  assert.deepEqual(layout.r1.workstations.slice(0, 25).map(station => station.chair_id), WORKSTATION_CHAIRS)
   for (const station of layout.r1.workstations) assert.equal(isReservedSeat(station.chair_id), false, station.chair_id)
 })
 

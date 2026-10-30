@@ -89,7 +89,7 @@ test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjus
  const dot=(Math.sin(yaw)*(facing.edge.x-p.x)+Math.cos(yaw)*(facing.edge.z-p.z))/facing.distance;assert.ok(dot>.9,id);assert.ok(facing.distance<1,id);groups[facing.category]=(groups[facing.category]||0)+1}
  assert.deepEqual(groups,{'办公桌':78,'会议桌':14,'圆桌':34,'环形吧台':14,'协作桌':8,'咖啡台':5,'弧形接待台':1})
  for(const id of ['02-CH-013','02-CH-014','08-CH-023','08-CH-024','10-CH-001']){const row=layout.r1.elements.find(i=>i.id===id),actual=f.chairFacings.get(id).yaw,registered=row.facingLocal;assert.ok(Math.sin(actual)*registered[0]+Math.cos(actual)*registered[1]>.9,id+' already-facing chair preserved')}
- assert.equal(Object.keys(R1_SEATED_PROFILES).length,25)
+ assert.equal(Object.keys(R1_SEATED_PROFILES).length,layout.r1.workstations.length)
  for(const station of layout.r1.workstations){
  const profile=f.seatedProfile(station.business_id);assert.ok(Object.isFrozen(profile));assert.ok(profile.seat>=-.04&&profile.seat<=.08);assert.ok(Number.isFinite(profile.handY)&&profile.handY>=.75&&profile.handY<=.85);assert.ok(profile.motions.length>=2&&profile.motions.some(n=>/^neutral_/.test(n)));assert.equal(new Set(profile.motions).size,profile.motions.length)
  const p=r1ToWorld(station.chairXM,station.chairYM),chair=f.chairAt(p.x,p.z),old=placeFurniture(A,'chairDesk',p.x,p.z,{scale:1,rotY:chair.rotation.y});old.group.scale.copy(chair.scale)

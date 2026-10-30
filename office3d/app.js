@@ -1,3 +1,4 @@
+import { R1_ADDED_AVATARS } from './office-r1-seating.js'
 import * as THREE from './vendor/three/three.module.js'
 import { createCharacter } from './rig.js'
 import { loadAssets, placeFurniture, createCharacter3D } from './assets3d.js'
@@ -996,7 +997,7 @@ function createAgentView(a, index) {
   const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
   const gender = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1][index % 10] ? 'female' : 'male'
   const seatIdx = Object.keys(SEATS).indexOf(a.name)
-  const avatar = (OFFICE_LAYOUT.r1Phase === 'R1' && ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[a.name]) || CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length]
+  const avatar = (OFFICE_LAYOUT.r1Phase === 'R1' && ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10', ...R1_ADDED_AVATARS })[a.name]) || (OFFICE_LAYOUT.temporary?.some(w => w.business_id === a.name) ? 'Male_Adult_12' : null) || CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length]
   const personAssets = PEOPLE && (OFFICE_LAYOUT.r1Phase === 'R1' ? r1SeatedAssets(PEOPLE, avatar, officeV3.get('furniture3').seatedProfile(a.name), a.name) : PEOPLE)
   const ch = personAssets
     ? createPerson(personAssets, avatar)
@@ -1087,8 +1088,28 @@ for (const [name, x, z] of [['休息交流区', LOUNGE_AREA.x, LOUNGE_AREA.z + 1
 const boardState = { approvals: 0, titles: [], waiting: 0 }
 let selectedId = null
 let NAMES = {}
+let r1SeatsRefreshing = false
+function updateR1AutomaticSeats(agents) {
+  if (!OFFICE_LAYOUT.assignAgents || r1SeatsRefreshing || !agents.some(a => !Object.hasOwn(SEATS, a.name))) return
+  const stats = director.stats()
+  if (!stats.prepared || !director.canRefreshSeats()) return
+  const added = OFFICE_LAYOUT.assignAgents(agents)
+  let notice = document.getElementById('r1-auto-seat-notice')
+  if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
+  notice.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
+  if (!added.length) return
+  r1SeatsRefreshing = true
+  try {
+    const furniture = officeV3.get('furniture3'); furniture.refresh()
+    for (const v of views.values()) {
+      const seat = SEATS[v.data.name]; v.desk = furniture.deskAt(seat[1], seat[2]); v.chair = v.desk.chair; v.lampColour = null
+    }
+    director.refreshSeats().finally(() => { r1SeatsRefreshing = false })
+  } catch (error) { r1SeatsRefreshing = false; notice.textContent += `；座位准备失败：${error.message}` }
+}
 function applyState(s) {
   latestState = s
+  updateR1AutomaticSeats(s.agents || [])
   updateR1WallScreen() // R1 会议室大屏：只用 today / agents / names 和 /daily 的完成列表
   if (LAYOUT3_MODE && (!OFFICE_SAMPLE_MODE || !officeV3?.get('furniture3')?.deskAt)) { NAMES = s.names || {}; updateFoyerPanels(); ui.render(s); return }
   NAMES = s.names || {}
@@ -2302,14 +2323,14 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
     requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(async () => {
       const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [] }
       try {
-        const loaded = await loadPeople()
+        const loaded = await loadPeople(undefined, Object.values(R1_ADDED_AVATARS))
         await loadR1Extras(loaded)
         PEOPLE = loaded
         for (const v of views.values()) {
           if (v.char.avatar) continue
           const personName = v.data?.name ?? v.name
           try {
-            const seatIdx = Object.keys(SEATS).indexOf(personName), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10' })[personName] || CAST_OVERRIDE[personName] || CAST[seatIdx % CAST.length]
+            const seatIdx = Object.keys(SEATS).indexOf(personName), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10', ...R1_ADDED_AVATARS })[personName] || (OFFICE_LAYOUT.temporary?.some(w => w.business_id === personName) ? 'Male_Adult_12' : null) || CAST_OVERRIDE[personName] || CAST[seatIdx % CAST.length]
             const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
             if (!assets) { status.failed.push(personName); continue }
             const ch = createPerson(assets, avatar), previous = v.char

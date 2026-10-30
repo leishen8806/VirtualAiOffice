@@ -5,14 +5,13 @@ import { R1_LANDSCAPE } from '../office-vis2/r1-landscape-plan.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { R1_PUBLIC_TRANSITIONS } from '../office-r1-navigation.js'
 
-test('MOVE integration moves only DENSE-CORE-3 inside zone 07 without changing planting density or the stool', () => {
+test('LOOK R3 freezes the regrouped plant plan while retaining the MOVE stool and local path', () => {
   const plan = structuredClone(R1_LANDSCAPE), plant = plan.plants.find(p => p.id === 'DENSE-CORE-3')
-  assert.deepEqual([plant.x, plant.z], [-2.394, -7.494])
+  assert.deepEqual([plant.x, plant.z], [6.54, -6.9])
   const layout = createOfficeR1Layout(), zone = layout.regions.find(r => r.id === '07')
   assert.ok(plant.x - plant.r >= zone.x0 && plant.x + plant.r <= zone.x1)
   assert.ok(plant.z - plant.r >= zone.z0 && plant.z + plant.r <= zone.z1)
-  plant.x = -1.994
-  assert.equal(createHash('sha256').update(JSON.stringify(plan)).digest('hex'), '68437f8f5bf84c002df1652950bd8495b24ecf16ef48026dd0e686500eba8f0a')
+  assert.equal(createHash('sha256').update(JSON.stringify(plan)).digest('hex'), '6ed84c4ce7d42df865c7e3b4404d014f06e0e127f94676c0fbef541887831b22')
   const seat = layout.r1.elements.find(e => e.id === '07-CH-014')
   assert.deepEqual([seat.xM, seat.yM], [23.9, 22.1])
   const path = R1_PUBLIC_TRANSITIONS[seat.id]

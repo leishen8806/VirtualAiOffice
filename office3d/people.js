@@ -81,9 +81,9 @@ function pruneMorphs(root) {
 }
 
 const cache = new Map()
-export async function loadPeople(onProgress) {
+export async function loadPeople(onProgress, extraAvatars = []) {
   const out = { avatars: {}, clips: { male: {}, female: {} } }
-  const all = [...AVATARS.male.map((a) => ['male', a]), ...AVATARS.female.map((a) => ['female', a])]
+  const all = [...AVATARS.male.map((a) => ['male', a]), ...AVATARS.female.map((a) => ['female', a]), ...extraAvatars.map(a => [/Female_/.test(a) ? 'female' : 'male', a])]
   let done = 0
   const total = all.length + Object.keys(CLIPS).length * 2
   const tick = () => onProgress && onProgress(++done / total)
