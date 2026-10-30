@@ -155,6 +155,8 @@ test('NPC-3 / 性能：app.js 把 NPC 排在 25 位同事之后，极速模式�
   // 名牌要跟着同事一起参与避让，并且 NPC 不进 views
   const declutter = app.slice(app.indexOf('declutter(['), app.indexOf('declutter([') + 400)
   assert.ok(declutter.includes('r1Npcs.members.map'), '名牌应与同事一起参与 declutter 避让')
+  // 验收采样要读真实的 char.pose；没有这个口子就只能从场景反查重建，pose 恒为 0，证据是假的
+  assert.match(app, /window\.__office\.r1NpcMembers = \(\) => \(r1Npcs \? r1Npcs\.members : \[\]\)/)
 })
 
 test('NPC-4 不挡路：所有站位与巡逻点都不压 R1 登记路线', () => {

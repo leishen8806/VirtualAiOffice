@@ -2369,6 +2369,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
 window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
 window.__office.r1Npcs = () => (r1Npcs ? r1Npcs.summary() : { count: 0, lite: !!LITE.lite })
+window.__office.r1NpcMembers = () => (r1Npcs ? r1Npcs.members : []) // 验收采样要读真实的 char.pose，不能靠场景反查重建
 window.__office.lite = LITE
 if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
   const btn = $('liteToggle')
