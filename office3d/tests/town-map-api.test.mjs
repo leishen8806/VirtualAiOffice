@@ -176,7 +176,7 @@ test('town-map.json stays byte-identical to the tracked reviewed source snapshot
   assert.equal(sha256(officeJson), sha256(sourceJson))
 })
 
-test('server wiring adds town api after access control without changing static whitelist', () => {
+test('server wiring adds town api after access control with the explicit static whitelist', () => {
   const server = fs.readFileSync(serverPath, 'utf8')
   const backup = fs.readFileSync(backupServerPath, 'utf8')
   const apiPaths = parseSet(server, 'API_PATHS')
@@ -191,7 +191,7 @@ test('server wiring adds town api after access control without changing static w
   assert.ok(apiPaths.has('/town/map'))
   assert.ok(gate < route && route < fallback)
   assert.match(server, /if \(req\.method !== 'GET' && !\(req\.method === 'HEAD' && url\.pathname === '\/town\/map'\)\)/)
-  assert.deepEqual([...staticExt], [...backupStaticExt])
+  assert.deepEqual([...staticExt], [...backupStaticExt, '.gz']) // PERF-LOAD-2: only the approved gzip asset extension is added.
   assert.equal(staticExt.has('.json'), false)
   assert.equal(simulateRequest({ method: 'GET', pathname: '/town-map.json' }), 404)
 })

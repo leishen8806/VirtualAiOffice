@@ -167,6 +167,7 @@ const TYPES = {
   '.glb': 'model/gltf-binary',
   '.gltf': 'model/gltf+json',
   '.bin': 'application/octet-stream',
+  '.gz': 'application/octet-stream',
   '.txt': 'text/plain; charset=utf-8',
 }
 
@@ -272,7 +273,7 @@ const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/i
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
 // 静态文件白名单：页面、脚本、样式、图片、模型。目录里的 json / log / dpapi / md / mjs（访问码、Telegram 配置、审计日志、委员会数据……）一律不对外
-const STATIC_EXT = new Set(['.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.glb', '.gltf', '.bin', '.fbx'])
+const STATIC_EXT = new Set(['.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.glb', '.gltf', '.bin', '.fbx', '.gz'])
 const staticOk = (rel) => STATIC_EXT.has(path.extname(rel).toLowerCase()) && !rel.split('/').some((seg) => seg.startsWith('.')) && !/^\/(tests|codex-prompts|_ref)\//.test(rel)
 let wallCache = { at: 0, data: null }, issuesCache = { at: 0, list: [] }, stateResponseCache = new Map()
 // /state 的轮询会持续遇到新任务、交互和版本号。缓存只用于短时间的展示加速，

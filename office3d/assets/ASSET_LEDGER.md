@@ -401,3 +401,18 @@ Microsoft Rocketbox, MIT, upstream commit 0943055db6ec570bcef9f2c8b41c9e5467c808
 | models\people\Male_Adult_20\Male_Adult_20_facial.fbx | 1840944 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 |
 | models\people\Male_Adult_20\m027_body_color.jpg | 166677 | 88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018 | 54cf6fe03676bea4cd9190ee2057c826e43f49d2f82170a92d1c0413eb153500 |
 | models\people\Male_Adult_20\m027_head_color.jpg | 163812 | d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d | 61c117bea375ea983f697c5b1acdf0ebff86ff69e21c956d27d10bc4ecc9be63 |
+
+
+## Compact runtime variants — PERF-LOAD-2 (2026-10-30)
+
+- Sources: the existing Microsoft Rocketbox avatars / motions (MIT) and Quaternius Universal Base Characters / Universal Animation Library (CC0), as registered above. All source files remain unchanged in `assets/models/`.
+- Outputs: 22 gzip-compressed GLB avatars, 56 compact Rocketbox motion files, one five-clip compact cartoon animation, eight byte-preserving cartoon/hair GLB containers, and 156 desktop/phone WebP texture variants. The complete per-file source SHA-256, output SHA-256, size, dimensions and inherited license are in `assets/compact/MANIFEST.json`.
+- Reproduction: `scripts/perf-load-2/README.md`; source and output verification: `scripts/perf-load-2/manifest.mjs`. Motion equivalence is bounded numerical equivalence, checked at every source keyframe and 120 samples/second; runtime pose and movement acceptance remain separate.
+- Conversion tool: Three.js r185 official GLTFExporter, MIT, obtained from the fixed upstream r185 URL under explicit tool-download authorization. Exact URL/hash and license are in `scripts/perf-load-2/vendor/SOURCES.json` and `vendor/LICENSE`. This exporter is used only by the conversion script, not loaded by the application; no npm dependency or runtime Three upgrade.
+
+
+### PERF-LOAD-2 R2 — compact coverage and original fallback
+
+All avatars referenced by AVATARS, CAST, CAST_OVERRIDE, R1_ADDED_AVATARS and app mappings have compact outputs, including Female_Adult_13/17, Business_Male_06/07 and Male_Adult_20. New avatar imports must run `scripts/perf-load-2` (see its README) and regenerate the compact MANIFEST. After I7B-A, Q-V1 will arrange the shared conversion run. Until converted, a failed compact model, animation or texture retries only its own retained original; FBXLoader loads dynamically on demand.
+
+Runtime `.gz` files use application/octet-stream, with no Content-Encoding gzip. The service allowlist includes `.gz`; server rollout/restart requires the separate Q-V1/board deployment approval.

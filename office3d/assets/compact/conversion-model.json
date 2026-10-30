@@ -1,0 +1,488 @@
+[
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Business_Male_06/Business_Male_06_facial.fbx",
+    "target": "people/Business_Male_06.glb.gz",
+    "sourceBytes": 1817264,
+    "sourceSha256": "5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e",
+    "bytes": 193597,
+    "sha256": "8908ff123e632218c1ed2c820a0bbcc7ca1f506e2df43a2413a2463a27b413c8",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000006474089843733984,
+      "vertexErrorSourceUnits": 0.00001037219692792586,
+      "vertices": 4150,
+      "morphs": 26,
+      "height": 181.02208098859495,
+      "bytes": 1089960
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Business_Male_07/Business_Male_07_facial.fbx",
+    "target": "people/Business_Male_07.glb.gz",
+    "sourceBytes": 1754800,
+    "sourceSha256": "6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9",
+    "bytes": 198104,
+    "sha256": "1bd65221ef1a6cb96e39de6e08faa4e098711a45d2073cf70e4eace910dde0c8",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000007441598595194735,
+      "vertexErrorSourceUnits": 0.000009939419546665327,
+      "vertices": 4004,
+      "morphs": 26,
+      "height": 179.59035975453614,
+      "bytes": 1006952
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_01/Female_Adult_01_facial.fbx",
+    "target": "people/Female_Adult_01.glb.gz",
+    "sourceBytes": 2226864,
+    "sourceSha256": "2e6ba71fb83a6899e3d4dd35da07fb5b078eef0c4d593f73d70cfc05dc4644cb",
+    "bytes": 268164,
+    "sha256": "bafb69f9bb4b81cc3ce961120c7caaae7366b6a485144a221d383d9d6e7baefa",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000001013776844048434,
+      "vertexErrorSourceUnits": 0.000008391964872162279,
+      "vertices": 5563,
+      "morphs": 39,
+      "height": 174.33470894139037,
+      "bytes": 1429192
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_02/Female_Adult_02_facial.fbx",
+    "target": "people/Female_Adult_02.glb.gz",
+    "sourceBytes": 2050400,
+    "sourceSha256": "befeeba2248dcb59e5a2875301b0192c8beaa1f14051a642840cfce9c9cdb053",
+    "bytes": 270433,
+    "sha256": "13ab642987027b032a924f82fcc7ab141fe89d8111aa2de1d9be8c86bc862906",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000001453792472733176,
+      "vertexErrorSourceUnits": 0.000008370568024896455,
+      "vertices": 5666,
+      "morphs": 39,
+      "height": 173.5162060781201,
+      "bytes": 1383684
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_03/Female_Adult_03_facial.fbx",
+    "target": "people/Female_Adult_03.glb.gz",
+    "sourceBytes": 2397744,
+    "sourceSha256": "918c3de818a49b58d21e6106ffe8622c5fe84e518f2fd172a36db2fe89146901",
+    "bytes": 287251,
+    "sha256": "d15b5892705db216cc288aff36c8943406335c9800a7a34ecc403640260d48e1",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.0000036701098140158637,
+      "vertexErrorSourceUnits": 0.000007363475568850444,
+      "vertices": 6232,
+      "morphs": 39,
+      "height": 173.88934181243366,
+      "bytes": 1683388
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_04/Female_Adult_04_facial.fbx",
+    "target": "people/Female_Adult_04.glb.gz",
+    "sourceBytes": 2349152,
+    "sourceSha256": "ce83b428828314ef675d1a64ca17d8c3d2178cc4f8b3e80273483f83f08748fb",
+    "bytes": 279848,
+    "sha256": "f97b441ef55ea8e31d9609aa9472b504e1232f7cfdd74593b913bd6351e21f2c",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000004074512787965607,
+      "vertexErrorSourceUnits": 0.000007382448473147777,
+      "vertices": 6053,
+      "morphs": 39,
+      "height": 176.592466313802,
+      "bytes": 1541112
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_05/Female_Adult_05_facial.fbx",
+    "target": "people/Female_Adult_05.glb.gz",
+    "sourceBytes": 2158576,
+    "sourceSha256": "8fdc024d3a1088839712b9ea2510322d3e9b03e2f20b9f9554e4c7cb30f58d16",
+    "bytes": 266316,
+    "sha256": "bf7f9b3ac9a8738115edc507d0b25736e22434fee72fc738fe114a52b26f2be7",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000001548081514315211,
+      "vertexErrorSourceUnits": 0.000009161053130226781,
+      "vertices": 5575,
+      "morphs": 39,
+      "height": 173.61781943750938,
+      "bytes": 1429156
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_06/Female_Adult_06_facial.fbx",
+    "target": "people/Female_Adult_06.glb.gz",
+    "sourceBytes": 1863184,
+    "sourceSha256": "b91c6e50deea83521f71f1d75b08bd1b34ef81d9b5ca4daf71a40ed64cf2ae90",
+    "bytes": 207692,
+    "sha256": "fc5688480669834d1273dad231a6f2d3be9079b1b873717a1b9592e0bc5294bd",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000003827627045459494,
+      "vertexErrorSourceUnits": 0.000007500034380518254,
+      "vertices": 4372,
+      "morphs": 39,
+      "height": 173.62618036110683,
+      "bytes": 1151752
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_07/Female_Adult_07_facial.fbx",
+    "target": "people/Female_Adult_07.glb.gz",
+    "sourceBytes": 2136864,
+    "sourceSha256": "88b359300657ea0efdbb34de7ab804db8b43c58b2dc143c62ed2615e75936fbc",
+    "bytes": 253950,
+    "sha256": "66d608229e21942eab5aeedb95a7b7872f02e57b40e923bb51a171b4a8d664ae",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000001798284502199462,
+      "vertexErrorSourceUnits": 0.000008373436878027569,
+      "vertices": 5324,
+      "morphs": 39,
+      "height": 172.25713218939686,
+      "bytes": 1373172
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_08/Female_Adult_08_facial.fbx",
+    "target": "people/Female_Adult_08.glb.gz",
+    "sourceBytes": 2147392,
+    "sourceSha256": "a98436064305b968d8bbf8a84632c746dbf5674c572f1916264f13ce53e7422d",
+    "bytes": 260221,
+    "sha256": "525f961b9514192b3bf30dda41e9bff7cdce20650e4b11d6f6767ea476d5121b",
+    "proof": {
+      "bones": 81,
+      "boundsError": 8.783573713937745e-7,
+      "vertexErrorSourceUnits": 0.000008371848460232113,
+      "vertices": 5387,
+      "morphs": 39,
+      "height": 173.49157323606696,
+      "bytes": 1386376
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_09/Female_Adult_09_facial.fbx",
+    "target": "people/Female_Adult_09.glb.gz",
+    "sourceBytes": 2135024,
+    "sourceSha256": "4378899297e2acde9b331e6e55f83acff70ae5c26c86438231fb83770831f04a",
+    "bytes": 265650,
+    "sha256": "634dd4665e8dae304e2b30c5da5330b29faa7699655e097dedf517cbd05c9f53",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000007872731241991362,
+      "vertexErrorSourceUnits": 0.000008831731190768629,
+      "vertices": 5752,
+      "morphs": 39,
+      "height": 173.540937349492,
+      "bytes": 1472928
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_10/Female_Adult_10_facial.fbx",
+    "target": "people/Female_Adult_10.glb.gz",
+    "sourceBytes": 1858560,
+    "sourceSha256": "7b7208b23688af2f884570a4aaa47ef803442fba2bdb2433f196bb977459e4b5",
+    "bytes": 211097,
+    "sha256": "a44bead1792fbbb7d91d5830338d93180d6d2a44de76e058d29d489d6d58b805",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000004660995350042631,
+      "vertexErrorSourceUnits": 0.000006917392438895093,
+      "vertices": 4227,
+      "morphs": 39,
+      "height": 173.69453584290574,
+      "bytes": 1115908
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_13/Female_Adult_13_facial.fbx",
+    "target": "people/Female_Adult_13.glb.gz",
+    "sourceBytes": 2209984,
+    "sourceSha256": "fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983",
+    "bytes": 265826,
+    "sha256": "9d2f4c416c7d9529a402c250cd84fec254a55cafd87db84ced025159b0bfc218",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000002063002780582465,
+      "vertexErrorSourceUnits": 0.00000973268044450142,
+      "vertices": 5661,
+      "morphs": 39,
+      "height": 175.15693875665045,
+      "bytes": 1451060
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Female_Adult_17/Female_Adult_17_facial.fbx",
+    "target": "people/Female_Adult_17.glb.gz",
+    "sourceBytes": 2114512,
+    "sourceSha256": "9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de",
+    "bytes": 254972,
+    "sha256": "6f4e0e34dede70a776b31f01e23190db94256edd5d7eadb71e52bde8dfc3b785",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.0000021387112591218235,
+      "vertexErrorSourceUnits": 0.000010022865092532301,
+      "vertices": 5243,
+      "morphs": 39,
+      "height": 175.09975926207838,
+      "bytes": 1355464
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_01/Male_Adult_01_facial.fbx",
+    "target": "people/Male_Adult_01.glb.gz",
+    "sourceBytes": 1962256,
+    "sourceSha256": "55771cbbcffb8204dcfe450784c8439ee27bfa48efffc48d325b55ee4bd04388",
+    "bytes": 219914,
+    "sha256": "1f9559c0c8d710e7b3784e245a04fd87d4777c79343c044060dc72ccdee7c78e",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.00000649759021739288,
+      "vertexErrorSourceUnits": 0.000010224162313524338,
+      "vertices": 4802,
+      "morphs": 39,
+      "height": 182.36786746856868,
+      "bytes": 1192232
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_02/Male_Adult_02_facial.fbx",
+    "target": "people/Male_Adult_02.glb.gz",
+    "sourceBytes": 1981328,
+    "sourceSha256": "0f8dea5317896e16a4490ca76f7273cdaf513cc50eb855d228826ed874a15186",
+    "bytes": 214788,
+    "sha256": "66bd029dabe3f9403f5d200e694ec7762c5f70852aae18d357e8ffb0cfe3ae0e",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000006393032141078028,
+      "vertexErrorSourceUnits": 0.00001031511790976295,
+      "vertices": 4576,
+      "morphs": 39,
+      "height": 182.27455426924806,
+      "bytes": 1199072
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_03/Male_Adult_03_facial.fbx",
+    "target": "people/Male_Adult_03.glb.gz",
+    "sourceBytes": 1907328,
+    "sourceSha256": "88aedb2f47ce68dab7ddaf1f53f6357290dc4edb69fc26e3d5fa27d18ee0785a",
+    "bytes": 214498,
+    "sha256": "1f4a597590196895ad4324f3fa761659bb56e94d66c4df189c240f022ed2620e",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.00000639259593825561,
+      "vertexErrorSourceUnits": 0.0000094185239144166,
+      "vertices": 4483,
+      "morphs": 39,
+      "height": 180.72471836496453,
+      "bytes": 1122628
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_04/Male_Adult_04_facial.fbx",
+    "target": "people/Male_Adult_04.glb.gz",
+    "sourceBytes": 2173840,
+    "sourceSha256": "04bf2ad65a5a8b8c377b29df1ae2b9c6a97d87376ed647ded0abb4e91d57665d",
+    "bytes": 263895,
+    "sha256": "c7aa31763f45e2182cf493499c68c772c0b5f186b6c82adf67d01a7a779be978",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.00000641725415397832,
+      "vertexErrorSourceUnits": 0.000009777337497048639,
+      "vertices": 5668,
+      "morphs": 39,
+      "height": 186.85755399916889,
+      "bytes": 1383148
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_05/Male_Adult_05_facial.fbx",
+    "target": "people/Male_Adult_05.glb.gz",
+    "sourceBytes": 1978688,
+    "sourceSha256": "2ae6474a98d477d3c46553cb93ea3d452179afa4756db18c23e8aec97982a161",
+    "bytes": 239825,
+    "sha256": "1441207a2784bc80da3fbf70c2bc3e4888c6c8378458ffd3fa3f4d1841dbca0c",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000006619311738957734,
+      "vertexErrorSourceUnits": 0.000009071713252114112,
+      "vertices": 4982,
+      "morphs": 39,
+      "height": 181.24373348604144,
+      "bytes": 1232976
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_06/Male_Adult_06_facial.fbx",
+    "target": "people/Male_Adult_06.glb.gz",
+    "sourceBytes": 2082768,
+    "sourceSha256": "9d7b04fa670de69820ca13fa09f8ed5b4ff59e741522cc1db533e24747af8d0c",
+    "bytes": 219946,
+    "sha256": "db36e52351a0357508d704d5b432aafac9aca793ccdc669268fee02bc52c75ec",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000006661852126332746,
+      "vertexErrorSourceUnits": 0.000009085201722808215,
+      "vertices": 4755,
+      "morphs": 39,
+      "height": 183.13217041636207,
+      "bytes": 1239644
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_07/Male_Adult_07_facial.fbx",
+    "target": "people/Male_Adult_07.glb.gz",
+    "sourceBytes": 1881520,
+    "sourceSha256": "6fbd1cd44b6145fce3caf18fdd22ccbd00fad2a019b3bf489be7e9c031269b0f",
+    "bytes": 225378,
+    "sha256": "f5e72b63c831cf97f5764dad947547f8f10ec00f2a29eea9b0fe56f180282d14",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000007480339085772545,
+      "vertexErrorSourceUnits": 0.000010138848521848123,
+      "vertices": 4668,
+      "morphs": 39,
+      "height": 182.052951909209,
+      "bytes": 1164432
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_08/Male_Adult_08_facial.fbx",
+    "target": "people/Male_Adult_08.glb.gz",
+    "sourceBytes": 1913408,
+    "sourceSha256": "a736f359d8adb61436de72fd59ba0acac4b42d18751b22ac4d3e2b574d7a71e0",
+    "bytes": 213299,
+    "sha256": "63b768cfaa499e9b09b72e4a77c90b86ac21d539ded1f0c696a759ad933c834f",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000007482535719248622,
+      "vertexErrorSourceUnits": 0.000009590411046628924,
+      "vertices": 4564,
+      "morphs": 39,
+      "height": 182.5722011955488,
+      "bytes": 1140948
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_09/Male_Adult_09_facial.fbx",
+    "target": "people/Male_Adult_09.glb.gz",
+    "sourceBytes": 1930736,
+    "sourceSha256": "4f2c074dde9e8fe7628e497e24f97557209c1997209a5004001660dded9ed142",
+    "bytes": 219133,
+    "sha256": "7ae0c0b7afe3561c74ccd6d0103cef1de974455468cf1ffb8df9ea0de67ff88e",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000007477808982653956,
+      "vertexErrorSourceUnits": 0.000010160354124767282,
+      "vertices": 4576,
+      "morphs": 39,
+      "height": 182.21765735384508,
+      "bytes": 1143592
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_10/Male_Adult_10_facial.fbx",
+    "target": "people/Male_Adult_10.glb.gz",
+    "sourceBytes": 1877232,
+    "sourceSha256": "e62c3c1345150d4cfebf454fbcb906d3cc8f4c846f4ee63e06d6928438b409a3",
+    "bytes": 220858,
+    "sha256": "d13703f4ff0020208dfef1ad59ffd89de9754c82bb28a9a25e2d74ecef194040",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000008503000303833171,
+      "vertexErrorSourceUnits": 0.000010590425836558778,
+      "vertices": 4109,
+      "morphs": 39,
+      "height": 183.1301694356104,
+      "bytes": 1074604
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_11/Male_Adult_11_facial.fbx",
+    "target": "people/Male_Adult_11.glb.gz",
+    "sourceBytes": 1779440,
+    "sourceSha256": "7c58b696c6f570a13dc6cb4d22f71d7ea82884eca095549fe2122c94a7f0b857",
+    "bytes": 198827,
+    "sha256": "aa6529002ce56f8ba870a0a1e5922614e8b31b7ca26a364f75897142e3ab2420",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.0000076031651873074115,
+      "vertexErrorSourceUnits": 0.000010205940218817405,
+      "vertices": 4000,
+      "morphs": 26,
+      "height": 180.26796977686084,
+      "bytes": 1006216
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_12/Male_Adult_12_facial.fbx",
+    "target": "people/Male_Adult_12.glb.gz",
+    "sourceBytes": 1772832,
+    "sourceSha256": "ef4d15accbff3e557af369bd8b6a7227ff808ab996b5c350388f081a287cbd63",
+    "bytes": 198589,
+    "sha256": "a73f9667fae12e72ac9e71ecec7d4f447798563d7a02f96819f39c5bed9ad2e4",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.000006519062608409241,
+      "vertexErrorSourceUnits": 0.00000942664289049534,
+      "vertices": 4043,
+      "morphs": 26,
+      "height": 180.68532939050382,
+      "bytes": 1015132
+    }
+  },
+  {
+    "kind": "model",
+    "file": "office3d/assets/models/people/Male_Adult_20/Male_Adult_20_facial.fbx",
+    "target": "people/Male_Adult_20.glb.gz",
+    "sourceBytes": 1840944,
+    "sourceSha256": "127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82",
+    "bytes": 199063,
+    "sha256": "43b075218616be60228111fe31911b70f59161f5e3defed9d88f9e235e724845",
+    "proof": {
+      "bones": 81,
+      "boundsError": 0.00000544225789032971,
+      "vertexErrorSourceUnits": 0.000011492382836186163,
+      "vertices": 4253,
+      "morphs": 26,
+      "height": 180.48939057404564,
+      "bytes": 1113500
+    }
+  }
+]

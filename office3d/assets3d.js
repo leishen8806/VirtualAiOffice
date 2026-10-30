@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from './vendor/three/jsm/loaders/GLTFLoader.js'
+import { CompactTextureLoader, compactTextureSize, loadCompactClips, loadCompactGltf } from './compact-assets.js'
 import * as SkeletonUtils from './vendor/three/jsm/utils/SkeletonUtils.js'
 
 // 素材：Kenney Furniture Kit、Quaternius Universal Base Characters / Universal Animation Library（均为 CC0，见 assets/ASSET_LEDGER.md）
@@ -20,7 +21,7 @@ const PALETTE = {
   metal: [0xc7cbcf, 0.3, 0.9], metalMedium: [0x9aa0a6, 0.35, 0.85], metalDark: [0x2a2d31, 0.4, 0.7],
   plant: [0x3c8a4f, 0.8, 0.0],
 }
-const tl = new THREE.TextureLoader()
+const tl = new CompactTextureLoader()
 const skinTexCache = new Map()
 function skinTexture(gender, tone) {
   const key = `${gender}:${tone}`
@@ -138,7 +139,10 @@ const LITE_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAA
 export const liteTextureUrl = url => /_(Normal|Roughness)\.png$/i.test(url) ? LITE_BLANK : url
 export async function loadAssets({ lite = false } = {}) {
   const manager = new THREE.LoadingManager()
-  if (lite) { manager.setURLModifier(liteTextureUrl); THREE.Cache.enabled = true }
+  const size = lite ? 512 : compactTextureSize()
+  manager.setURLModifier(url => lite || size === 512 ? liteTextureUrl(url) : url)
+  manager.addHandler(/\.(png|jpe?g)$/i, new CompactTextureLoader(manager))
+  if (lite) THREE.Cache.enabled = true
   try { return await loadAssetSet(new GLTFLoader(manager)) } finally { if (lite) { THREE.Cache.clear(); THREE.Cache.enabled = false } }
 }
 async function loadAssetSet(loader) {
@@ -158,7 +162,7 @@ async function loadAssetSet(loader) {
   }))
   const chars = {}
   for (const [gender, file] of [['male', 'Superhero_Male_FullBody'], ['female', 'Superhero_Female_FullBody']]) {
-    const g = await loader.loadAsync(`./assets/models/characters/${file}.gltf`)
+    const g = await loadCompactGltf(`./assets/compact/characters/${file}.glb.gz`, './assets/models/characters/', loader.manager)
     prepShadow(g.scene)
     let body = null
     g.scene.traverse((o) => { if (o.isSkinnedMesh && /Sphere|Retopology|Body/i.test(o.name)) body = o })
@@ -173,11 +177,11 @@ async function loadAssetSet(loader) {
   }
   const hairs = {}
   await Promise.all(HAIRS.map(async (n) => {
-    const g = await loader.loadAsync(`./assets/models/characters/hair/${n}.gltf`)
+    const g = await loadCompactGltf(`./assets/compact/characters/hair/${n}.glb.gz`, './assets/models/characters/hair/', loader.manager)
     prepShadow(g.scene)
     hairs[n] = g.scene
   }))
-  const animGltf = await loader.loadAsync('./assets/models/anim/UAL1_Standard.glb')
+  const animGltf = { animations: await loadCompactClips('UAL1_Standard') }
   const clips = {}
   for (const c of animGltf.animations) {
     // 去掉缩放与除骨盆外的位移轨道：两套骨架比例略有差异，只保留旋转就不会变形
