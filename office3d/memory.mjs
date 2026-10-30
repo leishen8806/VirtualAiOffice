@@ -399,7 +399,7 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
         const keep = path.join(folder, '.gitkeep'); if (!fs.existsSync(keep)) fs.writeFileSync(keep, '')
       }
     }
-    inspect()
+    try { inspect() } catch { error = '记忆库启动巡检失败，服务继续运行' }
     if (!timer) { timer = setInterval(() => { void tick() }, 60000); timer.unref() }
   }
   return { start, stop: () => { clearInterval(timer); timer = null }, tick, rescan: () => tick({ rescan: true }), preview, monthly, view }
