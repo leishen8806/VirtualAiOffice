@@ -89,7 +89,9 @@ function screenAtlas(THREE, stations, makeScreenTexture) {
     // 不能再用「竖直矩形」，那样下半片会埋进外壳里被挡掉（董事会看到的「只覆盖了一半」）。
     const fit = monitorPanelFit({ ...workstationDesktop({ x: desk.x, z: desk.z, yaw }).monitor, y: .76, yaw, aspect: width / height }), offset = index * 4
     for (const c of fit.corners) positions.push(c.x, c.y, c.z)
-    const col = index % grid, row = Math.floor(index / grid), u0 = col / grid, u1 = (col + 1) / grid, v0 = row / grid, v1 = (row + 1) / grid
+    // 行号要翻过来：下面 connect 用 drawImage 从图集画布的顶边往下贴（row 0 在最上），
+    // 而图集贴图 flipY = true 让 v=0 落在画布底边。不翻就会整格取错行、25 块屏互相串格。
+    const col = index % grid, row = Math.floor(index / grid), u0 = col / grid, u1 = (col + 1) / grid, v0 = 1 - (row + 1) / grid, v1 = 1 - row / grid
     uvs.push(u0, v0, u1, v0, u1, v1, u0, v1); indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3)
   })
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals()

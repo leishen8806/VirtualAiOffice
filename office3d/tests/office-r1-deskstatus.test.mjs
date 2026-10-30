@@ -310,6 +310,71 @@ test('DS-4 灯头颜色走 instanceColor，与头顶状态环同一套色', () =
   f.dispose()
 })
 
+// ───────────── DS-6 工位屏图集不串格（CMP-750）─────────────
+// 单屏画布是用 drawImage 从图集画布的**顶边**往下贴的，而 CanvasTexture 的 flipY=true
+// 让 v=0 落在画布**底边**。两边各算一遍、都换算成「图集画布像素」再比，才能发现整格取错行。
+// 这里 25 台逐台覆盖：第 i 块屏的 UV band 必须正好框住第 i 格的像素区域。
+const recordingScreens = () => {
+  const made = []
+  return { made, make() { const scr = { ctx: fakeCtx(256, 144), scroll: 0, last: '', tex: { needsUpdate: false, dispose() {} } }; made.push(scr); return scr } }
+}
+
+test('DS-6 25 块工位屏逐台：UV band 与本格画布区域在 flipY 下指向同一块像素', () => {
+  const { made, make } = recordingScreens()
+  const layout = createOfficeR1Layout(), root = new THREE.Group()
+  const f = buildR1Furniture({ THREE, root, layout, collision: createFurnitureCollision(), makeScreenTexture: make, A, placeFurniture })
+  const stations = layout.r1.workstations
+  assert.equal(stations.length, 25)
+  // 第一次调用建的是图集画布本身，之后每张桌子一个单屏画布。
+  assert.equal(made.length, 1 + stations.length, '单屏画布数量应当与工位数一致')
+  const atlas = made[0], atlasW = atlas.ctx.canvas.width, atlasH = atlas.ctx.canvas.height
+  assert.ok(atlasW > 256 && atlasH > 144, `图集画布没放大：${atlasW}x${atlasH}`)
+  const mesh = f.root.children.find(n => n.name === 'r1-workstation-screen-atlas')
+  assert.ok(mesh, '找不到工位屏图集批次')
+  const uv = mesh.geometry.attributes.uv, pos = mesh.geometry.attributes.position
+  assert.equal(uv.count, stations.length * 4)
+  const seen = new Set()
+  stations.forEach((station, i) => {
+    const desk = r1ToWorld(station.xM, station.yM), handle = f.deskAt(desk.x, desk.z)
+    assert.ok(handle, `第 ${i} 张桌子没有把手`)
+    // 触发一次贴图，拿到这一格在图集画布上的落点（y 从画布顶边往下量）。
+    const before = atlas.ctx.ops.length
+    handle.scr.tex.needsUpdate = true
+    const drawn = atlas.ctx.ops.slice(before).filter(o => o.op === 'drawImage')
+    assert.equal(drawn.length, 1, `第 ${i} 块屏没往图集上贴一次`)
+    const { x, y } = drawn[0], cellW = handle.scr.ctx.canvas.width, cellH = handle.scr.ctx.canvas.height
+    // 每格不许重叠，否则「对上了」可能只是因为大家都贴在同一处。
+    assert.ok(!seen.has(`${x},${y}`), `第 ${i} 块屏与别人贴在同一格 (${x},${y})`)
+    seen.add(`${x},${y}`)
+    // 画布像素 → UV：flipY=true，所以画布顶边 y=0 对应 v=1。
+    const want = { u0: x / atlasW, u1: (x + cellW) / atlasW, v0: 1 - (y + cellH) / atlasH, v1: 1 - y / atlasH }
+    const verts = [0, 1, 2, 3].map(k => ({ u: uv.getX(i * 4 + k), v: uv.getY(i * 4 + k), y: pos.getY(i * 4 + k) }))
+    // uv 存在 Float32BufferAttribute 里，容差按 float32 取 1e-6（和上面状态灯那条一致）。
+    const eq = (a, b, what) => assert.ok(Math.abs(a - b) < 1e-6, `第 ${i} 块屏 ${what}：${a} != ${b}`)
+    // 整格取对行：u / v 的上下界都要落在本格。
+    eq(Math.min(...verts.map(v => v.u)), want.u0, 'u 左界')
+    eq(Math.max(...verts.map(v => v.u)), want.u1, 'u 右界')
+    eq(Math.min(...verts.map(v => v.v)), want.v0, 'v 下界')
+    eq(Math.max(...verts.map(v => v.v)), want.v1, 'v 上界')
+    // 格内方向是正的：屏幕下沿两点取小 v，上沿两点取大 v（画面不上下颠倒）。
+    const lowY = Math.min(...verts.map(v => v.y)), highY = Math.max(...verts.map(v => v.y))
+    for (const vert of verts) {
+      if (Math.abs(vert.y - lowY) < 1e-6) eq(vert.v, want.v0, '屏幕下沿取了上界 v（画面上下颠倒）')
+      if (Math.abs(vert.y - highY) < 1e-6) eq(vert.v, want.v1, '屏幕上沿取了下界 v（画面上下颠倒）')
+    }
+  })
+  f.dispose()
+})
+
+test('DS-6 图集 UV 换算依赖 flipY=true，app.js 的屏幕纹理不许关掉它', () => {
+  // DS-6 的像素换算全靠 CanvasTexture 默认 flipY=true；哪天这里改了，上面那条断言就会悄悄算错。
+  const from = source.indexOf('function makeScreenTexture() {')
+  assert.ok(from > 0, 'app.js 里找不到 makeScreenTexture')
+  const block = source.slice(from, source.indexOf('\n}', from))
+  assert.match(block, /new THREE\.CanvasTexture\(/, '屏幕纹理不再是 CanvasTexture，flipY 假设要重新核对')
+  assert.ok(!/flipY/.test(block), 'makeScreenTexture 动了 flipY，DS-6 的 UV 换算需要同步改')
+})
+
 test('DS-5 非 R1 入口不建状态灯', () => {
   const root = new THREE.Group()
   const none = buildR1Furniture({ THREE, root, layout: undefined, collision: createFurnitureCollision(), makeScreenTexture: fakeScreenTexture, A, placeFurniture })
