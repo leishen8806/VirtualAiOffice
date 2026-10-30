@@ -30,7 +30,7 @@ export const R1_LANDSCAPE = Object.freeze({
     {"id":"DENSE-SOFA-16","zone":"07","x":-2.806,"z":-0.514,"r":0.25,"height":0.6,"kind":"low","role":"sofa-group"},
     {"id":"DENSE-CORE-1","zone":"07","x":5.394,"z":-0.106,"r":0.25,"height":0.6,"kind":"low","role":"core"},
     {"id":"DENSE-CORE-2","zone":"07","x":-1.394,"z":-0.106,"r":0.25,"height":0.6,"kind":"low","role":"core"},
-    {"id":"DENSE-CORE-3","zone":"07","x":-1.994,"z":-7.494,"r":0.25,"height":0.6,"kind":"low","role":"core"},
+    {"id":"DENSE-CORE-3","zone":"07","x":-2.394,"z":-7.494,"r":0.25,"height":0.6,"kind":"low","role":"core"},
     {"id":"DENSE-CORE-4","zone":"07","x":5.994,"z":-7.494,"r":0.25,"height":0.6,"kind":"low","role":"core"},
     {"id":"DENSE-10-5","zone":"10","x":-12.15,"z":9.2,"r":0.36,"height":1.15,"kind":"medium","role":"zone-edge"},
     {"id":"DENSE-10-6","zone":"10","x":-8.3,"z":9.2,"r":0.28,"height":0.6,"kind":"low","role":"zone-edge"},

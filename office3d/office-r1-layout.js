@@ -64,13 +64,13 @@ export const R1_BOARD_OVERRIDES = Object.freeze([
   ...RESERVED_TUCK,
 ])
 // 董事会 2026-10-29："广场的长椅子方向反了"。登记朝向背对广场圆环，原地转 180°，面向广场；占地不变。
-// 单独成表，不并入上面的 I6C / RECEP 表（那两张表的条数与日期有冻结测试）。
+// 单独成表；MOVE R5 另批准 BN-003 向西平移 0.50 m，其余三张仍原地转向。
 const BENCH_REASON = '董事会 2026-10-29："广场的长椅子方向反了"；原地转 180°，面向广场圆环与喷泉'
-const benchFlip = (id, from, to) => Object.freeze({ id, date: '2026-10-29', reason: BENCH_REASON, from: Object.freeze(from), to: Object.freeze(to) })
+const benchFlip = (id, from, to, reason = BENCH_REASON) => Object.freeze({ id, date: '2026-10-29', reason, from: Object.freeze(from), to: Object.freeze(to) })
 export const R1_BOARD_FACING_OVERRIDES = Object.freeze([
   benchFlip('14-BN-001', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
   benchFlip('14-BN-002', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
-  benchFlip('14-BN-003', { yawDeg: 90, facingLocal: [1, 0] }, { yawDeg: 270, facingLocal: Object.freeze([-1, 0]) }),
+  benchFlip('14-BN-003', { xM: 49, yawDeg: 90, facingLocal: [1, 0] }, { xM: 48.5, yawDeg: 270, facingLocal: Object.freeze([-1, 0]) }, `${BENCH_REASON}；MOVE R5：长椅与花境重叠，向西平移 0.50 m`),
   benchFlip('14-BN-004', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
 ])
 const BOARD_PATCH = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES].map(entry => [entry.id, entry.to]))
