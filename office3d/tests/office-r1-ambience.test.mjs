@@ -5,7 +5,7 @@ import { registerHooks } from 'node:module'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
-import { r1ToWorld, R1_RESERVED_SEATS, R1_RESERVED_TUCK_M, isReservedSeat } from '../office-r1-layout.js'
+import { r1ToWorld, R1_RESERVED_SEATS, R1_RESERVED_TUCK_M, R1_BOARD_REMOVALS, R1_DIRECTOR_ELEMENTS, isReservedSeat } from '../office-r1-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
 import { r1DoorPlan } from '../office-vis2/r1-doors.js'
 import { buildR1Plaza, r1PlazaBrand } from '../office-vis2/r1-plaza.js'
@@ -14,6 +14,7 @@ import { officeV3ModulesFor } from '../office-v3-modules.js'
 import {
   buildR1Brand, r1AmbienceSpec, R1_ROOM_PLATES, r1PlateStandoff, ATLAS_WIDTH, R1_AMBIENCE_ATLAS,
   drawR1Nameplate, drawR1Welcome, drawR1WallScreen, r1WallScreenModel, drawR1DeskPlate,
+  R1_DEPARTMENT_NAMES, drawR1AmbienceAtlas,
 } from '../office-vis2/r1-brand.js'
 
 // AM-7 要拿真实家具的包围盒来对桌牌，所以按 R5 的办法加载 GLB：只加载办公桌 / 办公椅 / 显示器
@@ -159,7 +160,7 @@ test('AMB-2 the half-ring planter has collision and keeps 0.3 m clear of the rou
 test('AMB-3 seven nameplates hang over the registered doors, face the corridor and clear the leaf sweep in all 101 phases', () => {
   const { module, ambience, layout, collision } = brand()
   const plates = ambience.plates
-  assert.deepEqual(plates.map(plate => plate.text), ['市场部', '会议与决策', '客服部', '售后部', '营销部', '洽谈室 A', '洽谈室 B'])
+  assert.deepEqual(plates.map(plate => plate.text), ['市场部', '会议与决策', '客服部', '售后部', '营销部', '洽谈室 A', '董事办公室'])
   assert.deepEqual(plates.map(plate => plate.doorId), ['01-D-001', '02-D-001', '05-D-001', '09-D-001', '13-D-001', '03-D-001', '03-D-002'])
   // BACKWALL 新开的两樘门不挂名牌。
   assert.ok(!plates.some(plate => ['11-D-002', '11-D-003'].includes(plate.doorId)))
@@ -392,17 +393,17 @@ const WORKSTATION_CHAIRS = Object.freeze([
 test('AM-7a the reserved-seat table is frozen, matches the board list and leaves the 25 workstations alone', () => {
   assert.ok(Object.isFrozen(R1_RESERVED_SEATS))
   assert.deepEqual(R1_RESERVED_SEATS.map(row => [row.name, row.chair, row.desk]),
-    [['苏晨', '08-CH-011', '08-T-011'], ['Dr', '08-CH-012', '08-T-012'], ['大旺', '08-CH-013', '08-T-013']])
+    [['苏晨', '03-DEPT-CH-001', '03-DEPT-T-001'], ['Dr', '03-DEPT-CH-002', '03-DEPT-T-002'], ['大旺', '03-DEPT-CH-003', '03-DEPT-T-003']])
   for (const row of R1_RESERVED_SEATS) {
     assert.ok(Object.isFrozen(row), row.chair)
-    assert.equal(row.date, '2026-10-29', row.chair)
+    assert.equal(row.date, '2026-10-30', row.chair)
     assert.ok(typeof row.reason === 'string' && row.reason.length > 0, row.chair)
   }
   // 导出判定：父件与三个子件都算同一个座位，别的椅子一律 false。
   for (const row of R1_RESERVED_SEATS) for (const suffix of ['', '-BACK', '-BASE', '-SEAT']) {
     assert.equal(isReservedSeat(`${row.chair}${suffix}`), true, `${row.chair}${suffix}`)
   }
-  for (const id of ['08-CH-010', '08-CH-014', '08-CH-0110', '04-CH-001', '08-T-011', '', null, undefined]) {
+  for (const id of ['08-CH-010', '08-CH-014', '03-DEPT-CH-0010', '04-CH-001', '03-DEPT-T-001', '', null, undefined]) {
     assert.equal(isReservedSeat(id), false, String(id))
   }
   // 三个预留座位不坐人：25 位同事的工位映射一条都不动。
@@ -416,8 +417,8 @@ test('AM-7b three reserved desk plates read the name plus 预留, sit on their o
   const { module, ambience, collision } = brand()
   const plates = ambience.deskPlates, DP = r1AmbienceSpec.deskPlate
   assert.deepEqual(plates.map(plate => plate.text), [['苏晨', '预留'], ['Dr', '预留'], ['大旺', '预留']])
-  assert.deepEqual(plates.map(plate => plate.desk), ['08-T-011', '08-T-012', '08-T-013'])
-  assert.deepEqual(plates.map(plate => plate.id), ['08-CH-011-PLATE', '08-CH-012-PLATE', '08-CH-013-PLATE'])
+  assert.deepEqual(plates.map(plate => plate.desk), ['03-DEPT-T-001', '03-DEPT-T-002', '03-DEPT-T-003'])
+  assert.deepEqual(plates.map(plate => plate.id), ['03-DEPT-CH-001-PLATE', '03-DEPT-CH-002-PLATE', '03-DEPT-CH-003-PLATE'])
   const furniture = deskFurniture()
   for (const plate of plates) {
     const deskBox = furniture.itemBounds.get(plate.desk)
@@ -459,33 +460,81 @@ test('AM-7b three reserved desk plates read the name plus 预留, sit on their o
   furniture.dispose(); module.dispose()
 })
 
-test('AM-7c the three reserved chairs are tucked under their desks and every desk still owns exactly one chair', () => {
+test('AM-7c DEPT restores the old three vacancies and each of the 81 desks still owns exactly one chair', () => {
   const layout = createOfficeR1Layout()
   const desks = layout.r1.elements.filter(item => item.category === '办公桌'), chairs = layout.r1.elements.filter(item => item.category === '办公椅')
-  assert.equal(desks.length, 78); assert.equal(chairs.length, 78)
-  // I3B 的「1.2 m 内恰有一把办公椅」对全部 78 张桌子仍然成立：推椅子不得让邻桌多出一把。
-  for (const desk of desks) {
-    assert.equal(chairs.filter(chair => Math.hypot(chair.xM - desk.xM, chair.yM - desk.yM) <= 1.2).length, 1, desk.id)
+  assert.equal(desks.length, 81); assert.equal(chairs.length, 81)
+  for (const desk of desks) assert.equal(chairs.filter(chair => Math.hypot(chair.xM - desk.xM, chair.yM - desk.yM) <= 1.2).length, 1, desk.id)
+  assert.equal(R1_RESERVED_TUCK_M, 0)
+  for (const id of ['08-CH-011', '08-CH-012', '08-CH-013']) for (const suffix of ['', '-BACK', '-BASE', '-SEAT']) {
+    const key = id + suffix
+    assert.deepEqual(layout.r1.elements.find(row => row.id === key), R1_DATA.elements.find(row => row.id === key), key)
+    assert.equal(isReservedSeat(key), false)
   }
-  const rawOf = id => R1_DATA.elements.find(item => item.id === id)
   for (const seat of R1_RESERVED_SEATS) {
-    const chair = chairs.find(item => item.id === seat.chair), desk = desks.find(item => item.id === seat.desk)
-    near(chair.xM, rawOf(seat.chair).xM, 1e-9)
-    near(chair.yM - rawOf(seat.chair).yM, R1_RESERVED_TUCK_M, 1e-9)
-    // 椅子前沿压进桌面占地 ≥ 9.5 cm，椅背仍留在桌子之外（不许整把埋进桌子）。
-    const front = chair.yM + chair.widthM / 2, edge = desk.yM - desk.widthM / 2
-    assert.ok(front - edge >= .095, `${seat.chair} 只推进 ${front - edge} m`)
-    assert.ok(chair.yM - chair.widthM / 2 < edge, `${seat.chair} 椅背埋进了桌子`)
-    // 子件（椅背 / 底座 / 座面）跟着父件同样平移，相对偏移不变。
-    for (const suffix of ['-BACK', '-BASE', '-SEAT']) {
-      const part = layout.r1.elements.find(item => item.id === `${seat.chair}${suffix}`)
-      near(part.yM - rawOf(`${seat.chair}${suffix}`).yM, R1_RESERVED_TUCK_M, 1e-9)
-      near(part.xM, rawOf(`${seat.chair}${suffix}`).xM, 1e-9)
+    const chair = chairs.find(row => row.id === seat.chair), desk = desks.find(row => row.id === seat.desk)
+    assert.equal(chair.regionId, '03'); assert.equal(desk.regionId, '03')
+    near(desk.yM - chair.yM, .81, 1e-9)
+    assert.ok(!layout.r1.workstations.some(row => row.chair_id === chair.id))
+  }
+  for (const chair of chairs.filter(row => !isReservedSeat(row.id))) near(chair.yM, R1_DATA.elements.find(row => row.id === chair.id).yM, 1e-9)
+})
+
+test('DEPT-1 all eleven department signs use one frozen naming table and the existing atlas batch', () => {
+  assert.ok(Object.isFrozen(R1_DEPARTMENT_NAMES))
+  assert.deepEqual(R1_DEPARTMENT_NAMES, {
+    '04/P1': '产品部', '04/P2': '前端研发部', '04/P3': '后端与知识库',
+    '06/O1': '运维与质量安全部', '06/O2': '运维与质量安全部',
+    '08/D1': 'Dr.life+ 研发一组', '08/D2': 'Dr.life+ 研发二组',
+    '01': '市场部', '09': '销售部', '13': '营销部', '05': '客服部',
+  })
+  const context = recordingContext()
+  drawR1AmbienceAtlas(context, ATLAS_WIDTH, R1_AMBIENCE_ATLAS.height)
+  for (const text of Object.values(R1_DEPARTMENT_NAMES)) assert.ok(context.texts.includes(text), text)
+  assert.equal(context.texts.filter(text => text === '运维与质量安全部').length, 2)
+  for (const low of [false, true]) {
+    const { module, root, layout, ambience, collision } = brand({ low })
+    const signs = ambience.departmentPlates
+    assert.equal(signs.length, 11)
+    const boxes = leafBoxes(layout, [...new Set(r1DoorPlan(layout).map(row => row.doorId))])
+    const vertices = []
+    root.updateMatrixWorld(true)
+    root.traverse(mesh => {
+      if (!mesh.isMesh || !mesh.name.includes('r1-ambience-surfaces')) return
+      const attr = mesh.geometry.attributes.position
+      for (let i = 0; i < attr.count; i++) vertices.push(new THREE.Vector3().fromBufferAttribute(attr, i).applyMatrix4(mesh.matrixWorld))
+    })
+    for (const sign of signs) {
+      assert.equal(sign.text, R1_DEPARTMENT_NAMES[sign.id])
+      assert.ok(sign.box.min.y >= 2.2 && sign.box.min.y <= 2.5)
+      assert.ok(vertices.filter(v => sign.box.clone().expandByScalar(1e-5).containsPoint(v)).length >= 8, `${sign.id}: actual batched board vertices`)
+      const whole = sign.box.clone(); whole.max.y += .45
+      for (const box of boxes) assert.equal(whole.intersectsBox(box), false, `${sign.id}: door sweep`)
+      assert.equal(collision.hit(sign.center.x, sign.center.z), null, 'sign must not become a navigation obstacle')
     }
+    assert.equal(root.getObjectsByProperty('isMesh', true).filter(mesh => mesh.name.includes('r1-ambience-art')).length, 1)
+    module.dispose()
   }
-  // 预留之外的办公椅一律停在原处（接待椅 11-CH-001 由 OFFICE-R1-RECEP 另行平移）。
-  for (const chair of chairs) {
-    if (isReservedSeat(chair.id) || chair.id === '11-CH-001') continue
-    near(chair.yM, rawOf(chair.id).yM, 1e-9)
+})
+
+test('DEPT-3 all removed records are explicit and the three board offices stay empty inside room B', () => {
+  assert.deepEqual(R1_DIRECTOR_ELEMENTS.filter(e => e.category === '办公桌').map(e => [e.xM, e.yM, e.lengthM, e.widthM]), [[21.8,42,1.4,.7],[23.3,42,1.4,.7],[24.8,42,1.4,.7]])
+  assert.equal(R1_BOARD_REMOVALS.length, 17)
+  assert.equal(R1_DIRECTOR_ELEMENTS.length, 9)
+  const layout = createOfficeR1Layout()
+  for (const row of R1_BOARD_REMOVALS) {
+    assert.ok(Object.isFrozen(row)); assert.equal(row.date, '2026-10-30')
+    assert.deepEqual(row.from, R1_DATA.elements.find(item => item.id === row.id)); assert.equal(row.to, null)
+    assert.ok(!layout.r1.elements.some(item => item.id === row.id))
+    assert.match(row.id, /^03-(T-002|CH-00[5-8])(?:$|-)/)
   }
+  for (const row of R1_DIRECTOR_ELEMENTS) {
+    assert.ok(Object.isFrozen(row)); assert.equal(row.date, '2026-10-30')
+    assert.equal(row.regionId, '03'); assert.equal(row.status, 'BOARD_ADDED')
+    assert.ok(row.xM - row.lengthM / 2 >= 19.1 && row.xM + row.lengthM / 2 <= 25.7)
+    assert.ok(row.yM - row.widthM / 2 >= 37.1 && row.yM + row.widthM / 2 <= 42.9)
+    assert.ok(!layout.r1.workstations.some(w => w.desk_id === row.id || w.chair_id === row.id))
+  }
+  assert.equal(R1_ROOM_PLATES.find(row => row.doorId === '03-D-002').text, '董事办公室')
+  assert.equal(R1_ROOM_PLATES.find(row => row.doorId === '03-D-001').text, '洽谈室 A')
 })

@@ -92,7 +92,7 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   for (const asset of ['chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']) assert.ok(calls.some(call => call.name === asset), asset)
   // R5 replaces only the office desk geometry; keep every other mapped asset and collision assertion.
   assert.equal(calls.filter(call => call.name === 'desk').length, 0)
-  assert.equal(deskGroups.length, 78)
+  assert.equal(deskGroups.length, 81)
   for (const group of deskGroups) {
     const item = layout.r1.elements.find(item => item.id === group.userData.r1Id), box = new THREE.Box3().setFromObject(group), center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), yaw = -item.yawDeg * Math.PI / 180
     assert.equal(group.children.length, 4, item.id)

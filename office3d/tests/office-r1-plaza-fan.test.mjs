@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B } from '../office-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_REMOVALS, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Plaza } from '../office-vis2/r1-plaza.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
@@ -25,11 +25,8 @@ const SHIFT = Object.freeze({ dxM: -6.5, dyM: 2.6 })
 // OFFICE-R1-RECEP（董事会 2026-10-28 批准）后来又往同一张偏离表加了 4 条接待椅平移；
 // I6C 这条测试只负责锁住自己这 24 条，接待椅的数值由 office-r1-recep-brand.test.mjs 的 RC-2 锁。
 const RECEP_SET = Object.freeze(['11-CH-001', '11-CH-001-BACK', '11-CH-001-BASE', '11-CH-001-SEAT'])
-// OFFICE-R1-AMBIENCE 补充 R2（董事会 2026-10-29 批准）又加了 12 条：三个预留座位的椅子推进桌下。
-// 同样不归 I6C 管，数值由 office-r1-ambience.test.mjs 的 AM-7c 锁。
-const RESERVED_SET = Object.freeze(['08-CH-011', '08-CH-012', '08-CH-013']
-  .flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`]))
-const LATER_SET = Object.freeze([...RECEP_SET, ...RESERVED_SET])
+// DEPT 撤销了旧预留座位推椅；本表只额外保留接待椅偏离。
+const LATER_SET = RECEP_SET
 // 代码基线 main a6aa91f3fb91a9e9158575977f69694582703ed7 上 office-r1/data.js 的 SHA-256：偏离表不得改登记数据文件。
 // 先把 CRLF 归一成 LF 再算：本机不同工作树的签出行尾不一致（pc-worktrees 是 CRLF、新建工作树是 LF），
 // 直接对原始字节取哈希会在换一个工作树复核时假失败。
@@ -51,7 +48,7 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
   assert.equal(new Set(ids).size, ids.length)
   for (const entry of R1_BOARD_OVERRIDES) {
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.from) && Object.isFrozen(entry.to), entry.id)
-    assert.equal(entry.date, RESERVED_SET.includes(entry.id) ? '2026-10-29' : '2026-10-28', entry.id)
+    assert.equal(entry.date, '2026-10-28', entry.id)
     assert.ok(typeof entry.reason === 'string' && entry.reason.length > 0, entry.id)
     // 原值必须与登记数据逐值相符，否则登记数据漂移了而偏离表没跟上。
     const raw = rawOf(entry.id)
@@ -79,14 +76,14 @@ test('I6C-1 the board deviation table is frozen, covers exactly the 24 approved 
   assert.equal(TRUNK_IDS.size, 35)
   // 树干表只碰 <id>-TR，与本表的 ID 不相交。
   assert.equal(ids.filter(id => TRUNK_IDS.has(id)).length, 0)
-  assert.equal(layout.elements.length, R1_DATA.elements.length + R1_BACKWALL.leaves.length + R1_BOARD_ADDED_ELEMENTS.length)
-  for (const [index, item] of layout.elements.slice(0, R1_DATA.elements.length).entries()) {
+  assert.equal(layout.elements.length, R1_DATA.elements.length - R1_BOARD_REMOVALS.length + R1_BACKWALL.leaves.length + R1_BOARD_ADDED_ELEMENTS.length)
+  for (const item of layout.elements.filter(row => R1_DATA.elements.some(raw => raw.id === row.id))) {
     // 2026-10-29 长椅转向另有一张董事会表（R1_BOARD_FACING_OVERRIDES），由 office-r1-bench-facing.test.mjs 单独锁住；
     // 室内绿植树干改细同样另有一张表（R1_BOARD_TRUNK_OVERRIDES），由 office-r1-trunk.test.mjs 的 TK-2 单独锁住。
     if (byId.has(item.id) || R1_GATE.leafIds.includes(item.id) || R1_BOARD_FACING_OVERRIDES.some(entry => entry.id === item.id) || TRUNK_IDS.has(item.id)) continue
-    assert.deepEqual(item, withApprovedPlantMove(R1_DATA.elements[index]), item.id)
+    assert.deepEqual(item, withApprovedPlantMove(rawOf(item.id)), item.id)
   }
-  assert.deepEqual(layout.elements.slice(R1_DATA.elements.length), [...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
+  assert.deepEqual(layout.elements.filter(row => !R1_DATA.elements.some(raw => raw.id === row.id)), [...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
   // 非 R1 布局（稳定 V3 / L2B 对齐）不受偏离表影响。
   for (const other of [LAYOUT_V3_ALIGN, LAYOUT_V3_ALIGN_L2B]) assert.equal(other.r1Phase, undefined)
 })
