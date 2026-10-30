@@ -1,5 +1,5 @@
 import { r1ToWorld, isReservedDesk } from '../office-r1-layout.js'
-import { monitorScreenFit, workstationDesktop } from '../office-furniture-v2.js'
+import { monitorPanelFit, workstationDesktop } from '../office-furniture-v2.js'
 
 const FURNITURE = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'])
 const SOLID = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '吧凳'])
@@ -77,15 +77,18 @@ function fallbackBox(THREE, x, z, size, yaw, bucket, color, target) {
 }
 // 每格 512×288（5×5 图集共 2560×1440，卡面 D 行允许的上限）：256×144 下中文任务名
 // 在真实显示器尺寸上糊得认不出，提到 512×288 后正文 15px 等比放大到 30px。
-const SCREEN_CELL = { width: 512, height: 288 }
+export const R1_SCREEN_CELL = { width: 512, height: 288 }
+const SCREEN_CELL = R1_SCREEN_CELL
 function screenAtlas(THREE, stations, makeScreenTexture) {
   const atlas = makeScreenTexture(), grid = Math.ceil(Math.sqrt(stations.length)), { width, height } = SCREEN_CELL
   if (atlas.ctx?.canvas) { atlas.ctx.canvas.width = grid * width; atlas.ctx.canvas.height = grid * height; atlas.tex.needsUpdate = true }
   const positions = [], uvs = [], indices = []
   stations.forEach((station, index) => {
     const desk = r1ToWorld(station.xM, station.yM), chair = r1ToWorld(station.chairXM, station.chairYM), yaw = Math.atan2(-(desk.x - chair.x), -(desk.z - chair.z))
-    const fit = monitorScreenFit({ ...workstationDesktop({ x: desk.x, z: desk.z, yaw }).monitor, y: .76, yaw }), right = { x: Math.cos(fit.yaw), z: -Math.sin(fit.yaw) }, half = fit.width / 2, top = fit.height / 2, offset = index * 4
-    positions.push(fit.center.x - right.x * half, fit.center.y - top, fit.center.z - right.z * half, fit.center.x + right.x * half, fit.center.y - top, fit.center.z + right.z * half, fit.center.x + right.x * half, fit.center.y + top, fit.center.z + right.z * half, fit.center.x - right.x * half, fit.center.y + top, fit.center.z - right.z * half)
+    // 贴片铺满整块黑色面板，并跟着面板后仰 8°：四角由 monitorPanelFit 的 right/up 算出，
+    // 不能再用「竖直矩形」，那样下半片会埋进外壳里被挡掉（董事会看到的「只覆盖了一半」）。
+    const fit = monitorPanelFit({ ...workstationDesktop({ x: desk.x, z: desk.z, yaw }).monitor, y: .76, yaw, aspect: width / height }), offset = index * 4
+    for (const c of fit.corners) positions.push(c.x, c.y, c.z)
     const col = index % grid, row = Math.floor(index / grid), u0 = col / grid, u1 = (col + 1) / grid, v0 = row / grid, v1 = (row + 1) / grid
     uvs.push(u0, v0, u1, v0, u1, v1, u0, v1); indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3)
   })
