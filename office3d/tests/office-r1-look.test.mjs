@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { registerHooks } from 'node:module'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout, buildR1Site } from '../office-vis2/r1-site.js'
+import { R1_CLUSTER_PLANTS, R1_LOW_PLANT_IDS } from '../office-vis2/r1-cluster-plan.js'
 import { r1MarbleTexture, r1LookPlantPositions } from '../office-vis2/r1-look.js'
 import { buildR1Plants } from '../office-vis2/r1-plants.js'
 import { buildR1Lights, r1LightingPlan } from '../office-vis2/r1-lights.js'
@@ -48,22 +49,22 @@ test('LOOK wall strips touch the solid band; bar accents retain the entry; floor
   module.dispose();assert.equal(root.children.length,0)
 })
 
-test('LOOK adds 12 atrium and 12 corner plants from six approved tropical species, with ordinary collision meshes and unchanged registered plants', () => {
+test('LOOK adds 12 atrium and 12 corner plants from six approved tropical species, with ordinary collision meshes and retained registered plant IDs', () => {
   assert.equal(r1LookPlantPositions.length,24);assert.equal(r1LookPlantPositions.filter(r=>r[1]==='07').length,12)
   for(const zone of ['04','06','08','10','11','12'])assert.equal(r1LookPlantPositions.filter(r=>r[1]===zone).length,2)
   for(const low of [false,true]){
     const root=new THREE.Group(),collision=createFurnitureCollision(),plants=buildR1Plants({THREE,root,layout,A,low,collision})
-    assert.equal(plants.records.length,35);assert.equal(plants.look.records.length,24);assert.equal(collision.stats().bodies,59 + plants.dense.proxies.length)
+    assert.equal(plants.records.length,35);assert.equal(plants.look.records.length,R1_CLUSTER_PLANTS.filter(p=>p.look&&(!low||R1_LOW_PLANT_IDS.includes(p.id))).length);assert.equal(collision.stats().bodies,35 + plants.look.records.length + plants.dense.proxies.length)
     for(const record of plants.look.records){
       assert.ok(collision.hit(record.position.x,record.position.z))
       const tier=plants.look.root.getObjectByName(low?'r1-dense-low':'r1-dense-high')
       for(const [name,start,count] of [['r1-dense-pots',record.startVertex,record.vertexCount],['r1-tropical-leaves',record.leafStart,record.leafCount]]) {
         const v=tier.getObjectByName(name).geometry.attributes.position
-        for(let i=start;i<start+count;i++)assert.ok(Math.hypot(v.getX(i)-record.position.x,v.getZ(i)-record.position.z)<=.60001,record.id)
+        for(let i=start;i<start+count;i++)assert.ok(Math.hypot(v.getX(i)-record.position.x,v.getZ(i)-record.position.z)<=record.r+1e-5,record.id)
       }
     }
     assert.ok(plants.look.proxies.every(p=>p.isMesh&&!p.isInstancedMesh));assert.equal(plants.look.root.children.length,1)
-    assert.equal(new Set(plants.look.records.map(r=>r.species)).size,6)
+    assert.equal(new Set([...plants.look.records,...plants.dense.records.filter(r=>r.r)].map(r=>r.species)).size,6)
     plants.dispose();plants.dispose();assert.equal(collision.stats().bodies,0);assert.equal(root.children.length,0)
   }
 })
@@ -71,16 +72,17 @@ test('LOOK adds 12 atrium and 12 corner plants from six approved tropical specie
 test('LOOK full plant envelopes clear all 17 swept routes, all door travel envelopes and the approved fountain by 0.3 m', () => {
   const doors=r1DoorPlan(layout)
   for(const [id,,x,z] of r1LookPlantPositions){
+    const r=R1_CLUSTER_PLANTS.find(p=>p.id===id).r
     for(const route of layout.r1.routes){
       const points=route.points_m.map(([x,y])=>[x-26,18-y]),radius=layout.r1.data.bodyProfiles[route.body_profile].radius_m
-      for(let i=1;i<points.length;i++)assert.ok(segment(x,z,points[i-1],points[i])-radius-.6>=.3,`${id} ${route.id}`)
+      for(let i=1;i<points.length;i++)assert.ok(segment(x,z,points[i-1],points[i])-radius-r>=.3,`${id} ${route.id}`)
     }
     for(const d of doors){
       const hx=(d.vertical?d.thickness:d.width)/2,hz=(d.vertical?d.width:d.thickness)/2
       const dx=Math.max(Math.min(d.closed.x,d.open.x)-hx-x,0,x-Math.max(d.closed.x,d.open.x)-hx),dz=Math.max(Math.min(d.closed.z,d.open.z)-hz-z,0,z-Math.max(d.closed.z,d.open.z)-hz)
-      assert.ok(Math.hypot(dx,dz)-.6>=.3,`${id} ${d.id}`)
+      assert.ok(Math.hypot(dx,dz)-r>=.3,`${id} ${d.id}`)
     }
-    assert.ok(Math.hypot(x-2,z-28)-4.15-.6>=.3,id)
+    assert.ok(Math.hypot(x-2,z-28)-4.15-r>=.3,id)
   }
 })
 

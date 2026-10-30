@@ -5,6 +5,7 @@ const heights = [[.8,1.3],[1.6,2.2],[1.4,1.8],[.65,.95],[1.6,2],[.5,.9]]
 const fract = x => x - Math.floor(x)
 export const plantSeed = id => [...id].reduce((n,c) => (Math.imul(n,31)+c.charCodeAt(0))>>>0, 17)
 export function tropicalRow(row, index) {
+  if (row.cluster) { const seed = plantSeed(row.id); return { ...row, speciesIndex: INDOOR_SPECIES.indexOf(row.species), seed, scale: row.kind === 'tall' ? 1.06 + .09 * fract(seed * .6180339) : .85 + .3 * fract(seed * .6180339), yaw: fract(seed * .41421356) * Math.PI * 2 } }
   const species = row.role === 'passage' ? (index % 2 ? 4 : 1) : index % 6
   const seed = plantSeed(row.id), scale = .85 + .3 * fract(seed * .6180339), range = heights[species]
   return { ...row, species: INDOOR_SPECIES[species], speciesIndex: species, seed, scale, yaw: fract(seed * .41421356) * Math.PI * 2,
@@ -34,10 +35,10 @@ export function tropicalLeafBatch(THREE) {
   }
 }
 
-export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=false}) {
+export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=false,inBed=false}) {
   const parts=[],leafParts=[],seed=row.seed??plantSeed(row.id),rng=()=>{random=(Math.imul(random,1664525)+1013904223)>>>0;return random/4294967296};let random=seed
   const species=plaza?row.speciesIndex:INDOOR_SPECIES.indexOf(row.species),height=row.height,radius=row.r
-  const potHeight=plaza?0:row.species==='花叶绿萝'?.55:height>1.3?.42:.22
+  const potHeight=plaza||inBed?0:row.species==='花叶绿萝'?.55:height>1.3?.42:.22
   const add=(g,c,pos=[0,0,0])=>{g.translate(...pos);parts.push({g,c})}
   const stem=(a,b,r=.018,color='#75654E')=>{
     const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b),d=bv.clone().sub(av),g=new THREE.CylinderGeometry(r*.65,r,d.length(),4)
@@ -57,7 +58,7 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
     g.computeVertexNormals();g.rotateX(lean);g.rotateY(yaw);g.translate(x,y,z);leafParts.push({g,c:new THREE.Color().setHSL(.22+rng()*.06,.18,.78+rng()*.12)})
   }
   const flower=(x,y,z,color)=>{for(let j=0;j<5;j++){const a=j*Math.PI*2/5,g=new THREE.CircleGeometry(.065,5);g.rotateX(-Math.PI/2);add(g,color,[x+Math.cos(a)*.045,y,z+Math.sin(a)*.045])}const c=new THREE.CircleGeometry(.027,6);c.rotateX(-Math.PI/2);add(c,'#E9C74C',[x,y+.004,z])}
-  if(!plaza){add(new THREE.CylinderGeometry(.24,.19,potHeight,12),'#D2C5AF',[0,potHeight/2,0]);add(new THREE.CylinderGeometry(.215,.215,.015,12),'#514A35',[0,potHeight,0])}
+  if(!plaza&&!inBed){add(new THREE.CylinderGeometry(.24,.19,potHeight,12),'#D2C5AF',[0,potHeight/2,0]);add(new THREE.CylinderGeometry(.215,.215,.015,12),'#514A35',[0,potHeight,0])}
   const green=['#466B3A','#527842','#356448'][seed%3]
   if(!plaza&&species<4){
     if(species===1)stem([0,potHeight,0],[.04,height*.85,0],.04)
@@ -89,6 +90,6 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
   for(const {g} of all){g.computeBoundingBox();box.union(g.boundingBox);const p=g.attributes.position;for(let i=0;i<p.count;i++)radial=Math.max(radial,Math.hypot(p.getX(i),p.getZ(i)))}
   const yaw=row.yaw??rng()*Math.PI*2,scale=(row.scale??(.85+.3*rng()))/1.15,ys=height/(box.max.y-box.min.y),rs=radius*scale/radial,bounds=new THREE.Box3()
   const startVertex=batch.triangles()*3,leafStart=leaves.vertices()
-  for(const {g,c} of all){g.translate(0,-box.min.y,0);g.scale(rs,ys,rs);g.rotateY(yaw);g.translate(row.x,0,row.z);g.computeBoundingBox();bounds.union(g.boundingBox);if(leafParts.some(p=>p.g===g))leaves.add(g,c);else batch.add(g,c)}
-  return {bounds,startVertex,vertexCount:batch.triangles()*3-startVertex,leafStart,leafCount:leaves.vertices()-leafStart,potHeight:potHeight*ys,renderHeight:bounds.max.y}
+  for(const part of all){const {g,c}=part, potScale=!plaza&&row.potR&&parts.indexOf(part)<2&&parts.indexOf(part)>=0?row.potR/.24:rs;g.translate(0,-box.min.y,0);g.scale(potScale,ys,potScale);g.rotateY(yaw);g.translate(row.x,0,row.z);g.computeBoundingBox();bounds.union(g.boundingBox);if(leafParts.some(p=>p.g===g))leaves.add(g,c);else batch.add(g,c)}
+  return {bounds,startVertex,vertexCount:batch.triangles()*3-startVertex,leafStart,leafCount:leaves.vertices()-leafStart,potHeight:potHeight*ys,potRadius:row.potR??.24*rs,renderHeight:bounds.max.y}
 }

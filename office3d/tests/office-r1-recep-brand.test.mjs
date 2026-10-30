@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Lounge, r1ReceptionCenter } from '../office-vis2/r1-lounge.js'
-import { createR1Layout, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ToWorld } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_GATE, r1ToWorld } from '../office-r1-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { buildR1Brand, drawR1BrandSlogan, r1BrandSpec, R1_BRAND_SLOGAN, R1_BRAND_LOGO_URL, R1_BRAND_LOGO_ASPECT } from '../office-vis2/r1-brand.js'
@@ -119,7 +119,7 @@ test('RC-2 the board table adds exactly the four approved reception-chair rows a
   const trunkIds = R1_BOARD_TRUNK_OVERRIDES.map(entry => entry.id)
   assert.equal(trunkIds.length, 35)
   assert.equal(ids.filter(id => trunkIds.includes(id)).length, 0)
-  assert.deepEqual(registered.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids, ...R1_BOARD_FACING_OVERRIDES.map(entry => entry.id), ...R1_GATE.leafIds, ...trunkIds].sort())
+  assert.deepEqual(registered.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids, ...R1_BOARD_FACING_OVERRIDES.map(entry => entry.id), ...R1_GATE.leafIds, ...R1_DATA.elements.filter(r=>R1_PLANT_POSITION_OVERRIDES.some(p=>p.id===r.id||p.id===r.parentId)).map(r=>r.id)].sort())
   for (const id of Object.keys(RECEP_OVERRIDES)) {
     assert.equal(applied.find(row => row.id === id).yawDeg, rawOf(id).yawDeg, `${id} 朝向不变`)
     assert.deepEqual(applied.find(row => row.id === id).facingLocal, rawOf(id).facingLocal, `${id} facing 不变`)

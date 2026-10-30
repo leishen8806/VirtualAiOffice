@@ -1,26 +1,15 @@
+import { R1_CLUSTER_PLANTS } from './r1-cluster-plan.js'
 import { createSampleBatch } from './batch.js'
 import { r1ToWorld } from '../office-r1-layout.js'
 
 // Supplemental landscaping; source register and route coordinates remain untouched.
-export const r1LookPlantPositions = Object.freeze([
-  ['LOOK-ATR-1','07',9.972,.881], ['LOOK-ATR-2','07',8.647,2.547],
-  ['LOOK-ATR-3','07',4.591,4.936], ['LOOK-ATR-4','07',-.274,5.021],
-  ['LOOK-ATR-5','07',-4.647,2.547], ['LOOK-ATR-6','07',-6.776,-.731],
-  ['LOOK-ATR-7','07',-7.457,-7.921], ['LOOK-ATR-8','07',-4.986,-10.39],
-  ['LOOK-ATR-9','07',6.449,-12.832], ['LOOK-ATR-10','07',8.986,-10.39],
-  ['LOOK-ATR-11','07',11.457,-7.921], ['LOOK-ATR-12','07',-5.967,1.074],
-  ['LOOK-04-1','04',23.1,-13.7], ['LOOK-04-2','04',5.3,-13.9],
-  ['LOOK-06-1','06',-25.1,7.7], ['LOOK-06-2','06',-25.1,-10.9],
-  ['LOOK-08-1','08',29.2,7.7], ['LOOK-08-2','08',29.2,-10.9],
-  ['LOOK-10-1','10',-19.3,17.2], ['LOOK-10-2','10',-5.7,17.2],
-  ['LOOK-11-1','11',8.1,16.8], ['LOOK-11-2','11',-4.1,16.8],
-  ['LOOK-12-1','12',23.3,17.2], ['LOOK-12-2','12',9.9,9.2],
-].map(Object.freeze))
+export const r1LookPlantPositions = Object.freeze(R1_CLUSTER_PLANTS.filter(p => p.look).map(p => Object.freeze([p.id, p.zone, p.x, p.z])))
 
 export function r1LookPlantElements() {
   return r1LookPlantPositions.flatMap(([id, regionId, x, z]) => {
-    const row = { id, regionId, xM: x + 26, yM: 18 - z, yawDeg: 0, zM: 0, category: '植物总成', heightM: 1.8, lengthM: .84, widthM: .84 }
-    return [row, ...[['POT', .72, .55, 0], ['TR', .09, .8, .5], ['CR', .84, 1.25, .55]].map(([suffix, width, height, base]) => ({ ...row, id: `${id}-${suffix}`, parentId: id, category: suffix, lengthM: width, widthM: width, heightM: height, zM: base }))]
+    const spec = R1_CLUSTER_PLANTS.find(p => p.id === id)
+    const row = { id, regionId, xM: x + 26, yM: 18 - z, yawDeg: 0, zM: 0, category: '植物总成', heightM: spec.height, lengthM: spec.r * 2, widthM: spec.r * 2 }
+    return [row, ...[['POT', spec.potR * 2, .42, 0], ['TR', .09, spec.height * .5, .2], ['CR', spec.r * 2, spec.height - .3, .3]].map(([suffix, width, height, base]) => ({ ...row, id: `${id}-${suffix}`, parentId: id, category: suffix, lengthM: width, widthM: width, heightM: height, zM: base }))]
   })
 }
 

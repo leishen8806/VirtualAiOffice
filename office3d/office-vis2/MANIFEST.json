@@ -379,7 +379,7 @@
       "source": "R1-only procedural marble, registered-centre floor inlay and supplemental plant positions; existing leaf assets; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "0D863B8397F44D3094B6142CB5C12EFF109F5697AE1BA220FD38EFBAE70E97A9"
+      "sha256": "7DD5FC1EB5E8C277E7E6C21BECD0AF12000AAD2355BAFC74E0AB3514CDECFFA6"
     },
     {
       "file": "office-vis2/r1-fountain.js",
@@ -393,21 +393,35 @@
       "source": "R1-only merged tropical pots, alpha-tested approved atlas leaves and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": true,
-      "sha256": "2C69F8AFCAB3C454D15F2BDCD1DD98E341A64020B95DD25D1832DA4302D27A38"
+      "sha256": "6C9F41473C5274F2275ECC6555101E520E930BBF50408B92D9EC2A6544A8BA0E"
     },
     {
       "file": "office-vis2/r1-landscape-plan.js",
       "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors, door sweeps and the OFFICE-R1-SIGHTLINE rule D display-face clear zones; no source-register changes",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "BF842A2CD3E3488D7FAD3D3AF6FAC4358B9E2A02692114D867612474DCBA3DAF"
+      "sha256": "36F0E5271866BFFFA4C42E7955D112A2FD12DE95E5E865F9E513CF47D5C67F4C"
     },
     {
       "file": "office-vis2/r1-tropical.js",
-      "sha256": "8D98A29F0C91D5AC8F6168968F12799371C1D844CC460DE313E55F8A4DDFA610",
+      "sha256": "7DA850CDD6DD6C72284C703F63177F84CDBB6B0503EC11012014E30681D927B0",
       "source": "OFFICE-R1-LOOK R2: six indoor tropical species and four plaza species; deterministic procedural geometry and approved alpha atlas",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": true
+    },
+    {
+      "file": "office-vis2/r1-cluster-plan.js",
+      "source": "OFFICE-R1-LOOK R3: deterministic plant groups and continuous garden strips; existing approved leaf sources; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "9B2F52688402E1548A73BF6F2608635D5E4267BFB3D7C29CD39D6F8941F57692"
+    },
+    {
+      "file": "office-vis2/r1-garden-strips.js",
+      "source": "OFFICE-R1-LOOK R3: deterministic plant groups and continuous garden strips; existing approved leaf sources; no downloads",
+      "license": "Repository MIT; see ../../LICENSE",
+      "photographicTexture": false,
+      "sha256": "DD7CFFD990C1F01F3D67D6B60893608AA6B88ED77639432AEDAAB5A5D73695DF"
     }
   ],
   "excluded": {

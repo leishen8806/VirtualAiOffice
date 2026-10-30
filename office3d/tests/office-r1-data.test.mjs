@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -77,7 +77,10 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   const gatePatch = new Map(R1_GATE.leafIds.map(id => [id, { heightM: R1_GATE.heightM }]))
   const trunkPatch = new Map(R1_BOARD_TRUNK_OVERRIDES.map(entry => [entry.id, entry.to]))
   assert.equal(trunkPatch.size, 35)
-  const patch = row => boardPatch.get(row.id) || gatePatch.get(row.id) || trunkPatch.get(row.id)
+  // LOOK R3 freezes 35 plant moves; children receive exactly their parent's translation.
+  const plants = new Map(R1_PLANT_POSITION_OVERRIDES.map(p => [p.id,p]))
+  assert.equal(plants.size,35)
+  const patch = row => { const p=plants.get(row.id)||plants.get(row.parentId), base=boardPatch.get(row.id)||gatePatch.get(row.id)||trunkPatch.get(row.id); return p?{...base,xM:Number((row.xM+p.to.xM-p.from.xM).toFixed(6)),yM:Number((row.yM+p.to.yM-p.from.yM).toFixed(6))}:base }
   assert.deepEqual(r1.elements, [...R1_DATA.elements.map(row => patch(row) ? { ...row, ...patch(row) } : row), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
   assert.equal(r1.elements.length, R1_DATA.elements.length + 4 + R1_BOARD_ADDED_ELEMENTS.length)
   assert.deepEqual(r1.workstations, R1_DATA.workstations)

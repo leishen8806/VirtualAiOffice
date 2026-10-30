@@ -1,3 +1,4 @@
+import { R1_CLUSTER_PLANTS } from './office-vis2/r1-cluster-plan.js'
 import { C01_DELTA, R1_DATA } from './office-r1/data.js'
 
 export const DEFAULT_CANDIDATE_C01 = true
@@ -217,11 +218,18 @@ const mergedData = Object.freeze({
   routes: Object.freeze(R1_DATA.routes.map(route => R1_BACKWALL.routes.has(route.id) ? Object.freeze({ ...route, points_m: R1_BACKWALL.routes.get(route.id) }) : route)),
 })
 
+// LOOK R3 explicitly permits moving registered plants, including their children, without editing data.js.
+export const R1_PLANT_POSITION_OVERRIDES = Object.freeze(R1_CLUSTER_PLANTS.filter(p => p.registered).map(p => {
+  const from = R1_DATA.elements.find(e => e.id === p.id)
+  return Object.freeze({ id:p.id, date:'2026-10-30', reason:'LOOK R3: cluster planting and door/display clearance', from:Object.freeze({xM:from.xM,yM:from.yM}), to:Object.freeze({xM:p.x+26,yM:18-p.z}) })
+}))
+const plantPositions = new Map(R1_PLANT_POSITION_OVERRIDES.map(p => [p.id,p]))
+
 export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const replacements = candidateC01 ? new Map(C01_DELTA.elements.map(item => [item.id, item.candidate])) : new Map()
   // 先按 C-01 候选替换，再叠董事会偏离：各张偏离表的 ID 互不相交，顺序只为可复现。
   // 树干表只落在 <id>-TR 上，与位置表 / 门扇表的 ID 不相交。
-  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id); return patch ? Object.freeze({ ...item, ...patch }) : item }
+  const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id), plant = plantPositions.get(item.id) || plantPositions.get(item.parentId); return patch || plant ? Object.freeze({ ...item, ...patch, ...(plant ? { xM: coordinate(item.xM + plant.to.xM - plant.from.xM), yM: coordinate(item.yM + plant.to.yM - plant.from.yM) } : {}) }) : item }
   // 背墙改道（Z09 / Z13）已并进 mergedData.routes；喷泉只改 Z14 终点，两者不重叠。
   const routes = Object.freeze(mergedData.routes.map(route => ROUTE_PATCH.has(route.id)
     ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
