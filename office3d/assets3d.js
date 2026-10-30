@@ -132,8 +132,16 @@ function boneByName(root, name) {
   return f
 }
 
-export async function loadAssets() {
-  const loader = new GLTFLoader()
+// 极速模式：卡通人物的法线 / 粗糙度贴图（单张 3–5 MB，小人物在低档下几乎看不出）换成 1 像素空图；
+// 同一张贴图被多个角色引用时只下载一次（加载期间临时开启 three 的缓存，加载完清掉）。
+const LITE_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+export const liteTextureUrl = url => /_(Normal|Roughness)\.png$/i.test(url) ? LITE_BLANK : url
+export async function loadAssets({ lite = false } = {}) {
+  const manager = new THREE.LoadingManager()
+  if (lite) { manager.setURLModifier(liteTextureUrl); THREE.Cache.enabled = true }
+  try { return await loadAssetSet(new GLTFLoader(manager)) } finally { if (lite) { THREE.Cache.clear(); THREE.Cache.enabled = false } }
+}
+async function loadAssetSet(loader) {
   const furn = {}
   await Promise.all(FURN.map(async (n) => {
     const g = await loader.loadAsync(`./assets/models/furniture/${n}.glb`)

@@ -5,7 +5,9 @@ import vm from 'node:vm'
 import * as THREE from '../vendor/three/three.module.js'
 
 const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
-const start = app.lastIndexOf("if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {")
+// 低配极速模式（lite-mode.js）下不加载写实人物；这里测完整模式的替换流程。
+const start = app.lastIndexOf("if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {")
+if (start < 0) throw new Error('R1 realistic-people block not found in app.js')
 const code = app.slice(start, app.indexOf('\nwindow.__office =', start))
 
 function fixture({ phase = 'R1', loadFailure = false, personFailure = false, poolFailure = false } = {}) {
@@ -13,7 +15,7 @@ function fixture({ phase = 'R1', loadFailure = false, personFailure = false, poo
   const ring = {}, label = {}, selected = { value: true }, old = { group: group(), pose: { mood: 'happy', type: 1 } }
   old.group.add(ring)
   const view = { id: 'public-test', name: 'Reviewer2', home: { x: 1, z: 2, yaw: 0 }, char: old, ring, label, selected, desk: { group: { position: { x: 1, z: 1 } } } }
-  const callbacks = [], context = { DR_MODE: false, OFFICE_LAYOUT: { r1Phase: phase }, views: new Map([[view.id, view]]), SEATS: { Reviewer2: [] }, CAST: ['Male_Adult_01'], CAST_OVERRIDE: {}, PEOPLE: null, scene: { userData: {}, add() {} }, officeV3: { get: () => ({ chairAt: () => ({}), seatedProfile: () => ({ handY: .837, motions: ['neutral_01', 'neutral_02'] }) }) }, performance: { now: () => 123 }, setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {}, r1SeatedAssets: loaded => poolFailure ? null : loaded, placeSeated: (ch, home) => { ch.home = { ...home } }, fitR1SeatedPerson: (ch, options) => { ch.fitOptions = options }, createPerson: (loaded, avatar) => { if (personFailure) throw Error('fixture person failure'); return { avatar, group: group(), pose: {} } } }
+  const callbacks = [], context = { DR_MODE: false, LITE: { lite: false }, OFFICE_LAYOUT: { r1Phase: phase }, views: new Map([[view.id, view]]), SEATS: { Reviewer2: [] }, CAST: ['Male_Adult_01'], CAST_OVERRIDE: {}, PEOPLE: null, scene: { userData: {}, add() {} }, officeV3: { get: () => ({ chairAt: () => ({}), seatedProfile: () => ({ handY: .837, motions: ['neutral_01', 'neutral_02'] }) }) }, performance: { now: () => 123 }, setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {}, r1SeatedAssets: loaded => poolFailure ? null : loaded, placeSeated: (ch, home) => { ch.home = { ...home } }, fitR1SeatedPerson: (ch, options) => { ch.fitOptions = options }, createPerson: (loaded, avatar) => { if (personFailure) throw Error('fixture person failure'); return { avatar, group: group(), pose: {} } } }
   let resolve
   context.loadPeople = () => new Promise((yes, no) => { resolve = () => loadFailure ? no(Error('fixture load failure')) : yes({}) })
   vm.runInNewContext(code, context)

@@ -5,6 +5,7 @@ import { buildEnvironment, weatherText } from './env.js'
 import { createUI } from './ui.js'
 import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
+import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
 import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
 import { createFurnitureCollision } from './furniture-collision.js'
@@ -91,7 +92,9 @@ const rnd = (() => { let s = 11; return () => ((s = (s * 16807) % 2147483647) / 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
 let qualityStorage
 try { qualityStorage = localStorage } catch {}
-const qualitySelection = initialQuality({ search:location.search, storage:qualityStorage, wall:WALL_MODE })
+// 低配极速模式（只作用于 R1 办公室）：不加载写实人物和走动导航，低档起步、DPR 1；网址 ?q= 仍可强制档位。
+const LITE = OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE ? decideLiteMode({ search: location.search, storage: qualityStorage, nav: navigator, screen, coarsePointer: matchMedia('(pointer: coarse)').matches }) : { lite: false, source: 'n/a', reason: '' }
+const qualitySelection = LITE.lite && !new URLSearchParams(location.search).has('q') ? { tier: 'low', source: 'lite', forced: true } : initialQuality({ search:location.search, storage:qualityStorage, wall:WALL_MODE })
 const debugGPU = renderer.getContext().getExtension('WEBGL_debug_renderer_info')
 const qualityPolicy = createQualityPolicy({ selection:qualitySelection, wall:WALL_MODE, signals:{ cores:navigator.hardwareConcurrency, memory:navigator.deviceMemory, gpu:debugGPU ? renderer.getContext().getParameter(debugGPU.UNMASKED_RENDERER_WEBGL) : '' } })
 // 显卡上下文丢失（驱动重置、显存不足、长时间后台）时：提示一下，恢复后自动重新加载页面
@@ -103,7 +106,7 @@ renderer.domElement.addEventListener('webglcontextlost', (e) => {
 })
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload())
 // 分辨率自适应：从 min(设备像素比, 1.5) 起步，帧率低就自动降、富余就慢慢升回去（见 frame()）
-const DPR_MAX = Math.min(window.devicePixelRatio || 1, 1.5)
+const DPR_MAX = LITE.lite ? 1 : Math.min(window.devicePixelRatio || 1, 1.5)
 let dpr = cappedDpr(qualityPolicy.tier, DPR_MAX, innerWidth, innerHeight)
 renderer.setPixelRatio(dpr)
 renderer.shadowMap.enabled = true
@@ -329,7 +332,7 @@ let A = null
 const loadText = (t, p) => { const el = $('loadText'); if (el) el.textContent = t; const b = $('loadBar'); if (b && p !== undefined) b.style.width = Math.round(p * 100) + '%' }
 try {
   loadText('正在搬家具…', 0.05)
-  A = await loadAssets()
+  A = await loadAssets({ lite: LITE.lite })
 } catch (e) {
   console.warn('素材加载失败，使用程序生成的造型：', e)
 }
@@ -1484,7 +1487,7 @@ function declutter(list) {
     if (y !== el._sy) el.style.transform = `translate(${el._sx}px, ${y}px) translate(-50%, -100%)`
   }
 }
-const director = createDirector({ views, board: boardViews, layer: bubblesEl, project: { tmp: new THREE.Vector3(), fn: projectTo }, needDesk: (v) => backToDesk(v), furnitureCollision: activeCollision, ...(OFFICE_LAYOUT.r1Phase === 'R1' ? { r1Furniture: officeV3.get('furniture3'), r1Doors: officeV3.get('r1Doors') } : {}) })
+const director = createDirector({ views, board: boardViews, layer: bubblesEl, project: { tmp: new THREE.Vector3(), fn: projectTo }, needDesk: (v) => backToDesk(v), furnitureCollision: activeCollision, ...(OFFICE_LAYOUT.r1Phase === 'R1' ? { r1Furniture: officeV3.get('furniture3'), r1Doors: officeV3.get('r1Doors'), r1Walking: !LITE.lite } : {}) })
 const waitingBoard = createWaitingBoard()
 const hasQuestion = (id) => (latestState?.waiting || []).some((item) => item.agentId === id && item.kind === 'question')
 function syncWaitingPeople(onDuty, live) {
@@ -1541,7 +1544,7 @@ function onCelebrate(e) {
   if (!v || v.away) return
   v.happyUntil = Date.now() + 2 * 3600000 // 完成任务后两小时里笑得开心一点
   fun.celebrate(v)
-  if (OFFICE_LAYOUT.r1Phase === 'R1') director.celebrate(v)
+  if (OFFICE_LAYOUT.r1Phase === 'R1') director.celebrate?.(v) // 极速模式的坐姿导演没有欢呼
   ui.toast(e.text)
 }
 function boardCheer() {
@@ -2291,7 +2294,8 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
 }
 frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
-if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
     if (!views.size) { setTimeout(ready, 100); return }
     // Paint the seated placeholders before starting expensive FBX parsing.
@@ -2329,6 +2333,14 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
 }
 window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
+window.__office.lite = LITE
+if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
+  const btn = $('liteToggle')
+  if (btn) {
+    btn.hidden = false; btn.textContent = LITE.lite ? '极速模式 · 切换完整版' : '切换极速模式'; btn.title = LITE.reason
+    btn.onclick = () => { setLitePreference(qualityStorage, !LITE.lite); const u = new URL(location.href); u.searchParams.delete('lite'); location.replace(u) }
+  }
+}
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell

@@ -5,7 +5,8 @@ import vm from 'node:vm'
 import { R1_SEATED_PROFILES } from '../office-vis2/r1-furniture.js'
 
 const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
-const start = app.lastIndexOf("if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {")
+const start = app.lastIndexOf("if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {")
+if (start < 0) throw new Error('R1 realistic-people block not found in app.js')
 const code = app.slice(start, app.indexOf('\nwindow.__office =', start))
 const people = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
 const CAST = vm.runInNewContext(people.match(/export const CAST = (\[[^\n]+\])/)[1])
@@ -22,6 +23,7 @@ async function replace(nicknames, phase = 'R1') {
   const callbacks = [], lookups = []
   let builds = 0
   const context = {
+    LITE: { lite: false },
     DR_MODE: false, OFFICE_LAYOUT: { r1Phase: phase }, views,
     SEATS: Object.fromEntries(names.map(n => [n, []])), CAST, CAST_OVERRIDE,
     PEOPLE: null, scene: { userData: {}, add() {} }, performance: { now: () => 1 },
