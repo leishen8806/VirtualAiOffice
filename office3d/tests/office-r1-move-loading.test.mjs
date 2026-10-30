@@ -1,3 +1,4 @@
+import { R1_ADDED_AVATARS } from '../office-r1-seating.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { Worker } from 'node:worker_threads'
@@ -38,7 +39,7 @@ test('replacement completes before optional movement loading; failure retains pe
   const callbacks=[],events=[],group=()=>({visible:true,add(){},traverse(f){f({userData:{}})},removeFromParent(){}})
   const v={name:'OpsLead',id:'fixture',home:{x:0,z:0,yaw:0},desk:{group:{position:{x:0,z:1}}},ring:{},char:{group:group(),pose:{}}}
   let rejectMovement
-  const context={DR_MODE:false,LITE:{lite:false},OFFICE_LAYOUT:{r1Phase:'R1'},views:new Map([['fixture',v]]),SEATS:{OpsLead:[]},CAST:['Male_Adult_11'],CAST_OVERRIDE:{},PEOPLE:null,
+  const context={R1_ADDED_AVATARS,LITE:{lite:false},DR_MODE:false,OFFICE_LAYOUT:{r1Phase:'R1'},views:new Map([['fixture',v]]),SEATS:{OpsLead:[]},CAST:['Male_Adult_11'],CAST_OVERRIDE:{},PEOPLE:null,
     scene:{userData:{},add(){}},performance:{now:()=>1},setTimeout:f=>callbacks.push(f),requestAnimationFrame:f=>callbacks.push(f),loadPeople:async()=>({}),loadR1Extras:async()=>{},
     loadR1MovementExtras:()=>{assert.ok(context.scene.userData.r1People.completedAt);events.push('extras');return new Promise((_,reject)=>rejectMovement=reject)},
     officeV3:{get:()=>({seatedProfile:()=>({handY:.82}),chairAt:()=>({})})},r1SeatedAssets:p=>p,createPerson:()=>{events.push('person');return{group:group(),pose:{},avatar:'Male_Adult_11'}},placeSeated(){},fitR1SeatedPerson(){}}

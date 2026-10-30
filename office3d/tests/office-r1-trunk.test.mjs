@@ -1,3 +1,4 @@
+import { withApprovedPlantMove } from './helpers/r1-plant-footprints.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
@@ -71,13 +72,13 @@ test('TK-2 树干偏离表冻结在 35 条室内登记绿植上，只改直径�
 
 test('TK-2 合并后只有这 35 行树干变了，其余登记行与区 14 / 大榕树逐值不变', () => {
   const applied = createR1Layout({ candidateC01: false }).elements
-  const registered = applied.slice(0, R1_DATA.elements.length)
+  const registered = applied.filter(row => rawOf(row.id))
   const trunkSet = new Set(INDOOR_TRUNK_IDS)
-  for (const [index, item] of registered.entries()) {
-    const raw = R1_DATA.elements[index]
+  for (const item of registered) {
+    const raw = rawOf(item.id)
     if (!trunkSet.has(item.id)) continue
     // 树干行：只有直径两项变，其余字段逐值与登记相同。
-    assert.deepEqual({ ...item, lengthM: raw.lengthM, widthM: raw.widthM }, raw, item.id)
+    assert.deepEqual({ ...item, lengthM: raw.lengthM, widthM: raw.widthM }, withApprovedPlantMove(raw), item.id)
     near(item.lengthM, R1_TRUNK_DIAMETER_M, 1e-9, item.id)
     near(item.widthM, R1_TRUNK_DIAMETER_M, 1e-9, item.id)
     near(item.heightM, raw.heightM, 1e-9, `${item.id} 高度`)
@@ -90,7 +91,7 @@ test('TK-2 合并后只有这 35 行树干变了，其余登记行与区 14 / �
   assert.equal(R1_DATA.elements.filter(row => /-TR$/.test(row.id)).length, 46)
   // 盆与冠不进表：35 株的 -POT / -CR 逐值与登记相同。
   for (const plant of INDOOR_PLANTS) for (const suffix of ['-POT', '-CR']) {
-    assert.deepEqual(applied.find(row => row.id === `${plant.id}${suffix}`), rawOf(`${plant.id}${suffix}`), `${plant.id}${suffix}`)
+    assert.deepEqual(applied.find(row => row.id === `${plant.id}${suffix}`), withApprovedPlantMove(rawOf(`${plant.id}${suffix}`)), `${plant.id}${suffix}`)
   }
 })
 
@@ -98,7 +99,7 @@ test('TK-3 树干在冠包络内水平居中、底面贴盆顶，碰撞体与三
   const thin = plantsWith(), thick = plantsWith(R1_DATA.elements)
   assert.equal(thin.built.records.length, 35)
   for (const record of thin.built.records) {
-    const world = r1ToWorld(rawOf(record.id).xM, rawOf(record.id).yM)
+    const moved = withApprovedPlantMove(rawOf(record.id)), world = r1ToWorld(moved.xM, moved.yM)
     const trunk = record.parts.TR, pot = rawOf(`${record.id}-POT`), raw = rawOf(trunk.id)
     near(trunk.diameter, R1_TRUNK_DIAMETER_M, 1e-9, `${trunk.id} 直径`)
     // 底面贴盆顶，高度与登记一致：树干仍从盆顶接到冠里。

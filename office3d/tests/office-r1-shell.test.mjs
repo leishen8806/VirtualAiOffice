@@ -18,7 +18,7 @@ const r1 = () => resolveOfficeLayout(R1_SEARCH)
 
 test('I2 resolves only the strict sample r1 switch and preserves every other sample entry', () => {
   assert.equal(r1().r1Phase, 'R1')
-  assert.equal(Object.keys(r1().seats).length, 25)
+  assert.equal(Object.keys(r1().seats).length, r1().r1.workstations.length)
   for (const search of ['?layout=3&align=1&officeSample=1', '?layout=3&align=1&officeSample=1&r1=0', '?layout=3&align=1&officeSample=1&r1=1&r1=1']) {
     assert.equal(resolveOfficeLayout(search), LAYOUT_V3_ALIGN_L2B, search)
   }
@@ -40,7 +40,7 @@ test('I3 retains the old V3 module order and isolates R1 to its shell and furnit
 
 test('MOVE preserves registered seats and old navigation while exposing R1 destinations', () => {
   const layout = r1(), nav = createOfficeNavigation(layout), home = { x: 1, z: 2 }
-  assert.equal(Object.keys(officeSeats(layout)).length, 25)
+  assert.equal(Object.keys(officeSeats(layout)).length, layout.r1.workstations.length)
   assert.deepEqual(officeSeats(layout), layout.seats)
   assert.equal(nav.ready(), false); assert.equal(nav.prepared(), false)
   assert.throws(() => nav.plan(home, { x: 4, z: 5 }), /not attached/)
@@ -55,8 +55,8 @@ test('MOVE preserves registered seats and old navigation while exposing R1 desti
 
 test('I3 registers all workstation seats with the candidate C-01 coordinates and runtime-facing yaw', () => {
   const candidate = createOfficeR1Layout(), base = createOfficeR1Layout({ candidateC01: false })
-  assert.equal(Object.keys(candidate.seats).length, 25)
-  assert.deepEqual(Object.values(candidate.seats).map(seat => seat[0]).reduce((counts, group) => ({ ...counts, [group]: (counts[group] || 0) + 1 }), {}), { product: 11, drlife: 8, ops: 6 })
+  assert.equal(Object.keys(candidate.seats).length, candidate.r1.workstations.length)
+  assert.deepEqual(Object.values(candidate.seats).map(seat => seat[0]).reduce((counts, group) => ({ ...counts, [group]: (counts[group] || 0) + 1 }), {}), { product: 12, drlife: 10, ops: 8 })
   for (const station of candidate.r1.workstations) {
     const seat = candidate.seats[station.business_id], home = seat[4]
     assert.ok(seat, station.business_id)
@@ -92,7 +92,7 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   for (const asset of ['chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']) assert.ok(calls.some(call => call.name === asset), asset)
   // R5 replaces only the office desk geometry; keep every other mapped asset and collision assertion.
   assert.equal(calls.filter(call => call.name === 'desk').length, 0)
-  assert.equal(deskGroups.length, 78)
+  assert.equal(deskGroups.length, 81)
   for (const group of deskGroups) {
     const item = layout.r1.elements.find(item => item.id === group.userData.r1Id), box = new THREE.Box3().setFromObject(group), center = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3()), yaw = -item.yawDeg * Math.PI / 180
     assert.equal(group.children.length, 4, item.id)

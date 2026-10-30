@@ -27,7 +27,7 @@ test('R1 any-angle routing goes around the real wall and rejects blocked destina
   assert.deepEqual(smoothed[0], start); assert.deepEqual(smoothed.at(-1), end)
   for (let i = 1; i < smoothed.length; i++) assert.equal(nav.clear(smoothed[i - 1], smoothed[i]), true)
   assert.equal(nav.plan(start, { x: 0, z: 0 }), null)
-  assert.deepEqual(R1_RESERVED_SEATS, ['08-CH-011', '08-CH-012', '08-CH-013'])
+  assert.deepEqual(R1_RESERVED_SEATS, ['03-DEPT-CH-001', '03-DEPT-CH-002', '03-DEPT-CH-003'])
 })
 test('the owner exception is only the exact chair; all other chairs and the owner desk remain obstacles', () => {
   const l = layout(); l.seats.A = ['a', 0, -1, 0, { x: 0, z: 0, yaw: 0 }]
@@ -102,11 +102,11 @@ test('public seats use a 0.25 m body and exclude only their chair during the las
   for (let i = 0; i < 3000 && !returned; i++) director.update(1 / 30)
   assert.equal(returned, true); assert.ok(returnPlans > 0); assert.equal(v.char.pose.r1AtDesk, true)
   assert.ok(Math.hypot(dx, dz) < 1e-9); assert.equal(yaw, 0)
-  assert.equal(director.travel(v, [], { id: '08-CH-011', x: 1, z: 1 }, true), false)
+  for (const id of R1_RESERVED_SEATS) assert.equal(director.travel(v, [], { id, x: 1, z: 1 }, true), false)
 })
 
-test('R6 freezes all 63 public paths and the four approved sofa point lists and limits', () => {
-  assert.equal(Object.keys(R1_PUBLIC_TRANSITIONS).length, 63)
+test('R6 freezes all 59 retained public paths and the four approved sofa point lists and limits', () => {
+  assert.equal(Object.keys(R1_PUBLIC_TRANSITIONS).length, 59)
   const sofaPaths = {"12-SF-001": [[14.039365, 12.400265], [14.409738692692903, 12.551338914892755], [15.4, 11.775]], "12-SF-002": [[14.518558, 14.814065], [14.789034554390293, 14.519374597161436], [15.4, 11.775]], "12-SF-003": [[17.025029, 15.08122], [16.833645159613894, 14.729976173521775], [16.6, 11.775]], "12-SF-004": [[17.960623, 12.757641], [17.57043111283354, 12.845676738137861], [16.6, 11.775]]}
   for (const [id, path] of Object.entries(R1_PUBLIC_TRANSITIONS)) {
     assert.ok(Object.isFrozen(path) && path.every(Object.isFrozen))

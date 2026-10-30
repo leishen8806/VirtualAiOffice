@@ -35,11 +35,11 @@ function boardCenter(group) {
   return pairs[0][0].center.clone().add(pairs[0][1].center).multiplyScalar(.5)
 }
 
-test('R5: 78 desks have registered footprints, open undersides and far-side boards',()=>{
+test('R5: 81 desks have registered footprints, open undersides and far-side boards',()=>{
   const base=createOfficeR1Layout(),layout={...base,r1:{...base.r1,elements:base.r1.elements.filter(i=>['办公桌','办公椅'].includes(i.category))}},root=new THREE.Group(),collision=createFurnitureCollision(),models=[]
   const f=buildR1Furniture({THREE,root,layout,A,placeFurniture,makeScreenTexture:()=>({ctx:{},tex:new THREE.Texture()}),collision:{...collision,add(g,k){models.push(g);return collision.add(g,k)}}})
   const desks=layout.r1.elements.filter(i=>i.category==='办公桌'),chairs=layout.r1.elements.filter(i=>i.category==='办公椅'),rows=[]
-  assert.equal(desks.length,78);assert.equal(chairs.length,78)
+  assert.equal(desks.length,81);assert.equal(chairs.length,81)
   const close=(actual,expected,label)=>assert.ok(Math.abs(actual-expected)<=.002,label+`: ${actual} vs ${expected}`)
   for(const item of desks){
     const nearest=chairs.filter(c=>Math.hypot(c.xM-item.xM,c.yM-item.yM)<=1.2);assert.equal(nearest.length,1,item.id)
@@ -67,10 +67,10 @@ test('R4: data bytes frozen and non-R1 builder remains inert',()=>{
   for(const phase of ['L1','L2','L2B',undefined]){const root=new THREE.Group(),f=buildR1Furniture({THREE,root,layout:{plan1Phase:phase},A,placeFurniture,makeScreenTexture:()=>{throw Error('must not build outside R1')}});assert.equal(root.children.length,0);assert.equal(f.deskAt(0,0),null)}
 })
 
-test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjusted chair keeps its base',()=>{
+test('R5: all desktop details stay on 81 footprints; 153 chair directions; adjusted chair keeps its base',()=>{
  const layout=createOfficeR1Layout(),root=new THREE.Group(),collision=createFurnitureCollision(),sources=[]
  const build=()=>buildR1Furniture({THREE,root,layout,A,placeFurniture,makeScreenTexture:()=>({ctx:{},tex:new THREE.Texture()}),collision:{add(g,k){sources.push(g);return collision.add(g,k)},remove:collision.remove}})
- const f=build();assert.equal(f.desktopItems.size,78);assert.equal(f.chairFacings.size,154)
+ const f=build();assert.equal(f.desktopItems.size,81);assert.equal(f.chairFacings.size,153)
  // OFFICE-R1-AMBIENCE 补充 R2（董事会 2026-10-29 授权）：三张预留桌不放个人物品，
  // 桌面散件因此是 3 件（键盘 / 鼠标 / 鼠标垫）而不是 4 件；其余 75 张仍是 4 件。占地约束不变。
  const wanted=id=>isReservedDesk(id)?3:4
@@ -87,9 +87,9 @@ test('R5: all desktop details stay on 78 footprints; 154 chair directions; adjus
  for(const [id,raw] of f.chairFacings){const item=layout.r1.elements.find(i=>i.id===id),p=r1ToWorld(item.xM,item.yM),source=sources.find(g=>g.userData.r1Id===id)
  const facing=arcFacing(raw,p),yaw=source?.rotation.y??raw.yaw
  const dot=(Math.sin(yaw)*(facing.edge.x-p.x)+Math.cos(yaw)*(facing.edge.z-p.z))/facing.distance;assert.ok(dot>.9,id);assert.ok(facing.distance<1,id);groups[facing.category]=(groups[facing.category]||0)+1}
- assert.deepEqual(groups,{'办公桌':78,'会议桌':14,'圆桌':34,'环形吧台':14,'协作桌':8,'咖啡台':5,'弧形接待台':1})
+ assert.deepEqual(groups,{'办公桌':81,'会议桌':14,'圆桌':30,'环形吧台':14,'协作桌':8,'咖啡台':5,'弧形接待台':1})
  for(const id of ['02-CH-013','02-CH-014','08-CH-023','08-CH-024','10-CH-001']){const row=layout.r1.elements.find(i=>i.id===id),actual=f.chairFacings.get(id).yaw,registered=row.facingLocal;assert.ok(Math.sin(actual)*registered[0]+Math.cos(actual)*registered[1]>.9,id+' already-facing chair preserved')}
- assert.equal(Object.keys(R1_SEATED_PROFILES).length,25)
+ assert.equal(Object.keys(R1_SEATED_PROFILES).length,layout.r1.workstations.length)
  for(const station of layout.r1.workstations){
  const profile=f.seatedProfile(station.business_id);assert.ok(Object.isFrozen(profile));assert.ok(profile.seat>=-.04&&profile.seat<=.08);assert.ok(Number.isFinite(profile.handY)&&profile.handY>=.75&&profile.handY<=.85);assert.ok(profile.motions.length>=2&&profile.motions.some(n=>/^neutral_/.test(n)));assert.equal(new Set(profile.motions).size,profile.motions.length)
  const p=r1ToWorld(station.chairXM,station.chairYM),chair=f.chairAt(p.x,p.z),old=placeFurniture(A,'chairDesk',p.x,p.z,{scale:1,rotY:chair.rotation.y});old.group.scale.copy(chair.scale)

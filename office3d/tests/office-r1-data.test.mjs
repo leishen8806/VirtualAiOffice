@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_REMOVALS, R1_BOARD_ADDED_WORKSTATIONS, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -77,10 +77,14 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   const gatePatch = new Map(R1_GATE.leafIds.map(id => [id, { heightM: R1_GATE.heightM }]))
   const trunkPatch = new Map(R1_BOARD_TRUNK_OVERRIDES.map(entry => [entry.id, entry.to]))
   assert.equal(trunkPatch.size, 35)
-  const patch = row => boardPatch.get(row.id) || gatePatch.get(row.id) || trunkPatch.get(row.id)
-  assert.deepEqual(r1.elements, [...R1_DATA.elements.map(row => patch(row) ? { ...row, ...patch(row) } : row), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
-  assert.equal(r1.elements.length, R1_DATA.elements.length + 4 + R1_BOARD_ADDED_ELEMENTS.length)
-  assert.deepEqual(r1.workstations, R1_DATA.workstations)
+  // LOOK R3 freezes 35 plant moves; children receive exactly their parent's translation.
+  const plants = new Map(R1_PLANT_POSITION_OVERRIDES.map(p => [p.id,p]))
+  assert.equal(plants.size,35)
+  const patch = row => { const p=plants.get(row.id)||plants.get(row.parentId), base=boardPatch.get(row.id)||gatePatch.get(row.id)||trunkPatch.get(row.id); return p?{...base,xM:Number((row.xM+p.to.xM-p.from.xM).toFixed(6)),yM:Number((row.yM+p.to.yM-p.from.yM).toFixed(6))}:base }
+  assert.deepEqual(r1.elements, [...R1_DATA.elements.filter(row => !R1_BOARD_REMOVALS.some(r => r.id === row.id)).map(row => patch(row) ? { ...row, ...patch(row) } : row), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS])
+  assert.equal(r1.elements.length, R1_DATA.elements.length - R1_BOARD_REMOVALS.length + 4 + R1_BOARD_ADDED_ELEMENTS.length)
+  assert.deepEqual(r1.workstations.slice(0, 25), R1_DATA.workstations)
+  assert.deepEqual(r1.workstations, [...R1_DATA.workstations, ...R1_BOARD_ADDED_WORKSTATIONS])
   assert.deepEqual(r1.routes, candidate.routes)
   assert.deepEqual({ barEntryClearMm: r1.controls.barEntryClearMm, productSideClearMm: r1.controls.productSideClearMm, productBetweenColumnsMm: r1.controls.productBetweenColumnsMm }, { barEntryClearMm: 1200, productSideClearMm: 1250, productBetweenColumnsMm: 1400 })
   assert.deepEqual({ barEntryClearMm: candidate.controls.barEntryClearMm, productSideClearMm: candidate.controls.productSideClearMm, productBetweenColumnsMm: candidate.controls.productBetweenColumnsMm }, { barEntryClearMm: 1500, productSideClearMm: 1340, productBetweenColumnsMm: 1340 })
@@ -88,7 +92,7 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   assert.ok(C01_DELTA.elements.every(row => row.id === '07-BAR-001' || row.base.regionId === '04'))
   assert.ok(C01_DELTA.workstations.every(row => row.base.zone === '04'))
   assert.equal(candidate.elements.filter((row, index) => JSON.stringify(row) !== JSON.stringify(r1.elements[index])).length, 141)
-  assert.equal(candidate.workstations.filter((row, index) => JSON.stringify(row) !== JSON.stringify(r1.workstations[index])).length, 11)
+  assert.equal(candidate.workstations.slice(0, 25).filter((row, index) => JSON.stringify(row) !== JSON.stringify(r1.workstations[index])).length, 11)
 })
 
 test('I1 retains clearance parameters needed to compare future route recomputation', () => {

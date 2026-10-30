@@ -1,7 +1,9 @@
+import { R1_ADDED_AVATARS } from '../office-r1-seating.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
+import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { R1_SEATED_PROFILES } from '../office-vis2/r1-furniture.js'
 
 const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
@@ -22,8 +24,7 @@ async function replace(nicknames, phase = 'R1') {
   }]))
   const callbacks = [], lookups = []
   let builds = 0
-  const context = {
-    LITE: { lite: false },
+  const context = { R1_ADDED_AVATARS, LITE: { lite: false },
     DR_MODE: false, OFFICE_LAYOUT: { r1Phase: phase }, views,
     SEATS: Object.fromEntries(names.map(n => [n, []])), CAST, CAST_OVERRIDE,
     PEOPLE: null, scene: { userData: {}, add() {} }, performance: { now: () => 1 },
@@ -40,10 +41,10 @@ async function replace(nicknames, phase = 'R1') {
   return { context, views, lookups, flush, builds: () => builds }
 }
 
-test('I3C-1 all 25 nicknames, including duplicate R1, resolve by Paperclip identity', async () => {
+test('I3C-1 all workstation nicknames, including duplicate R1, resolve by Paperclip identity', async () => {
   const plain = await replace(false), nick = await replace(true)
-  assert.equal(names.length, 25)
-  assert.equal(nick.builds(), 25)
+  assert.equal(names.length, createOfficeR1Layout().r1.workstations.length)
+  assert.equal(nick.builds(), names.length)
   assert.equal(nick.context.scene.userData.r1People.failed.length, 0)
   assert.deepEqual([...nick.context.scene.userData.r1People.replaced], names)
   for (const [id, v] of nick.views) {
@@ -62,7 +63,7 @@ test('I3C-2 changing a display name after replacement never rebuilds or changes 
   const f = await replace(true), v = [...f.views.values()].find(v => v.data.name === 'Reviewer1')
   const char = v.char, profile = char.assets.profile, avatar = char.avatar
   v.name = '改名后'; await f.flush()
-  assert.equal(f.builds(), 25); assert.equal(v.char, char)
+  assert.equal(f.builds(), names.length); assert.equal(v.char, char)
   assert.equal(v.char.assets.profile, profile); assert.equal(v.char.avatar, avatar)
   assert.match(app, /v\.name = NAMES\[a\.id\] \|\| a\.name/)
 })

@@ -372,3 +372,32 @@ Microsoft Rocketbox, MIT; unchanged source FBX from the approved quarantine. Rel
 | assets/models/people/anim/m_claphands_01.fbx | 2133184 | b1db818b9381e959e367d5ce23babf26c27b3f2cdc5540f0cd0b6bda1d8694bc | manifest5.json |
 | assets/models/people/anim/m_gestic_talk_excited_01.fbx | 4669728 | ce7638f6a36e6f49d81f7eeedae3b820eafa35025f6429cc92803155c76926d8 | manifest5.json |
 | assets/models/people/anim/m_gestic_talk_relaxed_01.fbx | 5511856 | 560c369eeec15c56534cdd8a87bdebd76f365a783c43b473e879a1707721be07 | manifest3.json |
+
+## SEAT26 R1b / 2026-10-30
+
+Microsoft Rocketbox, MIT, upstream commit 0943055db6ec570bcef9f2c8b41c9e5467c808f9; approved local quarantine batch DOWNLOAD_LIST-20261030.md. Five assigned avatars only; FBX unchanged, colour textures Lanczos 1024 JPG (quality 90) / opacity PNG. No download or new dependency.
+
+| Asset | Bytes | SHA-256 | Source SHA-256 |
+|---|---:|---|---|
+| models\people\Female_Adult_13\Female_Adult_13.fbx | 605168 | cbfa41f09859179bba873d70bd075ce910d298fce8b2a74e4920049b33f0402b | cbfa41f09859179bba873d70bd075ce910d298fce8b2a74e4920049b33f0402b |
+| models\people\Female_Adult_13\Female_Adult_13_facial.fbx | 2209984 | fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983 | fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983 |
+| models\people\Female_Adult_13\f019_body_color.jpg | 181502 | efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485 | ad4ae502d585441ab9344e9c9819b6af077d56f11dac1b45ed7edbafd27b2007 |
+| models\people\Female_Adult_13\f019_head_color.jpg | 185663 | 0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d | b2443eb8a3c247021dec33c12ff87960904c35196c31e0dfd94adab1caacc8c4 |
+| models\people\Female_Adult_13\f019_opacity_color.png | 1030333 | 91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce | c01fb95dab617aed3b8ff67b9ecf4b16bc5fe6bb6518245b0a5aacffec39087a |
+| models\people\Female_Adult_17\Female_Adult_17.fbx | 593440 | 777125303c2b4c493dce961b66cfc8c86ac69ee697c212ea9fe3107bfc45831f | 777125303c2b4c493dce961b66cfc8c86ac69ee697c212ea9fe3107bfc45831f |
+| models\people\Female_Adult_17\Female_Adult_17_facial.fbx | 2114512 | 9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de | 9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de |
+| models\people\Female_Adult_17\f006_body_color.jpg | 186223 | 977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e | d657c9113b23c72a58bca56bcfe7c0956caea976a6144c3f53c0181b9f2b746d |
+| models\people\Female_Adult_17\f006_head_color.jpg | 190925 | 73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915 | f23bfa861e036dc9a39ae8c6595bf0128f021eb762464e58f72907a9b49ecbfa |
+| models\people\Female_Adult_17\f006_opacity_color.png | 1382655 | bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6 | 2ce67c662cf20256c8bf0713e4aeff5f7be0ae3cee981df119dbc7d32111e3d0 |
+| models\people\Business_Male_06\Business_Male_06.fbx | 507712 | f0892405f3193c09c85a8391efd5219d8a6bc45ff293e6356175efd457e67b0b | f0892405f3193c09c85a8391efd5219d8a6bc45ff293e6356175efd457e67b0b |
+| models\people\Business_Male_06\Business_Male_06_facial.fbx | 1817264 | 5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e | 5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e |
+| models\people\Business_Male_06\m025_body_color.jpg | 124032 | 457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd | 36abf3edc359181188961d24fa59e7140f32e2f328d1ba7b3d644aa8477b3a22 |
+| models\people\Business_Male_06\m025_head_color.jpg | 156359 | 4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999 | 5f0ab4b879f0bd8834390a2ad6f3c99b6a7821c6293ec1bcb17fa1ba87f0cf39 |
+| models\people\Business_Male_07\Business_Male_07.fbx | 487360 | efe9d0cda6fa6f9c8365e026d9cda1dbbd8903b624b56fee77027efcd3c9ad5b | efe9d0cda6fa6f9c8365e026d9cda1dbbd8903b624b56fee77027efcd3c9ad5b |
+| models\people\Business_Male_07\Business_Male_07_facial.fbx | 1754800 | 6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9 | 6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9 |
+| models\people\Business_Male_07\m018_body_color.jpg | 186734 | 9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee | e95d6b706c641e72f45ab02191e8edc1af6b25839ae6362762b39d0958e4cea0 |
+| models\people\Business_Male_07\m018_head_color.jpg | 190862 | c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763 | 2e25f8fd67c914a5c01ace3768b78584a778344793ac63982b33ac6e86f1eff2 |
+| models\people\Male_Adult_20\Male_Adult_20.fbx | 519408 | 78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6 | 78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6 |
+| models\people\Male_Adult_20\Male_Adult_20_facial.fbx | 1840944 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 |
+| models\people\Male_Adult_20\m027_body_color.jpg | 166677 | 88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018 | 54cf6fe03676bea4cd9190ee2057c826e43f49d2f82170a92d1c0413eb153500 |
+| models\people\Male_Adult_20\m027_head_color.jpg | 163812 | d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d | 61c117bea375ea983f697c5b1acdf0ebff86ff69e21c956d27d10bc4ecc9be63 |

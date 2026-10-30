@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Lounge, r1ReceptionCenter } from '../office-vis2/r1-lounge.js'
-import { createR1Layout, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_GATE, r1ToWorld } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_REMOVALS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_GATE, r1ToWorld } from '../office-r1-layout.js'
 import { R1_DATA } from '../office-r1/data.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { buildR1Brand, drawR1BrandSlogan, r1BrandSpec, R1_BRAND_SLOGAN, R1_BRAND_LOGO_URL, R1_BRAND_LOGO_ASPECT } from '../office-vis2/r1-brand.js'
@@ -92,8 +92,8 @@ test('RC-1 the receptionist sits in the concave bay 0.4 m clear of the inner arc
 test('RC-2 the board table adds exactly the four approved reception-chair rows and leaves I6C and data.js alone', () => {
   const ids = R1_BOARD_OVERRIDES.map(entry => entry.id)
   assert.equal(new Set(ids).size, ids.length)
-  // 24 条 I6C + 4 条接待椅 + 12 条 OFFICE-R1-AMBIENCE 补充 R2 的预留座位推椅（数值由 AM-7c 锁）。
-  assert.equal(ids.length, 40)
+  // 24 条 I6C + 4 条接待椅；DEPT 已撤销旧预留座位的 12 条推椅偏离。
+  assert.equal(ids.length, 28)
   const byId = new Map(R1_BOARD_OVERRIDES.map(entry => [entry.id, entry]))
   for (const [id, want] of Object.entries(RECEP_OVERRIDES)) {
     const entry = byId.get(id)
@@ -109,17 +109,16 @@ test('RC-2 the board table adds exactly the four approved reception-chair rows a
     assert.equal(entry.date, '2026-10-28', id)
     assert.ok(/前台|翻转/.test(entry.reason), id)
   }
-  // I6C 的 24 条一条不改（补充 R2 的 12 条预留座位推椅由 AM-7c 锁，不归 RC-2 管）。
-  const RESERVED_SET = ['08-CH-011', '08-CH-012', '08-CH-013'].flatMap(id => [id, `${id}-BACK`, `${id}-BASE`, `${id}-SEAT`])
-  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES) && !RESERVED_SET.includes(id)).length, 24)
-  // 关掉 C-01 候选后，登记段里与裸登记值有差异的行只能是偏离表这 40 条、长椅转向表、BACKWALL 补充 R2
+  // I6C 的 24 条一条不改。
+  assert.equal(ids.filter(id => !(id in RECEP_OVERRIDES)).length, 24)
+  // 关掉 C-01 候选后，登记段里与裸登记值有差异的行只能是偏离表这 28 条、长椅转向表、BACKWALL 补充 R2
   // 抬高的大门 2 片门扇，加上 OFFICE-R1-TRUNK 的 35 条室内绿植树干；别的一行都不许动。
   const applied = createR1Layout({ candidateC01: false }).elements
-  const registered = applied.slice(0, R1_DATA.elements.length)
+  const registered = applied.filter(row => R1_DATA.elements.some(raw => raw.id === row.id))
   const trunkIds = R1_BOARD_TRUNK_OVERRIDES.map(entry => entry.id)
   assert.equal(trunkIds.length, 35)
   assert.equal(ids.filter(id => trunkIds.includes(id)).length, 0)
-  assert.deepEqual(registered.filter((row, i) => row !== R1_DATA.elements[i]).map(row => row.id).sort(), [...ids, ...R1_BOARD_FACING_OVERRIDES.map(entry => entry.id), ...R1_GATE.leafIds, ...trunkIds].sort())
+  assert.deepEqual(registered.filter(row => row !== rawOf(row.id)).map(row => row.id).sort(), [...ids, ...R1_BOARD_FACING_OVERRIDES.map(entry => entry.id), ...R1_GATE.leafIds, ...R1_DATA.elements.filter(r=>R1_PLANT_POSITION_OVERRIDES.some(p=>p.id===r.id||p.id===r.parentId)).map(r=>r.id)].sort())
   for (const id of Object.keys(RECEP_OVERRIDES)) {
     assert.equal(applied.find(row => row.id === id).yawDeg, rawOf(id).yawDeg, `${id} 朝向不变`)
     assert.deepEqual(applied.find(row => row.id === id).facingLocal, rawOf(id).facingLocal, `${id} facing 不变`)

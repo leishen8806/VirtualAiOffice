@@ -96,8 +96,26 @@ export const R1_ROOM_PLATES = Object.freeze([
   Object.freeze({ doorId: '09-D-001', text: '售后部' }),
   Object.freeze({ doorId: '13-D-001', text: '营销部' }),
   Object.freeze({ doorId: '03-D-001', text: '洽谈室 A' }),
-  Object.freeze({ doorId: '03-D-002', text: '洽谈室 B' }),
+  Object.freeze({ doorId: '03-D-002', text: '董事办公室' }),
 ])
+
+// A single naming table also covers the O2 extension and the four demonstration rooms.
+export const R1_DEPARTMENT_NAMES = Object.freeze({
+  '04/P1': '产品部', '04/P2': '前端研发部', '04/P3': '后端与知识库',
+  '06/O1': '运维与质量安全部', '06/O2': '运维与质量安全部',
+  '08/D1': 'Dr.life+ 研发一组', '08/D2': 'Dr.life+ 研发二组',
+  '01': '市场部', '09': '销售部', '13': '营销部', '05': '客服部',
+})
+export function r1DepartmentSignPlan(layout) {
+  return Object.entries(R1_DEPARTMENT_NAMES).map(([id, text]) => {
+    const [zone, island] = id.split('/'), region = layout.regions.find(r => r.id === zone)
+    const desks = layout.r1.workstations.filter(s => s.zone === zone && s.island === island)
+    const points = desks.map(s => r1ToWorld(s.xM, s.yM))
+    const x = points.length ? (Math.min(...points.map(p => p.x)) + Math.max(...points.map(p => p.x))) / 2 : (region.x0 + region.x1) / 2
+    const z = points.length ? (Math.min(...points.map(p => p.z)) + Math.max(...points.map(p => p.z))) / 2 : (region.z0 + region.z1) / 2
+    return { id, text, center: { x, y: 2.65, z }, width: 2.6, height: .32, depth: .025 }
+  })
+}
 
 // 名牌的悬挑距离不是写死的：门扇先离开墙中线 offset，再沿轨道平移，两段行程合起来的最远处
 // 就是 |offset| + 门扇半厚。名牌挂在它之外，再留 clearance，101 个相位都碰不到。
@@ -271,6 +289,7 @@ export const R1_AMBIENCE_ATLAS = (() => {
   let top = 0
   const put = (name, height) => { cells[name] = { top, height }; top += height }
   R1_ROOM_PLATES.forEach((row, index) => put(`plate${index}`, r1AmbienceSpec.plate.canvas[1]))
+  Object.keys(R1_DEPARTMENT_NAMES).forEach((id, index) => put(`dept${index}`, 128))
   // 桌牌那几格按牌面的真实长宽比开，字不会被拉长。
   R1_RESERVED_SEATS.forEach((seat, index) => put(`desk${index}`,
     Math.round(ATLAS_WIDTH * r1AmbienceSpec.deskPlate.height / r1AmbienceSpec.deskPlate.width)))
@@ -290,6 +309,7 @@ const atlasAspect = name => R1_AMBIENCE_ATLAS.cells[name].height / ATLAS_WIDTH
 export function drawR1AmbienceAtlas(ctx, width, height) {
   const cells = R1_AMBIENCE_ATLAS.cells
   R1_ROOM_PLATES.forEach((row, index) => drawR1Nameplate(ctx, width, cells[`plate${index}`].height, row.text, cells[`plate${index}`].top))
+  Object.values(R1_DEPARTMENT_NAMES).forEach((text, index) => drawR1Nameplate(ctx, width, cells[`dept${index}`].height, text, cells[`dept${index}`].top))
   R1_RESERVED_SEATS.forEach((seat, index) => drawR1DeskPlate(ctx, width, cells[`desk${index}`].height, seat.name, cells[`desk${index}`].top))
   drawR1AmbienceSlogan(ctx, width, cells.slogan.height, cells.slogan.top)
   drawR1Welcome(ctx, width, cells.welcome.height, cells.welcome.top)
@@ -508,7 +528,18 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface,
       box: boxOf(THREE, plateCentre, leaf.vertical ? [PT.depth, PT.height, PT.width] : [PT.width, PT.height, PT.depth]) })
   })
 
-  // ── 2b 预留座位桌牌 3 块：Dr.life+ 工作室东侧三张桌子，三角立牌立在桌面前缘偏左 ──
+  // Reuse the existing solid and atlas batches, including the two fine suspension rods.
+  const departmentPlates = r1DepartmentSignPlan(layout).map((row, index) => {
+    const { x, y, z } = row.center
+    const box = emit(new THREE.BoxGeometry(row.width, row.height, row.depth), PT.frame, [x, y, z], 0, .4, .65)
+    for (const sign of [-1, 1]) {
+      quads.push({ width: row.width, height: row.height, uv: atlasRect(`dept${index}`), yaw: sign === 1 ? 0 : Math.PI, position: [x, y, z + sign * row.depth / 2] })
+      emit(new THREE.BoxGeometry(.012, .45, .012), PT.frame, [x + sign * row.width * .35, y + row.height / 2 + .225, z], 0, .4, .65)
+    }
+    return { ...row, box }
+  })
+
+  // ── 2b 预留座位桌牌 3 块：董事办公室三张桌子，三角立牌立在桌面前缘偏左 ──
   // 两片牌面相互倚靠成「人」字：前片顶边往桌里倒，后片顶边往外倒，两片在顶上交会。
   // 局部坐标照抄 r1-furniture 的桌面物件公式，所以牌子跟着桌子朝向走；牌子不另加碰撞（桌子已经有）。
   const DP = r1AmbienceSpec.deskPlate, deskPlates = []
@@ -609,7 +640,7 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface,
       atriumFace, atlas: atlas?.texture || null,
       emblem: { center: { x: emblemX, y: E.centerY, z: atriumFace }, parts },
       planter: { radius: PL.radius, height: PL.height, center: { x: emblemX, y: PL.height / 2, z: atriumFace }, box: planterBox, proxy: planterProxy },
-      plates, deskPlates,
+      plates, deskPlates, departmentPlates,
       welcome: { center: { x: welcomeAt.x, y: W.lift, z: welcomeAt.z }, box: welcomeBox, material: atlasMaterial },
       screen: { center: { x: screenX, y: SC.centerY, z: inner }, inner, face: faceBox, bezel: bezelBox, glow: glowBox,
         box: bezelBox.clone().union(faceBox).union(glowBox), backing: built.mesh.material, texture: surface?.texture || null },

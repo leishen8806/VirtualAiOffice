@@ -6,7 +6,7 @@
 //   · 中庭形象墙（同一面墙朝中庭一侧）→ 铜环外沿 haloRadius 1.46 m，即宽 2.92 m；
 //   · 书架 → 正面长度（08-BK-002 六米、08-BK-001 十点二米）；
 //   · 会议室 02 大屏 → 外框 bezelWidth 4.42 m。
-// 理由：董事会的两处截图挡住的都是展示内容本身；屏风两端（DENSE-11-10 / 11-6）在内容之外，本来就不挡。
+// LOOK R3 同时要求展示内容左右外侧各 0.6 m 净空；节日装饰的投影判据保持不变。
 //
 // 规则 D 分两条断言：
 //   SL-A 落地绿植：净空区 = 展示内容在地面的投影 × 法向 1.2 m 深，区内不得有补植 / 登记绿植 / 花槽 / 花境的包络。
@@ -22,6 +22,7 @@ import { registerHooks } from 'node:module'
 import * as THREE from '../vendor/three/three.module.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
+import { plantFootprintSamples } from './helpers/r1-plant-footprints.mjs'
 import { R1_LANDSCAPE } from '../office-vis2/r1-landscape-plan.js'
 import { r1LookPlantElements } from '../office-vis2/r1-look.js'
 import { r1BrandSpec, R1_BRAND_WALL_ID, R1_BRAND_LOGO_ASPECT, r1AmbienceSpec } from '../office-vis2/r1-brand.js'
@@ -87,7 +88,7 @@ const FACES = [...brandFaces(), shelfFace('08-BK-002'), shelfFace('08-BK-001'), 
 function groundGreenery() {
   const rows = []
   for (const plant of R1_LANDSCAPE.plants) rows.push({ id: plant.id, x0: plant.x - plant.r, x1: plant.x + plant.r, z0: plant.z - plant.r, z1: plant.z + plant.r })
-  for (const bed of [...R1_LANDSCAPE.troughs, ...R1_LANDSCAPE.gardens]) rows.push({ id: bed.id, x0: bed.x - bed.w / 2, x1: bed.x + bed.w / 2, z0: bed.z - bed.d / 2, z1: bed.z + bed.d / 2 })
+  for (const bed of [...R1_LANDSCAPE.troughs, ...R1_LANDSCAPE.gardens]) for (const q of plantFootprintSamples(bed)) rows.push({ id: bed.id, x0: q.x-q.r, x1: q.x+q.r, z0: q.z-q.r, z1: q.z+q.r })
   const registered = [...layout.r1.elements, ...r1LookPlantElements()]
   for (const item of registered.filter(e => e.category === '植物总成')) {
     const kin = registered.filter(e => e.id === item.id || e.parentId === item.id)
@@ -100,11 +101,11 @@ function groundGreenery() {
 const clearZone = face => {
   const near = face.face, far = face.face + face.sign * CLEAR_DEPTH
   const along = [Math.min(near, far), Math.max(near, far)]
-  return face.axis === 'z' ? { x0: face.span[0], x1: face.span[1], z0: along[0], z1: along[1] } : { x0: along[0], x1: along[1], z0: face.span[0], z1: face.span[1] }
+  return face.axis === 'z' ? { x0: face.span[0]-.6, x1: face.span[1]+.6, z0: along[0], z1: along[1] } : { x0: along[0], x1: along[1], z0: face.span[0]-.6, z1: face.span[1]+.6 }
 }
 const overlaps = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.z0 < b.z1 && b.z0 < a.z1
 
-test('SL-A 规则 D：每个展示面正面前方 1.2 m、同宽的净空区内没有落地绿植', () => {
+test('SL-A 规则 D：每个展示面正面前方 1.2 m、左右各扩 0.6 m 的净空区内没有落地绿植', () => {
   assert.equal(FACES.length, 5)
   const greenery = groundGreenery()
   assert.ok(greenery.length > 150, `应覆盖全部落地绿植，实际 ${greenery.length}`)

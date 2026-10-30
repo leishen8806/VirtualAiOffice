@@ -1,4 +1,5 @@
 import { createOfficeV2Registry } from './office-v2-registry.js'
+import { createR1RuntimeLayout } from './office-r1-seating.js'
 import { buildOfficeShellV2 } from './office-layout-v2-scene.js'
 import { placeOfficeFurnitureV2 } from './office-furniture-v2.js'
 import { resolveOfficeLayout, createOfficeNavigation, SEATS as LEGACY_SEATS } from './office-layout.js'
@@ -8,7 +9,8 @@ import { createQueueBoard, createWaitingBoard as legacyWaitingBoard, waitingPlan
 // 浏览器入口负责选择版本；Node 数据测试不装载依赖浏览器 import-map 的旧渲染器。
 const browser = typeof location !== 'undefined'
 const [legacyWing, legacyPartitions, legacyFun] = browser ? await Promise.all([import('./wing.js'), import('./office-partitions.js'), import('./fun.js')]) : [null, null, null]
-export const OFFICE_LAYOUT = resolveOfficeLayout(browser ? location.search : '')
+const resolvedLayout = resolveOfficeLayout(browser ? location.search : '')
+export const OFFICE_LAYOUT = browser ? createR1RuntimeLayout(resolvedLayout) : resolvedLayout
 const [bar, departments, staff] = !browser || OFFICE_LAYOUT.version === 2 ? await Promise.all([
   import('./office-bar.js'), import('./display-departments.js'), import('./display-staff.js'),
 ]) : []

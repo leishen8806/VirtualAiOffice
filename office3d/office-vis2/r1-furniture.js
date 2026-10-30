@@ -34,6 +34,11 @@ export const R1_SEATED_PROFILES = Object.freeze(Object.fromEntries([
   ['ReactSenior', 0.079, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
   ['React1', 0, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
   ['Localizer', 0.079, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['Reviewer3', 0.06, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['SecurityReviewer2', 0.063, 0.82, ['neutral_01', 'waiting_01', 'neutral_02']],
+  ['Lead2', 0.078, 0.841, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['GoSenior2', 0.077, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
+  ['React2', 0.079, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
 ].map(([name, seat, handY, motions]) => [name, Object.freeze({ seat, handY, motions: Object.freeze(motions) })])))
 const yawFor = item => -Number(item.yawDeg || 0) * Math.PI / 180
 const dimensions = item => ({ x: Math.max(.02, Number(item.lengthM) || .1), y: Math.max(.02, Number(item.heightM) || .1), z: Math.max(.02, Number(item.widthM) || .1) })
@@ -79,9 +84,14 @@ function fallbackBox(THREE, x, z, size, yaw, bucket, color, target) {
 // 在真实显示器尺寸上糊得认不出，提到 512×288 后正文 15px 等比放大到 30px。
 export const R1_SCREEN_CELL = { width: 512, height: 288 }
 const SCREEN_CELL = R1_SCREEN_CELL
+export function r1ScreenAtlasSize(count) {
+  // Keep the existing texture budget when another row is needed; screen aspect stays 16:9.
+  const columns = Math.ceil(Math.sqrt(count)), rows = columns
+  return { columns, rows, width: Math.min(2560, columns * SCREEN_CELL.width), height: Math.min(1440, rows * SCREEN_CELL.height) }
+}
 function screenAtlas(THREE, stations, makeScreenTexture) {
-  const atlas = makeScreenTexture(), grid = Math.ceil(Math.sqrt(stations.length)), { width, height } = SCREEN_CELL
-  if (atlas.ctx?.canvas) { atlas.ctx.canvas.width = grid * width; atlas.ctx.canvas.height = grid * height; atlas.tex.needsUpdate = true }
+  const atlas = makeScreenTexture(), size = r1ScreenAtlasSize(stations.length), { columns, rows } = size, { width, height } = SCREEN_CELL
+  if (atlas.ctx?.canvas) { atlas.ctx.canvas.width = size.width; atlas.ctx.canvas.height = size.height; atlas.tex.needsUpdate = true }
   const positions = [], uvs = [], indices = []
   stations.forEach((station, index) => {
     const desk = r1ToWorld(station.xM, station.yM), chair = r1ToWorld(station.chairXM, station.chairYM), yaw = Math.atan2(-(desk.x - chair.x), -(desk.z - chair.z))
@@ -90,17 +100,17 @@ function screenAtlas(THREE, stations, makeScreenTexture) {
     const fit = monitorPanelFit({ ...workstationDesktop({ x: desk.x, z: desk.z, yaw }).monitor, y: .76, yaw, aspect: width / height }), offset = index * 4
     for (const c of fit.corners) positions.push(c.x, c.y, c.z)
     // 行号要翻过来：下面 connect 用 drawImage 从图集画布的顶边往下贴（row 0 在最上），
-    // 而图集贴图 flipY = true 让 v=0 落在画布底边。不翻就会整格取错行、25 块屏互相串格。
-    const col = index % grid, row = Math.floor(index / grid), u0 = col / grid, u1 = (col + 1) / grid, v0 = 1 - (row + 1) / grid, v1 = 1 - row / grid
+    // 而图集贴图 flipY = true 让 v=0 落在画布底边。不翻就会整格取错行、屏幕互相串格。
+    const col = index % columns, row = Math.floor(index / columns), u0 = col / columns, u1 = (col + 1) / columns, v0 = 1 - (row + 1) / rows, v1 = 1 - row / rows
     uvs.push(u0, v0, u1, v0, u1, v1, u0, v1); indices.push(offset, offset + 1, offset + 2, offset, offset + 2, offset + 3)
   })
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals()
   const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: atlas.tex, toneMapped: false })); mesh.name = 'r1-workstation-screen-atlas'
   // 把单屏画布也放大到一格的尺寸；改尺寸会清空画布，所以同时清掉去重键，保证下一轮重画一次。
   const connect = (scr, index) => {
-    scr.tex.dispose?.(); const col = index % grid, row = Math.floor(index / grid)
+    scr.tex.dispose?.(); const col = index % columns, row = Math.floor(index / columns)
     if (scr.ctx?.canvas && (scr.ctx.canvas.width !== width || scr.ctx.canvas.height !== height)) { scr.ctx.canvas.width = width; scr.ctx.canvas.height = height; scr.last = '' }
-    scr.tex = { set needsUpdate(value) { if (value && atlas.ctx?.drawImage) { atlas.ctx.drawImage(scr.ctx.canvas, col * width, row * height); atlas.tex.needsUpdate = true } }, dispose() {} }
+    scr.tex = { set needsUpdate(value) { if (value && atlas.ctx?.drawImage) { atlas.ctx.drawImage(scr.ctx.canvas, col * size.width / columns, row * size.height / rows, size.width / columns, size.height / rows); atlas.tex.needsUpdate = true } }, dispose() {} }
   }
   return { atlas, mesh, connect }
 }
@@ -136,12 +146,12 @@ function lampSpot(THREE, deskWorld, yaw, obstacles) {
   }
   return best
 }
-// 分段数压到 DS-3 的三角形预算内：25 盏合计 600（杆）+ 2,000（灯头）= 2,600 ≤ 3,000。
+// 30 盏合计 720（杆）+ 1,920（灯头）= 2,640，保留原 3,000 三角预算。
 // 杆直径 24–36 mm、灯头直径 70 mm，都是远景里的小件，低分段看不出棱。
 function statusLampBatch(THREE, spots) {
   const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(LAMP.postTop, LAMP.postBottom, LAMP.postHeight, 6),
     new THREE.MeshStandardMaterial({ color: '#8a6d3b', metalness: .6, roughness: .35 }), spots.length)
-  const caps = new THREE.InstancedMesh(new THREE.SphereGeometry(LAMP.cap, 8, 6),
+  const caps = new THREE.InstancedMesh(new THREE.SphereGeometry(LAMP.cap, 8, 5),
     new THREE.MeshBasicMaterial({ toneMapped: false }), spots.length)
   posts.name = 'r1-workstation-status-posts'; caps.name = 'r1-workstation-status-lamps'
   const transform = new THREE.Object3D(), white = new THREE.Color('#d8dde2')
@@ -155,7 +165,16 @@ function statusLampBatch(THREE, spots) {
 }
 
 // R1 furniture is baked by material bucket: detailed GLB assets without a draw call per record.
-export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture, A, placeFurniture }) {
+export function buildR1Furniture(context) {
+  const module = buildFurnitureSnapshot(context)
+  if (context.layout?.r1Phase === 'R1') module.refresh = () => {
+    const next = buildFurnitureSnapshot(context)
+    module.dispose(); Object.assign(module, next)
+  }
+  return module
+}
+
+function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenTexture, A, placeFurniture }) {
   if (layout?.r1Phase !== 'R1' || typeof makeScreenTexture !== 'function' || !A?.furn || typeof placeFurniture !== 'function') return { deskAt() { return null }, dispose() {} }
   const group = new THREE.Group(); group.name = 'r1-furniture'; group.userData.dynamic = true
   // 区 07 的吧凳 / 弧形座段由 I4 岛台重建，接待台与区 12 弧形沙发段由 I5 重建，区 14 的室外长椅由 I6 广场重建；这里不再画成素色方块。
@@ -183,7 +202,8 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
     return [item.id, Math.atan2(chair.x - desk.x, chair.z - desk.z)]
   }))
   const stationByDesk = new Map(layout.r1.workstations.map(station => [station.desk_id, station]))
-  const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, R1_SEATED_PROFILES[station.business_id]?.seat || 0]))
+  const seatedProfile = name => R1_SEATED_PROFILES[name] || (layout.r1.workstations.some(s => s.business_id === name && s.temporary) ? R1_SEATED_PROFILES.ReactSenior : null)
+  const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, seatedProfile(station.business_id)?.seat || 0]))
   const movingChairs = new Map(), bucketMeshes = new Map()
   const deskMaterials = {}
   A.furn.desk?.traverse(mesh => { const material = mesh.material; if (material?.name === 'wood') deskMaterials.wood = material; if (/^metal/.test(material?.name)) deskMaterials.metal = material })
@@ -325,5 +345,5 @@ export function buildR1Furniture({ THREE, root, layout, collision, makeScreenTex
   })
   root.add(group); let disposed = false
   return { root: group, moveChair, chairMotion: id => { const r = movingChairs.get(id); return r ? { dx: r.dx, dz: r.dz, yaw: r.yaw } : null }, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings,
-    statusLamps: { posts: lamps.posts, caps: lamps.caps, spots: lampSpots, metrics: LAMP, monitorByDesk }, seatedProfile(name) { return R1_SEATED_PROFILES[name] || null }, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); lamps.posts.geometry.dispose(); lamps.posts.material.dispose(); lamps.caps.geometry.dispose(); lamps.caps.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
+    statusLamps: { posts: lamps.posts, caps: lamps.caps, spots: lampSpots, metrics: LAMP, monitorByDesk }, seatedProfile, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); lamps.posts.geometry.dispose(); lamps.posts.material.dispose(); lamps.caps.geometry.dispose(); lamps.caps.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
 }
