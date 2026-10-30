@@ -44,7 +44,9 @@ function context(extra = {}) {
   }
 }
 function stateFunction(text, ctx) {
-  return vm.runInNewContext(extract(text, 'async function state()', '\nhttp') + '\nstate', ctx)
+  // 服务器入口后来改成 `const server = http`（优雅退出要用到句柄），老版本仍是裸 `http`。
+  const end = text.includes('\nconst server = http') ? '\nconst server = http' : '\nhttp'
+  return vm.runInNewContext(extract(text, 'async function state()', end) + '\nstate', ctx)
 }
 function stateRoute(state, lanUser = false, wallScope = false) {
   const code = extract(source, "      if (url.pathname === '/state')", "      if (url.pathname === '/replay')")
