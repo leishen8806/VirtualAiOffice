@@ -19,7 +19,7 @@ export function r1RegisteredStation(name, desk, chair, group, details = {}) {
 export function createR1RuntimeLayout(base) {
   if (base?.r1Phase !== 'R1') return base
   const workstations = [...base.r1.workstations], seats = Object.assign(Object.create(null), base.seats)
-  const temporary = [], unseated = new Set(), reserved = new Set(['08-T-011', '08-T-012', '08-T-013'])
+  const temporary = [], unseated = new Set(), reserved = new Set((base.r1.reservedSeats || []).map(seat => seat.desk))
   const elements = new Map(base.r1.elements.map(e => [e.id, e]))
   function assignAgents(agents) {
     const added = [], used = new Set(workstations.map(w => w.desk_id))

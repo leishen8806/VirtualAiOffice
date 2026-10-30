@@ -72,10 +72,10 @@ test('TK-2 树干偏离表冻结在 35 条室内登记绿植上，只改直径�
 
 test('TK-2 合并后只有这 35 行树干变了，其余登记行与区 14 / 大榕树逐值不变', () => {
   const applied = createR1Layout({ candidateC01: false }).elements
-  const registered = applied.slice(0, R1_DATA.elements.length)
+  const registered = applied.filter(row => rawOf(row.id))
   const trunkSet = new Set(INDOOR_TRUNK_IDS)
-  for (const [index, item] of registered.entries()) {
-    const raw = R1_DATA.elements[index]
+  for (const item of registered) {
+    const raw = rawOf(item.id)
     if (!trunkSet.has(item.id)) continue
     // 树干行：只有直径两项变，其余字段逐值与登记相同。
     assert.deepEqual({ ...item, lengthM: raw.lengthM, widthM: raw.widthM }, withApprovedPlantMove(raw), item.id)

@@ -61,7 +61,7 @@ test('S26 automatic fallback uses only same-department empty desks, preserves fr
   assert.deepEqual(Object.entries(runtime.seats).slice(0,30),Object.entries(base.seats))
   assert.equal(JSON.stringify(base),before)
   for(const s of added) {
-    assert.ok(!['08-T-011','08-T-012','08-T-013'].includes(s.desk_id))
+    assert.ok(!base.r1.reservedSeats.some(row => row.desk === s.desk_id))
     const seat=runtime.seats[s.business_id], dx=seat[1]-seat[4].x,dz=seat[2]-seat[4].z
     assert.ok(-Math.sin(seat[4].yaw)*dx-Math.cos(seat[4].yaw)*dz>0)
   }
@@ -80,4 +80,11 @@ test('S26 refreshed navigation uses a new snapshot after an automatic seat is ad
   assert.ok(after.stations.has('Reviewer4'))
   const director=readFileSync(new URL('../office-r1-director.js',import.meta.url),'utf8')
   assert.match(director,/nav = createR1Navigation\(\{ \.\.\.layout \}\)/)
+})
+
+test('DEPT restored studio vacancies can be assigned, but board-room reservations never can', () => {
+  const runtime = createR1RuntimeLayout(createOfficeR1Layout())
+  const added = runtime.assignAgents(Array.from({length: 40}, (_, i) => ({name: `GoSeniorAuto${i}`})))
+  for (const id of ['08-T-011', '08-T-012', '08-T-013']) assert.ok(added.some(s => s.desk_id === id), id)
+  for (const reserved of runtime.r1.reservedSeats) assert.ok(!runtime.r1.workstations.some(s => s.desk_id === reserved.desk || s.chair_id === reserved.chair))
 })

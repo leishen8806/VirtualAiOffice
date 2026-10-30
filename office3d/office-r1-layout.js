@@ -24,32 +24,30 @@ const stall = (id, from, to) => override(id, { xM: from[0], yM: from[1], yawDeg:
 const RECEP_REASON = '董事会 2026-10-28："前台的桌子反了。" 接待台 11-CT-001 翻转为凸面朝入口后，接待椅整组沿 −Y 平移 0.9 m 坐进凹面，离内半径弧 0.4 m（与翻转前的 0.4 m 规则相同）'
 const reception = (id, xM, yM) => override(id, { xM, yM }, { xM, yM: Number((yM - .9).toFixed(3)) }, RECEP_REASON)
 
-// ── 预留座位（冻结）──
-// 董事会 2026-10-29："清点办公室座位数量，预留座位：Dr、苏晨、大旺"。
-// 三个空工位在 Dr.life+ 工作室（区 08）东侧一排，朝向相同，与 Go / DB / React 组相邻；
-// 登记数据不改，座位不派人（三把椅子都不在 25 条 workstations 里），椅子整把推进桌下。
-// 走动卡（OFFICE-R1-MOVE）与 NPC 卡（I7B）读 isReservedSeat 判定，不得把人安排到这三个座位。
-const RESERVED_REASON = '董事会 2026-10-29："清点办公室座位数量，预留座位：Dr、苏晨、大旺"；区 08 东侧一排三个空工位改为预留，座位不派人，椅子沿 +Y 推进桌下 0.26 m'
-export const R1_RESERVED_TUCK_M = .26
+// DEPT 2026-10-30: reserved desks move into room 03 B; the old 08 desks revert to ordinary vacancies.
+const RESERVED_REASON = '董事会 2026-10-30：圆桌洽谈 B 改为董事办公室，Dr / 苏晨 / 大旺预留座位迁入，区 08 原三个空工位恢复登记位置'
+export const R1_RESERVED_TUCK_M = 0
 export const R1_RESERVED_SEATS = Object.freeze([
-  Object.freeze({ name: '苏晨', chair: '08-CH-011', desk: '08-T-011', date: '2026-10-29', reason: RESERVED_REASON }),
-  Object.freeze({ name: 'Dr', chair: '08-CH-012', desk: '08-T-012', date: '2026-10-29', reason: RESERVED_REASON }),
-  Object.freeze({ name: '大旺', chair: '08-CH-013', desk: '08-T-013', date: '2026-10-29', reason: RESERVED_REASON }),
+  Object.freeze({ name: '苏晨', chair: '03-DEPT-CH-001', desk: '03-DEPT-T-001', date: '2026-10-30', reason: RESERVED_REASON }),
+  Object.freeze({ name: 'Dr', chair: '03-DEPT-CH-002', desk: '03-DEPT-T-002', date: '2026-10-30', reason: RESERVED_REASON }),
+  Object.freeze({ name: '大旺', chair: '03-DEPT-CH-003', desk: '03-DEPT-T-003', date: '2026-10-30', reason: RESERVED_REASON }),
 ])
 const RESERVED_CHAIRS = new Set(R1_RESERVED_SEATS.map(row => row.chair))
 const RESERVED_DESKS = new Set(R1_RESERVED_SEATS.map(row => row.desk))
-// 子件 ID（-BACK / -BASE / -SEAT）算同一个座位，所以消费方拿到哪一级 ID 都判得出来。
 export const isReservedSeat = chairId => RESERVED_CHAIRS.has(String(chairId ?? '').replace(/-(BACK|BASE|SEAT)$/, ''))
-// 配对的桌子：r1-furniture 用它决定这三张桌上不放个人物品（显示器与键盘照常保留）。
-// 桌面物件 ID 形如 `08-T-011/keyboard`，所以先把 `/…` 后缀切掉。
 export const isReservedDesk = deskId => RESERVED_DESKS.has(String(deskId ?? '').split('/')[0])
-// 推椅子是位置变更，所以照旧走偏离表一处覆盖；原值直接从登记行读，偏离表不会跟登记数据脱节。
-// 推进量 0.26 m 是上限内取的值：再往前椅心离邻桌 08-T-0{14,15,16} 就不足 1.2 m，I3B 的桌椅配对会多出一把椅子。
-const RESERVED_TUCK = R1_RESERVED_SEATS.flatMap(seat => ['', '-BACK', '-BASE', '-SEAT'].map(suffix => {
-  const raw = R1_DATA.elements.find(row => row.id === `${seat.chair}${suffix}`)
-  if (!raw) throw new Error(`R1 预留座位 ${seat.chair}${suffix}: 登记数据里没有这一行`)
-  return override(raw.id, { xM: raw.xM, yM: raw.yM },
-    { xM: raw.xM, yM: Number((raw.yM + R1_RESERVED_TUCK_M).toFixed(3)) }, RESERVED_REASON, seat.date)
+const DEPT_REMOVED_ROOTS = new Set(['03-T-002', '03-CH-005', '03-CH-006', '03-CH-007', '03-CH-008'])
+export const R1_BOARD_REMOVALS = Object.freeze(R1_DATA.elements.filter(row => DEPT_REMOVED_ROOTS.has(row.id) || DEPT_REMOVED_ROOTS.has(row.parentId)).map(row => Object.freeze({
+  id: row.id, date: '2026-10-30', reason: '董事办公室三套工位及通行需要完整空间；撤下 B 间圆桌与四把公共椅及其子件，A 间保留洽谈功能', from: Object.freeze({ ...row }), to: null,
+})))
+const REMOVED_IDS = new Set(R1_BOARD_REMOVALS.map(row => row.id))
+export const R1_DIRECTOR_ELEMENTS = Object.freeze(R1_RESERVED_SEATS.flatMap((seat, i) => {
+  const xM = [21.8, 23.3, 24.8][i], common = { regionId: '03', status: 'BOARD_ADDED', date: seat.date, reason: RESERVED_REASON, geometry: null, unknown: false, yawDeg: 0, facingLocal: Object.freeze([0, 1]) }
+  return [
+    Object.freeze({ ...common, id: seat.desk, category: '办公桌', parentId: null, xM, yM: 42, zM: 0, lengthM: 1.4, widthM: .7, heightM: .75 }),
+    Object.freeze({ ...common, id: seat.chair, category: '办公椅', parentId: null, xM, yM: 41.19, zM: 0, lengthM: .62, widthM: .6, heightM: 1.04 }),
+    Object.freeze({ ...common, id: seat.desk.replace('-T-', '-M-'), category: '显示器', parentId: seat.desk, xM, yM: 42.18, zM: .75, lengthM: .72, widthM: .1, heightM: .43 }),
+  ]
 }))
 
 export const R1_BOARD_OVERRIDES = Object.freeze([
@@ -63,7 +61,6 @@ export const R1_BOARD_OVERRIDES = Object.freeze([
   shifted('14-CH-007', 14, -8.6), shifted('14-CH-007-BACK', 13.778, -8.6), shifted('14-CH-007-BASE', 14, -8.6), shifted('14-CH-007-SEAT', 14, -8.6),
   shifted('14-CH-008', 15, -9.6), shifted('14-CH-008-BACK', 15, -9.822), shifted('14-CH-008-BASE', 15, -9.6), shifted('14-CH-008-SEAT', 15, -9.6),
   reception('11-CH-001', 28, 5.8), reception('11-CH-001-BASE', 28, 5.8), reception('11-CH-001-SEAT', 28, 5.8), reception('11-CH-001-BACK', 28, 6.022),
-  ...RESERVED_TUCK,
 ])
 // 董事会 2026-10-29："广场的长椅子方向反了"。登记朝向背对广场圆环，原地转 180°，面向广场；占地不变。
 // 单独成表；MOVE R5 另批准 BN-003 向西平移 0.50 m，其余三张仍原地转向。
@@ -98,6 +95,7 @@ export const R1_BOARD_ADDED_ELEMENTS = Object.freeze([
     yawDeg: 90, zM: 0,
     date: '2026-10-29', reason: ADDED_SHELF_REASON,
   }),
+  ...R1_DIRECTOR_ELEMENTS,
 ])
 
 // ── 董事会批准的室内绿植树干改细（冻结）── OFFICE-R1-TRUNK
@@ -243,5 +241,5 @@ export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   const routes = Object.freeze(mergedData.routes.map(route => ROUTE_PATCH.has(route.id)
     ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
   // 追加顺序固定：登记行 → 背墙门扇（OFFICE-R1-BACKWALL）→ 董事会新增件（本卡 R2）。
-  return Object.freeze({ candidateC01, data: mergedData, elements: Object.freeze([...R1_DATA.elements.map(item => deviate(replacements.get(item.id) || item)), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze([...(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), ...R1_BOARD_ADDED_WORKSTATIONS.map(w => candidateC01 ? r1RegisteredStation(w.business_id, replacements.get(w.desk_id) || R1_DATA.elements.find(e => e.id === w.desk_id), replacements.get(w.chair_id) || R1_DATA.elements.find(e => e.id === w.chair_id), w.group, { island: w.island, status: w.status, date: w.date, reason: w.reason }) : w)]), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
+  return Object.freeze({ candidateC01, data: mergedData, reservedSeats: R1_RESERVED_SEATS, elements: Object.freeze([...R1_DATA.elements.filter(item => !REMOVED_IDS.has(item.id)).map(item => deviate(replacements.get(item.id) || item)), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze([...(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), ...R1_BOARD_ADDED_WORKSTATIONS.map(w => candidateC01 ? r1RegisteredStation(w.business_id, replacements.get(w.desk_id) || R1_DATA.elements.find(e => e.id === w.desk_id), replacements.get(w.chair_id) || R1_DATA.elements.find(e => e.id === w.chair_id), w.group, { island: w.island, status: w.status, date: w.date, reason: w.reason }) : w)]), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }

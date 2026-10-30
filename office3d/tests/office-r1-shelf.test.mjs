@@ -40,8 +40,8 @@ const cornersOf = (mesh, index) => {
 
 test('FD-6a 新书架 08-BK-002 作为董事会新增件冻结在表里，尺寸位置朝向逐值与补充卡一致并贴着东墙内侧', () => {
   assert.ok(Object.isFrozen(R1_BOARD_ADDED_ELEMENTS))
-  assert.equal(R1_BOARD_ADDED_ELEMENTS.length, 1)
-  const row = R1_BOARD_ADDED_ELEMENTS[0]
+  assert.equal(R1_BOARD_ADDED_ELEMENTS.filter(row => row.category === '书架').length, 1)
+  const row = R1_BOARD_ADDED_ELEMENTS.find(row => row.id === '08-BK-002')
   assert.ok(Object.isFrozen(row))
   assert.equal(row.id, '08-BK-002'); assert.equal(row.category, '书架'); assert.equal(row.regionId, '08')
   assert.equal(row.status, 'BOARD_ADDED'); assert.equal(row.date, '2026-10-29')
@@ -58,7 +58,7 @@ test('FD-6a 新书架 08-BK-002 作为董事会新增件冻结在表里，尺寸
   assert.ok(gap >= -1e-9 && gap <= .02, `背面离墙内侧面 ${gap} m`)
   // 登记数据没有这一行，元素表末尾才有（data.js 一个字节都没改，由 I6C-1 的哈希断言锁住）。
   assert.equal(R1_DATA.elements.filter(item => item.id === '08-BK-002').length, 0)
-  assert.equal(createR1Layout().elements.at(-1).id, '08-BK-002')
+  assert.deepEqual(createR1Layout().elements.filter(item => item.id === '08-BK-002'), [row])
 })
 
 test('FD-6a 新书架与圆桌椅、协作桌椅、端柜和南墙的净距逐件 ≥ 0.6 m', () => {

@@ -17,7 +17,7 @@ const layout=createOfficeR1Layout(),limits={'01':2,'02':4,'03':4,'04':12,'05':2,
 const segment=(x,z,a,b)=>{const dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(x-a[0]-t*dx,z-a[1]-t*dz)}
 const distance=(x,z,b)=>Math.hypot(Math.max(b.x0-x,0,x-b.x1),Math.max(b.z0-z,0,z-b.z1))
 const chairBoxes=layout.r1.elements.filter(e=>e.category==='办公椅').map(c=>{const desk=layout.r1.elements.filter(e=>e.category==='办公桌').sort((a,b)=>Math.hypot(a.xM-c.xM,a.yM-c.yM)-Math.hypot(b.xM-c.xM,b.yM-c.yM))[0],side=Math.abs(desk.xM-c.xM)>.5,hx=side?.3:.31,hz=side?.31:.3;return{id:c.id,x0:c.xM-26-hx,x1:c.xM-26+hx,z0:18-c.yM-hz,z1:18-c.yM+hz}})
-const reserved=layout.r1.elements.filter(e=>['08-T-011','08-T-012','08-T-013'].includes(e.id)).map(e=>({id:e.id,x0:e.xM-26-e.lengthM/2,x1:e.xM-26+e.lengthM/2,z0:18-e.yM-e.widthM/2,z1:18-e.yM+e.widthM/2}))
+const reserved=layout.r1.elements.filter(e=>layout.r1.reservedSeats.some(seat=>seat.desk===e.id)).map(e=>({id:e.id,x0:e.xM-26-e.lengthM/2,x1:e.xM-26+e.lengthM/2,z0:18-e.yM-e.widthM/2,z1:18-e.yM+e.widthM/2}))
 const doors=r1DoorPlan(layout).map(d=>{const hx=(d.vertical?d.thickness:d.width)/2,hz=(d.vertical?d.width:d.thickness)/2;return{id:d.id,x0:Math.min(d.closed.x,d.open.x)-hx,x1:Math.max(d.closed.x,d.open.x)+hx,z0:Math.min(d.closed.z,d.open.z)-hz,z1:Math.max(d.closed.z,d.open.z)+hz}})
 const samples=plantFootprintSamples
 

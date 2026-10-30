@@ -372,7 +372,7 @@
       "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; OFFICE-R1-AMBIENCE adds the courtyard-face emblem and planter, seven room nameplates, the gate welcome inlay, the meeting-room wall screen and the three reserved-seat desk plates, all procedural canvas art; reuses the existing assets/logo.png and the office-vis2 leaf geometry; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "1A471D36910858F4303E3E0ED21C28791655A0525F177CFEB031F0115C2588E4"
+      "sha256": "CE7FFBD94D69169DB306D049B96BECAB8BAE62A50DDF0413E0C272DEA1043D01"
     },
     {
       "file": "office-vis2/r1-look.js",
