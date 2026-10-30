@@ -7,6 +7,16 @@ export const R1_RESERVED_SEATS = Object.freeze(['08-CH-011', '08-CH-012', '08-CH
 
 // R4: real-mesh sweep and connected exit measurements, reproduced by the delivery solver.
 export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entries({
+  "SecurityReviewer2": {"home": [-17.96, 2.7, -1.5707963267948966], "distance": 0.14, "degrees": 0, "turn": 0, "localPath": [[-18.1, 2.7], [-18.110000000000003, 2.3600000000000003]]},
+  "Lead2": {"home": [17.07, -17.06, -3.141592653589793], "distance": 0.14, "degrees": 0, "turn": 0},
+  "GoSenior2": {"home": [13.54, -5, -1.5707963267948966], "distance": 0.14, "degrees": 0, "turn": 0},
+  "React2": {"home": [13.54, -6.4, -1.5707963267948966], "distance": 0.14, "degrees": 0, "turn": 0},
+  "Reviewer3": {
+    "home": [-17.96, 4.1, -1.5707963267948966],
+    "distance": 0.14,
+    "degrees": 0,
+    "turn": 0
+  },
   "Architect": {
     "home": [
       6.03,

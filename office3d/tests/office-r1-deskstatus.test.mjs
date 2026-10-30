@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { registerHooks } from 'node:module'
 import * as THREE from '../vendor/three/three.module.js'
+import { createR1RuntimeLayout } from '../office-r1-seating.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { buildR1Furniture } from '../office-vis2/r1-furniture.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
@@ -219,7 +220,7 @@ const A = { furn: FURN }
 
 const buildFurniture = (layout = createOfficeR1Layout()) => {
   const root = new THREE.Group(), collision = createFurnitureCollision()
-  return { root, collision, f: buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture: fakeScreenTexture, A, placeFurniture }) }
+  return { root, collision, layout, f: buildR1Furniture({ THREE, root, layout, collision, makeScreenTexture: fakeScreenTexture, A, placeFurniture }) }
 }
 // buildR1Furniture 要一个能当画布用的屏幕纹理；这里给个最小实现。
 function fakeScreenTexture() {
@@ -231,12 +232,12 @@ const gap = (a, b) => Math.hypot(
   Math.max(b.min.y - a.max.y, a.min.y - b.max.y, 0),
   Math.max(b.min.z - a.max.z, a.min.z - b.max.z, 0))
 
-test('DS-4 25 盏状态灯逐盏：在本桌桌面范围内、底面贴桌面、不与桌面件相交', () => {
-  const { f } = buildFurniture(), lamps = f.statusLamps, M = lamps.metrics
+test('DS-4 全部工位灯状态灯逐盏：在本桌桌面范围内、底面贴桌面、不与桌面件相交', () => {
+  const { f, layout } = buildFurniture(), lamps = f.statusLamps, M = lamps.metrics
   const stations = createOfficeR1Layout().r1.workstations
-  assert.equal(stations.length, 25)
-  assert.equal(lamps.posts.count, 25)
-  assert.equal(lamps.caps.count, 25)
+  assert.equal(stations.length, Object.keys(layout.seats).length)
+  assert.equal(lamps.posts.count, stations.length)
+  assert.equal(lamps.caps.count, stations.length)
   const m = new THREE.Matrix4(), pos = new THREE.Vector3(), quat = new THREE.Quaternion(), scl = new THREE.Vector3()
   stations.forEach((station, i) => {
     // 杆：底面正好贴桌面 y=.76。
@@ -270,31 +271,40 @@ test('DS-4 25 盏状态灯逐盏：在本桌桌面范围内、底面贴桌面、
 })
 
 test('DS-4 状态灯是新增批次，没挪用模型颜色圆片，且只多 2 个 draw call', () => {
-  const { f } = buildFurniture()
+  const { f, layout } = buildFurniture()
   const batches = f.root.children.filter(n => (n.isMesh || n.isInstancedMesh) && n.visible)
   const lamps = batches.filter(n => n.name.startsWith('r1-workstation-status-'))
   assert.equal(lamps.length, 2, '状态灯应当是 2 个批次（杆 + 灯头）')
-  assert.ok(lamps.every(n => n.isInstancedMesh && n.count === 25), '两个批次都要是 25 实例的 InstancedMesh')
+  assert.ok(lamps.every(n => n.isInstancedMesh && n.count === layout.r1.workstations.length), '两个批次都要是 每工位一实例的 InstancedMesh')
   // 模型颜色圆片还在，且没被状态灯接管。
   const badges = batches.find(n => n.name === 'r1-workstation-badges')
-  assert.ok(badges && badges.isInstancedMesh && badges.count === 25, '原来的模型圆片不该被动')
+  assert.ok(badges && badges.isInstancedMesh && badges.count === layout.r1.workstations.length, '原来的模型圆片不该被动')
   assert.ok(!lamps.includes(badges))
+  const screens = batches.find(n => n.name === 'r1-workstation-screen-atlas')
+  assert.equal(screens.geometry.index.count, layout.r1.workstations.length * 6)
+  const uv = screens.geometry.attributes.uv, tiles = new Set()
+  for (let i = 0; i < layout.r1.workstations.length; i++) {
+    const x = uv.getX(i * 4), y = uv.getY(i * 4)
+    assert.ok(x >= 0 && y >= 0 && uv.getX(i * 4 + 2) <= 1 && uv.getY(i * 4 + 2) <= 1)
+    tiles.add(`${x},${y}`)
+  }
+  assert.equal(tiles.size, layout.r1.workstations.length)
   f.dispose()
 })
 
-test('DS-3 状态灯三角形在预算内（25 盏合计 ≤ 3,000）', () => {
-  const { f } = buildFurniture()
+test('DS-3 状态灯三角形在预算内（全部工位灯合计 ≤ 3,000）', () => {
+  const { f, layout } = buildFurniture()
   const tris = m => { const g = m.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3; return n * m.count }
   const posts = tris(f.statusLamps.posts), caps = tris(f.statusLamps.caps)
   // 浏览器里用 renderer.info 实测的增量要和这里逐几何算出来的对得上（实测 2,600）。
-  assert.equal(posts, 600, `杆 ${posts} 三角`)
-  assert.equal(caps, 2000, `灯头 ${caps} 三角`)
+  assert.equal(posts, 24 * layout.r1.workstations.length, `杆 ${posts} 三角`)
+  assert.equal(caps, 64 * layout.r1.workstations.length, `灯头 ${caps} 三角`)
   assert.ok(posts + caps <= 3000, `状态灯合计 ${posts + caps} 三角，超出 DS-3 的 +3,000 预算`)
   f.dispose()
 })
 
 test('DS-4 灯头颜色走 instanceColor，与头顶状态环同一套色', () => {
-  const { f } = buildFurniture()
+  const { f, layout } = buildFurniture()
   const { DESK_STATE_COLOR } = loadScreenModule(null)
   const handle = f.deskAt(...(() => { const s = createOfficeR1Layout().r1.workstations[0]; const w = r1ToWorld(s.xM, s.yM); return [w.x, w.z] })())
   assert.ok(handle && typeof handle.setStatusLight === 'function', '每张桌要有 setStatusLight')
@@ -316,4 +326,21 @@ test('DS-5 非 R1 入口不建状态灯', () => {
   assert.equal(none.statusLamps, undefined)
   assert.equal(root.children.length, 0)
   none.dispose()
+})
+
+
+test('S26 automatic seats refresh screen and lamp handles without duplicate furniture or collision bodies', () => {
+  const layout = createR1RuntimeLayout(createOfficeR1Layout()), { f, root, collision } = buildFurniture(layout)
+  const before = collision.navigationBodies().length, boxes = [...f.itemBounds].map(([id,b])=>[id,b.min.toArray(),b.max.toArray()])
+  layout.assignAgents([{name:'Reviewer4'}]);f.refresh()
+  const s = layout.seats.Reviewer4, handle = f.deskAt(s[1],s[2])
+  assert.ok(handle?.scr?.ctx && handle.chair)
+  assert.equal(f.statusLamps.caps.count,31)
+  assert.equal(root.children.length,1)
+  assert.equal(collision.navigationBodies().length,before)
+  const autoChair = layout.temporary[0].chair_id
+  const autoDesk = layout.temporary[0].desk_id, autoMonitor = autoDesk.replace('-T-','-M-')
+  for (const [id,min,max] of boxes) if (id!==autoChair && id!==autoMonitor && !id.startsWith(autoDesk+'/')) { const b=f.itemBounds.get(id);assert.deepEqual([b.min.toArray(),b.max.toArray()],[min,max],id) }
+  f.refresh();assert.equal(root.children.length,1);assert.equal(collision.navigationBodies().length,before)
+  f.dispose();assert.equal(root.children.length,0);assert.equal(collision.navigationBodies().length,0)
 })
