@@ -39,7 +39,7 @@ test('I4 real merged high/low scenes retain all 155 workflow IDs, bounds, elevat
   try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'}
     for(const tier of ['high','low']){
       const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier},layout:{}});registry.buildAll({quality:{tier},canvasTex:texture});mergeStatic(scene)
-      assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-racks','wh-r1-workflow'])
+      assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-racks','wh-r1-workflow','wh-r1-vehicles'])
       const root=scene.getObjectByName('wh-r1-workflow'),boxes=rendered(root),ids=WH_R1_ASSIGNMENT.filter(a=>a.card==='I4').map(a=>a.id)
       assert.equal(ids.length,155);assert.deepEqual(root.userData.registerIds,ids)
       for(const id of ids){const row=source(id),box=boxes.get(id);assert.ok(box,id);near(box.min.y,WH_R1_FLOOR_Y+row.zM,id)
