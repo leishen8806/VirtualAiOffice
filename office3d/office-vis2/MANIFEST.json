@@ -400,7 +400,7 @@
       "source": "R1-only deterministic supplemental planting coordinates, checked against actual furniture bounds, route corridors, door sweeps and the OFFICE-R1-SIGHTLINE rule D display-face clear zones; no source-register changes",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E451D6F94BA815E14569037EF40EFC5CADF1FDABD45483C9ADFB502C13F5A782"
+      "sha256": "BF842A2CD3E3488D7FAD3D3AF6FAC4358B9E2A02692114D867612474DCBA3DAF"
     },
     {
       "file": "office-vis2/r1-tropical.js",

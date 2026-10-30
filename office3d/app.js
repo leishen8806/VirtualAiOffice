@@ -2299,7 +2299,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
       const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [] }
       try {
         const loaded = await loadPeople()
-        await Promise.all([loadR1Extras(loaded), loadR1MovementExtras(loaded)])
+        await loadR1Extras(loaded)
         PEOPLE = loaded
         for (const v of views.values()) {
           if (v.char.avatar) continue
@@ -2320,6 +2320,8 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1') {
           await new Promise(resolve => requestAnimationFrame(resolve))
         }
         status.completedAt = performance.now()
+        // Movement extras are optional: seated people and the first frame never wait for them.
+        setTimeout(() => { status.movementStartedAt = performance.now(); loadR1MovementExtras(loaded).then(() => { status.movementReadyAt = performance.now() }).catch(() => { status.movementLoadFailed = true }) }, 0)
       } catch { status.loadFailed = true }
     }, 0)))
   }

@@ -15,7 +15,8 @@ export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entri
     ],
     "distance": 0.67,
     "degrees": -50,
-    "turn": 0
+    "turn": 0,
+    "localPath": [[5.599332301510019, -18.313249776889716], [5.479332301510019, -18.923249776889715], [5.479332301510019, -19.533249776889715], [5.619332301510019, -20.093249776889717]]
   },
   "Backend1": {
     "home": [
@@ -23,8 +24,8 @@ export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entri
       -14.74,
       0
     ],
-    "distance": 0.26,
-    "degrees": 0,
+    "distance": 0.67,
+    "degrees": 50,
     "turn": 0
   },
   "Backend2": {
@@ -33,8 +34,8 @@ export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entri
       -14.74,
       0
     ],
-    "distance": 0.26,
-    "degrees": 0,
+    "distance": 0.67,
+    "degrees": -50,
     "turn": 0
   },
   "BackendSenior": {
@@ -257,10 +258,10 @@ export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entri
     "degrees": -10,
     "turn": 0
   }
-}).map(([name, row]) => [name, Object.freeze({ ...row, home: Object.freeze(row.home) })])))
+}).map(([name, row]) => [name, Object.freeze({ ...row, home: Object.freeze(row.home), ...(row.localPath ? { localPath: Object.freeze(row.localPath.map(Object.freeze)) } : {}) })])))
 
 // R6: measured public-seat transitions; four sofa point lists approved verbatim.
-export const R1_PUBLIC_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entries({"02-CH-001":[[-16.5,-17.8],[-16.5,-16.89]],"02-CH-002":[[-16.5,-20.2],[-16.5,-21.11]],"02-CH-003":[[-15.3,-17.8],[-15.3,-16.89]],"02-CH-004":[[-15.3,-20.2],[-15.3,-21.11]],"02-CH-005":[[-14.1,-17.8],[-14.1,-16.89]],"02-CH-006":[[-14.1,-20.2],[-14.1,-21.11]],"02-CH-007":[[-12.9,-17.8],[-12.9,-16.89]],"02-CH-008":[[-12.9,-20.2],[-12.9,-21.11]],"02-CH-009":[[-11.7,-17.8],[-11.7,-16.89]],"02-CH-010":[[-11.7,-20.2],[-11.7,-21.11]],"02-CH-011":[[-10.5,-17.8],[-10.5,-16.89]],"02-CH-012":[[-10.5,-20.2],[-10.5,-21.11]],"02-CH-013":[[-17.55,-19],[-18.46,-19]],"02-CH-014":[[-9.45,-19],[-8.54,-19]],"03-CH-001":[[-2.55,-16],[-1.6399999999999997,-16]],"03-CH-002":[[-3.6,-17.05],[-3.6,-17.96]],"03-CH-003":[[-4.65,-16],[-5.5600000000000005,-16]],"03-CH-004":[[-3.6,-14.95],[-3.5999999999999996,-14.04]],"03-CH-005":[[-2.55,-21.9],[-1.6399999999999997,-21.9]],"03-CH-006":[[-3.6,-22.95],[-3.6,-23.86]],"03-CH-007":[[-4.65,-21.9],[-5.5600000000000005,-21.9]],"03-CH-008":[[-3.6,-20.85],[-3.5999999999999996,-19.94]],"07-CH-001":[[-1.85274,-2.697717],[-1.9968682035659249,-1.8803266031045756]],"07-CH-002":[[-1.140782,-1.464571],[-0.9966535353203152,-0.6471806491460909]],"07-CH-003":[[-0.05,-0.549296],[0.3649998548795946,0.16950516892636958]],"07-CH-004":[[1.288042,-0.062288],[1.9238590040182766,0.4712255775228431]],"07-CH-005":[[2.711958,-0.062288],[3.4919028134078394,0.2215888888765185]],"07-CH-006":[[4.05,-0.549296],[3.6350001451204053,0.16950516892636958]],"07-CH-007":[[5.140782,-1.464571],[5.920727040987603,-1.7484472636058994]],"07-CH-008":[[5.85274,-2.697717],[6.4885567467379195,-3.2312308841376183]],"07-CH-009":[[6.1,-4.1],[6.515,-4.818801085141084]],"07-CH-010":[[5.85274,-5.502283],[5.996868203565925,-6.319673396895425]],"07-CH-011":[[5.140782,-6.735429],[4.725781580343225,-7.454229842851968]],"07-CH-012":[[-1.140782,-6.735429],[-0.7257815803432253,-7.454229842851968]],"07-CH-013":[[-1.85274,-5.502283],[-2.48855674673792,-4.968769115862382]],"07-CH-014":[[-2.1,-4.1],[-2.515,-3.3811989148589157]],"10-CH-001":[[-15.3,11.75],[-15.3,10.9]],"10-CH-002":[[-13.95,11.75],[-13.95,10.9]],"10-CH-003":[[-12.6,11.75],[-12.6,10.9]],"10-CH-004":[[-11.25,11.75],[-11.25,10.9]],"10-CH-005":[[-9.9,11.75],[-9.9,10.9]],"10-CH-006":[[-14.4,14.6],[-13.49,14.6]],"10-CH-007":[[-15.9,13.733975],[-15.11191697441717,13.278974840892102]],"10-CH-008":[[-15.9,15.466025],[-15.120577227445551,15.916025157359458]],"10-CH-009":[[-8.4,15],[-7.49,15]],"10-CH-010":[[-9.9,14.133975],[-9.11191697441717,13.678974840892103]],"10-CH-011":[[-9.9,15.866025],[-9.120577227445551,16.31602515735946]],"14-BN-001":[[-8,35],[-8,34.12]],"14-BN-002":[[11,35],[11,34.12]],"14-BN-003":[[22.5,29],[21.62,29]],"14-BN-004":[[-18,33],[-18,32.12]],"14-CH-001":[[-15,29],[-14.09,29]],"14-CH-002":[[-16,28],[-16,27.09]],"14-CH-003":[[-17,29],[-17.91,29]],"14-CH-004":[[-16,30],[-16,30.91]],"14-CH-005":[[-16.5,24],[-15.59,24]],"14-CH-006":[[-17.5,23],[-17.5,22.09]],"14-CH-007":[[-18.5,24],[-19.41,24]],"14-CH-008":[[-17.5,25],[-17.5,25.91]],"12-SF-001":[[14.039365,12.400265],[14.409738692692903,12.551338914892755],[15.4,11.775]],"12-SF-002":[[14.518558,14.814065],[14.789034554390293,14.519374597161436],[15.4,11.775]],"12-SF-003":[[17.025029,15.08122],[16.833645159613894,14.729976173521775],[16.6,11.775]],"12-SF-004":[[17.960623,12.757641],[17.57043111283354,12.845676738137861],[16.6,11.775]]}).map(([id, points]) => [id, Object.freeze(points.map(([x, z]) => Object.freeze({ x, z })))])))
+export const R1_PUBLIC_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entries({"02-CH-001":[[-16.5,-17.8],[-16.5,-16.89]],"02-CH-002":[[-16.5,-20.2],[-16.5,-21.11]],"02-CH-003":[[-15.3,-17.8],[-15.3,-16.89]],"02-CH-004":[[-15.3,-20.2],[-15.3,-21.11]],"02-CH-005":[[-14.1,-17.8],[-14.1,-16.89]],"02-CH-006":[[-14.1,-20.2],[-14.1,-21.11]],"02-CH-007":[[-12.9,-17.8],[-12.9,-16.89]],"02-CH-008":[[-12.9,-20.2],[-12.9,-21.11]],"02-CH-009":[[-11.7,-17.8],[-11.7,-16.89]],"02-CH-010":[[-11.7,-20.2],[-11.7,-21.11]],"02-CH-011":[[-10.5,-17.8],[-10.5,-16.89]],"02-CH-012":[[-10.5,-20.2],[-10.5,-21.11]],"02-CH-013":[[-17.55,-19],[-18.46,-19]],"02-CH-014":[[-9.45,-19],[-8.54,-19]],"03-CH-001":[[-2.55,-16],[-1.6399999999999997,-16]],"03-CH-002":[[-3.6,-17.05],[-2.6934628247365118,-17.12931172590037]],"03-CH-003":[[-4.65,-16],[-4.44,-16.68],[-4.130000000000001,-17.45],[-4.11,-17.49],[-4.08,-17.53],[-4.04,-17.56],[-3.7100000000000004,-17.72],[-3.1100000000000003,-17.92]],"03-CH-004":[[-3.6,-14.95],[-2.6988560574451714,-14.82335247812634]],"03-CH-005":[[-2.55,-21.9],[-1.6399999999999997,-21.9]],"03-CH-006":[[-3.6,-22.95],[-2.6934628247365118,-23.029311725900367]],"03-CH-007":[[-4.65,-21.9],[-4.44,-21.22],[-4.130000000000001,-20.45],[-4.11,-20.41],[-4.04,-20.33],[-3.5200000000000005,-19.939999999999998]],"03-CH-008":[[-3.6,-20.85],[-3.5206882740996313,-19.943462824736514]],"07-CH-001":[[-1.85274,-2.697717],[-2.1756937600236426,-0.06746969815049653]],"07-CH-002":[[-1.140782,-1.464571],[-0.630782,0.04542899999999994]],"07-CH-003":[[-0.05,-0.549296],[0.3649998548795946,0.16950516892636958]],"07-CH-004":[[1.288042,-0.062288],[1.9238590040182766,0.4712255775228431]],"07-CH-005":[[2.711958,-0.062288],[3.4919028134078394,0.2215888888765185]],"07-CH-006":[[4.05,-0.549296],[3.6350001451204053,0.16950516892636958]],"07-CH-007":[[5.140782,-1.464571],[5.920727040987603,-1.7484472636058994]],"07-CH-008":[[5.85274,-2.697717],[6.4885567467379195,-3.2312308841376183]],"07-CH-009":[[6.1,-4.1],[6.84,-3.7299999999999995]],"07-CH-010":[[5.85274,-5.502283],[6.928387011695225,-4.021781900293846]],"07-CH-011":[[5.140782,-6.735429],[4.725781580343225,-7.454229842851968]],"07-CH-012":[[-1.140782,-6.735429],[-0.7257815803432253,-7.454229842851968]],"07-CH-013":[[-1.85274,-5.502283],[-1.6175321672280654,-7.417897072667752]],"07-CH-014":[[-2.1,-4.1],[-2.34,-5.51],[-2.3200000000000003,-5.619999999999999],[-2.3000000000000003,-5.68],[-1.61,-7.42]],"10-CH-001":[[-15.3,11.75],[-15.3,10.9]],"10-CH-002":[[-13.95,11.75],[-13.95,10.9]],"10-CH-003":[[-12.6,11.75],[-12.6,10.9]],"10-CH-004":[[-11.25,11.75],[-11.25,10.9]],"10-CH-005":[[-9.9,11.75],[-9.9,10.9]],"10-CH-006":[[-14.4,14.6],[-13.49,14.6]],"10-CH-007":[[-15.9,13.733975],[-15.11191697441717,13.278974840892102]],"10-CH-008":[[-15.9,15.466025],[-15.120577227445551,15.916025157359458]],"10-CH-009":[[-8.4,15],[-7.49,15]],"10-CH-010":[[-9.9,14.133975],[-9.11191697441717,13.678974840892103]],"10-CH-011":[[-9.9,15.866025],[-9.120577227445551,16.31602515735946]],"14-BN-001":[[-8,35],[-8,34.12]],"14-BN-002":[[11,35],[11,34.12]],"14-BN-003":[[22.5,29],[21.63,27.91]],"14-BN-004":[[-18,33],[-18,32.12]],"14-CH-001":[[-15,29],[-14.09,29]],"14-CH-002":[[-16,28],[-16,27.09]],"14-CH-003":[[-17,29],[-17.91,29]],"14-CH-004":[[-16,30],[-16,30.91]],"14-CH-005":[[-16.5,24],[-15.59,24]],"14-CH-006":[[-17.5,23],[-17.5,22.09]],"14-CH-007":[[-18.5,24],[-19.41,24]],"14-CH-008":[[-17.5,25],[-17.5,25.91]],"12-SF-001":[[14.039365,12.400265],[14.409738692692903,12.551338914892755],[15.4,11.775]],"12-SF-002":[[14.518558,14.814065],[14.789034554390293,14.519374597161436],[15.4,11.775]],"12-SF-003":[[17.025029,15.08122],[16.833645159613894,14.729976173521775],[16.6,11.775]],"12-SF-004":[[17.960623,12.757641],[17.57043111283354,12.845676738137861],[16.6,11.775]]}).map(([id, points]) => [id, Object.freeze(points.map(([x, z]) => Object.freeze({ x, z })))])))
 
 const distance = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2)
 const cache = new WeakMap()
@@ -300,9 +301,10 @@ export function createR1Navigation(layout) {
   const directionLengths = directions.map(([x, z]) => Math.hypot(x, z) * R1_GRID)
   let edges = null, staticBlocked = null, integral = null, prepared = false, graphs
   const jumpSegments = []
+  let packedJumps = null
   const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
   const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(size), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap(size) }
-  const preparation = { milliseconds: 0, searchWarmup: [] }
+  const preparation = { milliseconds: 0, searchWarmup: [], mainThreadSlices: [] }
   const bodyMasks = new Map(), sweepMasks = new Map()
   const currentMasks = new WeakMap()
   const stations = new Map(layout.r1.workstations.map(w => [w.business_id, { ...w, home: layout.seats[w.business_id][4] }]))
@@ -311,7 +313,13 @@ export function createR1Navigation(layout) {
   const movable = b => ownedChairs.has(identity(b)) || !!b.group.userData.r1Door
   const bodyFor = id => bodyIndex.get(id)
   const square = (x, z) => `${Math.floor(x / 2)},${Math.floor(z / 2)}`
-  function attach(value) {
+  function attach(value) { for (const _ of attachment(value)) { /* synchronous test / worker path */ } return nav }
+  async function attachAsync(value) {
+    for (const _ of attachment(value)) await new Promise(resolve => setTimeout(resolve, 0))
+    return nav
+  }
+  function* attachment(value) {
+    let slice = performance.now(), triangles = 0
     collision = value; bodies = collision.navigationBodies(); dynamic = bodies.filter(movable); cells = new Map()
     bodyIndex.clear(); for (const body of bodies) if (!bodyIndex.has(identity(body))) bodyIndex.set(identity(body), body)
     for (const source of bodies) {
@@ -319,6 +327,7 @@ export function createR1Navigation(layout) {
       // Planning includes the parked, fully open leaf; runtime additionally checks its current moving pose.
       const body = source.group.userData.r1Door ? { ...source, box: source.box.clone(), triangles: source.triangles.map(t => t.clone()) } : source
       for (const tri of body.triangles) {
+        if (++triangles % 128 === 0 && performance.now() - slice > 8) { preparation.mainThreadSlices.push(performance.now() - slice); yield; slice = performance.now() }
         const x0 = Math.floor((Math.min(tri.a.x, tri.b.x, tri.c.x) - .8) / 2), x1 = Math.floor((Math.max(tri.a.x, tri.b.x, tri.c.x) + .8) / 2)
         const z0 = Math.floor((Math.min(tri.a.z, tri.b.z, tri.c.z) - .8) / 2), z1 = Math.floor((Math.max(tri.a.z, tri.b.z, tri.c.z) + .8) / 2)
         for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
@@ -345,8 +354,12 @@ export function createR1Navigation(layout) {
         exit = { ...p, distance: cm / 100, degrees }; break
       }
       if (!exit) throw new Error(`R1 ${name}: no exit within 1.2 m / 60 degrees`)
-      parameters.set(name, Object.freeze({ name, chairId: s.chair_id, deskId: s.desk_id, standing: { ...s.home }, exit, slide: .8, turn: frozen?.turn || 0, riseSeconds: .8, restoreSeconds: .6, back }))
+      if (performance.now() - slice > 8) { preparation.mainThreadSlices.push(performance.now() - slice); yield; slice = performance.now() }
+      const localPath = Object.freeze((frozen?.localPath || [[exit.x, exit.z]]).map(([x, z]) => Object.freeze({ x, z })))
+      if (Math.hypot(localPath[0].x - exit.x, localPath[0].z - exit.z) > 1e-9 || localPath.slice(1).reduce((n, p, i) => n + Math.hypot(p.x - localPath[i].x, p.z - localPath[i].z), 0) > 3.5) throw new Error(`R1 ${name}: invalid frozen workstation local path`)
+      parameters.set(name, Object.freeze({ localPath, walkPoint: localPath.at(-1), name, chairId: s.chair_id, deskId: s.desk_id, standing: { ...s.home }, exit, slide: .8, turn: frozen?.turn || 0, riseSeconds: .8, restoreSeconds: .6, back }))
     }
+    preparation.mainThreadSlices.push(performance.now() - slice)
     return nav
   }
   function refreshChairs() { dynamic = collision.navigationBodies().filter(movable); revision++ }
@@ -379,7 +392,82 @@ export function createR1Navigation(layout) {
     for (let i = 0; i <= n; i++) if (query({ x: a.x + (b.x - a.x) * i / n, z: a.z + (b.z - a.z) * i / n }, name, radius, ignore)) return false
     return true
   }
-  async function prepare() {
+  let preparing
+  function prepare() {
+    return preparing ||= typeof document !== 'undefined' ? prepareInWorker() : prepareLocally()
+  }
+  async function prepareInWorker() {
+    const started = performance.now(), snapshot = [], buffers = []
+    let slice = performance.now()
+    for (const body of bodies) {
+      const vertices = new Float64Array(body.triangles.length * 9)
+      for (let i = 0; i < body.triangles.length; i++) {
+        const t = body.triangles[i]
+        vertices.set([t.a.x,t.a.y,t.a.z,t.b.x,t.b.y,t.b.z,t.c.x,t.c.y,t.c.z], i * 9)
+        if (i % 128 === 0 && performance.now() - slice > 8) { preparation.mainThreadSlices.push(performance.now() - slice); await new Promise(r => setTimeout(r, 0)); slice = performance.now() }
+      }
+      snapshot.push({ name: body.group.name, id: identity(body), door: body.group.userData.r1Door, kind: body.kind, box: [...body.box.min.toArray(), ...body.box.max.toArray()], vertices })
+      buffers.push(vertices.buffer)
+    }
+    preparation.mainThreadSlices.push(performance.now() - slice)
+    const worker = new Worker(new URL('./office-r1-navigation-worker.js', import.meta.url), { type: 'module' })
+    try {
+      const data = await new Promise((resolve, reject) => {
+        worker.onmessage = ({ data }) => data.error ? reject(new Error(data.error)) : resolve(data)
+        worker.onerror = event => reject(new Error(event.message || 'Navigation worker failed'))
+        worker.onmessageerror = () => reject(new Error('Navigation worker result could not be decoded'))
+        const send = performance.now(); worker.postMessage({ layout, snapshot }, buffers)
+        preparation.mainThreadSlices.push(performance.now() - send)
+      })
+      const slices = preparation.mainThreadSlices, receive = performance.now()
+      adoptPrepared(data)
+      slices.push(performance.now() - receive); preparation.mainThreadSlices = slices
+      prepared = false
+      // The worker's optimized search code is not shared with the page's JavaScript realm.
+      preparation.mainSearchWarmup = []
+      // Warm the page's search on short routes before the first cross-site query on slow CPUs.
+      const probes = data.preparation.searchWarmup.slice().sort((a, b) => distance(a.start, a.end) - distance(b.start, b.end))
+      if (probes.length) {
+        const probe = probes[0], t = performance.now()
+        plan(probe.start, probe.end, probe.owner, probe.people, true)
+        slices.push(performance.now() - t)
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      for (const probe of probes) {
+        const t = performance.now()
+        plan(probe.start, probe.end, probe.owner, probe.people)
+        const milliseconds = performance.now() - t
+        slices.push(milliseconds); preparation.mainSearchWarmup.push(milliseconds)
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
+      prepared = true
+      preparation.worker = true; preparation.milliseconds = performance.now() - started
+    } finally { worker.terminate() }
+  }
+  function exportPrepared() {
+    const box = b => [...b.min.toArray(), ...b.max.toArray()]
+    const jumpPairs = new Uint32Array(jumpSegments.length * 2)
+    jumpSegments.forEach((pair,i) => pair.forEach((p,j) => { jumpPairs[i*2+j] = Math.round((p.z-layout.site.z0)/R1_GRID)*width+Math.round((p.x-layout.site.x0)/R1_GRID) }))
+    return { mask, integral, staticBlocked, edges, graphs, jumpPairs, landmarkCosts, reverseCosts, bodyMasks,
+      sweepMasks: [...sweepMasks].map(([id, s]) => [id, { box: box(s.box), closed: box(s.closed), open: box(s.open), mask: s.mask,
+        proxy: { kind: s.proxy.kind, group: s.proxy.group, triangles: s.proxy.triangles.map(t => [...t.a.toArray(), ...t.b.toArray(), ...t.c.toArray()]) } }]), preparation }
+  }
+  function adoptPrepared(data) {
+    const box = a => new THREE.Box3(new THREE.Vector3(...a.slice(0,3)), new THREE.Vector3(...a.slice(3)))
+    ;({ mask, integral, staticBlocked, edges, graphs } = data)
+    packedJumps = data.jumpPairs
+    landmarkCosts.push(...data.landmarkCosts); reverseCosts.push(...data.reverseCosts)
+    for (const [key,value] of data.bodyMasks) bodyMasks.set(key,value)
+    for (const [id,s] of data.sweepMasks) {
+      const bounds = box(s.box)
+      sweepMasks.set(id, { ...s, box: bounds, closed: box(s.closed), open: box(s.open), proxy: { ...s.proxy, box: bounds,
+        triangles: s.proxy.triangles.map(t => new THREE.Triangle(new THREE.Vector3(...t.slice(0,3)), new THREE.Vector3(...t.slice(3,6)), new THREE.Vector3(...t.slice(6,9)))) } })
+    }
+    search.jumpBlocked = new Uint8Array(packedJumps.length / 2)
+    Object.assign(preparation, data.preparation)
+    prepared = true
+  }
+  async function prepareLocally() {
     if (mask) return
     const started = performance.now()
     const next = new Uint8Array(cols * rows), radius = .6 + Math.SQRT2 * fine / 2
@@ -525,8 +613,9 @@ export function createR1Navigation(layout) {
     const probes = [...chosen].filter(id => !query(gridPoints[id]) && Number.isFinite(landmarkCosts[0][id]))
     const warmPeople = [...stations.values()].slice(0, 7).map(s => s.home), warmOwner = stations.keys().next().value
     for (let i = 1; i < probes.length * 2; i++) {
-      const start = performance.now(), path = plan(gridPoints[probes[(i - 1) % probes.length]], gridPoints[probes[i % probes.length]], i % 2 ? warmOwner : undefined, i % 2 ? warmPeople : [])
-      preparation.searchWarmup.push({ reachable: !!path, milliseconds: performance.now() - start })
+      const from = gridPoints[probes[(i - 1) % probes.length]], to = gridPoints[probes[i % probes.length]], owner = i % 2 ? warmOwner : undefined, people = i % 2 ? warmPeople : []
+      const start = performance.now(), path = plan(from, to, owner, people)
+      preparation.searchWarmup.push({ start: from, end: to, owner, people, reachable: !!path, milliseconds: performance.now() - start })
       await new Promise(resolve => setTimeout(resolve, 0))
     }
     preparation.milliseconds = performance.now() - started
@@ -633,8 +722,8 @@ export function createR1Navigation(layout) {
       raster.cells[z * raster.width + x] = !collision.navigationHit(px, pz, radius + margin, null, [body]) ? 0 : collision.navigationHit(px, pz, radius - margin, null, [body]) ? 1 : 2
     }
     const result = { blocked, links, nearby, raster, jumps: [] }; bodyMasks.set(key, result); current.radii.set(radius, result)
-    for (let i = 0; i < jumpSegments.length; i++) {
-      const [a,b] = jumpSegments[i]
+    for (let i = 0; i < (packedJumps ? packedJumps.length / 2 : jumpSegments.length); i++) {
+      const [a,b] = packedJumps ? [gridPoints[packedJumps[i*2]], gridPoints[packedJumps[i*2+1]]] : jumpSegments[i]
       if (Math.max(a.x,b.x) < box.min.x-radius || Math.min(a.x,b.x)>box.max.x+radius || Math.max(a.z,b.z)<box.min.z-radius || Math.min(a.z,b.z)>box.max.z+radius) continue
       // The single-body mask is already cached, so this cannot recurse.
       if (!movingClear(a,b, undefined, [body], radius)) result.jumps.push(i)
@@ -660,11 +749,13 @@ export function createR1Navigation(layout) {
   // A valid local seat approach must also join the walkable component outside the furniture.
   function reachableFrom(start, name) {
     const blocked = staticBlocked.slice(), links = edges.slice(), owner = stations.get(name)?.chair_id
+    const blockedJumps = new Uint8Array(packedJumps ? packedJumps.length / 2 : jumpSegments.length)
     for (const body of dynamic) {
       if (body.group.userData.r1Door) continue
       const cached = bodyMask(body, identity(body) === owner ? .24 : .6)
       for (const id of cached.blocked) blocked[id] = 1
       for (const [id, bits] of cached.links) links[id] &= bits
+      for (const edge of cached.jumps) blockedJumps[edge] = 1
     }
     const seen = new Uint8Array(size), queue = new Int32Array(size); let head = 0, tail = 0
     const connectors = (p, accept) => {
@@ -677,16 +768,17 @@ export function createR1Navigation(layout) {
     }
     connectors(start, (id, p) => { if (!seen[id] && clearFast(start, p, name, true)) { seen[id] = 1; queue[tail++] = id }; return false })
     while (head < tail) {
-      const id = queue[head++], x = id % width, z = Math.floor(id / width)
-      directions.forEach(([dx, dz], bit) => {
-        if (!(links[id] & (1 << bit))) return
-        const nx = x + dx, nz = z + dz, next = nz * width + nx
-        if (nx >= 0 && nz >= 0 && nx < width && nz < height && !blocked[next] && !seen[next]) { seen[next] = 1; queue[tail++] = next }
-      })
+      const id = queue[head++], graph = graphs[0]
+      // Use the same geometry-derived links as plan(), including narrow diagonal passages.
+      for (let at = graph.offsets[id]; at < graph.offsets[id + 1]; at++) {
+        const next = graph.ids[at], bit = graph.bits[at], jump = graph.jumps[at]
+        if (bit && !(links[id] & bit) || jump >= 0 && blockedJumps[jump]) continue
+        if (!blocked[next] && !seen[next]) { seen[next] = 1; queue[tail++] = next }
+      }
     }
     return p => !query(p, name) && connectors(p, (id, q) => seen[id] && clearFast(p, q, name, true))
   }
-  function plan(start, end, name, people = []) {
+  function plan(start, end, name, people = [], warmupOnly = false) {
     const peopleClear = (a, b) => {
       if (!people.length) return true
       const dx = b.x - a.x, dz = b.z - a.z, length2 = dx * dx + dz * dz
@@ -744,34 +836,37 @@ export function createR1Navigation(layout) {
       return [from, to]
     }
     const [goalFrom, goalTo] = bounds(goals), [startFrom, startTo] = bounds(starts)
-    const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,4).map(row => row.i)
+    const selected = landmarkCosts.map((_, i) => ({ i, bound: Math.max(Number.isFinite(goalFrom[i]-startFrom[i]) ? goalFrom[i]-startFrom[i] : 0, Number.isFinite(startTo[i]-goalTo[i]) ? startTo[i]-goalTo[i] : 0) })).sort((a,b) => b.bound-a.bound).slice(0,8).map(row => row.i)
     // Endpoint-near landmarks constrain local detours that distant landmark ties cannot distinguish.
     for (const values of [goalFrom, startFrom]) {
       let nearest = -1
       for (let i = 0; i < values.length; i++) if (Number.isFinite(values[i]) && (nearest < 0 || values[i] < values[nearest])) nearest = i
       if (nearest >= 0 && !selected.includes(nearest)) selected.push(nearest)
     }
+    const fields = selected.map(i => ({ from: landmarkCosts[i], to: reverseCosts[i],
+      goalFrom: Number.isFinite(goalFrom[i]) ? goalFrom[i] : -Infinity, goalTo: Number.isFinite(goalTo[i]) ? goalTo[i] : Infinity,
+      startFrom: Number.isFinite(startFrom[i]) ? startFrom[i] : Infinity, startTo: Number.isFinite(startTo[i]) ? startTo[i] : -Infinity }))
     const estimates = search.estimates, forwardEstimates = search.forwardEstimates, bidirectional = people.length > 0; estimates.fill(NaN)
     // Balanced landmark potentials let both frontiers meet without searching a whole room behind a narrow goal.
     const potential = id => {
       if (!Number.isNaN(estimates[id])) return estimates[id]
-      let forward = distance(gridPoints[id], end), backward = distance(start, gridPoints[id])
-      for (const i of selected) {
-        const from = landmarkCosts[i][id], to = reverseCosts[i][id]
+      let forward = distance(gridPoints[id], end), backward = bidirectional ? distance(start, gridPoints[id]) : 0
+      for (const field of fields) {
+        const from = field.from[id], to = field.to[id]
         if (Number.isFinite(from)) {
-          if (Number.isFinite(goalFrom[i])) forward = Math.max(forward, goalFrom[i] - from)
-          if (Number.isFinite(startFrom[i])) backward = Math.max(backward, from - startFrom[i])
+          forward = Math.max(forward, field.goalFrom - from)
+          if (bidirectional) backward = Math.max(backward, from - field.startFrom)
         }
         if (Number.isFinite(to)) {
-          if (Number.isFinite(goalTo[i])) forward = Math.max(forward, to - goalTo[i])
-          if (Number.isFinite(startTo[i])) backward = Math.max(backward, startTo[i] - to)
+          forward = Math.max(forward, to - field.goalTo)
+          if (bidirectional) backward = Math.max(backward, field.startTo - to)
         }
       }
       forwardEstimates[id] = forward
       return estimates[id] = (forward - backward) / 2
     }
     // Without temporary person obstacles, ordinary ALT A* avoids the second frontier's overhead.
-    const priority = (id, reverse = false) => { const p = potential(id); return bidirectional ? (reverse ? -p : p) : 1.03 * forwardEstimates[id] }
+    const priority = (id, reverse = false) => { const p = potential(id); return bidirectional ? (reverse ? -p : p) : 1.045 * forwardEstimates[id] }
     const { costs, previous, closed, open, backCosts, next: following, backClosed, backOpen } = search
     costs.fill(Infinity); backCosts.fill(Infinity); previous.fill(-2); following.fill(-2); closed.fill(0); backClosed.fill(0); open.rows.length = 0; backOpen.rows.length = 0
     for (const [id, length] of starts) { costs[id] = length; previous[id] = -1; open.push(id, length, length + priority(id)) }
@@ -780,13 +875,15 @@ export function createR1Navigation(layout) {
     const meet = id => { const length = costs[id] + backCosts[id]; if (length < best) { best = length; meeting = id } }
     for (const [id] of starts) meet(id)
     const trim = (heap, done, distances) => { while (heap.rows.length && (done[heap.ids[0]] || heap.gs[0] > distances[heap.ids[0]])) heap.pop() }
+    // Startup can heat connector/cache setup separately from the first frontier expansion.
+    if (warmupOnly) return null
     // Stop at a certified 4% grid bound; independent any-angle acceptance remains capped at 5%.
     while (open.rows.length && backOpen.rows.length) {
       trim(open, closed, costs); if (bidirectional) trim(backOpen, backClosed, backCosts)
       if (!open.rows.length || bidirectional && (!backOpen.rows.length || open.fs[0] + backOpen.fs[0] >= best / 1.04 - 1e-9)) break
       // Expand the smaller frontier to avoid flooding an open room while the other side crosses a narrow exit.
       const reverse = bidirectional && backOpen.rows.length < open.rows.length, heap = reverse ? backOpen : open, done = reverse ? backClosed : closed, distances = reverse ? backCosts : costs, parent = reverse ? following : previous
-      const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; meet(id)
+      const row = heap.pop(), id = row.id, g0 = row.g, here = gridPoints[id]; done[id] = 1; if (bidirectional) meet(id)
       if (!bidirectional && following[id] === -1) { meeting = id; break }
       const graph = graphs[reverse ? 1 : 0]
       for (let at = graph.offsets[id]; at < graph.offsets[id + 1]; at++) {
@@ -794,8 +891,8 @@ export function createR1Navigation(layout) {
         if (done[other] || blocked[other] || bit && !(links[from] & bit) || edge >= 0 && jumpBlocked[edge]) continue
         const g = g0 + graph.lengths[at]; if (g >= distances[other]) continue
         const p = gridPoints[other], a = reverse ? p : here, b = reverse ? here : p
-        if (!edgePeopleClear(from, a, b) || uncached.length && !movingClear(a, b, name, uncached)) continue
-        distances[other] = g; parent[other] = id; heap.push(other, g, g + priority(other, reverse)); meet(other)
+        if (people.length && !edgePeopleClear(from, a, b) || uncached.length && !movingClear(a, b, name, uncached)) continue
+        distances[other] = g; parent[other] = id; heap.push(other, g, g + priority(other, reverse)); if (bidirectional) meet(other)
       }
     }
     if (meeting < 0) return null
@@ -817,10 +914,10 @@ export function createR1Navigation(layout) {
   const trip = (from, to) => {
     if (!prepared) return []
     const owner = [...stations].find(([, s]) => distance(s.home, from) < .001)?.[0]
-    const start = owner ? parameters.get(owner).exit : from
+    const start = owner ? parameters.get(owner).walkPoint : from
     return plan(start, to, owner) || []
   }
-  const nav = { attach, prepare, preparationInfo: () => structuredClone(preparation), prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, chairSweepHit, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
+  const nav = { attach, attachAsync, prepare, exportPrepared, adoptPrepared, preparationInfo: () => structuredClone(preparation), prepared: () => prepared, query, clear, lineClear: clearFast, plan, smoothPath, reachableFrom, refreshChairs, chairSweepHit, parameters, stations, bodyFor, roomAt, ready: () => !!collision, revision: () => revision,
     standAt: p => ({ x: p.x, z: p.z }), officeExit: p => [p], corridorPath: trip, loungeTrip: trip, meetingTrip: trip, officeTrip: trip, boardTrip: trip, consumerTrip: trip, foyerTrip: trip, plazaTrip: trip, foyerReturnTrip: trip,
     consumerAdvance: (_, p) => [p], consumerDeparture: (_, p) => [p], consumerTargets: {}, consumerQueues: { waiting: [] },
     ENTRANCE: { x0: gate.x - 3.5, x1: gate.x + 3.5, inner: { x: gate.x, z: gate.z - 2 }, gate: [{ x: gate.x, z: gate.z - 2 }, { x: gate.x, z: gate.z + 2 }] },

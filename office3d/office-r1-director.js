@@ -17,8 +17,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     mesh.position.set(p.x, row.height / 2, p.z); mesh.scale.set(row.vertical ? row.thickness : row.width, row.height, row.vertical ? row.width : row.thickness)
     collision.add(mesh, 'r1-moving-door'); doorBodies.push({ row, mesh, p })
   }
-  nav.attach(collision)
-  const ready = nav.prepare().catch(error => { preparationError = error.message; console.error('R1 navigation:', error.message) })
+  const ready = nav.attachAsync(collision).then(() => nav.prepare()).catch(error => { preparationError = error.message; console.error('R1 navigation:', error.message) })
   const anchor = v => v.r1Position || v.home
   const countAway = () => [...views.values()].filter(v => !v.away && (v.r1AwayFromDesk || v.act && v.act.phase !== 'queued')).length
   const put = (v, p) => { v.r1Position = { x: p.x, z: p.z }; v.char.group.position.set(p.x, 0, p.z) }
@@ -43,6 +42,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       const otherParams = nav.parameters.get(stationName(other))
       // Returning neighbours reserve their shared approach until seated, not while idle elsewhere.
       const reserved = returning ? other.act && other.act.phase !== 'queued' : other.r1AwayFromDesk || other.act && other.act.phase !== 'queued'
+      // Opening a return chair can seal the shared aisle ahead of an earlier returning colleague.
+      if (reserved && other.act?.back && layout.seats[stationName(v)]?.[0] === layout.seats[stationName(other)]?.[0]) return true
       if (reserved && otherParams && dist(p.exit, otherParams.exit) < .5) return true
       if (reserved && otherParams) {
         const end = { x: v.home.x + p.back.x * p.slide, z: v.home.z + p.back.z * p.slide }
@@ -55,7 +56,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       const end = { x: v.home.x + p.back.x * p.slide, z: v.home.z + p.back.z * p.slide }
       if (pointDistance(anchor(other), v.home, end) < 1.04) return true
       if (!other.act || other.act.phase === 'queued') continue
-      if (['rise', 'exit', 'return-transition', 'sit'].includes(other.act.phase)) {
+      if (['rise', 'exit', 'workstation-local', 'return-workstation-local', 'return-transition', 'sit'].includes(other.act.phase)) {
         const q = nav.parameters.get(stationName(other)), c = q.standing, d = q.exit
         const crossing = cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0
         if (crossing || Math.min(pointDistance(a, c, d), pointDistance(b, c, d), pointDistance(c, a, b), pointDistance(d, a, b)) < .5) return true
@@ -127,16 +128,29 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   }
   function start(v, seat, options = {}) {
     if (!v || v.act || v.away && options.commute !== 'arrive' || R1_RESERVED_SEATS.includes(seat?.id)) return false
+    const path = R1_PUBLIC_TRANSITIONS[seat?.id]
+    if (path) {
+      const near = (points, p) => points.slice(1).some((b, i) => {
+        const a = points[i], dx = b.x - a.x, dz = b.z - a.z, t = clamp(((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz || 1))
+        return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz) < .5
+      })
+      // A seated neighbour must not occupy another seat's only entry/exit corridor.
+      for (const other of views.values()) {
+        if (other === v || other.away) continue
+        const reserved = other.r1PublicSeat?.path || R1_PUBLIC_TRANSITIONS[other.act?.seat?.id]
+        if (reserved && (near(path, reserved[0]) || near(reserved, path[0]))) return false
+      }
+    }
     const back = !options.cheer && (options.back || dist(seat, v.home) < .001)
     const act = { v, view: v, seat, back, phase: 'queued', t: 0, total: 0, options, trail: [], returnQueued: false, stall: 0 }
     v.act = act; actions.add(act); pending.push(act); return true
   }
-  function transitionClear(v, pos, publicSeat) {
+  function transitionClear(v, pos, publicSeat, workstationLocal = false) {
     const p = nav.parameters.get(stationName(v)), ids = publicSeat?.excluded || [p.deskId, p.chairId]
     const groups = new Set([nav.bodyFor(p.chairId)?.group, ...ids.map(id => nav.bodyFor(id)?.group)])
     if (publicSeat) return !nav.query(pos, stationName(v), .25, groups)
     const table = nav.bodyFor(p.deskId)
-    return !nav.query(pos, stationName(v), .6, groups) && (!table || !collision.navigationHit(pos.x, pos.z, .25, null, [table]))
+    return !nav.query(pos, stationName(v), workstationLocal ? .25 : .6, groups) && (!table || !collision.navigationHit(pos.x, pos.z, .25, null, [table]))
   }
   function finish(act) {
     const v = act.v; v.act = null; actions.delete(act); act.options.onDone?.()
@@ -162,9 +176,18 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     openAhead(v, target)
     if (!peopleClear(v, next)) {
       act.stall += dt; v.char.pose.walk = 0
-      if (act.stall > .4) for (const side of [1, -1]) {
-        const avoid = { x: pos.x - (target.z - pos.z) / length * .65 * side, z: pos.z + (target.x - pos.x) / length * .65 * side }
-        if (peopleClear(v, avoid) && nav.clear(pos, avoid, stationName(v)) && nav.lineClear(pos, avoid, stationName(v))) { act.path.splice(act.i, 0, avoid); act.stall = 0; break }
+      if (act.stall > .4 && elapsed >= (act.avoidAt || 0)) {
+        act.avoidAt = elapsed + .25
+        const dx = (target.x - pos.x) / length, dz = (target.z - pos.z) / length
+        const blockers = [...views.values()].filter(other => other !== v && !other.away && other.char.group.visible && dist(anchor(other), next) < .5)
+        const yields = blockers.some(other => stationName(v).localeCompare(stationName(other)) > 0)
+        const offsets = [.35, .65].flatMap(radius => [1, -1].map(side => ({ x: -dz * radius * side, z: dx * radius * side })))
+        // A narrow aisle may have no passing width: one walker backs out, rather than both holding it.
+        if (yields) offsets.push({ x: -dx * .65, z: -dz * .65 })
+        for (const offset of offsets) {
+          const avoid = { x: pos.x + offset.x, z: pos.z + offset.z }
+          if (peopleClear(v, avoid) && nav.clear(pos, avoid, stationName(v)) && nav.lineClear(pos, avoid, stationName(v))) { act.path.splice(act.i, 0, avoid); act.stall = 0; break }
+        }
       }
       return false
     }
@@ -199,6 +222,24 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       if (k === 1) {
         pose.walk = 0; act.t = 0
         if (entering) act.phase = 'sit'
+        else if (p.localPath.length > 1) act.phase = 'workstation-local'
+        else {
+          v.r1AwayFromDesk = true
+          const target = approach(act.seat, v)
+          if (!target) { act.phase = 'blocked'; act.retryTarget = null; return }
+          beginWalk(act, target, act.options.commute === 'leave' ? 'leave' : act.options.chat ? 'chat' : act.options.stand ? 'destination-stand' : 'destination-sit')
+        }
+      }
+    } else if (act.phase === 'workstation-local' || act.phase === 'return-workstation-local') {
+      const entering = act.phase === 'return-workstation-local', path = entering ? p.localPath.slice().reverse() : p.localPath
+      const local = localPosition(path, act.t), own = nav.bodyFor(p.chairId)
+      if (!peopleClear(v, local.p) || !transitionClear(v, local.p, null, true) || collision.navigationHit(local.p.x, local.p.z, .24, null, [own])) { act.t -= dt; return }
+      const pos = anchor(v)
+      if (dist(pos, local.p) > 1e-9) v.char.group.rotation.y = Math.atan2(pos.x - local.p.x, pos.z - local.p.z)
+      put(v, local.p); pose.walk = 1; pose.phase += .8 * dt * 4.6
+      if (local.done) {
+        act.t = 0; pose.walk = 0
+        if (entering) act.phase = 'return-transition'
         else {
           v.r1AwayFromDesk = true
           const target = approach(act.seat, v)
@@ -219,8 +260,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     } else if (act.phase === 'blocked') {
       act.blockedFor = (act.blockedFor || 0) + dt
       // Yield the exit back to a neighbour's restoring chair instead of holding it indefinitely.
-      if (!act.back && act.blockedFor > 3 && dist(anchor(v), p.exit) < .01) {
-        act.yielding = true; act.phase = 'return-transition'; act.t = 0
+      if (!act.back && act.blockedFor > 3 && dist(anchor(v), p.walkPoint) < .01) {
+        act.yielding = true; act.phase = p.localPath.length > 1 ? 'return-workstation-local' : 'return-transition'; act.t = 0
       } else if (act.t > 1 && act.retryTarget) beginWalk(act, act.retryTarget, act.next)
     } else if (act.phase === 'leave') {
       v.away = true; v.char.group.visible = false; reserveChair(v, false); finish(act)
@@ -243,7 +284,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       put(v, next); pose.walk = 1; pose.phase += .8 * dt * 4.6
       if (local.done) {
         v.r1PublicSeat = null; pose.lounge = 0
-        if (act.back) { reserveChair(v, true); beginWalk(act, p.exit, 'return-transition') }
+        if (act.back) { reserveChair(v, true); beginWalk(act, p.walkPoint, p.localPath.length > 1 ? 'return-workstation-local' : 'return-transition') }
         else {
           const target = approach(act.seat, v)
           if (!target) { act.phase = 'blocked'; act.retryTarget = null; return }
@@ -265,7 +306,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       pose.talk = 1; pose.r1Motion = 'gestic_talk_relaxed_01'; bubble(v, act.options.text, 5)
       act.phase = 'chat-wait'; act.t = 0
     } else if (act.phase === 'chat-wait' && act.t >= 5) {
-      pose.talk = 0; pose.r1Motion = null; reserveChair(v, true); act.back = true; beginWalk(act, p.exit, 'return-transition')
+      pose.talk = 0; pose.r1Motion = null; reserveChair(v, true); act.back = true; beginWalk(act, p.walkPoint, p.localPath.length > 1 ? 'return-workstation-local' : 'return-transition')
     }
   }
   function update(dt) {
@@ -288,10 +329,14 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       const a = pending[i], v = a.v
       if (elapsed < (a.retryAfter || 0) || (v.away || !v.r1AwayFromDesk) && countAway() >= 8 || transitionOccupied(v, a.back)) { i++; continue }
       pending.splice(i, 1); a.t = 0
-      if (a.options.commute === 'arrive') { const gate = nav.ENTRANCE.gate[1]; if (!peopleClear(v, gate)) { pending.push(a); break }; v.away = false; v.char.group.visible = true; put(v, gate); v.char.pose.sit = 0; v.char.pose.r1AtDesk = false; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).exit, 'return-transition') }
+      if (a.options.commute === 'arrive') { const gate = nav.ENTRANCE.gate[1]; if (!peopleClear(v, gate)) { pending.push(a); break }; v.away = false; v.char.group.visible = true; put(v, gate); v.char.pose.sit = 0; v.char.pose.r1AtDesk = false; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).walkPoint, nav.parameters.get(stationName(v)).localPath.length > 1 ? 'return-workstation-local' : 'return-transition') }
       else if (v.r1PublicSeat) a.phase = 'public-rise'
-      else if (a.back) { v.char.pose.sit = 0; v.char.pose.lounge = 0; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).exit, 'return-transition') }
-      else a.phase = 'rise'
+      else if (a.back) { v.char.pose.sit = 0; v.char.pose.lounge = 0; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).walkPoint, nav.parameters.get(stationName(v)).localPath.length > 1 ? 'return-workstation-local' : 'return-transition') }
+      else if (v.r1AwayFromDesk) {
+        const target = approach(a.seat, v)
+        if (target) beginWalk(a, target, a.options.commute === 'leave' ? 'leave' : a.options.chat ? 'chat' : a.options.stand ? 'destination-stand' : 'destination-sit')
+        else { a.phase = 'blocked'; a.retryTarget = null }
+      } else a.phase = 'rise'
     }
     for (const a of [...actions]) step(a, dt)
     for (const id of [...activeDoors]) {
