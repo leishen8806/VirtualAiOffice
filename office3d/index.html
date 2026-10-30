@@ -254,6 +254,7 @@
   #loading.done { opacity:0; pointer-events:none; }
   #liteToggle { position:fixed; right:16px; bottom:62px; z-index:30; padding:6px 12px; border-radius:16px; border:1px solid rgba(182,154,100,.6); background:rgba(20,22,26,.78); color:#e0c88f; font-size:12px; cursor:pointer; }
   #liteToggle:hover { background:rgba(40,42,48,.9); }
+  @media (max-width: 760px) { #liteToggle { bottom:104px; right:12px; } } /* 手机：让开底部两行工具栏 */
 
   /* 头顶标签与气泡 */
   #labels { position:fixed; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
