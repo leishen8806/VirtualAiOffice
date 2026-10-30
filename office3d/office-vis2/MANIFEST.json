@@ -267,7 +267,7 @@
       "source": "Existing office furniture assembly; ALIGN north library reuses the approved bookcaseOpen model; no download or new business seats",
       "license": "Repository MIT; existing furniture models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "B570627F5F7E4D549075D031FC1D7123E78E783F0B5965002ADCD438BF275718"
+      "sha256": "350ADD943DA4B2EF4293B97B6E8108F7FBDDD6F69D1AE3139B9C59B28BAFD866"
     },
     {
       "file": "office-vis2/furniture-sample.js",
@@ -309,7 +309,7 @@
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; OFFICE-R1-DESKSTATUS adds the brass desk-corner status lamps (two instanced batches, colour by instanceColor); no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "9394885894F69DEE41285207F873C3C8E64152BEE1F551EA6B81673741F165DF"
+      "sha256": "6FB1FECD14F104F73F0B075EF9674D894ACDB68968C956961459499F016C9011"
     },
     {
       "file": "office-vis2/r1-zones.js",

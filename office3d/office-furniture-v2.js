@@ -19,6 +19,37 @@ export function monitorScreenFit({ x, y, z, width = .66, height = .46, depth = .
   return { center: { x: glassCenter.x + normal[0] * .0015, y: glassCenter.y + normal[1] * .0015, z: glassCenter.z + normal[2] * .0015 }, glassCenter, normal, glassWidth, glassHeight, width: glassWidth - .012, height: glassHeight - .012, yaw, pitch: -Math.asin(ny), offset: .0015 }
 }
 
+// computerScreen.glb 的 metalDark 外壳朝前那一圈实测值：显示器正面整块黑色面板，
+// 和上面的玻璃同法线、同后仰角，但大一圈（.3927×.2472 对 .3791×.2337）。
+export const MONITOR_PANEL_SOURCE = Object.freeze({ center: Object.freeze([.196344003081321, .17188213765621185, -.04777985159307718]), normal: Object.freeze([0, .13917310535907745, .9902680516242981]), width: .3926880061626449, height: .2472119907708746 })
+export const MONITOR_PANEL_BORDER_MAX = .015 // 四周留的边框上限（OFFICE-R1-DESKSTATUS R2）
+const MONITOR_PANEL_OFFSET = .002 // 贴片浮在面板前表面前方 2 mm（要求 0.5–3 mm）
+
+// R1 工位屏幕用：把贴片铺满整块黑色面板，并且**跟着面板后仰**。
+// monitorScreenFit 返回的是一块竖直矩形，贴在后仰 8° 的面板上只有中线以上露在外面，
+// 以下半块埋进外壳里被挡住；这里连 up 向量一起给出去，由调用方按 right/up 建面。
+export function monitorPanelFit({ x, y, z, width = .66, height = .46, depth = .16, yaw = 0, aspect = 16 / 9 }) {
+  const sx = width / MONITOR_MODEL.width, sy = height / MONITOR_MODEL.height, sz = depth / MONITOR_MODEL.depth
+  const ny0 = MONITOR_PANEL_SOURCE.normal[1] / sy, nz0 = MONITOR_PANEL_SOURCE.normal[2] / sz, nl = Math.hypot(ny0, nz0)
+  const ny = ny0 / nl, nz = nz0 / nl, sin = Math.sin(yaw), cos = Math.cos(yaw)
+  const lx = (MONITOR_PANEL_SOURCE.center[0] - MONITOR_MODEL.centerX) * sx, lz = (MONITOR_PANEL_SOURCE.center[2] - MONITOR_MODEL.centerZ) * sz
+  const normal = [sin * nz, ny, cos * nz]
+  const panelCenter = { x: x + cos * lx + sin * lz, y: y + MONITOR_PANEL_SOURCE.center[1] * sy, z: z - sin * lx + cos * lz }
+  const panelWidth = MONITOR_PANEL_SOURCE.width * sx
+  const panelHeight = MONITOR_PANEL_SOURCE.height * Math.hypot(MONITOR_PANEL_SOURCE.normal[2] * sy, MONITOR_PANEL_SOURCE.normal[1] * sz)
+  // 先按上下各留满 1.5 cm 定高，再按画布宽高比定宽：画面不拉伸，左右边框自然比 1.5 cm 还小。
+  const fitHeight = panelHeight - 2 * MONITOR_PANEL_BORDER_MAX, fitWidth = fitHeight * aspect
+  const center = { x: panelCenter.x + normal[0] * MONITOR_PANEL_OFFSET, y: panelCenter.y + normal[1] * MONITOR_PANEL_OFFSET, z: panelCenter.z + normal[2] * MONITOR_PANEL_OFFSET }
+  const right = { x: cos, y: 0, z: -sin }, up = { x: -ny * sin, y: nz, z: -ny * cos }
+  const halfW = fitWidth / 2, halfH = fitHeight / 2
+  const corner = (sw, sh) => ({ x: center.x + right.x * halfW * sw + up.x * halfH * sh, y: center.y + up.y * halfH * sh, z: center.z + right.z * halfW * sw + up.z * halfH * sh })
+  return {
+    center, panelCenter, normal, right, up, panelWidth, panelHeight,
+    width: fitWidth, height: fitHeight, yaw, pitch: -Math.asin(ny), offset: MONITOR_PANEL_OFFSET,
+    corners: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)],
+  }
+}
+
 export function workstationDesktop(seat) {
   const yaw = seat.yaw || 0, point = (dx, dz) => ({ x: seat.x + Math.cos(yaw) * dx + Math.sin(yaw) * dz, z: seat.z - Math.sin(yaw) * dx + Math.cos(yaw) * dz })
   const monitor = point(0, -.17), keyboard = point(-.12, .15), mouse = point(.42, .15)
