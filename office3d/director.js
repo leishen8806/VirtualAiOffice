@@ -1,3 +1,4 @@
+import { createR1Director } from './office-r1-director.js'
 // 动画导演：把「真实事件」变成人物动作。没有事件就没有动作——不制造假活动。
 import { createOfficeNavigation } from './office-layout.js'
 import { createPedestrianTraffic, PERSON_GAP } from './pedestrian-traffic.js'
@@ -22,7 +23,8 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v))
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a))
 const isWalker = act => ['rise', 'walk'].includes(act.phase)
 
-export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride }) {
+export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride, r1Furniture, r1Doors }) {
+  if (layout?.r1Phase === 'R1') return createR1Director({ views, board, layer, project, needDesk, furnitureCollision, layout, r1Furniture, r1Doors })
   const seatedOnly = layout?.r1Phase === 'R1'
   const navigation = navigationOverride || createOfficeNavigation(layout)
   const { officeExit, officeTrip, boardTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
