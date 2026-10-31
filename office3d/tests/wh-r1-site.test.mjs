@@ -80,6 +80,28 @@ test('SITE annex, I7 objects and planning yards are complete and collidable', ()
   value.dispose(); assert.equal(collision.stats().bodies, 0); assert.equal(root.children.length, 0)
 })
 
+test('SITE instance colors are readable by every material and match the registered design colors', () => {
+  const expected = [
+    ['wh-r1-site-boxes', WH_R1_I7_ROWS.find(row => row.category === '长椅').id, 0x725740],
+    ['wh-r1-site-boxes', WH_R1_ANNEX.walls[0].id, 0x64767d],
+    ['wh-r1-site-planes', WH_R1_RESERVED_YARDS[0].id, 0xe1bd61],
+  ]
+  for (const tier of ['high', 'low']) {
+    const root = new THREE.Group(), value = buildWhR1Site({ THREE, root, quality: { tier } })
+    for (const name of ['wh-r1-site-boxes', 'wh-r1-site-planes']) {
+      const mesh = value.root.getObjectByName(name)
+      if (mesh.material.vertexColors) assert.ok(mesh.geometry.getAttribute('color'), `${tier} ${name} 开启 vertexColors 时必须有顶点 color`)
+    }
+    for (const [name, id, hex] of expected) {
+      const mesh = value.root.getObjectByName(name), index = mesh.userData.instanceToRegisterId.indexOf(id), actual = new THREE.Color()
+      assert.ok(index >= 0, id); mesh.getColorAt(index, actual)
+      const registered = new THREE.Color(hex)
+      assert.ok(Math.max(Math.abs(actual.r - registered.r), Math.abs(actual.g - registered.g), Math.abs(actual.b - registered.b)) < 1e-6, `${tier} ${id} 实例色必须等于 #${hex.toString(16).padStart(6, '0')}`)
+    }
+    value.dispose()
+  }
+})
+
 test('SITE changes only the explicit WH-R1 place metadata and clamps saved cameras to the new site', () => {
   const mode = resolvePlaceMode('?place=drlife-warehouse&whr1=1')
   assert.deepEqual(mode.miniBounds, WH_R1_SITE); assert.deepEqual(mode.zones, WH_R1_ZONES)

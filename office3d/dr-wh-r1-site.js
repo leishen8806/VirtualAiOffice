@@ -17,10 +17,10 @@ const instance = (THREE, root, name, geometry, material, rows, transform) => {
 export function buildWhR1Site({ THREE, root, quality, collision, canvasTex }) {
   const group = new THREE.Group(); group.name = 'wh-r1-site'; group.userData = { noMerge: true, motion: 'NONE', levels: 'UNKNOWN', deviations: WH_R1_DEVIATIONS }; root.add(group)
   const low = quality?.tier === 'low', meshes = [], proxies = [], textures = []
-  const solidMaterial = low ? new THREE.MeshLambertMaterial({ vertexColors: true }) : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .82, metalness: .05 })
+  const solidMaterial = low ? new THREE.MeshLambertMaterial() : new THREE.MeshStandardMaterial({ roughness: .82, metalness: .05 })
   const foliageMaterial = low ? new THREE.MeshLambertMaterial({ color: 0x437957 }) : new THREE.MeshStandardMaterial({ color: 0x437957, roughness: .88 })
   const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x6d5337 })
-  const planningMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: .38, depthWrite: false })
+  const planningMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: .38, depthWrite: false })
   const addProxy = (row, category = row.category) => {
     const p = whToWorld(row.xM, row.yM), proxy = new THREE.Mesh(new THREE.BoxGeometry(row.lengthM, row.heightM, row.widthM), new THREE.MeshBasicMaterial({ visible: false }))
     proxy.name = `wh-r1-site-proxy-${row.id}`; proxy.position.set(p.x, WH_R1_FLOOR_Y + row.zM + row.heightM / 2, p.z); proxy.rotation.y = row.yawDeg * Math.PI / 180
