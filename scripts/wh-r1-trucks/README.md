@@ -27,3 +27,10 @@ SHA-256: 3f55a8cd2a0c576650bb9a21f9003177442e1e9b8c95732976c46c1805ffa7b5.
 
 Evidence preview is outside the repository. It calls the actual env.js daylight/night formulas, at application exposure 0.85,
 with existing warehouse sky/hemisphere/fill lights. Preview numbers are truck module increments, not whole-page approval.
+
+R7 retains the B1 interface, with a 300 mm cab plan corner, a 6-degree bowed windscreen, shaped dark seats,
+curved lamp panels and upper-half wheel arches. Tyres have eight shoulder-profile points and 32 radial segments.
+Fleet ink is an alpha-cutout atlas with no backing stripe. Medium/far bake the rubber/glass colours (the near tyre
+material's light colour was only a texture multiplier); their paint tint is calibrated under the unchanged warehouse light.
+R7 budgets: nine near <=150k triangles / 14 calls, medium <=1500 triangles per vehicle, far <=800,
+low fleet <=3 calls. Whole-page 250/250k approval still belongs to B2 after SITE integration.

@@ -39,8 +39,8 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
       if(material.isMeshStandardMaterial&&lod===0){material.envMap=reflection.texture;material.envMapIntensity=.65}
       if(material.name==='matte'||material.name==='lamp'){
         const uniform={value:0};material.userData.nightUniform=uniform
-        material.onBeforeCompile=shader=>{shader.uniforms.truckNight=uniform;shader.vertexShader='attribute float _lampmask; varying float truckLamp;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntruckLamp=_lampmask;');shader.fragmentShader='uniform float truckNight; varying float truckLamp;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance=diffuseColor.rgb*truckLamp*truckNight*2.2;')}
-        material.customProgramCacheKey=()=> 'truck-lamp-mask-v1'
+        material.onBeforeCompile=shader=>{shader.uniforms.truckNight=uniform;shader.vertexShader='attribute float _lampmask; varying float truckLamp;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntruckLamp=_lampmask;');shader.fragmentShader='uniform float truckNight; varying float truckLamp;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance=diffuseColor.rgb*truckLamp*truckNight*5.5;')}
+        material.customProgramCacheKey=()=> 'truck-lamp-mask-v2'
       }
       if(source.material.name==='fleet'){
         material.polygonOffset=true;material.polygonOffsetFactor=-2;material.polygonOffsetUnits=-2
