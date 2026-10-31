@@ -6,6 +6,7 @@ import * as THREE from '../vendor/three/three.module.js'
 import { WH_R1_DATA, WH_R1_ASSIGNMENT } from '../wh-r1/data.js'
 import { WH_R1_FLOOR_Y, whToWorld } from '../wh-r1-layout.js'
 import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DOCK_MARKS } from '../dr-wh-r1-vehicles.js'
+import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
@@ -16,9 +17,10 @@ function boxes(root){
 }
 test('I5 keeps all nine trucks and fourteen equipment records without changing source values',()=>{
  const ids=new Set(WH_R1_ASSIGNMENT.filter(r=>r.card==='I5').map(r=>r.id))
- assert.deepEqual(WH_R1_VEHICLES,WH_R1_DATA.elements.filter(r=>ids.has(r.id)))
+ assert.deepEqual(WH_R1_VEHICLES.filter(r=>r.category!=='厢式货车'),WH_R1_DATA.elements.filter(r=>ids.has(r.id)&&r.category!=='厢式货车'))
  assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='厢式货车').length,9);assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位').length,14)
- assert.equal(WH_R1_VEHICLES.find(r=>r.id==='WH-01-VH-005').yawDeg,0)
+ for(const bay of WH_R1_PARKING_BAYS){const source=WH_R1_DATA.elements.find(r=>r.id===bay.id),display=WH_R1_VEHICLES.find(r=>r.id===bay.id);assert.equal(source.lengthM,8);assert.equal(display.lengthM,8);assert.deepEqual([display.xM,display.yM,display.yawDeg],[bay.displayXM,bay.displayYM,bay.yawDeg],`${bay.id} 现有 8m 车尾对门`)}
+ assert.equal(WH_R1_VEHICLES.find(r=>r.id==='WH-01-VH-005').yawDeg,270)
  assert.equal(WH_R1_VEHICLES.filter(r=>r.regionId==='06'&&r.category==='厢式货车').length,4)
 })
 test('I5 high and low actual full merge retain every ID, registered envelope, orientation and ground height',async()=>{
@@ -54,8 +56,8 @@ test('I5 seven round-ended sweeps preserve blocked and conditional values withou
 test('I5 unknown dock, cargo floor and entrance step elevations stay unknown; only nine flat door annotations exist',()=>{
  assert.deepEqual(WH_R1_LEVELS,{dock:'UNKNOWN',cargoFloor:'UNKNOWN',entranceStep:'UNKNOWN',sources:['WH-SITE-DOCK-U01','WH-SITE-ACCESS-U01']})
  assert.equal(WH_R1_DOCK_MARKS.length,9)
- for(const mark of WH_R1_DOCK_MARKS){const door=WH_R1_DATA.doors.find(r=>r.id===mark.doorId);assert.deepEqual({x:mark.x,z:mark.z},whToWorld(door.xM,door.yM));assert.equal(mark.widthM,door.lengthM);assert.equal(mark.level,'UNKNOWN');assert.equal(mark.displayOnly,'DESIGN_ASSUMPTION');assert.equal(mark.height,undefined)}
- assert.deepEqual(WH_R1_DOCK_MARKS.slice(5).map(r=>r.sourceTag),['05','06','UNKNOWN','08'])
+ for(const mark of WH_R1_DOCK_MARKS){const door=[...WH_R1_DATA.doors,...WH_R1_ANNEX.doors].find(r=>r.id===mark.doorId);assert.deepEqual({x:mark.x,z:mark.z},whToWorld(door.xM,door.yM));assert.equal(mark.widthM,door.lengthM);assert.equal(mark.level,'UNKNOWN');assert.equal(mark.displayOnly,'DESIGN_ASSUMPTION');assert.equal(mark.height,undefined)}
+ assert.deepEqual(WH_R1_DOCK_MARKS.slice(5).map(r=>r.sourceTag),['R5-SHIP-D-1','R5-SHIP-D-2','R5-SHIP-D-3','R5-SHIP-D-4'])
 })
 test('I5 real collision blocks each individual vehicle and releases only its own proxies',()=>{
  const root=new THREE.Group();root.position.y=-WH_R1_FLOOR_Y;const collision=createFurnitureCollision(),v=buildWhR1Vehicles({THREE,root,collision})

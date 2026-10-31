@@ -822,7 +822,7 @@ function buildFoyerScene() {
 }
 buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
-const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: CAMPUS, building: CAMPUS_BUILDING, zones: CAMPUS_ZONES, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
+const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: PLACE_MODE.miniBounds, building: PLACE_MODE.building || CAMPUS_BUILDING, zones: PLACE_MODE.zones, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
 if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
@@ -1551,7 +1551,7 @@ function focusAgent(id) {
 }
 const ui = createUI({ refresh: () => poll(), refreshFoyer: () => pollFoyer(), focusAgent: (id) => focusAgent(id), setGoal: (p) => setGoal(p) })
 const emptyFun = { burst() {}, celebrate() {}, setAwards() {}, setHoliday() {}, preview() {}, pick() { return false }, catInfo: () => '关闭', catDiag: () => [], catDiagClear() {}, catReact() { return null }, catToggle() { return false }, catPlaying: () => false, catAim() { return false }, debugCatPlan() {}, update() {}, debug: () => ({}) }; const fun = LAYOUT3_MODE && OFFICE_LAYOUT.r1Phase !== 'R1' ? emptyFun : createFun({ scene, views, boardViews, LOUNGE, furnitureCollision: activeCollision }) // 彩纸、猫、节日装饰、奖杯（见 fun.js）；只为 R1 放行，其余 layout=3 页面仍是 emptyFun
-const officeSceneRoots = DR_MODE ? isolateDrPlace({ scene, campusRoot: campusRegistry?.root, keepRoots: controlRoom ? [controlRoom.root] : [], environmentRoots, labels: labelsEl, bubbles: bubblesEl, zones: CAMPUS_ZONES, setGoal }) : []
+const officeSceneRoots = DR_MODE ? isolateDrPlace({ scene, campusRoot: campusRegistry?.root, keepRoots: controlRoom ? [controlRoom.root] : [], environmentRoots, labels: labelsEl, bubbles: bubblesEl, zones: PLACE_MODE.zones, setGoal }) : []
 const catPlayBtn = $('catPlay'), catPlayStatus = $('catPlayStatus')
 function syncCatPlay() {
   const on = fun.catPlaying()
@@ -1608,7 +1608,7 @@ $('replay').addEventListener('click', () => replay.open('today'))
 $('replayY').addEventListener('click', () => replay.open('yesterday'))
 
 // ───────────────────────── 相机：360° 环绕 + 惯性 + 预设机位 ─────────────────────────
-const VIEW_BOUNDS = LAYOUT3_MODE ? LAYOUT_V3.site : (CAMPUS_MODE ? CAMPUS : ENVELOPE)
+const VIEW_BOUNDS = LAYOUT3_MODE ? LAYOUT_V3.site : (CAMPUS_MODE ? PLACE_MODE.miniBounds : ENVELOPE)
 const LIM = { el: [6, 88], r: [3, 160], tx: [VIEW_BOUNDS.x0 - 10, VIEW_BOUNDS.x1 + 10], tz: [VIEW_BOUNDS.z0 - 10, VIEW_BOUNDS.z1 + 10] }
 const D2R = Math.PI / 180
 // 镜头坞：滚轮横向滚动（位置由 #bottombar 的 flex 布局保证不和工具栏重叠）
@@ -1621,7 +1621,7 @@ const homeR = () => {
   return Math.min(160, Math.max(48, (ENVELOPE.x1 - ENVELOPE.x0 + 18) / 2 / (tangent * aspect), (ENVELOPE.z1 - ENVELOPE.z0 + 14) / 2 / tangent))
 }
 let initialDrCamera = PLACE_MODE.homeCamera
-try { initialDrCamera = normalizeCameraState(JSON.parse(sessionStorage.getItem('office3d.camera.dr')), initialDrCamera) } catch {}
+try { initialDrCamera = normalizeCameraState(JSON.parse(sessionStorage.getItem('office3d.camera.dr')), initialDrCamera, PLACE_MODE.miniBounds) } catch {}
 const HOME = LAYOUT3_MODE ? { ...LAYOUT_V3.cameraDefaults.overview, t: LAYOUT_V3.cameraDefaults.overview.target } : DR_MODE ? initialDrCamera : { az: 6, el: 50, get r() { return homeR() }, t: VIEW_CENTER }
 const cam = { az: HOME.az, el: HOME.el, r: HOME.r, t: new THREE.Vector3(...HOME.t) }
 const goal = { az: cam.az, el: cam.el, r: cam.r, t: cam.t.clone() }
@@ -1829,9 +1829,10 @@ function drawMini() {
   g.clearRect(0, 0, W, H)
   const rect = (x0, z0, x1, z1, fill, stroke) => { const [a, b] = miniXY(x0, z0), [c, d] = miniXY(x1, z1); g.fillStyle = fill; g.fillRect(a, b, c - a, d - b); if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1.5; g.strokeRect(a, b, c - a, d - b) } }
   if (DR_MODE) {
-    rect(CAMPUS.x0, CAMPUS.z0, CAMPUS.x1, CAMPUS.z1, 'rgba(255,255,255,.07)', 'rgba(216,194,138,.72)')
-    rect(CAMPUS_BUILDING.x0, CAMPUS_BUILDING.z0, CAMPUS_BUILDING.x1, CAMPUS_BUILDING.z1, 'rgba(63,75,85,.42)', 'rgba(182,154,100,.8)')
-    for (const zone of CAMPUS_ZONES) rect(zone.x0, zone.z0, zone.x1, zone.z1, zone.kind === 'outdoor' ? 'rgba(216,194,138,.12)' : 'rgba(139,108,255,.13)', 'rgba(216,194,138,.35)')
+    rect(PLACE_MODE.miniBounds.x0, PLACE_MODE.miniBounds.z0, PLACE_MODE.miniBounds.x1, PLACE_MODE.miniBounds.z1, 'rgba(255,255,255,.07)', 'rgba(216,194,138,.72)')
+    const building = PLACE_MODE.building || CAMPUS_BUILDING
+    rect(building.x0, building.z0, building.x1, building.z1, 'rgba(63,75,85,.42)', 'rgba(182,154,100,.8)')
+    for (const zone of PLACE_MODE.zones) rect(zone.x0, zone.z0, zone.x1, zone.z1, zone.kind === 'outdoor' ? 'rgba(216,194,138,.12)' : 'rgba(139,108,255,.13)', 'rgba(216,194,138,.35)')
   } else {
     rect(ENVELOPE.x0, ENVELOPE.z0, ENVELOPE.x1, ENVELOPE.z1, 'rgba(255,255,255,.07)', 'rgba(255,255,255,.28)')
     for (const r of OFFICE_ROOMS) rect(r.x0, r.z0, r.x1, r.z1, 'rgba(139,108,255,.16)', 'rgba(139,108,255,.6)')
@@ -2365,9 +2366,9 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal({ az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
-window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: CAMPUS_ZONES }
+window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()
 window.__office.foyerPanels = () => Object.fromEntries([...foyerPanels].map(([id, panel]) => [id, { redraws: panel.redraws, signature: panel.signature, visible: panel.mesh.visible }]))
 window.__office.quality={get tier(){return qualityPolicy.tier},get metrics(){return {...qualityMetrics,dpr:renderer.getPixelRatio(),reason:qualityPolicy.reason,source:qualityPolicy.source,hidden:document.hidden}},select:q=>{if(qualityPolicy.select(q,qualityStorage))applyQuality()},summary:()=>sceneQuality.summary()}

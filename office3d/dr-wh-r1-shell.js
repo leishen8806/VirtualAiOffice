@@ -62,9 +62,9 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
     : new THREE.MeshStandardMaterial({ color: 0x75919a, roughness: .55, transparent: true, opacity: .34, depthWrite: false })
   const doorMaterial = new THREE.MeshBasicMaterial({ color: 0xd5af62, transparent: true, opacity: .35, side: THREE.DoubleSide, depthWrite: false })
   const site = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_SITE.width, WH_R1_SITE.depth), floorMaterial)
-  site.name = 'wh-r1-site-paving'; site.rotation.x = -Math.PI / 2; site.position.set(-123, -.595, 8); root.add(site)
+  site.name = 'wh-r1-site-paving'; site.rotation.x = -Math.PI / 2; site.position.set((WH_R1_SITE.x0 + WH_R1_SITE.x1) / 2, -.595, (WH_R1_SITE.z0 + WH_R1_SITE.z1) / 2); root.add(site)
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_BUILDING.width, WH_R1_BUILDING.depth), wallMaterial)
-  floor.name = 'wh-r1-building-floor'; floor.rotation.x = -Math.PI / 2; floor.position.set(-124, WH_R1_FLOOR_Y, 6); root.add(floor)
+  floor.name = 'wh-r1-building-floor'; floor.rotation.x = -Math.PI / 2; floor.position.set((WH_R1_BUILDING.x0 + WH_R1_BUILDING.x1) / 2, WH_R1_FLOOR_Y, (WH_R1_BUILDING.z0 + WH_R1_BUILDING.z1) / 2); root.add(floor)
 
   for (const wall of WH_R1_WALLS) {
     box(THREE, root, `wh-r1-wall-${wall.id}`, wall.length, wall.height, wall.thickness, wall.x, wall.height / 2 - .6, wall.z, wall.yaw, wallMaterial, {
@@ -101,8 +101,10 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
     doorLabels.name = 'wh-r1-door-labels'; doorLabels.userData = { whR1DoorLabelIds: labelledDoors.map(door => door.id), noMerge: true }; root.add(doorLabels)
   }
   const roof = [
-    ['north', 88, .28, -124, -17.86], ['south', 88, .28, -124, 29.86],
-    ['west', .28, 48, -167.86, 6], ['east', .28, 48, -80.14, 6],
+    ['north', WH_R1_BUILDING.width, .28, (WH_R1_BUILDING.x0 + WH_R1_BUILDING.x1) / 2, WH_R1_BUILDING.z0 + .14],
+    ['south', WH_R1_BUILDING.width, .28, (WH_R1_BUILDING.x0 + WH_R1_BUILDING.x1) / 2, WH_R1_BUILDING.z1 - .14],
+    ['west', .28, WH_R1_BUILDING.depth, WH_R1_BUILDING.x0 + .14, (WH_R1_BUILDING.z0 + WH_R1_BUILDING.z1) / 2],
+    ['east', .28, WH_R1_BUILDING.depth, WH_R1_BUILDING.x1 - .14, (WH_R1_BUILDING.z0 + WH_R1_BUILDING.z1) / 2],
   ]
   for (const [name, width, depth, x, z] of roof) box(THREE, root, `wh-r1-roof-${name}`, width, .28, depth, x, 3.9, z, 0, roofMaterial)
   return {

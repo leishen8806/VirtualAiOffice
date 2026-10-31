@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WH_R1_ASSIGNMENT, WH_R1_DATA } from '../wh-r1/data.js'
-import { runtimeYawFromFacing, whElementWorld, whToWorld, whZoneToWorld } from '../wh-r1-layout.js'
+import { WH_R1_WORLD_OFFSET, runtimeYawFromFacing, whElementWorld, whToWorld, whZoneToWorld } from '../wh-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const categories = category => WH_R1_DATA.elements.filter(row => row.category === category).length
@@ -31,20 +31,21 @@ test('I1 freezes the four WH-R1 source hashes and source counts', () => {
 })
 
 test('I1 converts WH-R1 metres and millimetres once, retaining zone dimensions', () => {
-  assert.deepEqual(whToWorld(0, 0), { x: -168, z: 30 })
-  assert.deepEqual(whToWorld(4, 47.86), { x: -164, z: -17.86 })
-  assert.deepEqual(whToWorld(58.4, 33.5), { x: -109.6, z: -3.5 })
-  assert.deepEqual(whToWorld(15, 39), { x: -153, z: -9 })
-  assert.deepEqual(whZoneToWorld([0, 30, 30, 48]), [-168, -138, -18, 0])
+  assert.deepEqual(whToWorld(0, 0), { x: -232, z: 30 })
+  assert.deepEqual(whToWorld(4, 47.86), { x: -228, z: -17.86 })
+  assert.deepEqual(whToWorld(58.4, 33.5), { x: -173.6, z: -3.5 })
+  assert.deepEqual(whToWorld(15, 39), { x: -217, z: -9 })
+  assert.deepEqual(whZoneToWorld([0, 30, 30, 48]), [-232, -202, -18, 0])
   for (const zone of WH_R1_DATA.zones) {
     const [x0, y0, x1, y1] = zone.sourceBboxM, [worldX0, worldX1, worldZ0, worldZ1] = zone.worldBboxXZ
+    assert.deepEqual(whZoneToWorld(zone.sourceBboxM), [worldX0 + WH_R1_WORLD_OFFSET.x, worldX1 + WH_R1_WORLD_OFFSET.x, worldZ0, worldZ1], zone.id)
     assert.ok(Math.abs((worldX1 - worldX0) - (x1 - x0)) < 1e-6, zone.id)
     assert.ok(Math.abs((worldZ1 - worldZ0) - (y1 - y0)) < 1e-6, zone.id)
   }
   for (const element of WH_R1_DATA.elements) {
     const point = whElementWorld(element)
-    assert.ok(point.x >= -174 && point.x <= -72, element.id)
-    assert.ok(point.z >= -26 && point.z <= 42, element.id)
+    assert.ok(point.x >= -238 && point.x <= -72, element.id)
+    assert.ok(point.z >= -74 && point.z <= 42, element.id)
   }
   assert.equal(runtimeYawFromFacing(0, -1), 0)
 })
@@ -120,7 +121,7 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
     if (!readFileSync(file, 'utf8').includes('wh-r1')) continue
     if (path.startsWith('tests/')) continue
     references.push(path)
-    assert.ok(path.startsWith('wh-r1/') || path === 'wh-r1-layout.js' || allowedRuntime.has(path) || /^dr-wh-r1-[^/]+\.js$/.test(path), path)
+    assert.ok(path.startsWith('wh-r1/') || path === 'wh-r1-layout.js' || path === 'wh-r1-site-plan.js' || allowedRuntime.has(path) || /^dr-wh-r1-[^/]+\.js$/.test(path), path)
   }
-  assert.deepEqual(references.sort(), ['dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js'])
+  assert.deepEqual(references.sort(), ['dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-site.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js', 'wh-r1-site-plan.js'])
 })
