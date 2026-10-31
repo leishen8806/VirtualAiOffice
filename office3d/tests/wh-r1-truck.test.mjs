@@ -93,11 +93,10 @@ test('TR-7 measured cab, gap, two-axle chassis and mirror-only exception follow 
  assert.equal(tyres.filter(p=>center(p)[0]<0).length,2);assert.equal(tyres.filter(p=>center(p)[0]>0).length,4)
  for(const p of parts){const b=p.bounds;if(b[0][2]<-1.250001||b[1][2]>1.250001){assert.ok(/^mirror/.test(p.name),p.name);assert.ok(b[0][2]>=-1.550001&&b[1][2]<=1.550001)}}
  // Inspect the actual mesh's front plane, not just the declared slope parameter.
- const g=v.root.getObjectByName('wh-r1-truck-detail').geometry,p=g.attributes.position,ys=new Map()
- for(let i=cab.start;i<cab.start+cab.count;i++){const y=p.getY(i);ys.set(y,Math.min(ys.get(y)??Infinity,p.getX(i)))}
- const samples=[...ys].filter(([y])=>y>1.15&&y<2.7).sort((a,b)=>a[0]-b[0]),lo=samples[0],hi=samples.at(-1),angle=Math.atan((hi[1]-lo[1])/(hi[0]-lo[0]))*180/Math.PI
- assert.ok(angle>=4&&angle<=10,String(angle));assert.ok(new Set(samples.map(x=>x[0])).size>=2)
- assert.equal(data.dimensions.bevelRadius,.12);v.dispose()
+ const g=v.root.getObjectByName('wh-r1-truck-detail').geometry,n=g.attributes.normal,slopes=[]
+ for(let i=cab.start;i<cab.start+cab.count;i++)if(n.getX(i)<-.9&&n.getY(i)>.1&&n.getY(i)<.3&&Math.abs(n.getZ(i))<.00001)slopes.push(Math.atan2(n.getY(i),-n.getX(i))*180/Math.PI)
+ assert.ok(slopes.length>0);for(const angle of slopes)assert.ok(angle>=8&&angle<=10,String(angle))
+ assert.equal(data.dimensions.bevelRadius,.18);v.dispose()
 })
 
 test('TR-3 actual detail submission shrinks per active truck and disappears at far/low while IDs retain fixed poses',()=>{
@@ -109,4 +108,50 @@ test('TR-3 actual detail submission shrinks per active truck and disappears at f
   if(location[1]===60){assert.equal(m.count,0);assert.equal(m.visible,false)}else assert.ok(m.count>0&&m.count<9)
  }
  quality.tier='low';v.onFrame(.1,{camera});assert.equal(m.count,0);v.dispose()
+})
+
+
+test('R3 four detail groups use rounded tyres, attached equipment and side/rear IDs without roof stripes',()=>{
+ const {v}=setup(),parts=v.root.userData.trucks.parts,all=n=>parts.filter(p=>p.name===n),one=n=>all(n)[0],center=p=>p.bounds[0].map((x,i)=>(x+p.bounds[1][i])/2)
+ const mesh=v.root.getObjectByName('wh-r1-truck-detail'),p=mesh.geometry.attributes.position,surface=mesh.geometry.attributes.truckSurface
+ assert.equal(all('windscreen-highlight').length,1);assert.equal(all('wiper').length,2);assert.equal(all('front-fascia').length,1);assert.equal(all('bumper-seam').length,1)
+ for(const n of ['headlamp','indicator'])for(const light of all(n)){
+  const f=one('front-fascia').bounds
+  assert.ok(light.bounds[0][1]>=f[0][1]&&light.bounds[1][1]<=f[1][1]);assert.ok(light.bounds[0][2]>=f[0][2]&&light.bounds[1][2]<=f[1][2])
+ }
+ for(const tyre of all('tyre')){
+  const c=center(tyre),sections=new Map()
+  for(let i=tyre.start;i<tyre.start+tyre.count;i++){
+   const a=Math.round((p.getZ(i)-c[2])*1000),r=Math.hypot(p.getX(i)-c[0],p.getY(i)-c[1]);sections.set(a,Math.max(sections.get(a)||0,r))
+   assert.ok(Math.abs(surface.getX(i)-.92)<1e-6);assert.equal(surface.getY(i),0)
+  }
+  assert.equal(sections.size,4);assert.ok(sections.get(-100)<sections.get(-70));assert.ok(sections.get(100)<sections.get(70));assert.ok(Math.abs(sections.get(70)-.45)<1e-6)
+ }
+ assert.equal(all('rim-spoke').length,24)
+ for(const sign of [-1,1]){
+  const pair=all('tyre').filter(t=>center(t)[0]>0&&Math.sign(center(t)[2])===sign).sort((a,b)=>a.bounds[0][2]-b.bounds[0][2])
+  assert.ok(Math.abs(pair[1].bounds[0][2]-pair[0].bounds[1][2]-.05)<1e-6)
+  assert.equal(all('side-guard').filter(p=>Math.sign(center(p)[2])===sign).length,2)
+ }
+ for(const b of all('equipment-hanger')){
+  assert.ok(all('frame-rail').some(r=>[0,1,2].every(a=>Math.min(b.bounds[1][a],r.bounds[1][a])>Math.max(b.bounds[0][a],r.bounds[0][a]))))
+  assert.ok([...all('fuel-tank'),...all('battery-box')].some(r=>[0,1,2].every(a=>Math.min(b.bounds[1][a],r.bounds[1][a])>Math.max(b.bounds[0][a],r.bounds[0][a]))))
+ }
+ for(const b of all('guard-hanger'))assert.ok(b.bounds[1][1]>=one('sill').bounds[0][1])
+ for(const n of ['rear-lamp','rear-indicator','reverse-lamp'])assert.equal(all(n).length,2)
+ for(const door of all('closed-rear-door')){assert.ok(one('rear-top-rail').bounds[0][1]<=door.bounds[1][1]);assert.ok(one('rear-bottom-rail').bounds[1][1]>=door.bounds[0][1])}
+ assert.equal(all('rear-underrun').length,1);assert.equal(all('rear-underrun-bracket').length,2);assert.equal(all('hinge').length,6)
+ const cargo=one('cargo-panel'),colors=mesh.geometry.attributes.color
+ assert.equal(cargo.count,30);for(let i=cargo.start;i<cargo.start+cargo.count;i++)assert.ok(mesh.geometry.attributes.normal.getX(i)<.5,'No rear body face may cover closed-door hardware')
+ for(let i=cargo.start;i<cargo.start+cargo.count;i++)assert.deepEqual([colors.getX(i),colors.getY(i),colors.getZ(i)],[1,1,1])
+ assert.equal(all('cargo-rib').length,32)
+ const ids=v.root.getObjectByName('wh-r1-truck-livery').userData.idPlates
+ assert.equal(ids.length,27)
+ for(const truck of WH_R1_VEHICLES.filter(r=>r.category==='厢式货车')){
+  const rows=ids.filter(r=>r.id===truck.id);assert.equal(rows.length,3)
+  assert.equal(rows.filter(r=>r.axis==='side'&&r.local[0]===3&&r.local[1]===3.19).length,2)
+  assert.equal(rows.filter(r=>r.axis==='end'&&r.local[0]===4).length,1)
+  assert.ok(!v.root.getObjectByName('wh-r1-vehicle-labels').userData.labels.some(r=>r.id===truck.id))
+ }
+ v.dispose()
 })
