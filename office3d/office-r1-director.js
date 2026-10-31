@@ -1,5 +1,17 @@
 import * as THREE from './vendor/three/three.module.js'
 import { createR1Navigation, R1_RESERVED_SEATS, R1_PUBLIC_TRANSITIONS } from './office-r1-navigation.js'
+export const R1_HISTORY_LIMIT = 400
+export const pushCapped = (list, row, limit = R1_HISTORY_LIMIT) => { list.push(row); if (list.length > limit) list.splice(0, list.length - limit); return list }
+// MOVEFIX A：同一趟出行最多让行这么多次，之后放弃这趟（原来没有上限，表现为工位上反复站起坐下）。
+export const R1_MAX_YIELDS = 2
+// MOVEFIX B：任一阶段停滞超过这些秒数就先重规划，再不行就回工位坐好。
+export const R1_REPLAN_SECONDS = 6
+export const R1_ABANDON_SECONDS = 10
+// 等聊天对方走过来是正常等待，不是停滞：对方可能要穿过整个办公室。
+// 对方自己那趟有独立的停滞保护（走不动 10 秒就放弃，act 随之清空），所以这里放宽到 60 秒也不会挂住。
+export const R1_CHAT_WAIT_SECONDS = 60
+// MOVEFIX C：每人鼓掌冷却 5–15 分钟。
+export const R1_APPLAUSE_COOLDOWN = Object.freeze([300, 900])
 const stationName = v => v.data?.name || v.name
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
 const smooth = t => t * t * (3 - 2 * t)
@@ -10,6 +22,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   if (!collision?.navigationBodies || !furniture?.moveChair || !doors?.records) throw new Error('R1 movement requires real collision, furniture and doors')
   let nav = createR1Navigation(layout)
   const actions = new Set(), pending = [], chairMoves = new Map(), bubbles = new Set(), history = []
+  const applauseUntil = new Map()
   const doorBodies = [], activeDoors = new Set(), publicTransitions = new Map(), geometry = new THREE.BoxGeometry(1, 1, 1)
   let elapsed = 0, planningMs = 0, blockedFrames = 0, preparationError = null, chairsMoving = false
   for (const row of doors.records) {
@@ -24,13 +37,28 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   const countAway = () => [...views.values()].filter(v => !v.away && (v.r1AwayFromDesk || v.act && v.act.phase !== 'queued')).length
   const put = (v, p) => { v.r1Position = { x: p.x, z: p.z }; v.char.group.position.set(p.x, 0, p.z) }
   function chair(v, amount) {
-    const p = nav.parameters.get(stationName(v)), moving = furniture.moveChair(p.chairId, p.back.x * p.slide * amount, p.back.z * p.slide * amount, p.turn * Math.PI / 180 * amount)
+    const p = nav.parameters.get(stationName(v))
+    if (!p) return false
+    const moving = furniture.moveChair(p.chairId, p.back.x * p.slide * amount, p.back.z * p.slide * amount, p.turn * Math.PI / 180 * amount)
     if (moving) { nav.refreshChairs(); chairsMoving = true }
     return moving
   }
   function reserveChair(v, open) {
-    const p = nav.parameters.get(stationName(v)), current = furniture.chairMotion(p.chairId), start = Math.hypot(current.dx, current.dz) / p.slide
+    const p = nav.parameters.get(stationName(v))
+    if (!p) return
+    const current = furniture.chairMotion(p.chairId), start = Math.hypot(current.dx, current.dz) / p.slide
     chairMoves.set(stationName(v), { v, from: start, to: open ? 1 : 0, t: 0 })
+  }
+  // 公共座位的座面高度（E）：只认登记的椅座子件（LOUNGE_SEATS.seatY）——椅子 0.45 m、吧凳 0.75 m。
+  // 弧形沙发段与室外长椅没有椅座子件，渲染上也是一整块（登记高度 0.85 m 是整体高、不是座面），
+  // 量网格只会量到靠背顶把人架上去，所以这两类一律不抬，保持原样；另开后续任务给它们补登记座面。
+  const seatSurfaceY = seat => (seat?.id && Number.isFinite(seat.seatY) ? seat.seatY : null)
+  // 坐姿朝向（F）：一处算出，approach() 与 destination-sit 都用它，不经过 approach() 也不会背对桌坐。
+  function seatedYaw(seat) {
+    if (!seat) return 0
+    if (seat.category === '弧形沙发段') return Math.atan2(seat.x - 16, seat.z - 13.2)
+    const facing = seat.id ? furniture.chairFacings.get(seat.id) : null
+    return facing ? facing.yaw + Math.PI : (seat.yaw || 0)
   }
   function peopleClear(v, p) {
     return [...views.values()].every(other => other === v || other.away || !other.char.group.visible || dist(anchor(other), p) >= .5 - 1e-7)
@@ -101,9 +129,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     if (R1_RESERVED_SEATS.includes(seat.id)) return null
     const chairBody = nav.bodyFor(seat.id)
     if (!chairBody) throw new Error(`R1 public seat has no collision body: ${seat.id}`)
-    const facing = furniture.chairFacings.get(seat.id)
-    if (facing) seat.yaw = facing.yaw + Math.PI
-    if (seat.category === '弧形沙发段') seat.yaw = Math.atan2(seat.x - 16, seat.z - 13.2)
+    seat.yaw = seatedYaw(seat)
     const ignored = new Set([chairBody.group, nav.bodyFor(nav.parameters.get(stationName(v)).chairId)?.group])
     const clear = (a, b) => {
       const n = Math.max(1, Math.ceil(dist(a, b) / .005))
@@ -130,6 +156,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
   }
   function start(v, seat, options = {}) {
     if (!v || v.act || v.away && options.commute !== 'arrive' || R1_RESERVED_SEATS.includes(seat?.id)) return false
+    // I：没有出口而被跳过的座位，只有这一位不动，不影响其他人。
+    if (!nav.parameters.get(stationName(v))) return false
     const path = R1_PUBLIC_TRANSITIONS[seat?.id]
     if (path) {
       const near = (points, p) => points.slice(1).some((b, i) => {
@@ -140,11 +168,12 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       for (const other of views.values()) {
         if (other === v || other.away) continue
         const reserved = other.r1PublicSeat?.path || R1_PUBLIC_TRANSITIONS[other.act?.seat?.id]
-        if (reserved && (near(path, reserved[0]) || near(reserved, path[0]))) return false
+        // B：六对公共座位共用进出点，只比座位点会让两人同时出发、卡死在同一个进出点上。
+        if (reserved && (near(path, reserved[0]) || near(reserved, path[0]) || near(path, reserved.at(-1)) || near(reserved, path.at(-1)))) return false
       }
     }
     const back = !options.cheer && (options.back || dist(seat, v.home) < .001)
-    const act = { v, view: v, seat, back, phase: 'queued', t: 0, total: 0, options, trail: [], returnQueued: false, stall: 0 }
+    const act = { v, view: v, seat, back, phase: 'queued', t: 0, total: 0, options, trail: [], returnQueued: false, stall: 0, held: 0, yields: 0 }
     v.act = act; actions.add(act); pending.push(act); return true
   }
   function transitionClear(v, pos, publicSeat, workstationLocal = false) {
@@ -154,10 +183,27 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     const table = nav.bodyFor(p.deskId)
     return !nav.query(pos, stationName(v), workstationLocal ? .25 : .6, groups) && (!table || !collision.navigationHit(pos.x, pos.z, .25, null, [table]))
   }
-  function finish(act) {
-    const v = act.v; v.act = null; actions.delete(act); act.options.onDone?.()
-    history.push({ name: stationName(v), kind: act.options.kind || (act.back ? 'return' : act.seat.zone || 'travel'), duration: act.total, end: { ...anchor(v) } })
+  function finish(act, abandoned = null) {
+    const v = act.v; v.act = null; actions.delete(act)
+    if (abandoned) act.options.onAbort?.(abandoned); else act.options.onDone?.()
+    // I：history 有上限，不随运行时间无限增长。
+    pushCapped(history, { name: stationName(v), kind: abandoned ? 'abandoned' : (act.options.kind || (act.back ? 'return' : act.seat.zone || 'travel')),
+      seat: act.seat?.id || null, reason: abandoned, duration: act.total, end: { ...anchor(v) } }, R1_HISTORY_LIMIT)
   }
+  // A / B：放弃这趟出行——在工位坐好、复位离座状态并回调 onAbort，让调用方清掉 seat.taken 与 v.lounging。
+  function abandon(act, reason) {
+    const v = act.v, pose = v.char.pose
+    pose.walk = 0; pose.talk = 0; pose.lounge = 0; pose.r1Motion = null; pose.r1PublicSeatY = null
+    pose.sit = 1; pose.r1AtDesk = true
+    put(v, v.home); v.char.group.rotation.y = v.home.yaw
+    v.r1Position = null; v.r1AwayFromDesk = false; v.r1Standing = false; v.r1PublicSeat = null; v.arriving = false
+    act.held = 0; act.yielding = false
+    reserveChair(v, false)
+    console.warn(`R1 director: ${stationName(v)} gave up this trip (${reason}); seat ${act.seat?.id || 'home'}`)
+    finish(act, reason)
+  }
+  // B：阶段内等待——回退计时、清掉走路姿态并累计停滞秒数。
+  function hold(act, dt) { act.t -= dt; act.held = (act.held || 0) + dt; act.v.char.pose.walk = 0; return act.held }
   function beginWalk(act, target, next) {
     if (chairsMoving || chairMoves.has(stationName(act.v))) { act.phase = 'wait-chair'; act.retryTarget = target; act.next = next; act.t = 0; return }
     const path = pathTo(act.v, target)
@@ -203,14 +249,20 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     v.char.group.rotation.y += diff * Math.min(1, dt * 10); put(v, next); v.char.pose.phase += step * 4.6; v.char.pose.walk = 1
     return step === length
   }
+  // B：这一帧没有累计停滞就说明有进展，把停滞计时清零。
   function step(act, dt) {
+    const held = act.held || 0
+    stepPhase(act, dt)
+    if (act.v.act === act && (act.held || 0) === held) act.held = 0
+  }
+  function stepPhase(act, dt) {
     const v = act.v, p = nav.parameters.get(stationName(v)), pose = v.char.pose
     act.t += dt; act.total += dt
     if (act.phase === 'queued') return
     pose.r1AtDesk = false
     if (act.phase === 'rise') {
       const k = smooth(clamp(act.t / .8)); pose.sit = 1 - k; pose.walk = 0
-      if (!safeChairMove(v, k)) { act.t -= dt; return }
+      if (!safeChairMove(v, k)) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, 'stall:rise'); return }
       chair(v, k); put(v, p.standing); v.char.group.rotation.y = v.home.yaw
       if (k === 1) { pose.sit = 0; act.phase = act.options.cheer ? 'cheer' : 'exit'; act.t = 0 }
     } else if (act.phase === 'cheer') {
@@ -219,7 +271,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     } else if (act.phase === 'exit' || act.phase === 'return-transition') {
       const entering = act.phase === 'return-transition', a = entering ? p.exit : p.standing, b = entering ? p.standing : p.exit, k = clamp(act.t / .5)
       const next = { x: a.x + (b.x - a.x) * k, z: a.z + (b.z - a.z) * k }
-      if (!peopleClear(v, next) || !transitionClear(v, next)) { act.t -= dt; return }
+      if (!peopleClear(v, next) || !transitionClear(v, next)) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, `stall:${act.phase}`); return }
       put(v, next); pose.walk = 1; pose.phase += dist(a, b) * dt / .5 * 4.6
       if (k === 1) {
         pose.walk = 0; act.t = 0
@@ -235,7 +287,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     } else if (act.phase === 'workstation-local' || act.phase === 'return-workstation-local') {
       const entering = act.phase === 'return-workstation-local', path = entering ? p.localPath.slice().reverse() : p.localPath
       const local = localPosition(path, act.t), own = nav.bodyFor(p.chairId)
-      if (!peopleClear(v, local.p) || !transitionClear(v, local.p, null, true) || collision.navigationHit(local.p.x, local.p.z, .24, null, [own])) { act.t -= dt; return }
+      if (!peopleClear(v, local.p) || !transitionClear(v, local.p, null, true) || collision.navigationHit(local.p.x, local.p.z, .24, null, [own])) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, `stall:${act.phase}`); return }
       const pos = anchor(v)
       if (dist(pos, local.p) > 1e-9) v.char.group.rotation.y = Math.atan2(pos.x - local.p.x, pos.z - local.p.z)
       put(v, local.p); pose.walk = 1; pose.phase += .8 * dt * 4.6
@@ -254,7 +306,8 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       if (goStep(act, act.path[act.i], dt)) {
         act.i++
         if (act.i === act.path.length) { pose.walk = 0; act.phase = act.next; act.t = 0; act.from = { ...anchor(v) } }
-      } else if (act.stall > 1.5 && act.t > 1.5 && !chairsMoving) {
+      } else if (act.stall > R1_ABANDON_SECONDS) { abandon(act, 'stall:walk'); return }
+      else if (act.stall > 1.5 && act.t > 1.5 && !chairsMoving) {
         const revised = pathTo(v, act.path.at(-1)); if (revised) { act.path = nav.smoothPath(revised, stationName(v)); act.i = 1 }; act.t = 0
       }
     } else if (act.phase === 'wait-chair') {
@@ -263,16 +316,21 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       act.blockedFor = (act.blockedFor || 0) + dt
       // Yield the exit back to a neighbour's restoring chair instead of holding it indefinitely.
       if (!act.back && act.blockedFor > 3 && dist(anchor(v), p.walkPoint) < .01) {
+        // A：让行有上限。超过上限（或 approach / plan 一直失败）就放弃这趟，而不是坐下 2 秒后再排一次。
+        if (act.yields >= R1_MAX_YIELDS) { abandon(act, act.retryTarget ? 'plan' : 'approach'); return }
+        act.yields++
         act.yielding = true; act.phase = p.localPath.length > 1 ? 'return-workstation-local' : 'return-transition'; act.t = 0
-      } else if (act.t > 1 && act.retryTarget) beginWalk(act, act.retryTarget, act.next)
+      } else if (act.blockedFor > R1_ABANDON_SECONDS) { abandon(act, act.retryTarget ? 'plan' : 'approach'); return }
+      else if (act.t > 1 && act.retryTarget) beginWalk(act, act.retryTarget, act.next)
     } else if (act.phase === 'leave') {
       v.away = true; v.char.group.visible = false; reserveChair(v, false); finish(act)
     } else if (act.phase === 'sit') {
       const k = smooth(clamp(act.t / .8))
-      if (!safeChairMove(v, 1 - k)) { act.t -= dt; return }
+      if (!safeChairMove(v, 1 - k)) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, 'stall:sit'); return }
       chair(v, 1 - k); pose.sit = k; pose.walk = 0; put(v, v.home); v.char.group.rotation.y = v.home.yaw
       if (k === 1) {
         pose.r1AtDesk = true; v.r1Standing = false; v.r1AwayFromDesk = false; v.r1Position = null; v.arriving = false
+        pose.r1PublicSeatY = null; pose.lounge = 0
         if (act.yielding) {
           act.yielding = false; act.blockedFor = 0; act.phase = 'queued'; act.t = 0; act.retryAfter = elapsed + 2; pending.push(act)
         } else finish(act)
@@ -282,7 +340,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       if (k === 1) { act.phase = 'public-exit'; act.t = 0; act.from = { ...anchor(v) } }
     } else if (act.phase === 'public-exit') {
       const local = localPosition(v.r1PublicSeat.path, act.t), next = local.p
-      if (!peopleClear(v, next) || !transitionClear(v, next, v.r1PublicSeat)) { act.t -= dt; return }
+      if (!peopleClear(v, next) || !transitionClear(v, next, v.r1PublicSeat)) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, 'stall:public-exit'); return }
       put(v, next); pose.walk = 1; pose.phase += .8 * dt * 4.6
       if (local.done) {
         v.r1PublicSeat = null; pose.lounge = 0
@@ -296,14 +354,15 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
     } else if (act.phase === 'destination-sit') {
       const transition = publicTransitions.get(act.seat.id), path = transition?.path.slice().reverse() || [act.from, act.seat], local = localPosition(path, act.t), next = local.p
       pose.sit = clamp(1 - dist(next, act.seat) / .4); pose.lounge = act.seat.pose === 'lounge' ? 1 : 0
-      if (!peopleClear(v, next) || !transitionClear(v, next, transition)) { act.t -= dt; return }
-      put(v, next); v.char.group.rotation.y = act.seat.yaw || 0
-      if (local.done) { v.r1PublicSeat = transition || null; finish(act) }
+      if (!peopleClear(v, next) || !transitionClear(v, next, transition)) { if (hold(act, dt) > R1_ABANDON_SECONDS) abandon(act, 'stall:destination-sit'); return }
+      put(v, next); v.char.group.rotation.y = seatedYaw(act.seat)
+      // E：坐稳后把实测座面高度交给坐高贴合，吧凳 / 椅子 / 沙发都坐在座面上。
+      if (local.done) { v.r1PublicSeat = transition || null; pose.r1PublicSeatY = seatSurfaceY(act.seat); finish(act) }
     } else if (act.phase === 'destination-stand') {
       pose.sit = 0; pose.walk = 0; v.r1Standing = true; finish(act)
     } else if (act.phase === 'chat') {
       const other = act.options.chat
-      if (other.act && !['chat', 'chat-wait'].includes(other.act.phase)) return
+      if (other.act && !['chat', 'chat-wait'].includes(other.act.phase)) { if (hold(act, dt) > R1_CHAT_WAIT_SECONDS) abandon(act, 'stall:chat'); return }
       const q = anchor(other), pos = anchor(v); v.char.group.rotation.y = Math.atan2(-(q.x - pos.x), -(q.z - pos.z)); other.char.group.rotation.y = Math.atan2(-(pos.x - q.x), -(pos.z - q.z))
       pose.talk = 1; pose.r1Motion = 'gestic_talk_relaxed_01'; bubble(v, act.options.text, 5)
       act.phase = 'chat-wait'; act.t = 0
@@ -332,7 +391,7 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       if (elapsed < (a.retryAfter || 0) || (v.away || !v.r1AwayFromDesk) && countAway() >= 8 || transitionOccupied(v, a.back)) { i++; continue }
       pending.splice(i, 1); a.t = 0
       if (a.options.commute === 'arrive') { const gate = nav.ENTRANCE.gate[1]; if (!peopleClear(v, gate)) { pending.push(a); break }; v.away = false; v.char.group.visible = true; put(v, gate); v.char.pose.sit = 0; v.char.pose.r1AtDesk = false; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).walkPoint, nav.parameters.get(stationName(v)).localPath.length > 1 ? 'return-workstation-local' : 'return-transition') }
-      else if (v.r1PublicSeat) a.phase = 'public-rise'
+      else if (v.r1PublicSeat) { a.phase = 'public-rise'; v.char.pose.r1PublicSeatY = null }
       else if (a.back) { v.char.pose.sit = 0; v.char.pose.lounge = 0; reserveChair(v, true); beginWalk(a, nav.parameters.get(stationName(v)).walkPoint, nav.parameters.get(stationName(v)).localPath.length > 1 ? 'return-workstation-local' : 'return-transition') }
       else if (v.r1AwayFromDesk) {
         const target = approach(a.seat, v)
@@ -355,25 +414,45 @@ export function createR1Director({ views, layer, project, layout, furnitureColli
       nav = createR1Navigation({ ...layout }); publicTransitions.clear(); preparationError = null
       return ready = prepare()
     },
-    travel(v, pts, seat, lounge, onDone) { return start(v, seat, { back: !lounge && dist(seat, v.home) < .01, onDone }) },
-    goHome(v, onDone) { return start(v, nav.ENTRANCE.gate[1], { commute: 'leave', onDone }) },
+    travel(v, pts, seat, lounge, onDone, onAbort) { return start(v, seat, { back: !lounge && dist(seat, v.home) < .01, onDone, onAbort }) },
+    goHome(v, onDone, onAbort) { return start(v, nav.ENTRANCE.gate[1], { commute: 'leave', onDone, onAbort }) },
     arrive(v) { return start(v, v.home, { back: true, commute: 'arrive' }) },
     enqueue(ev) {
       const v = views.get(ev.from), other = views.get(ev.to)
       if (!v || v.away) return
       if (!other || other.away || v.act || other.act || v.lounging || other.lounging || countAway() > 6) { bubble(v, ev.text); return }
-      const center = nav.parameters.get(stationName(v)).exit
+      // I：导航就绪前（或座位被跳过时）只冒气泡，不取 undefined.exit 抛错把事件丢掉。
+      const station = nav.parameters.get(stationName(v)), otherStation = nav.parameters.get(stationName(other))
+      if (!nav.prepared() || !station || !otherStation) { bubble(v, ev.text); return }
+      const center = station.exit
       for (let radius = 1; radius <= 5; radius += .25) for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
         const a = { x: center.x + Math.cos(angle) * radius, z: center.z + Math.sin(angle) * radius }, b = { x: a.x - Math.sin(angle) * 1.05, z: a.z + Math.cos(angle) * 1.05 }
         // Chat destinations must stay outside both chairs' complete slide envelopes.
-        if (dist(a, v.home) < nav.parameters.get(stationName(v)).slide + 1 || dist(b, other.home) < nav.parameters.get(stationName(other)).slide + 1 || nav.query(a, stationName(v)) || nav.query(b, stationName(other)) || !peopleClear(v, a) || !peopleClear(other, b)) continue
+        if (dist(a, v.home) < station.slide + 1 || dist(b, other.home) < otherStation.slide + 1 || nav.query(a, stationName(v)) || nav.query(b, stationName(other)) || !peopleClear(v, a) || !peopleClear(other, b)) continue
         start(v, a, { chat: other, text: ev.text, kind: 'chat' }); start(other, b, { chat: v, kind: 'chat' }); return
       }
       bubble(v, ev.text)
     },
-    celebrate(v) { if (!v || v.away || v.act) return; start(v, v.home, { cheer: 'cheer_01', kind: 'cheer' }); for (const other of views.values()) if (other !== v && other.mode === 'idle' && !other.away && !other.act && dist(anchor(v), anchor(other)) <= 6 && Math.random() < .5) start(other, other.home, { cheer: Math.random() < .5 ? 'claphands_01' : 'cheer_03', kind: 'applause' }) },
-    visitConsumer(v, plan, options) { return plan?.ok ? start(v, plan.stand, { stand: true, onDone: options?.onArrive }) : false },
-    cancelVisit() {}, aisleZ: v => v.home.z,
+    // C：欢呼 / 鼓掌只挑真正坐在工位上的人，并且每人有 5–15 分钟冷却，完成事件密集时不会反复起立。
+    celebrate(v) {
+      if (!v || v.away || v.act || v.r1PublicSeat || v.r1AwayFromDesk || v.lounging) return
+      start(v, v.home, { cheer: 'cheer_01', kind: 'cheer' })
+      for (const other of views.values()) {
+        if (other === v || other.mode !== 'idle' || other.away || other.act) continue
+        if (other.r1PublicSeat || other.r1AwayFromDesk || other.lounging) continue
+        if (elapsed < (applauseUntil.get(other) || 0) || dist(anchor(v), anchor(other)) > 6 || Math.random() >= .5) continue
+        const [low, high] = R1_APPLAUSE_COOLDOWN
+        if (start(other, other.home, { cheer: Math.random() < .5 ? 'claphands_01' : 'cheer_03', kind: 'applause' })) applauseUntil.set(other, elapsed + low + Math.random() * (high - low))
+      }
+    },
+    visitConsumer(v, plan, options) { return plan?.ok ? start(v, plan.stand, { stand: true, onDone: options?.onArrive, onAbort: options?.onAbort }) : false },
+    // A：给外部一个真正的打断点。immediate 才落座（调用方随后自己 placeSeated），其余沿用原来的"不打断"。
+    cancelVisit(v, reason, immediate = false) {
+      if (!v?.act || !immediate) return false
+      abandon(v.act, reason || 'cancelled')
+      return true
+    },
+    aisleZ: v => v.home.z,
     clear() { for (const a of [...actions]) { a.v.char.pose.r1Motion = null; a.v.act = null }; actions.clear(); pending.length = 0; for (const b of bubbles) b.el.remove(); bubbles.clear() },
     update,
     stats() { return { queued: pending.length, active: actions.size - pending.length, away: countAway(), bubbles: bubbles.size, blockedFrames, planningMs, prepared: nav.prepared(), preparationError, visits: 0 } },
