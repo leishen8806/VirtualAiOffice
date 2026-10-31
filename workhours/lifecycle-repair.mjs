@@ -2,13 +2,14 @@
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 
-const pgRequire = createRequire('C:/Users/Administrator/AppData/Local/npm-cache/_npx/43414d9b790239bb/node_modules/x.js')
+// pg 来自本机 Paperclip 的 npx 缓存；只在真正需要连库时才解析，导入本模块（测试、CI、非 Windows）不受影响。
+const PG_ANCHOR = 'C:/Users/Administrator/AppData/Local/npm-cache/_npx/43414d9b790239bb/node_modules/x.js'
 const terminal = "'succeeded','failed','cancelled','timed_out','interrupted'"
 const legacyUnacknowledged = "status = 'cancelled' and process_pid is null and process_group_id is null and runtime_mode = 'legacy' and coalesce(result_json->'executionCancellation'->>'state', '') <> 'acknowledged'"
 
 export async function defaultDbFactory() {
   let Client
-  try { ({ Client } = pgRequire('pg')) } catch { return null }
+  try { ({ Client } = createRequire(PG_ANCHOR)('pg')) } catch { return null }
   const bat = fs.readFileSync('C:/Users/Administrator/.paperclip/run_paperclip.bat', 'utf8')
   const url = bat.match(/DATABASE_URL=(\S+)/)?.[1]
   if (!url) return null
