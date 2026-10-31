@@ -102,6 +102,54 @@ function findBone(root, re) {
   return f
 }
 
+export const R1_HEAD_LIMITS = Object.freeze({ yaw: 80, pitchMin: -35, pitchMax: 45, roll: 30 })
+const HEAD_DEGREES = 180 / Math.PI
+
+export function r1HeadAngles(headWorld, chestWorld, modelWorld, bindHead, bindChest, out, s) {
+  s.bindHeadWorld.copy(modelWorld).multiply(bindHead)
+  s.bindChestWorld.copy(modelWorld).multiply(bindChest)
+  s.headMotion.copy(headWorld).multiply(s.inverse.copy(s.bindHeadWorld).invert())
+  s.chestMotion.copy(chestWorld).multiply(s.inverse.copy(s.bindChestWorld).invert())
+  s.relative.copy(s.inverse.copy(s.chestMotion).invert()).multiply(s.headMotion).normalize()
+  if (s.relative.w < 0) s.relative.set(-s.relative.x, -s.relative.y, -s.relative.z, -s.relative.w)
+  return out.setFromQuaternion(s.relative, 'YXZ')
+}
+
+export function limitR1HeadQuaternion(headWorld, chestWorld, modelWorld, bindHead, bindChest, out, s) {
+  const e = r1HeadAngles(headWorld, chestWorld, modelWorld, bindHead, bindChest, s.euler, s)
+  const pitchLimit = e.x < 0 ? -R1_HEAD_LIMITS.pitchMin : R1_HEAD_LIMITS.pitchMax
+  const scale = Math.max(1, Math.abs(e.y * HEAD_DEGREES) / R1_HEAD_LIMITS.yaw, Math.abs(e.x * HEAD_DEGREES) / pitchLimit, Math.abs(e.z * HEAD_DEGREES) / R1_HEAD_LIMITS.roll)
+  if (scale === 1) return out.copy(headWorld)
+  e.x /= scale; e.y /= scale; e.z /= scale
+  s.limited.setFromEuler(e)
+  out.copy(s.chestMotion).multiply(s.limited).multiply(s.bindHeadWorld).normalize()
+  if (out.dot(headWorld) < 0) out.set(-out.x, -out.y, -out.z, -out.w)
+  return out
+}
+
+function makeR1HeadControl(P, model, head) {
+  if (!P.r1HeadLimit || !head) return null
+  const chest = findBone(model, /Bip01_Spine2$/) || findBone(model, /Bip01_Spine1$/)
+  let skeleton = null
+  model.traverse(o => { if (!skeleton && o.isSkinnedMesh && o.skeleton.bones.includes(head) && o.skeleton.bones.includes(chest)) skeleton = o.skeleton })
+  if (!chest || !skeleton) return null
+  const bind = bone => {
+    const matrix = skeleton.boneInverses[skeleton.bones.indexOf(bone)].clone().invert(), quaternion = new THREE.Quaternion()
+    matrix.decompose(new THREE.Vector3(), quaternion, new THREE.Vector3())
+    return quaternion
+  }
+  const parentPath = []
+  for (let node = head.parent; node && node !== model; node = node.parent) parentPath.unshift(node)
+  if (!parentPath.includes(chest)) return null
+  const modelPath = []
+  for (let node = model; node; node = node.parent) modelPath.unshift(node)
+  const s = {
+    bindHeadWorld: new THREE.Quaternion(), bindChestWorld: new THREE.Quaternion(), headMotion: new THREE.Quaternion(), chestMotion: new THREE.Quaternion(),
+    relative: new THREE.Quaternion(), limited: new THREE.Quaternion(), inverse: new THREE.Quaternion(), euler: new THREE.Euler(0, 0, 0, 'YXZ'),
+  }
+  return { chest, bindHead: bind(head), bindChest: bind(chest), modelPath, modelWorld: new THREE.Quaternion(), parentPath, s, out: new THREE.Quaternion(), report: { limitedFrames: 0, yaw: 0, pitch: 0, roll: 0 } }
+}
+
 const used = new Set()
 // 对外接口与旧角色一致（group / body.head / pose / solve），director 与 app 不用改
 export function createPerson(P, name) {
@@ -122,6 +170,7 @@ export function createPerson(P, name) {
   root.add(holder)
   const garment = LOOSE_GARMENT.test(name) ? createGarmentMotion(model, root, src.scale) : null
   const head = findBone(model, /Bip01_Head$/) || findBone(model, /Head/)
+  const headControl = makeR1HeadControl(P, model, head)
   const hand = findBone(model, /Bip01_R_Hand$/)
   const mixer = new THREE.AnimationMixer(model)
   const clips = P.clips[src.gender]
@@ -181,7 +230,7 @@ export function createPerson(P, name) {
   }
   let flavor = null, flavorEnd = 0, nextFlavor = 8 + Math.random() * 25, folderReadyAt = 0
   let cur = null, lastPhase = 0
-  const q = new THREE.Quaternion(), qp = new THREE.Quaternion(), qd = new THREE.Quaternion()
+  const q = new THREE.Quaternion(), qp = new THREE.Quaternion(), qd = new THREE.Quaternion(), qc = new THREE.Quaternion()
   const UP = new THREE.Vector3(0, 1, 0)
   const X = P.extras[src.gender]
   const looseGarment = LOOSE_GARMENT.test(name)
@@ -241,7 +290,27 @@ export function createPerson(P, name) {
     lastPhase = pose.phase
     mixer.update(dt)
     if (garment) garment.update(dt)
-    if (head && Math.abs(pose.yaw) > 0.001) {
+    if (headControl) {
+      headControl.report.motion = flavor?.getClip().name || cur || 'none'
+      headControl.modelWorld.identity()
+      for (const node of headControl.modelPath) headControl.modelWorld.multiply(node.quaternion)
+      qp.copy(headControl.modelWorld)
+      for (const node of headControl.parentPath) {
+        qp.multiply(node.quaternion)
+        if (node === headControl.chest) qc.copy(qp)
+      }
+      q.copy(qp).multiply(head.quaternion)
+      if (Math.abs(pose.yaw) > 0.001) {
+        qd.setFromAxisAngle(UP, Math.max(-1, Math.min(1, pose.yaw)) * 0.7)
+        q.premultiply(qd)
+      }
+      limitR1HeadQuaternion(q, qc, headControl.modelWorld, headControl.bindHead, headControl.bindChest, headControl.out, headControl.s)
+      if (1 - Math.abs(headControl.out.dot(q)) > 1e-12) headControl.report.limitedFrames++
+      head.quaternion.copy(qp.invert().multiply(headControl.out))
+      headControl.report.pitch = headControl.s.euler.x * HEAD_DEGREES
+      headControl.report.yaw = headControl.s.euler.y * HEAD_DEGREES
+      headControl.report.roll = headControl.s.euler.z * HEAD_DEGREES
+    } else if (head && Math.abs(pose.yaw) > 0.001) {
       model.updateMatrixWorld(true)
       head.parent.getWorldQuaternion(qp)
       head.getWorldQuaternion(q)
@@ -277,7 +346,7 @@ export function createPerson(P, name) {
     }
   }
   solve(0)
-  return { group: root, body: { head }, pose, solve, labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
+  return { group: root, body: { head }, pose, solve, labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, r1HeadLimit: headControl?.report || null, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
 }
 
 // Only the R1 caller opts in; existing animation pools and source clips stay intact.
@@ -322,7 +391,7 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
   P.extras[gender].r1Motions ||= {}
   P.extras[gender].lounge ||= []
   // Separate actions avoid cross-fading an action into itself when speech starts; source tracks stay intact.
-  return { ...P, clips: { ...P.clips, [gender]: { ...P.clips[gender], sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { ...P.extras[gender], sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
+  return { ...P, r1HeadLimit: true, clips: { ...P.clips, [gender]: { ...P.clips[gender], sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { ...P.extras[gender], sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
