@@ -7,6 +7,7 @@ import { WH_R1_DOORS, WH_R1_SHELL_SPEC, WH_R1_WALLS } from '../dr-wh-r1-shell.js
 import { WH_R1_BUILDING, WH_R1_SITE, WH_R1_ZONES } from '../dr-wh-r1-zones.js'
 import { buildWhR1Shell } from '../dr-wh-r1-shell.js'
 import { hideCampusEnvironment, inspectEnvironmentMeshes } from '../dr-campus-shell.js'
+import { createSceneQuality } from '../quality.js'
 import * as THREE from '../vendor/three/three.module.js'
 
 const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) <= .005, `${message}: ${actual} !== ${expected}`)
@@ -102,5 +103,53 @@ test('WH-R1 environment inventory includes and hides sphere crowns within the si
   try { assert.equal(hideCampusEnvironment(THREE, scene, root)['north-garden-crown'], 1) }
   finally { globalThis.location = prior }
   assert.equal(crown.visible, false); assert.equal(outside.visible, true)
+})
+
+test('CMP-868 low quality replaces the world grass source, explaining hidden 20 versus high 19', () => {
+  const scene = new THREE.Scene(), sources = []
+  for (let index = 1; index <= 19; index++) {
+    const clutter = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial())
+    clutter.name = `whr1-hidden-${index}`; clutter.visible = false; scene.add(clutter); sources.push(clutter)
+  }
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshStandardMaterial())
+  ground.name = 'world-grass-2400x2400'; ground.rotation.x = -Math.PI / 2; ground.position.y = -.62; scene.add(ground); sources.push(ground)
+  const sky = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.ShaderMaterial())
+  sky.name = 'world-sky'; sky.scale.setScalar(3000); scene.add(sky); sources.push(sky)
+  const quality = createSceneQuality(THREE, {
+    scene,
+    renderer: { shadowMap: {}, compile() {} },
+    camera: new THREE.PerspectiveCamera(),
+    env: { setQuality() {} },
+    characters: () => [],
+    mergeStatic: () => ({ removed: 0, added: 0 }),
+  })
+  const hidden = () => sources.filter((item) => !item.visible).map((item) => item.name)
+  quality.prepare('high')
+  const high = hidden()
+  quality.activate('low')
+  const low = hidden()
+  assert.equal(high.length, 19)
+  assert.equal(low.length, 20)
+  assert.deepEqual(low.filter((name) => !high.includes(name)), ['world-grass-2400x2400'])
+  assert.equal(sky.visible, true, 'shader sky is not a low-quality proxy source')
+  assert.ok(scene.getObjectByName('quality-low').children.some((mesh) => mesh.userData.source === ground), 'visible low proxy replaces the hidden grass source')
+  quality.activate('high')
+  assert.equal(ground.visible, true)
+})
+
+test('CMP-868 keeps the non-WH-R1 point-based environment hide rule exact', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const inside = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+  const outside = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+  const enclosing = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial())
+  inside.name = 'inside'; outside.name = 'outside'; enclosing.name = 'enclosing'
+  inside.position.set(0, 0, 0); outside.position.set(3, 0, 0); enclosing.position.set(0, 0, 0)
+  scene.add(root, inside, outside, enclosing)
+  const prior = globalThis.location
+  globalThis.location = { search: '?place=drlife-warehouse' }
+  try {
+    assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), { inside: 1, enclosing: 1 })
+  } finally { globalThis.location = prior }
+  assert.equal(inside.visible, false); assert.equal(enclosing.visible, false); assert.equal(outside.visible, true)
 })
 
