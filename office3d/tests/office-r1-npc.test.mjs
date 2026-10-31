@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import { createR1Layout, r1ToWorld } from '../office-r1-layout.js'
 import { R1_NPC_ROSTER, r1NpcStations, R1_NPC_BODY_R } from '../office-r1-npc.js'
@@ -26,10 +26,17 @@ test('NPC-0 名册：11 位服务人员，岗位数量与董事会 2026-10-30 �
   assert.equal(count('plaza-kiosk'), 4)
   assert.equal(count('security'), 1)
   assert.equal(stations.length, 11)
-  // 每人一张不同的脸，且都来自本卡新导入的 28 人
+  // 每人一张不同的脸，且都来自本卡新导入的人物
   assert.equal(new Set(R1_NPC_ROSTER.map((n) => n.avatar)).size, 11)
   // Female_Adult_13 留给第 26 位同事（SEAT26），本卡不得占用
   assert.ok(!R1_NPC_ROSTER.some((n) => n.avatar === 'Female_Adult_13'))
+})
+
+test('NPC-5：需求修订后的第 29 个导入人物 Male_Adult_21 有完整运行时资源', () => {
+  const dir = new URL('../assets/models/people/Male_Adult_21/', import.meta.url)
+  for (const name of ['Male_Adult_21.fbx', 'Male_Adult_21_facial.fbx', 'm251_body_color.jpg', 'm251_head_color.jpg', 'm251_keffiyeh_color.jpg', 'preview.png']) {
+    assert.ok(existsSync(new URL(name, dir)), `缺少 Male_Adult_21/${name}`)
+  }
 })
 
 test('NPC-3 隔离：名牌只写角色，没有同事姓名/职级/模型名，也没有任务字段', () => {
