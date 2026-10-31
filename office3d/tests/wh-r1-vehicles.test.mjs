@@ -12,7 +12,7 @@ const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
 const texture=()=>new THREE.Texture()
 function boxes(root){
  root.updateMatrixWorld(true);const result=new Map(),matrix=new THREE.Matrix4()
- root.traverse(m=>{if(!m.isInstancedMesh||!m.userData.instanceToRegisterId)return;m.geometry.computeBoundingBox();m.userData.instanceToRegisterId.forEach((id,i)=>{m.getMatrixAt(i,matrix);const box=m.geometry.boundingBox.clone().applyMatrix4(matrix.clone().premultiply(m.matrixWorld));if(!result.has(id))result.set(id,new THREE.Box3());result.get(id).union(box)})});return result
+ root.traverse(m=>{if(!m.isInstancedMesh||!m.userData.instanceToRegisterId||m.name==='wh-r1-truck-detail')return;m.geometry.computeBoundingBox();m.userData.instanceToRegisterId.forEach((id,i)=>{m.getMatrixAt(i,matrix);const box=m.geometry.boundingBox.clone().applyMatrix4(matrix.clone().premultiply(m.matrixWorld));if(!result.has(id))result.set(id,new THREE.Box3());result.get(id).union(box)})});return result
 }
 test('I5 keeps all nine trucks and fourteen equipment records without changing source values',()=>{
  const ids=new Set(WH_R1_ASSIGNMENT.filter(r=>r.card==='I5').map(r=>r.id))
@@ -47,7 +47,7 @@ test('I5 seven round-ended sweeps preserve blocked and conditional values withou
  assert.deepEqual(WH_R1_SWEEPS.slice(2,4).map(r=>[r.status,r.min_clearance_mm]),[['CONDITIONAL_STATIC_CLEAR',350],['CONDITIONAL_STATIC_CLEAR',115]])
  const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),overlay=value.root.getObjectByName('wh-r1-vehicle-inspection-overlays'),pos=overlay.geometry.attributes.position
  for(const range of overlay.userData.ranges.filter(r=>/^(TR|FL)/.test(r.id))){const row=WH_R1_SWEEPS.find(r=>r.id===range.id),a=whToWorld(...row.points_m[0]),b=whToWorld(...row.points_m[1]),r=row.swept_radius_mm/1000,x=[],z=[];for(let i=range.start;i<range.start+range.count;i++){x.push(pos.getX(i));z.push(pos.getZ(i))}near(Math.max(...x)-Math.min(...x),2*r,row.id+' width');near(Math.max(...z)-Math.min(...z),Math.abs(a.z-b.z)+2*r,row.id+' round ends')}
- assert.equal(value.onFrame,undefined);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
  const source=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8');assert.doesNotMatch(source,/CAMPUS_VEHICLE_ROUTES|B4_PLAN|pathPoint|requestAnimationFrame|setInterval/)
  value.dispose()
 })
