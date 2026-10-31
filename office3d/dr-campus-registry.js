@@ -2,6 +2,7 @@ import { buildWhR1Shell } from './dr-wh-r1-shell.js'
 import { buildWhR1Zones } from './dr-wh-r1-zones.js'
 import { buildWhR1Racks } from './dr-wh-r1-racks.js'
 import { buildWhR1Workflow } from './dr-wh-r1-workflow.js'
+import { buildWhR1Vehicles } from './dr-wh-r1-vehicles.js'
 import { whR1Requested } from './place-mode.js'
 
 const shape = geometry => Object.keys(geometry.attributes).filter(name => name !== 'color').sort().map(name => `${name}${geometry.attributes[name].itemSize}`).join(',')
@@ -97,7 +98,7 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const buildAll = (shared = {}) => {
     scene.add(root)
     const sources = whr1
-      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow]]
+      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-vehicles', buildWhR1Vehicles]]
       : modules
     for (const [name, factory] of sources) {
       try { built.set(name, factory({ THREE, root, layout, now, ...shared }) || {}) }
