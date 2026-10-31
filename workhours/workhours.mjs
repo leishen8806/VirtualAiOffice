@@ -8,7 +8,8 @@ import { createAgentRecovery } from './agent-recovery.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const API = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
-const COMPANY = fs.readFileSync(path.join(HERE, '..', 'company-id.txt'), 'utf8').trim()
+// 公司 ID：环境变量优先，其次部署目录上一级的 company-id.txt；导入时不因缺文件报错（测试与 CI 会注入 company）。
+const COMPANY = process.env.PAPERCLIP_COMPANY_ID || (() => { try { return fs.readFileSync(path.join(HERE, '..', 'company-id.txt'), 'utf8').trim() } catch { return '' } })()
 const CFG_FILE = path.join(HERE, 'workhours.json')
 const STATE_FILE = path.join(HERE, 'workhours-state.json')
 const LOG_FILE = path.join(HERE, 'workhours.log')
@@ -120,6 +121,7 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (!COMPANY) { console.error('作息调度无法启动：缺少 PAPERCLIP_COMPANY_ID 或上一级目录的 company-id.txt'); process.exit(1) }
   const app = createWorkhours()
   app.log(`作息调度启动${process.argv.includes('--dry-run') ? '（演练模式，不会暂停/恢复任何 agent）' : ''}`)
   app.loop()
