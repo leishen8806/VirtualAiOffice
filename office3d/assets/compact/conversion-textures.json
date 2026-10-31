@@ -1,0 +1,1982 @@
+[
+  {
+    "source": "office3d/assets/models/people/Business_Male_06/m025_body_color.jpg",
+    "sourceSha256": "457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd",
+    "target": "office3d/assets/compact/1024/people/Business_Male_06/m025_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 33070,
+    "sha256": "59523b6d1b91669b8d08a721634f72a52bae52477485004737f973986f6f1129"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_06/m025_body_color.jpg",
+    "sourceSha256": "457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd",
+    "target": "office3d/assets/compact/512/people/Business_Male_06/m025_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 13368,
+    "sha256": "475e6db66b05f1cbe99cc45a0ced686ceaba66c3f468e1973a4021e876a69cad"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_06/m025_head_color.jpg",
+    "sourceSha256": "4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999",
+    "target": "office3d/assets/compact/1024/people/Business_Male_06/m025_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 54312,
+    "sha256": "e578a8ab36528df11a49727d010a8bc026cb1b2809ce2370caf1b38067cc01c9"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_06/m025_head_color.jpg",
+    "sourceSha256": "4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999",
+    "target": "office3d/assets/compact/512/people/Business_Male_06/m025_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15664,
+    "sha256": "fa1945e5081b0aabc84a3ae70d6fc56c25eedeb07f0ad16130100aedd4f59dcd"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_07/m018_body_color.jpg",
+    "sourceSha256": "9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee",
+    "target": "office3d/assets/compact/1024/people/Business_Male_07/m018_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 73492,
+    "sha256": "52dd40e4825e7bafb93d059696b9ec37f352ad4c9d06b3c3e721af5c123b8a4f"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_07/m018_body_color.jpg",
+    "sourceSha256": "9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee",
+    "target": "office3d/assets/compact/512/people/Business_Male_07/m018_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 22600,
+    "sha256": "d45c28f2fe3895e360739931fc9d6a19fe34e1d6382f0161ca0dadd999406ac2"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_07/m018_head_color.jpg",
+    "sourceSha256": "c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763",
+    "target": "office3d/assets/compact/1024/people/Business_Male_07/m018_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 83300,
+    "sha256": "cc1369b408575df4e093a10c13356c902dc1596ab4d3f2d3eabb96eb3380a7d4"
+  },
+  {
+    "source": "office3d/assets/models/people/Business_Male_07/m018_head_color.jpg",
+    "sourceSha256": "c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763",
+    "target": "office3d/assets/compact/512/people/Business_Male_07/m018_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 18884,
+    "sha256": "31841a1622bac3eb3ddf6f1b3859d8b02a2c3986e1a3392abc87c3bbac6433b7"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_body_color.jpg",
+    "sourceSha256": "1be20f40aa95a140ed532eca296e67c529027eb3f2aa32b82585e0f798bc3bf0",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_01/f001_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 87322,
+    "sha256": "b246b0b72f617e5cdcb1d791fe5272ff5d38bb2898cf8ead48624c31ae504141"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_body_color.jpg",
+    "sourceSha256": "1be20f40aa95a140ed532eca296e67c529027eb3f2aa32b82585e0f798bc3bf0",
+    "target": "office3d/assets/compact/512/people/Female_Adult_01/f001_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 24022,
+    "sha256": "ddec5caf792c25e74d8e7d4d78c508f50c0adfcdc2a6e47418fc959921265a7e"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_head_color.jpg",
+    "sourceSha256": "60c4bf8b3ba46843425c2a5e2b7407cd0dd81bead6d86876967c56a0859c76c1",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_01/f001_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 72728,
+    "sha256": "f86b45842320b4a7009c75c0f7bf98e2176b545ccb796660b813b7793c58d5bc"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_head_color.jpg",
+    "sourceSha256": "60c4bf8b3ba46843425c2a5e2b7407cd0dd81bead6d86876967c56a0859c76c1",
+    "target": "office3d/assets/compact/512/people/Female_Adult_01/f001_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21446,
+    "sha256": "0bf5e3b135f0c48b812d061979d4c2fb3e4b22e8791e9e85ecc4e6c37658bad8"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_opacity_color.png",
+    "sourceSha256": "3453c4be1c2b29021602304199fa9327d18736a3da247089359a8f2dfafdfbb4",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_01/f001_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 291674,
+    "sha256": "ef1acbead90d09e8148fd928106bc1d5d3031058be6b002450479e7df55fb507"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_01/f001_opacity_color.png",
+    "sourceSha256": "3453c4be1c2b29021602304199fa9327d18736a3da247089359a8f2dfafdfbb4",
+    "target": "office3d/assets/compact/512/people/Female_Adult_01/f001_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 98556,
+    "sha256": "d2eff227b935f2eb53c22fbd7f432c18a716787a93441d0b45ac6c8b63360a9f"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_body_color.jpg",
+    "sourceSha256": "40ab82db3f16c664dd7d4188411dc2dd2b7366a6062b4092354c3b2ef0d675c6",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_02/f002_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 118936,
+    "sha256": "14523c11647c5bdef0ee4694fd17353a9cb2b852737ad7b4d181a17b3ac6f2fd"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_body_color.jpg",
+    "sourceSha256": "40ab82db3f16c664dd7d4188411dc2dd2b7366a6062b4092354c3b2ef0d675c6",
+    "target": "office3d/assets/compact/512/people/Female_Adult_02/f002_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21598,
+    "sha256": "c1a3a9e159167304f413f746b1c4af01dcc3c20db52201cf36a588c3425fb37b"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_head_color.jpg",
+    "sourceSha256": "12c8b248142e5689445d1574f3037e70c5bd83d67d423e74e2850b80d3f39760",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_02/f002_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 80986,
+    "sha256": "b243ec540bfedf84199d309918c9a8490fb14816af74e52a723fea28f3a9fcdb"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_head_color.jpg",
+    "sourceSha256": "12c8b248142e5689445d1574f3037e70c5bd83d67d423e74e2850b80d3f39760",
+    "target": "office3d/assets/compact/512/people/Female_Adult_02/f002_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 19046,
+    "sha256": "93b5aa97ecc288315595aef04e3296b7605c20f6dd1f2d7b83533c3fc5204022"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_opacity_color.png",
+    "sourceSha256": "892139137e32a2a15c2cce4c684f9c1800e23ba0e3b3fb4aaf79cae71f200e30",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_02/f002_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 388256,
+    "sha256": "9861d32194c859e5eaaa5aa047eea356679cee7f23867560da61723006ef4999"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_02/f002_opacity_color.png",
+    "sourceSha256": "892139137e32a2a15c2cce4c684f9c1800e23ba0e3b3fb4aaf79cae71f200e30",
+    "target": "office3d/assets/compact/512/people/Female_Adult_02/f002_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 108004,
+    "sha256": "2faf4e80317aa064b65ce75f76d60032b58279adcf149b7d8b2dbb8cde67acf7"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_body_color.jpg",
+    "sourceSha256": "37f04c8e00de9aa670dfdf2e685bd22e2f93b8d72a0cda98471c77edb9ad11dc",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_03/f003_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 60192,
+    "sha256": "89e7389eaa961c43584f7a80b5723711605b72a57a01be5b0ffa68b022d313b1"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_body_color.jpg",
+    "sourceSha256": "37f04c8e00de9aa670dfdf2e685bd22e2f93b8d72a0cda98471c77edb9ad11dc",
+    "target": "office3d/assets/compact/512/people/Female_Adult_03/f003_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21038,
+    "sha256": "3fe8465f3edfbf74eb76c81234563e48185293750dfe57f584c72c7048a424a0"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_head_color.jpg",
+    "sourceSha256": "d708e731955e699eca30170772e03ab0d5f4d31142d6b201aecd134ec203582f",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_03/f003_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 53660,
+    "sha256": "3b306a5ea1cdd1820d037d5d40142fe38a748396927fcf859d7646044ff7095b"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_head_color.jpg",
+    "sourceSha256": "d708e731955e699eca30170772e03ab0d5f4d31142d6b201aecd134ec203582f",
+    "target": "office3d/assets/compact/512/people/Female_Adult_03/f003_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 14824,
+    "sha256": "ed04b8f18d5ebc38cf9b1845a3e15c4ace488ce902c57a6b298641964a26ea70"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_opacity_color.png",
+    "sourceSha256": "7c23414b011ba0ee53ce6c68d93378d64712802ac663b07a501d09ec45d0903f",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_03/f003_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 579564,
+    "sha256": "b5628a894230b6b96845f303d87807714f6538f8c31a2d287ab1a72df6ef312d"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_03/f003_opacity_color.png",
+    "sourceSha256": "7c23414b011ba0ee53ce6c68d93378d64712802ac663b07a501d09ec45d0903f",
+    "target": "office3d/assets/compact/512/people/Female_Adult_03/f003_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 163226,
+    "sha256": "c011ad3b0e19a55e26522c8e9409c3a187e53ee084ca10942e9d3c60e636d106"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_body_color.jpg",
+    "sourceSha256": "45ea042585eff87669ff041ca4a1ec65dcb567f59a0d5d3d18cc4036937169a3",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_04/f004_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 63942,
+    "sha256": "5d3718fc38c82a2a89282ec3d6747710e2dd30d8844177d2366a33cde3045dd6"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_body_color.jpg",
+    "sourceSha256": "45ea042585eff87669ff041ca4a1ec65dcb567f59a0d5d3d18cc4036937169a3",
+    "target": "office3d/assets/compact/512/people/Female_Adult_04/f004_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 22158,
+    "sha256": "ab293e68f4ba5bf57070c4b29a7e051afa11b3fc41056ea2a5a9efbedee6998f"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_head_color.jpg",
+    "sourceSha256": "f6572ee00279570b2d0b7288f98e5c7c6075a200609304573b3336d83c4b6cd0",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_04/f004_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 91650,
+    "sha256": "52ca1da1a094b872e33ce1ec220ffa69874239af43282109c6bde4722aaa87e8"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_head_color.jpg",
+    "sourceSha256": "f6572ee00279570b2d0b7288f98e5c7c6075a200609304573b3336d83c4b6cd0",
+    "target": "office3d/assets/compact/512/people/Female_Adult_04/f004_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 26466,
+    "sha256": "080b81678f759715a5ac6b4c5131a47afff9d9bccecd7d5313d622f65ffcec16"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_opacity_color.png",
+    "sourceSha256": "b179e345136a72c7228a9275178c81e7996ed27c2a47cd7c70686e73d3b7fd44",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_04/f004_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 318570,
+    "sha256": "f6a3e439ddf101f66b872d6ad55e5d475f577f46734c4c220175b83e638aad07"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_04/f004_opacity_color.png",
+    "sourceSha256": "b179e345136a72c7228a9275178c81e7996ed27c2a47cd7c70686e73d3b7fd44",
+    "target": "office3d/assets/compact/512/people/Female_Adult_04/f004_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 112276,
+    "sha256": "a105d957e8877df4ff300aeb5a941f1deee277462ee350605214436964ee4874"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_body_color.jpg",
+    "sourceSha256": "e61e567ebe863cb969a7ef8bb53e2d96dbca24500be79134f81d2c87c9f61c42",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_05/f005_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 168396,
+    "sha256": "dd4d0e763e3c69c72f54e128c22d751be599dc3cfc3b09ffc5be44e2551055d6"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_body_color.jpg",
+    "sourceSha256": "e61e567ebe863cb969a7ef8bb53e2d96dbca24500be79134f81d2c87c9f61c42",
+    "target": "office3d/assets/compact/512/people/Female_Adult_05/f005_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 33008,
+    "sha256": "82f5ee701cbbd8b2d65767f4dd13e58252a6d05b68a5b264fa0ac6b74999c4f1"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_head_color.jpg",
+    "sourceSha256": "1f7dad9d6161faadc1134bc8216f9dbb7f6db74fc35be0f891123038324d9843",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_05/f005_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 49060,
+    "sha256": "38d3150c92b2454b62a278f5848429cd14ea3544fb2211d2da17026a3736d8ac"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_head_color.jpg",
+    "sourceSha256": "1f7dad9d6161faadc1134bc8216f9dbb7f6db74fc35be0f891123038324d9843",
+    "target": "office3d/assets/compact/512/people/Female_Adult_05/f005_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 12598,
+    "sha256": "c97d9ca1e8945764de6e908f7081a7a802649c49c2e551a9cd2b057230df8dc6"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_opacity_color.png",
+    "sourceSha256": "01236f9a06fb5277921788b49bce48385770f99c0657248612d56f31bf455534",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_05/f005_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 299876,
+    "sha256": "9f52d068752a871cdb448c2d5acb1ae56e74ace0aa6136d682c95b6600bb1d70"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_05/f005_opacity_color.png",
+    "sourceSha256": "01236f9a06fb5277921788b49bce48385770f99c0657248612d56f31bf455534",
+    "target": "office3d/assets/compact/512/people/Female_Adult_05/f005_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 99734,
+    "sha256": "795e8025452e4772e5fa631d2ccc4d3e15b83478836c3b77c3884161f6f80d6a"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_body_color.jpg",
+    "sourceSha256": "c822f4bc3a146c1eebef450e326a9c434b6941e98c3e635f744c47fd945eaa70",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_06/f202_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 34468,
+    "sha256": "0d3cd90ec7db40af1626e0fb2cc2a6414f165eeb9cdeac1f26f90c5352f54ec3"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_body_color.jpg",
+    "sourceSha256": "c822f4bc3a146c1eebef450e326a9c434b6941e98c3e635f744c47fd945eaa70",
+    "target": "office3d/assets/compact/512/people/Female_Adult_06/f202_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 13540,
+    "sha256": "94d477080187342f16c6bd1226171d1b04207c0391f502b732efb112ff03f29d"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_head_color.jpg",
+    "sourceSha256": "30b217357cb79202a9bf7d756e33908974402c8851e937504515762c3365cfe6",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_06/f202_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 40288,
+    "sha256": "0e835cd679255120deb1cccbb9fa5dc1ba43437817a22f92ff96d885b0622e07"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_head_color.jpg",
+    "sourceSha256": "30b217357cb79202a9bf7d756e33908974402c8851e937504515762c3365cfe6",
+    "target": "office3d/assets/compact/512/people/Female_Adult_06/f202_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15046,
+    "sha256": "11aae2a4cde78eaf8caa8dd3ce362246130a0119287220c59b906fff8198ad30"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_opacity_color.png",
+    "sourceSha256": "d82754302cdcefc6342240056befed3646fe0e88d7c15739a442c028cf696d24",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_06/f202_opacity_color.webp",
+    "dimensions": [
+      1024,
+      256
+    ],
+    "bytes": 164168,
+    "sha256": "edcf2a590017364fb44be837b18e08a690d0ab66eb7448efadf931d4e07dd637"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_06/f202_opacity_color.png",
+    "sourceSha256": "d82754302cdcefc6342240056befed3646fe0e88d7c15739a442c028cf696d24",
+    "target": "office3d/assets/compact/512/people/Female_Adult_06/f202_opacity_color.webp",
+    "dimensions": [
+      512,
+      128
+    ],
+    "bytes": 51748,
+    "sha256": "580f9da247f0173acdf2a024ef581249a5f10a91dfd826111e422830ac86d5b5"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_body_color.jpg",
+    "sourceSha256": "f8d614926595373d10a04ea1a36d89dc9bf332b343465a58821eeed1819611fa",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_07/f007_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 65296,
+    "sha256": "828565273f6dc0401b9134e6dad92756a9395f7907a2ae1421d73b98a81659d7"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_body_color.jpg",
+    "sourceSha256": "f8d614926595373d10a04ea1a36d89dc9bf332b343465a58821eeed1819611fa",
+    "target": "office3d/assets/compact/512/people/Female_Adult_07/f007_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 20452,
+    "sha256": "0f532af882416beb723722dc980cee6c0e43051ee3361db5ddf768cd8c54c9f1"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_head_color.jpg",
+    "sourceSha256": "d5ceb4b0ba4413d0042d2dc5bb30cf413604914326c5583b4d55117591ad7a27",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_07/f007_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 61496,
+    "sha256": "6b3ce87a299a3a71a80dbf5de96eca3dc135d1653fc8745276bc683d6c09084c"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_head_color.jpg",
+    "sourceSha256": "d5ceb4b0ba4413d0042d2dc5bb30cf413604914326c5583b4d55117591ad7a27",
+    "target": "office3d/assets/compact/512/people/Female_Adult_07/f007_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16826,
+    "sha256": "c96fe6f1b3821e33551ee0e9bc412d8c5c0139ccae258bff56f672fc3d120c66"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_opacity_color.png",
+    "sourceSha256": "dfafbd7454ac53afe34a6c96314f2b92cecc4a86099b955755c909e1320cac3c",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_07/f007_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 406544,
+    "sha256": "76ee7aab25389c95ce2d10bd05706ddf37c8e26a1b3e8df4048665cd8fdbe09e"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_07/f007_opacity_color.png",
+    "sourceSha256": "dfafbd7454ac53afe34a6c96314f2b92cecc4a86099b955755c909e1320cac3c",
+    "target": "office3d/assets/compact/512/people/Female_Adult_07/f007_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 118840,
+    "sha256": "c9baa87095ba33147bddcb100db626398411d715883535c3d54af5afb81ecd1f"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_body_color.jpg",
+    "sourceSha256": "4f549f5520662b266b31341bd597f5f083757dbc3b94c88ce38e20717bf237c7",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_08/f008_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 81094,
+    "sha256": "995e379927c3171c595236852ad91295fcad1ce4f8f2a4e0fda99842224b066b"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_body_color.jpg",
+    "sourceSha256": "4f549f5520662b266b31341bd597f5f083757dbc3b94c88ce38e20717bf237c7",
+    "target": "office3d/assets/compact/512/people/Female_Adult_08/f008_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 22878,
+    "sha256": "167bae8e262a671b44ca7f112aa186884d190a42a79787d91f80da7b5307f405"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_head_color.jpg",
+    "sourceSha256": "95b61b960a2b9fffcb2a02b7c8a4661a16702e50927bbdfaf434dc8a9b5926d8",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_08/f008_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 59258,
+    "sha256": "fa067ee796ebff0e99210aa90daf459b9097e441b17ecca8ecb7e1bcefe84472"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_head_color.jpg",
+    "sourceSha256": "95b61b960a2b9fffcb2a02b7c8a4661a16702e50927bbdfaf434dc8a9b5926d8",
+    "target": "office3d/assets/compact/512/people/Female_Adult_08/f008_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16936,
+    "sha256": "0db58614435d5e947357aef71f51d2e69644ec065ab00a0089eaa21e38bc30b3"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_opacity_color.png",
+    "sourceSha256": "0223c3557eecdc35b627c3f1cd361d8ace91e5537f95b4643904468d7f962ba9",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_08/f008_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 354842,
+    "sha256": "6093151feeff1cfc9d7824e6b753e9b9fedef35db6fd31946d051c38285e06a0"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_08/f008_opacity_color.png",
+    "sourceSha256": "0223c3557eecdc35b627c3f1cd361d8ace91e5537f95b4643904468d7f962ba9",
+    "target": "office3d/assets/compact/512/people/Female_Adult_08/f008_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 108394,
+    "sha256": "d4cff12ed514c1df2c66564095fbe071013a25b2021909cbdf750691146294fc"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_body_color.jpg",
+    "sourceSha256": "9a7fa6236d3900248cc9b17e1dc5c1acaf9f657ec0077f0b2b535d47143d1bf7",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_09/f009_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 92944,
+    "sha256": "e3478fe247fa0bd45f1ff58f535c2bd5bf672a0cfcac625476ae5a70439a4fa9"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_body_color.jpg",
+    "sourceSha256": "9a7fa6236d3900248cc9b17e1dc5c1acaf9f657ec0077f0b2b535d47143d1bf7",
+    "target": "office3d/assets/compact/512/people/Female_Adult_09/f009_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21074,
+    "sha256": "8b1e9d1079cfce4041a064f421f3ea7e59f1a6c833105ab1c2a78869ee408de9"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_head_color.jpg",
+    "sourceSha256": "632b345dd2f3118abf660f86a9a731d5755f479e6aca6574ffd50387fde9ebb5",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_09/f009_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 57466,
+    "sha256": "95b260a2db0687cfe57c204ee1f5ce6277ea90c8801e226cc3c35dbd336658e5"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_head_color.jpg",
+    "sourceSha256": "632b345dd2f3118abf660f86a9a731d5755f479e6aca6574ffd50387fde9ebb5",
+    "target": "office3d/assets/compact/512/people/Female_Adult_09/f009_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16684,
+    "sha256": "88240f6001f34bd62348d8480ce4e6a4fb371030ba3b4c8366ced27fb5256179"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_opacity_color.png",
+    "sourceSha256": "7e6d00375d75dab3aa4037be88b4ca2d2e4b2b827787db603f8044de745183ce",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_09/f009_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 374326,
+    "sha256": "dae3d5802cb2e3d05ce9a30d520d1957f2d2b318c83f48bc720376391c59e1ff"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_09/f009_opacity_color.png",
+    "sourceSha256": "7e6d00375d75dab3aa4037be88b4ca2d2e4b2b827787db603f8044de745183ce",
+    "target": "office3d/assets/compact/512/people/Female_Adult_09/f009_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 109842,
+    "sha256": "58ec7a184509af9b7c123395ff42ad2592b007459f693007387383aa40228c65"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_body_color.jpg",
+    "sourceSha256": "82c31aa483bf4a72cfcc713277b13d363b6b6e2f119d990b853e5885e645093b",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_10/f201_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 27490,
+    "sha256": "41cfe289fcffad3ebbbe4a518cc86f13a9ae50648d37914770b8d0cd2598cf01"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_body_color.jpg",
+    "sourceSha256": "82c31aa483bf4a72cfcc713277b13d363b6b6e2f119d990b853e5885e645093b",
+    "target": "office3d/assets/compact/512/people/Female_Adult_10/f201_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 10138,
+    "sha256": "c0d42f1990d4fbfc3a8433e3cbbd5a1dee0b526616a4314d7dc5f4f2d5932283"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_head_color.jpg",
+    "sourceSha256": "785685f98fa1f9563bc6f3e54045f497262e6df939c29aeb05d3782225c527aa",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_10/f201_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 17186,
+    "sha256": "31ebce11038097b1477bf80f550470c2527e2434dcaa7245404dafa18f0422f3"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_head_color.jpg",
+    "sourceSha256": "785685f98fa1f9563bc6f3e54045f497262e6df939c29aeb05d3782225c527aa",
+    "target": "office3d/assets/compact/512/people/Female_Adult_10/f201_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 6284,
+    "sha256": "eeb3006a0648b4f90cab2358e4f542cf5219a09fffe2d86b68769fb163636889"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_opacity_color.png",
+    "sourceSha256": "ba58f1968213905829c66bec51b9d8b5937e30f1413090a485bf283a07a8daf5",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_10/f201_opacity_color.webp",
+    "dimensions": [
+      512,
+      256
+    ],
+    "bytes": 33562,
+    "sha256": "b457083ecd4bd36aef48ae9d57b7a31195fddc79824dc75ca4a9bef755b8d910"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_10/f201_opacity_color.png",
+    "sourceSha256": "ba58f1968213905829c66bec51b9d8b5937e30f1413090a485bf283a07a8daf5",
+    "target": "office3d/assets/compact/512/people/Female_Adult_10/f201_opacity_color.webp",
+    "dimensions": [
+      512,
+      256
+    ],
+    "bytes": 33562,
+    "sha256": "b457083ecd4bd36aef48ae9d57b7a31195fddc79824dc75ca4a9bef755b8d910"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_body_color.jpg",
+    "sourceSha256": "efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_13/f019_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 61104,
+    "sha256": "59453738d4f903e8135785b6033ae987c05c25ccfbb00942352d4c4478fd9f9e"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_body_color.jpg",
+    "sourceSha256": "efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485",
+    "target": "office3d/assets/compact/512/people/Female_Adult_13/f019_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 19758,
+    "sha256": "20f374d601bc3b012f91e6866d6889ee7e8681343e5b7a1ac4fd8a64ccd357c6"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_head_color.jpg",
+    "sourceSha256": "0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_13/f019_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 67100,
+    "sha256": "e8c19f6b93f041fb3f7fca9a311b1461223e6ad207afb4d4726ad9fe3084b499"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_head_color.jpg",
+    "sourceSha256": "0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d",
+    "target": "office3d/assets/compact/512/people/Female_Adult_13/f019_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21002,
+    "sha256": "22356624c452ecd62c66425bb462c0665a7dea58fb2ad95490b00092db582ec7"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_opacity_color.png",
+    "sourceSha256": "91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_13/f019_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 360844,
+    "sha256": "14c0825a01df165047ddec05d55d8f648929cee1e1c1394d8b124c47bc03b203"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_13/f019_opacity_color.png",
+    "sourceSha256": "91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce",
+    "target": "office3d/assets/compact/512/people/Female_Adult_13/f019_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 108768,
+    "sha256": "979dc15d9bbe265b7fed260b4ec7e3e2264304ab29b5f217d21afae7907733c9"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_body_color.jpg",
+    "sourceSha256": "977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_17/f006_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 64746,
+    "sha256": "9f565607779c421715afd913033d276c520a797329e532ed1b14a73d81084594"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_body_color.jpg",
+    "sourceSha256": "977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e",
+    "target": "office3d/assets/compact/512/people/Female_Adult_17/f006_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 23002,
+    "sha256": "2336af28fa4f61d0dd276c6138fd9862b6505170baa75173ec7895bdcb6b6c54"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_head_color.jpg",
+    "sourceSha256": "73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_17/f006_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 69228,
+    "sha256": "eb80f0531d449f5ab2ec82b9e1b4ec199e39dfcb169833b72c6ffc605e635891"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_head_color.jpg",
+    "sourceSha256": "73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915",
+    "target": "office3d/assets/compact/512/people/Female_Adult_17/f006_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21038,
+    "sha256": "a35f5f641758c12637c9a5421c497facf62a2d5a8721f0d4aefe93a252f2962f"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_opacity_color.png",
+    "sourceSha256": "bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6",
+    "target": "office3d/assets/compact/1024/people/Female_Adult_17/f006_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 313950,
+    "sha256": "b7f42499ba1582e846cd030104645c12b100b867fe3e7d08b6b4cc9d1405830f"
+  },
+  {
+    "source": "office3d/assets/models/people/Female_Adult_17/f006_opacity_color.png",
+    "sourceSha256": "bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6",
+    "target": "office3d/assets/compact/512/people/Female_Adult_17/f006_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 103650,
+    "sha256": "c44310626bab66e596f9fc6558939bf37e6e794b7461cc7c325b19051c34afe0"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_body_color.jpg",
+    "sourceSha256": "d8281dcad9424b4a2914f837b665c001a251925cceb0ad4c6acbc71bd0919541",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_01/m002_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 81180,
+    "sha256": "981f64186b9c66d3cc4884a1f421c551c38dd351c32c59050262b11fd31a9661"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_body_color.jpg",
+    "sourceSha256": "d8281dcad9424b4a2914f837b665c001a251925cceb0ad4c6acbc71bd0919541",
+    "target": "office3d/assets/compact/512/people/Male_Adult_01/m002_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 28808,
+    "sha256": "235c71fb048757cf7e87e484f1842b85feb0cf9434fc80bb68d83c24eb778115"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_head_color.jpg",
+    "sourceSha256": "de94bd3f3757f7effd9bfc1672cd7779fad7e7bac347d59b6a33dd9f99e823a3",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_01/m002_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 54362,
+    "sha256": "56c55ecc0178d43fe004e52d03a53b7a4c5abc9ecadbb7ef6f6fb6d7203a5233"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_head_color.jpg",
+    "sourceSha256": "de94bd3f3757f7effd9bfc1672cd7779fad7e7bac347d59b6a33dd9f99e823a3",
+    "target": "office3d/assets/compact/512/people/Male_Adult_01/m002_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16076,
+    "sha256": "a0251114b6a64722c480d535a2c1265c03835924d054c7858e9652f7b921f26f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_opacity_color.png",
+    "sourceSha256": "6f4d1e945084d52fccbdb73186a028e818c9f7a519fd817313ee85ee23de6486",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_01/m002_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 387622,
+    "sha256": "358436abbfed8551f0cf57d42ee234db971b96a4619081891adc79003093fa15"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_01/m002_opacity_color.png",
+    "sourceSha256": "6f4d1e945084d52fccbdb73186a028e818c9f7a519fd817313ee85ee23de6486",
+    "target": "office3d/assets/compact/512/people/Male_Adult_01/m002_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 125950,
+    "sha256": "07b36573af11c425ae2de1a4221afddfe854842b9a6065a1275e9f16338d3c30"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_body_color.jpg",
+    "sourceSha256": "374fb0f31c3953003d15d85db740953ae50ca3bd505b05283bf2599bc38a9deb",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_02/m003_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 59048,
+    "sha256": "fc7b1cb55f604fff94f32a85f4801392b159854663d9d345a4d61bf8959f606a"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_body_color.jpg",
+    "sourceSha256": "374fb0f31c3953003d15d85db740953ae50ca3bd505b05283bf2599bc38a9deb",
+    "target": "office3d/assets/compact/512/people/Male_Adult_02/m003_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 18396,
+    "sha256": "e714be32229adcc9641d51de9deddc1c6c33bd569927d77e99aa30172dd96190"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_head_color.jpg",
+    "sourceSha256": "5f8481c3dfabf937a57c9b14fc94cb659c2aa3c03c1df54e5f773fcf053d8983",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_02/m003_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 50564,
+    "sha256": "c727ebddb369449a5a86ce091cb71dd1254ac684eb8187f5032edf0fd71f5187"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_head_color.jpg",
+    "sourceSha256": "5f8481c3dfabf937a57c9b14fc94cb659c2aa3c03c1df54e5f773fcf053d8983",
+    "target": "office3d/assets/compact/512/people/Male_Adult_02/m003_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15110,
+    "sha256": "545bcde0a444d82046e61393245b79a5f02acdc8cac4e8c28c77de002c7c48ae"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_opacity_color.png",
+    "sourceSha256": "b39b2e48a813450af02800e5a597296669c28116218291f91e2a5e7d87c5a9f9",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_02/m003_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 301610,
+    "sha256": "7ea548850c6d422754bb3f04630afb5c3acdd17befbe96cb5325e365faa24154"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_02/m003_opacity_color.png",
+    "sourceSha256": "b39b2e48a813450af02800e5a597296669c28116218291f91e2a5e7d87c5a9f9",
+    "target": "office3d/assets/compact/512/people/Male_Adult_02/m003_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 103420,
+    "sha256": "f6ca1b285ca3353b3b20d9310f2efc67f410e95914d2b7b8df660a167f7987fa"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_body_color.jpg",
+    "sourceSha256": "9da59c6482a2642ce69ba53e0404256deefe779d4993fb7150cb22c91f8e51ab",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_03/m004_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 138500,
+    "sha256": "3bc99556eb874a92947b9fcfda554d9713622cc75851c5c69fc4abe70bb7d1bd"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_body_color.jpg",
+    "sourceSha256": "9da59c6482a2642ce69ba53e0404256deefe779d4993fb7150cb22c91f8e51ab",
+    "target": "office3d/assets/compact/512/people/Male_Adult_03/m004_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 25768,
+    "sha256": "10a1126ae2676af2ec5b28d7b65fb775fe4629cbead526e2af472cd4c80deebd"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_head_color.jpg",
+    "sourceSha256": "7b1346419c7c87ee9f9d29a8e7779c921c0c0826fdc3362dbbbf519f3dcd75f8",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_03/m004_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 90958,
+    "sha256": "449c791a50924bac2716cd017d64e99df05007adcef6bdba33955506c0f75fa0"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_head_color.jpg",
+    "sourceSha256": "7b1346419c7c87ee9f9d29a8e7779c921c0c0826fdc3362dbbbf519f3dcd75f8",
+    "target": "office3d/assets/compact/512/people/Male_Adult_03/m004_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 19854,
+    "sha256": "51ad84a8e711d67a34f7b5b72bc5e886f2dfc8b2ce35af5b8db79000f3ccdc32"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_opacity_color.png",
+    "sourceSha256": "041bb694f869b013bcb6e6986e8e159c0f8626edead14ab7f55f32d6ca71e82f",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_03/m004_opacity_color.webp",
+    "dimensions": [
+      1024,
+      512
+    ],
+    "bytes": 392866,
+    "sha256": "83178302ada65e3ef2ae2ae21f5b49ca26eaebe5234a5e8658132b7e695be4f6"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_03/m004_opacity_color.png",
+    "sourceSha256": "041bb694f869b013bcb6e6986e8e159c0f8626edead14ab7f55f32d6ca71e82f",
+    "target": "office3d/assets/compact/512/people/Male_Adult_03/m004_opacity_color.webp",
+    "dimensions": [
+      512,
+      256
+    ],
+    "bytes": 116202,
+    "sha256": "d33b6c9b4e6cee2be69cadbffbae6d02ba31059153f049a69a97ba0b3244cfc6"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_body_color.jpg",
+    "sourceSha256": "9f1acd52f34e71053e94df36a7d501b4ad2fe572cdd13836c51431d5d791f992",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_04/m006_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 70450,
+    "sha256": "ad34e88ea34f2047c25acb9ff1533f0c164a451c582d112189d8ee39197f65d4"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_body_color.jpg",
+    "sourceSha256": "9f1acd52f34e71053e94df36a7d501b4ad2fe572cdd13836c51431d5d791f992",
+    "target": "office3d/assets/compact/512/people/Male_Adult_04/m006_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 21298,
+    "sha256": "23f90eb643d6ba54f3f4090b051cd88eec69cfecccb3e6ffc64c6a9796b6dc62"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_head_color.jpg",
+    "sourceSha256": "cad4d44c9be226d801ac8610f448067a52f956f5ba3ae90e8cdd820cbc1d0618",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_04/m006_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 66860,
+    "sha256": "d8dfe273e8e9a2e84ac62782622ec246eee464745731b8b428a364fc8aea428f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_head_color.jpg",
+    "sourceSha256": "cad4d44c9be226d801ac8610f448067a52f956f5ba3ae90e8cdd820cbc1d0618",
+    "target": "office3d/assets/compact/512/people/Male_Adult_04/m006_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15184,
+    "sha256": "ebc39e03e310d48ab4be94bc6948802d62a40e337a9b81310afd6c58c933517e"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_opacity_color.png",
+    "sourceSha256": "3e5ae90bc00572de9cdeb7f4f7d6453ed554c62e959d59a6f6932a8579f9a740",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_04/m006_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 436466,
+    "sha256": "976dc1acd1a98b61543484fb68ef2fb012677123bfb28acb6d04510b8d056303"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_04/m006_opacity_color.png",
+    "sourceSha256": "3e5ae90bc00572de9cdeb7f4f7d6453ed554c62e959d59a6f6932a8579f9a740",
+    "target": "office3d/assets/compact/512/people/Male_Adult_04/m006_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 136564,
+    "sha256": "caf5ebf16c01949dad88ae895cd5313c3edda22962148aa0d420ad17ee7fa37e"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_body_color.jpg",
+    "sourceSha256": "68256ee7b77cc19e8fffacc701afc9d749a902169c66c131276740619ed31c16",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_05/m009_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 63582,
+    "sha256": "26147ff9a83ad6d2d133e844c6838acca05f04ef763d98bac51a464bad754f7f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_body_color.jpg",
+    "sourceSha256": "68256ee7b77cc19e8fffacc701afc9d749a902169c66c131276740619ed31c16",
+    "target": "office3d/assets/compact/512/people/Male_Adult_05/m009_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 20132,
+    "sha256": "df03c7720ba1a90adf09622cb18d25c7e8bf10f326b9701f62dfe85de01d3c53"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_head_color.jpg",
+    "sourceSha256": "fe26f3a4a6562ca349767d8c775407ac9040ed59bc2fcda9590ee893e99cddf5",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_05/m009_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 91318,
+    "sha256": "fe307c321a3258207ffcf7378ce19e93655056fc564d9950e38c4125342cbeed"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_head_color.jpg",
+    "sourceSha256": "fe26f3a4a6562ca349767d8c775407ac9040ed59bc2fcda9590ee893e99cddf5",
+    "target": "office3d/assets/compact/512/people/Male_Adult_05/m009_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 20768,
+    "sha256": "df20a26eb16d0aae588152fc7d04b00361249ef5dec7863690e9a791d2315ebb"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_opacity_color.png",
+    "sourceSha256": "8ee4c4971be723ee032af0b749f36accf516d194d895019ef79120eea0c8779a",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_05/m009_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 341234,
+    "sha256": "f9686ba5c251e7d4a7bc962c48e4f8966b0c6f03c0448c484205febaf45af294"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_05/m009_opacity_color.png",
+    "sourceSha256": "8ee4c4971be723ee032af0b749f36accf516d194d895019ef79120eea0c8779a",
+    "target": "office3d/assets/compact/512/people/Male_Adult_05/m009_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 119470,
+    "sha256": "6eb987a88e090355d8d79cdeaba659ba3b699ed21dd110acde1dd783b06a8a09"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_body_color.jpg",
+    "sourceSha256": "dae3ae9f48ae9db6e6b665a7d05d4bca1a5ef2fa484eb873279e075b4b5b5fe1",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_06/m011_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 65894,
+    "sha256": "83fd4da3a3b76ca617ce474c8d98b897ff88bcc9fb57782d1037b9c0b8e770ea"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_body_color.jpg",
+    "sourceSha256": "dae3ae9f48ae9db6e6b665a7d05d4bca1a5ef2fa484eb873279e075b4b5b5fe1",
+    "target": "office3d/assets/compact/512/people/Male_Adult_06/m011_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 19240,
+    "sha256": "8f1d5876b4881b1fdbeb7b84ae1c676e7400ac1451f1ad89373a3c9ae7fa4bea"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_head_color.jpg",
+    "sourceSha256": "45a5713b6b8c11d7774793782a0a7298cf46cf90ebca9771c77b786e96f2672f",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_06/m011_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 61326,
+    "sha256": "a773048f793f0b20c1753cf18efd14574339e96a489e23a41730554fc2d2ae6d"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_head_color.jpg",
+    "sourceSha256": "45a5713b6b8c11d7774793782a0a7298cf46cf90ebca9771c77b786e96f2672f",
+    "target": "office3d/assets/compact/512/people/Male_Adult_06/m011_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 18648,
+    "sha256": "86c11d5b318b02e35e97338691554e8bfe472693d1c050292aec6df9a882735c"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_opacity_color.png",
+    "sourceSha256": "5f8e6bba0685ff023b14c49f169e7b1939c0f79c60c7e217393927ed953a0c5c",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_06/m011_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 530102,
+    "sha256": "4caefc6dfded0bc115f5597d55a7c17381312156d1d0b73e5d1267383ee90f80"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_06/m011_opacity_color.png",
+    "sourceSha256": "5f8e6bba0685ff023b14c49f169e7b1939c0f79c60c7e217393927ed953a0c5c",
+    "target": "office3d/assets/compact/512/people/Male_Adult_06/m011_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 171154,
+    "sha256": "3d1eb5111516def548a9e3fde814fbe840b5ef19d67f8153d418ad5762f47578"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_body_color.jpg",
+    "sourceSha256": "ee4a8560e143ed0e12c763a9f1932e07c9424fbc84cce86eb0207c54e5884135",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_07/m013_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 83836,
+    "sha256": "95920a3f04dd477035cdb3300d4919e9ee1151425a3b8b91aec1487f1ace767f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_body_color.jpg",
+    "sourceSha256": "ee4a8560e143ed0e12c763a9f1932e07c9424fbc84cce86eb0207c54e5884135",
+    "target": "office3d/assets/compact/512/people/Male_Adult_07/m013_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 19308,
+    "sha256": "feb78eb560aaa8ffdc2cc36395e67f8a07ff3a987f543201a262a3e710cb4007"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_head_color.jpg",
+    "sourceSha256": "796c803038e2af2aace562ad9622fa17d75ad9162ce50f20e660d47264582aea",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_07/m013_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 58354,
+    "sha256": "c2b869f62eae2e4800a21a96b0741be86b28a8b7f2e026c1aa200b62abf71cf0"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_head_color.jpg",
+    "sourceSha256": "796c803038e2af2aace562ad9622fa17d75ad9162ce50f20e660d47264582aea",
+    "target": "office3d/assets/compact/512/people/Male_Adult_07/m013_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15298,
+    "sha256": "4c92be317e5bdc98d8715f8ca51588f4415202b95aba588e0293590eae7096f4"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_opacity_color.png",
+    "sourceSha256": "624794cb0d72a2bcd87416ac4bd830efa73fde22eccc76411876d7797a52b9d4",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_07/m013_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 144376,
+    "sha256": "efb8e9e134042a8ab7834fe9a858afbe248646aa3f2bc151ea8f2ea2e6cb7b08"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_07/m013_opacity_color.png",
+    "sourceSha256": "624794cb0d72a2bcd87416ac4bd830efa73fde22eccc76411876d7797a52b9d4",
+    "target": "office3d/assets/compact/512/people/Male_Adult_07/m013_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 49362,
+    "sha256": "b84140fce305ac123a9ebc85114f3154c5317f69a2a120c5a6e71d4c8c73263b"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_body_color.jpg",
+    "sourceSha256": "8aa77b77f5cff2fd6d0bbdea60537d709311fea961df15f856bbe5a302238488",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_08/m014_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 43390,
+    "sha256": "3645e515b0b3815b59fbb534e482cafbc2724478833198e02e45171111589a3e"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_body_color.jpg",
+    "sourceSha256": "8aa77b77f5cff2fd6d0bbdea60537d709311fea961df15f856bbe5a302238488",
+    "target": "office3d/assets/compact/512/people/Male_Adult_08/m014_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15134,
+    "sha256": "9f3c99a762692d419e9eaad943d1ace11dab3d67c0e74a60edec0a7871c89d2f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_head_color.jpg",
+    "sourceSha256": "adc37440cf718b92d6f61d7fe1d9730f6dc0c6cba9f31354ad42ea8ca819769a",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_08/m014_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 64572,
+    "sha256": "b81b067e2634e8e3bcf0489731a59a7109960565a7a1a1ff84bafd512f838e9a"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_head_color.jpg",
+    "sourceSha256": "adc37440cf718b92d6f61d7fe1d9730f6dc0c6cba9f31354ad42ea8ca819769a",
+    "target": "office3d/assets/compact/512/people/Male_Adult_08/m014_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 17560,
+    "sha256": "ca05e663fcd8baa17c03d3d00079bc6daf8e63bf191b0aacadd8962a46be65a3"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_opacity_color.png",
+    "sourceSha256": "b563844f311e3298c1dd198b08829b5bb02488ab2470d717950f6eb689d9605a",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_08/m014_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 400696,
+    "sha256": "5af53dd6e5171522000173d97dac28e75da2dbfb11634d1cc81849c2e04e49cf"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_08/m014_opacity_color.png",
+    "sourceSha256": "b563844f311e3298c1dd198b08829b5bb02488ab2470d717950f6eb689d9605a",
+    "target": "office3d/assets/compact/512/people/Male_Adult_08/m014_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 131192,
+    "sha256": "98c7266a57ec445790741cc0b7d58df09e970cee8e65fed48d77739fd405fb8b"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_body_color.jpg",
+    "sourceSha256": "c170e81204f958a6a1c6c2dc7c9201b150190e4c60cfffabf13ea90871b7aea9",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_09/m017_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 74106,
+    "sha256": "39c8812a9e6b90fd2b001429408afc31e70b3f69757376993211e1dfa5fb7539"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_body_color.jpg",
+    "sourceSha256": "c170e81204f958a6a1c6c2dc7c9201b150190e4c60cfffabf13ea90871b7aea9",
+    "target": "office3d/assets/compact/512/people/Male_Adult_09/m017_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 20948,
+    "sha256": "f4269dc216f2b9351ade78570d56faabba79bc22890cece6f73ee95cf151ec83"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_head_color.jpg",
+    "sourceSha256": "3118b7161bde9d9655fc7c558e4acfba0a2dd3859a1b9425811f29c7625f2a20",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_09/m017_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 56838,
+    "sha256": "c2e9bd3cbb6da36e8655558da10c5cb0856d2fb93275c052e41704c0aa5faff9"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_head_color.jpg",
+    "sourceSha256": "3118b7161bde9d9655fc7c558e4acfba0a2dd3859a1b9425811f29c7625f2a20",
+    "target": "office3d/assets/compact/512/people/Male_Adult_09/m017_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15956,
+    "sha256": "6e3876add299fc7f72ebf5862eebb0bf82acc0c20072aee41b5759a7d065acc1"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_opacity_color.png",
+    "sourceSha256": "977cb5f8724f4a4d9764c1f10641f9e460de288a88d28a29ea6579bbdca51c35",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_09/m017_opacity_color.webp",
+    "dimensions": [
+      1024,
+      512
+    ],
+    "bytes": 236244,
+    "sha256": "e4423c18c1f9663011adaab264edafe184f7880c1cd41780a094534fd600e20c"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_09/m017_opacity_color.png",
+    "sourceSha256": "977cb5f8724f4a4d9764c1f10641f9e460de288a88d28a29ea6579bbdca51c35",
+    "target": "office3d/assets/compact/512/people/Male_Adult_09/m017_opacity_color.webp",
+    "dimensions": [
+      512,
+      256
+    ],
+    "bytes": 73526,
+    "sha256": "2392478428732b236276ee66c95b324125e8be69321392ae8c4ed7ffe9357df8"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_body_color.jpg",
+    "sourceSha256": "a273b6f3bf0c2f21fd1a88615e76d916ad00016567b4360809a9e471322daa0a",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_10/m024_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 47214,
+    "sha256": "6bba510c40f77f1981d638e4a1a225a21ca611381abebb65adf93780f4ad2f15"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_body_color.jpg",
+    "sourceSha256": "a273b6f3bf0c2f21fd1a88615e76d916ad00016567b4360809a9e471322daa0a",
+    "target": "office3d/assets/compact/512/people/Male_Adult_10/m024_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 18542,
+    "sha256": "559ace00e8bc48b2aaf2bda95547c25d2e4e62dcaebff28d9f85dff783e62ea2"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_head_color.jpg",
+    "sourceSha256": "3a412a4887844e3c7976dfde6c63e414fead2e905405ea33e60b9b2f15742da4",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_10/m024_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 44320,
+    "sha256": "ae447d283137e1d0f65a06f29b120e098470daae65f53b4bf1f001fcac35f7ce"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_head_color.jpg",
+    "sourceSha256": "3a412a4887844e3c7976dfde6c63e414fead2e905405ea33e60b9b2f15742da4",
+    "target": "office3d/assets/compact/512/people/Male_Adult_10/m024_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 12702,
+    "sha256": "65b6d0f93adacc6c4d2156a45f17bdd918de73b69e774f0639b61d56f697b04f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_opacity_color.png",
+    "sourceSha256": "1fc9a8bec8e87853038c15b045f1d4b76d60b12ae914e4697865a21c067bb2b8",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_10/m024_opacity_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 388882,
+    "sha256": "5dcb44ce15cfcae787f48ba8a2c6c9995cf0277fee828c4c976fa82fcaa62a35"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_10/m024_opacity_color.png",
+    "sourceSha256": "1fc9a8bec8e87853038c15b045f1d4b76d60b12ae914e4697865a21c067bb2b8",
+    "target": "office3d/assets/compact/512/people/Male_Adult_10/m024_opacity_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 116772,
+    "sha256": "da8a3e7c5118d407bb47be6f9ae933e2817dc2c216d4c42e03fe4a20b2aedbe7"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_11/m001_body_color.jpg",
+    "sourceSha256": "e7306ed7e781a113aa83d01bc82367d83176f4855448979633f788c50b36f4b7",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_11/m001_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 74558,
+    "sha256": "7ae094bbd3e38a630918d8f81b64e326efd13cf25f1293d986645ab9afab813f"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_11/m001_body_color.jpg",
+    "sourceSha256": "e7306ed7e781a113aa83d01bc82367d83176f4855448979633f788c50b36f4b7",
+    "target": "office3d/assets/compact/512/people/Male_Adult_11/m001_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 20076,
+    "sha256": "5b1800270c60e0a9297cef7123c6f90ea68eb48f903c128971c16d654c24145e"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_11/m001_head_color.jpg",
+    "sourceSha256": "25a5fcd73a325638858e199c6849bcba443ce9de3d8ac06bf0adf3298bacc00d",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_11/m001_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 62916,
+    "sha256": "6097beef0fe80e2b5d539a5293fd00104ee0410239b6f552dc2badfe7b20a0d9"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_11/m001_head_color.jpg",
+    "sourceSha256": "25a5fcd73a325638858e199c6849bcba443ce9de3d8ac06bf0adf3298bacc00d",
+    "target": "office3d/assets/compact/512/people/Male_Adult_11/m001_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16696,
+    "sha256": "7f6910ae094b9caaa2eee7bcb05b6dd0802094e5bf48370bb11e3956331906b8"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_12/m007_body_color.jpg",
+    "sourceSha256": "845153e333b0df98e67f40db920d933c8df7800526b983f2c1f602148833b2bc",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_12/m007_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 151930,
+    "sha256": "98368b517801980c809a1909ac952812fff7f15ec558a4a1b78110dd5a3ffdb1"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_12/m007_body_color.jpg",
+    "sourceSha256": "845153e333b0df98e67f40db920d933c8df7800526b983f2c1f602148833b2bc",
+    "target": "office3d/assets/compact/512/people/Male_Adult_12/m007_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 35348,
+    "sha256": "9548b30f4c8225646df68b1111ac1d5a08b9b11ec9c97fc6816c6b69c43991a4"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_12/m007_head_color.jpg",
+    "sourceSha256": "8d3d12ca07cf8fcd905f4521972e9c5ca9cddd33c083841b9dffe9f8003f0202",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_12/m007_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 54546,
+    "sha256": "32c0d5c4c982cc8f87aefd8bb13992c7ff2e34cf398875449631b79f3c42f533"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_12/m007_head_color.jpg",
+    "sourceSha256": "8d3d12ca07cf8fcd905f4521972e9c5ca9cddd33c083841b9dffe9f8003f0202",
+    "target": "office3d/assets/compact/512/people/Male_Adult_12/m007_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 12694,
+    "sha256": "01168e24ff3929f93cb0184ac725a67766a53ed50f4d59a09af8bb01997f4c2e"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_20/m027_body_color.jpg",
+    "sourceSha256": "88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_20/m027_body_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 53844,
+    "sha256": "12c953be32059a38e92599e3f9482ea0e40146e02bdfe3930f3abc74ba555efe"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_20/m027_body_color.jpg",
+    "sourceSha256": "88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018",
+    "target": "office3d/assets/compact/512/people/Male_Adult_20/m027_body_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 16684,
+    "sha256": "6a3c9fa7e1b750fb9c22c1c9ef6bf40c6c82015b95a72ce8fce58b3009078828"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_20/m027_head_color.jpg",
+    "sourceSha256": "d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d",
+    "target": "office3d/assets/compact/1024/people/Male_Adult_20/m027_head_color.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 58746,
+    "sha256": "87b802d4ffc1934e8ae1391e4b72c4a751f258cf58beed967daaa7905ed5388b"
+  },
+  {
+    "source": "office3d/assets/models/people/Male_Adult_20/m027_head_color.jpg",
+    "sourceSha256": "d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d",
+    "target": "office3d/assets/compact/512/people/Male_Adult_20/m027_head_color.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15646,
+    "sha256": "ca47984d584917143fa9f5983cece34695d46cdd54d2d870113d80fdc28f0cf5"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Eye_Brown.png",
+    "sourceSha256": "d08e3356a83211bc6ca21fe3a8e39f4b5c1a3b8f85457fc2c0fb57be09935025",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Eye_Brown.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "bytes": 1556,
+    "sha256": "182517f0228580783c20699af082bd494d0e3a388fd66286946131dacec0adaa"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Eye_Brown.png",
+    "sourceSha256": "d08e3356a83211bc6ca21fe3a8e39f4b5c1a3b8f85457fc2c0fb57be09935025",
+    "target": "office3d/assets/compact/512/characters/tex/T_Eye_Brown.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "bytes": 1556,
+    "sha256": "182517f0228580783c20699af082bd494d0e3a388fd66286946131dacec0adaa"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Eye_Normal.png",
+    "sourceSha256": "9ed61f7726a54fe346a78b9e5a18905d8e2b88f86235d97f53cd207a26f3f8c7",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Eye_Normal.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "bytes": 1610,
+    "sha256": "5d8760930692aaa3d19fc1fc6180de21a45bc27ea6c93afab1cc6aa21c4eeeca"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Eye_Normal.png",
+    "sourceSha256": "9ed61f7726a54fe346a78b9e5a18905d8e2b88f86235d97f53cd207a26f3f8c7",
+    "target": "office3d/assets/compact/512/characters/tex/T_Eye_Normal.webp",
+    "dimensions": [
+      256,
+      256
+    ],
+    "bytes": 1610,
+    "sha256": "5d8760930692aaa3d19fc1fc6180de21a45bc27ea6c93afab1cc6aa21c4eeeca"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+    "sourceSha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Hair_1_BaseColor.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 28518,
+    "sha256": "2774be7788d145b2cb3376ee1e2f62be6cc7952b10e90d9ba2d1d370a48b65ae"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+    "sourceSha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+    "target": "office3d/assets/compact/512/characters/tex/T_Hair_1_BaseColor.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 12028,
+    "sha256": "12616ecf3d43b64a8f64c7a34a9e51c43097e32a3ef610c40a2a36ce61eafbf0"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_1_Normal.png",
+    "sourceSha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Hair_1_Normal.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 169150,
+    "sha256": "095121bf48c1417b9e8e892ab9b9b75ffdbfe2ef0eddd318c4dea9fdd263bcb3"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_1_Normal.png",
+    "sourceSha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb",
+    "target": "office3d/assets/compact/512/characters/tex/T_Hair_1_Normal.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 63162,
+    "sha256": "35d4edc19a1cc93c34fc12f10de9d00bcc401d0fb4681745bcd97cc819ead84b"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+    "sourceSha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Hair_2_BaseColor.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 35456,
+    "sha256": "6a253223934a05cfe3eded902be8fde886ea5de65cd50be382ec9d8d69903ffc"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+    "sourceSha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3",
+    "target": "office3d/assets/compact/512/characters/tex/T_Hair_2_BaseColor.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 14678,
+    "sha256": "9c6ffd6db7cf0a94ccdb49d5e50dfb99beaae6d572db6f9037687325540d10a7"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_2_Normal.png",
+    "sourceSha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Hair_2_Normal.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 212252,
+    "sha256": "0de254dc8ef7c81e7760a80c2805f1ffb915ab1d26ab31ebf6235944483afd56"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Hair_2_Normal.png",
+    "sourceSha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d",
+    "target": "office3d/assets/compact/512/characters/tex/T_Hair_2_Normal.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 78628,
+    "sha256": "b1a327f2f8b674ef49026f7f0fe5e583baee79ed7c4fa897b9558428a44729f9"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+    "sourceSha256": "d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Dark_BaseColor.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 18922,
+    "sha256": "8b85044943ede6563b1155f9d94073d766e039967eb051e054e66710cf07e0cd"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+    "sourceSha256": "d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Dark_BaseColor.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 8330,
+    "sha256": "8e2ac875cac9be4246f96acfc52e3da9af35c1b44851ad50389774b0e8ac6b97"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Light_BaseColor.png",
+    "sourceSha256": "743f811857db0b950f3ad09a0733dfa4888801ead332313ca25becea14c54f8d",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Light_BaseColor.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 17500,
+    "sha256": "f9dc487acfa7b4c32028c261dbf393ff9f697bad4ac6fb508b1fd5ce9e964786"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Light_BaseColor.png",
+    "sourceSha256": "743f811857db0b950f3ad09a0733dfa4888801ead332313ca25becea14c54f8d",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Light_BaseColor.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 7452,
+    "sha256": "c3330fb7d06a2a19e3886276fa5c392c4e1c819b08afe4fc64d6751a5b0c2d5c"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+    "sourceSha256": "cf922460b43ccd31e983e34db05514c9d451dd2f9cdd01a843978e797719f859",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Normal.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 97100,
+    "sha256": "638152c5dfd4c3658098f4ff5ba148c7cf10a5caa8695f0b2851941caab9d21b"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+    "sourceSha256": "cf922460b43ccd31e983e34db05514c9d451dd2f9cdd01a843978e797719f859",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Normal.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 39738,
+    "sha256": "1fbb8c39a901ca14c7fd353f60302964143e5f45ee5e88354bad5f37037a5f07"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+    "sourceSha256": "d2beabf2bd0313e32c68dcdbb80dca371a6e994fabf96efa97128bf9f14fa57b",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Roughness.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 50960,
+    "sha256": "b427a1d908c1cf3ab2dfb0a346a593c395ef4c0cf661e3a979a73ba799e9f8cf"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+    "sourceSha256": "d2beabf2bd0313e32c68dcdbb80dca371a6e994fabf96efa97128bf9f14fa57b",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Roughness.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 15344,
+    "sha256": "5aefe7e3a8070b764430fb3eeb47e9ce6df00b92b4dac4488e431258ecb964d8"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+    "sourceSha256": "df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Dark.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 19074,
+    "sha256": "940f050eae2a8032439c975f4aef1c262155a9e52ebbec79592b559927283d53"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+    "sourceSha256": "df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Dark.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 8286,
+    "sha256": "c64247fb0fa18d8d9b37cf78f15ed564e6c47ddec04c4a8b06384e82beb981d1"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+    "sourceSha256": "419f96dbb8811511e2d515bcdabc085ff2f219ec7b8b4e91050a84cba6888fe9",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Ligh.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 18104,
+    "sha256": "4b18c904ce48c6300d4a36bbabb04320fd86f45a901817a2aa99c18f517f0c3c"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+    "sourceSha256": "419f96dbb8811511e2d515bcdabc085ff2f219ec7b8b4e91050a84cba6888fe9",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Ligh.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 7844,
+    "sha256": "1bd054a497d8fa206a520f0706256d433ad121ea5c4310a431faa0d544ada7a4"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+    "sourceSha256": "9b25cf9200216eb754b79cf4c63b5380c419780788322f3c57cdd2b3e02679a6",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Normal.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 118512,
+    "sha256": "7243acbd65e11592e1355cb733e6e263b9f94747e1f0bd1473d059dfd97549ee"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+    "sourceSha256": "9b25cf9200216eb754b79cf4c63b5380c419780788322f3c57cdd2b3e02679a6",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Normal.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 52738,
+    "sha256": "fad0711f2b8efb4d32c2d1d143ff258a16735d6ea09b3a2ee2acc90d9fea6fde"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+    "sourceSha256": "c70dabf48574cda55644d556beae1ee7cf1bdcf68a50d259d20f2f2358f27991",
+    "target": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Roughness.webp",
+    "dimensions": [
+      1024,
+      1024
+    ],
+    "bytes": 46302,
+    "sha256": "9919b99b86e8a029cb34d37c40e75de4184a26bfbd6e94b5822b439c698dc42b"
+  },
+  {
+    "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+    "sourceSha256": "c70dabf48574cda55644d556beae1ee7cf1bdcf68a50d259d20f2f2358f27991",
+    "target": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Roughness.webp",
+    "dimensions": [
+      512,
+      512
+    ],
+    "bytes": 12844,
+    "sha256": "ad846487b2f2d3e36f4698a01cd9501506283e33cea4e8274939ddd1a01be861"
+  }
+]

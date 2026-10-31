@@ -1,0 +1,3783 @@
+{
+  "schemaVersion": 1,
+  "threeRevision": "185",
+  "originalFilesRetained": true,
+  "format": "GLB gzip / VOA2 Float32 byte-plane animation gzip / WebP",
+  "animationTolerance": {
+    "quaternionComponent": 0.00001,
+    "positionSourceUnits": 0.00002,
+    "samplesPerSecond": 120,
+    "allSourceKeyframes": true
+  },
+  "files": [
+    {
+      "source": "office3d/assets/models/characters/tex/T_Eye_Brown.png",
+      "sourceSha256": "d08e3356a83211bc6ca21fe3a8e39f4b5c1a3b8f85457fc2c0fb57be09935025",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Eye_Brown.webp",
+      "bytes": 1556,
+      "sha256": "182517f0228580783c20699af082bd494d0e3a388fd66286946131dacec0adaa",
+      "kind": "texture",
+      "dimensions": [
+        256,
+        256
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Eye_Normal.png",
+      "sourceSha256": "9ed61f7726a54fe346a78b9e5a18905d8e2b88f86235d97f53cd207a26f3f8c7",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Eye_Normal.webp",
+      "bytes": 1610,
+      "sha256": "5d8760930692aaa3d19fc1fc6180de21a45bc27ea6c93afab1cc6aa21c4eeeca",
+      "kind": "texture",
+      "dimensions": [
+        256,
+        256
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+      "sourceSha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Hair_1_BaseColor.webp",
+      "bytes": 28518,
+      "sha256": "2774be7788d145b2cb3376ee1e2f62be6cc7952b10e90d9ba2d1d370a48b65ae",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_1_Normal.png",
+      "sourceSha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Hair_1_Normal.webp",
+      "bytes": 169150,
+      "sha256": "095121bf48c1417b9e8e892ab9b9b75ffdbfe2ef0eddd318c4dea9fdd263bcb3",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+      "sourceSha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Hair_2_BaseColor.webp",
+      "bytes": 35456,
+      "sha256": "6a253223934a05cfe3eded902be8fde886ea5de65cd50be382ec9d8d69903ffc",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_2_Normal.png",
+      "sourceSha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Hair_2_Normal.webp",
+      "bytes": 212252,
+      "sha256": "0de254dc8ef7c81e7760a80c2805f1ffb915ab1d26ab31ebf6235944483afd56",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+      "sourceSha256": "d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Dark_BaseColor.webp",
+      "bytes": 18922,
+      "sha256": "8b85044943ede6563b1155f9d94073d766e039967eb051e054e66710cf07e0cd",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Light_BaseColor.png",
+      "sourceSha256": "743f811857db0b950f3ad09a0733dfa4888801ead332313ca25becea14c54f8d",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Light_BaseColor.webp",
+      "bytes": 17500,
+      "sha256": "f9dc487acfa7b4c32028c261dbf393ff9f697bad4ac6fb508b1fd5ce9e964786",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+      "sourceSha256": "cf922460b43ccd31e983e34db05514c9d451dd2f9cdd01a843978e797719f859",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Normal.webp",
+      "bytes": 97100,
+      "sha256": "638152c5dfd4c3658098f4ff5ba148c7cf10a5caa8695f0b2851941caab9d21b",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+      "sourceSha256": "d2beabf2bd0313e32c68dcdbb80dca371a6e994fabf96efa97128bf9f14fa57b",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Female_Roughness.webp",
+      "bytes": 50960,
+      "sha256": "b427a1d908c1cf3ab2dfb0a346a593c395ef4c0cf661e3a979a73ba799e9f8cf",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+      "sourceSha256": "df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Dark.webp",
+      "bytes": 19074,
+      "sha256": "940f050eae2a8032439c975f4aef1c262155a9e52ebbec79592b559927283d53",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+      "sourceSha256": "419f96dbb8811511e2d515bcdabc085ff2f219ec7b8b4e91050a84cba6888fe9",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Ligh.webp",
+      "bytes": 18104,
+      "sha256": "4b18c904ce48c6300d4a36bbabb04320fd86f45a901817a2aa99c18f517f0c3c",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+      "sourceSha256": "9b25cf9200216eb754b79cf4c63b5380c419780788322f3c57cdd2b3e02679a6",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Normal.webp",
+      "bytes": 118512,
+      "sha256": "7243acbd65e11592e1355cb733e6e263b9f94747e1f0bd1473d059dfd97549ee",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+      "sourceSha256": "c70dabf48574cda55644d556beae1ee7cf1bdcf68a50d259d20f2f2358f27991",
+      "file": "office3d/assets/compact/1024/characters/tex/T_Superhero_Male_Roughness.webp",
+      "bytes": 46302,
+      "sha256": "9919b99b86e8a029cb34d37c40e75de4184a26bfbd6e94b5822b439c698dc42b",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_06/m025_body_color.jpg",
+      "sourceSha256": "457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd",
+      "file": "office3d/assets/compact/1024/people/Business_Male_06/m025_body_color.webp",
+      "bytes": 33070,
+      "sha256": "59523b6d1b91669b8d08a721634f72a52bae52477485004737f973986f6f1129",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_06/m025_head_color.jpg",
+      "sourceSha256": "4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999",
+      "file": "office3d/assets/compact/1024/people/Business_Male_06/m025_head_color.webp",
+      "bytes": 54312,
+      "sha256": "e578a8ab36528df11a49727d010a8bc026cb1b2809ce2370caf1b38067cc01c9",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_07/m018_body_color.jpg",
+      "sourceSha256": "9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee",
+      "file": "office3d/assets/compact/1024/people/Business_Male_07/m018_body_color.webp",
+      "bytes": 73492,
+      "sha256": "52dd40e4825e7bafb93d059696b9ec37f352ad4c9d06b3c3e721af5c123b8a4f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_07/m018_head_color.jpg",
+      "sourceSha256": "c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763",
+      "file": "office3d/assets/compact/1024/people/Business_Male_07/m018_head_color.webp",
+      "bytes": 83300,
+      "sha256": "cc1369b408575df4e093a10c13356c902dc1596ab4d3f2d3eabb96eb3380a7d4",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_body_color.jpg",
+      "sourceSha256": "1be20f40aa95a140ed532eca296e67c529027eb3f2aa32b82585e0f798bc3bf0",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_01/f001_body_color.webp",
+      "bytes": 87322,
+      "sha256": "b246b0b72f617e5cdcb1d791fe5272ff5d38bb2898cf8ead48624c31ae504141",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_head_color.jpg",
+      "sourceSha256": "60c4bf8b3ba46843425c2a5e2b7407cd0dd81bead6d86876967c56a0859c76c1",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_01/f001_head_color.webp",
+      "bytes": 72728,
+      "sha256": "f86b45842320b4a7009c75c0f7bf98e2176b545ccb796660b813b7793c58d5bc",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_opacity_color.png",
+      "sourceSha256": "3453c4be1c2b29021602304199fa9327d18736a3da247089359a8f2dfafdfbb4",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_01/f001_opacity_color.webp",
+      "bytes": 291674,
+      "sha256": "ef1acbead90d09e8148fd928106bc1d5d3031058be6b002450479e7df55fb507",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_body_color.jpg",
+      "sourceSha256": "40ab82db3f16c664dd7d4188411dc2dd2b7366a6062b4092354c3b2ef0d675c6",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_02/f002_body_color.webp",
+      "bytes": 118936,
+      "sha256": "14523c11647c5bdef0ee4694fd17353a9cb2b852737ad7b4d181a17b3ac6f2fd",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_head_color.jpg",
+      "sourceSha256": "12c8b248142e5689445d1574f3037e70c5bd83d67d423e74e2850b80d3f39760",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_02/f002_head_color.webp",
+      "bytes": 80986,
+      "sha256": "b243ec540bfedf84199d309918c9a8490fb14816af74e52a723fea28f3a9fcdb",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_opacity_color.png",
+      "sourceSha256": "892139137e32a2a15c2cce4c684f9c1800e23ba0e3b3fb4aaf79cae71f200e30",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_02/f002_opacity_color.webp",
+      "bytes": 388256,
+      "sha256": "9861d32194c859e5eaaa5aa047eea356679cee7f23867560da61723006ef4999",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_body_color.jpg",
+      "sourceSha256": "37f04c8e00de9aa670dfdf2e685bd22e2f93b8d72a0cda98471c77edb9ad11dc",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_03/f003_body_color.webp",
+      "bytes": 60192,
+      "sha256": "89e7389eaa961c43584f7a80b5723711605b72a57a01be5b0ffa68b022d313b1",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_head_color.jpg",
+      "sourceSha256": "d708e731955e699eca30170772e03ab0d5f4d31142d6b201aecd134ec203582f",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_03/f003_head_color.webp",
+      "bytes": 53660,
+      "sha256": "3b306a5ea1cdd1820d037d5d40142fe38a748396927fcf859d7646044ff7095b",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_opacity_color.png",
+      "sourceSha256": "7c23414b011ba0ee53ce6c68d93378d64712802ac663b07a501d09ec45d0903f",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_03/f003_opacity_color.webp",
+      "bytes": 579564,
+      "sha256": "b5628a894230b6b96845f303d87807714f6538f8c31a2d287ab1a72df6ef312d",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_body_color.jpg",
+      "sourceSha256": "45ea042585eff87669ff041ca4a1ec65dcb567f59a0d5d3d18cc4036937169a3",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_04/f004_body_color.webp",
+      "bytes": 63942,
+      "sha256": "5d3718fc38c82a2a89282ec3d6747710e2dd30d8844177d2366a33cde3045dd6",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_head_color.jpg",
+      "sourceSha256": "f6572ee00279570b2d0b7288f98e5c7c6075a200609304573b3336d83c4b6cd0",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_04/f004_head_color.webp",
+      "bytes": 91650,
+      "sha256": "52ca1da1a094b872e33ce1ec220ffa69874239af43282109c6bde4722aaa87e8",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_opacity_color.png",
+      "sourceSha256": "b179e345136a72c7228a9275178c81e7996ed27c2a47cd7c70686e73d3b7fd44",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_04/f004_opacity_color.webp",
+      "bytes": 318570,
+      "sha256": "f6a3e439ddf101f66b872d6ad55e5d475f577f46734c4c220175b83e638aad07",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_body_color.jpg",
+      "sourceSha256": "e61e567ebe863cb969a7ef8bb53e2d96dbca24500be79134f81d2c87c9f61c42",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_05/f005_body_color.webp",
+      "bytes": 168396,
+      "sha256": "dd4d0e763e3c69c72f54e128c22d751be599dc3cfc3b09ffc5be44e2551055d6",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_head_color.jpg",
+      "sourceSha256": "1f7dad9d6161faadc1134bc8216f9dbb7f6db74fc35be0f891123038324d9843",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_05/f005_head_color.webp",
+      "bytes": 49060,
+      "sha256": "38d3150c92b2454b62a278f5848429cd14ea3544fb2211d2da17026a3736d8ac",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_opacity_color.png",
+      "sourceSha256": "01236f9a06fb5277921788b49bce48385770f99c0657248612d56f31bf455534",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_05/f005_opacity_color.webp",
+      "bytes": 299876,
+      "sha256": "9f52d068752a871cdb448c2d5acb1ae56e74ace0aa6136d682c95b6600bb1d70",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_body_color.jpg",
+      "sourceSha256": "c822f4bc3a146c1eebef450e326a9c434b6941e98c3e635f744c47fd945eaa70",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_06/f202_body_color.webp",
+      "bytes": 34468,
+      "sha256": "0d3cd90ec7db40af1626e0fb2cc2a6414f165eeb9cdeac1f26f90c5352f54ec3",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_head_color.jpg",
+      "sourceSha256": "30b217357cb79202a9bf7d756e33908974402c8851e937504515762c3365cfe6",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_06/f202_head_color.webp",
+      "bytes": 40288,
+      "sha256": "0e835cd679255120deb1cccbb9fa5dc1ba43437817a22f92ff96d885b0622e07",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_opacity_color.png",
+      "sourceSha256": "d82754302cdcefc6342240056befed3646fe0e88d7c15739a442c028cf696d24",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_06/f202_opacity_color.webp",
+      "bytes": 164168,
+      "sha256": "edcf2a590017364fb44be837b18e08a690d0ab66eb7448efadf931d4e07dd637",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        256
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_body_color.jpg",
+      "sourceSha256": "f8d614926595373d10a04ea1a36d89dc9bf332b343465a58821eeed1819611fa",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_07/f007_body_color.webp",
+      "bytes": 65296,
+      "sha256": "828565273f6dc0401b9134e6dad92756a9395f7907a2ae1421d73b98a81659d7",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_head_color.jpg",
+      "sourceSha256": "d5ceb4b0ba4413d0042d2dc5bb30cf413604914326c5583b4d55117591ad7a27",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_07/f007_head_color.webp",
+      "bytes": 61496,
+      "sha256": "6b3ce87a299a3a71a80dbf5de96eca3dc135d1653fc8745276bc683d6c09084c",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_opacity_color.png",
+      "sourceSha256": "dfafbd7454ac53afe34a6c96314f2b92cecc4a86099b955755c909e1320cac3c",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_07/f007_opacity_color.webp",
+      "bytes": 406544,
+      "sha256": "76ee7aab25389c95ce2d10bd05706ddf37c8e26a1b3e8df4048665cd8fdbe09e",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_body_color.jpg",
+      "sourceSha256": "4f549f5520662b266b31341bd597f5f083757dbc3b94c88ce38e20717bf237c7",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_08/f008_body_color.webp",
+      "bytes": 81094,
+      "sha256": "995e379927c3171c595236852ad91295fcad1ce4f8f2a4e0fda99842224b066b",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_head_color.jpg",
+      "sourceSha256": "95b61b960a2b9fffcb2a02b7c8a4661a16702e50927bbdfaf434dc8a9b5926d8",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_08/f008_head_color.webp",
+      "bytes": 59258,
+      "sha256": "fa067ee796ebff0e99210aa90daf459b9097e441b17ecca8ecb7e1bcefe84472",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_opacity_color.png",
+      "sourceSha256": "0223c3557eecdc35b627c3f1cd361d8ace91e5537f95b4643904468d7f962ba9",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_08/f008_opacity_color.webp",
+      "bytes": 354842,
+      "sha256": "6093151feeff1cfc9d7824e6b753e9b9fedef35db6fd31946d051c38285e06a0",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_body_color.jpg",
+      "sourceSha256": "9a7fa6236d3900248cc9b17e1dc5c1acaf9f657ec0077f0b2b535d47143d1bf7",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_09/f009_body_color.webp",
+      "bytes": 92944,
+      "sha256": "e3478fe247fa0bd45f1ff58f535c2bd5bf672a0cfcac625476ae5a70439a4fa9",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_head_color.jpg",
+      "sourceSha256": "632b345dd2f3118abf660f86a9a731d5755f479e6aca6574ffd50387fde9ebb5",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_09/f009_head_color.webp",
+      "bytes": 57466,
+      "sha256": "95b260a2db0687cfe57c204ee1f5ce6277ea90c8801e226cc3c35dbd336658e5",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_opacity_color.png",
+      "sourceSha256": "7e6d00375d75dab3aa4037be88b4ca2d2e4b2b827787db603f8044de745183ce",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_09/f009_opacity_color.webp",
+      "bytes": 374326,
+      "sha256": "dae3d5802cb2e3d05ce9a30d520d1957f2d2b318c83f48bc720376391c59e1ff",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_body_color.jpg",
+      "sourceSha256": "82c31aa483bf4a72cfcc713277b13d363b6b6e2f119d990b853e5885e645093b",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_10/f201_body_color.webp",
+      "bytes": 27490,
+      "sha256": "41cfe289fcffad3ebbbe4a518cc86f13a9ae50648d37914770b8d0cd2598cf01",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_head_color.jpg",
+      "sourceSha256": "785685f98fa1f9563bc6f3e54045f497262e6df939c29aeb05d3782225c527aa",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_10/f201_head_color.webp",
+      "bytes": 17186,
+      "sha256": "31ebce11038097b1477bf80f550470c2527e2434dcaa7245404dafa18f0422f3",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_opacity_color.png",
+      "sourceSha256": "ba58f1968213905829c66bec51b9d8b5937e30f1413090a485bf283a07a8daf5",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_10/f201_opacity_color.webp",
+      "bytes": 33562,
+      "sha256": "b457083ecd4bd36aef48ae9d57b7a31195fddc79824dc75ca4a9bef755b8d910",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        256
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_body_color.jpg",
+      "sourceSha256": "efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_13/f019_body_color.webp",
+      "bytes": 61104,
+      "sha256": "59453738d4f903e8135785b6033ae987c05c25ccfbb00942352d4c4478fd9f9e",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_head_color.jpg",
+      "sourceSha256": "0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_13/f019_head_color.webp",
+      "bytes": 67100,
+      "sha256": "e8c19f6b93f041fb3f7fca9a311b1461223e6ad207afb4d4726ad9fe3084b499",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_opacity_color.png",
+      "sourceSha256": "91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_13/f019_opacity_color.webp",
+      "bytes": 360844,
+      "sha256": "14c0825a01df165047ddec05d55d8f648929cee1e1c1394d8b124c47bc03b203",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_body_color.jpg",
+      "sourceSha256": "977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_17/f006_body_color.webp",
+      "bytes": 64746,
+      "sha256": "9f565607779c421715afd913033d276c520a797329e532ed1b14a73d81084594",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_head_color.jpg",
+      "sourceSha256": "73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_17/f006_head_color.webp",
+      "bytes": 69228,
+      "sha256": "eb80f0531d449f5ab2ec82b9e1b4ec199e39dfcb169833b72c6ffc605e635891",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_opacity_color.png",
+      "sourceSha256": "bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6",
+      "file": "office3d/assets/compact/1024/people/Female_Adult_17/f006_opacity_color.webp",
+      "bytes": 313950,
+      "sha256": "b7f42499ba1582e846cd030104645c12b100b867fe3e7d08b6b4cc9d1405830f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_body_color.jpg",
+      "sourceSha256": "d8281dcad9424b4a2914f837b665c001a251925cceb0ad4c6acbc71bd0919541",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_01/m002_body_color.webp",
+      "bytes": 81180,
+      "sha256": "981f64186b9c66d3cc4884a1f421c551c38dd351c32c59050262b11fd31a9661",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_head_color.jpg",
+      "sourceSha256": "de94bd3f3757f7effd9bfc1672cd7779fad7e7bac347d59b6a33dd9f99e823a3",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_01/m002_head_color.webp",
+      "bytes": 54362,
+      "sha256": "56c55ecc0178d43fe004e52d03a53b7a4c5abc9ecadbb7ef6f6fb6d7203a5233",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_opacity_color.png",
+      "sourceSha256": "6f4d1e945084d52fccbdb73186a028e818c9f7a519fd817313ee85ee23de6486",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_01/m002_opacity_color.webp",
+      "bytes": 387622,
+      "sha256": "358436abbfed8551f0cf57d42ee234db971b96a4619081891adc79003093fa15",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_body_color.jpg",
+      "sourceSha256": "374fb0f31c3953003d15d85db740953ae50ca3bd505b05283bf2599bc38a9deb",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_02/m003_body_color.webp",
+      "bytes": 59048,
+      "sha256": "fc7b1cb55f604fff94f32a85f4801392b159854663d9d345a4d61bf8959f606a",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_head_color.jpg",
+      "sourceSha256": "5f8481c3dfabf937a57c9b14fc94cb659c2aa3c03c1df54e5f773fcf053d8983",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_02/m003_head_color.webp",
+      "bytes": 50564,
+      "sha256": "c727ebddb369449a5a86ce091cb71dd1254ac684eb8187f5032edf0fd71f5187",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_opacity_color.png",
+      "sourceSha256": "b39b2e48a813450af02800e5a597296669c28116218291f91e2a5e7d87c5a9f9",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_02/m003_opacity_color.webp",
+      "bytes": 301610,
+      "sha256": "7ea548850c6d422754bb3f04630afb5c3acdd17befbe96cb5325e365faa24154",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_body_color.jpg",
+      "sourceSha256": "9da59c6482a2642ce69ba53e0404256deefe779d4993fb7150cb22c91f8e51ab",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_03/m004_body_color.webp",
+      "bytes": 138500,
+      "sha256": "3bc99556eb874a92947b9fcfda554d9713622cc75851c5c69fc4abe70bb7d1bd",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_head_color.jpg",
+      "sourceSha256": "7b1346419c7c87ee9f9d29a8e7779c921c0c0826fdc3362dbbbf519f3dcd75f8",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_03/m004_head_color.webp",
+      "bytes": 90958,
+      "sha256": "449c791a50924bac2716cd017d64e99df05007adcef6bdba33955506c0f75fa0",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_opacity_color.png",
+      "sourceSha256": "041bb694f869b013bcb6e6986e8e159c0f8626edead14ab7f55f32d6ca71e82f",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_03/m004_opacity_color.webp",
+      "bytes": 392866,
+      "sha256": "83178302ada65e3ef2ae2ae21f5b49ca26eaebe5234a5e8658132b7e695be4f6",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_body_color.jpg",
+      "sourceSha256": "9f1acd52f34e71053e94df36a7d501b4ad2fe572cdd13836c51431d5d791f992",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_04/m006_body_color.webp",
+      "bytes": 70450,
+      "sha256": "ad34e88ea34f2047c25acb9ff1533f0c164a451c582d112189d8ee39197f65d4",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_head_color.jpg",
+      "sourceSha256": "cad4d44c9be226d801ac8610f448067a52f956f5ba3ae90e8cdd820cbc1d0618",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_04/m006_head_color.webp",
+      "bytes": 66860,
+      "sha256": "d8dfe273e8e9a2e84ac62782622ec246eee464745731b8b428a364fc8aea428f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_opacity_color.png",
+      "sourceSha256": "3e5ae90bc00572de9cdeb7f4f7d6453ed554c62e959d59a6f6932a8579f9a740",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_04/m006_opacity_color.webp",
+      "bytes": 436466,
+      "sha256": "976dc1acd1a98b61543484fb68ef2fb012677123bfb28acb6d04510b8d056303",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_body_color.jpg",
+      "sourceSha256": "68256ee7b77cc19e8fffacc701afc9d749a902169c66c131276740619ed31c16",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_05/m009_body_color.webp",
+      "bytes": 63582,
+      "sha256": "26147ff9a83ad6d2d133e844c6838acca05f04ef763d98bac51a464bad754f7f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_head_color.jpg",
+      "sourceSha256": "fe26f3a4a6562ca349767d8c775407ac9040ed59bc2fcda9590ee893e99cddf5",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_05/m009_head_color.webp",
+      "bytes": 91318,
+      "sha256": "fe307c321a3258207ffcf7378ce19e93655056fc564d9950e38c4125342cbeed",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_opacity_color.png",
+      "sourceSha256": "8ee4c4971be723ee032af0b749f36accf516d194d895019ef79120eea0c8779a",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_05/m009_opacity_color.webp",
+      "bytes": 341234,
+      "sha256": "f9686ba5c251e7d4a7bc962c48e4f8966b0c6f03c0448c484205febaf45af294",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_body_color.jpg",
+      "sourceSha256": "dae3ae9f48ae9db6e6b665a7d05d4bca1a5ef2fa484eb873279e075b4b5b5fe1",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_06/m011_body_color.webp",
+      "bytes": 65894,
+      "sha256": "83fd4da3a3b76ca617ce474c8d98b897ff88bcc9fb57782d1037b9c0b8e770ea",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_head_color.jpg",
+      "sourceSha256": "45a5713b6b8c11d7774793782a0a7298cf46cf90ebca9771c77b786e96f2672f",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_06/m011_head_color.webp",
+      "bytes": 61326,
+      "sha256": "a773048f793f0b20c1753cf18efd14574339e96a489e23a41730554fc2d2ae6d",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_opacity_color.png",
+      "sourceSha256": "5f8e6bba0685ff023b14c49f169e7b1939c0f79c60c7e217393927ed953a0c5c",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_06/m011_opacity_color.webp",
+      "bytes": 530102,
+      "sha256": "4caefc6dfded0bc115f5597d55a7c17381312156d1d0b73e5d1267383ee90f80",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_body_color.jpg",
+      "sourceSha256": "ee4a8560e143ed0e12c763a9f1932e07c9424fbc84cce86eb0207c54e5884135",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_07/m013_body_color.webp",
+      "bytes": 83836,
+      "sha256": "95920a3f04dd477035cdb3300d4919e9ee1151425a3b8b91aec1487f1ace767f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_head_color.jpg",
+      "sourceSha256": "796c803038e2af2aace562ad9622fa17d75ad9162ce50f20e660d47264582aea",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_07/m013_head_color.webp",
+      "bytes": 58354,
+      "sha256": "c2b869f62eae2e4800a21a96b0741be86b28a8b7f2e026c1aa200b62abf71cf0",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_opacity_color.png",
+      "sourceSha256": "624794cb0d72a2bcd87416ac4bd830efa73fde22eccc76411876d7797a52b9d4",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_07/m013_opacity_color.webp",
+      "bytes": 144376,
+      "sha256": "efb8e9e134042a8ab7834fe9a858afbe248646aa3f2bc151ea8f2ea2e6cb7b08",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_body_color.jpg",
+      "sourceSha256": "8aa77b77f5cff2fd6d0bbdea60537d709311fea961df15f856bbe5a302238488",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_08/m014_body_color.webp",
+      "bytes": 43390,
+      "sha256": "3645e515b0b3815b59fbb534e482cafbc2724478833198e02e45171111589a3e",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_head_color.jpg",
+      "sourceSha256": "adc37440cf718b92d6f61d7fe1d9730f6dc0c6cba9f31354ad42ea8ca819769a",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_08/m014_head_color.webp",
+      "bytes": 64572,
+      "sha256": "b81b067e2634e8e3bcf0489731a59a7109960565a7a1a1ff84bafd512f838e9a",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_opacity_color.png",
+      "sourceSha256": "b563844f311e3298c1dd198b08829b5bb02488ab2470d717950f6eb689d9605a",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_08/m014_opacity_color.webp",
+      "bytes": 400696,
+      "sha256": "5af53dd6e5171522000173d97dac28e75da2dbfb11634d1cc81849c2e04e49cf",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_body_color.jpg",
+      "sourceSha256": "c170e81204f958a6a1c6c2dc7c9201b150190e4c60cfffabf13ea90871b7aea9",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_09/m017_body_color.webp",
+      "bytes": 74106,
+      "sha256": "39c8812a9e6b90fd2b001429408afc31e70b3f69757376993211e1dfa5fb7539",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_head_color.jpg",
+      "sourceSha256": "3118b7161bde9d9655fc7c558e4acfba0a2dd3859a1b9425811f29c7625f2a20",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_09/m017_head_color.webp",
+      "bytes": 56838,
+      "sha256": "c2e9bd3cbb6da36e8655558da10c5cb0856d2fb93275c052e41704c0aa5faff9",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_opacity_color.png",
+      "sourceSha256": "977cb5f8724f4a4d9764c1f10641f9e460de288a88d28a29ea6579bbdca51c35",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_09/m017_opacity_color.webp",
+      "bytes": 236244,
+      "sha256": "e4423c18c1f9663011adaab264edafe184f7880c1cd41780a094534fd600e20c",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_body_color.jpg",
+      "sourceSha256": "a273b6f3bf0c2f21fd1a88615e76d916ad00016567b4360809a9e471322daa0a",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_10/m024_body_color.webp",
+      "bytes": 47214,
+      "sha256": "6bba510c40f77f1981d638e4a1a225a21ca611381abebb65adf93780f4ad2f15",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_head_color.jpg",
+      "sourceSha256": "3a412a4887844e3c7976dfde6c63e414fead2e905405ea33e60b9b2f15742da4",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_10/m024_head_color.webp",
+      "bytes": 44320,
+      "sha256": "ae447d283137e1d0f65a06f29b120e098470daae65f53b4bf1f001fcac35f7ce",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_opacity_color.png",
+      "sourceSha256": "1fc9a8bec8e87853038c15b045f1d4b76d60b12ae914e4697865a21c067bb2b8",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_10/m024_opacity_color.webp",
+      "bytes": 388882,
+      "sha256": "5dcb44ce15cfcae787f48ba8a2c6c9995cf0277fee828c4c976fa82fcaa62a35",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_11/m001_body_color.jpg",
+      "sourceSha256": "e7306ed7e781a113aa83d01bc82367d83176f4855448979633f788c50b36f4b7",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_11/m001_body_color.webp",
+      "bytes": 74558,
+      "sha256": "7ae094bbd3e38a630918d8f81b64e326efd13cf25f1293d986645ab9afab813f",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_11/m001_head_color.jpg",
+      "sourceSha256": "25a5fcd73a325638858e199c6849bcba443ce9de3d8ac06bf0adf3298bacc00d",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_11/m001_head_color.webp",
+      "bytes": 62916,
+      "sha256": "6097beef0fe80e2b5d539a5293fd00104ee0410239b6f552dc2badfe7b20a0d9",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_12/m007_body_color.jpg",
+      "sourceSha256": "845153e333b0df98e67f40db920d933c8df7800526b983f2c1f602148833b2bc",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_12/m007_body_color.webp",
+      "bytes": 151930,
+      "sha256": "98368b517801980c809a1909ac952812fff7f15ec558a4a1b78110dd5a3ffdb1",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_12/m007_head_color.jpg",
+      "sourceSha256": "8d3d12ca07cf8fcd905f4521972e9c5ca9cddd33c083841b9dffe9f8003f0202",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_12/m007_head_color.webp",
+      "bytes": 54546,
+      "sha256": "32c0d5c4c982cc8f87aefd8bb13992c7ff2e34cf398875449631b79f3c42f533",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_20/m027_body_color.jpg",
+      "sourceSha256": "88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_20/m027_body_color.webp",
+      "bytes": 53844,
+      "sha256": "12c953be32059a38e92599e3f9482ea0e40146e02bdfe3930f3abc74ba555efe",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_20/m027_head_color.jpg",
+      "sourceSha256": "d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d",
+      "file": "office3d/assets/compact/1024/people/Male_Adult_20/m027_head_color.webp",
+      "bytes": 58746,
+      "sha256": "87b802d4ffc1934e8ae1391e4b72c4a751f258cf58beed967daaa7905ed5388b",
+      "kind": "texture",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Eye_Brown.png",
+      "sourceSha256": "d08e3356a83211bc6ca21fe3a8e39f4b5c1a3b8f85457fc2c0fb57be09935025",
+      "file": "office3d/assets/compact/512/characters/tex/T_Eye_Brown.webp",
+      "bytes": 1556,
+      "sha256": "182517f0228580783c20699af082bd494d0e3a388fd66286946131dacec0adaa",
+      "kind": "texture",
+      "dimensions": [
+        256,
+        256
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Eye_Normal.png",
+      "sourceSha256": "9ed61f7726a54fe346a78b9e5a18905d8e2b88f86235d97f53cd207a26f3f8c7",
+      "file": "office3d/assets/compact/512/characters/tex/T_Eye_Normal.webp",
+      "bytes": 1610,
+      "sha256": "5d8760930692aaa3d19fc1fc6180de21a45bc27ea6c93afab1cc6aa21c4eeeca",
+      "kind": "texture",
+      "dimensions": [
+        256,
+        256
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_1_BaseColor.png",
+      "sourceSha256": "bc7aa863bd22ab0a995cd838cceb4d3a5186ee54ee2fb0108fad85d20c057e6e",
+      "file": "office3d/assets/compact/512/characters/tex/T_Hair_1_BaseColor.webp",
+      "bytes": 12028,
+      "sha256": "12616ecf3d43b64a8f64c7a34a9e51c43097e32a3ef610c40a2a36ce61eafbf0",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_1_Normal.png",
+      "sourceSha256": "57fd0ad8c96a4d01b38769637e066cecaa285b456f6e48ce00863754a457affb",
+      "file": "office3d/assets/compact/512/characters/tex/T_Hair_1_Normal.webp",
+      "bytes": 63162,
+      "sha256": "35d4edc19a1cc93c34fc12f10de9d00bcc401d0fb4681745bcd97cc819ead84b",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_2_BaseColor.png",
+      "sourceSha256": "f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3",
+      "file": "office3d/assets/compact/512/characters/tex/T_Hair_2_BaseColor.webp",
+      "bytes": 14678,
+      "sha256": "9c6ffd6db7cf0a94ccdb49d5e50dfb99beaae6d572db6f9037687325540d10a7",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Hair_2_Normal.png",
+      "sourceSha256": "172f230aae0d4366c3cfc0402b2e6d1811b11f8487344bff28605eeacac1558d",
+      "file": "office3d/assets/compact/512/characters/tex/T_Hair_2_Normal.webp",
+      "bytes": 78628,
+      "sha256": "b1a327f2f8b674ef49026f7f0fe5e583baee79ed7c4fa897b9558428a44729f9",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Dark_BaseColor.png",
+      "sourceSha256": "d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Dark_BaseColor.webp",
+      "bytes": 8330,
+      "sha256": "8e2ac875cac9be4246f96acfc52e3da9af35c1b44851ad50389774b0e8ac6b97",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Light_BaseColor.png",
+      "sourceSha256": "743f811857db0b950f3ad09a0733dfa4888801ead332313ca25becea14c54f8d",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Light_BaseColor.webp",
+      "bytes": 7452,
+      "sha256": "c3330fb7d06a2a19e3886276fa5c392c4e1c819b08afe4fc64d6751a5b0c2d5c",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Normal.png",
+      "sourceSha256": "cf922460b43ccd31e983e34db05514c9d451dd2f9cdd01a843978e797719f859",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Normal.webp",
+      "bytes": 39738,
+      "sha256": "1fbb8c39a901ca14c7fd353f60302964143e5f45ee5e88354bad5f37037a5f07",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Female_Roughness.png",
+      "sourceSha256": "d2beabf2bd0313e32c68dcdbb80dca371a6e994fabf96efa97128bf9f14fa57b",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Female_Roughness.webp",
+      "bytes": 15344,
+      "sha256": "5aefe7e3a8070b764430fb3eeb47e9ce6df00b92b4dac4488e431258ecb964d8",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Dark.png",
+      "sourceSha256": "df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Dark.webp",
+      "bytes": 8286,
+      "sha256": "c64247fb0fa18d8d9b37cf78f15ed564e6c47ddec04c4a8b06384e82beb981d1",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Ligh.png",
+      "sourceSha256": "419f96dbb8811511e2d515bcdabc085ff2f219ec7b8b4e91050a84cba6888fe9",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Ligh.webp",
+      "bytes": 7844,
+      "sha256": "1bd054a497d8fa206a520f0706256d433ad121ea5c4310a431faa0d544ada7a4",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Normal.png",
+      "sourceSha256": "9b25cf9200216eb754b79cf4c63b5380c419780788322f3c57cdd2b3e02679a6",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Normal.webp",
+      "bytes": 52738,
+      "sha256": "fad0711f2b8efb4d32c2d1d143ff258a16735d6ea09b3a2ee2acc90d9fea6fde",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/tex/T_Superhero_Male_Roughness.png",
+      "sourceSha256": "c70dabf48574cda55644d556beae1ee7cf1bdcf68a50d259d20f2f2358f27991",
+      "file": "office3d/assets/compact/512/characters/tex/T_Superhero_Male_Roughness.webp",
+      "bytes": 12844,
+      "sha256": "ad846487b2f2d3e36f4698a01cd9501506283e33cea4e8274939ddd1a01be861",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_06/m025_body_color.jpg",
+      "sourceSha256": "457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd",
+      "file": "office3d/assets/compact/512/people/Business_Male_06/m025_body_color.webp",
+      "bytes": 13368,
+      "sha256": "475e6db66b05f1cbe99cc45a0ced686ceaba66c3f468e1973a4021e876a69cad",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_06/m025_head_color.jpg",
+      "sourceSha256": "4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999",
+      "file": "office3d/assets/compact/512/people/Business_Male_06/m025_head_color.webp",
+      "bytes": 15664,
+      "sha256": "fa1945e5081b0aabc84a3ae70d6fc56c25eedeb07f0ad16130100aedd4f59dcd",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_07/m018_body_color.jpg",
+      "sourceSha256": "9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee",
+      "file": "office3d/assets/compact/512/people/Business_Male_07/m018_body_color.webp",
+      "bytes": 22600,
+      "sha256": "d45c28f2fe3895e360739931fc9d6a19fe34e1d6382f0161ca0dadd999406ac2",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_07/m018_head_color.jpg",
+      "sourceSha256": "c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763",
+      "file": "office3d/assets/compact/512/people/Business_Male_07/m018_head_color.webp",
+      "bytes": 18884,
+      "sha256": "31841a1622bac3eb3ddf6f1b3859d8b02a2c3986e1a3392abc87c3bbac6433b7",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_body_color.jpg",
+      "sourceSha256": "1be20f40aa95a140ed532eca296e67c529027eb3f2aa32b82585e0f798bc3bf0",
+      "file": "office3d/assets/compact/512/people/Female_Adult_01/f001_body_color.webp",
+      "bytes": 24022,
+      "sha256": "ddec5caf792c25e74d8e7d4d78c508f50c0adfcdc2a6e47418fc959921265a7e",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_head_color.jpg",
+      "sourceSha256": "60c4bf8b3ba46843425c2a5e2b7407cd0dd81bead6d86876967c56a0859c76c1",
+      "file": "office3d/assets/compact/512/people/Female_Adult_01/f001_head_color.webp",
+      "bytes": 21446,
+      "sha256": "0bf5e3b135f0c48b812d061979d4c2fb3e4b22e8791e9e85ecc4e6c37658bad8",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/f001_opacity_color.png",
+      "sourceSha256": "3453c4be1c2b29021602304199fa9327d18736a3da247089359a8f2dfafdfbb4",
+      "file": "office3d/assets/compact/512/people/Female_Adult_01/f001_opacity_color.webp",
+      "bytes": 98556,
+      "sha256": "d2eff227b935f2eb53c22fbd7f432c18a716787a93441d0b45ac6c8b63360a9f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_body_color.jpg",
+      "sourceSha256": "40ab82db3f16c664dd7d4188411dc2dd2b7366a6062b4092354c3b2ef0d675c6",
+      "file": "office3d/assets/compact/512/people/Female_Adult_02/f002_body_color.webp",
+      "bytes": 21598,
+      "sha256": "c1a3a9e159167304f413f746b1c4af01dcc3c20db52201cf36a588c3425fb37b",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_head_color.jpg",
+      "sourceSha256": "12c8b248142e5689445d1574f3037e70c5bd83d67d423e74e2850b80d3f39760",
+      "file": "office3d/assets/compact/512/people/Female_Adult_02/f002_head_color.webp",
+      "bytes": 19046,
+      "sha256": "93b5aa97ecc288315595aef04e3296b7605c20f6dd1f2d7b83533c3fc5204022",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/f002_opacity_color.png",
+      "sourceSha256": "892139137e32a2a15c2cce4c684f9c1800e23ba0e3b3fb4aaf79cae71f200e30",
+      "file": "office3d/assets/compact/512/people/Female_Adult_02/f002_opacity_color.webp",
+      "bytes": 108004,
+      "sha256": "2faf4e80317aa064b65ce75f76d60032b58279adcf149b7d8b2dbb8cde67acf7",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_body_color.jpg",
+      "sourceSha256": "37f04c8e00de9aa670dfdf2e685bd22e2f93b8d72a0cda98471c77edb9ad11dc",
+      "file": "office3d/assets/compact/512/people/Female_Adult_03/f003_body_color.webp",
+      "bytes": 21038,
+      "sha256": "3fe8465f3edfbf74eb76c81234563e48185293750dfe57f584c72c7048a424a0",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_head_color.jpg",
+      "sourceSha256": "d708e731955e699eca30170772e03ab0d5f4d31142d6b201aecd134ec203582f",
+      "file": "office3d/assets/compact/512/people/Female_Adult_03/f003_head_color.webp",
+      "bytes": 14824,
+      "sha256": "ed04b8f18d5ebc38cf9b1845a3e15c4ace488ce902c57a6b298641964a26ea70",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/f003_opacity_color.png",
+      "sourceSha256": "7c23414b011ba0ee53ce6c68d93378d64712802ac663b07a501d09ec45d0903f",
+      "file": "office3d/assets/compact/512/people/Female_Adult_03/f003_opacity_color.webp",
+      "bytes": 163226,
+      "sha256": "c011ad3b0e19a55e26522c8e9409c3a187e53ee084ca10942e9d3c60e636d106",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_body_color.jpg",
+      "sourceSha256": "45ea042585eff87669ff041ca4a1ec65dcb567f59a0d5d3d18cc4036937169a3",
+      "file": "office3d/assets/compact/512/people/Female_Adult_04/f004_body_color.webp",
+      "bytes": 22158,
+      "sha256": "ab293e68f4ba5bf57070c4b29a7e051afa11b3fc41056ea2a5a9efbedee6998f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_head_color.jpg",
+      "sourceSha256": "f6572ee00279570b2d0b7288f98e5c7c6075a200609304573b3336d83c4b6cd0",
+      "file": "office3d/assets/compact/512/people/Female_Adult_04/f004_head_color.webp",
+      "bytes": 26466,
+      "sha256": "080b81678f759715a5ac6b4c5131a47afff9d9bccecd7d5313d622f65ffcec16",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/f004_opacity_color.png",
+      "sourceSha256": "b179e345136a72c7228a9275178c81e7996ed27c2a47cd7c70686e73d3b7fd44",
+      "file": "office3d/assets/compact/512/people/Female_Adult_04/f004_opacity_color.webp",
+      "bytes": 112276,
+      "sha256": "a105d957e8877df4ff300aeb5a941f1deee277462ee350605214436964ee4874",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_body_color.jpg",
+      "sourceSha256": "e61e567ebe863cb969a7ef8bb53e2d96dbca24500be79134f81d2c87c9f61c42",
+      "file": "office3d/assets/compact/512/people/Female_Adult_05/f005_body_color.webp",
+      "bytes": 33008,
+      "sha256": "82f5ee701cbbd8b2d65767f4dd13e58252a6d05b68a5b264fa0ac6b74999c4f1",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_head_color.jpg",
+      "sourceSha256": "1f7dad9d6161faadc1134bc8216f9dbb7f6db74fc35be0f891123038324d9843",
+      "file": "office3d/assets/compact/512/people/Female_Adult_05/f005_head_color.webp",
+      "bytes": 12598,
+      "sha256": "c97d9ca1e8945764de6e908f7081a7a802649c49c2e551a9cd2b057230df8dc6",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/f005_opacity_color.png",
+      "sourceSha256": "01236f9a06fb5277921788b49bce48385770f99c0657248612d56f31bf455534",
+      "file": "office3d/assets/compact/512/people/Female_Adult_05/f005_opacity_color.webp",
+      "bytes": 99734,
+      "sha256": "795e8025452e4772e5fa631d2ccc4d3e15b83478836c3b77c3884161f6f80d6a",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_body_color.jpg",
+      "sourceSha256": "c822f4bc3a146c1eebef450e326a9c434b6941e98c3e635f744c47fd945eaa70",
+      "file": "office3d/assets/compact/512/people/Female_Adult_06/f202_body_color.webp",
+      "bytes": 13540,
+      "sha256": "94d477080187342f16c6bd1226171d1b04207c0391f502b732efb112ff03f29d",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_head_color.jpg",
+      "sourceSha256": "30b217357cb79202a9bf7d756e33908974402c8851e937504515762c3365cfe6",
+      "file": "office3d/assets/compact/512/people/Female_Adult_06/f202_head_color.webp",
+      "bytes": 15046,
+      "sha256": "11aae2a4cde78eaf8caa8dd3ce362246130a0119287220c59b906fff8198ad30",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/f202_opacity_color.png",
+      "sourceSha256": "d82754302cdcefc6342240056befed3646fe0e88d7c15739a442c028cf696d24",
+      "file": "office3d/assets/compact/512/people/Female_Adult_06/f202_opacity_color.webp",
+      "bytes": 51748,
+      "sha256": "580f9da247f0173acdf2a024ef581249a5f10a91dfd826111e422830ac86d5b5",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        128
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_body_color.jpg",
+      "sourceSha256": "f8d614926595373d10a04ea1a36d89dc9bf332b343465a58821eeed1819611fa",
+      "file": "office3d/assets/compact/512/people/Female_Adult_07/f007_body_color.webp",
+      "bytes": 20452,
+      "sha256": "0f532af882416beb723722dc980cee6c0e43051ee3361db5ddf768cd8c54c9f1",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_head_color.jpg",
+      "sourceSha256": "d5ceb4b0ba4413d0042d2dc5bb30cf413604914326c5583b4d55117591ad7a27",
+      "file": "office3d/assets/compact/512/people/Female_Adult_07/f007_head_color.webp",
+      "bytes": 16826,
+      "sha256": "c96fe6f1b3821e33551ee0e9bc412d8c5c0139ccae258bff56f672fc3d120c66",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/f007_opacity_color.png",
+      "sourceSha256": "dfafbd7454ac53afe34a6c96314f2b92cecc4a86099b955755c909e1320cac3c",
+      "file": "office3d/assets/compact/512/people/Female_Adult_07/f007_opacity_color.webp",
+      "bytes": 118840,
+      "sha256": "c9baa87095ba33147bddcb100db626398411d715883535c3d54af5afb81ecd1f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_body_color.jpg",
+      "sourceSha256": "4f549f5520662b266b31341bd597f5f083757dbc3b94c88ce38e20717bf237c7",
+      "file": "office3d/assets/compact/512/people/Female_Adult_08/f008_body_color.webp",
+      "bytes": 22878,
+      "sha256": "167bae8e262a671b44ca7f112aa186884d190a42a79787d91f80da7b5307f405",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_head_color.jpg",
+      "sourceSha256": "95b61b960a2b9fffcb2a02b7c8a4661a16702e50927bbdfaf434dc8a9b5926d8",
+      "file": "office3d/assets/compact/512/people/Female_Adult_08/f008_head_color.webp",
+      "bytes": 16936,
+      "sha256": "0db58614435d5e947357aef71f51d2e69644ec065ab00a0089eaa21e38bc30b3",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/f008_opacity_color.png",
+      "sourceSha256": "0223c3557eecdc35b627c3f1cd361d8ace91e5537f95b4643904468d7f962ba9",
+      "file": "office3d/assets/compact/512/people/Female_Adult_08/f008_opacity_color.webp",
+      "bytes": 108394,
+      "sha256": "d4cff12ed514c1df2c66564095fbe071013a25b2021909cbdf750691146294fc",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_body_color.jpg",
+      "sourceSha256": "9a7fa6236d3900248cc9b17e1dc5c1acaf9f657ec0077f0b2b535d47143d1bf7",
+      "file": "office3d/assets/compact/512/people/Female_Adult_09/f009_body_color.webp",
+      "bytes": 21074,
+      "sha256": "8b1e9d1079cfce4041a064f421f3ea7e59f1a6c833105ab1c2a78869ee408de9",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_head_color.jpg",
+      "sourceSha256": "632b345dd2f3118abf660f86a9a731d5755f479e6aca6574ffd50387fde9ebb5",
+      "file": "office3d/assets/compact/512/people/Female_Adult_09/f009_head_color.webp",
+      "bytes": 16684,
+      "sha256": "88240f6001f34bd62348d8480ce4e6a4fb371030ba3b4c8366ced27fb5256179",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/f009_opacity_color.png",
+      "sourceSha256": "7e6d00375d75dab3aa4037be88b4ca2d2e4b2b827787db603f8044de745183ce",
+      "file": "office3d/assets/compact/512/people/Female_Adult_09/f009_opacity_color.webp",
+      "bytes": 109842,
+      "sha256": "58ec7a184509af9b7c123395ff42ad2592b007459f693007387383aa40228c65",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_body_color.jpg",
+      "sourceSha256": "82c31aa483bf4a72cfcc713277b13d363b6b6e2f119d990b853e5885e645093b",
+      "file": "office3d/assets/compact/512/people/Female_Adult_10/f201_body_color.webp",
+      "bytes": 10138,
+      "sha256": "c0d42f1990d4fbfc3a8433e3cbbd5a1dee0b526616a4314d7dc5f4f2d5932283",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_head_color.jpg",
+      "sourceSha256": "785685f98fa1f9563bc6f3e54045f497262e6df939c29aeb05d3782225c527aa",
+      "file": "office3d/assets/compact/512/people/Female_Adult_10/f201_head_color.webp",
+      "bytes": 6284,
+      "sha256": "eeb3006a0648b4f90cab2358e4f542cf5219a09fffe2d86b68769fb163636889",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/f201_opacity_color.png",
+      "sourceSha256": "ba58f1968213905829c66bec51b9d8b5937e30f1413090a485bf283a07a8daf5",
+      "file": "office3d/assets/compact/512/people/Female_Adult_10/f201_opacity_color.webp",
+      "bytes": 33562,
+      "sha256": "b457083ecd4bd36aef48ae9d57b7a31195fddc79824dc75ca4a9bef755b8d910",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        256
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_body_color.jpg",
+      "sourceSha256": "efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485",
+      "file": "office3d/assets/compact/512/people/Female_Adult_13/f019_body_color.webp",
+      "bytes": 19758,
+      "sha256": "20f374d601bc3b012f91e6866d6889ee7e8681343e5b7a1ac4fd8a64ccd357c6",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_head_color.jpg",
+      "sourceSha256": "0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d",
+      "file": "office3d/assets/compact/512/people/Female_Adult_13/f019_head_color.webp",
+      "bytes": 21002,
+      "sha256": "22356624c452ecd62c66425bb462c0665a7dea58fb2ad95490b00092db582ec7",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/f019_opacity_color.png",
+      "sourceSha256": "91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce",
+      "file": "office3d/assets/compact/512/people/Female_Adult_13/f019_opacity_color.webp",
+      "bytes": 108768,
+      "sha256": "979dc15d9bbe265b7fed260b4ec7e3e2264304ab29b5f217d21afae7907733c9",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_body_color.jpg",
+      "sourceSha256": "977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e",
+      "file": "office3d/assets/compact/512/people/Female_Adult_17/f006_body_color.webp",
+      "bytes": 23002,
+      "sha256": "2336af28fa4f61d0dd276c6138fd9862b6505170baa75173ec7895bdcb6b6c54",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_head_color.jpg",
+      "sourceSha256": "73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915",
+      "file": "office3d/assets/compact/512/people/Female_Adult_17/f006_head_color.webp",
+      "bytes": 21038,
+      "sha256": "a35f5f641758c12637c9a5421c497facf62a2d5a8721f0d4aefe93a252f2962f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/f006_opacity_color.png",
+      "sourceSha256": "bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6",
+      "file": "office3d/assets/compact/512/people/Female_Adult_17/f006_opacity_color.webp",
+      "bytes": 103650,
+      "sha256": "c44310626bab66e596f9fc6558939bf37e6e794b7461cc7c325b19051c34afe0",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_body_color.jpg",
+      "sourceSha256": "d8281dcad9424b4a2914f837b665c001a251925cceb0ad4c6acbc71bd0919541",
+      "file": "office3d/assets/compact/512/people/Male_Adult_01/m002_body_color.webp",
+      "bytes": 28808,
+      "sha256": "235c71fb048757cf7e87e484f1842b85feb0cf9434fc80bb68d83c24eb778115",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_head_color.jpg",
+      "sourceSha256": "de94bd3f3757f7effd9bfc1672cd7779fad7e7bac347d59b6a33dd9f99e823a3",
+      "file": "office3d/assets/compact/512/people/Male_Adult_01/m002_head_color.webp",
+      "bytes": 16076,
+      "sha256": "a0251114b6a64722c480d535a2c1265c03835924d054c7858e9652f7b921f26f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/m002_opacity_color.png",
+      "sourceSha256": "6f4d1e945084d52fccbdb73186a028e818c9f7a519fd817313ee85ee23de6486",
+      "file": "office3d/assets/compact/512/people/Male_Adult_01/m002_opacity_color.webp",
+      "bytes": 125950,
+      "sha256": "07b36573af11c425ae2de1a4221afddfe854842b9a6065a1275e9f16338d3c30",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_body_color.jpg",
+      "sourceSha256": "374fb0f31c3953003d15d85db740953ae50ca3bd505b05283bf2599bc38a9deb",
+      "file": "office3d/assets/compact/512/people/Male_Adult_02/m003_body_color.webp",
+      "bytes": 18396,
+      "sha256": "e714be32229adcc9641d51de9deddc1c6c33bd569927d77e99aa30172dd96190",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_head_color.jpg",
+      "sourceSha256": "5f8481c3dfabf937a57c9b14fc94cb659c2aa3c03c1df54e5f773fcf053d8983",
+      "file": "office3d/assets/compact/512/people/Male_Adult_02/m003_head_color.webp",
+      "bytes": 15110,
+      "sha256": "545bcde0a444d82046e61393245b79a5f02acdc8cac4e8c28c77de002c7c48ae",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/m003_opacity_color.png",
+      "sourceSha256": "b39b2e48a813450af02800e5a597296669c28116218291f91e2a5e7d87c5a9f9",
+      "file": "office3d/assets/compact/512/people/Male_Adult_02/m003_opacity_color.webp",
+      "bytes": 103420,
+      "sha256": "f6ca1b285ca3353b3b20d9310f2efc67f410e95914d2b7b8df660a167f7987fa",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_body_color.jpg",
+      "sourceSha256": "9da59c6482a2642ce69ba53e0404256deefe779d4993fb7150cb22c91f8e51ab",
+      "file": "office3d/assets/compact/512/people/Male_Adult_03/m004_body_color.webp",
+      "bytes": 25768,
+      "sha256": "10a1126ae2676af2ec5b28d7b65fb775fe4629cbead526e2af472cd4c80deebd",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_head_color.jpg",
+      "sourceSha256": "7b1346419c7c87ee9f9d29a8e7779c921c0c0826fdc3362dbbbf519f3dcd75f8",
+      "file": "office3d/assets/compact/512/people/Male_Adult_03/m004_head_color.webp",
+      "bytes": 19854,
+      "sha256": "51ad84a8e711d67a34f7b5b72bc5e886f2dfc8b2ce35af5b8db79000f3ccdc32",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/m004_opacity_color.png",
+      "sourceSha256": "041bb694f869b013bcb6e6986e8e159c0f8626edead14ab7f55f32d6ca71e82f",
+      "file": "office3d/assets/compact/512/people/Male_Adult_03/m004_opacity_color.webp",
+      "bytes": 116202,
+      "sha256": "d33b6c9b4e6cee2be69cadbffbae6d02ba31059153f049a69a97ba0b3244cfc6",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        256
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_body_color.jpg",
+      "sourceSha256": "9f1acd52f34e71053e94df36a7d501b4ad2fe572cdd13836c51431d5d791f992",
+      "file": "office3d/assets/compact/512/people/Male_Adult_04/m006_body_color.webp",
+      "bytes": 21298,
+      "sha256": "23f90eb643d6ba54f3f4090b051cd88eec69cfecccb3e6ffc64c6a9796b6dc62",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_head_color.jpg",
+      "sourceSha256": "cad4d44c9be226d801ac8610f448067a52f956f5ba3ae90e8cdd820cbc1d0618",
+      "file": "office3d/assets/compact/512/people/Male_Adult_04/m006_head_color.webp",
+      "bytes": 15184,
+      "sha256": "ebc39e03e310d48ab4be94bc6948802d62a40e337a9b81310afd6c58c933517e",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/m006_opacity_color.png",
+      "sourceSha256": "3e5ae90bc00572de9cdeb7f4f7d6453ed554c62e959d59a6f6932a8579f9a740",
+      "file": "office3d/assets/compact/512/people/Male_Adult_04/m006_opacity_color.webp",
+      "bytes": 136564,
+      "sha256": "caf5ebf16c01949dad88ae895cd5313c3edda22962148aa0d420ad17ee7fa37e",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_body_color.jpg",
+      "sourceSha256": "68256ee7b77cc19e8fffacc701afc9d749a902169c66c131276740619ed31c16",
+      "file": "office3d/assets/compact/512/people/Male_Adult_05/m009_body_color.webp",
+      "bytes": 20132,
+      "sha256": "df03c7720ba1a90adf09622cb18d25c7e8bf10f326b9701f62dfe85de01d3c53",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_head_color.jpg",
+      "sourceSha256": "fe26f3a4a6562ca349767d8c775407ac9040ed59bc2fcda9590ee893e99cddf5",
+      "file": "office3d/assets/compact/512/people/Male_Adult_05/m009_head_color.webp",
+      "bytes": 20768,
+      "sha256": "df20a26eb16d0aae588152fc7d04b00361249ef5dec7863690e9a791d2315ebb",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/m009_opacity_color.png",
+      "sourceSha256": "8ee4c4971be723ee032af0b749f36accf516d194d895019ef79120eea0c8779a",
+      "file": "office3d/assets/compact/512/people/Male_Adult_05/m009_opacity_color.webp",
+      "bytes": 119470,
+      "sha256": "6eb987a88e090355d8d79cdeaba659ba3b699ed21dd110acde1dd783b06a8a09",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_body_color.jpg",
+      "sourceSha256": "dae3ae9f48ae9db6e6b665a7d05d4bca1a5ef2fa484eb873279e075b4b5b5fe1",
+      "file": "office3d/assets/compact/512/people/Male_Adult_06/m011_body_color.webp",
+      "bytes": 19240,
+      "sha256": "8f1d5876b4881b1fdbeb7b84ae1c676e7400ac1451f1ad89373a3c9ae7fa4bea",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_head_color.jpg",
+      "sourceSha256": "45a5713b6b8c11d7774793782a0a7298cf46cf90ebca9771c77b786e96f2672f",
+      "file": "office3d/assets/compact/512/people/Male_Adult_06/m011_head_color.webp",
+      "bytes": 18648,
+      "sha256": "86c11d5b318b02e35e97338691554e8bfe472693d1c050292aec6df9a882735c",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/m011_opacity_color.png",
+      "sourceSha256": "5f8e6bba0685ff023b14c49f169e7b1939c0f79c60c7e217393927ed953a0c5c",
+      "file": "office3d/assets/compact/512/people/Male_Adult_06/m011_opacity_color.webp",
+      "bytes": 171154,
+      "sha256": "3d1eb5111516def548a9e3fde814fbe840b5ef19d67f8153d418ad5762f47578",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_body_color.jpg",
+      "sourceSha256": "ee4a8560e143ed0e12c763a9f1932e07c9424fbc84cce86eb0207c54e5884135",
+      "file": "office3d/assets/compact/512/people/Male_Adult_07/m013_body_color.webp",
+      "bytes": 19308,
+      "sha256": "feb78eb560aaa8ffdc2cc36395e67f8a07ff3a987f543201a262a3e710cb4007",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_head_color.jpg",
+      "sourceSha256": "796c803038e2af2aace562ad9622fa17d75ad9162ce50f20e660d47264582aea",
+      "file": "office3d/assets/compact/512/people/Male_Adult_07/m013_head_color.webp",
+      "bytes": 15298,
+      "sha256": "4c92be317e5bdc98d8715f8ca51588f4415202b95aba588e0293590eae7096f4",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/m013_opacity_color.png",
+      "sourceSha256": "624794cb0d72a2bcd87416ac4bd830efa73fde22eccc76411876d7797a52b9d4",
+      "file": "office3d/assets/compact/512/people/Male_Adult_07/m013_opacity_color.webp",
+      "bytes": 49362,
+      "sha256": "b84140fce305ac123a9ebc85114f3154c5317f69a2a120c5a6e71d4c8c73263b",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_body_color.jpg",
+      "sourceSha256": "8aa77b77f5cff2fd6d0bbdea60537d709311fea961df15f856bbe5a302238488",
+      "file": "office3d/assets/compact/512/people/Male_Adult_08/m014_body_color.webp",
+      "bytes": 15134,
+      "sha256": "9f3c99a762692d419e9eaad943d1ace11dab3d67c0e74a60edec0a7871c89d2f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_head_color.jpg",
+      "sourceSha256": "adc37440cf718b92d6f61d7fe1d9730f6dc0c6cba9f31354ad42ea8ca819769a",
+      "file": "office3d/assets/compact/512/people/Male_Adult_08/m014_head_color.webp",
+      "bytes": 17560,
+      "sha256": "ca05e663fcd8baa17c03d3d00079bc6daf8e63bf191b0aacadd8962a46be65a3",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/m014_opacity_color.png",
+      "sourceSha256": "b563844f311e3298c1dd198b08829b5bb02488ab2470d717950f6eb689d9605a",
+      "file": "office3d/assets/compact/512/people/Male_Adult_08/m014_opacity_color.webp",
+      "bytes": 131192,
+      "sha256": "98c7266a57ec445790741cc0b7d58df09e970cee8e65fed48d77739fd405fb8b",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_body_color.jpg",
+      "sourceSha256": "c170e81204f958a6a1c6c2dc7c9201b150190e4c60cfffabf13ea90871b7aea9",
+      "file": "office3d/assets/compact/512/people/Male_Adult_09/m017_body_color.webp",
+      "bytes": 20948,
+      "sha256": "f4269dc216f2b9351ade78570d56faabba79bc22890cece6f73ee95cf151ec83",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_head_color.jpg",
+      "sourceSha256": "3118b7161bde9d9655fc7c558e4acfba0a2dd3859a1b9425811f29c7625f2a20",
+      "file": "office3d/assets/compact/512/people/Male_Adult_09/m017_head_color.webp",
+      "bytes": 15956,
+      "sha256": "6e3876add299fc7f72ebf5862eebb0bf82acc0c20072aee41b5759a7d065acc1",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/m017_opacity_color.png",
+      "sourceSha256": "977cb5f8724f4a4d9764c1f10641f9e460de288a88d28a29ea6579bbdca51c35",
+      "file": "office3d/assets/compact/512/people/Male_Adult_09/m017_opacity_color.webp",
+      "bytes": 73526,
+      "sha256": "2392478428732b236276ee66c95b324125e8be69321392ae8c4ed7ffe9357df8",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        256
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_body_color.jpg",
+      "sourceSha256": "a273b6f3bf0c2f21fd1a88615e76d916ad00016567b4360809a9e471322daa0a",
+      "file": "office3d/assets/compact/512/people/Male_Adult_10/m024_body_color.webp",
+      "bytes": 18542,
+      "sha256": "559ace00e8bc48b2aaf2bda95547c25d2e4e62dcaebff28d9f85dff783e62ea2",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_head_color.jpg",
+      "sourceSha256": "3a412a4887844e3c7976dfde6c63e414fead2e905405ea33e60b9b2f15742da4",
+      "file": "office3d/assets/compact/512/people/Male_Adult_10/m024_head_color.webp",
+      "bytes": 12702,
+      "sha256": "65b6d0f93adacc6c4d2156a45f17bdd918de73b69e774f0639b61d56f697b04f",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/m024_opacity_color.png",
+      "sourceSha256": "1fc9a8bec8e87853038c15b045f1d4b76d60b12ae914e4697865a21c067bb2b8",
+      "file": "office3d/assets/compact/512/people/Male_Adult_10/m024_opacity_color.webp",
+      "bytes": 116772,
+      "sha256": "da8a3e7c5118d407bb47be6f9ae933e2817dc2c216d4c42e03fe4a20b2aedbe7",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_11/m001_body_color.jpg",
+      "sourceSha256": "e7306ed7e781a113aa83d01bc82367d83176f4855448979633f788c50b36f4b7",
+      "file": "office3d/assets/compact/512/people/Male_Adult_11/m001_body_color.webp",
+      "bytes": 20076,
+      "sha256": "5b1800270c60e0a9297cef7123c6f90ea68eb48f903c128971c16d654c24145e",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_11/m001_head_color.jpg",
+      "sourceSha256": "25a5fcd73a325638858e199c6849bcba443ce9de3d8ac06bf0adf3298bacc00d",
+      "file": "office3d/assets/compact/512/people/Male_Adult_11/m001_head_color.webp",
+      "bytes": 16696,
+      "sha256": "7f6910ae094b9caaa2eee7bcb05b6dd0802094e5bf48370bb11e3956331906b8",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_12/m007_body_color.jpg",
+      "sourceSha256": "845153e333b0df98e67f40db920d933c8df7800526b983f2c1f602148833b2bc",
+      "file": "office3d/assets/compact/512/people/Male_Adult_12/m007_body_color.webp",
+      "bytes": 35348,
+      "sha256": "9548b30f4c8225646df68b1111ac1d5a08b9b11ec9c97fc6816c6b69c43991a4",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_12/m007_head_color.jpg",
+      "sourceSha256": "8d3d12ca07cf8fcd905f4521972e9c5ca9cddd33c083841b9dffe9f8003f0202",
+      "file": "office3d/assets/compact/512/people/Male_Adult_12/m007_head_color.webp",
+      "bytes": 12694,
+      "sha256": "01168e24ff3929f93cb0184ac725a67766a53ed50f4d59a09af8bb01997f4c2e",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_20/m027_body_color.jpg",
+      "sourceSha256": "88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018",
+      "file": "office3d/assets/compact/512/people/Male_Adult_20/m027_body_color.webp",
+      "bytes": 16684,
+      "sha256": "6a3c9fa7e1b750fb9c22c1c9ef6bf40c6c82015b95a72ce8fce58b3009078828",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_20/m027_head_color.jpg",
+      "sourceSha256": "d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d",
+      "file": "office3d/assets/compact/512/people/Male_Adult_20/m027_head_color.webp",
+      "bytes": 15646,
+      "sha256": "ca47984d584917143fa9f5983cece34695d46cdd54d2d870113d80fdc28f0cf5",
+      "kind": "texture",
+      "dimensions": [
+        512,
+        512
+      ],
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_cell_phone_textmessage.fbx",
+      "sourceSha256": "fec5b09446c1f097d87490005157979a49053cd2462547794b9bdeababdae97b",
+      "file": "office3d/assets/compact/anim/f_cell_phone_textmessage.anim.gz",
+      "bytes": 110840,
+      "sha256": "9af7977e8c6e6b94fb89bc36fa82e9274ffe4499683a9fd1042dbef323795135",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 252642,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_cheer_01.fbx",
+      "sourceSha256": "c6348d384bf83f66d6b77a45229847eea94cdcf5cdc06659d5f6d964f028b54d",
+      "file": "office3d/assets/compact/anim/f_cheer_01.anim.gz",
+      "bytes": 165997,
+      "sha256": "c8128fb89209be0df3c45b9a94b7a2ffafc98f9849a61e0be7bbfd974bc9b942",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 188354,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_cheer_03.fbx",
+      "sourceSha256": "03d6f83b11f1c1efe05b22d415134a778a3854bc6eb373a497bc83c27b16f08d",
+      "file": "office3d/assets/compact/anim/f_cheer_03.anim.gz",
+      "bytes": 36212,
+      "sha256": "4eaedf5bc07163862b9e1712ea81c5cef4ad6722fd817f45814e45819a6344a2",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 39114,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_claphands_01.fbx",
+      "sourceSha256": "125b108aa10a1207d4beb9a0041a0b20fcb29d96f7c2fb9fc5e343e51aae863a",
+      "file": "office3d/assets/compact/anim/f_claphands_01.anim.gz",
+      "bytes": 152136,
+      "sha256": "b2eff5f2cc697b1fe3cf4128d28dff8fe6efb1d4cd4517d4401cd33977d65af0",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 196144,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_drink_idle.fbx",
+      "sourceSha256": "3e486b8aa0e5d4aac1907536ff04f1c8b55a350095496ad10e513d797f1e1f67",
+      "file": "office3d/assets/compact/anim/f_drink_idle.anim.gz",
+      "bytes": 185519,
+      "sha256": "945bcc192b3329056fc78d7d7c12b52342fb0323c2fb205c0734f0710553acf4",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 365884,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_gestic_talk_excited_01.fbx",
+      "sourceSha256": "c80b5e40a00f121bd5dc4b18cf0e16dc558bcd985621b89ce89cd7464f815384",
+      "file": "office3d/assets/compact/anim/f_gestic_talk_excited_01.anim.gz",
+      "bytes": 330944,
+      "sha256": "e9ecfdb7e4238adc49d912f0f636e0dc127d91fa91908d7511848ba524d3e975",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 357192,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_gestic_talk_neutral_01.fbx",
+      "sourceSha256": "fee2c764dcfac6f2edd85e73e11b1a13aac305372cbd657207d4c947b21a2476",
+      "file": "office3d/assets/compact/anim/f_gestic_talk_neutral_01.anim.gz",
+      "bytes": 273392,
+      "sha256": "98e32b10d5d92367e1db1f55429667d9720391831bc0b0ed4c919f9782799291",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 336364,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_gestic_talk_relaxed_01.fbx",
+      "sourceSha256": "a22d59d1d0cc34a16df70a994ef829d3206034f6416bc9bd3de387fb3f204c61",
+      "file": "office3d/assets/compact/anim/f_gestic_talk_relaxed_01.anim.gz",
+      "bytes": 298180,
+      "sha256": "58be5db405b5da1a549fd91325671b82b178bbf88798c1fddd6e3f30e67fdfc6",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 338414,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_idle_look_around_01.fbx",
+      "sourceSha256": "61a70b35f08d5308c01fd1bce75ecbdb2cd320193ee900bbef26ad0e9d52261e",
+      "file": "office3d/assets/compact/anim/f_idle_look_around_01.anim.gz",
+      "bytes": 39588,
+      "sha256": "01b07891c3ebe10c0113213a38c586bc0f2c02beb51feb68da162ae3324eb438",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 55104,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_idle_neutral_01.fbx",
+      "sourceSha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb",
+      "file": "office3d/assets/compact/anim/f_idle_neutral_01.anim.gz",
+      "bytes": 73926,
+      "sha256": "768b23d241fdf41c45a1401507db1dbaf8c9cc19d539d20be31639a31a885f39",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 191224,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_idle_stretch_arms_01.fbx",
+      "sourceSha256": "731a81fb08987d4ff4adabdb2f205a90943fde19688d4bafafdd11178c43dcad",
+      "file": "office3d/assets/compact/anim/f_idle_stretch_arms_01.anim.gz",
+      "bytes": 76614,
+      "sha256": "86e1698c6478f7892e1d5c4e4f2297a963efb6cdfee7dd64ce52c07d6e2f5025",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 89954,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_chair_idle_neutral_01.fbx",
+      "sourceSha256": "45a11c11fa22364eb0ea0a0f20c05771aeefa92a7fbe89361eed90e218e58abb",
+      "file": "office3d/assets/compact/anim/f_sit_chair_idle_neutral_01.anim.gz",
+      "bytes": 187830,
+      "sha256": "26d93a9cff3013a9fcdf039e0a102d685114aefc2a96a883e65c4a185f959845",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 408934,
+        "maxError": 0.000005342066287994385
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_chair_idle_relaxed_01.fbx",
+      "sourceSha256": "4d7fa1f1fe8f2bd3bee686888cf0d123620b8c35bec2c9aff25d6cd5a8c63388",
+      "file": "office3d/assets/compact/anim/f_sit_chair_idle_relaxed_01.anim.gz",
+      "bytes": 256676,
+      "sha256": "f7c956bd102f0219bcac6667f4d2cb34cc7f26292ae82393d7e3fcf446c4abbb",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 460594,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_breathe_01.fbx",
+      "sourceSha256": "ebd70602249742fa259e50ef8bcf33d499364d48d6896d929e4a1379c2b65597",
+      "file": "office3d/assets/compact/anim/f_sit_table_breathe_01.anim.gz",
+      "bytes": 59418,
+      "sha256": "cd8184c57d3501468b35f7ab116244a94faf1184e7bee259b609432578c51653",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 236324,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_gestic_shrug_01.fbx",
+      "sourceSha256": "05f9883101b3b05ad1b7195bbea8d280cc5748fc400c71cb8331439f3f3774a8",
+      "file": "office3d/assets/compact/anim/f_sit_table_gestic_shrug_01.anim.gz",
+      "bytes": 11227,
+      "sha256": "4d480077abc2831766d0b1b79d52b3240d8bc55c0d9a4448a00391c16952b6ca",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 16564,
+        "maxError": 0.000004970468580722809
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_gestic_thoughtful.fbx",
+      "sourceSha256": "c86ad99ffa89d8b89e04e3b8b51363ea01f96752cff298a119c7255534ed5d22",
+      "file": "office3d/assets/compact/anim/f_sit_table_gestic_thoughtful.anim.gz",
+      "bytes": 111798,
+      "sha256": "cecbf006535d1049e46e873f74b2ff2362232aa7d695b663c9709abf6c891e2b",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 186222,
+        "maxError": 0.000005342066287994385
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_look_around.fbx",
+      "sourceSha256": "ff19db71ef6044218915d2561b81488f4399029e54bffafc8fd63444fe9f1aa4",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_look_around.anim.gz",
+      "bytes": 24157,
+      "sha256": "65c9b1d1737056199b08679e82d01b0cc8abdefc485667e5d0fd931888a153da",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 49364,
+        "maxError": 0.000005111098289489746
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_neutral_01.fbx",
+      "sourceSha256": "518e3790c39fbda5de67cbbec5f72d0b1f1912e988d3a56ed1944bef6062afaa",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_neutral_01.anim.gz",
+      "bytes": 134869,
+      "sha256": "5094e293185b293adbea3c879c3f01afaf19c42852b20f12095b7e8772e25d36",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 322834,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_neutral_02.fbx",
+      "sourceSha256": "ee99f393f04211b71251b489db5d17265e2050cd1783e24528ac098d898336f9",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_neutral_02.anim.gz",
+      "bytes": 98425,
+      "sha256": "06d057ec473701f792a291c3757b34d1e929e842f12b6c00d24a77441cfae619",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 273962,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_relaxed_01.fbx",
+      "sourceSha256": "a7dbcae874c4964c64f19e21438b45214a8f059f2d89fbdf14b963b19898e70f",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_relaxed_01.anim.gz",
+      "bytes": 174607,
+      "sha256": "d2cb7740808d48cddefc79026cf15008498042270f14da9409cf8c09a97db8d7",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 340382,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_roll_head.fbx",
+      "sourceSha256": "6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_roll_head.anim.gz",
+      "bytes": 37604,
+      "sha256": "8317ae7dc3265d473232002395b5a3e727d2420fa33fd64035efb16ae3699eb0",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 87412,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_scratch_head.fbx",
+      "sourceSha256": "993a07de6338fdfabbb28cd65e2634a47461373da5b7952d653496e272e6fa5c",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_scratch_head.anim.gz",
+      "bytes": 35280,
+      "sha256": "abd37668cdd31742ca5a7ef424ef7712f9487d74245998a962cf362135c2720c",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 40262,
+        "maxError": 0.00000521540641784668
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_stretch_arms.fbx",
+      "sourceSha256": "3815502ddf2b04054745515dd5091a3dbe7c180203e1fd2e1742eb934e7ceae3",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_stretch_arms.anim.gz",
+      "bytes": 64838,
+      "sha256": "cba465a35df9981a6fd6b0c18ade4b332ac3c253eed85850e0a5485b68611d12",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 95202,
+        "maxError": 0.000005364418029785156
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_touch_face.fbx",
+      "sourceSha256": "b5409ecdf1d28605c35c450297743024b7cca95c4549487ece17ad29607b84db",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_touch_face.anim.gz",
+      "bytes": 44334,
+      "sha256": "28b955102af7c2cf0ba46b98eac3979f2b409e887379ea1ada8c2c412cf6bb00",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 53464,
+        "maxError": 0.000005230307579040527
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_touch_hair.fbx",
+      "sourceSha256": "2e89fa2557075fa24f6b92dad4d3991f9cca49b7645959e3d28674aa58abd36f",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_touch_hair.anim.gz",
+      "bytes": 62570,
+      "sha256": "aaf66dec424b55b740d82fcd62897d239a270366a292bab056662d3425c8ceb4",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 75522,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_waiting_01.fbx",
+      "sourceSha256": "047ee274ea779ee413dbe29515c1b422010906d0be30446bcf46eb4ae9ca76c3",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_waiting_01.anim.gz",
+      "bytes": 197262,
+      "sha256": "ca5d645cb8e8f53cbeddf750806bf2a0c80dc20109bfa7431cde2e9d8eebd301",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 314142,
+        "maxError": 0.000005364418029785156
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_sit_table_idle_yawn.fbx",
+      "sourceSha256": "542f467818fda7c5b6afe1e5256fa78decabd106e7d7241644499376a8b379a1",
+      "file": "office3d/assets/compact/anim/f_sit_table_idle_yawn.anim.gz",
+      "bytes": 53055,
+      "sha256": "eea9c48c8112c0c8174256a11f9923759e6e8582452c3bceb28bad7860f977f6",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 87822,
+        "maxError": 0.0000054193660616874695
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/f_walk_neutral_01.fbx",
+      "sourceSha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b",
+      "file": "office3d/assets/compact/anim/f_walk_neutral_01.anim.gz",
+      "bytes": 9596,
+      "sha256": "ef059b183141982084f52d4377e7d54b12e9a2a082e0361b17bfc6e773eb66f7",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 14924,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_cell_phone_textmessage.fbx",
+      "sourceSha256": "fe358efe720533691589b3f16d43bfb7719f51be7ae23abaa66459477fb4250b",
+      "file": "office3d/assets/compact/anim/m_cell_phone_textmessage.anim.gz",
+      "bytes": 231790,
+      "sha256": "e1f493123b0a528d34551f50a8d74d06e64f772572b88242e5e4a6f3341c5bbb",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 424104,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_cheer_01.fbx",
+      "sourceSha256": "f71a32d4c4629817488855bbca36ce3c4112e8605cd90dcf84ba1726687f8d10",
+      "file": "office3d/assets/compact/anim/m_cheer_01.anim.gz",
+      "bytes": 263272,
+      "sha256": "af09684ce64f9717e4f0682811050befb29565e3478195dd303cf49f816cf56c",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 303072,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_cheer_03.fbx",
+      "sourceSha256": "93bee57cc1edfb9ccf45c530b144464a1fd55686724bb3b747fd12e3f513c4e7",
+      "file": "office3d/assets/compact/anim/m_cheer_03.anim.gz",
+      "bytes": 40624,
+      "sha256": "c8250ddd53dabc343ce4c1b7d53bf534662ef73ea6b48a049852b8f087e63ebc",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 51742,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_claphands_01.fbx",
+      "sourceSha256": "b1db818b9381e959e367d5ce23babf26c27b3f2cdc5540f0cd0b6bda1d8694bc",
+      "file": "office3d/assets/compact/anim/m_claphands_01.anim.gz",
+      "bytes": 76295,
+      "sha256": "e4840f58bc9e3f785f7c30f85d1b46b505db9794fcf24336d0175ff4714dddf5",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 86182,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_drink_idle.fbx",
+      "sourceSha256": "44a8183dd457dbbac3e56b8dc93dcec99eb26e9eb10c36d73987ab70beb1f2b2",
+      "file": "office3d/assets/compact/anim/m_drink_idle.anim.gz",
+      "bytes": 178039,
+      "sha256": "911ce025f8b820ea295a6c9ee7dc3aed31a0033a9e389d018aedff8c8114e125",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 386302,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_gestic_talk_excited_01.fbx",
+      "sourceSha256": "ce7638f6a36e6f49d81f7eeedae3b820eafa35025f6429cc92803155c76926d8",
+      "file": "office3d/assets/compact/anim/m_gestic_talk_excited_01.anim.gz",
+      "bytes": 301281,
+      "sha256": "c2f10b63d5c46a6f97da7e487aa2cdb504c3a2bd9cd5501fc15b560a2bdc975f",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 326442,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_gestic_talk_neutral_01.fbx",
+      "sourceSha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8",
+      "file": "office3d/assets/compact/anim/m_gestic_talk_neutral_01.anim.gz",
+      "bytes": 356557,
+      "sha256": "853d1d81e95d9f27849118390194d010f36b2fef0aba92acce2143d68c32df94",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 437552,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_gestic_talk_relaxed_01.fbx",
+      "sourceSha256": "560c369eeec15c56534cdd8a87bdebd76f365a783c43b473e879a1707721be07",
+      "file": "office3d/assets/compact/anim/m_gestic_talk_relaxed_01.anim.gz",
+      "bytes": 337221,
+      "sha256": "8ddd551d6a74a1b659b62d4e849f70d68559540ff167a43fbdb351a56c27ab12",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 397782,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_idle_look_around_01.fbx",
+      "sourceSha256": "018b19ad26695c5ebbd4131e0506da69dc76f4001a8100a9e38fcdb9a202b7a4",
+      "file": "office3d/assets/compact/anim/m_idle_look_around_01.anim.gz",
+      "bytes": 38843,
+      "sha256": "f2f5d38498c4cc497c05db093e89e4706fc27ab7b0fb9968534b4eb6a37f445b",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 57072,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_idle_neutral_01.fbx",
+      "sourceSha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2",
+      "file": "office3d/assets/compact/anim/m_idle_neutral_01.anim.gz",
+      "bytes": 74355,
+      "sha256": "7ae99b3ce5c9ab3bb1d9695bda7b2eed54dc97a29b06edc5be189a60eb3a6e7e",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 143664,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_idle_stretch_arms_01.fbx",
+      "sourceSha256": "7430dc57cd72500dd98403efe6c0da5395321e1ac4787007140687248708ee60",
+      "file": "office3d/assets/compact/anim/m_idle_stretch_arms_01.anim.gz",
+      "bytes": 71771,
+      "sha256": "fb323ff35db506267d219648dc4b5f3b66674892cc1290c3ca35d4c88db444dd",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 81672,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_chair_idle_neutral_01.fbx",
+      "sourceSha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2",
+      "file": "office3d/assets/compact/anim/m_sit_chair_idle_neutral_01.anim.gz",
+      "bytes": 189203,
+      "sha256": "ae0580335ec1cb12764495e86134b7d4624083d3c14de6e28da49592d7129543",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 444112,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_chair_idle_relaxed_01.fbx",
+      "sourceSha256": "f5d2ebb6c21e0067a9c9b065ff9d14f2ac3dba688b6eec9090b6e8f3af55e7d7",
+      "file": "office3d/assets/compact/anim/m_sit_chair_idle_relaxed_01.anim.gz",
+      "bytes": 206384,
+      "sha256": "6011b5df80255d2a3288345fe506efbc05a10e81b27bf2442af7203b6e4af1ed",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 447884,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_breathe_01.fbx",
+      "sourceSha256": "29ad66f2da4242570c45ee90e2a20c28af88233720a4531a03981a7ee9cbf96a",
+      "file": "office3d/assets/compact/anim/m_sit_table_breathe_01.anim.gz",
+      "bytes": 51890,
+      "sha256": "ca4799db5ed95075bd24035f9da6605ea4283d8a088fd472a517b544bab58277",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 156292,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_gestic_shrug_01.fbx",
+      "sourceSha256": "d69cf86c90b0851c6ef1bd8372c35198020d2ccb57c08f9c9dc5985c9dc791c2",
+      "file": "office3d/assets/compact/anim/m_sit_table_gestic_shrug_01.anim.gz",
+      "bytes": 18127,
+      "sha256": "b78d6838f38112fca77fbf6302f0a4669d7808e1c0075ef941aa90931fa8a266",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 43214,
+        "maxError": 0.000005245208740234375
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_gestic_thoughtful.fbx",
+      "sourceSha256": "22e4baa64e1a09dfb3a3b4dda433300d21dad72a0e37ebe746c31fe6fe3c1242",
+      "file": "office3d/assets/compact/anim/m_sit_table_gestic_thoughtful.anim.gz",
+      "bytes": 125362,
+      "sha256": "aaa9a96a8cded4c7de2ac3277068a6b8839e217cd041e4a714545a5dcf588d1c",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 205082,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_look_around.fbx",
+      "sourceSha256": "57e42e4619f531b979852ae9f08470fd73c02b9fa994c0b6410ce1cb77e8cb06",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_look_around.anim.gz",
+      "bytes": 45605,
+      "sha256": "fd7a4093ce33d2f1235a10771b3a5aa9c296d1001a8174bcd819ff8f3246c480",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 106764,
+        "maxError": 0.000005140900611877441
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_nervous_01.fbx",
+      "sourceSha256": "afe96e6cba1e0b141b4f14b397d0f5584ecc5d8dee44d25ea569de2d8ad643e9",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_nervous_01.anim.gz",
+      "bytes": 295774,
+      "sha256": "9de3a653c133d2e86e79e6b0ff6dbe27a225713a2affb804225c6bce32a5b9b1",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 417954,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_neutral_01.fbx",
+      "sourceSha256": "b0d32e673184f5907332ff5094518834cd838bd68591a410ce06298126a1815c",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_neutral_01.anim.gz",
+      "bytes": 241393,
+      "sha256": "24470484d16f7374b6f91211451fe47f2da86a8b91e9a9d6a5b6ef9657ea7b10",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 562274,
+        "maxError": 0.000005334615707397461
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_neutral_02.fbx",
+      "sourceSha256": "76eddd55dcfcee98e7849ec769d412f1d91d369b78502baf40eeae09bee8e71c",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_neutral_02.anim.gz",
+      "bytes": 198066,
+      "sha256": "fbba3284d2f6494a8966898ed2ef5e9edcdad10a468eaa0e0e8fcf48452aca7f",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 448294,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_relaxed_01.fbx",
+      "sourceSha256": "f3c5f5d4b4f9a3fe9f6f103cf09f9fd898db4f06784129be9539f53ec1e6bcbd",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_relaxed_01.anim.gz",
+      "bytes": 286198,
+      "sha256": "bc26774304c35ab79d405e9dde5b24504b3fe6ae5214aac6f50a44f1b17ee508",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 545382,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_roll_head.fbx",
+      "sourceSha256": "8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_roll_head.anim.gz",
+      "bytes": 41827,
+      "sha256": "02d90df862f72943224738002298649cdd5bfbca5a14416806ed099991177365",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 100942,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_scratch_head.fbx",
+      "sourceSha256": "7525204a25d79960f45281dad1936f1592e41cc6623ee6180ed381fe69fda86f",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_scratch_head.anim.gz",
+      "bytes": 82350,
+      "sha256": "790cf9a86eb16838168433e5849baf5c5c8365be409f0e14bacdaf439a7596bf",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 116522,
+        "maxError": 0.00000537186861038208
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_touch_face.fbx",
+      "sourceSha256": "b595f08d63da949b7f0d82cd2a945055744089b3023dc8533916e7566af8b5dd",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_touch_face.anim.gz",
+      "bytes": 72459,
+      "sha256": "aec7c1b8f376b1ed39587252f746fd62e5bc2244082245bdbc72060d5b848ff7",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 92332,
+        "maxError": 0.0000053942203521728516
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_touch_hair.fbx",
+      "sourceSha256": "60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_touch_hair.anim.gz",
+      "bytes": 78186,
+      "sha256": "33264b4ed57b4c4ba65bddd26c98dd01a69a92dd3b0a7337283cc9e19b68d3f3",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 103402,
+        "maxError": 0.00000527501106262207
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_waiting_01.fbx",
+      "sourceSha256": "b7453f9de0bbb6168f6df71b11fcf3813e5ab568fbf770ed846801592b72ba5e",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_waiting_01.anim.gz",
+      "bytes": 207377,
+      "sha256": "76b781da36e63dbd46fc08ec72074b31b04cc2f618d9a5bec4ddb4510ed60682",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 401062,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_sit_table_idle_yawn.fbx",
+      "sourceSha256": "7c4ce491a310a5e9bf6a1bf3affb747924206be1f03c229de4b90b45685e76e5",
+      "file": "office3d/assets/compact/anim/m_sit_table_idle_yawn.anim.gz",
+      "bytes": 53672,
+      "sha256": "c86c76822d0f07fb468287a231d1ee761729536079c06bc517e7e535a26c4487",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 78884,
+        "maxError": 0.00000762939453125
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/anim/m_walk_neutral_01.fbx",
+      "sourceSha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0",
+      "file": "office3d/assets/compact/anim/m_walk_neutral_01.anim.gz",
+      "bytes": 8778,
+      "sha256": "7873f32d86666353b0276e002a021328d4846caec7f4f078e19a4b55ceb2b891",
+      "kind": "animation",
+      "validation": {
+        "clips": 1,
+        "tracks": 82,
+        "samples": 14924,
+        "maxError": 0.0000152587890625
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/anim/UAL1_Standard.glb",
+      "sourceSha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+      "file": "office3d/assets/compact/anim/UAL1_Standard.anim.gz",
+      "bytes": 56090,
+      "sha256": "07a500f9e022e71b8e8fa97798bb70bf50818ca573ceea41d942d97c1afbe919",
+      "kind": "animation",
+      "validation": {
+        "clips": 5,
+        "tracks": 330,
+        "samples": 113124,
+        "maxError": 0.000012766802683472633
+      },
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_Beard.gltf",
+      "sourceSha256": "9b4370b5d89f50799ddef85a522aff28adc32e9049246b3864a92e058175dcc8",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Beard.bin",
+      "sourceBufferSha256": "781cf9b719d75a9f8d73881d2ca0713fe580d774edc96adaded392aad37a72b7",
+      "file": "office3d/assets/compact/characters/hair/Hair_Beard.glb.gz",
+      "bytes": 16737,
+      "sha256": "cac2552ac6f559b4a36b13a25eaa27a4d4bc15045c1c81d1c415d98dc5fb5df5",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_Buns.gltf",
+      "sourceSha256": "1721c8013708324a193b21a62633c97dec3fdc1bd88c585b7868d210eca99724",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Buns.bin",
+      "sourceBufferSha256": "4f6d4c010201278483da8d6d46ec40e3beb8d9e679ec2139bed216c561bccd38",
+      "file": "office3d/assets/compact/characters/hair/Hair_Buns.glb.gz",
+      "bytes": 80291,
+      "sha256": "030e8d1f166cd9a09b78eb95037c291d4bb290a6342b6aa43afa84617aabdd45",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_Buzzed.gltf",
+      "sourceSha256": "c8b25f8f08c268172ed314b2b9e92813d6e1e47d79964786bb2798c81ec1eaa2",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Buzzed.bin",
+      "sourceBufferSha256": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+      "file": "office3d/assets/compact/characters/hair/Hair_Buzzed.glb.gz",
+      "bytes": 16111,
+      "sha256": "4bc2aa94a9bfa90de98f5aa7aaae016db1f1cc7118abc4c49b22a468359afc40",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+      "sourceSha256": "3e0187d1d5d86dce7b8cf8ec77e602834d02e0760d4f215fe748bbf005a84fb5",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+      "sourceBufferSha256": "6f1ab9bc997b01311dc0635ee165edfe27bd9715222718bc4cf4265e10b933af",
+      "file": "office3d/assets/compact/characters/hair/Hair_BuzzedFemale.glb.gz",
+      "bytes": 13579,
+      "sha256": "8d05713899d6a29170d05ef12853b963d43454010802554537d942f1f54af178",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_Long.gltf",
+      "sourceSha256": "8a1931f9a70a27bae1a8500f95272e1d29dc9cade074c6bf6496837ab6337e48",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Long.bin",
+      "sourceBufferSha256": "13996da35c7afbf8cb5097da37207ee5b7c2e2904d4ab9e2ace9843030fff8d5",
+      "file": "office3d/assets/compact/characters/hair/Hair_Long.glb.gz",
+      "bytes": 74372,
+      "sha256": "ff9772e739dd634b0176dd236851692db1f8a738671a43cb8dee66ed39a41619",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/hair/Hair_SimpleParted.gltf",
+      "sourceSha256": "4568e0f3daae15fd93680b746e7da7e796d4465808ea97f9c8d4c0d9d067dfc4",
+      "sourceBuffer": "office3d/assets/models/characters/hair/Hair_SimpleParted.bin",
+      "sourceBufferSha256": "57c6359703a37e346ee38a9c7ba55c8dee761c0a02da99847d06f5a91728f3cc",
+      "file": "office3d/assets/compact/characters/hair/Hair_SimpleParted.glb.gz",
+      "bytes": 27793,
+      "sha256": "61bfebbe0c964914a9f991a46781c44b7d9c9f983620f98c93eb91ffd0a30410",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/Superhero_Female_FullBody.gltf",
+      "sourceSha256": "3aad6297a4ebaeea5e6239057576233df7bf8f8a37c2a54175244fa5507fe059",
+      "sourceBuffer": "office3d/assets/models/characters/Superhero_Female_FullBody.bin",
+      "sourceBufferSha256": "3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208",
+      "file": "office3d/assets/compact/characters/Superhero_Female_FullBody.glb.gz",
+      "bytes": 328173,
+      "sha256": "a2bc74909a2d2a8673cd3de8e3fa1bafc77fc27233ea942e5653f9d608e2bdeb",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/characters/Superhero_Male_FullBody.gltf",
+      "sourceSha256": "6c700b67ab15ba99ca994f88c6f8968cd96b4f834a02ff2e38aa20ffb7e5857b",
+      "sourceBuffer": "office3d/assets/models/characters/Superhero_Male_FullBody.bin",
+      "sourceBufferSha256": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+      "file": "office3d/assets/compact/characters/Superhero_Male_FullBody.glb.gz",
+      "bytes": 319336,
+      "sha256": "7cf3202214185b5677debd974ed6bbf8534a03531eec721f95fc65bb48f6034c",
+      "kind": "cartoon-model",
+      "license": "CC0-1.0 (Quaternius)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_06/Business_Male_06_facial.fbx",
+      "sourceSha256": "5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e",
+      "file": "office3d/assets/compact/people/Business_Male_06.glb.gz",
+      "bytes": 193597,
+      "sha256": "8908ff123e632218c1ed2c820a0bbcc7ca1f506e2df43a2413a2463a27b413c8",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006474089843733984,
+        "vertexErrorSourceUnits": 0.00001037219692792586,
+        "vertices": 4150,
+        "morphs": 26,
+        "height": 181.02208098859495,
+        "bytes": 1089960
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Male_07/Business_Male_07_facial.fbx",
+      "sourceSha256": "6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9",
+      "file": "office3d/assets/compact/people/Business_Male_07.glb.gz",
+      "bytes": 198104,
+      "sha256": "1bd65221ef1a6cb96e39de6e08faa4e098711a45d2073cf70e4eace910dde0c8",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007441598595194735,
+        "vertexErrorSourceUnits": 0.000009939419546665327,
+        "vertices": 4004,
+        "morphs": 26,
+        "height": 179.59035975453614,
+        "bytes": 1006952
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_01/Female_Adult_01_facial.fbx",
+      "sourceSha256": "2e6ba71fb83a6899e3d4dd35da07fb5b078eef0c4d593f73d70cfc05dc4644cb",
+      "file": "office3d/assets/compact/people/Female_Adult_01.glb.gz",
+      "bytes": 268164,
+      "sha256": "bafb69f9bb4b81cc3ce961120c7caaae7366b6a485144a221d383d9d6e7baefa",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000001013776844048434,
+        "vertexErrorSourceUnits": 0.000008391964872162279,
+        "vertices": 5563,
+        "morphs": 39,
+        "height": 174.33470894139037,
+        "bytes": 1429192
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_02/Female_Adult_02_facial.fbx",
+      "sourceSha256": "befeeba2248dcb59e5a2875301b0192c8beaa1f14051a642840cfce9c9cdb053",
+      "file": "office3d/assets/compact/people/Female_Adult_02.glb.gz",
+      "bytes": 270433,
+      "sha256": "13ab642987027b032a924f82fcc7ab141fe89d8111aa2de1d9be8c86bc862906",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000001453792472733176,
+        "vertexErrorSourceUnits": 0.000008370568024896455,
+        "vertices": 5666,
+        "morphs": 39,
+        "height": 173.5162060781201,
+        "bytes": 1383684
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_03/Female_Adult_03_facial.fbx",
+      "sourceSha256": "918c3de818a49b58d21e6106ffe8622c5fe84e518f2fd172a36db2fe89146901",
+      "file": "office3d/assets/compact/people/Female_Adult_03.glb.gz",
+      "bytes": 287251,
+      "sha256": "d15b5892705db216cc288aff36c8943406335c9800a7a34ecc403640260d48e1",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000036701098140158637,
+        "vertexErrorSourceUnits": 0.000007363475568850444,
+        "vertices": 6232,
+        "morphs": 39,
+        "height": 173.88934181243366,
+        "bytes": 1683388
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_04/Female_Adult_04_facial.fbx",
+      "sourceSha256": "ce83b428828314ef675d1a64ca17d8c3d2178cc4f8b3e80273483f83f08748fb",
+      "file": "office3d/assets/compact/people/Female_Adult_04.glb.gz",
+      "bytes": 279848,
+      "sha256": "f97b441ef55ea8e31d9609aa9472b504e1232f7cfdd74593b913bd6351e21f2c",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000004074512787965607,
+        "vertexErrorSourceUnits": 0.000007382448473147777,
+        "vertices": 6053,
+        "morphs": 39,
+        "height": 176.592466313802,
+        "bytes": 1541112
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_05/Female_Adult_05_facial.fbx",
+      "sourceSha256": "8fdc024d3a1088839712b9ea2510322d3e9b03e2f20b9f9554e4c7cb30f58d16",
+      "file": "office3d/assets/compact/people/Female_Adult_05.glb.gz",
+      "bytes": 266316,
+      "sha256": "bf7f9b3ac9a8738115edc507d0b25736e22434fee72fc738fe114a52b26f2be7",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000001548081514315211,
+        "vertexErrorSourceUnits": 0.000009161053130226781,
+        "vertices": 5575,
+        "morphs": 39,
+        "height": 173.61781943750938,
+        "bytes": 1429156
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_06/Female_Adult_06_facial.fbx",
+      "sourceSha256": "b91c6e50deea83521f71f1d75b08bd1b34ef81d9b5ca4daf71a40ed64cf2ae90",
+      "file": "office3d/assets/compact/people/Female_Adult_06.glb.gz",
+      "bytes": 207692,
+      "sha256": "fc5688480669834d1273dad231a6f2d3be9079b1b873717a1b9592e0bc5294bd",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000003827627045459494,
+        "vertexErrorSourceUnits": 0.000007500034380518254,
+        "vertices": 4372,
+        "morphs": 39,
+        "height": 173.62618036110683,
+        "bytes": 1151752
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_07/Female_Adult_07_facial.fbx",
+      "sourceSha256": "88b359300657ea0efdbb34de7ab804db8b43c58b2dc143c62ed2615e75936fbc",
+      "file": "office3d/assets/compact/people/Female_Adult_07.glb.gz",
+      "bytes": 253950,
+      "sha256": "66d608229e21942eab5aeedb95a7b7872f02e57b40e923bb51a171b4a8d664ae",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000001798284502199462,
+        "vertexErrorSourceUnits": 0.000008373436878027569,
+        "vertices": 5324,
+        "morphs": 39,
+        "height": 172.25713218939686,
+        "bytes": 1373172
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_08/Female_Adult_08_facial.fbx",
+      "sourceSha256": "a98436064305b968d8bbf8a84632c746dbf5674c572f1916264f13ce53e7422d",
+      "file": "office3d/assets/compact/people/Female_Adult_08.glb.gz",
+      "bytes": 260221,
+      "sha256": "525f961b9514192b3bf30dda41e9bff7cdce20650e4b11d6f6767ea476d5121b",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 8.783573713937745e-7,
+        "vertexErrorSourceUnits": 0.000008371848460232113,
+        "vertices": 5387,
+        "morphs": 39,
+        "height": 173.49157323606696,
+        "bytes": 1386376
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_09/Female_Adult_09_facial.fbx",
+      "sourceSha256": "4378899297e2acde9b331e6e55f83acff70ae5c26c86438231fb83770831f04a",
+      "file": "office3d/assets/compact/people/Female_Adult_09.glb.gz",
+      "bytes": 265650,
+      "sha256": "634dd4665e8dae304e2b30c5da5330b29faa7699655e097dedf517cbd05c9f53",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007872731241991362,
+        "vertexErrorSourceUnits": 0.000008831731190768629,
+        "vertices": 5752,
+        "morphs": 39,
+        "height": 173.540937349492,
+        "bytes": 1472928
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_10/Female_Adult_10_facial.fbx",
+      "sourceSha256": "7b7208b23688af2f884570a4aaa47ef803442fba2bdb2433f196bb977459e4b5",
+      "file": "office3d/assets/compact/people/Female_Adult_10.glb.gz",
+      "bytes": 211097,
+      "sha256": "a44bead1792fbbb7d91d5830338d93180d6d2a44de76e058d29d489d6d58b805",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000004660995350042631,
+        "vertexErrorSourceUnits": 0.000006917392438895093,
+        "vertices": 4227,
+        "morphs": 39,
+        "height": 173.69453584290574,
+        "bytes": 1115908
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_13/Female_Adult_13_facial.fbx",
+      "sourceSha256": "fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983",
+      "file": "office3d/assets/compact/people/Female_Adult_13.glb.gz",
+      "bytes": 265826,
+      "sha256": "9d2f4c416c7d9529a402c250cd84fec254a55cafd87db84ced025159b0bfc218",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000002063002780582465,
+        "vertexErrorSourceUnits": 0.00000973268044450142,
+        "vertices": 5661,
+        "morphs": 39,
+        "height": 175.15693875665045,
+        "bytes": 1451060
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_17/Female_Adult_17_facial.fbx",
+      "sourceSha256": "9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de",
+      "file": "office3d/assets/compact/people/Female_Adult_17.glb.gz",
+      "bytes": 254972,
+      "sha256": "6f4e0e34dede70a776b31f01e23190db94256edd5d7eadb71e52bde8dfc3b785",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000021387112591218235,
+        "vertexErrorSourceUnits": 0.000010022865092532301,
+        "vertices": 5243,
+        "morphs": 39,
+        "height": 175.09975926207838,
+        "bytes": 1355464
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_01/Male_Adult_01_facial.fbx",
+      "sourceSha256": "55771cbbcffb8204dcfe450784c8439ee27bfa48efffc48d325b55ee4bd04388",
+      "file": "office3d/assets/compact/people/Male_Adult_01.glb.gz",
+      "bytes": 219914,
+      "sha256": "1f9559c0c8d710e7b3784e245a04fd87d4777c79343c044060dc72ccdee7c78e",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.00000649759021739288,
+        "vertexErrorSourceUnits": 0.000010224162313524338,
+        "vertices": 4802,
+        "morphs": 39,
+        "height": 182.36786746856868,
+        "bytes": 1192232
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_02/Male_Adult_02_facial.fbx",
+      "sourceSha256": "0f8dea5317896e16a4490ca76f7273cdaf513cc50eb855d228826ed874a15186",
+      "file": "office3d/assets/compact/people/Male_Adult_02.glb.gz",
+      "bytes": 214788,
+      "sha256": "66bd029dabe3f9403f5d200e694ec7762c5f70852aae18d357e8ffb0cfe3ae0e",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006393032141078028,
+        "vertexErrorSourceUnits": 0.00001031511790976295,
+        "vertices": 4576,
+        "morphs": 39,
+        "height": 182.27455426924806,
+        "bytes": 1199072
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_03/Male_Adult_03_facial.fbx",
+      "sourceSha256": "88aedb2f47ce68dab7ddaf1f53f6357290dc4edb69fc26e3d5fa27d18ee0785a",
+      "file": "office3d/assets/compact/people/Male_Adult_03.glb.gz",
+      "bytes": 214498,
+      "sha256": "1f4a597590196895ad4324f3fa761659bb56e94d66c4df189c240f022ed2620e",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.00000639259593825561,
+        "vertexErrorSourceUnits": 0.0000094185239144166,
+        "vertices": 4483,
+        "morphs": 39,
+        "height": 180.72471836496453,
+        "bytes": 1122628
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_04/Male_Adult_04_facial.fbx",
+      "sourceSha256": "04bf2ad65a5a8b8c377b29df1ae2b9c6a97d87376ed647ded0abb4e91d57665d",
+      "file": "office3d/assets/compact/people/Male_Adult_04.glb.gz",
+      "bytes": 263895,
+      "sha256": "c7aa31763f45e2182cf493499c68c772c0b5f186b6c82adf67d01a7a779be978",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.00000641725415397832,
+        "vertexErrorSourceUnits": 0.000009777337497048639,
+        "vertices": 5668,
+        "morphs": 39,
+        "height": 186.85755399916889,
+        "bytes": 1383148
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_05/Male_Adult_05_facial.fbx",
+      "sourceSha256": "2ae6474a98d477d3c46553cb93ea3d452179afa4756db18c23e8aec97982a161",
+      "file": "office3d/assets/compact/people/Male_Adult_05.glb.gz",
+      "bytes": 239825,
+      "sha256": "1441207a2784bc80da3fbf70c2bc3e4888c6c8378458ffd3fa3f4d1841dbca0c",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006619311738957734,
+        "vertexErrorSourceUnits": 0.000009071713252114112,
+        "vertices": 4982,
+        "morphs": 39,
+        "height": 181.24373348604144,
+        "bytes": 1232976
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_06/Male_Adult_06_facial.fbx",
+      "sourceSha256": "9d7b04fa670de69820ca13fa09f8ed5b4ff59e741522cc1db533e24747af8d0c",
+      "file": "office3d/assets/compact/people/Male_Adult_06.glb.gz",
+      "bytes": 219946,
+      "sha256": "db36e52351a0357508d704d5b432aafac9aca793ccdc669268fee02bc52c75ec",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006661852126332746,
+        "vertexErrorSourceUnits": 0.000009085201722808215,
+        "vertices": 4755,
+        "morphs": 39,
+        "height": 183.13217041636207,
+        "bytes": 1239644
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_07/Male_Adult_07_facial.fbx",
+      "sourceSha256": "6fbd1cd44b6145fce3caf18fdd22ccbd00fad2a019b3bf489be7e9c031269b0f",
+      "file": "office3d/assets/compact/people/Male_Adult_07.glb.gz",
+      "bytes": 225378,
+      "sha256": "f5e72b63c831cf97f5764dad947547f8f10ec00f2a29eea9b0fe56f180282d14",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007480339085772545,
+        "vertexErrorSourceUnits": 0.000010138848521848123,
+        "vertices": 4668,
+        "morphs": 39,
+        "height": 182.052951909209,
+        "bytes": 1164432
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_08/Male_Adult_08_facial.fbx",
+      "sourceSha256": "a736f359d8adb61436de72fd59ba0acac4b42d18751b22ac4d3e2b574d7a71e0",
+      "file": "office3d/assets/compact/people/Male_Adult_08.glb.gz",
+      "bytes": 213299,
+      "sha256": "63b768cfaa499e9b09b72e4a77c90b86ac21d539ded1f0c696a759ad933c834f",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007482535719248622,
+        "vertexErrorSourceUnits": 0.000009590411046628924,
+        "vertices": 4564,
+        "morphs": 39,
+        "height": 182.5722011955488,
+        "bytes": 1140948
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_09/Male_Adult_09_facial.fbx",
+      "sourceSha256": "4f2c074dde9e8fe7628e497e24f97557209c1997209a5004001660dded9ed142",
+      "file": "office3d/assets/compact/people/Male_Adult_09.glb.gz",
+      "bytes": 219133,
+      "sha256": "7ae0c0b7afe3561c74ccd6d0103cef1de974455468cf1ffb8df9ea0de67ff88e",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007477808982653956,
+        "vertexErrorSourceUnits": 0.000010160354124767282,
+        "vertices": 4576,
+        "morphs": 39,
+        "height": 182.21765735384508,
+        "bytes": 1143592
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_10/Male_Adult_10_facial.fbx",
+      "sourceSha256": "e62c3c1345150d4cfebf454fbcb906d3cc8f4c846f4ee63e06d6928438b409a3",
+      "file": "office3d/assets/compact/people/Male_Adult_10.glb.gz",
+      "bytes": 220858,
+      "sha256": "d13703f4ff0020208dfef1ad59ffd89de9754c82bb28a9a25e2d74ecef194040",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000008503000303833171,
+        "vertexErrorSourceUnits": 0.000010590425836558778,
+        "vertices": 4109,
+        "morphs": 39,
+        "height": 183.1301694356104,
+        "bytes": 1074604
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_11/Male_Adult_11_facial.fbx",
+      "sourceSha256": "7c58b696c6f570a13dc6cb4d22f71d7ea82884eca095549fe2122c94a7f0b857",
+      "file": "office3d/assets/compact/people/Male_Adult_11.glb.gz",
+      "bytes": 198827,
+      "sha256": "aa6529002ce56f8ba870a0a1e5922614e8b31b7ca26a364f75897142e3ab2420",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000076031651873074115,
+        "vertexErrorSourceUnits": 0.000010205940218817405,
+        "vertices": 4000,
+        "morphs": 26,
+        "height": 180.26796977686084,
+        "bytes": 1006216
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_12/Male_Adult_12_facial.fbx",
+      "sourceSha256": "ef4d15accbff3e557af369bd8b6a7227ff808ab996b5c350388f081a287cbd63",
+      "file": "office3d/assets/compact/people/Male_Adult_12.glb.gz",
+      "bytes": 198589,
+      "sha256": "a73f9667fae12e72ac9e71ecec7d4f447798563d7a02f96819f39c5bed9ad2e4",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006519062608409241,
+        "vertexErrorSourceUnits": 0.00000942664289049534,
+        "vertices": 4043,
+        "morphs": 26,
+        "height": 180.68532939050382,
+        "bytes": 1015132
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_20/Male_Adult_20_facial.fbx",
+      "sourceSha256": "127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82",
+      "file": "office3d/assets/compact/people/Male_Adult_20.glb.gz",
+      "bytes": 199063,
+      "sha256": "43b075218616be60228111fe31911b70f59161f5e3defed9d88f9e235e724845",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.00000544225789032971,
+        "vertexErrorSourceUnits": 0.000011492382836186163,
+        "vertices": 4253,
+        "morphs": 26,
+        "height": 180.48939057404564,
+        "bytes": 1113500
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    }
+  ]
+}

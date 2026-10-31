@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { FBXLoader } from './vendor/three/jsm/loaders/FBXLoader.js'
+import { fixMaterials } from './people-materials.js'
+import { loadCompactPerson, loadCompactClips } from './compact-assets.js'
 import * as SkeletonUtils from './vendor/three/jsm/utils/SkeletonUtils.js'
 import { createGarmentMotion } from './garment-motion.js'
 
 // 写实人物：Microsoft Rocketbox（MIT），日常/商务便装、不同脸型与肤色。
-// 贴图已在隔离区从 2048 TGA 转为 1024 JPG/PNG；动画是同一套 Bip01 骨架的坐姿、站姿、说话、走路。
-const BASE = './assets/models/people/'
+// 原件保留；运行时读压缩 GLB、分档 WebP 和紧凑 Bip01 动画，转换与逐帧校验见 scripts/perf-load-2。
 export const AVATARS = {
   male: ['Male_Adult_01', 'Male_Adult_02', 'Male_Adult_03', 'Male_Adult_04', 'Male_Adult_05', 'Male_Adult_06', 'Male_Adult_07', 'Male_Adult_08', 'Male_Adult_09', 'Male_Adult_10', 'Male_Adult_11', 'Male_Adult_12'],
   female: ['Female_Adult_01', 'Female_Adult_02', 'Female_Adult_03', 'Female_Adult_04', 'Female_Adult_05', 'Female_Adult_06', 'Female_Adult_07', 'Female_Adult_08', 'Female_Adult_09', 'Female_Adult_10'],
@@ -20,65 +20,13 @@ const EXTRA = {
   standFlavor: ['idle_look_around_01', 'idle_stretch_arms_01', 'drink_idle', 'cell_phone_textmessage'],
 }
 const HEIGHT = { male: 1.78, female: 1.66 }
-const BLANK = (() => { const c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/png') })()
 // 22 位 agent 按工位顺序分配（男女穿插），每人一张不同的脸
 export const CAST = ['Male_Adult_01', 'Female_Adult_01', 'Male_Adult_02', 'Male_Adult_03', 'Female_Adult_02', 'Male_Adult_04', 'Female_Adult_03', 'Male_Adult_05', 'Female_Adult_04', 'Male_Adult_06', 'Female_Adult_05', 'Male_Adult_07', 'Male_Adult_08', 'Female_Adult_06', 'Male_Adult_09', 'Female_Adult_07', 'Male_Adult_10', 'Female_Adult_08', 'Male_Adult_11', 'Female_Adult_09', 'Male_Adult_12', 'Female_Adult_10']
 const STRIDE = 1.21 // 走路动画一个循环走 1.21 米（实测根骨位移），用来让脚步与移动速度对上
 // Female_Adult_10 的宽袍下摆没有布料模拟；避免大幅抬臂动作把衣服拉穿。
 const LOOSE_GARMENT = /Female_Adult_10$/
 
-function makeLoader(folder) {
-  const m = new THREE.LoadingManager()
-  // FBX 里写的是原始 .tga 路径；改指向转换后的 JPG / PNG（透明贴图）
-  m.setURLModifier((url) => {
-    const name = decodeURIComponent(url.split(/[\\/]/).pop())
-    if (/_(normal|specular)\.tga$/i.test(name)) return BLANK // 只下载了颜色贴图；法线/高光图不加载
-    if (/\.tga$/i.test(name)) return BASE + folder + '/' + name.replace(/\.tga$/i, /opacity/i.test(name) ? '.png' : '.jpg')
-    return url
-  })
-  return new FBXLoader(m)
-}
-
-// FBX 带来的 Phong 材质换成 PBR，透明贴图（头发、睫毛）用 alphaTest，避免排序闪烁
-function fixMaterials(root) {
-  root.traverse((o) => {
-    if (!o.isMesh) return
-    o.castShadow = true
-    o.receiveShadow = true
-    o.frustumCulled = false
-    if (o.isSkinnedMesh) o.normalizeSkinWeights()
-    const conv = (m) => {
-      const map = m.map || null
-      if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4 }
-      const cut = /opacity/i.test(m.name || '') || /opacity/i.test(map?.image?.src || map?.name || '')
-      const n = new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: cut ? 0.6 : 0.72, metalness: 0, name: m.name })
-      if (cut) { n.transparent = false; n.alphaTest = 0.45; n.side = THREE.DoubleSide }
-      return n
-    }
-    o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material)
-  })
-}
-
-// 带表情的模型每人约 87 个全身大小的表情形变（位置 + 法线），22 人合计 1 GB 以上，是卡顿和显卡掉线的主因。
-// 页面只用到眨眼、张嘴、几个口型和微笑（见 createPerson 里的 MI），其余全部丢掉；法线形变也丢掉（眨眼张嘴看不出差别）。
-const KEEP_MORPH = /(EyeBlinkLeft|EyeBlinkRight|AK_25_JawOpen|VI_10_aa|VI_13_O|VI_11_E|MouthSmileLeft|MouthSmileRight|MouthFrownLeft|MouthFrownRight|BrowDownLeft|BrowDownRight|BrowInnerUp)$/
-function pruneMorphs(root) {
-  root.traverse((o) => {
-    if (!o.isMesh || !o.morphTargetDictionary) return
-    const g = o.geometry
-    const pos = g.morphAttributes.position || []
-    const keep = Object.entries(o.morphTargetDictionary).filter(([n]) => KEEP_MORPH.test(n)).sort((a, b) => a[1] - b[1])
-    if (!keep.length) {
-      g.morphAttributes = {}
-      o.morphTargetDictionary = undefined
-      o.morphTargetInfluences = undefined
-      return
-    }
-    g.morphAttributes = { position: keep.map(([, i]) => pos[i]) }
-    o.morphTargetDictionary = Object.fromEntries(keep.map(([n], j) => [n, j]))
-    o.morphTargetInfluences = keep.map(() => 0)
-  })
-}
+async function loadAnimation(name) { return { animations: await loadCompactClips(name) } }
 
 const cache = new Map()
 export async function loadPeople(onProgress, extraAvatars = []) {
@@ -90,22 +38,21 @@ export async function loadPeople(onProgress, extraAvatars = []) {
   await Promise.all(all.map(async ([g, name]) => {
     // 优先用带表情的版本（会眨眼、说话时嘴动）；没有就用普通版
     let obj
-    try { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}_facial.fbx`) } catch { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}.fbx`) }
+    obj = await loadCompactPerson(name)
     // 每个 FBX 都自带一盏强度 1 的环境光：22 个人叠起来会把整个场景照成一片白，全部去掉
     const lights = []
     obj.traverse((o) => { if (o.isLight) lights.push(o) })
     lights.forEach((l) => l.parent && l.parent.remove(l))
-    fixMaterials(obj)
-    pruneMorphs(obj)
-    const box = new THREE.Box3().setFromObject(obj)
-    const h = box.max.y - box.min.y
+    // The converted asset already has the same PBR materials, retained morphs
+    // and source height; avoid skinning every resting vertex again at startup.
+    const h = obj.userData.compactHeight
     out.avatars[name] = { obj, gender: g, scale: HEIGHT[g] / h }
     tick()
   }))
   for (const g of ['male', 'female']) {
     await Promise.all(Object.entries(CLIPS).map(async ([k, file]) => {
       const f = `${g === 'male' ? 'm' : 'f'}_${file}`
-      const a = await new FBXLoader().loadAsync(`${BASE}anim/${f}.fbx`)
+      const a = await loadAnimation(f)
       const clip = a.animations[0]
       // 导出辅助节点不在人物模型中，剔除其无效轨道，避免 PropertyBinding 警告。
       // 只保留旋转与根骨（Bip01）的位移：不同人骨长不同，其它位移轨道会把人拉变形
@@ -129,7 +76,7 @@ export async function loadExtras(P) {
         if (g === 'male' && file === 'sit_table_idle_stretch_arms') continue
         const f = `${g === 'male' ? 'm' : 'f'}_${file}`
         try {
-          const a = await new FBXLoader().loadAsync(`${BASE}anim/${f}.fbx`)
+          const a = await loadAnimation(f)
           const clip = a.animations[0]
           clip.tracks = clip.tracks.filter((t) => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || (t.name.endsWith('.position') && /^Bip01\.position$/.test(t.name)))
           clip.name = f
@@ -338,7 +285,7 @@ export const R1_SEATED_EXTRAS = Object.freeze(['sit_table_idle_neutral_02', 'sit
 export async function loadR1Extras(P) {
   await Promise.all(['male', 'female'].flatMap(g => R1_SEATED_EXTRAS.filter(name => /idle_(neutral_02|relaxed_01|waiting_01|nervous_01)$/.test(name) && !(g === 'female' && name === 'sit_table_idle_nervous_01')).map(async name => {
     const file = `${g === 'male' ? 'm' : 'f'}_${name}`
-    const source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    const source = await loadAnimation(file), clip = source.animations[0]
     clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
     clip.name = file
     ;(P.extras[g].sitFlavor ||= []).push(clip)
@@ -350,13 +297,13 @@ export async function loadR1MovementExtras(P) {
   const names = ['cheer_01', 'cheer_03', 'claphands_01', 'gestic_talk_excited_01', 'gestic_talk_relaxed_01']
   await Promise.all(['male', 'female'].flatMap(g => names.map(async name => {
     const file = `${g === 'male' ? 'm' : 'f'}_${name}`
-    const source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    const source = await loadAnimation(file), clip = source.animations[0]
     clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
     clip.name = file
     ;(P.extras[g].r1Motions ||= {})[name] = clip
   })))
   await Promise.all(['male', 'female'].flatMap(g => EXTRA.lounge.map(async name => {
-    const file = `${g === 'male' ? 'm' : 'f'}_${name}`, source = await new FBXLoader().loadAsync(`${BASE}anim/${file}.fbx`), clip = source.animations[0]
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`, source = await loadAnimation(file), clip = source.animations[0]
     clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
     clip.name = file; (P.extras[g].lounge ||= []).push(clip)
   })))
