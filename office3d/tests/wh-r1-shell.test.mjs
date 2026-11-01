@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs'
 import { resolvePlaceMode } from '../place-mode.js'
 import { WH_R1_DATA } from '../wh-r1/data.js'
 import { WH_R1_DOORS, WH_R1_SHELL_SPEC, WH_R1_WALLS } from '../dr-wh-r1-shell.js'
-import { WH_R1_BUILDING, WH_R1_SITE, WH_R1_ZONES } from '../dr-wh-r1-zones.js'
+import { WH_R1_BUILDING, WH_R1_SITE, WH_R1_ZONES, WH_R1_ZONE_SOURCE_OVERRIDES } from '../dr-wh-r1-zones.js'
+import { whZoneToWorld } from '../wh-r1-layout.js'
 import { buildWhR1Shell } from '../dr-wh-r1-shell.js'
 import { hideCampusEnvironment, inspectEnvironmentMeshes } from '../dr-campus-shell.js'
 import * as THREE from '../vendor/three/three.module.js'
@@ -22,7 +23,7 @@ test('WH-R1 I2 keeps the registered 34 walls, 68 faces and 19 door openings', ()
 })
 
 test('WH-R1 I2 converts registered wall endpoints and preserves every door gap', () => {
-  near(WH_R1_WALLS[0].endpoints[0].x, -167.86, 'first wall x')
+  near(WH_R1_WALLS[0].endpoints[0].x, -231.86, 'first wall x')
   near(WH_R1_WALLS[0].endpoints[0].z, -17.86, 'first wall z')
   for (const door of WH_R1_DOORS) {
     const horizontal = Math.abs(Math.sin(door.yaw)) < .01
@@ -41,12 +42,12 @@ test('WH-R1 I2 converts registered wall endpoints and preserves every door gap',
 })
 
 test('WH-R1 I2 uses independent site and exact zone bounds', () => {
-  assert.deepEqual(WH_R1_SITE, { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68 })
-  assert.deepEqual(WH_R1_BUILDING, { x0: -168, x1: -80, z0: -18, z1: 30, width: 88, depth: 48 })
+  assert.deepEqual(WH_R1_SITE, { x0: -238, x1: -72, z0: -74, z1: 42, width: 166, depth: 116 })
+  assert.deepEqual(WH_R1_BUILDING, { x0: -232, x1: -144, z0: -18, z1: 30, width: 88, depth: 48 })
   assert.equal(WH_R1_ZONES.length, 14)
   for (const zone of WH_R1_ZONES) {
     const source = WH_R1_DATA.zones.find((item) => item.id === zone.id)
-    assert.deepEqual([zone.x0, zone.x1, zone.z0, zone.z1], source.worldBboxXZ, zone.id)
+    assert.deepEqual([zone.x0, zone.x1, zone.z0, zone.z1], whZoneToWorld(WH_R1_ZONE_SOURCE_OVERRIDES[zone.id] || source.sourceBboxM), zone.id)
   }
 })
 

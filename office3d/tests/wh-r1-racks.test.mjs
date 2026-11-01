@@ -58,9 +58,9 @@ test('I3 builds four instanced WH-R1 pallet racks and real mesh collision proxie
   const northWall = WH_R1_WALLS.find(wall => wall.id === 'WH-00-W-006'), northGuard = Math.min(...WH_R1_DATA.elements.filter(row => row.category === '架端防撞占位').map(row => rendered.get(row.id).box.min.z))
   near(northGuard - (northWall.z + northWall.thickness / 2), 2.77, '后侧横通道')
   assert.equal(collision.stats().bodies, 12)
-  assert.ok(collision.hit(-108.55, -9.15), 'real proxy blocks rack face')
-  assert.ok(collision.hit(-109.6, -3.425), 'real proxy blocks rack guard')
-  assert.equal(collision.hit(-106.6, -9.15), null, '3.6m aisle remains clear')
+  assert.ok(collision.hit(-172.55, -9.15), 'real proxy blocks rack face after the single SITE offset')
+  assert.ok(collision.hit(-173.6, -3.425), 'real proxy blocks rack guard after the single SITE offset')
+  assert.equal(collision.hit(-170.6, -9.15), null, '3.6m aisle remains clear after the single SITE offset')
   assert.equal(group.getObjectByName('wh-r1-shuttle').count, 12)
   assert.deepEqual(group.getObjectByName('wh-r1-rack-labels').userData.whR1LabelIds, ['WH-03-RK-01-label', 'WH-03-RK-02-label', 'WH-03-RK-03-label', 'WH-03-RK-04-label'])
   assert.deepEqual(value.yellowReview, [{ id: 'F03', margin_mm: 61, status: 'SMALL_MARGIN_NOT_ACCEPTED', marker: 'yellow' }, { id: 'R02', margin_mm: 290, status: 'VERTICAL_UNRESOLVED', marker: 'yellow' }])
@@ -91,6 +91,6 @@ test('I3 appends racks only to the WH-R1 registry source order', () => {
   globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
   try {
     const registry = createCampusRegistry({ THREE, scene, quality: { tier: 'low' }, layout: {} })
-    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-racks', 'wh-r1-workflow', 'wh-r1-vehicles']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
+    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-site', 'wh-r1-racks', 'wh-r1-workflow', 'wh-r1-vehicles']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
   } finally { globalThis.location = prior }
 })

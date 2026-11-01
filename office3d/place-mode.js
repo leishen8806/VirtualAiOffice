@@ -3,7 +3,7 @@ import {
   CAMPUS_BUILDING,
   CAMPUS_ZONES,
 } from './office-layout.js'
-import { WH_R1_CAMERA_VIEWS, WH_R1_SITE, WH_R1_ZONES } from './dr-wh-r1-zones.js'
+import { WH_R1_BUILDING, WH_R1_CAMERA_VIEWS, WH_R1_SITE, WH_R1_ZONES } from './dr-wh-r1-zones.js'
 
 // 将来由多租户配置替换；F01 完成前不接受或展示其它租户。
 export const PLACE_TENANTS = Object.freeze({
@@ -89,7 +89,7 @@ function warehouseMode(controlRoom, legacy, whr1 = false) {
     ...DR_MODE,
     ...placeMeta('warehouse', legacy),
     ...(controlRoom ? { controlRoom: true } : {}),
-    ...(whr1 ? { whr1: true, miniBounds: WH_R1_SITE, cameraViews: WH_R1_CAMERA_VIEWS, homeCamera: WH_R1_CAMERA_VIEWS[0], zones: WH_R1_ZONES } : {}),
+    ...(whr1 ? { whr1: true, miniBounds: WH_R1_SITE, building: WH_R1_BUILDING, cameraViews: WH_R1_CAMERA_VIEWS, homeCamera: WH_R1_CAMERA_VIEWS[0], zones: WH_R1_ZONES } : {}),
   }
 }
 
@@ -210,13 +210,13 @@ export function cameraStorageKeys(mode) {
   return Object.freeze(keys)
 }
 
-export function normalizeCameraState(value, fallback = DR_CAMERA_VIEWS[0]) {
+export function normalizeCameraState(value, fallback = DR_CAMERA_VIEWS[0], bounds = CAMPUS) {
   if (!value || typeof value !== 'object') return fallback
   const numbers = [value.az, value.el, value.r, ...(Array.isArray(value.t) ? value.t : [])]
   if (numbers.length !== 6 || numbers.some((item) => !Number.isFinite(item))) return fallback
   if (value.el < 6 || value.el > 88 || value.r < 3 || value.r > 160) return fallback
-  if (value.t[0] < CAMPUS.x0 - 10 || value.t[0] > CAMPUS.x1 + 10) return fallback
-  if (value.t[2] < CAMPUS.z0 - 10 || value.t[2] > CAMPUS.z1 + 10) return fallback
+  if (value.t[0] < bounds.x0 - 10 || value.t[0] > bounds.x1 + 10) return fallback
+  if (value.t[2] < bounds.z0 - 10 || value.t[2] > bounds.z1 + 10) return fallback
   return {
     az: value.az,
     el: value.el,

@@ -2,12 +2,17 @@
 // Only silhouettes are reused: WH-R1 controls every footprint; no legacy lane, dock, turn or motion data.
 import { WH_R1_DATA, WH_R1_ASSIGNMENT } from './wh-r1/data.js'
 import { WH_R1_FLOOR_Y, whToWorld } from './wh-r1-layout.js'
+import { WH_R1_ANNEX, WH_R1_PARKING_BAYS, whR1VehicleForSite } from './wh-r1-site-plan.js'
 
 const assigned = new Set(WH_R1_ASSIGNMENT.filter(row => row.card === 'I5').map(row => row.id))
-export const WH_R1_VEHICLES = Object.freeze(WH_R1_DATA.elements.filter(row => assigned.has(row.id)))
+export const WH_R1_VEHICLES = Object.freeze(WH_R1_DATA.elements.filter(row => assigned.has(row.id)).map(whR1VehicleForSite))
 export const WH_R1_SWEEPS = Object.freeze(WH_R1_DATA.integrityAudit.routes.filter(row => /^(TR|FL)/.test(row.id)))
 export const WH_R1_LEVELS = Object.freeze({ dock: 'UNKNOWN', cargoFloor: 'UNKNOWN', entranceStep: 'UNKNOWN', sources: Object.freeze(['WH-SITE-DOCK-U01', 'WH-SITE-ACCESS-U01']) })
-export const WH_R1_DOCK_MARKS = Object.freeze(WH_R1_DATA.doors.filter(row => ['01', '06'].includes(row.regionId)).map(row => Object.freeze({ doorId: row.id, sourceTag: row.sourceTag, ...whToWorld(row.xM, row.yM), widthM: row.lengthM, depthM: 1, level: 'UNKNOWN', displayOnly: 'DESIGN_ASSUMPTION' })))
+const siteDoors = [...WH_R1_DATA.doors, ...WH_R1_ANNEX.doors]
+export const WH_R1_DOCK_MARKS = Object.freeze(WH_R1_PARKING_BAYS.map(bay => {
+  const door = siteDoors.find(row => row.id === bay.doorId)
+  return Object.freeze({ doorId: door.id, sourceTag: door.sourceTag || door.id, ...whToWorld(door.xM, door.yM), widthM: door.lengthM, depthM: 1, level: 'UNKNOWN', displayOnly: 'DESIGN_ASSUMPTION' })
+}))
 
 function forkliftParts() {
   const parts=[],add=(part,x,y,z,sx,sy,sz,color,shape='box')=>parts.push({part,x,y,z,sx,sy,sz,color,shape})
@@ -109,7 +114,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
   const sweepGeometry = new THREE.BufferGeometry(); sweepGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); sweepGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
   const sweep = new THREE.Mesh(sweepGeometry, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: .45, depthWrite: false, side: THREE.DoubleSide }))
   sweep.name = 'wh-r1-vehicle-inspection-overlays'; sweep.userData = { noMerge: true, ranges, readOnly: true, levels: WH_R1_LEVELS }; group.add(sweep); meshes.push(sweep)
-  labels.push({ id: 'WH-SITE-DOCK-U01', text: '月台 / 车厢 / 台阶高差 UNKNOWN · 无完整车辆进出验证', x: -153, z: -21, y: .025, width: 19, depth: .8 })
+  labels.push({ id: 'WH-SITE-DOCK-U01', text: '月台 / 车厢 / 台阶高差 UNKNOWN · 无完整车辆进出验证', ...whToWorld(15, 51), y: .025, width: 19, depth: .8 })
   if (canvasTex) {
     const cellW = 768, cellH = 80, cols = 4, rows = Math.ceil(labels.length / cols)
     const texture = canvasTex(cellW * cols, cellH * rows, (ctx) => {

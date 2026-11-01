@@ -5,12 +5,15 @@ import { buildWhR1Vehicles, WH_R1_VEHICLES } from '../dr-wh-r1-vehicles.js'
 import { WH_R1_FLOOR_Y, whToWorld } from '../wh-r1-layout.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 
+const truckRows=WH_R1_VEHICLES.filter(row=>row.category==='厢式货车')
+const truckCenter=row=>{const p=whToWorld(row.xM,row.yM);return new THREE.Vector3(p.x,WH_R1_FLOOR_Y+row.zM+row.heightM/2,p.z)}
+
 function setup(tier='high') {
   const text=[],ctx={fillRect(){},fillText(s){text.push(s)}}
   const quality={tier},env={night:0},root=new THREE.Group(),collision=createFurnitureCollision()
   root.position.y=-WH_R1_FLOOR_Y
   const v=buildWhR1Vehicles({THREE,root,quality,env,collision,canvasTex:(w,h,draw)=>{draw(ctx);return new THREE.Texture()}})
-  const camera=new THREE.PerspectiveCamera();camera.position.set(-158.5,3,-11.5)
+  const camera=new THREE.PerspectiveCamera();camera.position.copy(truckCenter(truckRows[0])).setY(3)
   return {v,quality,env,root,collision,camera,text}
 }
 
@@ -53,7 +56,7 @@ test('TR-2/4 shared logo and fleet atlas retains nine distinct IDs and 示意 on
 test('TR-3 LOD hysteresis and complementary fade do not move vehicles, tyres, doors or collision',()=>{
   const {v,camera,quality,env}=setup(),detail=v.root.getObjectByName('wh-r1-truck-detail')
   const snapshot=()=>v.root.children.filter(m=>(m.isInstancedMesh&&m.name!=='wh-r1-truck-detail')||m.userData.collisionProxy).map(m=>m.isInstancedMesh?Array.from(m.instanceMatrix.array):[...m.position.toArray(),...m.quaternion.toArray()])
-  const before=snapshot(),center=new THREE.Vector3(-158.5,WH_R1_FLOOR_Y+1.7,-11.5)
+  const before=snapshot(),center=truckCenter(truckRows[0])
   const at=d=>{camera.position.copy(center).add(new THREE.Vector3(0,d,0));v.onFrame(.1,{camera});return v.root.userData.trucks.state[0]}
   assert.equal(at(31).near,true);for(let i=0;i<10;i++)assert.equal(at(35).near,true)
   assert.equal(at(39).near,true);assert.equal(at(41).near,false)
@@ -101,11 +104,13 @@ test('TR-7 measured cab, gap, two-axle chassis and mirror-only exception follow 
 
 test('TR-3 actual detail submission shrinks per active truck and disappears at far/low while IDs retain fixed poses',()=>{
  const {v,camera,quality}=setup(),m=v.root.getObjectByName('wh-r1-truck-detail'),fleet=v.root.userData.trucks.fleet,mat=new THREE.Matrix4()
- for(const location of [[-158.5,3,-11.5],[-117,60,1],[-83,3,5.6]]){
-  camera.position.set(...location);for(let i=0;i<12;i++)v.onFrame(.1,{camera})
+ const centers=[truckCenter(truckRows[0]),truckCenter(truckRows.at(-1))]
+ const locations=[centers[0].clone().setY(3),centers[0].clone().lerp(centers[1],.5).setY(60),centers[1].clone().setY(3)]
+ for(const location of locations){
+  camera.position.copy(location);for(let i=0;i<12;i++)v.onFrame(.1,{camera})
   assert.equal(m.count,m.userData.instanceToRegisterId.length)
   m.userData.instanceToRegisterId.forEach((id,i)=>{const f=fleet.find(f=>f.id===id);m.getMatrixAt(i,mat);const expected=new THREE.Matrix4().makeRotationY(f.yaw).setPosition(f.x,f.zM,f.z);mat.elements.forEach((x,j)=>assert.ok(Math.abs(x-expected.elements[j])<.00001))})
-  if(location[1]===60){assert.equal(m.count,0);assert.equal(m.visible,false)}else assert.ok(m.count>0&&m.count<9)
+  if(location.y===60){assert.equal(m.count,0);assert.equal(m.visible,false)}else assert.ok(m.count>0&&m.count<9)
  }
  quality.tier='low';v.onFrame(.1,{camera});assert.equal(m.count,0);v.dispose()
 })
