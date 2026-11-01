@@ -40,8 +40,8 @@ test('SITE uses one conversion offset and leaves the WH-R1 root at the origin', 
 })
 
 test('SITE keeps source data immutable and records every approved deviation', () => {
-  const source = readFileSync(new URL('../wh-r1/data.js', import.meta.url))
-  assert.equal(createHash('sha256').update(source).digest('hex'), '946b7519a00d762a709b93442188a1cd83423aae37bb9404713583ee01d0fff0')
+  const source = readFileSync(new URL('../wh-r1/data.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  assert.equal(createHash('sha256').update(source).digest('hex'), 'c0475dd2e964cda89c2592dcf37f89baa4a005b8b8457c4c5a90cf7267d67b07')
   assert.deepEqual(WH_R1_DEVIATIONS.map(row => row.id), ['WH-R1-WORLD-ORIGIN', 'WH-14-D-001', 'WH-R1-PARKING-BAYS', 'WH-14-LOGISTICS-GATE'])
   assert.ok(WH_R1_DEVIATIONS.every(row => row.date === '2026-10-31' && row.reason))
   assert.equal(WH_R1_DATA.elements.find(row => row.id === 'WH-01-VH-001').lengthM, 8)
