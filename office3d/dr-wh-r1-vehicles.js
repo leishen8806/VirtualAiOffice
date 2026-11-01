@@ -3,6 +3,7 @@
 import { WH_R1_DATA, WH_R1_ASSIGNMENT } from './wh-r1/data.js'
 import { WH_R1_FLOOR_Y, whToWorld } from './wh-r1-layout.js'
 import { WH_R1_ANNEX, WH_R1_PARKING_BAYS, whR1VehicleForSite } from './wh-r1-site-plan.js'
+import { loadWhR1Semitrailers } from './dr-wh-r1-semitrailers.js'
 
 const assigned = new Set(WH_R1_ASSIGNMENT.filter(row => row.card === 'I5').map(row => row.id))
 export const WH_R1_VEHICLES = Object.freeze(WH_R1_DATA.elements.filter(row => assigned.has(row.id)).map(whR1VehicleForSite))
@@ -13,6 +14,11 @@ export const WH_R1_DOCK_MARKS = Object.freeze(WH_R1_PARKING_BAYS.map(bay => {
   const door = siteDoors.find(row => row.id === bay.doorId)
   return Object.freeze({ doorId: door.id, sourceTag: door.sourceTag || door.id, ...whToWorld(door.xM, door.yM), widthM: door.lengthM, depthM: 1, level: 'UNKNOWN', displayOnly: 'DESIGN_ASSUMPTION' })
 }))
+export const WH_R1_SEMITRAILER_BAYS = Object.freeze(WH_R1_PARKING_BAYS.map((bay, index) => {
+  const position = whToWorld(bay.xM, bay.yM)
+  return Object.freeze({ id: bay.id, dockDoor: bay.doorId, fleetNumber: index + 1, x: position.x, y: 0, z: position.z, yaw: (bay.yawDeg - 90) * Math.PI / 180 })
+}).filter(row => row.id.startsWith('WH-01-')))
+export const WH_R1_OUTBOUND_FLEET = Object.freeze(WH_R1_VEHICLES.filter(row => row.displayVehicleType?.startsWith('delivery-')))
 
 function forkliftParts() {
   const parts=[],add=(part,x,y,z,sx,sy,sz,color,shape='box')=>parts.push({part,x,y,z,sx,sy,sz,color,shape})
@@ -58,20 +64,52 @@ function truckParts() {
   return parts
 }
 
+function deliveryTrainParts() {
+  const parts=[],add=(part,x,y,z,sx,sy,sz,color,shape='box')=>parts.push({part,x,y,z,sx,sy,sz,color,shape})
+  add('tug-chassis',0,.34,2.35,1.45,.28,1.75,0x244f78)
+  add('tug-cab',0,1.02,2.45,1.38,1.12,1.35,0xf1f3ef)
+  add('tug-windscreen',0,1.25,3.14,1.08,.5,.04,0x315465)
+  add('tug-roof',0,1.63,2.43,1.48,.12,1.45,0xd5aa59)
+  for(const z of [.15,-2.15]) {
+    add('wagon-bed',0,.55,z,1.58,.3,1.72,0x244f78)
+    add('wagon-cargo',0,1.12,z,1.45,.82,1.52,0xe8ece8)
+    add('tow-bar',0,.42,z+1.02,.14,.12,.55,0xd5aa59)
+  }
+  for(const [x,z] of [[-.67,2.55],[.67,2.55],[-.67,.15],[.67,.15],[-.67,-2.15],[.67,-2.15]]) add('wheel',x,.28,z,.22,.5,.5,0x25292d,'wheel')
+  add('head-light',0,1.02,3.18,.72,.16,.04,0xffe7aa)
+  return parts
+}
 
-export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, env }) {
+function deliveryTricycleParts() {
+  const parts=[],add=(part,x,y,z,sx,sy,sz,color,shape='box')=>parts.push({part,x,y,z,sx,sy,sz,color,shape})
+  add('rear-chassis',0,.38,-.55,1.18,.24,1.45,0x244f78)
+  add('cargo-box',0,1.03,-.72,1.16,1.0,1.15,0xe8ece8)
+  add('driver-seat',0,.78,.42,.48,.2,.44,0x30363b)
+  add('canopy',0,1.66,.28,1.18,.09,1.18,0xd5aa59)
+  for(const x of [-.55,.55]) add('canopy-post',x,1.22,.25,.06,.88,.06,0x244f78)
+  add('front-fork',0,.62,1.18,.10,.75,.12,0x244f78)
+  add('handlebar',0,1.12,.87,.82,.06,.08,0x30363b)
+  add('wheel',0,.35,1.28,.18,.62,.62,0x25292d,'wheel')
+  for(const x of [-.54,.54]) add('wheel',x,.35,-1.05,.18,.62,.62,0x25292d,'wheel')
+  add('head-light',0,1.02,1.48,.38,.18,.05,0xffe7aa)
+  return parts
+}
+
+
+export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, env, renderer, loadSemitrailers = loadWhR1Semitrailers }) {
   const group = new THREE.Group(); group.name = 'wh-r1-vehicles'; group.position.y = WH_R1_FLOOR_Y; group.userData.noMerge = true; root.add(group)
+  const useSemitrailers = !!renderer
   const batches = { boxes: [], wheels: [] }, meshes = [], proxies = [], labels = []
-  const templates = { truck: truckParts(), forklift: forkliftParts() }
+  const templates = { truck: truckParts(), forklift: forkliftParts(), train: deliveryTrainParts(), tricycle: deliveryTricycleParts() }
   const bounds = Object.fromEntries(Object.entries(templates).map(([key, rows]) => [key, {
     x0: Math.min(...rows.map(p => p.x - p.sx / 2)), x1: Math.max(...rows.map(p => p.x + p.sx / 2)),
     y0: Math.min(...rows.map(p => p.y - p.sy / 2)), y1: Math.max(...rows.map(p => p.y + p.sy / 2)),
     z0: Math.min(...rows.map(p => p.z - p.sz / 2)), z1: Math.max(...rows.map(p => p.z + p.sz / 2)),
   }]))
   for (const row of WH_R1_VEHICLES) {
-    const key = row.category === '厢式货车' ? 'truck' : 'forklift', b = bounds[key], p = whToWorld(row.xM, row.yM), yaw = row.yawDeg * Math.PI / 180
+    const key = row.displayVehicleType === 'delivery-train' ? 'train' : row.displayVehicleType === 'delivery-tricycle' ? 'tricycle' : row.category === '厢式货车' ? 'truck' : 'forklift', b = bounds[key], p = whToWorld(row.xM, row.yM), yaw = row.yawDeg * Math.PI / 180
     const sx = row.lengthM / (b.z1 - b.z0), sy = row.heightM / (b.y1 - b.y0), sz = row.widthM / (b.x1 - b.x0)
-    for (const part of templates[key]) {
+    for (const part of useSemitrailers && key === 'truck' ? [] : templates[key]) {
       // The old model's long Z axis becomes WH-R1's registered long X axis; the cab faces away from the receiving doors.
       const x = -(part.z - (b.z0 + b.z1) / 2) * sx, z = (part.x - (b.x0 + b.x1) / 2) * sz
       batches[part.shape === 'wheel' ? 'wheels' : 'boxes'].push({ id: row.id, part: part.part,
@@ -80,7 +118,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     }
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(row.lengthM, row.heightM, row.widthM), new THREE.MeshBasicMaterial({ visible: false }))
     proxy.name = `wh-r1-vehicle-proxy-${row.id}`; proxy.position.set(p.x, row.zM + row.heightM / 2, p.z); proxy.rotation.y = yaw
-    proxy.userData = { whR1Id: row.id, collisionProxy: true, noMerge: true }; group.add(proxy); collision?.add(proxy, row.category); proxies.push(proxy)
+    proxy.userData = { whR1Id: row.id, collisionProxy: true, noMerge: true }; group.add(proxy); collision?.add(proxy, row.displayVehicleType || row.category); proxies.push(proxy)
     if (key !== 'truck') labels.push({ id: row.id, text: `${row.id} · 示意`, x: p.x, z: p.z, y: row.zM + row.heightM + .02, width: 2.6, depth: .42 })
   }
   const dummy = new THREE.Object3D()
@@ -129,12 +167,16 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(index); g.computeVertexNormals()
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })); mesh.name = 'wh-r1-vehicle-labels'; mesh.userData = { noMerge: true, labels }; group.add(mesh); meshes.push(mesh)
   }
-  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'NONE — static drawing objects only', shapeStatus: 'DESIGN_ASSUMPTION' }
-  const appearance = truckAppearance(THREE, group, meshes, batches, canvasTex, quality, env)
-  let disposed = false
+  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'NONE — static drawing objects only', shapeStatus: useSemitrailers ? 'APPROVED_MIXED_FLEET' : 'DESIGN_ASSUMPTION' }
+  const appearance = useSemitrailers ? { onFrame() {}, dispose() {} } : truckAppearance(THREE, group, meshes, batches, canvasTex, quality, env)
+  let disposed = false, semitrailers = null
+  const ready = useSemitrailers
+    ? Promise.resolve(loadSemitrailers({ root: group, renderer, bays: WH_R1_SEMITRAILER_BAYS, quality, env })).then(value => { if (disposed) value.dispose(); else semitrailers = value; return value }).catch(error => { group.userData.semitrailerError = String(error?.message || error); console.warn(`[wh-r1-vehicles] 半挂加载失败：${group.userData.semitrailerError}`); return null })
+    : Promise.resolve(null)
   return { root: group, records: WH_R1_VEHICLES, levels: WH_R1_LEVELS,
-    onFrame: appearance.onFrame,
-    dispose() { if (disposed) return; disposed = true; appearance.dispose(); proxies.forEach(p => { collision?.remove(p); p.geometry.dispose(); p.material.dispose() }); meshes.forEach(m => { m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); if (m.isInstancedMesh) m.dispose() }); group.removeFromParent() } }
+    ready,
+    onFrame(dt, context) { appearance.onFrame(dt, context); if (semitrailers && context?.camera) semitrailers.update(context.camera) },
+    dispose() { if (disposed) return; disposed = true; semitrailers?.dispose(); appearance.dispose(); proxies.forEach(p => { collision?.remove(p); p.geometry.dispose(); p.material.dispose() }); meshes.forEach(m => { m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); if (m.isInstancedMesh) m.dispose() }); group.removeFromParent() } }
 }
 
 // Solid, complementary screen-door coverage avoids alpha sorting and double surfaces during LOD changes.
@@ -154,7 +196,7 @@ function truckFade(THREE, mesh, values) {
 }
 
 function truckAppearance(T, group, meshes, batches, canvasTex, quality, env) {
-  const trucks = WH_R1_VEHICLES.filter(r => r.category === '厢式货车')
+  const trucks = WH_R1_VEHICLES.filter(r => r.displayVehicleType === 'semitrailer')
   const fleet = trucks.map((r, i) => ({ id:r.id, number:`DL-${String(i+1).padStart(2,'0')}`, ...whToWorld(r.xM,r.yM), yaw:r.yawDeg*Math.PI/180, zM:r.zM }))
   const solid = [], lamps = [], parts = []
   const put = (name,g,color,target=solid) => {
@@ -278,11 +320,11 @@ function truckAppearance(T, group, meshes, batches, canvasTex, quality, env) {
   }
   const matrices=fleet.map(f=>new T.Matrix4().makeRotationY(f.yaw).setPosition(f.x,f.zM,f.z))
   const instance=(name,geometry,material)=>{
-    const m=new T.InstancedMesh(geometry,material,9);m.name=name;m.userData={noMerge:true,instanceToRegisterId:fleet.map(f=>f.id),parts:parts.map(p=>p.name),designStatus:'DESIGN_ASSUMPTION'}
+    const m=new T.InstancedMesh(geometry,material,fleet.length);m.name=name;m.userData={noMerge:true,instanceToRegisterId:fleet.map(f=>f.id),parts:parts.map(p=>p.name),designStatus:'DESIGN_ASSUMPTION'}
     matrices.forEach((matrix,i)=>m.setMatrixAt(i,matrix));group.add(m);meshes.push(m);return m
   }
   const detail=instance('wh-r1-truck-detail',merge(solid),new T.MeshStandardMaterial({vertexColors:true,roughness:.52,metalness:.25}))
-  const detailFade=truckFade(T,detail,Array(9).fill(0));detail.visible=false
+  const detailFade=truckFade(T,detail,Array(fleet.length).fill(0));detail.visible=false
   const baseFades=['boxes','wheels'].map(kind=>({mesh:group.getObjectByName(`wh-r1-vehicles-${kind}`),rows:batches[kind]})).map(x=>({...x,fade:truckFade(T,x.mesh,x.rows.map(()=>-1))}))
   const light=instance('wh-r1-truck-lamps',merge(lamps),new T.MeshStandardMaterial({vertexColors:true,roughness:.3,emissive:0xffffff,emissiveIntensity:0,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}))
   const lampShader=s=>{s.fragmentShader=s.fragmentShader.replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n#ifdef USE_COLOR\ntotalEmissiveRadiance *= vColor.rgb;\n#endif')}

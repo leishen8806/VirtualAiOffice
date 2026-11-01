@@ -17,7 +17,7 @@ export function truckLod(distance, previous, low=false) {
   return distance>96?2:1
 }
 
-// B1 intentionally has no registry caller. SITE supplies world-space bays when B2 is approved.
+// The SITE adapter supplies world-space bays; the model stays independent of WH-R1 layout data.
 export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'high'},env={night:0},assetBase=new URL('./assets/compact/wh-trucks/',import.meta.url),fetchAsset=fetch}) {
   validateTruckBays(bays)
   bays=bays.map(b=>({...b}))

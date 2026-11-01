@@ -5,7 +5,7 @@ import { buildWhR1Vehicles, WH_R1_VEHICLES } from '../dr-wh-r1-vehicles.js'
 import { WH_R1_FLOOR_Y, whToWorld } from '../wh-r1-layout.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 
-const truckRows=WH_R1_VEHICLES.filter(row=>row.category==='厢式货车')
+const truckRows=WH_R1_VEHICLES.filter(row=>row.displayVehicleType==='semitrailer')
 const truckCenter=row=>{const p=whToWorld(row.xM,row.yM);return new THREE.Vector3(p.x,WH_R1_FLOOR_Y+row.zM+row.heightM/2,p.z)}
 
 function setup(tier='high') {
@@ -38,10 +38,10 @@ test('TR-1 detailed physical vertices, proxies and all 23 registered poses remai
   assert.equal(collision.stats().bodies,23);v.dispose();assert.equal(collision.stats().bodies,0)
 })
 
-test('TR-2/4 shared logo and fleet atlas retains nine distinct IDs and 示意 on bright labels',()=>{
+test('TR-2/4 shared logo and fleet atlas retains five receiving IDs and 示意 on bright labels',()=>{
   const {v,text}=setup(),a=v.root.getObjectByName('wh-r1-truck-livery')
-  assert.equal(a.userData.logo,'assets/logo.png');assert.equal(a.userData.fleet.length,9)
-  assert.deepEqual(a.userData.fleet.map(f=>f.number),Array.from({length:9},(_,i)=>`DL-0${i+1}`))
+  assert.equal(a.userData.logo,'assets/logo.png');assert.equal(a.userData.fleet.length,5)
+  assert.deepEqual(a.userData.fleet.map(f=>f.number),Array.from({length:5},(_,i)=>`DL-0${i+1}`))
   for(const f of a.userData.fleet){assert.ok(text.includes(f.number));assert.ok(text.includes(f.id+' · 示意'))}
   assert.equal(a.material.toneMapped,false);assert.equal(v.root.getObjectByName('wh-r1-vehicle-labels').material.toneMapped,false)
   const roofLabel=v.root.getObjectByName('wh-r1-vehicle-labels').geometry.attributes.normal
@@ -110,7 +110,7 @@ test('TR-3 actual detail submission shrinks per active truck and disappears at f
   camera.position.copy(location);for(let i=0;i<12;i++)v.onFrame(.1,{camera})
   assert.equal(m.count,m.userData.instanceToRegisterId.length)
   m.userData.instanceToRegisterId.forEach((id,i)=>{const f=fleet.find(f=>f.id===id);m.getMatrixAt(i,mat);const expected=new THREE.Matrix4().makeRotationY(f.yaw).setPosition(f.x,f.zM,f.z);mat.elements.forEach((x,j)=>assert.ok(Math.abs(x-expected.elements[j])<.00001))})
-  if(location.y===60){assert.equal(m.count,0);assert.equal(m.visible,false)}else assert.ok(m.count>0&&m.count<9)
+  if(location.y===60){assert.equal(m.count,0);assert.equal(m.visible,false)}else assert.ok(m.count>0&&m.count<=truckRows.length)
  }
  quality.tier='low';v.onFrame(.1,{camera});assert.equal(m.count,0);v.dispose()
 })
@@ -151,8 +151,8 @@ test('R3 four detail groups use rounded tyres, attached equipment and side/rear 
  for(let i=cargo.start;i<cargo.start+cargo.count;i++)assert.deepEqual([colors.getX(i),colors.getY(i),colors.getZ(i)],[1,1,1])
  assert.equal(all('cargo-rib').length,32)
  const ids=v.root.getObjectByName('wh-r1-truck-livery').userData.idPlates
- assert.equal(ids.length,27)
- for(const truck of WH_R1_VEHICLES.filter(r=>r.category==='厢式货车')){
+ assert.equal(ids.length,15)
+ for(const truck of WH_R1_VEHICLES.filter(r=>r.displayVehicleType==='semitrailer')){
   const rows=ids.filter(r=>r.id===truck.id);assert.equal(rows.length,3)
   assert.equal(rows.filter(r=>r.axis==='side'&&r.local[0]===3&&r.local[1]===3.19).length,2)
   assert.equal(rows.filter(r=>r.axis==='end'&&r.local[0]===4).length,1)
