@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import * as THREE from '../vendor/three/three.module.js'
 import { WH_R1_DATA, WH_R1_ASSIGNMENT } from '../wh-r1/data.js'
 import { WH_R1_FLOOR_Y, whToWorld } from '../wh-r1-layout.js'
-import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DOCK_MARKS } from '../dr-wh-r1-vehicles.js'
+import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DOCK_MARKS, WH_R1_SEMITRAILER_BAYS } from '../dr-wh-r1-vehicles.js'
 import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
@@ -19,7 +19,7 @@ test('I5 keeps all nine trucks and fourteen equipment records without changing s
  const ids=new Set(WH_R1_ASSIGNMENT.filter(r=>r.card==='I5').map(r=>r.id))
  assert.deepEqual(WH_R1_VEHICLES.filter(r=>r.category!=='厢式货车'),WH_R1_DATA.elements.filter(r=>ids.has(r.id)&&r.category!=='厢式货车'))
  assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='厢式货车').length,9);assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位').length,14)
- for(const bay of WH_R1_PARKING_BAYS){const source=WH_R1_DATA.elements.find(r=>r.id===bay.id),display=WH_R1_VEHICLES.find(r=>r.id===bay.id);assert.equal(source.lengthM,8);assert.equal(display.lengthM,8);assert.deepEqual([display.xM,display.yM,display.yawDeg],[bay.displayXM,bay.displayYM,bay.yawDeg],`${bay.id} 现有 8m 车尾对门`)}
+ for(const bay of WH_R1_PARKING_BAYS){const source=WH_R1_DATA.elements.find(r=>r.id===bay.id),display=WH_R1_VEHICLES.find(r=>r.id===bay.id);assert.equal(source.lengthM,8);assert.deepEqual([display.lengthM,display.widthM,display.heightM],[16.5,2.55,4]);assert.deepEqual([display.xM,display.yM,display.yawDeg],[bay.xM,bay.yM,bay.yawDeg],`${bay.id} 16.5m 车尾对门`)}
  assert.equal(WH_R1_VEHICLES.find(r=>r.id==='WH-01-VH-005').yawDeg,270)
  assert.equal(WH_R1_VEHICLES.filter(r=>r.regionId==='06'&&r.category==='厢式货车').length,4)
 })
@@ -64,6 +64,19 @@ test('I5 real collision blocks each individual vehicle and releases only its own
  assert.equal(collision.stats().bodies,23)
  for(const r of WH_R1_VEHICLES){const p=whToWorld(r.xM,r.yM),yaw=r.yawDeg*Math.PI/180;const hit=collision.hit(p.x+Math.cos(yaw)*(r.lengthM/2-.01),p.z-Math.sin(yaw)*(r.lengthM/2-.01));assert.equal(hit?.group.userData.whR1Id,r.id,r.id)}
  v.dispose();v.dispose();assert.equal(collision.stats().bodies,0);assert.equal(root.children.length,0)
+})
+test('B2 supplies all nine SITE bays to the approved semitrailer loader and removes the legacy truck draw batches',async()=>{
+ let input,updates=0,disposed=false
+ const loadSemitrailers=async value=>{input=value;return{update(){updates++},dispose(){disposed=true}}}
+ const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root,renderer:{},quality:{tier:'high'},env:{night:0},loadSemitrailers})
+ await value.ready
+ assert.deepEqual(input.bays,WH_R1_SEMITRAILER_BAYS);assert.equal(input.root,value.root);assert.deepEqual(input.bays.map(r=>r.fleetNumber),[1,2,3,4,5,6,7,8,9])
+ for(let index=0;index<WH_R1_PARKING_BAYS.length;index++){
+  const bay=WH_R1_PARKING_BAYS[index],actual=input.bays[index],world=whToWorld(bay.xM,bay.yM)
+  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,(bay.yawDeg-90)*Math.PI/180,bay.id+' model yaw')
+ }
+ for(const mesh of ['wh-r1-vehicles-boxes','wh-r1-vehicles-wheels'])assert.ok(value.root.getObjectByName(mesh).userData.instanceToRegisterId.every(id=>!WH_R1_PARKING_BAYS.some(b=>b.id===id)),mesh)
+ value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
 })
 test('I5 non-WH registry preserves registration order and does not build vehicle data',()=>{
  const prior=globalThis.location

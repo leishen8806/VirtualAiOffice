@@ -3,6 +3,7 @@
 import { WH_R1_DATA, WH_R1_ASSIGNMENT } from './wh-r1/data.js'
 import { WH_R1_FLOOR_Y, whToWorld } from './wh-r1-layout.js'
 import { WH_R1_ANNEX, WH_R1_PARKING_BAYS, whR1VehicleForSite } from './wh-r1-site-plan.js'
+import { loadWhR1Semitrailers } from './dr-wh-r1-semitrailers.js'
 
 const assigned = new Set(WH_R1_ASSIGNMENT.filter(row => row.card === 'I5').map(row => row.id))
 export const WH_R1_VEHICLES = Object.freeze(WH_R1_DATA.elements.filter(row => assigned.has(row.id)).map(whR1VehicleForSite))
@@ -12,6 +13,10 @@ const siteDoors = [...WH_R1_DATA.doors, ...WH_R1_ANNEX.doors]
 export const WH_R1_DOCK_MARKS = Object.freeze(WH_R1_PARKING_BAYS.map(bay => {
   const door = siteDoors.find(row => row.id === bay.doorId)
   return Object.freeze({ doorId: door.id, sourceTag: door.sourceTag || door.id, ...whToWorld(door.xM, door.yM), widthM: door.lengthM, depthM: 1, level: 'UNKNOWN', displayOnly: 'DESIGN_ASSUMPTION' })
+}))
+export const WH_R1_SEMITRAILER_BAYS = Object.freeze(WH_R1_PARKING_BAYS.map((bay, index) => {
+  const position = whToWorld(bay.xM, bay.yM)
+  return Object.freeze({ id: bay.id, dockDoor: bay.doorId, fleetNumber: index + 1, x: position.x, y: 0, z: position.z, yaw: (bay.yawDeg - 90) * Math.PI / 180 })
 }))
 
 function forkliftParts() {
@@ -59,8 +64,9 @@ function truckParts() {
 }
 
 
-export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, env }) {
+export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, env, renderer, loadSemitrailers = loadWhR1Semitrailers }) {
   const group = new THREE.Group(); group.name = 'wh-r1-vehicles'; group.position.y = WH_R1_FLOOR_Y; group.userData.noMerge = true; root.add(group)
+  const useSemitrailers = !!renderer
   const batches = { boxes: [], wheels: [] }, meshes = [], proxies = [], labels = []
   const templates = { truck: truckParts(), forklift: forkliftParts() }
   const bounds = Object.fromEntries(Object.entries(templates).map(([key, rows]) => [key, {
@@ -71,7 +77,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
   for (const row of WH_R1_VEHICLES) {
     const key = row.category === '厢式货车' ? 'truck' : 'forklift', b = bounds[key], p = whToWorld(row.xM, row.yM), yaw = row.yawDeg * Math.PI / 180
     const sx = row.lengthM / (b.z1 - b.z0), sy = row.heightM / (b.y1 - b.y0), sz = row.widthM / (b.x1 - b.x0)
-    for (const part of templates[key]) {
+    for (const part of useSemitrailers && key === 'truck' ? [] : templates[key]) {
       // The old model's long Z axis becomes WH-R1's registered long X axis; the cab faces away from the receiving doors.
       const x = -(part.z - (b.z0 + b.z1) / 2) * sx, z = (part.x - (b.x0 + b.x1) / 2) * sz
       batches[part.shape === 'wheel' ? 'wheels' : 'boxes'].push({ id: row.id, part: part.part,
@@ -129,12 +135,16 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(index); g.computeVertexNormals()
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })); mesh.name = 'wh-r1-vehicle-labels'; mesh.userData = { noMerge: true, labels }; group.add(mesh); meshes.push(mesh)
   }
-  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'NONE — static drawing objects only', shapeStatus: 'DESIGN_ASSUMPTION' }
-  const appearance = truckAppearance(THREE, group, meshes, batches, canvasTex, quality, env)
-  let disposed = false
+  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'NONE — static drawing objects only', shapeStatus: useSemitrailers ? 'APPROVED_SEMITRAILER' : 'DESIGN_ASSUMPTION' }
+  const appearance = useSemitrailers ? { onFrame() {}, dispose() {} } : truckAppearance(THREE, group, meshes, batches, canvasTex, quality, env)
+  let disposed = false, semitrailers = null
+  const ready = useSemitrailers
+    ? Promise.resolve(loadSemitrailers({ root: group, renderer, bays: WH_R1_SEMITRAILER_BAYS, quality, env })).then(value => { if (disposed) value.dispose(); else semitrailers = value; return value }).catch(error => { group.userData.semitrailerError = String(error?.message || error); console.warn(`[wh-r1-vehicles] 半挂加载失败：${group.userData.semitrailerError}`); return null })
+    : Promise.resolve(null)
   return { root: group, records: WH_R1_VEHICLES, levels: WH_R1_LEVELS,
-    onFrame: appearance.onFrame,
-    dispose() { if (disposed) return; disposed = true; appearance.dispose(); proxies.forEach(p => { collision?.remove(p); p.geometry.dispose(); p.material.dispose() }); meshes.forEach(m => { m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); if (m.isInstancedMesh) m.dispose() }); group.removeFromParent() } }
+    ready,
+    onFrame(dt, context) { appearance.onFrame(dt, context); if (semitrailers && context?.camera) semitrailers.update(context.camera) },
+    dispose() { if (disposed) return; disposed = true; semitrailers?.dispose(); appearance.dispose(); proxies.forEach(p => { collision?.remove(p); p.geometry.dispose(); p.material.dispose() }); meshes.forEach(m => { m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); if (m.isInstancedMesh) m.dispose() }); group.removeFromParent() } }
 }
 
 // Solid, complementary screen-door coverage avoids alpha sorting and double surfaces during LOD changes.

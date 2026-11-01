@@ -48,11 +48,11 @@ export const WH_R1_RESERVED_YARDS = frozenRows([
 export const WH_R1_DEVIATIONS = Object.freeze([
   Object.freeze({ id: 'WH-R1-WORLD-ORIGIN', date: '2026-10-31', from: 'xM - 168', to: 'xM - 232', reason: '仓配整组西移 64 m，东边界保持 -72，与办公室绿带保持 32 m' }),
   Object.freeze({ id: 'WH-14-D-001', date: '2026-10-31', from: '外部车辆接口', to: '主仓与东侧附建区连接口', reason: '外部靠泊转移到 R5-SHIP-D-1…4' }),
-  Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '9 个 16.5 m 半挂规划车位', reason: '董事会批准扩地，现有 8 m 展示车车尾对门，B2 再替换半挂模型' }),
+  Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '9 辆 16.5 m 牵引半挂车位', reason: '董事会批准扩地与 B2 半挂落位，车尾对门且高差仍 UNKNOWN' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路' }),
 ])
 
 export function whR1VehicleForSite(row) {
   const bay = WH_R1_PARKING_BAYS.find(item => item.id === row.id)
-  return bay ? Object.freeze({ ...row, xM: bay.displayXM, yM: bay.displayYM, yawDeg: bay.yawDeg }) : row
+  return bay ? Object.freeze({ ...row, xM: bay.xM, yM: bay.yM, yawDeg: bay.yawDeg, lengthM: bay.lengthM, widthM: bay.widthM, heightM: bay.heightM }) : row
 }

@@ -46,10 +46,11 @@ test('B1 all LOD thresholds have hysteresis and low quality never chooses high m
  assert.equal(truckLod(70,1,true),1);assert.equal(truckLod(70,2,true),2)
  for(let d=0;d<200;d++)assert(truckLod(d,0,true)>=1)
 })
-test('B1 runtime cannot import offline authoring or register itself into the existing page',()=>{
+test('B2 runtime stays independent of offline authoring and is wired only through the WH-R1 vehicle adapter',()=>{
  const source=fs.readFileSync(new URL('../dr-wh-r1-semitrailers.js',import.meta.url),'utf8')
  assert(!/scripts\/wh-r1-trucks|new THREE\.(Box|Cylinder|Lathe|Extrude)Geometry/.test(source))
- for(const file of ['dr-campus-registry.js','app.js','dr-wh-r1-vehicles.js'])assert(!fs.readFileSync(new URL('../'+file,import.meta.url),'utf8').includes('dr-wh-r1-semitrailers'))
+ assert.match(fs.readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8'),/from '.\/dr-wh-r1-semitrailers\.js'/)
+ for(const file of ['dr-campus-registry.js','app.js'])assert(!fs.readFileSync(new URL('../'+file,import.meta.url),'utf8').includes('dr-wh-r1-semitrailers'))
 })
 
 test('R7 baked cab has 300mm plan corners, 6-degree raked windscreen and unobstructed curved lamps',()=>{
