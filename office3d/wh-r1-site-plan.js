@@ -48,11 +48,15 @@ export const WH_R1_RESERVED_YARDS = frozenRows([
 export const WH_R1_DEVIATIONS = Object.freeze([
   Object.freeze({ id: 'WH-R1-WORLD-ORIGIN', date: '2026-10-31', from: 'xM - 168', to: 'xM - 232', reason: '仓配整组西移 64 m，东边界保持 -72，与办公室绿带保持 32 m' }),
   Object.freeze({ id: 'WH-14-D-001', date: '2026-10-31', from: '外部车辆接口', to: '主仓与东侧附建区连接口', reason: '外部靠泊转移到 R5-SHIP-D-1…4' }),
-  Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '9 辆 16.5 m 牵引半挂车位', reason: '董事会批准扩地与 B2 半挂落位，车尾对门且高差仍 UNKNOWN' }),
+  Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '5 辆进货牵引半挂 + 4 辆出货配送车', reason: '董事会明确进货用大半挂，出货用园区小火车与三轮车；车尾对门且高差仍 UNKNOWN' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路' }),
 ])
 
 export function whR1VehicleForSite(row) {
   const bay = WH_R1_PARKING_BAYS.find(item => item.id === row.id)
-  return bay ? Object.freeze({ ...row, xM: bay.xM, yM: bay.yM, yawDeg: bay.yawDeg, lengthM: bay.lengthM, widthM: bay.widthM, heightM: bay.heightM }) : row
+  if (!bay) return row
+  if (bay.id.startsWith('WH-01-')) return Object.freeze({ ...row, xM: bay.xM, yM: bay.yM, yawDeg: bay.yawDeg, lengthM: bay.lengthM, widthM: bay.widthM, heightM: bay.heightM, displayVehicleType: 'semitrailer' })
+  const index = WH_R1_PARKING_BAYS.filter(item => item.id.startsWith('WH-06-')).findIndex(item => item.id === bay.id)
+  const spec = index < 2 ? { type: 'delivery-train', lengthM: 6.8, widthM: 1.65, heightM: 1.9 } : { type: 'delivery-tricycle', lengthM: 3.2, widthM: 1.25, heightM: 1.75 }
+  return Object.freeze({ ...row, xM: bay.xM - (bay.lengthM - spec.lengthM) / 2, yM: bay.yM, yawDeg: bay.yawDeg, lengthM: spec.lengthM, widthM: spec.widthM, heightM: spec.heightM, displayVehicleType: spec.type })
 }
