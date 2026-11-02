@@ -73,6 +73,9 @@ test('WH-R1 walls retain their IDs and face maps through the full scene static m
   assert.equal(walls.length, 34)
   assert.deepEqual(new Set(walls.map((wall) => wall.userData.whR1Id)), new Set(WH_R1_WALLS.map((wall) => wall.id)))
   assert.deepEqual(new Set(walls.flatMap((wall) => wall.userData.faceIds)), new Set(WH_R1_SHELL_SPEC.wallFaces.map((face) => face.id)))
+  const surfaces = scene.getObjectByName('wh-r1-walls-visible')
+  assert.equal(surfaces.count, 34); assert.deepEqual(surfaces.userData.instanceToRegisterId, WH_R1_WALLS.map((wall) => wall.id))
+  assert.equal(new Set(surfaces.userData.faceIds).size, 68); assert.equal(walls.every((wall) => wall.material.visible === false), true)
 })
 
 test('WH-R1 step 0 retains all 19 door panel IDs through the full scene static merge', async () => {
@@ -96,12 +99,21 @@ test('WH-R1 environment inventory includes and hides sphere crowns within the si
   const outside = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
   crown.name = 'north-garden-crown'; crown.position.set(-123, 1, 8)
   outside.name = 'outside-crown'; outside.position.set(-60, 1, 8)
+  crown.castShadow = true; outside.castShadow = true
   scene.add(root, crown, outside)
   assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === crown), true)
   const prior = globalThis.location
   globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
   try { assert.equal(hideCampusEnvironment(THREE, scene, root)['north-garden-crown'], 1) }
   finally { globalThis.location = prior }
-  assert.equal(crown.visible, false); assert.equal(outside.visible, true)
+  assert.equal(crown.visible, false); assert.equal(outside.visible, true); assert.equal(crown.castShadow, false); assert.equal(outside.castShadow, false)
+})
+
+test('non WH-R1 environment shadow state remains unchanged', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group(), tree = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
+  tree.position.set(0, 1, 0); tree.castShadow = true; scene.add(root, tree)
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse' }
+  try { hideCampusEnvironment(THREE, scene, root) } finally { globalThis.location = prior }
+  assert.equal(tree.castShadow, true)
 })
 

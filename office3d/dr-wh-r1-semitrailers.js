@@ -16,6 +16,12 @@ export function truckLod(distance, previous, low=false) {
   if(previous===2&&distance>84)return 2
   return distance>96?2:1
 }
+export function capNearTruckLods(lods, distances, owners, maxNear=2) {
+  const selected=[...owners].filter(index=>lods[index]===0).slice(0,maxNear)
+  for(const index of lods.map((lod,index)=>({lod,index,distance:distances[index]})).filter(row=>row.lod===0&&!selected.includes(row.index)).sort((a,b)=>a.distance-b.distance||a.index-b.index).map(row=>row.index))if(selected.length<maxNear)selected.push(index)
+  owners.clear();selected.forEach(index=>owners.add(index))
+  return lods.map((lod,index)=>lod===0&&!owners.has(index)?1:lod)
+}
 
 // The SITE adapter supplies world-space bays; the model stays independent of WH-R1 layout data.
 export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'high'},env={night:0},assetBase=new URL('./assets/compact/wh-trucks/',import.meta.url),fetchAsset=fetch}) {
@@ -29,7 +35,7 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
   }))
   const group=new THREE.Group();group.name='wh-r1-semitrailers';group.userData={noMerge:true,level:'UNKNOWN',bays:bays.map(b=>({...b}))}
   const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment(),reflection=pmrem.fromScene(room,.04);room.dispose();pmrem.dispose()
-  const batches=[],states=bays.map(()=>-1),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quaternion=new THREE.Quaternion(),scale=new THREE.Vector3(1,1,1)
+  const batches=[],states=bays.map(()=>-1),nearOwners=new Set(),matrix=new THREE.Matrix4(),position=new THREE.Vector3(),quaternion=new THREE.Quaternion(),scale=new THREE.Vector3(1,1,1)
   for(let lod=0;lod<templates.length;lod++){
     const list=[];templates[lod].traverse(source=>{
       if(!source.isMesh)return
@@ -65,9 +71,11 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
     if(disposed)return
     let changed=lastTier!==quality.tier;lastTier=quality.tier
     // Low quality shares the nearest fleet LOD: mixed medium/far would double its three-call budget.
-    const low=quality.tier==='low',nearest=low?Math.min(...bays.map(b=>camera.position.distanceTo(position.set(b.x,b.y+2,b.z)))):0
+    const low=quality.tier==='low',distances=bays.map(b=>camera.position.distanceTo(position.set(b.x,b.y+2,b.z))),nearest=low?Math.min(...distances):0
     const lowLod=truckLod(nearest,states.every(s=>s===2)?2:1,true)
-    for(let i=0;i<bays.length;i++){const b=bays[i],d=camera.position.distanceTo(position.set(b.x,b.y+2,b.z)),lod=low?lowLod:truckLod(d,states[i]);if(lod!==states[i])changed=true;states[i]=lod}
+    const next=low?bays.map(()=>lowLod):capNearTruckLods(bays.map((_,i)=>truckLod(distances[i],states[i])),distances,nearOwners)
+    if(low)nearOwners.clear()
+    for(let i=0;i<bays.length;i++){if(next[i]!==states[i])changed=true;states[i]=next[i]}
     if(changed)for(let lod=0;lod<3;lod++){
       const selected=bays.map((b,i)=>({b,i})).filter(({i})=>states[i]===lod)
       for(const mesh of batches[lod]){
