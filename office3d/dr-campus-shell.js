@@ -42,6 +42,7 @@ const plane = (THREE, root, part, y, material) => {
 export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS) {
   if (whR1Requested(globalThis.location?.search)) {
     const hidden = {}
+    scene.traverse((object) => { if (object.isMesh && !campusRoot.getObjectById(object.id)) object.castShadow = false })
     for (const item of inspectEnvironmentMeshes(THREE, scene, campusRoot, WH_R1_SITE)) {
       item.object.visible = false
       hidden[item.type] = (hidden[item.type] || 0) + 1

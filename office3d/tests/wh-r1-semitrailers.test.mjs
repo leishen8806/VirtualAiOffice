@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {gunzipSync} from 'node:zlib'
 import {createHash} from 'node:crypto'
-import {SEMITRAILER_SIZE,validateTruckBays,truckLod} from '../dr-wh-r1-semitrailers.js'
+import {SEMITRAILER_SIZE,capNearTruckLods,validateTruckBays,truckLod} from '../dr-wh-r1-semitrailers.js'
 
 const base=new URL('../assets/compact/wh-trucks/',import.meta.url),manifest=JSON.parse(fs.readFileSync(new URL('manifest.json',base)))
 function glb(row){const compressed=fs.readFileSync(new URL(row.file,base));assert.equal(createHash('sha256').update(compressed).digest('hex'),row.sha256);const data=gunzipSync(compressed);assert.equal(data.readUInt32LE(0),0x46546c67);assert.equal(data.readUInt32LE(4),2);const jsonLength=data.readUInt32LE(12);return {json:JSON.parse(data.subarray(20,20+jsonLength).toString()),binary:data.subarray(28+jsonLength)}}
@@ -45,6 +45,12 @@ test('B1 all LOD thresholds have hysteresis and low quality never chooses high m
  assert.equal(truckLod(37,0),0);assert.equal(truckLod(37,1),1);assert.equal(truckLod(90,1),1);assert.equal(truckLod(90,2),2)
  assert.equal(truckLod(70,1,true),1);assert.equal(truckLod(70,2,true),2)
  for(let d=0;d<200;d++)assert(truckLod(d,0,true)>=1)
+})
+test('FIT keeps at most two stable near trucks and demotes the rest to medium detail',()=>{
+ const owners=new Set(),first=capNearTruckLods([0,0,0,0,0],[8,10,12,14,16],owners)
+ assert.deepEqual(first,[0,0,1,1,1]);assert.deepEqual([...owners],[0,1])
+ assert.deepEqual(capNearTruckLods([0,0,0,0,0],[30,28,6,8,10],owners),[0,0,1,1,1],'near ownership stays stable inside hysteresis')
+ assert.deepEqual(capNearTruckLods([1,0,0,0,0],[50,28,6,8,10],owners),[1,0,0,1,1]);assert.deepEqual([...owners],[1,2])
 })
 test('B2 runtime stays independent of offline authoring and is wired only through the WH-R1 vehicle adapter',()=>{
  const source=fs.readFileSync(new URL('../dr-wh-r1-semitrailers.js',import.meta.url),'utf8')

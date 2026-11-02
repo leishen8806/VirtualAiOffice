@@ -61,19 +61,27 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
     ? new THREE.MeshLambertMaterial({ color: 0x75919a, transparent: true, opacity: .34 })
     : new THREE.MeshStandardMaterial({ color: 0x75919a, roughness: .55, transparent: true, opacity: .34, depthWrite: false })
   const doorMaterial = new THREE.MeshBasicMaterial({ color: 0xd5af62, transparent: true, opacity: .35, side: THREE.DoubleSide, depthWrite: false })
+  const collisionMaterial = new THREE.MeshBasicMaterial({ visible: false })
   const site = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_SITE.width, WH_R1_SITE.depth), floorMaterial)
   site.name = 'wh-r1-site-paving'; site.rotation.x = -Math.PI / 2; site.position.set((WH_R1_SITE.x0 + WH_R1_SITE.x1) / 2, -.595, (WH_R1_SITE.z0 + WH_R1_SITE.z1) / 2); root.add(site)
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(WH_R1_BUILDING.width, WH_R1_BUILDING.depth), wallMaterial)
   floor.name = 'wh-r1-building-floor'; floor.rotation.x = -Math.PI / 2; floor.position.set((WH_R1_BUILDING.x0 + WH_R1_BUILDING.x1) / 2, WH_R1_FLOOR_Y, (WH_R1_BUILDING.z0 + WH_R1_BUILDING.z1) / 2); root.add(floor)
 
-  for (const wall of WH_R1_WALLS) {
-    box(THREE, root, `wh-r1-wall-${wall.id}`, wall.length, wall.height, wall.thickness, wall.x, wall.height / 2 - .6, wall.z, wall.yaw, wallMaterial, {
+  const wallGeometry = new THREE.BoxGeometry(1, 1, 1), wallSurfaces = new THREE.InstancedMesh(wallGeometry, wallMaterial, WH_R1_WALLS.length)
+  const wallMatrix = new THREE.Matrix4(), wallPosition = new THREE.Vector3(), wallScale = new THREE.Vector3(), wallRotation = new THREE.Quaternion(), wallEuler = new THREE.Euler()
+  for (const [index, wall] of WH_R1_WALLS.entries()) {
+    box(THREE, root, `wh-r1-wall-${wall.id}`, wall.length, wall.height, wall.thickness, wall.x, wall.height / 2 - .6, wall.z, wall.yaw, collisionMaterial, {
       whR1Id: wall.id,
       collisionProxy: true,
       noMerge: true,
       faceIds: WH_R1_DATA.wallFaces.filter((face) => face.wallId === wall.id).map((face) => face.id),
     })
+    wallMatrix.compose(wallPosition.set(wall.x, wall.height / 2 - .6, wall.z), wallRotation.setFromEuler(wallEuler.set(0, wall.yaw, 0)), wallScale.set(wall.length, wall.height, wall.thickness))
+    wallSurfaces.setMatrixAt(index, wallMatrix)
   }
+  wallSurfaces.instanceMatrix.needsUpdate = true; wallSurfaces.name = 'wh-r1-walls-visible'; wallSurfaces.receiveShadow = true
+  wallSurfaces.userData = { noMerge: true, whR1WallIds: WH_R1_WALLS.map(wall => wall.id), instanceToRegisterId: WH_R1_WALLS.map(wall => wall.id), faceIds: WH_R1_DATA.wallFaces.map(face => face.id) }
+  root.add(wallSurfaces)
   const doorGeometry = new THREE.PlaneGeometry(1, 1), doorPanels = new THREE.InstancedMesh(doorGeometry, doorMaterial, WH_R1_DOORS.length)
   const doorMatrix = new THREE.Matrix4(), doorPosition = new THREE.Vector3(), doorScale = new THREE.Vector3(), doorRotation = new THREE.Quaternion(), doorEuler = new THREE.Euler()
   WH_R1_DOORS.forEach((door, index) => {
@@ -110,7 +118,7 @@ export function buildWhR1Shell({ THREE, root, quality, canvasTex }) {
   return {
     shellSpec: WH_R1_SHELL_SPEC,
     dispose() {
-      new Set([wallMaterial, floorMaterial, roofMaterial, doorMaterial]).forEach((material) => material.dispose()); doorGeometry.dispose()
+      new Set([wallMaterial, floorMaterial, roofMaterial, doorMaterial, collisionMaterial]).forEach((material) => material.dispose()); doorGeometry.dispose(); wallGeometry.dispose()
       if (doorLabels) { doorLabels.geometry.dispose(); doorLabels.material.map?.dispose(); doorLabels.material.dispose() }
     },
   }
