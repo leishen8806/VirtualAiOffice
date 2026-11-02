@@ -50,6 +50,19 @@ test('R1 fixture batches and point intensities follow independent interior and o
   buildR1Lights({ THREE, root, layout: { r1Phase: 'L2B' } }); assert.equal(root.children.length, 0)
 })
 
+test('interior glow stays additive while indoor level scales its warm emission', () => {
+  const root = new THREE.Group(), env = { indoorLevel: 0, night: 0 }, module = buildR1Lights({ THREE, root, layout, env })
+  const glow = root.getObjectByName('interior-glow')
+  assert.equal(glow.material.blending, THREE.AdditiveBlending)
+  assert.equal(glow.material.depthWrite, false)
+  for (const level of [.09, .33, .6, 1]) {
+    env.indoorLevel = level; module.onFrame()
+    assert.equal(glow.material.blending, THREE.AdditiveBlending, `level ${level} must not use normal blending`)
+    assert.ok(glow.material.color.r > 0 && glow.material.color.g > 0 && glow.material.color.b > 0)
+  }
+  module.dispose()
+})
+
 test('new fixtures clear registered routes; every source stays two metres from reception screen', () => {
   const screen = new THREE.Box3(new THREE.Vector3(-.5, -100, 8.9), new THREE.Vector3(4.5, 100, 9.1))
   for (const row of plan.fixtures) {
