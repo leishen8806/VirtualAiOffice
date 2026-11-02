@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { onDuty, nextChange, localParts } from './schedule.mjs'
 import { createLifecycleRepair } from './lifecycle-repair.mjs'
 import { createAgentRecovery } from './agent-recovery.mjs'
+import { buildUsageReport } from './usage-report.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const API = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
@@ -15,7 +16,7 @@ const STATE_FILE = path.join(HERE, 'workhours-state.json')
 const LOG_FILE = path.join(HERE, 'workhours.log')
 
 const dayKey = (date, cfg) => { const t = localParts(date, cfg.timezone); return `${t.y}-${String(t.mo).padStart(2, '0')}-${String(t.d).padStart(2, '0')}` }
-const normalState = (state) => ({ pausedByUs: Array.isArray(state?.pausedByUs) ? [...new Set(state.pausedByUs)] : [], resumeRequested: state?.resumeRequested || {}, repairAttempts: state?.repairAttempts || {}, manualRepairDay: state?.manualRepairDay || {}, errorRecoveryAttempts: state?.errorRecoveryAttempts || {}, errorRecoveryManualDay: state?.errorRecoveryManualDay || {} })
+const normalState = (state) => ({ pausedByUs: Array.isArray(state?.pausedByUs) ? [...new Set(state.pausedByUs)] : [], resumeRequested: state?.resumeRequested || {}, repairAttempts: state?.repairAttempts || {}, manualRepairDay: state?.manualRepairDay || {}, errorRecoveryAttempts: state?.errorRecoveryAttempts || {}, errorRecoveryManualDay: state?.errorRecoveryManualDay || {}, dailyUsage: state?.dailyUsage || {}, sessionReset: state?.sessionReset || {} })
 const rows = (value) => Array.isArray(value) ? value : Array.isArray(value?.issues) ? value.issues : Array.isArray(value?.comments) ? value.comments : []
 const minutesEarlier = (date, minutes) => new Date(date.getTime() - minutes * 60_000)
 
@@ -43,7 +44,7 @@ const isSystemRecoveryBlock = (issue, comments, window) => {
   })
 }
 
-export function createWorkhours({ api = API, company = COMPANY, dryRun = process.argv.includes('--dry-run'), now = () => new Date(), fetchFn = fetch, loadCfg = () => JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')), loadState = () => { try { return normalState(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))) } catch { return normalState() } }, saveState = (state) => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2)), log = (msg) => { const line = `${now().toISOString()} ${msg}`; console.log(line); fs.appendFileSync(LOG_FILE, line + '\n') }, repair = createLifecycleRepair({ backupFile: path.join(HERE, 'backup-lifecycle-operation.jsonl'), now }), recoverErrors } = {}) {
+export function createWorkhours({ api = API, company = COMPANY, dryRun = process.argv.includes('--dry-run'), now = () => new Date(), fetchFn = fetch, loadCfg = () => JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')), loadState = () => { try { return normalState(JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))) } catch { return normalState() } }, saveState = (state) => fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2)), log = (msg) => { const line = `${now().toISOString()} ${msg}`; console.log(line); fs.appendFileSync(LOG_FILE, line + '\n') }, repair = createLifecycleRepair({ backupFile: path.join(HERE, 'backup-lifecycle-operation.jsonl'), now }), recoverErrors, reportBuilder = buildUsageReport, writeReport = (markdown, file) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, markdown) } } = {}) {
   let lastMode = null
   recoverErrors ||= createAgentRecovery({ api, company, now, fetchFn, log })
   const call = async (method, target, body) => {
@@ -58,6 +59,64 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
     await call('POST', `/api/agents/${agent.id}/resume`)
     state.resumeRequested[agent.id] = { at: now().toISOString() }
     log(`上班：恢复 ${agent.name}${suffix}`)
+  }
+  const scheduledMinute = (cfg, key, fallback) => {
+    const value = cfg[key]?.at || fallback
+    const [hour, minute] = String(value).split(':').map(Number)
+    return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : fallback
+  }
+  const isBusinessDay = (cfg, date) => cfg.days.includes(localParts(date, cfg.timezone).dow)
+  const runDailyUsage = async (cfg, state) => {
+    const settings = cfg.dailyUsage || {}
+    if (settings.enabled === false || !isBusinessDay(cfg, now())) return
+    const t = localParts(now(), cfg.timezone), target = scheduledMinute(cfg, 'dailyUsage', 8 * 60 + 20), minute = t.minutes
+    if (minute < target || minute > target + 2) return
+    const key = dayKey(now(), cfg), record = state.dailyUsage[key] || { attempts: 0 }
+    if (record.status === 'done' || record.attempts >= 2) return
+    if (dryRun) { log(`演练：将触发日报 ${key}`); return }
+    try {
+      const report = await reportBuilder({ api, company, days: Number(settings.days) || 1, now: now(), fetchFn })
+      const outDir = settings.outDir || path.join(HERE, '..', 'dispatch', '_BACKLOG', '用量日报')
+      const file = path.join(outDir, `用量日报-${key}.md`)
+      writeReport(report.markdown, file, report)
+      state.dailyUsage[key] = { attempts: record.attempts + 1, status: 'done', at: now().toISOString(), file }
+      log(`日报：已生成 ${file}`)
+    } catch (error) {
+      state.dailyUsage[key] = { attempts: record.attempts + 1, status: 'failed', at: now().toISOString(), error: String(error?.message || error) }
+      log(`日报失败：${error?.message || error}`)
+    }
+  }
+  const runSessionReset = async (cfg, state, agents) => {
+    const settings = cfg.sessionReset || {}, names = Array.isArray(settings.agents) ? settings.agents : ['Lead', 'Lead2', 'PM', 'OpsLead']
+    if (!names.length || !isBusinessDay(cfg, now())) return
+    const t = localParts(now(), cfg.timezone), target = scheduledMinute(cfg, 'sessionReset', 8 * 60 + 25), minute = t.minutes
+    if (minute < target || minute > 10 * 60 || (minute - target) % 10 !== 0) return
+    const key = dayKey(now(), cfg), day = state.sessionReset[key] ||= { completed: {}, attempts: {}, deferred: {} }
+    for (const name of names) {
+      const agent = agents.find(item => item.name === name || item.id === name)
+      if (!agent || day.completed[agent.id] || (day.attempts[agent.id] || 0) >= 3) continue
+      if (agent.status === 'running') { day.deferred[agent.id] = now().toISOString(); log(`会话清理推迟：${agent.name} 正在运行`); continue }
+      let runs
+      try {
+        runs = rows(await call('GET', `/api/companies/${company}/heartbeat-runs?agentId=${encodeURIComponent(agent.id)}&limit=20`))
+      } catch (error) {
+        log(`会话清理检查失败：${agent.name}；${error?.message || error}`); continue
+      }
+      const active = runs.some(run => {
+        const status = String(run.status || '').toLowerCase()
+        return ['running', 'queued', 'pending', 'in_progress'].includes(status) || (!status && !run.finishedAt && !run.completedAt && !run.endedAt)
+      })
+      if (active) { day.deferred[agent.id] = now().toISOString(); log(`会话清理推迟：${agent.name} 有排队或运行中的运行`); continue }
+      if (dryRun) { log(`演练：将清理名单 ${agent.name}`); continue }
+      try {
+        const response = await call('POST', `/api/agents/${agent.id}/runtime-state/reset-session`, {})
+        day.completed[agent.id] = { at: now().toISOString(), clearedTaskSessions: response?.clearedTaskSessions ?? null }
+        log(`会话清理：${agent.name} clearedTaskSessions=${response?.clearedTaskSessions ?? 'unknown'}`)
+      } catch (error) {
+        day.attempts[agent.id] = (day.attempts[agent.id] || 0) + 1
+        log(`会话清理失败：${agent.name}；${error?.message || error}`)
+      }
+    }
   }
   const recoverOffDutyBlocks = async (cfg) => {
     const window = previousOffDutyWindow(cfg, now())
@@ -101,6 +160,8 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
         if (result.kind === 'pg-missing') { await requestResume(agent, state, '（pg 不可用，退回普通恢复）'); continue }
         if (result.kind === 'manual' || result.kind === 'rollback' || result.kind === 'changed') state.manualRepairDay[id] = today
       }
+      await runDailyUsage(cfg, state)
+      await runSessionReset(cfg, state, agents)
       await recoverErrors({ agents, state, dryRun, day: dayKey(now(), cfg) })
       try { await recoverOffDutyBlocks(cfg) } catch { log('blocked recovery scan failed; state will be saved and retried next tick') }
     } else {
