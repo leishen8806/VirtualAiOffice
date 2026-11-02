@@ -84,7 +84,7 @@ export function buildR1Lights({ THREE, root, layout, env }) {
     const mount = new THREE.Group(); mount.name = name; group.add(mount)
     const fixtures = [...plan.fixtures, ...plan.accents].filter(row => (row.zone === '14') === (name === 'plaza'))
     const materials = [new THREE.MeshBasicMaterial({ color: '#6C5943' }), new THREE.MeshBasicMaterial({ color: '#FFDAB0', toneMapped: false })]
-    if (name === 'interior') { materials[1].map = halo; materials[1].transparent = true; materials[1].depthWrite = false; materials[1].opacity = .75 }
+    if (name === 'interior') { materials[1].map = halo; materials[1].transparent = true; materials[1].depthWrite = false; materials[1].blending = THREE.AdditiveBlending; materials[1].opacity = .75 }
     for (const [index, material] of materials.entries()) {
       const rows = fixtures.filter(row => row.glow === Boolean(index))
       if (!rows.length) continue
