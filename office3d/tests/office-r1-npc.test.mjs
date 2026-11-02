@@ -39,6 +39,13 @@ test('NPC-5：需求修订后的第 29 个导入人物 Male_Adult_21 有完整�
   }
 })
 
+test('NPC-5：额外人物沿用 compact 资产加载器，不调用已移除的 FBX loader', () => {
+  const people = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
+  const extraLoader = people.slice(people.indexOf('export async function loadExtraAvatars'), people.indexOf('// 首屏之后'))
+  assert.match(extraLoader, /loadCompactPerson\(name\)/)
+  assert.doesNotMatch(extraLoader, /makeLoader\(/)
+})
+
 test('NPC-3 隔离：名牌只写角色，没有同事姓名/职级/模型名，也没有任务字段', () => {
   for (const npc of R1_NPC_ROSTER) {
     assert.match(npc.label, /^[一-龥·]+$/, `${npc.id} 名牌应只有中文角色名：${npc.label}`)

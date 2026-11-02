@@ -72,15 +72,8 @@ export async function loadPeople(onProgress, extraAvatars = []) {
 export async function loadExtraAvatars(P, list) {
   await Promise.all(list.map(async ({ name, gender }) => {
     if (P.avatars[name]) return
-    let obj
-    try { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}_facial.fbx`) } catch { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}.fbx`) }
-    const lights = []
-    obj.traverse((o) => { if (o.isLight) lights.push(o) })
-    lights.forEach((l) => l.parent && l.parent.remove(l))
-    fixMaterials(obj)
-    pruneMorphs(obj)
-    const box = new THREE.Box3().setFromObject(obj)
-    P.avatars[name] = { obj, gender, scale: HEIGHT[gender] / (box.max.y - box.min.y) }
+    const obj = await loadCompactPerson(name)
+    P.avatars[name] = { obj, gender, scale: HEIGHT[gender] / obj.userData.compactHeight }
   }))
   return P
 }
