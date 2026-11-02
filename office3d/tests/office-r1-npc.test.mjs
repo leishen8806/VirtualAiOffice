@@ -39,6 +39,13 @@ test('NPC-5：需求修订后的第 29 个导入人物 Male_Adult_21 有完整�
   }
 })
 
+test('NPC-5：11 位服务人员的模型资源都已导入，不能在运行时回退到 404', () => {
+  for (const npc of R1_NPC_ROSTER) {
+    const dir = new URL(`../assets/models/people/${npc.avatar}/`, import.meta.url)
+    assert.ok(existsSync(new URL(`${npc.avatar}.fbx`, dir)), `缺少 ${npc.avatar} 的模型资源`)
+  }
+})
+
 test('NPC-5：额外人物沿用 compact 资产加载器，不调用已移除的 FBX loader', () => {
   const people = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
   const extraLoader = people.slice(people.indexOf('export async function loadExtraAvatars'), people.indexOf('// 首屏之后'))
