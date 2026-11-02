@@ -111,13 +111,16 @@ test('ENTRANCE-1 preserves the baseline parse matrix except the new latest offic
       assert.deepEqual({ ...mode, subtitle: stableV3.subtitle }, stableV3, 'only the new latest route subtitle changes')
       assert.equal(mode.subtitle, '最新版 · 办公室样板')
       assert.notEqual(hash, baselineHash)
+    } else if (['warehouse latest', 'campus preview', 'legacy warehouse'].includes(label)) {
+      assert.equal(mode.whr1, true, `${label}: WH-R1 is now the default`)
+      assert.notEqual(hash, baselineHash, `${label}: archived campus is no longer the default`)
     } else {
       assert.equal(hash, baselineHash, `${label}: full resolvePlaceMode result`)
     }
   }
 })
 
-test('legacy URLs preserve every pre-NAV-2 field', () => {
+test('office URLs stay frozen and explicit legacy=drcampus preserves the archived warehouse', () => {
   const office = {
     place: 'office',
     campus: false,
@@ -128,15 +131,11 @@ test('legacy URLs preserve every pre-NAV-2 field', () => {
   assert.deepEqual(oldFields(resolvePlaceMode('')), office)
   assert.deepEqual(oldFields(resolvePlaceMode('?place=office')), office)
   assert.deepEqual(
-    oldFields(resolvePlaceMode('?campus=1')),
-    { ...office, campus: true },
-  )
-  assert.deepEqual(
     oldFields(resolvePlaceMode('?place=office&campus=1')),
     { ...office, campus: true },
   )
 
-  const warehouse = resolvePlaceMode('?place=dr')
+  const warehouse = resolvePlaceMode('?place=dr&legacy=drcampus')
   assert.deepEqual(oldFields(warehouse), {
     place: 'dr',
     campus: true,
@@ -149,7 +148,7 @@ test('legacy URLs preserve every pre-NAV-2 field', () => {
     zones: warehouse.zones,
   })
   assert.deepEqual(
-    oldFields(resolvePlaceMode('?campus=1&place=dr&controlRoom=1')),
+    oldFields(resolvePlaceMode('?campus=1&place=dr&controlRoom=1&legacy=drcampus')),
     { ...oldFields(warehouse), controlRoom: true },
   )
 })
@@ -171,6 +170,29 @@ test('canonical and legacy place spellings are equivalent', () => {
     assert.equal(legacy.legacy, true)
     assert.equal(canonical.legacy, false)
   }
+})
+
+test('WH-R1 I9 entry matrix keeps one explicit archived fallback', () => {
+  for (const search of [
+    '?place=drlife-warehouse',
+    '?place=drlife-warehouse&whr1=1',
+    '?place=dr',
+    '?campus=1',
+    '?controlRoom=1',
+    '?place=drlife-warehouse&whr1=0',
+    '?place=drlife-warehouse&whr1=1&whr1=1',
+    '?place=drlife-warehouse&legacy=DRCAMPUS',
+    '?place=drlife-warehouse&legacy=drcampus&legacy=drcampus',
+  ]) {
+    const mode = resolvePlaceMode(search)
+    assert.equal(mode.kind, 'warehouse', search)
+    assert.equal(mode.whr1, true, search)
+  }
+  const archived = resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus')
+  assert.equal(archived.kind, 'warehouse')
+  assert.equal(archived.whr1, undefined)
+  assert.deepEqual(archived.cameraViews, DR_CAMERA_VIEWS)
+  assert.equal(createHash('sha256').update(JSON.stringify(archived)).digest('hex'), '9a611052a0767ced059d37faba83ff6c42442bf870be0b9cc71ebb174bccd612')
 })
 
 test('latest channel is frozen and generates complete place searches', () => {
@@ -336,8 +358,8 @@ test('camera storage keys are place-scoped with one legacy DR fallback', () => {
   )
 })
 
-test('DR mode exposes isolated copy, four campus cameras and fourteen demo zones', () => {
-  const mode = resolvePlaceMode('?place=dr')
+test('archived DR mode exposes isolated copy, four campus cameras and fourteen demo zones', () => {
+  const mode = resolvePlaceMode('?place=dr&legacy=drcampus')
   assert.equal(mode.title, 'DR 仓配服务中心 · 智序小镇')
   assert.equal(mode.brand, 'DR 仓配服务中心')
   assert.equal(mode.subtitle, '仓配地点 · 演示场景')
@@ -360,8 +382,8 @@ test('stored DR camera accepts finite campus views and rejects invalid state', (
   }
 })
 
-test('place bar treats campus-only preview as office and fails closed', () => {
-  assert.equal(currentPlace({ pathname: '/', search: '?campus=1' }).id, 'office')
+test('place bar routes campus-only preview to WH-R1 and still fails closed', () => {
+  assert.equal(currentPlace({ pathname: '/', search: '?campus=1' }).id, 'dr')
   assert.equal(currentPlace({ pathname: '/', search: '?place=dr' }).id, 'dr')
   assert.equal(currentPlace({ pathname: '/', search: '?place=drlife-warehouse' }).id, 'dr')
   assert.equal(currentPlace({ pathname: '/', search: '?place=drlife-office' }).id, 'office')

@@ -29,7 +29,7 @@ test('SITE uses one conversion offset and leaves the WH-R1 root at the origin', 
   }
   const prior = globalThis.location
   try {
-    globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
+    globalThis.location = { search: '?place=drlife-warehouse' }
     const scene = new THREE.Scene(), registry = createCampusRegistry({ THREE, scene, quality: { tier: 'low' }, layout: {} })
     registry.buildAll()
     assert.deepEqual(registry.root.position.toArray(), [0, 0, 0])
@@ -111,7 +111,7 @@ test('SITE changes only the explicit WH-R1 place metadata and clamps saved camer
   assert.deepEqual(normalizeCameraState(inside, mode.homeCamera, mode.miniBounds), inside)
   assert.equal(normalizeCameraState({ ...inside, t: [-250, 0, -60] }, mode.homeCamera, mode.miniBounds), mode.homeCamera)
   assert.equal(resolvePlaceMode('?place=drlife-office').whr1, undefined)
-  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, true)
   assert.equal(WH_R1_SITE.x1 - -40, -32)
   const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
   assert.match(app, /CAMPUS_MODE \? PLACE_MODE\.miniBounds : ENVELOPE/)

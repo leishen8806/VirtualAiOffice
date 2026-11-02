@@ -51,14 +51,23 @@ test('WH-R1 I2 uses independent site and exact zone bounds', () => {
   }
 })
 
-test('WH-R1 I2 activates only the unique whr1=1 warehouse and campus entries', () => {
-  const warehouse = resolvePlaceMode('?place=drlife-warehouse&whr1=1')
+test('WH-R1 I9 makes warehouse, campus and control-room entries default to WH-R1', () => {
+  const warehouse = resolvePlaceMode('?place=drlife-warehouse')
   assert.equal(warehouse.whr1, true)
   assert.equal(warehouse.place, 'dr')
   assert.deepEqual(warehouse.miniBounds, WH_R1_SITE)
-  assert.equal(resolvePlaceMode('?campus=1&whr1=1').whr1, true)
-  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1&whr1=1').whr1, undefined)
-  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=0').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=dr').whr1, true)
+  assert.equal(resolvePlaceMode('?campus=1').whr1, true)
+  assert.equal(resolvePlaceMode('?controlRoom=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1&whr1=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=0').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=DRCAMPUS').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus&legacy=drcampus').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-office').whr1, undefined)
+  const legacy = resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus')
+  assert.equal(legacy.whr1, undefined)
+  assert.notDeepEqual(legacy.miniBounds, WH_R1_SITE)
 })
 
 test('WH-R1 walls retain their IDs and face maps through the full scene static merge', async () => {

@@ -609,6 +609,7 @@ export const resolveOfficeLayout = (search = '') => {
 }
 
 
+// archived: the DR-PLAN-1 / B-R1 campus remains available only through legacy=drcampus.
 const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }
 const CAMPUS_BUILDING_DATA = { x0: -168, x1: -80, z0: -18, z1: 30, width: 88, depth: 48, area: 4224 }
 const campusZone = (id, name, label, x0, x1, z0, z1, kind, v1, ref) => ({ id, name, label, x0, x1, z0, z1, kind, v1, ref })

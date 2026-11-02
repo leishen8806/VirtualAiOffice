@@ -80,6 +80,14 @@ function officeMode(campus, legacy, layout = DEFAULT_OFFICE_LAYOUT, latest = fal
 
 export function whR1Requested(paramsOrSearch = '') {
   const params = paramsOrSearch instanceof URLSearchParams ? paramsOrSearch : new URLSearchParams(String(paramsOrSearch || ''))
+  const legacy = params.getAll('legacy')
+  if (legacy.length === 1 && legacy[0] === 'drcampus') return false
+  const places = params.getAll('place')
+  if (places.length === 1 && (places[0] === 'dr' || places[0] === `${DEFAULT_PLACE_TENANT}-warehouse`)) return true
+  const campuses = params.getAll('campus')
+  if (campuses.length === 1 && campuses[0] === '1') return true
+  const controlRooms = params.getAll('controlRoom')
+  if (controlRooms.length === 1 && controlRooms[0] === '1') return true
   const values = params.getAll('whr1')
   return values.length === 1 && values[0] === '1'
 }
@@ -141,7 +149,8 @@ export function latestSearch(placeId) {
 
 export function resolvePlaceMode(search = '') {
   const params = new URLSearchParams(String(search || ''))
-  const controlRoom = params.get('controlRoom') === '1'
+  const controlRooms = params.getAll('controlRoom')
+  const controlRoom = controlRooms.length === 1 && controlRooms[0] === '1'
   const whr1 = whR1Requested(params)
   const places = params.getAll('place')
   if (places.length > 1) return officeMode(false, false)
@@ -170,7 +179,7 @@ export function resolvePlaceMode(search = '') {
   }
   const campuses = params.getAll('campus')
   const campus = campuses.length === 1 && campuses[0] === '1'
-  if (campus && whr1) return warehouseMode(controlRoom, true, true)
+  if ((campus || controlRoom) && whr1) return warehouseMode(controlRoom, true, true)
   return officeMode(campus, true, officeLayout(params))
 }
 
