@@ -339,6 +339,17 @@ const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 // 显示名称（只在办公室 3D 里用，不改 Paperclip 里的 agent 名）：存在本目录 names.json
 const NAMES_FILE = path.join(HERE, 'names.json')
 const readNames = () => { try { return JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8')) } catch { return {} } }
+// MOVEFIX J：改名查重。返回已经叫这个名字的那个 key（不分大小写、忽略首尾空格），没有就返回 null；
+// 改成自己原来的名字不算重复。现状 Reviewer1 与 React1 都显示「R1」，现值由董事会决定怎么改。
+function nameConflict(names, key, name) {
+  const wanted = String(name ?? '').trim().toLowerCase()
+  if (!wanted) return null
+  for (const [id, value] of Object.entries(names)) {
+    if (id === key) continue
+    if (String(value ?? '').trim().toLowerCase() === wanted) return id
+  }
+  return null
+}
 
 // 真实事件账本（「今日回放」的数据源）：订阅 state() 已生成的 events，脱敏存档。本模块出错只记日志，不影响 /state。
 const ledger = createEventsLedger({ redactText, dir: HERE, now: Date.now, tz: PNH.tz, names: readNames })
@@ -356,6 +367,7 @@ async function act(a, options = {}) {
     need(UUID.test(key) || /^board:.{1,12}$/.test(key), '对象不对')
     const name = str(a.name, 24).replace(/[<>"]/g, '')
     const names = readNames()
+    need(!nameConflict(names, key, name), '这个显示名已经有人用了，换一个')
     if (name) names[key] = name
     else delete names[key] // 清空 = 恢复原名
     fs.writeFileSync(NAMES_FILE, JSON.stringify(names, null, 2))

@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { r1ToWorld, runtimeYawFromFacing, R1_RESERVED_SEATS as RESERVED } from './office-r1-layout.js'
+import { r1ToWorld, runtimeYawFromFacing, R1_RESERVED_SEATS as RESERVED, R1_BOARD_TRANSITION_OVERRIDES, R1_TABLE_CATEGORIES, r1ChairFacing, r1SeatedYaw } from './office-r1-layout.js'
 
 export const R1_WALK_RADIUS = .6
 export const R1_GRID = .25
@@ -271,7 +271,16 @@ export const R1_SEAT_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entri
 }).map(([name, row]) => [name, Object.freeze({ ...row, home: Object.freeze(row.home), ...(row.localPath ? { localPath: Object.freeze(row.localPath.map(Object.freeze)) } : {}) })])))
 
 // R6: measured public-seat transitions; four sofa point lists approved verbatim.
-export const R1_PUBLIC_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entries({"02-CH-001":[[-16.5,-17.8],[-16.5,-16.89]],"02-CH-002":[[-16.5,-20.2],[-16.5,-21.11]],"02-CH-003":[[-15.3,-17.8],[-15.3,-16.89]],"02-CH-004":[[-15.3,-20.2],[-15.3,-21.11]],"02-CH-005":[[-14.1,-17.8],[-14.1,-16.89]],"02-CH-006":[[-14.1,-20.2],[-14.1,-21.11]],"02-CH-007":[[-12.9,-17.8],[-12.9,-16.89]],"02-CH-008":[[-12.9,-20.2],[-12.9,-21.11]],"02-CH-009":[[-11.7,-17.8],[-11.7,-16.89]],"02-CH-010":[[-11.7,-20.2],[-11.7,-21.11]],"02-CH-011":[[-10.5,-17.8],[-10.5,-16.89]],"02-CH-012":[[-10.5,-20.2],[-10.5,-21.11]],"02-CH-013":[[-17.55,-19],[-18.46,-19]],"02-CH-014":[[-9.45,-19],[-8.54,-19]],"03-CH-001":[[-2.55,-16],[-1.6399999999999997,-16]],"03-CH-002":[[-3.6,-17.05],[-2.6934628247365118,-17.12931172590037]],"03-CH-003":[[-4.65,-16],[-4.44,-16.68],[-4.130000000000001,-17.45],[-4.11,-17.49],[-4.08,-17.53],[-4.04,-17.56],[-3.7100000000000004,-17.72],[-3.1100000000000003,-17.92]],"03-CH-004":[[-3.6,-14.95],[-2.6988560574451714,-14.82335247812634]],"07-CH-001":[[-1.85274,-2.697717],[-2.1756937600236426,-0.06746969815049653]],"07-CH-002":[[-1.140782,-1.464571],[-0.630782,0.04542899999999994]],"07-CH-003":[[-0.05,-0.549296],[0.3649998548795946,0.16950516892636958]],"07-CH-004":[[1.288042,-0.062288],[1.9238590040182766,0.4712255775228431]],"07-CH-005":[[2.711958,-0.062288],[3.4919028134078394,0.2215888888765185]],"07-CH-006":[[4.05,-0.549296],[3.6350001451204053,0.16950516892636958]],"07-CH-007":[[5.140782,-1.464571],[5.920727040987603,-1.7484472636058994]],"07-CH-008":[[5.85274,-2.697717],[6.4885567467379195,-3.2312308841376183]],"07-CH-009":[[6.1,-4.1],[6.84,-3.7299999999999995]],"07-CH-010":[[5.85274,-5.502283],[6.928387011695225,-4.021781900293846]],"07-CH-011":[[5.140782,-6.735429],[4.725781580343225,-7.454229842851968]],"07-CH-012":[[-1.140782,-6.735429],[-0.7257815803432253,-7.454229842851968]],"07-CH-013":[[-1.85274,-5.502283],[-1.6175321672280654,-7.417897072667752]],"07-CH-014":[[-2.1,-4.1],[-2.34,-5.51],[-2.3200000000000003,-5.619999999999999],[-2.3000000000000003,-5.68],[-1.61,-7.42]],"10-CH-001":[[-15.3,11.75],[-15.3,10.9]],"10-CH-002":[[-13.95,11.75],[-13.95,10.9]],"10-CH-003":[[-12.6,11.75],[-12.6,10.9]],"10-CH-004":[[-11.25,11.75],[-11.25,10.9]],"10-CH-005":[[-9.9,11.75],[-9.9,10.9]],"10-CH-006":[[-14.4,14.6],[-13.49,14.6]],"10-CH-007":[[-15.9,13.733975],[-15.11191697441717,13.278974840892102]],"10-CH-008":[[-15.9,15.466025],[-15.120577227445551,15.916025157359458]],"10-CH-009":[[-8.4,15],[-7.49,15]],"10-CH-010":[[-9.9,14.133975],[-9.11191697441717,13.678974840892103]],"10-CH-011":[[-9.9,15.866025],[-9.120577227445551,16.31602515735946]],"14-BN-001":[[-8,35],[-8,34.12]],"14-BN-002":[[11,35],[11,34.12]],"14-BN-003":[[22.5,29],[21.63,27.91]],"14-BN-004":[[-18,33],[-18,32.12]],"14-CH-001":[[-15,29],[-14.09,29]],"14-CH-002":[[-16,28],[-16,27.09]],"14-CH-003":[[-17,29],[-17.91,29]],"14-CH-004":[[-16,30],[-16,30.91]],"14-CH-005":[[-16.5,24],[-15.59,24]],"14-CH-006":[[-17.5,23],[-17.5,22.09]],"14-CH-007":[[-18.5,24],[-19.41,24]],"14-CH-008":[[-17.5,25],[-17.5,25.91]],"12-SF-001":[[14.039365,12.400265],[14.409738692692903,12.551338914892755],[15.4,11.775]],"12-SF-002":[[14.518558,14.814065],[14.789034554390293,14.519374597161436],[15.4,11.775]],"12-SF-003":[[17.025029,15.08122],[16.833645159613894,14.729976173521775],[16.6,11.775]],"12-SF-004":[[17.960623,12.757641],[17.57043111283354,12.845676738137861],[16.6,11.775]]}).map(([id, points]) => [id, Object.freeze(points.map(([x, z]) => Object.freeze({ x, z })))])))
+// MOVEFIX D：进出点的位置变更只走 office-r1-layout.js 的冻结偏离表，原值留在下表里以便核对。
+const TRANSITION_PATCH = new Map(R1_BOARD_TRANSITION_OVERRIDES.map(entry => [entry.id, entry]))
+const applyTransitionOverride = (id, points) => {
+  const entry = TRANSITION_PATCH.get(id)
+  if (!entry) return points
+  const last = points.at(-1)
+  if (Math.abs(last[0] - entry.from[0]) > 1e-9 || Math.abs(last[1] - entry.from[1]) > 1e-9) throw new Error(`R1 transition override no longer matches the measured value: ${id}`)
+  return [...points.slice(0, -1), [entry.to[0], entry.to[1]]]
+}
+export const R1_PUBLIC_TRANSITIONS = Object.freeze(Object.fromEntries(Object.entries({"02-CH-001":[[-16.5,-17.8],[-16.5,-16.89]],"02-CH-002":[[-16.5,-20.2],[-16.5,-21.11]],"02-CH-003":[[-15.3,-17.8],[-15.3,-16.89]],"02-CH-004":[[-15.3,-20.2],[-15.3,-21.11]],"02-CH-005":[[-14.1,-17.8],[-14.1,-16.89]],"02-CH-006":[[-14.1,-20.2],[-14.1,-21.11]],"02-CH-007":[[-12.9,-17.8],[-12.9,-16.89]],"02-CH-008":[[-12.9,-20.2],[-12.9,-21.11]],"02-CH-009":[[-11.7,-17.8],[-11.7,-16.89]],"02-CH-010":[[-11.7,-20.2],[-11.7,-21.11]],"02-CH-011":[[-10.5,-17.8],[-10.5,-16.89]],"02-CH-012":[[-10.5,-20.2],[-10.5,-21.11]],"02-CH-013":[[-17.55,-19],[-18.46,-19]],"02-CH-014":[[-9.45,-19],[-8.54,-19]],"03-CH-001":[[-2.55,-16],[-1.6399999999999997,-16]],"03-CH-002":[[-3.6,-17.05],[-2.6934628247365118,-17.12931172590037]],"03-CH-003":[[-4.65,-16],[-4.44,-16.68],[-4.130000000000001,-17.45],[-4.11,-17.49],[-4.08,-17.53],[-4.04,-17.56],[-3.7100000000000004,-17.72],[-3.1100000000000003,-17.92]],"03-CH-004":[[-3.6,-14.95],[-2.6988560574451714,-14.82335247812634]],"07-CH-001":[[-1.85274,-2.697717],[-2.1756937600236426,-0.06746969815049653]],"07-CH-002":[[-1.140782,-1.464571],[-0.630782,0.04542899999999994]],"07-CH-003":[[-0.05,-0.549296],[0.3649998548795946,0.16950516892636958]],"07-CH-004":[[1.288042,-0.062288],[1.9238590040182766,0.4712255775228431]],"07-CH-005":[[2.711958,-0.062288],[3.4919028134078394,0.2215888888765185]],"07-CH-006":[[4.05,-0.549296],[3.6350001451204053,0.16950516892636958]],"07-CH-007":[[5.140782,-1.464571],[5.920727040987603,-1.7484472636058994]],"07-CH-008":[[5.85274,-2.697717],[6.4885567467379195,-3.2312308841376183]],"07-CH-009":[[6.1,-4.1],[6.84,-3.7299999999999995]],"07-CH-010":[[5.85274,-5.502283],[6.928387011695225,-4.021781900293846]],"07-CH-011":[[5.140782,-6.735429],[4.725781580343225,-7.454229842851968]],"07-CH-012":[[-1.140782,-6.735429],[-0.7257815803432253,-7.454229842851968]],"07-CH-013":[[-1.85274,-5.502283],[-1.6175321672280654,-7.417897072667752]],"07-CH-014":[[-2.1,-4.1],[-2.34,-5.51],[-2.3200000000000003,-5.619999999999999],[-2.3000000000000003,-5.68],[-1.61,-7.42]],"10-CH-001":[[-15.3,11.75],[-15.3,10.9]],"10-CH-002":[[-13.95,11.75],[-13.95,10.9]],"10-CH-003":[[-12.6,11.75],[-12.6,10.9]],"10-CH-004":[[-11.25,11.75],[-11.25,10.9]],"10-CH-005":[[-9.9,11.75],[-9.9,10.9]],"10-CH-006":[[-14.4,14.6],[-13.49,14.6]],"10-CH-007":[[-15.9,13.733975],[-15.11191697441717,13.278974840892102]],"10-CH-008":[[-15.9,15.466025],[-15.120577227445551,15.916025157359458]],"10-CH-009":[[-8.4,15],[-7.49,15]],"10-CH-010":[[-9.9,14.133975],[-9.11191697441717,13.678974840892103]],"10-CH-011":[[-9.9,15.866025],[-9.120577227445551,16.31602515735946]],"14-BN-001":[[-8,35],[-8,34.12]],"14-BN-002":[[11,35],[11,34.12]],"14-BN-003":[[22.5,29],[21.63,27.91]],"14-BN-004":[[-18,33],[-18,32.12]],"14-CH-001":[[-15,29],[-14.09,29]],"14-CH-002":[[-16,28],[-16,27.09]],"14-CH-003":[[-17,29],[-17.91,29]],"14-CH-004":[[-16,30],[-16,30.91]],"14-CH-005":[[-16.5,24],[-15.59,24]],"14-CH-006":[[-17.5,23],[-17.5,22.09]],"14-CH-007":[[-18.5,24],[-19.41,24]],"14-CH-008":[[-17.5,25],[-17.5,25.91]],"12-SF-001":[[14.039365,12.400265],[14.409738692692903,12.551338914892755],[15.4,11.775]],"12-SF-002":[[14.518558,14.814065],[14.789034554390293,14.519374597161436],[15.4,11.775]],"12-SF-003":[[17.025029,15.08122],[16.833645159613894,14.729976173521775],[16.6,11.775]],"12-SF-004":[[17.960623,12.757641],[17.57043111283354,12.845676738137861],[16.6,11.775]]}).map(([id, points]) => [id, Object.freeze(applyTransitionOverride(id, points).map(([x, z]) => Object.freeze({ x, z })))])))
 
 const distance = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2)
 const cache = new WeakMap()
@@ -314,7 +323,7 @@ export function createR1Navigation(layout) {
   let packedJumps = null
   const jumpEdges = new Map(), reverseJumps = new Map(), landmarkCosts = [], reverseCosts = []
   const search = { blocked: new Int8Array(size), links: new Uint32Array(size), estimates: new Float64Array(size), forwardEstimates: new Float64Array(size), costs: new Float64Array(size), previous: new Int32Array(size), closed: new Uint8Array(size), open: new Heap(size), peopleFlags: new Uint32Array(size), backCosts: new Float64Array(size), next: new Int32Array(size), backClosed: new Uint8Array(size), backOpen: new Heap(size) }
-  const preparation = { milliseconds: 0, searchWarmup: [], mainThreadSlices: [] }
+  const preparation = { milliseconds: 0, searchWarmup: [], mainThreadSlices: [], skippedStations: [] }
   const bodyMasks = new Map(), sweepMasks = new Map()
   const currentMasks = new WeakMap()
   const stations = new Map(layout.r1.workstations.map(w => [w.business_id, { ...w, home: layout.seats[w.business_id][4] }]))
@@ -363,7 +372,13 @@ export function createR1Navigation(layout) {
         if (query(p, name) || !clear(s.home, p, name, .6, ignore)) continue
         exit = { ...p, distance: cm / 100, degrees }; break
       }
-      if (!exit) throw new Error(`R1 ${name}: no exit within 1.2 m / 60 degrees`)
+      if (!exit) {
+        // 登记工位没有出口仍要报错（防回归）；自动 / 临时座位只跳过那一位，不让全场走动停摆。
+        if (frozen) throw new Error(`R1 ${name}: no exit within 1.2 m / 60 degrees`)
+        preparation.skippedStations.push({ name, reason: 'no exit within 1.2 m / 60 degrees' })
+        console.warn(`R1 navigation: ${name} has no exit within 1.2 m / 60 degrees; that seat stays put and everyone else keeps moving`)
+        continue
+      }
       if (performance.now() - slice > 8) { preparation.mainThreadSlices.push(performance.now() - slice); yield; slice = performance.now() }
       const localPath = Object.freeze((frozen?.localPath || [[exit.x, exit.z]]).map(([x, z]) => Object.freeze({ x, z })))
       if (Math.hypot(localPath[0].x - exit.x, localPath[0].z - exit.z) > 1e-9 || localPath.slice(1).reduce((n, p, i) => n + Math.hypot(p.x - localPath[i].x, p.z - localPath[i].z), 0) > 3.5) throw new Error(`R1 ${name}: invalid frozen workstation local path`)
@@ -919,7 +934,20 @@ export function createR1Navigation(layout) {
     return result
   }
 
-  const seats = layout.r1.elements.filter(e => ['02', '03', '07', '10', '12', '14'].includes(e.regionId) && ['椅子', '吧凳', '弧形沙发段', '室外长椅'].includes(e.category)).map(e => ({ id: e.id, category: e.category, ...r1ToWorld(e.xM, e.yM), yaw: e.facingLocal ? runtimeYawFromFacing(e.facingLocal[0], -e.facingLocal[1]) : -Number(e.yawDeg || 0) * Math.PI / 180, zone: e.regionId, meeting: e.regionId === '02', room: 'A', pose: ['弧形沙发段', '室外长椅'].includes(e.category) ? 'lounge' : 'sit' }))
+  // MOVEFIX F：椅子与吧凳的登记 yaw 一律朝外，只靠 approach() 的 chairFacings + π 纠正；
+  // 这里改为与 chairFacings 同一算法（r1ChairFacing）得出，任何不经过 approach() 的调用也不会背对桌坐。
+  // 弧形沙发段按 approach() 的圆弧公式处理，室外长椅沿用董事会 2026-10-29 批准的朝向，都保留登记值。
+  const registeredYaw = e => e.facingLocal ? runtimeYawFromFacing(e.facingLocal[0], -e.facingLocal[1]) : -Number(e.yawDeg || 0) * Math.PI / 180
+  const seatTables = layout.r1.elements.filter(e => R1_TABLE_CATEGORIES.includes(e.category))
+  // MOVEFIX E：座面高度取登记的椅座子件（zM + 厚度）——吧凳 0.75 m、椅子 0.45 m。
+  // 这是权威数值，比往座位中心打一条射线可靠（实测 5 张吧凳里 4 张射不到上表面，1 张射到了半高的底座）。
+  const seatPads = new Map(layout.r1.elements.filter(e => e.category === '椅座子件').map(e => [e.id, Number(e.zM || 0) + Number(e.heightM || 0)]))
+  const seats = layout.r1.elements.filter(e => ['02', '03', '07', '10', '12', '14'].includes(e.regionId) && ['椅子', '吧凳', '弧形沙发段', '室外长椅'].includes(e.category)).map(e => {
+    const world = r1ToWorld(e.xM, e.yM)
+    const facing = ['椅子', '吧凳'].includes(e.category) ? r1ChairFacing(seatTables, world) : null
+    const pad = seatPads.get(`${e.id}-SEAT`)
+    return { id: e.id, category: e.category, ...world, yaw: facing ? r1SeatedYaw(facing) : registeredYaw(e), table: facing?.table || null, seatY: Number.isFinite(pad) ? Number(pad.toFixed(6)) : null, zone: e.regionId, meeting: e.regionId === '02', room: 'A', pose: ['弧形沙发段', '室外长椅'].includes(e.category) ? 'lounge' : 'sit' }
+  })
   const gate = r1ToWorld(28, 0), roomAt = (x, z) => layout.regions.find(r => x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1)
   const trip = (from, to) => {
     if (!prepared) return []
