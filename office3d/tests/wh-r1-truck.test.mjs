@@ -44,8 +44,8 @@ test('TR-2/4 shared logo and fleet atlas retains five receiving IDs and 示意 o
   assert.deepEqual(a.userData.fleet.map(f=>f.number),Array.from({length:5},(_,i)=>`DL-0${i+1}`))
   for(const f of a.userData.fleet){assert.ok(text.includes(f.number));assert.ok(text.includes(f.id+' · 示意'))}
   assert.equal(a.material.toneMapped,false);assert.equal(v.root.getObjectByName('wh-r1-vehicle-labels').material.toneMapped,false)
-  const roofLabel=v.root.getObjectByName('wh-r1-vehicle-labels').geometry.attributes.normal
-  for(let i=0;i<roofLabel.count;i++)assert.equal(roofLabel.getY(i),1)
+  const labelMesh=v.root.getObjectByName('wh-r1-vehicle-labels'),roofLabel=labelMesh.geometry.attributes.normal
+  labelMesh.userData.labels.forEach((row,index)=>{for(let i=index*4;i<index*4+4;i++)assert.equal(roofLabel.getY(i),row.body?0:1)})
   assert.ok(!a.material.transparent);assert.equal(v.root.userData.trucks.mirrorsBeyondEnvelope,.25)
   const parts=v.root.userData.trucks.parts
   for(const name of ['windscreen','A-pillar','door-handle','mirror','step','wiper','grille','headlamp','indicator','foglamp','frame-rail','fuel-tank','battery-box','side-guard','rear-underrun','mudflap','tyre','rim','cargo-rib','corner-post','roof-rail','closed-rear-door','locking-rod','hinge','rear-handle','rear-lamp','side-marker','reflector'])assert.ok(parts.some(p=>p.name===name),name)
