@@ -416,3 +416,16 @@ Microsoft Rocketbox, MIT, upstream commit 0943055db6ec570bcef9f2c8b41c9e5467c808
 All avatars referenced by AVATARS, CAST, CAST_OVERRIDE, R1_ADDED_AVATARS and app mappings have compact outputs, including Female_Adult_13/17, Business_Male_06/07 and Male_Adult_20. New avatar imports must run `scripts/perf-load-2` (see its README) and regenerate the compact MANIFEST. After I7B-A, Q-V1 will arrange the shared conversion run. Until converted, a failed compact model, animation or texture retries only its own retained original; FBXLoader loads dynamically on demand.
 
 Runtime `.gz` files use application/octet-stream, with no Content-Encoding gzip. The service allowlist includes `.gz`; server rollout/restart requires the separate Q-V1/board deployment approval.
+
+### R1 人物导入补充（2026-10-31，OFFICE-R1-I7B-A）
+
+来源：董事会批准的 Rocketbox（MIT）隔离区清单 `DOWNLOAD_LIST-20261030.md`；需求修订新增 1 人。
+
+| 文件 | 字节 | SHA-256 |
+| --- | ---: | --- |
+| assets/models/people/Male_Adult_21/Male_Adult_21.fbx | 518928 | 3e73b7a6d9123c15e746b5d8285035c2372e01dd5573b0a8d5fc9ac04a16c776 |
+| assets/models/people/Male_Adult_21/Male_Adult_21_facial.fbx | 1779744 | 0a40c3183ad21e1434839fb1b046d1bd9219da661b10401d332724e106b57aca |
+| assets/models/people/Male_Adult_21/m251_body_color.jpg | 108254 | 851a63788d6c00c7dc28038a985bc91846c4ff34b080140351996a33e82e43b8 |
+| assets/models/people/Male_Adult_21/m251_head_color.jpg | 78461 | ab5fa59aaf36f6a4f3b2de883f75e9846bc82582211f8825ac17f7faebfb7a1b |
+| assets/models/people/Male_Adult_21/m251_keffiyeh_color.jpg | 341751 | ecae709a298440cf2bb3e55ceb5c276fd6985a40b931fa5ced86832d207e21e5 |
+| assets/models/people/Male_Adult_21/preview.png | 352293 | 60a5d5812b05342d696d7bf2ea45bcedf3e815c7bde7112865697be89361c003 |

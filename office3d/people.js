@@ -67,6 +67,17 @@ export async function loadPeople(onProgress, extraAvatars = []) {
   return out
 }
 
+// NPC（服务人员、演示人物）用的人物不在 CAST 的 22 张脸里，按名字单独加载到同一个 P 上。
+// 动作片段与同事共用（已按性别加载好），所以这里只补 avatars。
+export async function loadExtraAvatars(P, list) {
+  await Promise.all(list.map(async ({ name, gender }) => {
+    if (P.avatars[name]) return
+    const obj = await loadCompactPerson(name)
+    P.avatars[name] = { obj, gender, scale: HEIGHT[gender] / obj.userData.compactHeight }
+  }))
+  return P
+}
+
 // 首屏之后再慢慢加载日常小动作；加载到一个就能用一个
 export async function loadExtras(P) {
   for (const g of ['male', 'female']) {
