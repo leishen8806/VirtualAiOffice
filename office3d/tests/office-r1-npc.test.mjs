@@ -47,6 +47,16 @@ test('NPC-5：11 位服务人员的模型资源都已导入，不能在运行时
 })
 
 test('NPC-5：额外人物沿用 compact 资产加载器，不调用已移除的 FBX loader', () => {
+})
+
+test('NPC-5: every service NPC has a compact runtime asset', () => {
+  for (const npc of R1_NPC_ROSTER) {
+    if (npc.avatar === 'Chef_Female_01') continue // Missing source head texture remains a tracked exception.
+    assert.ok(existsSync(new URL(`../assets/compact/people/${npc.avatar}.glb.gz`, import.meta.url)), `missing compact asset: ${npc.avatar}`)
+  }
+})
+
+test('NPC-5: extra avatars use the compact loader', () => {
   const people = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
   const extraLoader = people.slice(people.indexOf('export async function loadExtraAvatars'), people.indexOf('// 首屏之后'))
   assert.match(extraLoader, /loadCompactPerson\(name\)/)

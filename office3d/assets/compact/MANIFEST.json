@@ -3294,6 +3294,60 @@
       "license": "CC0-1.0 (Quaternius)"
     },
     {
+      "source": "office3d/assets/models/people/Business_Female_01/Business_Female_01_facial.fbx",
+      "sourceSha256": "bf886b61087bf494431c5124bffe2f3d2cb80887fd19daeaec19abb72ae14868",
+      "file": "office3d/assets/compact/people/Business_Female_01.glb.gz",
+      "bytes": 277971,
+      "sha256": "fe76ef472f530864e41210e8147b29073402835f519c62b145464a9ff88049b5",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000020816918392185985,
+        "vertexErrorSourceUnits": 0.00000976855372139434,
+        "vertices": 6119,
+        "morphs": 39,
+        "height": 174.03591623558367,
+        "bytes": 1554472
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Female_02/Business_Female_02_facial.fbx",
+      "sourceSha256": "04dcae60a2386a2e2b2799aeafc6335c532db7c4b322db3e50fbea4b056556a6",
+      "file": "office3d/assets/compact/people/Business_Female_02.glb.gz",
+      "bytes": 267974,
+      "sha256": "1c1d270bf85843781810ead448fdbe925cb23320c45243de569876c24b0eb75a",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000017087373596233842,
+        "vertexErrorSourceUnits": 0.000008366000341088004,
+        "vertices": 5802,
+        "morphs": 52,
+        "height": 172.87523142336292,
+        "bytes": 1493208
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Business_Female_03/Business_Female_03_facial.fbx",
+      "sourceSha256": "20210d05e7e4d2ca368f3605ce91e0d552a7ba74659f09f0add1f0b9bbe27bdc",
+      "file": "office3d/assets/compact/people/Business_Female_03.glb.gz",
+      "bytes": 272695,
+      "sha256": "ac6cb42e9bee47aed1e55a9d862c550c9d548f224263097a4b0acac96fed40dc",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000001477291463233194,
+        "vertexErrorSourceUnits": 0.000008366984225578382,
+        "vertices": 5809,
+        "morphs": 39,
+        "height": 174.30565261504313,
+        "bytes": 1481832
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
       "source": "office3d/assets/models/people/Business_Male_06/Business_Male_06_facial.fbx",
       "sourceSha256": "5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e",
       "file": "office3d/assets/compact/people/Business_Male_06.glb.gz",
@@ -3506,6 +3560,42 @@
         "morphs": 39,
         "height": 173.69453584290574,
         "bytes": 1115908
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_11/Female_Adult_11_facial.fbx",
+      "sourceSha256": "7ddb77aedb39fa1dd17dc3b5beffaf260769f39cbace52e9e6cc62cd93ee1af9",
+      "file": "office3d/assets/compact/people/Female_Adult_11.glb.gz",
+      "bytes": 273729,
+      "sha256": "797ec40358db93171aa3495848d6561dcb118a3fe62e0cd40671bc74881e3d02",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000015548463646527655,
+        "vertexErrorSourceUnits": 0.000008378981558160572,
+        "vertices": 6261,
+        "morphs": 39,
+        "height": 173.6420357842301,
+        "bytes": 1586076
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Female_Adult_12/Female_Adult_12_facial.fbx",
+      "sourceSha256": "0dd67a4fd3f9d9b3a73d17e0862742ebb3197016387915b41f4815d50308c7ef",
+      "file": "office3d/assets/compact/people/Female_Adult_12.glb.gz",
+      "bytes": 268744,
+      "sha256": "6f659ffc2c49ca5dc321401d97e86e4625a74a4b515c5cdc65ad26b20b584a2b",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000018513187335552704,
+        "vertexErrorSourceUnits": 0.00000837321783230512,
+        "vertices": 5570,
+        "morphs": 39,
+        "height": 172.67290072417939,
+        "bytes": 1430676
       },
       "license": "MIT (Microsoft Rocketbox)"
     },
@@ -3762,6 +3852,78 @@
       "license": "MIT (Microsoft Rocketbox)"
     },
     {
+      "source": "office3d/assets/models/people/Male_Adult_13/Male_Adult_13_facial.fbx",
+      "sourceSha256": "acf0693228d3c3bca085f724aae2965c904b38d768bc0a71ba8a4606ab806549",
+      "file": "office3d/assets/compact/people/Male_Adult_13.glb.gz",
+      "bytes": 202191,
+      "sha256": "611386f161164097556148c05b2827939bd8f24ce8da8bfd265ffaf2a9793230",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000006511223507797212,
+        "vertexErrorSourceUnits": 0.000009648847650826691,
+        "vertices": 3949,
+        "morphs": 26,
+        "height": 180.5881591072135,
+        "bytes": 995108
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_14/Male_Adult_14_facial.fbx",
+      "sourceSha256": "b6db6c4e264dcdb8735a91158c1d5f9f182d4a2f6a77f904a59e98c6af9d33bc",
+      "file": "office3d/assets/compact/people/Male_Adult_14.glb.gz",
+      "bytes": 197166,
+      "sha256": "3cb08fd2a27f3eaf838ef4d0b933ba366e62900b6a1da328ecab53ee317bfae3",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.0000020949119078359323,
+        "vertexErrorSourceUnits": 0.000009667644477710491,
+        "vertices": 4090,
+        "morphs": 26,
+        "height": 179.61115901018195,
+        "bytes": 1025876
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_15/Male_Adult_15_facial.fbx",
+      "sourceSha256": "14d1e398fb0dc762eafa1e457cf8fc4f151aefc5b54c8b3e6093486b10bbb380",
+      "file": "office3d/assets/compact/people/Male_Adult_15.glb.gz",
+      "bytes": 221260,
+      "sha256": "476d7ef0a6cf8abbbac272c3fe24713ddddc02c5acb2cbd0b6d9686ece68373d",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007452245705353219,
+        "vertexErrorSourceUnits": 0.00001003407895497078,
+        "vertices": 4519,
+        "morphs": 26,
+        "height": 181.85873112879,
+        "bytes": 1174312
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_16/Male_Adult_16_facial.fbx",
+      "sourceSha256": "5aa9bce9a7a0ebbcae86d7c11cf32a72cae845e60cbcec32bd27136db3668b04",
+      "file": "office3d/assets/compact/people/Male_Adult_16.glb.gz",
+      "bytes": 207208,
+      "sha256": "b60363239bec8bebc60b1197b5668ab39b9d3b1d1baee484148e1deb24e0c576",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007473340704215104,
+        "vertexErrorSourceUnits": 0.000009887443862515872,
+        "vertices": 4237,
+        "morphs": 26,
+        "height": 180.90167890711095,
+        "bytes": 1109652
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
       "source": "office3d/assets/models/people/Male_Adult_20/Male_Adult_20_facial.fbx",
       "sourceSha256": "127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82",
       "file": "office3d/assets/compact/people/Male_Adult_20.glb.gz",
@@ -3776,6 +3938,42 @@
         "morphs": 26,
         "height": 180.48939057404564,
         "bytes": 1113500
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Male_Adult_21/Male_Adult_21_facial.fbx",
+      "sourceSha256": "0a40c3183ad21e1434839fb1b046d1bd9219da661b10401d332724e106b57aca",
+      "file": "office3d/assets/compact/people/Male_Adult_21.glb.gz",
+      "bytes": 204928,
+      "sha256": "577ea52615d1f168bdbc6253349cbc6587465df0a65d82485cc58e1b221e1d7f",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.000007583202307609796,
+        "vertexErrorSourceUnits": 0.000009432223338956558,
+        "vertices": 4338,
+        "morphs": 39,
+        "height": 181.7397071778168,
+        "bytes": 1141184
+      },
+      "license": "MIT (Microsoft Rocketbox)"
+    },
+    {
+      "source": "office3d/assets/models/people/Security_Male_01/Security_Male_01_facial.fbx",
+      "sourceSha256": "adfed3cf7631831c45b9703a6da198076c93aa21ade62305d803bc78a3d8e433",
+      "file": "office3d/assets/compact/people/Security_Male_01.glb.gz",
+      "bytes": 266271,
+      "sha256": "0e632fdc178bec4ad720e7f2103e536cfc67716c8b80441a45570fd621f71786",
+      "kind": "model",
+      "validation": {
+        "bones": 81,
+        "boundsError": 0.00000562706560408924,
+        "vertexErrorSourceUnits": 0.000011496168735532931,
+        "vertices": 6607,
+        "morphs": 39,
+        "height": 183.23473502480797,
+        "bytes": 1586360
       },
       "license": "MIT (Microsoft Rocketbox)"
     }
