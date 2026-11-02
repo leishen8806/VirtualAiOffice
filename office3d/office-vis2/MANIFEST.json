@@ -365,7 +365,7 @@
       "source": "R1-only procedural zone and plaza lighting; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "122C98078AAAA389FD5615106473FB0CD8B21A1693905CF546B955C5DB490B7C"
+      "sha256": "7A1777FB2808DBC9E78A2518D0B87C26203F652498E7D0461D2A2E70F2AA83F6"
     },
     {
       "file": "office-vis2/r1-brand.js",
