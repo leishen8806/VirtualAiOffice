@@ -226,9 +226,13 @@ test('act auth and body are unchanged; fake unavailable upstream never returns s
   const sigRe = /async function act\(a(?:, options = \{\})?\)/
   const reviewRe = /  if \(a\.type === 'review'\) \{[\s\S]*?\n  \}\n/
   const cancelRunRe = /  if \(a\.type === 'cancel_run'\) \{[\s\S]*?\n  \}\n(?=  if \(a\.type === 'review'\))/
-  const actBody = (text) => text.replace(sigRe, 'async function act(a)').replace(/\r\n/g, '\n').replace(cancelRunRe, '  /* cancel_run */\n').replace(reviewRe, '  /* review */\n')
+  // OFFICE-R1-MOVEFIX J（CMP-835，董事会 2026-10-30「名牌重名」）：rename 分支只新增一行显示名查重；
+  // 鉴权与其它所有分支仍须与 H2 备份逐字一致，所以这里只豁免这一行，并在下面正面断言它存在。
+  const renameGuardRe = / {4}need\(!nameConflict\(names, key, name\), '[^']*'\)\n/
+  const actBody = (text) => text.replace(sigRe, 'async function act(a)').replace(/\r\n/g, '\n').replace(cancelRunRe, '  /* cancel_run */\n').replace(reviewRe, '  /* review */\n').replace(renameGuardRe, '')
   const actNow = extract(source, 'async function act(a', '// 任务详情（只读）')
   assert.match(actNow, /^async function act\(a, options = \{\}\)/)
+  assert.match(actNow, /need\(!nameConflict\(names, key, name\), '[^']*'\)/, 'rename 分支必须保留显示名查重')
   assert.match(actNow, /const liveness = run && runAlive\(run, await readProcessTable\(\)\)/)
   assert.match(actNow, /if \(shouldBlockCancel\(liveness\)\)/)
   assert.equal(actBody(actNow), actBody(extract(backup, 'async function act(a)', '// 任务详情（只读）')))

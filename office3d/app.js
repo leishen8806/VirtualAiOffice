@@ -1,4 +1,4 @@
-import { R1_ADDED_AVATARS } from './office-r1-seating.js'
+import { R1_ADDED_AVATARS, r1SeatView } from './office-r1-seating.js'
 import * as THREE from './vendor/three/three.module.js'
 import { createCharacter } from './rig.js'
 import { loadAssets, placeFurniture, createCharacter3D } from './assets3d.js'
@@ -985,10 +985,13 @@ function modelFamily(a) {
 const FAMILY_NAME = { claude: 'Claude', deepseek: 'DeepSeek', codex: 'GPT' }
 const shortTitle = (t) => String(t || '').replace(/[（(].*$/, '').trim()
 const labelText = (a, nick) => [nick, shortTitle(a.title), FAMILY_NAME[modelFamily(a)]].filter(Boolean).join('-')
-function placeSeated(ch, home) {
+// MOVEFIX H：直接坐好时统一复位离座状态，否则这些人被算作离座，满 8 人后所有出发都被挡住。
+function placeSeated(ch, home, view) {
   ch.group.position.set(home.x, 0, home.z)
   ch.group.rotation.y = home.yaw
   ch.pose.sit = 1
+  if (view) r1SeatView(view)
+  if (!view || view.char !== ch) r1SeatView({ char: ch }) // 新建的 char 还没挂到 view 上，至少复位它的姿态
   ch.solve(0)
 }
 function createAgentView(a, index) {
@@ -1093,8 +1096,9 @@ let NAMES = {}
 let r1SeatsRefreshing = false
 function updateR1AutomaticSeats(agents) {
   if (!OFFICE_LAYOUT.assignAgents || r1SeatsRefreshing || !agents.some(a => !Object.hasOwn(SEATS, a.name))) return
-  const stats = director.stats()
-  if (!stats.prepared || !director.canRefreshSeats()) return
+  // MOVEFIX I：极速模式没有走动导演，不该等导航就绪——否则新同事永远分不到座位。
+  const walking = director.r1 === true
+  if (walking && (!director.stats().prepared || !director.canRefreshSeats())) return
   const added = OFFICE_LAYOUT.assignAgents(agents)
   let notice = document.getElementById('r1-auto-seat-notice')
   if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
@@ -1106,7 +1110,8 @@ function updateR1AutomaticSeats(agents) {
     for (const v of views.values()) {
       const seat = SEATS[v.data.name]; v.desk = furniture.deskAt(seat[1], seat[2]); v.chair = v.desk.chair; v.lampColour = null
     }
-    director.refreshSeats().finally(() => { r1SeatsRefreshing = false })
+    if (walking) director.refreshSeats().finally(() => { r1SeatsRefreshing = false })
+    else r1SeatsRefreshing = false
   } catch (error) { r1SeatsRefreshing = false; notice.textContent += `；座位准备失败：${error.message}` }
 }
 function applyState(s) {
@@ -1205,6 +1210,7 @@ function hideAway(v) {
   v.char.group.position.set(v.home.x, 0, v.home.z)
   v.char.group.rotation.y = v.home.yaw
   v.char.pose.sit = 1
+  r1SeatView(v) // MOVEFIX H：下班隐藏也要复位离座状态，否则下一次出行从大门坐标开始
 }
 let lastWorld = null
 let lastDutyOn = null, awardsSince = null
@@ -1255,7 +1261,7 @@ function applyWorld(s) {
         v.away = false
         v.arriving = false
         v.char.group.visible = true
-        if (!(live && !document.hidden && director.arrive(v))) placeSeated(v.char, v.home) // 不在前台看着就直接坐好
+        if (!(live && !document.hidden && director.arrive(v))) placeSeated(v.char, v.home, v) // 不在前台看着就直接坐好
       }, live ? Math.random() * 40000 : 0)
     }
   }
@@ -1278,7 +1284,8 @@ function backToDesk(v) {
   if (!v.lounging || v.act) return
   const seat = v.lounging
   const pts = loungePath(v, seat).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }])
-  if (director.travel(v, pts, v.home, false, null)) { seat.taken = null; v.lounging = null }
+  // 回工位这趟就算被放弃，人也已经由导演在工位坐好了，座位同样要释放。
+  if (director.travel(v, pts, v.home, false, null, () => { seat.taken = null; v.lounging = null })) { seat.taken = null; v.lounging = null }
 }
 function lifeTick(onDuty) {
   const now = Date.now()
@@ -1298,7 +1305,10 @@ function goLounge(v, now, stay, pick) {
   const seat = pick || (free ? free[Math.floor(Math.random() * free.length)] : LOUNGE.find((x) => !x.taken))
   if (!seat) return false
   seat.taken = v
-  if (director.travel(v, loungePath(v, seat), seat, !seat.meeting, null)) { v.lounging = seat; v.loungeUntil = now + stay; return true }
+  // MOVEFIX A：导演放弃这趟出行时回调 onAbort，座位与 lounging 必须一起清掉，
+  // 否则座位被永久占着、人却回到了工位（之后 backToDesk 会从 home 再出发一趟）。
+  const release = () => { if (seat.taken === v) seat.taken = null; if (v.lounging === seat) v.lounging = null; v.loungeUntil = 0 }
+  if (director.travel(v, loungePath(v, seat), seat, !seat.meeting, null, release)) { v.lounging = seat; v.loungeUntil = now + stay; return true }
   seat.taken = null
   return false
 }
@@ -1518,13 +1528,13 @@ function syncWaitingPeople(onDuty, live) {
   for (const v of views.values()) {
     if (!onDuty && v.visiting?.targetId === 'waiting') {
       if (live) director.cancelVisit(v, 'offDuty')
-      else if (director.cancelVisit(v, 'offDuty', true)) placeSeated(v.char, v.home)
+      else if (director.cancelVisit(v, 'offDuty', true)) placeSeated(v.char, v.home, v)
       continue
     }
     if (!live && v.visiting?.targetId === 'waiting' && hasQuestion(v.id)) director.cancelVisit(v, null, true)
     if (v.visiting?.targetId === 'waiting' && (!onDuty || !hasQuestion(v.id))) {
       if (live) director.cancelVisit(v, onDuty ? null : 'offDuty')
-      else if (director.cancelVisit(v, null, true)) placeSeated(v.char, v.home)
+      else if (director.cancelVisit(v, null, true)) placeSeated(v.char, v.home, v)
       continue
     }
     if (!selected.has(v.id) || v.visiting || v.mode !== 'idle' || v.act || v.lounging || v.away || v.leaving || v.arriving || voteSeated.has(v) || meet?.here?.includes(v)) continue
@@ -2325,29 +2335,41 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
     if (!views.size) { setTimeout(ready, 100); return }
     // Paint the seated placeholders before starting expensive FBX parsing.
     requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(async () => {
-      const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [] }
+      const status = scene.userData.r1People = { startedAt: performance.now(), replaced: [], failed: [], deferred: [] }
       try {
         const loaded = await loadPeople(undefined, Object.values(R1_ADDED_AVATARS))
         await loadR1Extras(loaded)
         PEOPLE = loaded
-        for (const v of views.values()) {
-          if (v.char.avatar) continue
+        const replace = v => {
           const personName = v.data?.name ?? v.name
           try {
             const seatIdx = Object.keys(SEATS).indexOf(personName), avatar = ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10', ...R1_ADDED_AVATARS })[personName] || (OFFICE_LAYOUT.temporary?.some(w => w.business_id === personName) ? 'Male_Adult_12' : null) || CAST_OVERRIDE[personName] || CAST[seatIdx % CAST.length]
             const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
-            if (!assets) { status.failed.push(personName); continue }
+            if (!assets) { status.failed.push(personName); return }
             const ch = createPerson(assets, avatar), previous = v.char
             Object.assign(ch.pose, previous.pose)
-            placeSeated(ch, v.home)
+            placeSeated(ch, v.home, v)
             fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(personName).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent(); v.char = ch
             status.replaced.push(personName)
           } catch { status.failed.push(personName) }
+        }
+        // MOVEFIX I：正在走动 / 坐公共座位的人不能替换——placeSeated 会把他们瞬移回工位。
+        const busy = v => v.act || v.r1PublicSeat || v.r1AwayFromDesk, deferred = new Set()
+        for (const v of views.values()) {
+          if (v.char.avatar) continue
+          if (busy(v)) { deferred.add(v); status.deferred.push(v.data?.name ?? v.name); continue }
+          replace(v)
           await new Promise(resolve => requestAnimationFrame(resolve))
         }
+        // 等他们回到工位再替换，最多等 1200 帧；仍在走动的保留轻量人物，不瞬移。
+        for (let tick = 0; tick < 1200 && deferred.size; tick++) {
+          for (const v of [...deferred]) if (!busy(v)) { deferred.delete(v); replace(v) }
+          await new Promise(resolve => requestAnimationFrame(resolve))
+        }
+        status.stillDeferred = [...deferred].map(v => v.data?.name ?? v.name)
         status.completedAt = performance.now()
         // Movement extras are optional: seated people and the first frame never wait for them.
         setTimeout(() => { status.movementStartedAt = performance.now(); loadR1MovementExtras(loaded).then(() => { status.movementReadyAt = performance.now() }).catch(() => { status.movementLoadFailed = true }) }, 0)

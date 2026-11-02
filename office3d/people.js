@@ -386,16 +386,8 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
   const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
   const before = new THREE.Vector3(), target = new THREE.Vector3(), handWorld = new THREE.Quaternion(), rotation = new THREE.Quaternion()
   const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward, limits: R1_ARM_LIMITS, hands: [] }
-  ch.solve = dt => {
-    // Remove last frame's correction before the original mixer updates its pose.
-    for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
-    solve(dt)
-    if (ch.pose?.r1AtDesk === false) {
-      for (const arm of arms) arm.bones.forEach((bone, i) => arm.original[i].copy(bone.quaternion))
-      report.active = false; return
-    }
-    report.active = true
-    ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
+  // 骨盆最低点（世界 Y）：组的 y 先置 0 再量，返回值用来把骨盆贴到座面上。
+  const measurePelvis = () => {
     ch.group.updateMatrixWorld(true)
     for (const [mesh, cache] of skinning) {
       const { rows, basis } = cache, position = mesh.geometry.attributes.position
@@ -413,6 +405,30 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
       for (const [w, m] of influences) { y += w * (m[1] * point.x + m[5] * point.y + m[9] * point.z + m[13]); sum += w }
       bottom = Math.min(bottom, y + basis.elements[13] * (1 - sum))
     }
+    return bottom
+  }
+  ch.solve = dt => {
+    // Remove last frame's correction before the original mixer updates its pose.
+    for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
+    solve(dt)
+    if (ch.pose?.r1AtDesk === false) {
+      for (const arm of arms) arm.bones.forEach((bone, i) => arm.original[i].copy(bone.quaternion))
+      report.active = false
+      // MOVEFIX E：坐在公共座位（吧凳 / 椅子 / 沙发 / 长椅）上时，按 director 实测的座面高度贴合骨盆；
+      // 位置由 director 维护，这里只调 y。工位的手臂 IK 不适用，保持不动。
+      const seatY = ch.pose?.r1PublicSeatY
+      report.publicSeatY = Number.isFinite(seatY) ? seatY : null
+      if (!Number.isFinite(seatY)) { report.pelvisY = null; return }
+      ch.group.position.y = 0
+      const bottom = measurePelvis()
+      ch.group.position.y = seatY + .015 - bottom
+      ch.group.updateWorldMatrix(false, false)
+      report.pelvisY = seatY + .015
+      return
+    }
+    report.active = true; report.publicSeatY = null
+    ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
+    const bottom = measurePelvis()
     ch.group.position.y = hit.point.y + .015 - bottom
     ch.group.updateWorldMatrix(false, false)
     report.offset = ch.group.position.toArray(); report.pelvisY = hit.point.y + .015; report.hands = []

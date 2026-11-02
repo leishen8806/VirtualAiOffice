@@ -79,6 +79,30 @@ export const R1_BOARD_ROUTE_OVERRIDES = Object.freeze([
 ])
 const ROUTE_PATCH = new Map(R1_BOARD_ROUTE_OVERRIDES.map(entry => [entry.id, entry.to]))
 
+// ── 公共座位进出点偏离表（冻结）──
+// 座位本身的登记位置不动，只改「人从哪一侧进出」；消费方是 office-r1-navigation.js 的 R1_PUBLIC_TRANSITIONS。
+const STOOL_REASON = '董事会 2026-10-30 截图"人坐进高桌"：区 10 吧凳 10-CH-001…005 的进出点原在咖啡台 10-CT-001 一侧（z = 10.9），离台边只有 0.10 m，人体半径 0.25 m 时约 0.15 m 落在台面里；改为从吧凳背后、远离咖啡台的一侧进出（z = 12.6），偏移量仍是 0.85 m，实测最小净空 0.95 m'
+const stoolTransition = (id, x) => Object.freeze({ id, date: '2026-10-31', reason: STOOL_REASON, from: Object.freeze([x, 10.9]), to: Object.freeze([x, 12.6]) })
+export const R1_BOARD_TRANSITION_OVERRIDES = Object.freeze([
+  stoolTransition('10-CH-001', -15.3), stoolTransition('10-CH-002', -13.95), stoolTransition('10-CH-003', -12.6),
+  stoolTransition('10-CH-004', -11.25), stoolTransition('10-CH-005', -9.9),
+])
+
+// 坐姿朝向的唯一算法：取最近桌台的最近边缘点。r1-furniture 的 chairFacings 与 navigation 的
+// LOUNGE_SEATS 都走这里，避免两处各算一套（MOVEFIX F：登记 yaw 对全部 59 张椅子都朝外）。
+export const R1_TABLE_CATEGORIES = Object.freeze(['办公桌', '圆桌', '会议桌', '协作桌', '弧形接待台', '环形吧台', '咖啡台'])
+export const r1ChairFacing = (tables, p) => tables.map(table => {
+  const t = r1ToWorld(table.xM, table.yM), yaw = -Number(table.yawDeg || 0) * Math.PI / 180
+  const c = Math.cos(yaw), s = Math.sin(yaw), dx = p.x - t.x, dz = p.z - t.z
+  let x = c * dx - s * dz, z = s * dx + c * dz
+  if (['圆桌', '环形吧台'].includes(table.category)) { const k = table.lengthM / 2 / (Math.hypot(x, z) || 1); x *= k; z *= k }
+  else { x = Math.max(-table.lengthM / 2, Math.min(table.lengthM / 2, x)); z = Math.max(-table.widthM / 2, Math.min(table.widthM / 2, z)) }
+  const edge = { x: t.x + c * x + s * z, z: t.z - s * x + c * z }
+  return { table: table.id, category: table.category, edge, distance: Math.hypot(edge.x - p.x, edge.z - p.z), yaw: Math.atan2(edge.x - p.x, edge.z - p.z) }
+}).sort((a, b) => a.distance - b.distance)[0]
+// 坐下后的朝向：膝盖指向桌台，与 director 的 approach()（chairFacings.yaw + π）一致。
+export const r1SeatedYaw = facing => facing ? facing.yaw + Math.PI : 0
+
 // ── 董事会新增件表（冻结）──
 // 和上面的偏离表同一个道理：登记数值不得改，所以董事会在验收里新加的实体也不进 office-r1/data.js，
 // 只在这里登记，每条带尺寸 / 位置 / 朝向 / 原因 / 日期；createR1Layout 把它们追加到 elements 末尾，
