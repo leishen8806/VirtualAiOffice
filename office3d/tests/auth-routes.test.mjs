@@ -381,28 +381,34 @@ test('csrf checks reject missing origin, cross-site, wrong content type and over
 })
 
 test('login failures stay uniform, account and source limits lock then recover, and digests hide IPs', async (t) => {
-  const { dir, createUser, call, setNow } = setup(t)
-  await createUser()
-
+  const timing = setup(t)
+  await timing.createUser()
   const wrongDurations = []
   const missingDurations = []
-  for (let i = 0; i < 3; i++) {
-    let started = process.hrtime.bigint()
-    const wrong = await login(call, { password: 'WrongPassword123', remoteAddress: `10.0.0.${20 + i}` })
-    wrongDurations.push(Number(process.hrtime.bigint() - started))
-    started = process.hrtime.bigint()
-    const missing = await login(call, { username: `ghost${i}.x`, password: 'WrongPassword123', remoteAddress: `10.0.0.${30 + i}` })
-    missingDurations.push(Number(process.hrtime.bigint() - started))
-    assert.equal(wrong.status, 401)
-    assert.equal(missing.status, 401)
-    assert.deepEqual(bodyOf(wrong), bodyOf(missing))
+  for (let i = 0; i < 12; i++) {
+    timing.setNow(Date.parse('2026-10-20T10:00:00.000Z') + i * 16 * 60000)
+    const results = {}
+    for (const kind of i % 2 ? ['missing', 'wrong'] : ['wrong', 'missing']) {
+      const started = process.hrtime.bigint()
+      results[kind] = kind === 'wrong'
+        ? await login(timing.call, { password: 'WrongPassword123', remoteAddress: `10.0.1.${20 + i}` })
+        : await login(timing.call, { username: `ghost${i}.x`, password: 'WrongPassword123', remoteAddress: `10.0.2.${20 + i}` })
+      if (i > 0) (kind === 'wrong' ? wrongDurations : missingDurations).push(Number(process.hrtime.bigint() - started))
+    }
+    assert.equal(results.wrong.status, 401)
+    assert.equal(results.missing.status, 401)
+    assert.deepEqual(bodyOf(results.wrong), bodyOf(results.missing))
   }
   wrongDurations.sort((a, b) => a - b)
   missingDurations.sort((a, b) => a - b)
   const wrongMedian = wrongDurations[Math.floor(wrongDurations.length / 2)]
   const missingMedian = missingDurations[Math.floor(missingDurations.length / 2)]
   const ratio = wrongMedian > missingMedian ? wrongMedian / missingMedian : missingMedian / wrongMedian
-  assert.ok(ratio < 2.5, `login timing ratio too large: ${ratio}`)
+  console.log(`AUTH_LOGIN_TIMING=${JSON.stringify({ samples: wrongDurations.length, wrongMedian, missingMedian, ratio })}`)
+  assert.ok(ratio < 1.5, `login timing ratio too large: ${ratio}`)
+
+  const { dir, createUser, call, setNow } = setup(t)
+  await createUser()
 
   setNow('2026-10-20T10:16:10.000Z')
   for (let i = 0; i < 5; i++) {
