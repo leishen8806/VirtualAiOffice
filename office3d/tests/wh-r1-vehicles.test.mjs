@@ -89,6 +89,22 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  }
  value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
 })
+test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
+ const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
+ assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
+ const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
+ for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
+ const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)
+ const bodyLabels=value.root.getObjectByName('wh-r1-vehicle-labels').userData.labels.filter(r=>r.body)
+ assert.equal(bodyLabels.length,28);for(const row of fleet)assert.equal(bodyLabels.filter(r=>r.id===row.id&&r.text===row.id).length,2,row.id)
+ value.root.updateMatrixWorld(true);const boxesMesh=core[0],matrix=new THREE.Matrix4();boxesMesh.geometry.computeBoundingBox()
+ boxesMesh.userData.parts.forEach((part,index)=>{if(part!=='fork')return;boxesMesh.getMatrixAt(index,matrix);const box=boxesMesh.geometry.boundingBox.clone().applyMatrix4(matrix.clone().premultiply(boxesMesh.matrixWorld));near(box.min.y,WH_R1_FLOOR_Y,'fork ground')})
+ const first=fleet[0],p=whToWorld(first.xM,first.yM),camera=new THREE.PerspectiveCamera(),state=()=>value.root.userData.forklifts.state.find(r=>r.id===first.id).near,detail=()=>value.root.children.filter(r=>r.name.startsWith('wh-r1-forklift-detail-')).reduce((sum,r)=>sum+r.count,0)
+ const place=distance=>{camera.position.set(p.x+distance,WH_R1_FLOOR_Y+first.heightM/2,p.z);camera.updateMatrixWorld(true);value.onFrame(.016,{camera})}
+ place(27);assert.equal(state(),true);assert.ok(detail()>0);place(31);assert.equal(state(),true);place(35);assert.equal(state(),false);place(31);assert.equal(state(),false)
+ quality.tier='low';place(27);assert.equal(state(),false);assert.equal(detail(),0)
+ value.dispose()
+})
 test('I5 non-WH registry preserves registration order and does not build vehicle data',()=>{
  const prior=globalThis.location
  try{for(const search of ['','?place=drlife-warehouse','?campus=1','?whr1=0','?whr1=1&whr1=1']){globalThis.location={search};const scene=new THREE.Scene(),r=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}});for(const name of ['shell','yard','racks','motion'])r.register(name,()=>({}));r.buildAll();assert.deepEqual(r.summary().modules,['shell','yard','racks','motion']);assert.equal(scene.getObjectByName('wh-r1-vehicles'),undefined);r.dispose()}}finally{globalThis.location=prior}
