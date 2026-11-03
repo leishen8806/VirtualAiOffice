@@ -26,32 +26,54 @@ export async function buildUsageReport({ api = API, company = COMPANY, days = 1,
   const runs = rows(response)
   const since = now.getTime() - Number(days) * 86_400_000
   const groups = {}
-  for (const run of runs) {
-    const at = Date.parse(run.createdAt || run.startedAt || '')
-    if (!Number.isFinite(at) || at < since || at > now.getTime()) continue
-    const usage = run.usageJson || {}, agent = byId[run.agentId], name = agent?.name || run.agentId || 'unknown'
+  const hourly = {}
+  const previous = {}
+  const deltas = runs.map((run, index) => ({ run, index, at:Date.parse(run.createdAt || run.startedAt || '') }))
+    .filter(({ at }) => Number.isFinite(at))
+    .sort((a, b) => a.at - b.at || a.index - b.index)
+    .map(({ run, at }) => {
+      const usage = run.usageJson || {}
+      const current = { input:number(usage.inputTokens), output:number(usage.outputTokens), cached:number(usage.cachedInputTokens), cost:number(usage.costUsd) }
+      const key = `${run.agentId || 'unknown'}\u0000${run.sessionIdAfter || run.sessionIdBefore || ''}`
+      const before = previous[key]
+      previous[key] = current
+      const delta = Object.fromEntries(Object.entries(current).map(([name, value]) => [name, before && value >= before[name] ? value - before[name] : value]))
+      return { run, at, usage, delta }
+    })
+  for (const { run, at, usage, delta } of deltas) {
+    if (at < since || at > now.getTime()) continue
+    const agent = byId[run.agentId], name = agent?.name || run.agentId || 'unknown'
     const group = groups[name] ||= { adapter: agent?.adapterType || '-', model: '', billing: new Set(), runs: 0, failed: 0, cancelled: 0, input: 0, output: 0, cached: 0, cost: 0, wake: {} }
     group.runs++
     if (run.status === 'failed') group.failed++
     if (run.status === 'cancelled') group.cancelled++
-    group.input += number(usage.inputTokens)
-    group.output += number(usage.outputTokens)
-    group.cached += number(usage.cachedInputTokens)
-    group.cost += number(usage.costUsd)
+    group.input += delta.input
+    group.output += delta.output
+    group.cached += delta.cached
+    group.cost += delta.cost
     if (usage.model) group.model = usage.model
     if (usage.billingType) group.billing.add(usage.billingType)
     const wake = run.contextSnapshot?.wakeReason || run.wakeReason || '-'
     group.wake[wake] = (group.wake[wake] || 0) + 1
+    const hour = localDateTime(at).slice(0, 13)
+    const bucket = hourly[`${name}\u0000${hour}`] ||= { name, hour, count:0, wake:{} }
+    bucket.count++
+    bucket.wake[wake] = (bucket.wake[wake] || 0) + 1
   }
   const list = Object.entries(groups).sort((a, b) => (b[1].input + b[1].output) - (a[1].input + a[1].output))
   const totals = list.reduce((sum, [, group]) => ({ runs:sum.runs + group.runs, io:sum.io + group.input + group.output, cached:sum.cached + group.cached, cost:sum.cost + group.cost }), { runs:0, io:0, cached:0, cost:0 })
   const timestamps = runs.map(run => Date.parse(run.createdAt || run.startedAt || '')).filter(Number.isFinite)
   const oldest = timestamps.length ? Math.min(...timestamps) : now.getTime()
   const windowShort = oldest > since
+  const alerts = Object.values(hourly).filter(bucket => bucket.count > 30).map(bucket => {
+    const wake = Object.entries(bucket.wake).sort((a, b) => b[1] - a[1])[0][0]
+    return `${bucket.name}（${bucket.hour}:00，${bucket.count} 次，主要唤醒：${wake}）`
+  })
   const lines = [
     `# 用量日报（最近 ${days} 天，UTC+7）`, '',
     `生成：${localDateTime(now.getTime())}；数据：运行记录最近 1000 条（最早一条 ${localDateTime(oldest)}）${windowShort ? '——**窗口比所选天数短，数字偏小**' : ''}。`,
-    '来源是只读 GET；订阅计费不报金额，“记录成本”只是平台记下的 costUsd，不是账单。', '',
+    '来源是只读 GET；订阅计费不报金额，“记录成本”只是平台记下的 costUsd，不是账单。',
+    '统计口径：按岗位+会话排序后分别取累计用量差分，再筛选窗口；本次获取中会话首条按全额计，故窗口首条可能偏高。', '',
     `合计：运行 ${totals.runs} 次，输入+输出 ${millions(totals.io)} M token，缓存输入 ${millions(totals.cached)} M，记录成本 $${totals.cost.toFixed(2)}`, '',
     '| 岗位 | 适配器 | 模型 | 计费 | 运行 | 失败/取消 | 输入+输出 (M) | 占比 | 缓存输入 (M) | 记录成本 $ | 前两位唤醒原因 |',
     '|---|---|---|---|---:|---:|---:|---:|---:|---:|---|',
@@ -61,7 +83,8 @@ export async function buildUsageReport({ api = API, company = COMPANY, days = 1,
     const top = Object.entries(group.wake).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([wake, count]) => `${wake}×${count}`).join('、')
     lines.push(`| ${name} | ${group.adapter} | ${group.model || '-'} | ${[...group.billing].join('/') || '-'} | ${group.runs} | ${group.failed}/${group.cancelled} | ${millions(io)} | ${totals.io ? Math.round(io / totals.io * 100) : 0}% | ${millions(group.cached)} | ${group.cost.toFixed(2)} | ${top} |`)
   }
-  return { markdown: lines.join('\n') + '\n', totals: { ...totals, windowShort, oldest: localDateTime(oldest), day: localDay(now.getTime()) } }
+  lines.push('', `失控预警：${alerts.length ? alerts.join('；') : '无'}`)
+  return { markdown: lines.join('\n') + '\n', totals: { ...totals, windowShort, oldest: localDateTime(oldest), day: localDay(now.getTime()) }, groups:Object.fromEntries(list.map(([name, group]) => [name, { input:group.input, output:group.output, cached:group.cached, cost:group.cost }])) }
 }
 
 const arg = (key, fallback) => { const index = process.argv.indexOf(key); return index >= 0 ? process.argv[index + 1] || fallback : fallback }
