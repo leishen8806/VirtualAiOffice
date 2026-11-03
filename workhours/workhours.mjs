@@ -70,11 +70,15 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
     const settings = cfg.dailyUsage || {}
     if (settings.enabled === false || !isBusinessDay(cfg, now())) return
     const t = localParts(now(), cfg.timezone), target = scheduledMinute(cfg, 'dailyUsage', 8 * 60 + 20), minute = t.minutes
-    if (minute < target || minute > target + 2) return
     const key = dayKey(now(), cfg), record = state.dailyUsage[key] || { attempts: 0 }
     if (record.status === 'done' || record.attempts >= 2) return
+    const initial = record.attempts === 0 && minute >= target && minute <= target + 2
+    const elapsed = now().getTime() - Date.parse(record.at || '')
+    const retry = record.status === 'failed' && minute <= 10 * 60 && elapsed >= 30 * 60_000
+    if (!initial && !retry) return
     if (dryRun) { log(`演练：将触发日报 ${key}`); return }
     try {
+      // heartbeat-runs?limit=1000 is a 5.77 MB / ~4.9 s database read; at most once plus one delayed retry per day.
       const report = await reportBuilder({ api, company, days: Number(settings.days) || 1, now: now(), fetchFn })
       const outDir = settings.outDir || path.join(HERE, '..', 'dispatch', '_BACKLOG', '用量日报')
       const file = path.join(outDir, `用量日报-${key}.md`)
@@ -141,6 +145,9 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
     const cfg = loadCfg(), duty = dutyOverride ?? onDuty(cfg, now()), state = normalState(loadState()), st = state, DRY = dryRun
     const agents = (await call('GET', `/api/companies/${company}/agents`)).filter((agent) => agent.status !== 'terminated')
     if (duty !== lastMode) { const t = localParts(now(), cfg.timezone), nc = nextChange(cfg, now()); log(`金边 ${String(t.h).padStart(2, '0')}:${String(t.mi).padStart(2, '0')} → ${duty ? '上班时间' : '下班时间'}；下一次切换 ${nc ? nc.at : '无'}`); lastMode = duty }
+    // These are business-day housekeeping tasks, not an on-duty action. Keeping them here preserves the off-duty pause branch.
+    await runDailyUsage(cfg, state)
+    await runSessionReset(cfg, state, agents)
     if (duty) {
       for (const id of [...state.pausedByUs]) {
         const agent = agents.find((item) => item.id === id)
@@ -160,8 +167,6 @@ export function createWorkhours({ api = API, company = COMPANY, dryRun = process
         if (result.kind === 'pg-missing') { await requestResume(agent, state, '（pg 不可用，退回普通恢复）'); continue }
         if (result.kind === 'manual' || result.kind === 'rollback' || result.kind === 'changed') state.manualRepairDay[id] = today
       }
-      await runDailyUsage(cfg, state)
-      await runSessionReset(cfg, state, agents)
       await recoverErrors({ agents, state, dryRun, day: dayKey(now(), cfg) })
       try { await recoverOffDutyBlocks(cfg) } catch { log('blocked recovery scan failed; state will be saved and retried next tick') }
     } else {
