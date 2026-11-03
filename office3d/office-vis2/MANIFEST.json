@@ -358,7 +358,7 @@
       "source": "OFFICE-R1-I6 R1-only plaza ring paving, registered landscape trees, garden beds, food truck, kiosks, parasols and outdoor benches; reuses the existing backdrop canopy and garden-bed planting; OFFICE-R1-FOOD adds the four themed stall food displays and one shared Canvas price-board atlas, reusing the procedural food shapes from r1-island.js; OFFICE-R1-AMBIENCE recolours the parasol canopy and truck roof cap and adds a flat DR.LIFE+ roof decal from assets/logo.png; procedural geometry and canvas text only, no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7A96D21282C98088F33EE672AABB29D0005CF07B6E3F8C8BCD510347F3861E37"
+      "sha256": "D4013665A6078F2D087DBD219130A1C43B761E2F7182D66D3817AC7F7987476D"
     },
     {
       "file": "office-vis2/r1-lights.js",

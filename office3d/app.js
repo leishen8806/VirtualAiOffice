@@ -2479,7 +2479,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
           const npcStatus = scene.userData.r1Npcs = { startedAt: performance.now() }
           try {
             await loadExtraAvatars(loaded, R1_NPC_AVATARS)
-            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson })
+            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
             npcStatus.completedAt = performance.now()
           } catch (e) { npcStatus.loadFailed = String(e && e.message || e) }

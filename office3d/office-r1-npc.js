@@ -3,7 +3,7 @@
 // 这些人是 NPC，不是 Paperclip 同事：不写进 views、不带 userData.agentId、不占工位、
 // 不显示任务、不计入顶栏「在岗」人数，名牌只写角色（董事会 2026-10-30）。
 // 站位全部由 office-r1/data.js 的登记锚点推出来，不写死坐标；具体偏移量见下表注释。
-import { r1ToWorld } from './office-r1-layout.js'
+import { r1ToWorld, runtimeYawFromFacing } from './office-r1-layout.js'
 
 // 站立人物的身体半径（肩宽的一半）。MOVE 走路用的 H2 体型是 0.6 m，两者相加就是
 // NPC 站位与登记路线之间要留的净距。
@@ -32,8 +32,6 @@ export const R1_NPC_ROSTER = Object.freeze([
 // 本卡用到的人物（供加载器按名字预取）
 export const R1_NPC_AVATARS = Object.freeze(R1_NPC_ROSTER.map((n) => ({ name: n.avatar, gender: n.gender })))
 
-// 站在柜台后方时，人体中心离柜台边缘再留的余量
-const COUNTER_GAP = 0.5
 // 接待台后侧：站立接待员比台面再往里 1.1 m（台宽 1.8，半宽 0.9 + 0.2 余量）
 const RECEPTION_BACK = 1.1
 
@@ -100,10 +98,16 @@ export function r1NpcStations(layout) {
     }
 
     if (npc.post === 'plaza-kiosk') {
-      // 柜台的 facingLocal 指向顾客一侧；摊主站在另一侧，面朝同一个方向
-      const f = { x: row.facingLocal[0], z: row.facingLocal[1] }
-      const depth = Math.min(row.lengthM, row.widthM) / 2 + COUNTER_GAP
-      return { ...npc, x: c.x - f.x * depth, z: c.z - f.z * depth, yaw: yawTo(f.x, f.z), patrol: [] }
+      // 与摊亭模型用同一坐标变换；登记 Y 轴与世界 Z 轴相反。
+      const yaw = runtimeYawFromFacing(row.facingLocal[0], -row.facingLocal[1])
+      const at = (x, z) => ({ x: c.x + x * Math.cos(yaw) + z * Math.sin(yaw), z: c.z - x * Math.sin(yaw) + z * Math.cos(yaw) })
+      if (row.category === '餐车') {
+        // 餐车是封闭车体，外侧取餐窗服务点不冒充车内通道。
+        const z = -row.widthM / 2 - .5
+        return { ...npc, ...at(0, z), yaw: yaw + Math.PI, patrol: [at(-.4, z), at(.4, z)] }
+      }
+      // 台面后缘 -0.30、后柜前缘 +0.65；0.30 m 身体在这条真实空隙中活动。
+      return { ...npc, ...at(0, .15), yaw, patrol: [at(-.55, .15), at(.55, .15)] }
     }
 
     // 保安：大门内侧一旁，避开门洞净宽与门扇扫掠；偶尔到广场上走一小段
@@ -113,7 +117,8 @@ export function r1NpcStations(layout) {
       x: post.x,
       z: post.z,
       yaw: yawTo(0, 1), // 面朝大门（+z）
-      patrol: [post, { x: post.x - 0.2, z: post.z + 3.6 }, { x: post.x - 1.9, z: post.z + 5.9 }],
+      // 在门内侧巡查；到达方式仍由真实导航求解，不再把跨过花池的直线当通路。
+      patrol: [post, { x: post.x - 2, z: post.z - .8 }, { x: post.x, z: post.z - 2 }],
     }
   })
 }
@@ -130,9 +135,11 @@ function makeWalker(station, seed) {
   return {
     route,
     leg: 0,
-    t: 0,
+    path: [],
+    speed: 0,
+    arrivals: 0,
+    blocked: 0,
     dwell: DWELL[0] + (seed % 1) * (DWELL[1] - DWELL[0]),
-    forward: true,
     x: station.x,
     z: station.z,
     yaw: station.yaw,
@@ -140,37 +147,63 @@ function makeWalker(station, seed) {
   }
 }
 
-function stepWalker(w, dt) {
+function stepWalker(w, dt, station, navigation, collision) {
   if (!w.route) return
-  if (w.dwell > 0) { w.dwell -= dt; w.walking = 0; return }
-  const from = w.route[w.leg]
-  const to = w.route[w.leg + (w.forward ? 1 : -1)]
-  if (!to) { // 走到一端，掉头并停一会儿
-    w.forward = !w.forward
-    w.dwell = DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])
-    return
+  const turn = target => {
+    const delta = Math.atan2(Math.sin(target - w.yaw), Math.cos(target - w.yaw))
+    w.yaw += Math.max(-dt * Math.PI / 2, Math.min(dt * Math.PI / 2, delta))
+    return Math.abs(delta)
   }
-  const span = Math.hypot(to.x - from.x, to.z - from.z)
-  if (span < 1e-4) { w.leg += w.forward ? 1 : -1; return }
-  w.t += (dt * WALK_SPEED) / span
-  w.walking = 1
-  if (w.t >= 1) {
-    w.t = 0
-    w.leg += w.forward ? 1 : -1
-    w.x = to.x; w.z = to.z
-    if (w.leg <= 0 || w.leg >= w.route.length - 1) {
-      w.forward = w.leg <= 0
-      w.dwell = DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])
+  w.walking = 0
+  if (w.dwell > 0) { w.dwell -= dt; w.speed = 0; turn(station.yaw); return }
+  const guard = station.post === 'security'
+  if (guard && !navigation?.prepared()) return
+  if (!w.path.length) {
+    const target = w.route[w.leg]
+    if (Math.hypot(target.x - w.x, target.z - w.z) < .015) { w.leg = (w.leg + 1) % w.route.length; return }
+    w.path = guard ? (navigation.plan(w, target, station.id) || []).slice(1) : [target]
+    if (!w.path.length) { w.dwell = 2; w.blocked++; w.leg = (w.leg + 1) % w.route.length; return }
+  }
+  const to = w.path[0], span = Math.hypot(to.x - w.x, to.z - w.z)
+  if (span < .015) {
+    w.path.shift()
+    if (!w.path.length) {
+      w.arrivals++; w.leg = (w.leg + 1) % w.route.length
+      w.dwell = DWELL[0] + Math.random() * (DWELL[1] - DWELL[0]); w.speed = 0
     }
     return
   }
-  w.x = from.x + (to.x - from.x) * w.t
-  w.z = from.z + (to.z - from.z) * w.t
-  w.yaw = yawTo(to.x - from.x, to.z - from.z)
+  const angle = turn(yawTo(to.x - w.x, to.z - w.z))
+  if (angle > .25) { w.speed = 0; return }
+  w.speed = Math.min(WALK_SPEED, w.speed + dt * .6, Math.sqrt(2 * .6 * span))
+  const step = Math.min(span, w.speed * dt)
+  const next = { x: w.x + (to.x - w.x) * step / span, z: w.z + (to.z - w.z) * step / span }
+  const safe = guard ? navigation.clear(w, next, station.id) : collision && !collision.navigationHit(next.x, next.z, R1_NPC_BODY_R)
+  if (!safe) {
+    w.path = []; w.speed = 0; w.dwell = 2; w.blocked++
+    return
+  }
+  w.x = next.x; w.z = next.z; w.walking = 1
 }
 
-export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPerson, document: doc = globalThis.document }) {
+export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPerson, collision, navigation, document: doc = globalThis.document }) {
   const stations = r1NpcStations(layout)
+  // 摆场变化时也不能生成在障碍内；只在守岗点附近找最近的真实可站立点。
+  const guard = stations.find(s => s.post === 'security')
+  if (collision && guard) {
+    const free = p => {
+      for (let radius = 0; radius <= 2; radius += .1) {
+        const count = radius ? Math.ceil(2 * Math.PI * radius / .1) : 1
+        for (let i = 0; i < count; i++) {
+          const q = { x: p.x + Math.cos(i * 2 * Math.PI / count) * radius, z: p.z + Math.sin(i * 2 * Math.PI / count) * radius }
+          if (!collision.navigationHit(q.x, q.z, .6)) return q
+        }
+      }
+      throw new Error('保安守岗点附近没有安全站位')
+    }
+    guard.patrol = guard.patrol.map(free)
+    Object.assign(guard, guard.patrol[0])
+  }
   const members = []
   const head = new THREE.Vector3()
 
@@ -203,20 +236,20 @@ export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPer
     for (const m of members) {
       const { station, char, walker } = m
       const p = char.pose
-      stepWalker(walker, dt)
+      stepWalker(walker, dt, station, navigation, collision)
       if (walker.route) {
         const moved = Math.hypot(char.group.position.x - walker.x, char.group.position.z - walker.z)
         char.group.position.set(walker.x, 0, walker.z)
         p.phase += moved * PHASE_PER_M
         p.walk += (walker.walking - p.walk) * Math.min(1, dt * 6)
-        if (walker.walking) char.group.rotation.y = walker.yaw
-        else char.group.rotation.y = station.yaw
+        char.group.rotation.y = walker.yaw
       }
       p.sit += ((station.seated ? 1 : 0) - p.sit) * Math.min(1, dt * 6)
       // 前台偶尔看向大门方向；其余人原地小幅转头
       m.lookT -= dt
       if (m.lookT <= 0) { m.lookT = 4 + Math.random() * 9; m.lookTarget = (Math.random() - 0.5) * 0.9 }
       p.yaw += ((m.lookTarget || 0) - p.yaw) * Math.min(1, dt * 1.6)
+      if (station.post === 'plaza-kiosk') p.talk += ((!walker.walking && walker.dwell > 3 && walker.dwell < 7 ? .7 : 0) - p.talk) * Math.min(1, dt * 2)
       char.solve(dt)
       if (m.label && project) {
         char.body.head.getWorldPosition(head)
@@ -234,6 +267,7 @@ export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPer
         id: m.station.id, post: m.station.post, label: m.station.label, avatar: m.station.avatar,
         x: +m.char.group.position.x.toFixed(3), z: +m.char.group.position.z.toFixed(3),
         yaw: +m.char.group.rotation.y.toFixed(4), walking: m.walker.walking > 0.5,
+        arrivals: m.walker.arrivals, blocked: m.walker.blocked,
       })),
     }
   }
