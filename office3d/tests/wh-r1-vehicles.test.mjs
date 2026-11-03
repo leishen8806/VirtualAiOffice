@@ -92,6 +92,7 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
  assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
+ assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
  const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
  for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
  const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)
