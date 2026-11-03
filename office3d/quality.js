@@ -183,15 +183,29 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
       if(name===q&&!v.root.parent)scene.add(v.root)
       else if(name!==q&&v.root.parent)v.root.removeFromParent()
     }
-    for(const [ch,shadow]of fakeShadows)shadow.visible=q==='low'&&ch.group.visible
+    for(const [ch,shadow]of fakeShadows)syncFakeShadow(ch,shadow)
     renderer.shadowMap.needsUpdate=q!=='low'
+  }
+  function syncFakeShadow(ch,shadow) {
+    shadow.visible=tier==='low'&&ch.group.visible
+    shadow.position.set(ch.group.position.x,.035,ch.group.position.z)
+  }
+  function createFakeShadow(ch) {
+    const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshBasicMaterial({color:0x18202a,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}))
+    shadow.rotation.x=-Math.PI/2;shadow.userData.dynamic=true;shadow.userData.fakeShadow=true;shadow.userData.character=ch;syncFakeShadow(ch,shadow);scene.add(shadow);return shadow
+  }
+  function replaceCharacter(previous,next) {
+    if(!prepared||!previous||!next)return
+    const old=fakeShadows.get(previous)
+    if(!old)return
+    fakeShadows.delete(previous);old.removeFromParent();old.geometry.dispose();old.material.dispose()
+    fakeShadows.set(next,createFakeShadow(next))
   }
   function prepare(q = tier) {
     if(prepared)return
     capture();prepared=true;tier=q
     for(const ch of characters()){
-      const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshBasicMaterial({color:0x18202a,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}))
-      shadow.rotation.x=-Math.PI/2;shadow.userData.dynamic=true;scene.add(shadow);fakeShadows.set(ch,shadow)
+      fakeShadows.set(ch,createFakeShadow(ch))
     }
     const started=performance.now();apply(q);if(q!=='high')renderer.compile(scene,camera);compiled.add(q);cooldownUntil=performance.now()+Math.max(1000,performance.now()-started)
   }
@@ -206,7 +220,7 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
   }
   function update() {
     if(tier==='low')for(const {source,material}of lowMaterials.values()){material.emissive?.copy(source.emissive);material.emissiveIntensity=source.emissiveIntensity}
-    if(tier==='low')for(const [ch,shadow]of fakeShadows){shadow.visible=ch.group.visible;shadow.position.set(ch.group.position.x,.035,ch.group.position.z)}
+    if(tier==='low')for(const [ch,shadow]of fakeShadows)syncFakeShadow(ch,shadow)
   }
-  return {prepare,prepareTier,activate,update,eligible(time=performance.now()){return time>=cooldownUntil},get tier(){return tier},get prepared(){return prepared},summary:()=>({sourceMeshes:originals.length,medium:variants.medium?.merged,low:variants.low?.merged,instanced:[variants.medium?.instances,variants.low?.instances],lowTextures:lowTextures.size})}
+  return {prepare,prepareTier,activate,update,replaceCharacter,fakeShadowState:()=>[...fakeShadows].map(([character,shadow])=>({character,shadow})),eligible(time=performance.now()){return time>=cooldownUntil},get tier(){return tier},get prepared(){return prepared},summary:()=>({sourceMeshes:originals.length,medium:variants.medium?.merged,low:variants.low?.merged,instanced:[variants.medium?.instances,variants.low?.instances],lowTextures:lowTextures.size})}
 }
