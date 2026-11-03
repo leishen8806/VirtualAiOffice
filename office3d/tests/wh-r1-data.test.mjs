@@ -113,6 +113,7 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
   assert.equal(WH_R1_ASSIGNMENT.length, 1244)
   assert.equal(new Set(WH_R1_ASSIGNMENT.map(row => row.id)).size, 1244)
   assert.deepEqual([...new Set(WH_R1_ASSIGNMENT.map(row => row.card))].sort(), ['I2', 'I3', 'I4', 'I5', 'I6', 'I7'])
+  assert.deepEqual(WH_R1_ASSIGNMENT.find(row => row.id === 'WH-12-STEP-001'), { card: 'I7', id: 'WH-12-STEP-001' })
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
   const allowedRuntime = new Set(['app.js', 'dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'place-mode.js'])
   const references = []
