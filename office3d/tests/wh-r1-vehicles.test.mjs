@@ -35,7 +35,7 @@ test('I5 high and low actual full merge retain every ID, registered envelope, or
  try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'}
   for(const tier of ['high','low']){
    const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier},layout:{}});registry.buildAll({quality:{tier},canvasTex:texture});mergeStatic(scene);if(tier==='low')mergeStatic(scene)
-   assert.deepEqual(registry.summary().skipped,[]);assert.equal(registry.summary().modules.at(-1),'wh-r1-vehicles')
+    assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-vehicles','wh-r1-front'])
    const root=scene.getObjectByName('wh-r1-vehicles'),rendered=boxes(root);assert.equal(rendered.size,23)
    for(const r of WH_R1_VEHICLES){
     const p=whToWorld(r.xM,r.yM),b=rendered.get(r.id),expected=new THREE.Box3(new THREE.Vector3(-r.lengthM/2,0,-r.widthM/2),new THREE.Vector3(r.lengthM/2,r.heightM,r.widthM/2)).applyMatrix4(new THREE.Matrix4().makeRotationY(r.yawDeg*Math.PI/180)).translate(new THREE.Vector3(p.x,WH_R1_FLOOR_Y+r.zM,p.z))
@@ -92,6 +92,7 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
  assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
+ assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
  const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
  for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
  const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)

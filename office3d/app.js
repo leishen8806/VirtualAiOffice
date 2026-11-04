@@ -2352,7 +2352,9 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(personName).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
-            ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent(); v.char = ch
+            ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
+            if (typeof sceneQuality !== 'undefined') try { sceneQuality.replaceCharacter(previous, ch) } catch {}
+            v.char = ch
             status.replaced.push(personName)
           } catch { status.failed.push(personName) }
         }
