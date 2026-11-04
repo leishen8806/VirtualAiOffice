@@ -191,7 +191,7 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   assert.deepEqual(good, buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
   assert.equal(good.agents[0].lastFailure.category, 'upstream')
   assert.equal(good.incidents.length, 0)
-  fail = true; ms += 30000
+  fail = true; ms += 10 * 60 * 1000
   const manager = createLastGoodState({ file: temp(t), now: () => ms, log() {} })
   const state = stateFunction(source, context({ lastGoodState: manager, healthReport: async () => cache.read() }))
   const refresh = cache.refresh().then(() => { healthSettled = true })
@@ -203,7 +203,7 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   assert.equal(stale.reason, 'UPSTREAM_UNAVAILABLE')
   assert.deepEqual(retained, good)
   assert.equal(calls.filter(p => p.includes('heartbeat-runs')).length, 2)
-  fail = false; ms += 30000
+  fail = false; ms += 10 * 60 * 1000
   await cache.refresh()
   assert.equal(cache.read().stale, undefined)
   assert.deepEqual(cache.read(), buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
@@ -232,7 +232,7 @@ test('health summary retains the 24h window when another agent has over 40 newer
   assert.equal(report.agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
   assert.equal(report.incidents.some(i => i.category === 'login' && i.agentIds.includes('quiet-agent')), true)
   assert.equal(report.agents.find(a => a.agentId === 'busy-agent').runs24h, 40)
-  let later = ms + 30000
+  let later = ms + 10 * 60 * 1000
   // A retained snapshot proves a 40-row follow-up cannot erase a quiet agent's 24h failure.
   const file = path.join(os.tmpdir(), `health-runs-${process.pid}-${Date.now()}.json`)
   fs.writeFileSync(file, JSON.stringify({ runs }))
@@ -308,7 +308,7 @@ test('/state response cache does not cross local, LAN, and wall scopes', async (
   assert.equal(builds, 3)
 })
 
-test('health readers share concurrent work and refresh no faster than once per 30 seconds', async () => {
+test('health readers share concurrent work and refresh no faster than once per 10 minutes', async () => {
   let ms = start
   const calls = []
   const agents = [{ id: 'demo-agent', name: 'Demo', status: 'idle', model: 'gpt-5.6' }]
@@ -322,9 +322,20 @@ test('health readers share concurrent work and refresh no faster than once per 3
   for (let i = 0; i < 100; i++) health.read()
   await health.refresh()
   assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 1)
-  ms += 30000
+  ms += 10 * 60 * 1000
   await health.refresh()
   assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 2)
+})
+
+test('snapshot cache canonicalizes query ordering across modules', async () => {
+  let upstream = 0
+  const snapshots = createSnapshotGet({ get: async () => { upstream++; return [{ id: upstream }] } })
+  const a = snapshots.forModule('workload')
+  const b = snapshots.forModule('state')
+  const first = await a('/api/companies/demo/issues?status=todo,in_progress&limit=40')
+  const second = await b('/api/companies/demo/issues?limit=40&status=todo,in_progress')
+  assert.deepEqual(first, second)
+  assert.equal(upstream, 1)
 })
 
 test('concurrent state reads share build and return isolated copies, gaps deterministic on all optional failures', async t => {

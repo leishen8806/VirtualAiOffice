@@ -91,8 +91,17 @@ export async function loadStateComponents({ get, company, backlog }) {
 
 export function createSnapshotGet({ get, now = Date.now }) {
   const cache = new Map(), modules = new Map()
+  const cacheKey = p => {
+    try {
+      const url = new URL(p, 'http://snapshot.local')
+      url.searchParams.sort()
+      return `${url.pathname}${url.search}`
+    } catch { return p }
+  }
   const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs)(?:\?|$)/.test(p)
-  const ttl = p => p.includes('heartbeat-runs?limit=1000') ? 10 * 60 * 1000 : 45000
+  const ttl = p => {
+    try { return new URL(p, 'http://snapshot.local').searchParams.get('limit') === '1000' ? 10 * 60 * 1000 : 45000 } catch { return 45000 }
+  }
   const mark = (module, key) => {
     const row = modules.get(module) || { requests: 0, hits: 0, upstream: 0 }
     row[key]++; modules.set(module, row)
@@ -100,15 +109,16 @@ export function createSnapshotGet({ get, now = Date.now }) {
   async function read(module, p, options = {}) {
     mark(module, 'requests')
     if (!collection(p) || options.signal) { mark(module, 'upstream'); return get(p, options) }
-    const old = cache.get(p), age = old ? now() - old.at : Infinity
+    const key = cacheKey(p)
+    const old = cache.get(key), age = old ? now() - old.at : Infinity
     if (old?.value && age < ttl(p)) { mark(module, 'hits'); return structuredClone(old.value) }
     if (old?.flight) { mark(module, 'hits'); return structuredClone(await old.flight) }
     mark(module, 'upstream')
     const flight = Promise.resolve(get(p)).then(value => {
-      cache.set(p, { at: now(), value: structuredClone(value) })
+      cache.set(key, { at: now(), value: structuredClone(value) })
       return value
-    }).catch(error => { cache.delete(p); throw error })
-    cache.set(p, { at: old?.at || 0, flight })
+    }).catch(error => { cache.delete(key); throw error })
+    cache.set(key, { at: old?.at || 0, flight })
     return structuredClone(await flight)
   }
   return { forModule: module => (p, options) => read(module, p, options), counts: () => Object.fromEntries([...modules].map(([name, row]) => [name, { ...row }])) }
@@ -135,7 +145,7 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
     persist()
   }
   function refresh() {
-    if (flight || (attemptedAt !== null && now() - attemptedAt < 30000)) return flight
+    if (flight || (attemptedAt !== null && now() - attemptedAt < 10 * 60 * 1000)) return flight
     attemptedAt = now()
     flight = (async () => {
       let timer
