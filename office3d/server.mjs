@@ -532,14 +532,15 @@ async function issueDetail(id) {
 }
 
 const issueCache = new Map()
+const STATE_AUX_TIMEOUT_MS = 1000
 async function issueInfo(id) {
   if (issueCache.has(id)) return issueCache.get(id)
   try {
-    const i = await get(`/api/issues/${id}`)
+    const i = await get(`/api/issues/${id}`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
     const v = { identifier: i.identifier, title: i.title, createdByAgentId: i.createdByAgentId || null, createdByUserId: i.createdByUserId || null, assigneeAgentId: i.assigneeAgentId || null, projectId: i.projectId || null }
     return boundedCacheSet(issueCache, id, v, 400)
   } catch {
-    return null
+    return boundedCacheSet(issueCache, id, null, 400)
   }
 }
 const firstLine = (t) =>
@@ -622,7 +623,7 @@ async function interactionInfo(issueId, interactionId) {
   const hit = interactionCache.get(interactionId)
   if (hit && hit.status !== 'pending') return hit
   try {
-    const list = await get(`/api/issues/${issueId}/interactions`)
+    const list = await get(`/api/issues/${issueId}/interactions`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
     const x = (Array.isArray(list) ? list : []).find((y) => y.id === interactionId)
     if (!x) return null
     const qs = (x.payload && (x.payload.questionSet?.questions || x.payload.questions)) || []
@@ -665,10 +666,10 @@ async function issuePolicy(id, updatedAt) {
   const key = id + '@' + updatedAt
   if (policyCache.has(key)) return policyCache.get(key)
   try {
-    const i = await get(`/api/issues/${id}`)
+    const i = await get(`/api/issues/${id}`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
     return boundedCacheSet(policyCache, key, i.executionPolicy || null, 400)
   } catch {
-    return null
+    return boundedCacheSet(policyCache, key, null, 400)
   }
 }
 

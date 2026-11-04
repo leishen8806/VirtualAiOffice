@@ -7,8 +7,8 @@ export function stripStateCredentials(value) {
   return Object.fromEntries(Object.keys(value).filter(key => !credential(key)).map(key => [key, stripStateCredentials(value[key])]))
 }
 
-export function createLastGoodState({ file, now = Date.now, log = console.log }) {
-  let saved = null, degraded = false, flight = null, writes = Promise.resolve()
+export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000 }) {
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, writes = Promise.resolve()
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
@@ -43,7 +43,9 @@ export function createLastGoodState({ file, now = Date.now, log = console.log })
   }
   return {
     async run(build) {
-      if (!flight) flight = (async () => {
+      if (!flight) {
+        flightStartedAt = now()
+        flight = (async () => {
         let out
         try { out = await build() } catch { return fallback() }
         const snapshot = stripStateCredentials(out)
@@ -53,8 +55,22 @@ export function createLastGoodState({ file, now = Date.now, log = console.log })
         if (degraded) log('[state] 恢复')
         degraded = false
         return out
-      })().finally(() => { flight = null })
-      const value = await flight
+        })().finally(() => { flight = null; flightStartedAt = 0 })
+      }
+      const remaining = Math.max(0, timeoutMs - (now() - flightStartedAt))
+      if (remaining === 0) {
+        const value = fallback()
+        const copy = structuredClone(value)
+        if (value._schedulerSource) Object.defineProperty(copy, '_schedulerSource', { value: structuredClone(value._schedulerSource), enumerable: false })
+        return copy
+      }
+      let timer
+      const timeout = new Promise((resolve, reject) => {
+        timer = setTimeout(() => {
+          try { resolve(fallback()) } catch (error) { reject(error) }
+        }, remaining)
+      })
+      const value = await Promise.race([flight, timeout]).finally(() => clearTimeout(timer))
       const copy = structuredClone(value)
       if (value._schedulerSource) Object.defineProperty(copy, '_schedulerSource', { value: structuredClone(value._schedulerSource), enumerable: false })
       return copy

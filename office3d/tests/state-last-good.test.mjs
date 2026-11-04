@@ -426,3 +426,22 @@ test('snapshot static paths denied and new helper has no Paperclip write or rand
   assert.doesNotMatch(helper, /Math\.random|\beval\s*\(|\bfetch\s*\(|\bsend\s*\(/)
   assert.equal(extract(source, 'const API_PATHS', 'let wallCache').includes("'/state-last-good"), false)
 })
+
+test('a stuck refresh falls back to last good after the timeout instead of hanging (live hotfix 11-02)', async t => {
+  const logs = []
+  const manager = createLastGoodState({ file: temp(t), log: message => logs.push(message), timeoutMs: 40 })
+  await manager.run(async () => fixture())
+  const started = Date.now()
+  const reply = await manager.run(() => new Promise(() => {}))
+  assert.ok(Date.now() - started < 1000, 'must not wait for the stuck refresh')
+  assert.equal(reply.stale.active, true)
+  assert.equal(reply.stale.reason === 'UPSTREAM_UNAVAILABLE' || reply.stale.reason === 'STALE_DATA', true)
+  assert.equal(reply.actToken, '')
+})
+
+test('state auxiliary Paperclip reads are time-bounded (live hotfix 11-02)', () => {
+  const text = fs.readFileSync(new URL('../server.mjs', import.meta.url), 'utf8').replace(/\r/g, '')
+  assert.match(text, /const STATE_AUX_TIMEOUT_MS = 1000/)
+  const bounded = text.match(/AbortSignal\.timeout\(STATE_AUX_TIMEOUT_MS\)/g) || []
+  assert.equal(bounded.length, 3, 'issue, interactions and policy-issue reads must all carry the timeout')
+})
