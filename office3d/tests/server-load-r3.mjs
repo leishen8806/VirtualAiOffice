@@ -11,6 +11,7 @@ const args = Object.fromEntries(process.argv.slice(2).map((value, index, all) =>
 const root = path.resolve(args.root || process.cwd())
 const out = path.resolve(args.out || path.join(root, 'server-load-r3.json'))
 const minutes = Number(args.minutes || 40)
+const forceGc = args.forceGc === '1' || args.forceGc === 'true'
 if (!Number.isFinite(minutes) || minutes <= 0) throw new Error('--minutes must be positive')
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 const json = value => JSON.stringify(value)
@@ -51,7 +52,8 @@ const sha = (await exec('git', ['-C', root, 'rev-parse', 'HEAD'])).stdout.trim()
 const companyFile = path.join(root, 'company-id.txt')
 let syntheticCompanyFile = false
 try { await fs.access(companyFile) } catch { await fs.writeFile(companyFile, 'synthetic-company\n'); syntheticCompanyFile = true }
-const child = spawn(process.execPath, ['office3d/server.mjs'], { cwd: root, env: { ...process.env, PAPERCLIP_API_URL: `http://127.0.0.1:${apiPort}`, OFFICE3D_PORT: String(officePort), OFFICE3D_LOAD_METRICS: '1' }, stdio: ['ignore', 'pipe', 'pipe'] })
+const childArgs = forceGc ? ['--expose-gc', 'office3d/server.mjs'] : ['office3d/server.mjs']
+const child = spawn(process.execPath, childArgs, { cwd: root, env: { ...process.env, PAPERCLIP_API_URL: `http://127.0.0.1:${apiPort}`, OFFICE3D_PORT: String(officePort), OFFICE3D_LOAD_METRICS: '1', OFFICE3D_FORCE_GC: forceGc ? '1' : '0' }, stdio: ['ignore', 'pipe', 'pipe'] })
 let output = ''
 child.stdout.on('data', chunk => { output += chunk })
 child.stderr.on('data', chunk => { output += chunk })
@@ -78,6 +80,7 @@ try {
   if (syntheticCompanyFile) await fs.unlink(companyFile).catch(() => {})
 }
 const metrics = output.split(/\r?\n/).filter(line => line.startsWith('[load-metrics]')).map(line => { try { return JSON.parse(line.slice('[load-metrics]'.length).trim()) } catch { return null } }).filter(Boolean)
+const snapshotEvents = output.split(/\r?\n/).filter(line => line.startsWith('[snapshot]')).map(line => { try { return JSON.parse(line.slice('[snapshot]'.length).trim()) } catch { return null } }).filter(Boolean)
 const periodic = requests.filter(row => Date.parse(row.at) - started > 5 * 60000 && (row.bytes > 1000000 || row.elapsedMs > 1000))
 const rss = samples.map(row => row.rssBytes).filter(Number.isFinite)
 const measure = (fn, count = 5) => {
@@ -94,7 +97,7 @@ const cloneBenchmark = async () => {
   return { payloadBytes: { runs: Buffer.byteLength(json(runsPayload)), issues: Buffer.byteLength(json(issuesPayload)) }, structuredClone: { runs: measure(() => structuredClone(runsPayload)), issues: measure(() => structuredClone(issuesPayload)) }, sharedRead: { runs: await (async () => { const t0 = performance.now(); const cpuBefore = process.cpuUsage(); const before = process.memoryUsage().heapUsed; for (let i = 0; i < 5; i++) await runsGet('/api/companies/demo/heartbeat-runs?limit=1000&summary=false'); const cpu = process.cpuUsage(cpuBefore); return { count: 5, elapsedMs: Math.round((performance.now() - t0) * 100) / 100, cpuUserMicros: cpu.user, cpuSystemMicros: cpu.system, heapDeltaBytes: process.memoryUsage().heapUsed - before } })(), issues: await (async () => { const t0 = performance.now(); const cpuBefore = process.cpuUsage(); const before = process.memoryUsage().heapUsed; for (let i = 0; i < 5; i++) await issuesGet('/api/companies/demo/issues'); const cpu = process.cpuUsage(cpuBefore); return { count: 5, elapsedMs: Math.round((performance.now() - t0) * 100) / 100, cpuUserMicros: cpu.user, cpuSystemMicros: cpu.system, heapDeltaBytes: process.memoryUsage().heapUsed - before } })() } }
 }
 const cloneCost = await cloneBenchmark()
-const report = { codeSha: sha, fixture: { realPayloadTargets: { runs1000: { fullBytes: 4114038, summaryBytes: 1729059, fullMs: 4000, summaryMs: 3400 }, issuesUnfilteredBytes: 2169509 }, noPaperclipWrites: true }, startedAt: new Date(started).toISOString(), endedAt: new Date().toISOString(), minutes, samples, metrics, cloneCost, requests, summary: { totalBytes: requests.reduce((sum, row) => sum + row.bytes, 0), periodicLargeRequests: periodic.length, commentRequests: requests.filter(row => row.path.includes('/comments')).length, rssRangeBytes: rss.length ? Math.max(...rss) - Math.min(...rss) : null, metricsSamples: metrics.length, gcCount: metrics.at(-1)?.gcCount ?? null, moduleLog: output.split(/\r?\n/).filter(line => line.startsWith('[snapshot]')) } }
+const report = { codeSha: sha, fixture: { realPayloadTargets: { runs1000: { fullBytes: 4114038, summaryBytes: 1729059, fullMs: 4000, summaryMs: 3400 }, issuesUnfilteredBytes: 2169509 }, noPaperclipWrites: true }, startedAt: new Date(started).toISOString(), endedAt: new Date().toISOString(), minutes, samples, metrics, snapshotEvents, cloneCost, requests, summary: { totalBytes: requests.reduce((sum, row) => sum + row.bytes, 0), periodicLargeRequests: periodic.length, commentRequests: requests.filter(row => row.path.includes('/comments')).length, rssRangeBytes: rss.length ? Math.max(...rss) - Math.min(...rss) : null, metricsSamples: metrics.length, gcCount: metrics.at(-1)?.gcCount ?? null, moduleLog: snapshotEvents } }
 await fs.mkdir(path.dirname(out), { recursive: true })
 await fs.writeFile(out, json(report) + '\n')
 console.log(json(report.summary))

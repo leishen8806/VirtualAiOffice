@@ -877,15 +877,21 @@ async function refreshProjects() {
 }
 const projectStart = setTimeout(refreshProjects, 15000); projectStart.unref?.()
 setInterval(refreshProjects, 5 * 60 * 1000)
-const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify(snapshots.counts())), 10 * 60 * 1000); snapshotLog.unref?.()
+const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000); snapshotLog.unref?.()
 if (process.env.OFFICE3D_LOAD_METRICS === '1') {
   let gcCount = 0
   const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
   observer.observe({ entryTypes: ['gc'] })
-  const loadMetrics = setInterval(() => console.log('[load-metrics]', JSON.stringify({
-    at: new Date().toISOString(), rssBytes: process.memoryUsage().rss, heapUsedBytes: process.memoryUsage().heapUsed,
-    heapTotalBytes: process.memoryUsage().heapTotal, cpu: process.cpuUsage(), gcCount,
-  })), 5000)
+  const loadMetrics = setInterval(() => {
+    const forcedGc = process.env.OFFICE3D_FORCE_GC === '1' && typeof global.gc === 'function'
+    if (forcedGc) global.gc()
+    const afterGc = process.memoryUsage()
+    console.log('[load-metrics]', JSON.stringify({
+      at: new Date().toISOString(), rssBytes: afterGc.rss, heapUsedBytes: afterGc.heapUsed,
+      heapTotalBytes: afterGc.heapTotal, externalBytes: afterGc.external, arrayBuffersBytes: afterGc.arrayBuffers,
+      cpu: process.cpuUsage(), gcCount, forcedGc,
+    }))
+  }, 5000)
   loadMetrics.unref?.()
 }
 
