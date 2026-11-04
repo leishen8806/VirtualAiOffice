@@ -43,7 +43,7 @@ export function createStats({ dir, get, company }) {
     } catch {}
   }
   async function seed() {
-    try { ingest({ runs: await get(`/api/companies/${company}/heartbeat-runs?limit=1000`) }) } catch {}
+    try { ingest({ runs: await get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`) }) } catch {}
     await refreshDone()
   }
   seed()

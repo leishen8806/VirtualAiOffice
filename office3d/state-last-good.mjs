@@ -101,7 +101,7 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
         const data = await Promise.race([
           Promise.all([
             get(`/api/companies/${company}/agents`, { signal: controller.signal }),
-            get(`/api/companies/${company}/heartbeat-runs?limit=1000`, { signal: controller.signal }),
+            get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`, { signal: controller.signal }),
           ]),
           new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('HEALTH_TIMEOUT')) }, timeoutMs) }),
         ])

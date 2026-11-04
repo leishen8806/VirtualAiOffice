@@ -1283,7 +1283,7 @@ const server = http
       if (url.pathname === '/state') {
         const cacheKey = wallScope ? 'wall' : lanUser ? 'lan' : 'local'
         const cached = typeof stateResponseCache === 'undefined' ? null : stateResponseCache.get(cacheKey)
-        if (cached && Date.now() - cached.at < 1000) {
+        if (cached && Date.now() - cached.at < 5000) {
           res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(cached.body)
           return
         }

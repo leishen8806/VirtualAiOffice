@@ -201,7 +201,7 @@ export function createHandoff({ dir, company, get, send, notify, dutyOn, now = D
   async function context() {
     const [issues, runs, agentList] = await Promise.all([
       asList(await get(`/api/companies/${company}/issues`)),
-      asList(await get(`/api/companies/${company}/heartbeat-runs?limit=1000`)),
+      asList(await get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`)),
       typeof agents === 'function' ? asList(await agents()) : [],
     ])
     const runsByIssue = new Map()

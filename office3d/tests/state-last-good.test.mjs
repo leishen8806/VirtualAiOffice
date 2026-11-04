@@ -48,12 +48,12 @@ function stateFunction(text, ctx) {
   const end = text.includes('\nconst server = http') ? '\nconst server = http' : '\nhttp'
   return vm.runInNewContext(extract(text, 'async function state()', end) + '\nstate', ctx)
 }
-function stateRoute(state, lanUser = false, wallScope = false) {
-  const code = extract(source, "      if (url.pathname === '/state')", "      if (url.pathname === '/replay')")
+function stateRoute(state, lanUser = false, wallScope = false, cache = new Map(), now = Date.now, routeSource = source) {
+  const code = extract(routeSource, "      if (url.pathname === '/state')", "      if (url.pathname === '/replay')")
   let response
   const res = { writeHead(status) { response = { status }; return this }, end(body) { response.body = JSON.parse(body); return this } }
   const run = vm.runInNewContext(`(async () => { ${code} })`, {
-    url: { pathname: '/state' }, state, lanUser, wallScope, LAN: { write: false }, foyer: { summary: () => ({}) },
+    url: { pathname: '/state' }, state, lanUser, wallScope, stateResponseCache: cache, Date: { now }, LAN: { write: false }, foyer: { summary: () => ({}) },
     redactState, restrictedWorld: value => ({ ...value, weather: { ...value.weather,
       location: coarsenGeo(value.weather.location.lat, value.weather.location.lon) } }),
     TYPES: { '.json': 'application/json' }, res, json: (status, body) => { response = { status, body } },
@@ -174,13 +174,17 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   let ms = start, fail = false
   const agents = [{ id: 'OpsLead', model: 'gpt-5.6-terra', status: 'running' }]
   const runs = [{ agentId: 'OpsLead', status: 'failed', errorCode: 'provider_quota',
-    message: 'Selected model is at capacity. Please try a different model.', finishedAt: '2026-10-22T01:00:00Z' }]
+    error: 'Selected model is at capacity. Please try a different model.', finishedAt: '2026-10-22T01:00:00Z' }]
   const calls = []
   let healthSettled = false
   const cache = createBackgroundHealth({ now: () => ms, timeoutMs: 500, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
-    get: async (p, { signal }) => { calls.push(p); if (fail) return new Promise(() => {}); assert.ok(signal); return p.includes('heartbeat') ? runs : agents } })
+    get: async (p, { signal }) => { calls.push(p); if (fail) return new Promise(() => {}); assert.ok(signal); return p.includes('heartbeat') ? runs.map(run => ({ ...run, resultJson: null })) : agents } })
   assert.equal(cache.read().stale.reason, 'NOT_LOADED')
   await cache.refresh()
+  assert.deepEqual(calls.sort(), [
+    '/api/companies/demo/agents',
+    '/api/companies/demo/heartbeat-runs?limit=1000&summary=true',
+  ].sort())
   const good = cache.read()
   assert.deepEqual(good, buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
   assert.equal(good.agents[0].lastFailure.category, 'upstream')
@@ -196,11 +200,96 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   const expired = cache.read(), { stale, ...retained } = expired
   assert.equal(stale.reason, 'UPSTREAM_UNAVAILABLE')
   assert.deepEqual(retained, good)
-  assert.equal(calls.filter(p => p.includes('limit=1000')).length, 2)
+  assert.equal(calls.filter(p => p.includes('limit=1000&summary=true')).length, 2)
   fail = false; ms += 30000
   await cache.refresh()
   assert.equal(cache.read().stale, undefined)
   assert.deepEqual(cache.read(), buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
+})
+
+test('health summary retains the 24h window when another agent has over 40 newer runs', async () => {
+  const ms = Date.parse('2026-11-03T04:00:00Z')
+  const agents = [{ id: 'quiet-agent', name: 'quiet-agent', model: 'claude' }, { id: 'busy-agent', name: 'busy-agent', model: 'gpt' }]
+  const runs = []
+  for (let i = 0; i < 40; i++) runs.push({ agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - i * 60000).toISOString() })
+  runs.push({ agentId: 'quiet-agent', status: 'failed', errorCode: 'claude_auth_required', error: 'login required', finishedAt: new Date(ms - 30 * 60000).toISOString() })
+  const calls = []
+  const cache = createBackgroundHealth({ now: () => ms, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async p => {
+      calls.push(p)
+      if (!p.includes('heartbeat-runs')) return agents
+      const limit = Number(new URL(`http://local${p}`).searchParams.get('limit'))
+      return runs.slice(0, limit).map(run => ({ ...run, resultJson: null }))
+    } })
+  await cache.refresh()
+  assert.deepEqual(calls, [
+    '/api/companies/demo/agents',
+    '/api/companies/demo/heartbeat-runs?limit=1000&summary=true',
+  ])
+  const report = cache.read()
+  assert.equal(report.agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
+  assert.equal(report.incidents.some(i => i.category === 'login' && i.agentIds.includes('quiet-agent')), true)
+  assert.equal(report.agents.find(a => a.agentId === 'busy-agent').runs24h, 40)
+})
+
+test('/state shares one response for five seconds and refreshes after expiry', async () => {
+  let ms = start, builds = 0
+  const cache = new Map(), read = async () => { builds++; return fixture() }
+  await stateRoute(read, false, false, cache, () => ms)
+  ms += 4999
+  await stateRoute(read, false, false, cache, () => ms)
+  assert.equal(builds, 1)
+  ms += 1
+  await stateRoute(read, false, false, cache, () => ms)
+  assert.equal(builds, 2)
+})
+
+test('/state five-second response cache halves work at a three-second poll cadence', async () => {
+  const poll = async (routeSource) => {
+    let ms = start, builds = 0
+    const cache = new Map()
+    const read = async () => { builds++; return fixture() }
+    for (let i = 0; i < 20; i++) {
+      await stateRoute(read, false, false, cache, () => ms, routeSource)
+      ms += 3000
+    }
+    return builds
+  }
+  const oneSecondBaseline = source.replace(/cached\.at < 5000/, 'cached.at < 1000')
+  assert.notEqual(oneSecondBaseline, source, 'baseline fixture must contain the former one-second TTL')
+  const baselineBuilds = await poll(oneSecondBaseline)
+  const cachedBuilds = await poll(source)
+  assert.equal(baselineBuilds, 20)
+  assert.equal(cachedBuilds, 10)
+  assert.equal((baselineBuilds - cachedBuilds) / baselineBuilds, 0.5)
+})
+
+test('/state response cache does not cross local, LAN, and wall scopes', async () => {
+  let builds = 0
+  const cache = new Map(), read = async () => { builds++; return fixture() }
+  await stateRoute(read, false, false, cache, () => start)
+  await stateRoute(read, true, false, cache, () => start + 10)
+  await stateRoute(read, false, true, cache, () => start + 20)
+  assert.equal(builds, 3)
+})
+
+test('health readers share concurrent work and refresh no faster than once per 30 seconds', async () => {
+  let ms = start
+  const calls = []
+  const agents = [{ id: 'demo-agent', name: 'Demo', status: 'idle', model: 'gpt-5.6' }]
+  const runs = [{ id: 'r1', agentId: 'demo-agent', status: 'succeeded', finishedAt: new Date(ms).toISOString() }]
+  const health = createBackgroundHealth({
+    now: () => ms, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async (route) => { calls.push(route); return route.includes('heartbeat-runs') ? runs : agents },
+  })
+  await Promise.all(Array.from({ length: 12 }, () => health.refresh()))
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 1)
+  for (let i = 0; i < 100; i++) health.read()
+  await health.refresh()
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 1)
+  ms += 30000
+  await health.refresh()
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 2)
 })
 
 test('concurrent state reads share build and return isolated copies, gaps deterministic on all optional failures', async t => {

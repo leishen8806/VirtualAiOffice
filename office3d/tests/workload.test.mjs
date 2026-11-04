@@ -114,6 +114,7 @@ test('损坏账本容错提示且不覆盖；重启首两分钟不聚合',async 
 })
 test('实采队列仅08:30/17:00，不补错过的时点；原子写和重启保留、返工去重、真实关联',async t=>{
   const r=runtime(t,true,'2026-10-29T08:00:00+07:00');r.set('2026-10-29T08:30:00+07:00');assert.equal((await r.w.tick()).ok,true)
+  assert.ok(r.calls.includes('/api/companies/c/heartbeat-runs?limit=1000&summary=true'))
   let db=JSON.parse(fs.readFileSync(path.join(r.dir,'workload.json')))
   assert.equal(db.observations['2026-10-29'].a.available,true);assert.equal(db.observations['2026-10-29'].a.queue.am.todo,1);assert.equal(Object.keys(db.reworks).length,1)
   assert.equal(db.tasks.i.firstRunAt,iso('2026-10-28','09:00'))
@@ -152,6 +153,7 @@ test('没有页面轮询时仍保留GET中的新终态运行，未知时间仍�
 })
 test('stats补字段保留同状态旧记录的a/s/at及每日计数，不启动真实计时器',()=>{
   const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))), source=fs.readFileSync(path.join(root,'stats.mjs'),'utf8').replace(/^import .*$/gm,'').replace('export function createStats','function createStats')
+  assert.match(source,/heartbeat-runs\?limit=1000&summary=true/)
   const old={runs:{r:{a:'a',s:'succeeded',at:iso('2026-10-15','10:00')}},done:{},comments:{},decisions:{},since:iso('2026-10-15','10:00')}
   const context={fs:{readFileSync:()=>JSON.stringify(old)},path,structuredClone,setInterval:()=>0}
   vm.runInNewContext(source+'\nthis.make=createStats',context)

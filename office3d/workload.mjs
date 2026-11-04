@@ -143,7 +143,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
   }
   async function collect() {
     const s = schedule(), current = now(), day = dateKey(current), time = localParts(new Date(current), s.timezone)
-    const [aa, ii, rr] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/heartbeat-runs?limit=1000`)])
+    const [aa, ii, rr] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`)])
     const agents = array(aa, 'agents'), issues = array(ii, 'issues'), runs = array(rr, 'runs')
     const ledger = stats()
     // 没人打开办公室时stats.ingest也可能没运行；直接保留GET得到的真实终态，不依赖页面轮询。

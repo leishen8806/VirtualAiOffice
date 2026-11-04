@@ -69,7 +69,7 @@ export function createBlockedPatrol({ dir, company, get, send: write, notify: al
     return Boolean(dutyOn()) && w.days.includes(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday)) && min >= minutes(w.start) && min < minutes(w.end)
   }
   async function context() {
-    const [a, i, r, h] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/heartbeat-runs?limit=1000`), healthReport()])
+    const [a, i, r, h] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`), healthReport()])
     return { agents: list(a, 'agents'), issues: list(i, 'issues'), runs: list(r, 'runs'), health: h }
   }
   const clearDeps = (i) => Array.isArray(i.blockedBy) && i.blockedBy.every((b) => ended(b.status))
