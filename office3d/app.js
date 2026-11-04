@@ -8,8 +8,9 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
 import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
+import { createFoodtruckDemo } from './foodtruck-demo.js'
 import { createFurnitureCollision } from './furniture-collision.js'
 import { startOfficeV2, OFFICE_LAYOUT, SEATS, buildWing, ROOMS, buildOfficePartitions, createDirector, createFun, holidayInfo, officeStand, officeExit, corridorPath, LOUNGE_AREA, LOUNGE_SEATS, loungeTrip, meetingTrip, createWaitingBoard, waitingPlan } from './office-v2-modules.js'
 import { buildWarehouseShell } from './warehouse-shell.js'
@@ -969,6 +970,7 @@ let board = officeFurnitureV2?.board || (() => {
 // ───────────────────────── 人物视图 ─────────────────────────
 const labelsEl = $('labels')
 let r1Npcs = null // 服务人员 NPC（OFFICE-R1-I7B-A）：同事替换完成后才建；极速模式保持 null
+let foodtruckDemo = null
 const bubblesEl = $('bubbles')
 const views = new Map() // agentId -> view
 const boardViews = {}
@@ -2294,6 +2296,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     projectTo(bv.headPos, bv.label, 0)
   })
   if (r1Npcs) r1Npcs.update(dt, t, projectTo)
+  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) $('foodtruckDemo').disabled = false }
   for (const z of zoneLabels) projectTo(z.pos, z.el)
   declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
@@ -2429,6 +2432,12 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
 frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
+  const demoButton = $('foodtruckDemo'), note = $('foodtruckDemoNote')
+  demoButton.hidden = false
+  demoButton.textContent = '餐车文字演示 · 未扣款'
+  demoButton.onclick = () => { note.textContent = '演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。'; note.hidden = false }
+}
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
     if (!views.size) { setTimeout(ready, 100); return }
@@ -2479,8 +2488,24 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
           const npcStatus = scene.userData.r1Npcs = { startedAt: performance.now() }
           try {
             await loadExtraAvatars(loaded, R1_NPC_AVATARS)
-            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson })
+            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
+            const vendor = r1Npcs.members.find(m => m.station.id === 'npc-kiosk-4')
+            const demoButton = $('foodtruckDemo')
+            if (vendor && demoButton && !LITE.lite) {
+              const bubble = document.createElement('span')
+              bubble.className = 'foodtruck-demo-bubble'
+              bubble.hidden = true
+              vendor.label?.appendChild(bubble)
+              foodtruckDemo = createFoodtruckDemo(vendor, text => { bubble.textContent = text; bubble.hidden = !text })
+              demoButton.hidden = false
+              demoButton.onclick = async () => {
+                if (demoButton.disabled) return
+                demoButton.disabled = true
+                try { await loadFoodtruckDemoExtras(loaded, vendor.station.gender) } catch { /* 缺动作时由演示模块显示文字回退 */ }
+                if (!foodtruckDemo.start(performance.now())) demoButton.disabled = false
+              }
+            }
             npcStatus.completedAt = performance.now()
           } catch (e) { npcStatus.loadFailed = String(e && e.message || e) }
         }, 0)

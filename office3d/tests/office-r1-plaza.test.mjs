@@ -106,15 +106,21 @@ test('I6-3 every crown and parasol vertex at or below 2.1 m keeps 0.6 m from all
 test('I6-4 plain-mesh proxies block every registered plaza body in the real collision engine while route Z14 stays clear', () => {
   const layout = createOfficeR1Layout(), root = new THREE.Group(), collision = createFurnitureCollision()
   const plaza = buildR1Plaza({ THREE, root, layout, collision })
-  // 26 个登记实体 + 餐车与 3 座摊亭各一层腰部挡板（它们比 1.48 m 的直立胶囊高）。
-  assert.equal(plaza.proxies.length, 30)
+  // 三座摊亭各用七个真实构件替代原来的两个实心代理，操作通道留空。
+  assert.equal(plaza.proxies.length, 45)
   assert.ok(plaza.proxies.every(mesh => mesh.isMesh && !mesh.isInstancedMesh))
-  assert.equal(collision.stats().bodies, 31) // 30 existing plaza bodies + the separately tested fountain.
+  assert.equal(collision.stats().bodies, 46) // plaza bodies + the separately tested fountain.
   assert.equal(new Set(plaza.proxies.map(mesh => mesh.userData.r1Id)).size, 26)
   for (const category of PROXY_CATEGORIES) {
     const items = region14(layout, category)
     assert.ok(items.length > 0, category)
-    for (const item of items) assert.ok(collision.hit(item.xM - 26, 18 - item.yM), item.id)
+    for (const item of items) {
+      if (category === '摊亭') {
+        const yaw = Math.atan2(-item.facingLocal[0], item.facingLocal[1])
+        assert.ok(collision.hit(item.xM - 26 - .8 * Math.sin(yaw), 18 - item.yM - .8 * Math.cos(yaw)), item.id)
+        assert.equal(collision.hit(item.xM - 26 + .15 * Math.sin(yaw), 18 - item.yM + .15 * Math.cos(yaw)), null, `${item.id} operator aisle`)
+      } else assert.ok(collision.hit(item.xM - 26, 18 - item.yM), item.id)
+    }
   }
   const z14 = layout.r1.routes.find(route => route.id === 'Z14')
   assert.deepEqual(z14.points_m, [[28, -1], [28, -4], [28, -5]])

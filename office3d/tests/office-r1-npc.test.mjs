@@ -143,13 +143,17 @@ test('NPC-1 广场摊位：4 位摊主各在自己柜台后方，面朝顾客一
     const c = r1ToWorld(e.xM, e.yM)
     // 柜台朝向顾客；摊主站在柜台另一侧，并且面朝同一个方向
     const f = facingOf(v.yaw)
-    const counter = { x: e.facingLocal[0], z: e.facingLocal[1] }
-    assert.ok(f.x * counter.x + f.z * counter.z > 0.95, `${v.id} 应与柜台同向（面朝顾客）`)
+    const counter = { x: e.facingLocal[0], z: -e.facingLocal[1] }
     // 站在柜台背面：从柜台中心看，摊主在 -facing 一侧
     const rel = { x: v.x - c.x, z: v.z - c.z }
-    assert.ok(rel.x * counter.x + rel.z * counter.z < -0.6, `${v.id} 应站在柜台后方，而不是顾客一侧`)
-    // 不要站进柜台体内
-    assert.ok(dist(v, c) >= Math.min(e.lengthM, e.widthM) / 2 + 0.3, `${v.id} 离柜台太近，会穿柜台`)
+    if (e.category === '餐车') {
+      assert.ok(f.x * counter.x + f.z * counter.z < -.95, `${v.id} 应面朝取餐窗`)
+      assert.ok(dist(v, c) >= e.widthM / 2 + .3, `${v.id} 不进入封闭车体`)
+    } else {
+      assert.ok(f.x * counter.x + f.z * counter.z > .95, `${v.id} 应面朝顾客一侧`)
+      assert.ok(rel.x * counter.x + rel.z * counter.z < -.14, `${v.id} 应在柜台和后柜之间`)
+      assert.ok(dist(v, c) < .2, `${v.id} 应在亭内操作区`)
+    }
   }
 })
 

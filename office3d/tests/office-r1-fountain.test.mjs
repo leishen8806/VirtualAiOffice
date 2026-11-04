@@ -118,7 +118,7 @@ test('FT-6 integration forwards animation/disposal and non-R1 creates no fountai
   const plaza = buildR1Plaza({ THREE, root, layout, collision })
   assert.equal(plaza.fountain.root.parent, plaza.root)
   assert.equal(plaza.onFrame, plaza.fountain.onFrame)
-  assert.equal(collision.stats().bodies, 31)
+  assert.equal(collision.stats().bodies, 46) // 三座摊亭各由 2 个实心代理改为 7 个构件代理。
   let lights = 0; plaza.root.traverse(n => { if (n.isLight) lights++ }); assert.equal(lights, 0)
   plaza.dispose(); assert.equal(collision.stats().bodies, 0)
   for (const old of [undefined, LAYOUT_V3_ALIGN_L2B]) {

@@ -19,6 +19,7 @@ const EXTRA = {
   lounge: ['sit_chair_idle_relaxed_01', 'sit_chair_idle_neutral_01'],
   standFlavor: ['idle_look_around_01', 'idle_stretch_arms_01', 'drink_idle', 'cell_phone_textmessage'],
 }
+export const FOODTRUCK_DEMO_MOTIONS = Object.freeze(['drink_idle', 'cell_phone_textmessage'])
 const HEIGHT = { male: 1.78, female: 1.66 }
 // 22 位 agent 按工位顺序分配（男女穿插），每人一张不同的脸
 export const CAST = ['Male_Adult_01', 'Female_Adult_01', 'Male_Adult_02', 'Male_Adult_03', 'Female_Adult_02', 'Male_Adult_04', 'Female_Adult_03', 'Male_Adult_05', 'Female_Adult_04', 'Male_Adult_06', 'Female_Adult_05', 'Male_Adult_07', 'Male_Adult_08', 'Female_Adult_06', 'Male_Adult_09', 'Female_Adult_07', 'Male_Adult_10', 'Female_Adult_08', 'Male_Adult_11', 'Female_Adult_09', 'Male_Adult_12', 'Female_Adult_10']
@@ -332,6 +333,8 @@ export function createPerson(P, name) {
     folder.visible = pose.carry > 0.5 && pose.t >= folderReadyAt
     // 淡出期间仍跟随手掌，离开该动作后收起；文件夹优先占用手部。
     cup.visible = phone.visible = false
+    if (pose.r1Prop === 'cup') cup.visible = true
+    if (pose.r1Prop === 'phone') phone.visible = true
     if (pose.carry <= 0.5) for (const [clip, a] of extraActs) {
       if (!a.isRunning() || a.getEffectiveWeight() <= 0.05) continue
       if (/drink_idle$/.test(clip.name)) cup.visible = true
@@ -357,7 +360,7 @@ export function createPerson(P, name) {
     }
   }
   solve(0)
-  return { group: root, body: { head }, pose, solve, labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, r1HeadLimit: headControl?.report || null, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
+  return { group: root, body: { head }, pose, solve, hasR1Motion: (name) => !!X.r1Motions?.[name], labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, r1HeadLimit: headControl?.report || null, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
 }
 
 // Only the R1 caller opts in; existing animation pools and source clips stay intact.
@@ -387,6 +390,18 @@ export async function loadR1MovementExtras(P) {
     clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
     clip.name = file; (P.extras[g].lounge ||= []).push(clip)
   })))
+}
+
+// 餐车演示由点击触发；不占用所有人物的后台待机动作与首次加载预算。
+export async function loadFoodtruckDemoExtras(P, gender) {
+  const motions = P.extras[gender].r1Motions ||= {}
+  await Promise.all(FOODTRUCK_DEMO_MOTIONS.filter(name => !motions[name]).map(async (name) => {
+    const file = `${gender === 'male' ? 'm' : 'f'}_${name}`
+    const source = await loadAnimation(file), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    motions[name] = clip
+  }))
 }
 
 const R1_POOL_WARNED = new Set()

@@ -353,10 +353,15 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
   for (const kiosk of pick('摊亭')) {
     const p = r1ToWorld(kiosk.xM, kiosk.yM), yaw = yawOf(kiosk), at = placer(p, yaw)
     const halfX = kiosk.lengthM / 2, halfZ = kiosk.widthM / 2, post = .1, eave = 2.2
+    const obstacle = (w, h, d, x, y, z) => {
+      const [wx, wz] = at(x, z)
+      proxy(kiosk.id, new THREE.BoxGeometry(w, h, d), [wx, y, wz], yaw)
+    }
     open(kiosk)
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const [x, z] = at(sx * (halfX - post / 2), sz * (halfZ - post / 2))
       emit(new THREE.BoxGeometry(post, eave, post), COLOR.frame, [x, eave / 2, z], yaw, .75, 0, 'wood')
+      obstacle(post, eave, post, sx * (halfX - post / 2), eave / 2, sz * (halfZ - post / 2))
     }
     const [bodyX, bodyZ] = at(0, -(halfZ - .425))
     emit(new THREE.BoxGeometry(kiosk.lengthM - .2, .95, .75), COLOR.frame, [bodyX, .475, bodyZ], yaw, .75, 0, 'wood')
@@ -366,7 +371,10 @@ export function buildR1Plaza({ THREE, root, layout, collision, quality, low = fa
     emit(new THREE.BoxGeometry(kiosk.lengthM - .2, 1.6, .5), COLOR.interior, [cabX, .8, cabZ], yaw, .7)
     emit(new THREE.ConeGeometry(fitRadius(kiosk.lengthM, 4), kiosk.heightM - eave, 4, 1, false, Math.PI / 4), COLOR.roof, [p.x, (eave + kiosk.heightM) / 2, p.z], yaw, .8)
     close()
-    boxProxy(kiosk, yaw)
+    // 只挡住真实构件；整亭实心代理会封死柜台与后柜之间的操作通道。
+    obstacle(kiosk.lengthM - .2, .95, .75, 0, .475, -(halfZ - .425))
+    obstacle(kiosk.lengthM, .07, .9, 0, .985, -(halfZ - .45))
+    obstacle(kiosk.lengthM - .2, 1.6, .5, 0, .8, halfZ - .3)
     stallDisplay(kiosk, yaw)
   }
 
