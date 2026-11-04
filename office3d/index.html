@@ -142,6 +142,8 @@
   #dock { flex:1 1 0; min-width:0; display:flex; gap:4px; padding:6px; border-radius:999px; overflow-x:auto; scrollbar-width:none; }
   #dock > :first-child { margin-left:auto; } #dock > :last-child { margin-right:auto; }
   #dock::-webkit-scrollbar { display:none; }
+  #dock .dock-group { display:flex; flex:0 0 auto; align-items:center; gap:4px; }
+  #dock .dock-group-label { flex:0 0 auto; padding:0 5px; color:var(--muted); font-size:10px; white-space:nowrap; }
   #dock button, #tools button { border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; min-height:34px; }
   #dock button:hover, #tools button:hover { background:rgba(255,255,255,.1); }
   #dock button.on { background:var(--gold); color:#1b1606; font-weight:700; }
@@ -153,6 +155,29 @@
   #tools .grp.right .menu { left:auto; right:0; }
   #tools .grp.open > .menu { display:flex; }
   #tools .menu button { width:100%; text-align:left; border-radius:10px; padding:9px 12px; }
+  #tools .destination-picker > .gbtn { min-width:58px; }
+  #tools .destination-menu {
+    width:min(440px, calc(100vw - 24px));
+    min-width:0;
+    max-height:min(62vh, 440px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+  }
+  #tools .destination-menu-heading { padding:7px 9px 9px; color:var(--text); font-size:12px; font-weight:700; }
+  #tools .destination-menu-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; }
+  #tools .destination-menu-grid button {
+    min-width:0;
+    min-height:42px;
+    padding:8px 10px;
+    border-radius:10px;
+    white-space:normal;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #tools .destination-menu-grid button.on { background:var(--gold); color:#1b1606; font-weight:700; }
+  #tools .destination-menu-grid button:focus-visible, #tools .destination-picker > .gbtn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  #tools .destination-menu-note { padding:8px 9px 4px; color:var(--muted); font-size:11px; line-height:1.4; }
   #tools::-webkit-scrollbar { display:none; }
   #replayHint { position:fixed; z-index:5; left:18px; bottom:64px; color:#ecdcb8; font-size:11px; }
   /* 操作提示放在底部栏的正上方（底部栏约 60px 高），不再压在镜头栏右端 */
@@ -285,6 +310,11 @@
   .bubble.k-board { border-color:#ffb020; background:#fff7e0; }
   .bubble.k-chat { border-color:#c9b48a; background:#fbf8f1; font-size:11.5px; } .bubble.k-chat .b-head { color:#9a8660; }
   @media (max-width: 1180px) { #bottombar { flex-direction:column-reverse; align-items:stretch; gap:8px; } #tools { align-self:flex-start; max-width:100%; } #help { bottom:122px; } #quest { max-height:calc(100% - 240px); } }
+  @media (max-width: 560px) {
+    #tools .destination-menu { width:calc(100vw - 16px); max-height:min(64vh, 440px); }
+    #tools .destination-menu-grid { grid-template-columns:1fr; }
+    #tools .destination-menu-grid button { min-height:44px; }
+  }
   @media (max-width: 900px) {
     body { overflow:hidden; }
     #top { left:8px; right:8px; top:8px; }

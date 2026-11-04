@@ -24,6 +24,7 @@ import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
 import { createReplay } from './replay.js' // T11 今日回放（真实事件账本）：回放入口 / 回放期间暂停实时事件的最小挂钩
 import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
+import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
 const APP_STARTED = performance.now()
 
@@ -1880,37 +1881,115 @@ miniEl.addEventListener('pointermove', (e) => { if (miniDown) miniGo(e) })
 miniEl.addEventListener('pointerup', () => { miniDown = false })
 setInterval(drawMini, 250)
 const zonesEl = $('dock')
-function zoneBtn(label, fn, first) {
+function dockGroup(label, kind) {
+  const group = document.createElement('div')
+  group.className = 'dock-group'
+  group.dataset.kind = kind
+  const heading = document.createElement('span')
+  heading.className = 'dock-group-label'
+  heading.textContent = label
+  group.appendChild(heading)
+  zonesEl.appendChild(group)
+  return group
+}
+function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', destinationKind = '目的地区域') {
   const b = document.createElement('button')
   b.textContent = label
-  b.addEventListener('click', () => { zonesEl.querySelectorAll('button').forEach((x) => x.classList.remove('on')); b.classList.add('on'); fn() })
+  if (destinationId) { b.dataset.destinationId = destinationId; b.setAttribute('aria-label', `${destinationKind}：${label}`) }
+  else b.setAttribute('aria-label', `视角：${label}`)
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => {
+      x.classList.remove('on')
+      if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false')
+    })
+    b.classList.add('on')
+    if (destinationId) b.setAttribute('aria-pressed', 'true')
+    fn()
+  })
   if (first) b.classList.add('on')
-  zonesEl.appendChild(b)
+  container.appendChild(b)
 }
 if (DR_MODE) {
-  PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0))
+  const cameraGroup = dockGroup('仓配场景视角', 'views')
+  PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
 } else {
-  zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true)
-  zoneBtn('🔄 环绕巡航', () => { setGoal({ el: 30, r: homeR(), t: VIEW_CENTER }); camMode.tour = true })
-  zoneBtn('🔭 俯视', () => setGoal({ az: 0, el: 86, r: homeR(), t: VIEW_CENTER }))
-  zoneBtn('📐 等距', () => setGoal({ az: 45, el: 35, r: homeR(), t: VIEW_CENTER }))
-  zoneBtn('🎥 低机位', () => setGoal({ az: -25, el: 7, r: 26, t: [-4, 0, 2] }))
+  const cameraGroup = dockGroup('视角预设', 'views')
+  zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true, cameraGroup)
+  zoneBtn('🔄 环绕巡航', () => { setGoal({ el: 30, r: homeR(), t: VIEW_CENTER }); camMode.tour = true }, false, cameraGroup)
+  zoneBtn('🔭 俯视', () => setGoal({ az: 0, el: 86, r: homeR(), t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('📐 等距', () => setGoal({ az: 45, el: 35, r: homeR(), t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('🎥 低机位', () => setGoal({ az: -25, el: 7, r: 26, t: [-4, 0, 2] }), false, cameraGroup)
   zoneBtn('👤 跟随', () => {
-  // 跟随选中的人；没选就跟一个正在走动或正在干活的人
-  const all = [...views.values()].filter((v) => !v.away)
-  const v = views.get(selectedId) || all.find((x) => x.act) || all.find((x) => x.mode === 'run') || all[0]
-  if (!v) return
-  setGoal({ el: 22, r: 6.5 })
-  camMode.follow = v.id
-  selectedId = v.id
-  showDetail(v.id)
-})
-zoneBtn('🌇 室外', () => setGoal({ az: 18, el: 24, r: 78, t: VIEW_CENTER }))
-zoneBtn('🛕 高棉地标', () => setGoal({ az: 0, el: 12, r: 110, t: [0, 0, -20] }))
-zoneBtn('✨ 形象墙', () => setGoal({ az: 4, el: 22, r: 13, t: [CORRIDOR_X, 0, BACK_Z + 4] }))
-for (const z of Object.values(ZONES)) zoneBtn(z.label, () => setGoal({ az: 6, el: 36, r: z.focus.r, t: z.focus.t }))
-zoneBtn('🏛️ DR广场', () => { const focus = focusOf('plaza'); setGoal({ az: 8, el: 34, r: focus.r, t: focus.t }) })
-  zoneBtn('🛋️ 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }))
+    // 跟随选中的人；没选就跟一个正在走动或正在干活的人
+    const all = [...views.values()].filter((v) => !v.away)
+    const v = views.get(selectedId) || all.find((x) => x.act) || all.find((x) => x.mode === 'run') || all[0]
+    if (!v) return
+    setGoal({ el: 22, r: 6.5 })
+    camMode.follow = v.id
+    selectedId = v.id
+    showDetail(v.id)
+  }, false, cameraGroup)
+  zoneBtn('🌇 室外', () => setGoal({ az: 18, el: 24, r: 78, t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('🛕 高棉地标', () => setGoal({ az: 0, el: 12, r: 110, t: [0, 0, -20] }), false, cameraGroup)
+  zoneBtn('✨ 形象墙', () => setGoal({ az: 4, el: 22, r: 13, t: [CORRIDOR_X, 0, BACK_Z + 4] }), false, cameraGroup)
+
+  const explicitDestinations = OFFICE_LAYOUT.variant === 'align' || OFFICE_LAYOUT.variant === 'r1'
+    ? officeDestinationsForLayout(OFFICE_LAYOUT)
+    : []
+  if (explicitDestinations.length) {
+    const picker = document.createElement('div')
+    picker.className = 'grp right destination-picker'
+    picker.dataset.kind = 'destinations'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'
+    trigger.className = 'gbtn'
+    trigger.textContent = '区域'
+    trigger.setAttribute('aria-expanded', 'false')
+    trigger.setAttribute('aria-controls', 'officeDestinationMenu')
+    trigger.setAttribute('aria-label', '打开当前办公室区域列表')
+    const menu = document.createElement('div')
+    menu.className = 'menu glass destination-menu'
+    menu.id = 'officeDestinationMenu'
+    menu.setAttribute('role', 'group')
+    menu.setAttribute('aria-label', '当前场景区域')
+    const heading = document.createElement('div')
+    heading.className = 'destination-menu-heading'
+    heading.textContent = OFFICE_LAYOUT.variant === 'r1' ? '当前 R1 场景区域' : '当前 V3 场景区域'
+    const grid = document.createElement('div')
+    grid.className = 'destination-menu-grid'
+    for (const [index, destination] of explicitDestinations.entries()) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.textContent = destination.label
+      button.dataset.destinationId = destination.id
+      button.setAttribute('aria-label', '当前场景区域：' + destination.label)
+      button.setAttribute('aria-pressed', String(index === 0))
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => {
+          x.classList.remove('on')
+          if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false')
+        })
+        button.classList.add('on')
+        button.setAttribute('aria-pressed', 'true')
+        setGoal(destination.focus)
+      })
+      if (index === 0) button.classList.add('on')
+      grid.appendChild(button)
+    }
+    const note = document.createElement('div')
+    note.className = 'destination-menu-note'
+    note.textContent = '目标按当前布局登记；与旧业务名称的对应关系待确认'
+    menu.append(heading, grid, note)
+    picker.append(trigger, menu)
+    $('tools').appendChild(picker)
+  } else {
+    const destinationGroup = dockGroup('目的地导航', 'destinations')
+    for (const [index, z] of Object.values(ZONES).entries()) {
+      zoneBtn(z.label, () => setGoal({ az: 6, el: 36, r: z.focus.r, t: z.focus.t }), index === 0, destinationGroup, z.focus.id || z.focus.label)
+    }
+    zoneBtn('入口 DR广场', () => { const focus = focusOf('plaza'); setGoal({ az: 8, el: 34, r: focus.r, t: focus.t }) }, false, destinationGroup, 'plaza')
+    zoneBtn('入口 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }), false, destinationGroup, 'lounge')
+  }
 }
 const qb = $('quality')
 board.beacon.userData.dynamic = true // 告警灯会变色，不进入静态渲染副本。
@@ -1942,13 +2021,33 @@ $('clean').addEventListener('click', toggleClean)
 // （画质 / 亮度 / 边缘滚动 / 镜头跟随这类连续切换的带 data-keep，保持打开）；点别处或按 Esc 也收起。
 {
   const grps = [...document.querySelectorAll('#tools .grp')]
-  const closeAll = (except) => grps.forEach((g) => { if (g !== except) g.classList.remove('open') })
+  const setOpen = (g, open) => {
+    g.classList.toggle('open', open)
+    g.querySelector('.gbtn')?.setAttribute('aria-expanded', String(open))
+  }
+  const closeAll = (except) => grps.forEach((g) => { if (g !== except) setOpen(g, false) })
   for (const g of grps) {
-    g.querySelector('.gbtn').addEventListener('click', (e) => { e.stopPropagation(); closeAll(g); g.classList.toggle('open') })
-    g.querySelector('.menu').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.hasAttribute('data-keep')) g.classList.remove('open') })
+    g.querySelector('.gbtn').addEventListener('click', (e) => {
+      e.stopPropagation()
+      const nextOpen = !g.classList.contains('open')
+      closeAll(g)
+      setOpen(g, nextOpen)
+    })
+    g.querySelector('.menu').addEventListener('click', (e) => {
+      const b = e.target.closest('button')
+      if (b && !b.hasAttribute('data-keep')) {
+        setOpen(g, false)
+        if (g.classList.contains('destination-picker')) g.querySelector('.gbtn')?.focus()
+      }
+    })
   }
   document.addEventListener('click', (e) => { if (!e.target.closest('#tools .grp')) closeAll() })
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll() })
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    const opened = grps.find((g) => g.classList.contains('open'))
+    closeAll()
+    if (opened?.classList.contains('destination-picker')) opened.querySelector('.gbtn')?.focus()
+  })
 }
 document.addEventListener('fullscreenchange', () => { $('fs').textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏'; setTimeout(resize, 50) })
 addEventListener('keydown', (e) => {
