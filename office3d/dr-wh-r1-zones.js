@@ -12,7 +12,7 @@ export const WH_R1_ZONES = Object.freeze(WH_R1_DATA.zones.map((zone) => {
 export const WH_R1_CAMERA_VIEWS = Object.freeze([
   Object.freeze({ id: 'overview', label: '全景', az: -25, el: 52, r: 132, t: Object.freeze([(WH_R1_SITE.x0 + WH_R1_SITE.x1) / 2, 0, (WH_R1_SITE.z0 + WH_R1_SITE.z1) / 2]) }),
   Object.freeze({ id: 'northDock', label: '北侧 5 车位', az: 180, el: 36, r: 46, t: Object.freeze([whToWorld(14.5, 56).x, 0, whToWorld(14.5, 56).z]) }),
-  Object.freeze({ id: 'eastAnnex', label: '东侧附建发货区', az: 270, el: 38, r: 54, t: Object.freeze([whToWorld(113, 26).x, 0, whToWorld(113, 26).z]) }),
+  Object.freeze({ id: 'eastAnnex', label: '东侧附建区', az: 270, el: 38, r: 54, t: Object.freeze([whToWorld(113, 26).x, 0, whToWorld(113, 26).z]) }),
   Object.freeze({ id: 'frontPlaza', label: '前广场', az: 180, el: 42, r: 42, t: Object.freeze([whToWorld(44, -3).x, 0, whToWorld(44, -3).z]) }),
 ])
 
