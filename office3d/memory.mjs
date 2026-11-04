@@ -283,8 +283,13 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
     } catch { error = '月度清单生成或提醒失败，请人工核对'; return { error } }
     finally { busy = false }
   }
-  async function context() {
-    const [a, i, p] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`), get(`/api/companies/${company}/projects`)])
+  async function context({ feedback = false } = {}) {
+    const current = now()
+    const since = db.feedbackSince || new Date(current - 7 * DAY).toISOString()
+    const issuesPath = feedback
+      ? `/api/companies/${company}/issues?updatedSince=${encodeURIComponent(since)}`
+      : `/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`
+    const [a, i, p] = await Promise.all([get(`/api/companies/${company}/agents`), get(issuesPath), get(`/api/companies/${company}/projects`)])
     return { agents: rows(a, 'agents'), issues: rows(i, 'issues'), projects: rows(p, 'projects') }
   }
   async function collectFeedback(ctx) {
@@ -319,6 +324,8 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
       }
     }
     await Promise.all([scan(), scan()])
+    const updated = pending.map(issue => Date.parse(issue.updatedAt || '')).filter(Number.isFinite)
+    if (updated.length) db.feedbackSince = new Date(Math.max(...updated) - 1).toISOString()
     db.lastFeedbackAt = now(); assertEnabled(); save(); refreshEntries()
   }
   async function candidate(raw, ctx) {
@@ -352,7 +359,7 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
       const ctx = await context()
       if (!dutyOn()) return view()
       let count = 0
-      if (approved.length && now() - (db.lastFeedbackAt || 0) >= 300000) await collectFeedback(ctx)
+      if (approved.length && now() - (db.lastFeedbackAt || 0) >= 300000) await collectFeedback(await context({ feedback: true }))
       const month = today(now()).slice(0, 7)
       if (today(now()).endsWith('-01') && !db.monthlyLists.some(r => r.month === month)) writeMonthly()
       const monthlyRecord = db.monthlyLists.find(r => r.month === month && !r.notified)

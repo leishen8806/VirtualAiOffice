@@ -7,6 +7,7 @@ import crypto from 'node:crypto'
 import os from 'node:os'
 import fs from 'node:fs'
 import path from 'node:path'
+import { PerformanceObserver } from 'node:perf_hooks'
 import { fileURLToPath } from 'node:url'
 
 import { onDuty, nextChange, localParts } from '../workhours/schedule.mjs'
@@ -877,6 +878,16 @@ async function refreshProjects() {
 const projectStart = setTimeout(refreshProjects, 15000); projectStart.unref?.()
 setInterval(refreshProjects, 5 * 60 * 1000)
 const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify(snapshots.counts())), 10 * 60 * 1000); snapshotLog.unref?.()
+if (process.env.OFFICE3D_LOAD_METRICS === '1') {
+  let gcCount = 0
+  const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
+  observer.observe({ entryTypes: ['gc'] })
+  const loadMetrics = setInterval(() => console.log('[load-metrics]', JSON.stringify({
+    at: new Date().toISOString(), rssBytes: process.memoryUsage().rss, heapUsedBytes: process.memoryUsage().heapUsed,
+    heapTotalBytes: process.memoryUsage().heapTotal, cpu: process.cpuUsage(), gcCount,
+  })), 5000)
+  loadMetrics.unref?.()
+}
 
 async function backlogRows(strict = false) {
   if (Date.now() - backlogCache.at < 60 * 1000) {

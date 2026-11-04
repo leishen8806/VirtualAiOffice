@@ -243,13 +243,29 @@ test('health summary retains the 24h window when another agent has over 40 newer
   fs.unlinkSync(file)
 })
 
-test('shared collection snapshot coalesces modules and preserves caller isolation', async () => {
+test('health detects a full routine page without overlap and backfills the 24h window', async t => {
+  const ms = Date.parse('2026-11-03T04:00:00Z'), file = temp(t)
+  fs.writeFileSync(file, JSON.stringify({ runs: [{ id: 'old', agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - 200 * 60000).toISOString() }] }))
+  const agents = [{ id: 'busy-agent', name: 'busy-agent', model: 'gpt' }]
+  const recent = Array.from({ length: 150 }, (_, i) => ({ id: `recent-${i}`, agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - i * 60000).toISOString() }))
+  const calls = [], logs = []
+  const cache = createBackgroundHealth({ now: () => ms, file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), log: message => logs.push(message),
+    get: async p => { calls.push(p); if (p.endsWith('/agents')) return agents; if (p.includes('limit=1000')) return recent; return recent.slice(0, 100) } })
+  await cache.refresh()
+  assert.ok(calls.includes('/api/companies/demo/heartbeat-runs?limit=100&summary=true'))
+  assert.ok(calls.includes('/api/companies/demo/heartbeat-runs?limit=1000&summary=true'))
+  assert.equal(cache.read().agents[0].runs24h, 151)
+  assert.deepEqual(logs, ['[health] 运行窗口可能有缺口，已补取完整快照'])
+})
+
+test('shared collection snapshot coalesces modules and exposes a read-only shared value', async () => {
   let ms = start, upstream = 0
   const snapshots = createSnapshotGet({ now: () => ms, get: async () => { upstream++; return [{ id: upstream }] } })
   const modules = ['state', 'workload', 'blocked', 'stats', 'health'].map(name => snapshots.forModule(name))
   const rows = await Promise.all(modules.map(get => get('/api/companies/demo/agents')))
   assert.equal(upstream, 1)
-  rows[0][0].id = 'changed'
+  assert.equal(Object.isFrozen(rows[0]), true)
+  assert.throws(() => { rows[0][0].id = 'changed' }, TypeError)
   assert.equal((await modules[0]('/api/companies/demo/agents'))[0].id, 1)
   assert.deepEqual(snapshots.counts().state, { requests: 2, hits: 1, upstream: 1 })
   ms += 45000

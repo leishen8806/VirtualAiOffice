@@ -91,6 +91,12 @@ export async function loadStateComponents({ get, company, backlog }) {
 
 export function createSnapshotGet({ get, now = Date.now }) {
   const cache = new Map(), modules = new Map()
+  const freeze = (value, seen = new Set()) => {
+    if (!value || typeof value !== 'object' || seen.has(value)) return value
+    seen.add(value)
+    for (const child of Object.values(value)) freeze(child, seen)
+    return Object.freeze(value)
+  }
   const cacheKey = p => {
     try {
       const url = new URL(p, 'http://snapshot.local')
@@ -111,21 +117,23 @@ export function createSnapshotGet({ get, now = Date.now }) {
     if (!collection(p) || options.signal) { mark(module, 'upstream'); return get(p, options) }
     const key = cacheKey(p)
     const old = cache.get(key), age = old ? now() - old.at : Infinity
-    if (old?.value && age < ttl(p)) { mark(module, 'hits'); return structuredClone(old.value) }
-    if (old?.flight) { mark(module, 'hits'); return structuredClone(await old.flight) }
+    if (old?.value && age < ttl(p)) { mark(module, 'hits'); return old.value }
+    if (old?.flight) { mark(module, 'hits'); return await old.flight }
     mark(module, 'upstream')
     const flight = Promise.resolve(get(p)).then(value => {
-      cache.set(key, { at: now(), value: structuredClone(value) })
-      return value
+      // 缓存结果只读共享，避免每个读取方为 MB 级快照重复 structuredClone。
+      const shared = freeze(structuredClone(value))
+      cache.set(key, { at: now(), value: shared })
+      return shared
     }).catch(error => { cache.delete(key); throw error })
     cache.set(key, { at: old?.at || 0, flight })
-    return structuredClone(await flight)
+    return await flight
   }
   return { forModule: module => (p, options) => read(module, p, options), counts: () => Object.fromEntries([...modules].map(([name, row]) => [name, { ...row }])) }
 }
 
-export function createBackgroundHealth({ get, company, buildHealth, schedule, now = Date.now, timeoutMs = 20000, file = null }) {
-  let report = null, refreshedAt = 0, attemptedAt = null, failed = false, flight = null, runs = []
+export function createBackgroundHealth({ get, company, buildHealth, schedule, now = Date.now, timeoutMs = 20000, file = null, log = console.log }) {
+  let report = null, refreshedAt = 0, attemptedAt = null, failed = false, flight = null, runs = [], gapFetchAt = 0
   try {
     const saved = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (Array.isArray(saved?.runs)) runs = saved.runs
@@ -150,16 +158,34 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
     flight = (async () => {
       let timer
       try {
+        const routineLimit = runs.length ? 100 : 1000
         const data = await Promise.race([
           Promise.all([
             get(`/api/companies/${company}/agents`),
-            get(`/api/companies/${company}/heartbeat-runs?limit=${runs.length ? 40 : 1000}&summary=true`),
+            get(`/api/companies/${company}/heartbeat-runs?limit=${routineLimit}&summary=true`),
           ]),
           new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('HEALTH_TIMEOUT')), timeoutMs) }),
         ])
         const agents = Array.isArray(data[0]) ? data[0] : data[0]?.agents
-        const fresh = Array.isArray(data[1]) ? data[1] : data[1]?.runs
+        let fresh = Array.isArray(data[1]) ? data[1] : data[1]?.runs
         if (!Array.isArray(agents) || !Array.isArray(fresh)) throw new Error('INVALID_SOURCE')
+        const freshOldest = fresh.length ? Math.min(...fresh.map(runAt)) : 0
+        const localLatest = runs.length ? Math.max(...runs.map(runAt)) : 0
+        const possibleGap = runs.length && fresh.length >= routineLimit && freshOldest > localLatest
+        if (possibleGap && now() - gapFetchAt >= 10 * 60 * 1000) {
+          gapFetchAt = now()
+          try {
+            const full = await Promise.race([
+              get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('HEALTH_GAP_TIMEOUT')), timeoutMs)),
+            ])
+            const rows = Array.isArray(full) ? full : full?.runs
+            if (Array.isArray(rows)) {
+              fresh = rows
+              log('[health] 运行窗口可能有缺口，已补取完整快照')
+            } else log('[health] 运行窗口可能有缺口，完整快照补取失败')
+          } catch { log('[health] 运行窗口可能有缺口，完整快照补取失败') }
+        }
         mergeRuns(fresh)
         report = buildHealth({ now: new Date(now()), agents, runs, schedule: schedule() })
         refreshedAt = now(); failed = false
