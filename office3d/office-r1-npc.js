@@ -236,6 +236,15 @@ export function createR1Npcs({ THREE, scene, layout, people, labelsEl, createPer
     for (const m of members) {
       const { station, char, walker } = m
       const p = char.pose
+      // 餐车演示临时接管摊主；导演/巡逻在此期间不得重写其姿态或位置。
+      if (m.demoControlled) {
+        if (m.label && project) {
+          char.body.head.getWorldPosition(head)
+          head.y += char.labelDY || 0.62
+          project(head, m.label, 0)
+        }
+        continue
+      }
       stepWalker(walker, dt, station, navigation, collision)
       if (walker.route) {
         const moved = Math.hypot(char.group.position.x - walker.x, char.group.position.z - walker.z)
