@@ -32,7 +32,7 @@ function setup(t, options = {}) {
   const failRun = (issueId, status = 'failed', finishedAt = '2026-10-19T01:00:00+07:00') => runs.push({ id: 'r' + ++n, issueId, status, errorCode: status === 'cancelled' ? 'cancelled' : 'tool_use_error', finishedAt: iso(finishedAt) })
   const get = async (p) => {
     calls.push(p)
-    if (p === `/api/companies/C/issues`) return structuredClone(Object.values(issues))
+    if (p.startsWith(`/api/companies/C/issues?status=`)) return structuredClone(Object.values(issues))
     if (p.startsWith('/api/companies/C/heartbeat-runs')) return structuredClone(runs)
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues[m[1]]; assert.ok(i, '未模拟任务 ' + p); return structuredClone(m[2] ? i.comments : i) }
@@ -223,7 +223,7 @@ test('T14b 端到端：三类等待任务开启总开关不发评论不通知；
   w.enable()
   const hf = w.factory()
   await hf.run()
-  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=1000&summary=true'))
+  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=40&summary=true'))
   assert.equal(w.writes.length, 1, '只有真卡住的任务发提醒')
   assert.equal(w.writes[0].p, '/api/issues/CMP-4/comments')
   assert.match(w.writes[0].body.body, /长停留/)

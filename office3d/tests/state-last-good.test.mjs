@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
 import test from 'node:test'
-import { createLastGoodState, stripStateCredentials, loadStateComponents, createBackgroundHealth } from '../state-last-good.mjs'
+import { createLastGoodState, stripStateCredentials, loadStateComponents, createBackgroundHealth, createSnapshotGet } from '../state-last-good.mjs'
 import { buildHealth } from '../health.mjs'
 import { redactState } from '../wall.mjs'
 import { coarsenGeo } from '../office-geo.mjs'
@@ -25,7 +25,7 @@ function temp(t) {
 }
 function context(extra = {}) {
   const empty = () => ({}), view = { view: empty, summary: empty }
-  return { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
+  const value = { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
     get: async p => p.endsWith('/dashboard') ? { tasks: { todo: 1 }, costs: { total: 2 }, pendingApprovals: 0 }
       : p.endsWith('/agents') ? [{ id: 'demo-agent', name: 'demo-name', status: 'idle' }] : [],
     backlogRows: async () => [], world: () => ({ duty: { on: false, days: [1] } }),
@@ -42,6 +42,8 @@ function context(extra = {}) {
     computeToday: () => ({ runs: { total: 0 }, backlog: 0, done: 0, total: 1, percent: 0, comments: 0, waiting: 0, decisions: {}, byProject: [] }),
     commandLive: { capture() {} }, console: { log() {} }, loadStateComponents, ...extra,
   }
+  value.moduleGet ||= () => value.get
+  return value
 }
 function stateFunction(text, ctx) {
   // 服务器入口后来改成 `const server = http`（优雅退出要用到句柄），老版本仍是裸 `http`。
@@ -178,7 +180,7 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   const calls = []
   let healthSettled = false
   const cache = createBackgroundHealth({ now: () => ms, timeoutMs: 500, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
-    get: async (p, { signal }) => { calls.push(p); if (fail) return new Promise(() => {}); assert.ok(signal); return p.includes('heartbeat') ? runs.map(run => ({ ...run, resultJson: null })) : agents } })
+    get: async p => { calls.push(p); if (fail) return new Promise(() => {}); return p.includes('heartbeat') ? runs.map(run => ({ ...run, resultJson: null })) : agents } })
   assert.equal(cache.read().stale.reason, 'NOT_LOADED')
   await cache.refresh()
   assert.deepEqual(calls.sort(), [
@@ -200,7 +202,7 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   const expired = cache.read(), { stale, ...retained } = expired
   assert.equal(stale.reason, 'UPSTREAM_UNAVAILABLE')
   assert.deepEqual(retained, good)
-  assert.equal(calls.filter(p => p.includes('limit=1000&summary=true')).length, 2)
+  assert.equal(calls.filter(p => p.includes('heartbeat-runs')).length, 2)
   fail = false; ms += 30000
   await cache.refresh()
   assert.equal(cache.read().stale, undefined)
@@ -230,6 +232,29 @@ test('health summary retains the 24h window when another agent has over 40 newer
   assert.equal(report.agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
   assert.equal(report.incidents.some(i => i.category === 'login' && i.agentIds.includes('quiet-agent')), true)
   assert.equal(report.agents.find(a => a.agentId === 'busy-agent').runs24h, 40)
+  let later = ms + 30000
+  // A retained snapshot proves a 40-row follow-up cannot erase a quiet agent's 24h failure.
+  const file = path.join(os.tmpdir(), `health-runs-${process.pid}-${Date.now()}.json`)
+  fs.writeFileSync(file, JSON.stringify({ runs }))
+  const retained = createBackgroundHealth({ now: () => later, file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async p => p.includes('heartbeat-runs') ? runs.slice(0, 40) : agents })
+  await retained.refresh()
+  assert.equal(retained.read().agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
+  fs.unlinkSync(file)
+})
+
+test('shared collection snapshot coalesces modules and preserves caller isolation', async () => {
+  let ms = start, upstream = 0
+  const snapshots = createSnapshotGet({ now: () => ms, get: async () => { upstream++; return [{ id: upstream }] } })
+  const modules = ['state', 'workload', 'blocked', 'stats', 'health'].map(name => snapshots.forModule(name))
+  const rows = await Promise.all(modules.map(get => get('/api/companies/demo/agents')))
+  assert.equal(upstream, 1)
+  rows[0][0].id = 'changed'
+  assert.equal((await modules[0]('/api/companies/demo/agents'))[0].id, 1)
+  assert.deepEqual(snapshots.counts().state, { requests: 2, hits: 1, upstream: 1 })
+  ms += 45000
+  await modules[0]('/api/companies/demo/agents')
+  assert.equal(upstream, 2)
 })
 
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
@@ -242,6 +267,16 @@ test('/state shares one response for five seconds and refreshes after expiry', a
   ms += 1
   await stateRoute(read, false, false, cache, () => ms)
   assert.equal(builds, 2)
+})
+
+test('/state keeps one upstream build for one, three, and five concurrent pages', async t => {
+  for (const pages of [1, 3, 5]) {
+    let builds = 0
+    const manager = createLastGoodState({ file: temp(t), now: () => start, log() {} })
+    const read = () => manager.run(async () => { builds++; await Promise.resolve(); return fixture() })
+    await Promise.all(Array.from({ length: pages }, () => stateRoute(read, false, false, new Map(), () => start)))
+    assert.equal(builds, 1)
+  }
 })
 
 test('/state five-second response cache halves work at a three-second poll cadence', async () => {

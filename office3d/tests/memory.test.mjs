@@ -70,7 +70,7 @@ function fixture(t, { enabled = true, tasks = 1, roleCount = 1 } = {}) {
   const comments = {}, writes = []
   const get = async url => {
     if (url.endsWith('/agents')) return agents
-    if (url.endsWith('/issues')) return issues
+    if (url.includes('/issues?status=todo,in_progress,in_review,blocked')) return issues
     if (url.endsWith('/projects')) return []
     const m = url.match(/\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) return m[2] ? comments[m[1]] || [] : issues.find(i => i.id === m[1])

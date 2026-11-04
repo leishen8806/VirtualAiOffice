@@ -67,7 +67,7 @@ export async function loadStateComponents({ get, company, backlog }) {
   const entries = [
     ['agents', `${base}/agents`, 'agents'], ['dashboard', `${base}/dashboard`, null],
     ['issues', `${base}/issues?status=todo,in_progress,in_review,blocked`, 'issues'],
-    ['runs', `${base}/heartbeat-runs?limit=40`, 'runs'],
+    ['runs', `${base}/heartbeat-runs?limit=40&summary=true`, 'runs'],
     ['approvals', `${base}/approvals?status=pending`, 'approvals'],
     ['activity', `${base}/activity?limit=500`, 'activity'],
     ['approvalsAll', `${base}/approvals`, 'approvals'], ['backlog', null, null],
@@ -89,28 +89,71 @@ export async function loadStateComponents({ get, company, backlog }) {
   return { ...values, gaps }
 }
 
-export function createBackgroundHealth({ get, company, buildHealth, schedule, now = Date.now, timeoutMs = 20000 }) {
-  let report = null, refreshedAt = 0, attemptedAt = null, failed = false, flight = null
+export function createSnapshotGet({ get, now = Date.now }) {
+  const cache = new Map(), modules = new Map()
+  const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs)(?:\?|$)/.test(p)
+  const ttl = p => p.includes('heartbeat-runs?limit=1000') ? 10 * 60 * 1000 : 45000
+  const mark = (module, key) => {
+    const row = modules.get(module) || { requests: 0, hits: 0, upstream: 0 }
+    row[key]++; modules.set(module, row)
+  }
+  async function read(module, p, options = {}) {
+    mark(module, 'requests')
+    if (!collection(p) || options.signal) { mark(module, 'upstream'); return get(p, options) }
+    const old = cache.get(p), age = old ? now() - old.at : Infinity
+    if (old?.value && age < ttl(p)) { mark(module, 'hits'); return structuredClone(old.value) }
+    if (old?.flight) { mark(module, 'hits'); return structuredClone(await old.flight) }
+    mark(module, 'upstream')
+    const flight = Promise.resolve(get(p)).then(value => {
+      cache.set(p, { at: now(), value: structuredClone(value) })
+      return value
+    }).catch(error => { cache.delete(p); throw error })
+    cache.set(p, { at: old?.at || 0, flight })
+    return structuredClone(await flight)
+  }
+  return { forModule: module => (p, options) => read(module, p, options), counts: () => Object.fromEntries([...modules].map(([name, row]) => [name, { ...row }])) }
+}
+
+export function createBackgroundHealth({ get, company, buildHealth, schedule, now = Date.now, timeoutMs = 20000, file = null }) {
+  let report = null, refreshedAt = 0, attemptedAt = null, failed = false, flight = null, runs = []
+  try {
+    const saved = JSON.parse(fs.readFileSync(file, 'utf8'))
+    if (Array.isArray(saved?.runs)) runs = saved.runs
+  } catch {}
+  const runAt = run => Date.parse(run.finishedAt || run.updatedAt || run.startedAt || run.createdAt || 0) || 0
+  const persist = () => {
+    if (!file) return
+    const temp = file + '.tmp'
+    try { fs.writeFileSync(temp, JSON.stringify({ runs })); fs.renameSync(temp, file) } catch { try { fs.unlinkSync(temp) } catch {} }
+  }
+  const mergeRuns = fresh => {
+    const key = run => run.id || `${run.agentId || ''}|${run.finishedAt || run.updatedAt || run.startedAt || run.createdAt || ''}|${run.status || ''}`
+    const byId = new Map(runs.map(run => [key(run), run]))
+    for (const run of fresh) if (run) byId.set(key(run), run)
+    const cutoff = now() - 24 * 3600000
+    runs = [...byId.values()].filter(run => runAt(run) >= cutoff).sort((a, b) => runAt(b) - runAt(a))
+    persist()
+  }
   function refresh() {
     if (flight || (attemptedAt !== null && now() - attemptedAt < 30000)) return flight
     attemptedAt = now()
-    const controller = new AbortController()
     flight = (async () => {
       let timer
       try {
         const data = await Promise.race([
           Promise.all([
-            get(`/api/companies/${company}/agents`, { signal: controller.signal }),
-            get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`, { signal: controller.signal }),
+            get(`/api/companies/${company}/agents`),
+            get(`/api/companies/${company}/heartbeat-runs?limit=${runs.length ? 40 : 1000}&summary=true`),
           ]),
-          new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('HEALTH_TIMEOUT')) }, timeoutMs) }),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('HEALTH_TIMEOUT')), timeoutMs) }),
         ])
         const agents = Array.isArray(data[0]) ? data[0] : data[0]?.agents
-        const runs = Array.isArray(data[1]) ? data[1] : data[1]?.runs
-        if (!Array.isArray(agents) || !Array.isArray(runs)) throw new Error('INVALID_SOURCE')
+        const fresh = Array.isArray(data[1]) ? data[1] : data[1]?.runs
+        if (!Array.isArray(agents) || !Array.isArray(fresh)) throw new Error('INVALID_SOURCE')
+        mergeRuns(fresh)
         report = buildHealth({ now: new Date(now()), agents, runs, schedule: schedule() })
         refreshedAt = now(); failed = false
-      } catch { failed = true; controller.abort() }
+      } catch { failed = true }
       finally { clearTimeout(timer) }
     })().finally(() => { flight = null })
     return flight

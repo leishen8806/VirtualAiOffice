@@ -20,7 +20,7 @@ function setup(t, options = {}) {
     calls.push(p)
     if (p.endsWith('/agents')) return structuredClone(agents)
     if (p.endsWith('/projects')) return [{ id: 'ops', name: '运营与知识库' }]
-    if (p.endsWith('/issues')) return structuredClone(issues)
+    if (p.startsWith('/api/companies/C/issues')) return structuredClone(issues)
     if (p.includes('/heartbeat-runs?')) return structuredClone(runs)
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues.find((i) => i.id === m[1]); assert.ok(i, p); return structuredClone(m[2] ? i.comments : i) }
@@ -63,7 +63,7 @@ for (const [label, extra] of [['未满足依赖', { blockedBy: [{ status: 'todo'
   const w = setup(t); Object.assign(w.issue, extra)
   const before = fs.existsSync(w.file)
   assert.ok((await w.patrol.preview()).items[0].skip)
-  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=1000&summary=true'))
+  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=40&summary=true'))
   assert.equal(fs.existsSync(w.file), before); await w.patrol.run(); assert.equal(w.writes.length, 0)
 })
 test('负责人 paused 跳过', async (t) => { const w = setup(t); w.agents.find((a) => a.name === 'Worker').status = 'paused'; await w.patrol.run(); assert.equal(w.writes.length, 0) })
