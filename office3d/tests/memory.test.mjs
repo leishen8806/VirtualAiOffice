@@ -70,7 +70,8 @@ function fixture(t, { enabled = true, tasks = 1, roleCount = 1 } = {}) {
   const comments = {}, writes = []
   const get = async url => {
     if (url.endsWith('/agents')) return agents
-    if (url.endsWith('/issues')) return issues
+    if (url.includes('/issues?updatedSince=')) return issues
+    if (url.includes('/issues?status=todo,in_progress,in_review,blocked')) return issues
     if (url.endsWith('/projects')) return []
     const m = url.match(/\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) return m[2] ? comments[m[1]] || [] : issues.find(i => i.id === m[1])
@@ -290,6 +291,16 @@ test('反馈容忍全角括号冒号，逐评论去重并跨重启累计；没�
   assert.equal(JSON.parse(fs.readFileSync(f.config)).entryStats[p].useless, 3)
   f.comments['issue-0'].push({ id: 'useful', body: `【记忆库反馈】有用 ${p}` }); f.advance(300001); await again.tick()
   const last = await again.monthly(); assert.ok(!fs.readFileSync(path.join(f.kb, last.path), 'utf8').includes('反馈没用'))
+})
+test('已完成任务的反馈通过 updatedSince 增量仍会被计数', async t => {
+  const f = fixture(t), p = '记忆/流程/done-feedback.md'
+  f.put('流程', 'done-feedback', { source: 'CMP-6101' })
+  f.issues[0].status = 'done'; f.issues[0].updatedAt = '2026-10-29T11:00:00.000Z'
+  f.comments['issue-0'] = [{ id: 'done-useful', body: `【记忆库反馈】有用 ${p}` }]
+  f.advance(300001); await f.mem.tick()
+  const saved = JSON.parse(fs.readFileSync(f.config))
+  assert.equal(saved.entryStats[p].useful, 1)
+  assert.ok(saved.feedbackSince)
 })
 test('月初上班自动生成一次，提醒固定审核任务一次，不自动创建任务', async t => {
   const f = fixture(t, { tasks: 0 }); f.agents[0].name = 'KnowledgeKeeper'

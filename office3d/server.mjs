@@ -7,6 +7,7 @@ import crypto from 'node:crypto'
 import os from 'node:os'
 import fs from 'node:fs'
 import path from 'node:path'
+import { PerformanceObserver } from 'node:perf_hooks'
 import { fileURLToPath } from 'node:url'
 
 import { onDuty, nextChange, localParts } from '../workhours/schedule.mjs'
@@ -53,7 +54,7 @@ import { commandViewEnabled, createCommandViewRoutes } from './command-view-rout
 import { createCommandLiveWiring } from './command-view-wiring.mjs'
 import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
-import { createLastGoodState, loadStateComponents, createBackgroundHealth } from './state-last-good.mjs'
+import { createLastGoodState, loadStateComponents, createBackgroundHealth, createSnapshotGet } from './state-last-good.mjs'
 import { readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel } from './run-liveness.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
@@ -176,6 +177,8 @@ async function get(p, { signal } = {}) {
   if (!r.ok) throw new Error(`${p} -> ${r.status}`)
   return r.json()
 }
+const snapshots = createSnapshotGet({ get })
+const moduleGet = name => snapshots.forModule(name)
 function readGovernanceFile(name) { try { return JSON.parse(fs.readFileSync(path.join(HERE, name), 'utf8')) } catch { return {} } }
 async function send(method, p, body) {
   const r = await fetch(PAPERCLIP + p, {
@@ -318,7 +321,7 @@ function restrictedWorld(value) {
 async function wallData(restrictGeo = false) {
   if (!restrictGeo && wallCache.data && Date.now() - wallCache.at < 5000) return wallCache.data
   if (Date.now() - issuesCache.at > 30000) {
-    const r = await get(`/api/companies/${COMPANY}/issues`)
+    const r = await moduleGet('wall')(`/api/companies/${COMPANY}/issues?status=todo,in_progress,in_review,blocked`)
     issuesCache = { at: Date.now(), list: (Array.isArray(r) ? r : r.issues || []).map((i) => ({ id: i.id, ident: i.identifier, title: i.title, status: i.status, projectId: i.projectId || null, updatedAt: i.updatedAt })) }
   }
   let roadmap = null
@@ -765,7 +768,7 @@ function kbDoc(rel) {
   if (meta.audience === 'confidential') return { meta, body: '（confidential：内容不在页面显示，请到原始文件查看）' }
   return { meta, body: body.slice(0, 60000) }
 }
-const stats = createStats({ dir: HERE, get, company: COMPANY }) // 每日战报、本周之星，见 stats.mjs
+const stats = createStats({ dir: HERE, get: moduleGet('stats'), company: COMPANY, staggerMs: 30000 }) // 每日战报、本周之星，见 stats.mjs
 // Telegram bot 接入向导，见 telegram.mjs（令牌只在内存里；office / paperclip 用 Windows 账户加密存本机，support 只存 Paperclip 密钥库）
 // Telegram 快捷按钮能做的三件事（页面之外的另一个入口，所以这里再核对一遍：资金类、还在 agent 审查链里的、已经不在待验收的，一律不动）
 const tgActions = {
@@ -799,34 +802,36 @@ const telegram = createTelegram({
 })
 telegram.start()
 // 内容审批委员会（见 committee.mjs）：每个工作日 11:00 开一批、16:00 统计；红线内容委员会先投票、董事会最后确认
-const committee = createCommittee({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}) })
+const committee = createCommittee({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: moduleGet('committee'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}) })
 committee.start()
 // 返工巡检（见 rework.mjs）：识别提交验收后被退回 ≥3 轮的超限任务并通知董事会；超限任务挡住晨会 / 自动验收流程（isCapped 读不到状态按未超限）
-const rework = createRework({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on })
+const rework = createRework({ dir: HERE, company: COMPANY, get: moduleGet('rework'), send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on })
 rework.start()
 // 晨会（见 standup.mjs）：工作日 8:35 Lead 提议今天的主要工作，5 位委员投票，通过的由程序派发
-const standup = createStandup({ dir: HERE, workhoursFile: path.join(HERE, '..', 'workhours', 'workhours.json'), company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id) })
+const standup = createStandup({ dir: HERE, workhoursFile: path.join(HERE, '..', 'workhours', 'workhours.json'), company: COMPANY, get: moduleGet('standup'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id) })
 standup.start()
 // 超时验收（见 acceptance.mjs）：「待验收」超过 1 小时没人处理 → 委员会投票决定是否验收通过（资金类只能董事会验收）
 // 版本核对（见 evidence-version.mjs）：批验收前先把【验收证据】里的对象版本（git 提交 / sha256）与当前实际版本只读核对；
 //   版本已变 → 不进入委员会批次（等同交董事会）；证据缺版本 / 核对失败 → 进批次但标记 version:false，投票规则里加版本核对警告
-const evidenceVersion = createEvidenceVersion({ dir: HERE, company: COMPANY, get, redactText })
+const evidenceVersion = createEvidenceVersion({ dir: HERE, company: COMPANY, get: moduleGet('evidence-version'), redactText })
 const versionCheck = async (id) => { const r = await evidenceVersion.checkByIdent(id); return r && !r.disabled ? r : null }
-completionGateFn = createCompletionGate({ policy: completionPolicy, get, versionCheck })
-const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck, completionGate: (id) => completionGateFn(id, { localFullAccess: false }) })
+completionGateFn = createCompletionGate({ policy: completionPolicy, get: moduleGet('completion'), versionCheck })
+const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get: moduleGet('acceptance'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck, completionGate: (id) => completionGateFn(id, { localFullAccess: false }) })
 acceptance.start()
-const patrol = createBlockedPatrol({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, healthReport })
+const patrol = createBlockedPatrol({ dir: HERE, company: COMPANY, get: moduleGet('blocked'), send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, healthReport })
 // 断点交接包（见 handoff.mjs）：被打断 / 转阻塞 / 换人 / 长停留时识别【交接包】模板提醒补写、新负责人上岗时转交前任交接包；只发标记评论不碰状态
-const handoff = createHandoff({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, agents: () => get(`/api/companies/${COMPANY}/agents`), redactText })
+const handoffGet = moduleGet('handoff')
+const handoff = createHandoff({ dir: HERE, company: COMPANY, get: handoffGet, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, agents: () => handoffGet(`/api/companies/${COMPANY}/agents`), redactText })
 handoff.start()
 patrol.start()
-const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get, send, dutyOn: () => world().duty.on })
+const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: moduleGet('memory'), send, dutyOn: () => world().duty.on })
 mem.start()
-const chat = createChat({ dir: HERE, company: COMPANY, get, send, dutyOn: () => Boolean(world().duty?.on), agents: () => get(`/api/companies/${COMPANY}/agents`), redactText })
+const chatGet = moduleGet('chat')
+const chat = createChat({ dir: HERE, company: COMPANY, get: chatGet, send, dutyOn: () => Boolean(world().duty?.on), agents: () => chatGet(`/api/companies/${COMPANY}/agents`), redactText })
 const chatStart = setTimeout(() => chat.start(), 60000); chatStart.unref?.()
 // 前厅两项新数据（见 foyer.mjs）：匿名访客登记 + 董事会手写公告。默认关闭；foyer.json 原子写入、不在静态白名单里
 const foyer = createFoyer({ dir: HERE, now: Date.now, redactText, scanMemoryText, log: console.log })
-const workload = createWorkload({ dir: HERE, company: COMPANY, get, stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
+const workload = createWorkload({ dir: HERE, company: COMPANY, get: moduleGet('workload'), stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
 workload.start()
 // 投票会：委员会内容审批 / 晨会投票期间，委员在办公室的评审室入座（前端据此走位；投票结果来自真实的投票任务）
 function voteSessions(agents) {
@@ -863,15 +868,32 @@ function voteSessions(agents) {
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
 const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
-const backgroundHealth = createBackgroundHealth({ get, company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }) })
+const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
   try {
-    const p = await get(`/api/companies/${COMPANY}/projects`)
+    const p = await moduleGet('projects')(`/api/companies/${COMPANY}/projects`)
     projectsCache = (Array.isArray(p) ? p : p.projects || []).map((x) => ({ id: x.id, name: x.name, status: x.status }))
   } catch {}
 }
-refreshProjects()
+const projectStart = setTimeout(refreshProjects, 15000); projectStart.unref?.()
 setInterval(refreshProjects, 5 * 60 * 1000)
+const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000); snapshotLog.unref?.()
+if (process.env.OFFICE3D_LOAD_METRICS === '1') {
+  let gcCount = 0
+  const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
+  observer.observe({ entryTypes: ['gc'] })
+  const loadMetrics = setInterval(() => {
+    const forcedGc = process.env.OFFICE3D_FORCE_GC === '1' && typeof global.gc === 'function'
+    if (forcedGc) global.gc()
+    const afterGc = process.memoryUsage()
+    console.log('[load-metrics]', JSON.stringify({
+      at: new Date().toISOString(), rssBytes: afterGc.rss, heapUsedBytes: afterGc.heapUsed,
+      heapTotalBytes: afterGc.heapTotal, externalBytes: afterGc.external, arrayBuffersBytes: afterGc.arrayBuffers,
+      cpu: process.cpuUsage(), gcCount, forcedGc,
+    }))
+  }, 5000)
+  loadMetrics.unref?.()
+}
 
 async function backlogRows(strict = false) {
   if (Date.now() - backlogCache.at < 60 * 1000) {
@@ -879,7 +901,7 @@ async function backlogRows(strict = false) {
     return backlogCache.rows
   }
   try {
-    const result = await get(`/api/companies/${COMPANY}/issues?status=backlog`)
+    const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
     const rows = Array.isArray(result) ? result : result.issues || []
     backlogCache = { at: Date.now(), rows: rows.map((i) => ({
       id: i.identifier,
@@ -940,9 +962,7 @@ async function schedulerEnrichRow(row) {
 
 async function schedulerCompletedRows() {
   try {
-    const r = await fetch(PAPERCLIP + `/api/companies/${COMPANY}/issues?status=done`, { signal: AbortSignal.timeout(5000) })
-    if (!r.ok) throw new Error(`done -> ${r.status}`)
-    const result = await r.json()
+    const result = await moduleGet('scheduler')(`/api/companies/${COMPANY}/issues?status=done`)
     const rows = Array.isArray(result) ? result : result.issues || []
     return rows
       .filter((item) => item.assigneeAgentId && item.projectId)
@@ -964,7 +984,7 @@ async function healthReport() {
 async function state() {
   return lastGoodState.run(async () => {
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get, company: COMPANY, backlog: () => backlogRows(true) })
+    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true) })
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -1264,7 +1284,7 @@ const server = http
         // 某个项目的待排期任务（派发面板用）；资金类任务打标，页面据此限制可选的负责人
         const pid = url.searchParams.get('projectId') || ''
         if (!UUID.test(pid)) return json(400, { error: 'projectId 不对' })
-        const list = await get(`/api/companies/${COMPANY}/issues?status=backlog&projectId=${pid}`)
+        const list = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog&projectId=${pid}`)
         const items = (Array.isArray(list) ? list : list.issues || []).filter((i) => i.projectId === pid)
         return json(200, items.map((i) => ({
           id: i.id,
@@ -1283,7 +1303,7 @@ const server = http
       if (url.pathname === '/state') {
         const cacheKey = wallScope ? 'wall' : lanUser ? 'lan' : 'local'
         const cached = typeof stateResponseCache === 'undefined' ? null : stateResponseCache.get(cacheKey)
-        if (cached && Date.now() - cached.at < 1000) {
+        if (cached && Date.now() - cached.at < 5000) {
           res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(cached.body)
           return
         }
@@ -1327,7 +1347,7 @@ const server = http
         const kinds = rawKinds.length ? [...new Set(rawKinds)] : ['dispatch', 'report', 'speak']
         if (kinds.length === 0 || kinds.some((k) => !['dispatch', 'report', 'speak'].includes(k))) return json(400, { error: 'kinds 只能包含 dispatch / report / speak' })
         try {
-          const rawAgents = await get(`/api/companies/${COMPANY}/agents`)
+          const rawAgents = await moduleGet('collab')(`/api/companies/${COMPANY}/agents`)
           const agents = Array.isArray(rawAgents) ? rawAgents : rawAgents.agents || []
           const names = readNames()
           // 节点 = 25 个有座岗位（agent.name 即 SEAT 键，分组沿 office-layout.js 的房间）+ 董事会

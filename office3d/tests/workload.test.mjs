@@ -96,7 +96,7 @@ function runtime(t, enabled=true, clock='2026-10-29T10:00:00+07:00') {
   let ms=Date.parse(clock), calls=[], notifications=[], issue={id:'i',assigneeAgentId:'a',projectId:'p',status:'todo',todoAt:iso('2026-10-29','08:30'),updatedAt:'v1',description:'SECRET BODY MUST NOT APPEAR'}
   let run={id:'r',agentId:'a',status:'succeeded',startedAt:iso('2026-10-28','09:00'),finishedAt:iso('2026-10-28','10:00'),issueId:'i'}
   const ledger={runs:{r:{a:'a',s:'succeeded',at:iso('2026-10-28','10:00')}},done:{},comments:{}}
-  const options={dir,company:'c',workhoursFile,stats:()=>structuredClone(ledger),now:()=>ms,dutyOn:()=>true,notify:async msg=>notifications.push(msg),get:async p=>{calls.push(p);if(p.endsWith('/agents'))return [agent('a','a user@example.com $55 10.1.2.3')];if(p.includes('heartbeat-runs'))return [run];if(p.endsWith('/comments'))return [{id:'c',createdAt:iso('2026-10-28','12:00'),body:'【第 2 轮退回】secret comment'}];if(p.endsWith('/issues'))return [issue];throw Error('unexpected GET '+p)}}
+  const options={dir,company:'c',workhoursFile,stats:()=>structuredClone(ledger),now:()=>ms,dutyOn:()=>true,notify:async msg=>notifications.push(msg),get:async p=>{calls.push(p);if(p.endsWith('/agents'))return [agent('a','a user@example.com $55 10.1.2.3')];if(p.includes('heartbeat-runs'))return [run];if(p.endsWith('/comments'))return [{id:'c',createdAt:iso('2026-10-28','12:00'),body:'【第 2 轮退回】secret comment'}];if(p.includes('/issues?status='))return [issue];throw Error('unexpected GET '+p)}}
   const w=createWorkload(options);t.after(()=>w.stop())
   return {dir,w,options,calls,notifications,ledger,issue,run,advance:n=>ms+=n,set:v=>ms=Date.parse(v)}
 }
@@ -114,6 +114,7 @@ test('损坏账本容错提示且不覆盖；重启首两分钟不聚合',async 
 })
 test('实采队列仅08:30/17:00，不补错过的时点；原子写和重启保留、返工去重、真实关联',async t=>{
   const r=runtime(t,true,'2026-10-29T08:00:00+07:00');r.set('2026-10-29T08:30:00+07:00');assert.equal((await r.w.tick()).ok,true)
+  assert.ok(r.calls.includes('/api/companies/c/heartbeat-runs?limit=40&summary=true'))
   let db=JSON.parse(fs.readFileSync(path.join(r.dir,'workload.json')))
   assert.equal(db.observations['2026-10-29'].a.available,true);assert.equal(db.observations['2026-10-29'].a.queue.am.todo,1);assert.equal(Object.keys(db.reworks).length,1)
   assert.equal(db.tasks.i.firstRunAt,iso('2026-10-28','09:00'))
@@ -150,8 +151,29 @@ test('没有页面轮询时仍保留GET中的新终态运行，未知时间仍�
   const r=runtime(t);r.run.id='new';r.run.startedAt=null;r.advance(120000);await r.w.tick()
   const a=r.w.reportView().roles[0];assert.equal(a.runs,2);assert.equal(a.busyMs,null)
 })
+test('评论扫描只处理更新任务的前20项、两路并发且失败退避30分钟', async t => {
+  const r = runtime(t), issues = Array.from({ length: 25 }, (_, n) => ({ ...r.issue, id: `i-${n}`, updatedAt: `v-${n}` }))
+  let active = 0, maxActive = 0, commentCalls = []
+  const get = async p => {
+    if (p.endsWith('/agents')) return [agent()]
+    if (p.includes('heartbeat-runs')) return [r.run]
+    if (p.includes('/issues?status=')) return issues
+    const id = p.match(/\/issues\/([^/]+)\/comments/)?.[1]
+    if (!id) throw Error('unexpected ' + p)
+    commentCalls.push(id); active++; maxActive = Math.max(maxActive, active)
+    await Promise.resolve(); active--
+    if (id === 'i-0') throw Error('fixture transient')
+    return []
+  }
+  const w = createWorkload({ ...r.options, get }); t.after(() => w.stop())
+  r.advance(120000); await w.tick()
+  assert.equal(commentCalls.length, 20); assert.ok(maxActive <= 2)
+  r.advance(60000); await w.tick()
+  assert.equal(commentCalls.filter(id => id === 'i-0').length, 1)
+})
 test('stats补字段保留同状态旧记录的a/s/at及每日计数，不启动真实计时器',()=>{
   const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))), source=fs.readFileSync(path.join(root,'stats.mjs'),'utf8').replace(/^import .*$/gm,'').replace('export function createStats','function createStats')
+  assert.match(source,/heartbeat-runs\?limit=1000&summary=true/)
   const old={runs:{r:{a:'a',s:'succeeded',at:iso('2026-10-15','10:00')}},done:{},comments:{},decisions:{},since:iso('2026-10-15','10:00')}
   const context={fs:{readFileSync:()=>JSON.stringify(old)},path,structuredClone,setInterval:()=>0}
   vm.runInNewContext(source+'\nthis.make=createStats',context)
