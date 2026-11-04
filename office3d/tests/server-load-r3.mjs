@@ -30,12 +30,12 @@ const api = http.createServer(async (req, res) => {
   if (url.pathname.endsWith('/agents')) body = agents
   else if (url.pathname.endsWith('/projects')) body = [{ id: 'project-1', name: 'Synthetic', status: 'active' }]
   else if (url.pathname.endsWith('/dashboard')) body = { tasks: { total: 24, done: 3 }, costs: { total: 0 } }
-  else if (url.pathname.endsWith('/issues')) body = fit(issues, url.searchParams.has('status') ? 52902 : 2169509)
+  else if (url.pathname.endsWith('/issues')) { body = fit(issues, url.searchParams.has('status') ? 73728 : 2169509); delay = url.searchParams.has('status') ? 290 : 320 }
   else if (url.pathname.endsWith('/heartbeat-runs')) {
     const limit = Math.min(Number(url.searchParams.get('limit')) || 1000, 1000)
     const summary = url.searchParams.get('summary') === 'true'
-    body = fit((summary ? summaryRunRows : fullRunRows).slice(0, limit), limit === 1000 ? (summary ? 1729059 : 4114038) : (summary ? 69863 : 161435))
-    delay = limit === 1000 ? (summary ? 3400 : 4000) : 50
+    body = fit((summary ? summaryRunRows : fullRunRows).slice(0, limit), limit === 1000 ? (summary ? 1729059 : 4114038) : (summary ? 157696 : 161435))
+    delay = limit === 1000 ? (summary ? 3400 : 4000) : 550
   } else if (url.pathname.includes('/comments')) body = []
   else if (url.pathname.endsWith('/activity') || url.pathname.endsWith('/approvals')) body = []
   await sleep(delay)
