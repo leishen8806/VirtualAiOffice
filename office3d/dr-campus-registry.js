@@ -134,5 +134,8 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const inspectWhR1 = id => module('wh-r1-inspector')?.inspect?.(id) || null
   const enableWhR1Picking = ids => module('wh-r1-inspector')?.enablePicking?.(ids) || null
   const disableWhR1Picking = () => module('wh-r1-inspector')?.disablePicking?.()
-  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking }
+  const pickWhR1 = ray => module('wh-r1-inspector')?.pickRay?.(ray) || null
+  const toggleWhR1Zones = value => module('wh-r1-zones')?.setOverlay?.(value)
+  const whR1ZonesVisible = () => module('wh-r1-zones')?.overlayVisible?.() || false
+  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking, pickWhR1, toggleWhR1Zones, whR1ZonesVisible }
 }

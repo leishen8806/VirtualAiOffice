@@ -1916,6 +1916,10 @@ if (DR_MODE) {
   PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
   if (PLACE_MODE.whr1) {
     const zoneGroup = dockGroup('仓配分区', 'warehouse-zones')
+    const overlay = document.createElement('button')
+    overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
+    overlay.addEventListener('click', () => { const on = campusRegistry.toggleWhR1Zones(); overlay.classList.toggle('on', on); overlay.setAttribute('aria-pressed', String(on)) })
+    zoneGroup.appendChild(overlay)
     for (const zone of PLACE_MODE.zones || []) {
       const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
       const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
@@ -2100,6 +2104,10 @@ function pick(cx, cy, shift = false) {
   for (const v of [...views.values(), ...Object.values(boardViews)]) v.char.group.traverse((o) => { if (o.isMesh) meshes.push(o) })
   if (fun.pick(ray)) { const response = fun.catReact(); ui.toast(`🐱 小橘（办公室猫，纯装饰）：${response || '刚玩过，等一下'}`); return }
   if (fun.catPlaying()) { const p = catGround(cx, cy); if (p) fun.catAim(p, shift); return }
+  if (PLACE_MODE.whr1) {
+    const whItem = campusRegistry?.pickWhR1?.(ray.ray)
+    if (whItem) { showWhR1Inspect(whItem); return }
+  }
   const panelHit = ray.intersectObjects([...foyerPanels.values()].map(panel => panel.mesh).filter(mesh => mesh.visible), false)[0]
   if (panelHit) {
     const access = panelAccess(WALL_MODE ? 'wall' : latestState?.lan ? 'lan' : 'local')
@@ -2119,9 +2127,17 @@ function pick(cx, cy, shift = false) {
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
+    document.getElementById('wh-r1-inspector-panel')?.remove()
+    if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
     const pt = new THREE.Vector3()
     if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) walkTo(pt.x, pt.z, false) // 点地面：镜头走过去
   }
+}
+function showWhR1Inspect(item) {
+  let panel = document.getElementById('wh-r1-inspector-panel')
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'wh-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:280px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · ${esc(item.useScope || '未分区')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>用途/状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.hidden = false
 }
 // 改名：放在人物卡片底部，单独渲染（每 3 秒刷新卡片时不会冲掉正在输入的内容）
 let nameBoxFor = null
@@ -2537,7 +2553,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
 window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()

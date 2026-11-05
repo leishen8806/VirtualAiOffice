@@ -22,16 +22,18 @@ export function buildWhR1Zones({ THREE, root, quality, canvasTex }) {
     ? new THREE.MeshBasicMaterial({ color: 0xd5af62, transparent: true, opacity: .22, depthWrite: false })
     : new THREE.MeshStandardMaterial({ color: 0xd5af62, transparent: true, opacity: .18, depthWrite: false, roughness: .8 })
   const textures = []
+  const meshes = []
   for (const zone of WH_R1_ZONES) {
     const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material)
-    mesh.name = `wh-r1-zone-${zone.id}`; mesh.rotation.x = -Math.PI / 2; mesh.position.set((zone.x0 + zone.x1) / 2, -.575, (zone.z0 + zone.z1) / 2); mesh.userData = { whR1Id: zone.id, businessId: zone.businessId }; root.add(mesh)
+    mesh.name = `wh-r1-zone-${zone.id}`; mesh.rotation.x = -Math.PI / 2; mesh.position.set((zone.x0 + zone.x1) / 2, -.575, (zone.z0 + zone.z1) / 2); mesh.userData = { whR1Id: zone.id, businessId: zone.businessId }; mesh.visible = false; root.add(mesh); meshes.push(mesh)
     if (canvasTex) {
       const texture = canvasTex(768, 96, (context, canvasWidth, canvasHeight) => { context.clearRect(0, 0, canvasWidth, canvasHeight); context.fillStyle = '#e8d6aa'; context.textAlign = 'center'; context.font = '600 42px "Microsoft YaHei",sans-serif'; context.fillText(zone.label, canvasWidth / 2, canvasHeight * .66) })
       textures.push(texture)
       const label = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(width - .5, 8), .5), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }))
-      label.name = `wh-r1-zone-label-${zone.id}`; label.rotation.x = -Math.PI / 2; label.position.set((zone.x0 + zone.x1) / 2, -.565, zone.z1 - .38); root.add(label)
+      label.name = `wh-r1-zone-label-${zone.id}`; label.rotation.x = -Math.PI / 2; label.position.set((zone.x0 + zone.x1) / 2, -.565, zone.z1 - .38); label.visible = false; root.add(label); meshes.push(label)
     }
   }
-  return { dispose() { material.dispose(); textures.forEach((texture) => texture.dispose()) } }
+  let visible = false
+  return { zones: WH_R1_ZONES, overlayVisible: () => visible, setOverlay(value = !visible) { visible = !!value; meshes.forEach(mesh => { mesh.visible = visible }); return visible }, dispose() { material.dispose(); textures.forEach((texture) => texture.dispose()) } }
 }

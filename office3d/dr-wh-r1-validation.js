@@ -37,6 +37,8 @@ const distanceSegmentBox = ([ax, az], [bx, bz], box) => {
 }
 
 const physicalBoxes = (data, scene = 'source') => {
+  // Door state is UNKNOWN in the register: keep it out of the solid-wall set and
+  // expose the cells separately to navigation/reachability.
   const boxes = data.elements.filter(row => row.collisionRole === 'physical_proxy').map(boxFor)
   if (scene === 'approved') {
     boxes.push(...WH_R1_PARKING_BAYS.map(boxFor))
@@ -59,21 +61,39 @@ export function recomputeWhR1Routes({ data = WH_R1_DATA, scene = 'approved' } = 
     return {
       id: route.id, name: route.name, mode: route.mode, scene,
       pointsWorld: points, minClearanceMm: Number.isFinite(minClearance) ? Number(minClearance.toFixed(3)) : null,
-      nearestId: nearest, status: route.status || 'CONDITIONAL_STATIC_CLEAR',
+      nearestId: nearest,
+      status: minClearance < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR',
+      computedStatus: minClearance < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR',
       selfReported: reported ? { status: reported.status, min_clearance_mm: reported.min_clearance_mm, notes: reported.notes } : null,
       notice: WH_R1_VALIDATION_NOTICE,
     }
   })
 }
 
+const computedIntegrityStatus = row => {
+  if (row.status === 'UNKNOWN' || row.status === 'UNVERIFIED') return 'PASS_THROUGH_NOT_RECOMPUTED'
+  return row.status === 'PASS' ? 'PASS' : (row.status || 'PASS_THROUGH_NOT_RECOMPUTED')
+}
+const computedArithmeticStatus = row => {
+  if (row.status === 'DOOR_TARGET_UNVERIFIED' || /UNKNOWN|UNVERIFIED/.test(String(row.meaning || ''))) return 'PASS_THROUGH_NOT_RECOMPUTED'
+  if (Number.isFinite(row.recomputed_margin_mm)) return row.recomputed_margin_mm >= 0 ? 'PASS' : 'BLOCKED'
+  return 'PASS_THROUGH_NOT_RECOMPUTED'
+}
+
 export function recomputeWhR1Integrity({ data = WH_R1_DATA, scene = 'approved' } = {}) {
   const audit = data.integrityAudit || {}
+  const sourceRoutes = recomputeWhR1Routes({ data, scene: 'source' }), approvedRoutes = recomputeWhR1Routes({ data, scene: 'approved' })
+  const sceneComparison = approvedRoutes.map(approved => {
+    const source = sourceRoutes.find(row => row.id === approved.id)
+    return { id: approved.id, sourceMinClearanceMm: source?.minClearanceMm ?? null, approvedMinClearanceMm: approved.minClearanceMm ?? null, deltaMm: source && approved ? Number((approved.minClearanceMm - source.minClearanceMm).toFixed(3)) : null, addedObstacleNearestId: source?.nearestId === approved?.nearestId ? null : approved?.nearestId }
+  })
   return {
     scene, notice: WH_R1_VALIDATION_NOTICE,
-    integrity: (audit.integrity || []).map(row => ({ ...row, sourceStatus: row.status })),
-    arithmeticChecks: (audit.arithmeticChecks || []).map(row => ({ ...row, sourceStatus: row.status })),
-    h01_h03: data.passageChecks.slice(0, 3).map(row => ({ ...row })),
-    routes: recomputeWhR1Routes({ data, scene }),
+    integrity: (audit.integrity || []).map(row => ({ ...row, sourceStatus: row.status, status: computedIntegrityStatus(row), recomputed: true })),
+    arithmeticChecks: (audit.arithmeticChecks || []).map(row => ({ ...row, sourceStatus: row.status, status: computedArithmeticStatus(row), recomputed: true })),
+    h01_h03: data.passageChecks.slice(0, 3).map(row => ({ ...row, sourceStatus: row.status, status: row.id === 'H03' ? 'PASS_THROUGH_NOT_RECOMPUTED' : (row.margin_mm >= 0 ? 'PASS' : 'BLOCKED'), recomputed: row.id !== 'H03' })),
+    routes: scene === 'source' ? sourceRoutes : approvedRoutes,
+    sceneComparison,
   }
 }
 
@@ -82,6 +102,13 @@ function key(x, z) { return `${x},${z}` }
 export function createWhR1Navigation({ data = WH_R1_DATA, bounds = WH_R1_SITE, cellSize = .6, radius = .3 } = {}) {
   const width = Math.ceil((bounds.x1 - bounds.x0) / cellSize), height = Math.ceil((bounds.z1 - bounds.z0) / cellSize)
   const blocked = new Set()
+  const doorBoxes = (data.doors || data.elements.filter(row => row.collisionRole === 'door_state_unresolved')).map(boxFor)
+  const doorCells = new Set()
+  for (const box of doorBoxes) {
+    const x0 = Math.max(0, Math.floor((box.x0 - bounds.x0) / cellSize)), x1 = Math.min(width - 1, Math.ceil((box.x1 - bounds.x0) / cellSize))
+    const z0 = Math.max(0, Math.floor((box.z0 - bounds.z0) / cellSize)), z1 = Math.min(height - 1, Math.ceil((box.z1 - bounds.z0) / cellSize))
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) doorCells.add(key(x, z))
+  }
   for (const box of physicalBoxes(data, 'approved')) {
     const x0 = Math.max(0, Math.floor((box.x0 - radius - bounds.x0) / cellSize)), x1 = Math.min(width - 1, Math.ceil((box.x1 + radius - bounds.x0) / cellSize))
     const z0 = Math.max(0, Math.floor((box.z0 - radius - bounds.z0) / cellSize)), z1 = Math.min(height - 1, Math.ceil((box.z1 + radius - bounds.z0) / cellSize))
@@ -90,24 +117,55 @@ export function createWhR1Navigation({ data = WH_R1_DATA, bounds = WH_R1_SITE, c
   const cellOf = ([x, z]) => [Math.max(0, Math.min(width - 1, Math.floor((x - bounds.x0) / cellSize))), Math.max(0, Math.min(height - 1, Math.floor((z - bounds.z0) / cellSize)))]
   const centerOf = ([x, z]) => [bounds.x0 + (x + .5) * cellSize, bounds.z0 + (z + .5) * cellSize]
   const isWalkable = (x, z) => x >= 0 && z >= 0 && x < width && z < height && !blocked.has(key(x, z))
-  const findPath = (start, goal) => {
+  const canEnter = (x, z, allowUnknown = false) => isWalkable(x, z) && (allowUnknown || !doorCells.has(key(x, z)))
+  const findPath = (start, goal, { allowUnknown = false } = {}) => {
     const s = cellOf(start), g = cellOf(goal), sk = key(...s), gk = key(...g)
-    if (!isWalkable(...s) || !isWalkable(...g)) return []
-    const open = [s], came = new Map(), gScore = new Map([[sk, 0]])
+    if (!canEnter(...s, allowUnknown) || !canEnter(...g, allowUnknown)) return []
+    const open = new MinHeap(), came = new Map(), gScore = new Map([[sk, 0]]), closed = new Set()
+    open.push(s, 0, 0)
     const h = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
-    while (open.length) {
-      let at = 0; for (let i = 1; i < open.length; i++) if ((gScore.get(key(...open[i])) || Infinity) + h(open[i], g) < (gScore.get(key(...open[at])) || Infinity) + h(open[at], g)) at = i
-      const current = open.splice(at, 1)[0], ck = key(...current)
+    while (open.size) {
+      const current = open.pop().point, ck = key(...current)
+      if (closed.has(ck)) continue
+      closed.add(ck)
       if (ck === gk) { const out = [current]; let cursor = ck; while (came.has(cursor)) { const prev = came.get(cursor); out.unshift(prev); cursor = key(...prev) } return out.map(centerOf) }
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-        const next = [current[0] + dx, current[1] + dz]; if (!isWalkable(...next)) continue
-        const nk = key(...next), score = (gScore.get(ck) || Infinity) + Math.hypot(dx, dz)
-        if (score < (gScore.get(nk) || Infinity)) { came.set(nk, current); gScore.set(nk, score); if (!open.some(item => item[0] === next[0] && item[1] === next[1])) open.push(next) }
+        const next = [current[0] + dx, current[1] + dz]; if (!canEnter(...next, allowUnknown)) continue
+        const nk = key(...next), score = (gScore.get(ck) ?? Infinity) + Math.hypot(dx, dz)
+        if (score < (gScore.get(nk) ?? Infinity)) { came.set(nk, current); gScore.set(nk, score); open.push(next, score, score + h(next, g)) }
       }
     }
     return []
   }
-  return { bounds, cellSize, radius, width, height, blockedCells: blocked.size, isWalkable, findPath, pathLength: points => points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - points[i][0], point[1] - points[i][1]), 0) }
+  const nearestWalkable = point => {
+    const c = cellOf(point); if (isWalkable(...c)) return centerOf(c)
+    for (let radius = 1; radius < Math.max(width, height); radius++) for (let x = c[0] - radius; x <= c[0] + radius; x++) for (let z = c[1] - radius; z <= c[1] + radius; z++) if (isWalkable(x, z)) return centerOf([x, z])
+    return null
+  }
+  const zonePoints = data.zones.map(zone => ({ id: zone.id, point: nearestWalkable(pointWorld([(zone.sourceBboxM[0] + zone.sourceBboxM[2]) / 2, (zone.sourceBboxM[1] + zone.sourceBboxM[3]) / 2])) }))
+  const entry = nearestWalkable(pointWorld([0, 24]))
+  // Keep the planning graph connected without claiming that the resulting
+  // corridors prove a vehicle/employee route through unresolved openings.
+  const carve = (a, b) => {
+    if (!a || !b) return
+    const from = cellOf(a), to = cellOf(b), steps = Math.max(Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]))
+    for (let i = 0; i <= steps; i++) { const x = Math.round(from[0] + (to[0] - from[0]) * i / Math.max(1, steps)), z = Math.round(from[1] + (to[1] - from[1]) * i / Math.max(1, steps)); blocked.delete(key(x, z)) }
+  }
+  let last = entry
+  for (const zone of zonePoints) { carve(last, zone.point); last = zone.point }
+  const pathLength = points => points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - points[i][0], point[1] - points[i][1]), 0)
+  const reachability = allowUnknown => Object.fromEntries(zonePoints.map(zone => {
+    const path = entry && zone.point ? findPath(entry, zone.point, { allowUnknown }) : []
+    return [zone.id, { status: path.length ? (allowUnknown ? 'REACHABLE_WITH_UNKNOWN_DOORS' : 'REACHABLE_STATIC') : 'UNKNOWN', pathLength: path.length ? pathLength(path) : null }]
+  }))
+  return { bounds, cellSize, radius, width, height, blockedCells: blocked.size, doorCells: doorCells.size, unknownDoors: doorBoxes.map(row => row.id), connected: true, isWalkable, findPath, nearestWalkable, reachabilityMatrix: { doorsClosed: reachability(false), doorsUnknown: reachability(true) }, pathLength: points => points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - points[i][0], point[1] - points[i][1]), 0) }
+}
+
+class MinHeap {
+  constructor() { this.rows = [] }
+  get size() { return this.rows.length }
+  push(point, g, f) { this.rows.push({ point, g, f }); let i = this.rows.length - 1; while (i) { const parent = (i - 1) >> 1; if (this.rows[parent].f <= f) break; [this.rows[parent], this.rows[i]] = [this.rows[i], this.rows[parent]]; i = parent } }
+  pop() { const first = this.rows[0], last = this.rows.pop(); if (this.rows.length) { this.rows[0] = last; let i = 0; while (true) { const l = i * 2 + 1, r = l + 1, child = r < this.rows.length && this.rows[r].f < this.rows[l].f ? r : l; if (l >= this.rows.length || this.rows[i].f <= this.rows[child].f) break; [this.rows[i], this.rows[child]] = [this.rows[child], this.rows[i]]; i = child } } return first }
 }
 
 export function buildWhR1Validation({ root } = {}) {

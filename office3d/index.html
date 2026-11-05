@@ -143,6 +143,7 @@
   #dock > :first-child { margin-left:auto; } #dock > :last-child { margin-right:auto; }
   #dock::-webkit-scrollbar { display:none; }
   #dock .dock-group { display:flex; flex:0 0 auto; align-items:center; gap:4px; }
+  #dock .dock-group[data-kind="warehouse-zones"] { flex-wrap:wrap; max-width:min(calc(100vw - 24px), 920px); max-height:74px; overflow-y:auto; scrollbar-width:thin; }
   #dock .dock-group-label { flex:0 0 auto; padding:0 5px; color:var(--muted); font-size:10px; white-space:nowrap; }
   #dock button, #tools button { border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; min-height:34px; }
   #dock button:hover, #tools button:hover { background:rgba(255,255,255,.1); }
