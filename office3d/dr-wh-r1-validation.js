@@ -35,6 +35,7 @@ const distanceSegmentBox = ([ax, az], [bx, bz], box) => {
   if (edges.some(([c, d]) => segmentsIntersect([ax, az], [bx, bz], c, d)) || (ax >= box.x0 && ax <= box.x1 && az >= box.z0 && az <= box.z1) || (bx >= box.x0 && bx <= box.x1 && bz >= box.z0 && bz <= box.z1)) return 0
   return Math.min(...edges.map(([c, d]) => Math.min(pointSegmentDistance(c, [ax, az], [bx, bz]), pointSegmentDistance([ax, az], c, d))), distancePointBox(ax, az, box), distancePointBox(bx, bz, box))
 }
+const distancePolylineBox = (points, box) => points.slice(1).reduce((min, point, index) => Math.min(min, distanceSegmentBox(points[index], point, box)), Infinity)
 
 const physicalBoxes = (data, scene = 'source') => {
   // Door state is UNKNOWN in the register: keep it out of the solid-wall set and
@@ -45,6 +46,34 @@ const physicalBoxes = (data, scene = 'source') => {
     boxes.push(...WH_R1_ANNEX.walls.map(boxFor), ...WH_R1_ANNEX.doors.map(boxFor))
   }
   return boxes
+}
+
+const approvedAddedBoxes = () => [
+  ...WH_R1_PARKING_BAYS.map(boxFor),
+  ...WH_R1_ANNEX.walls.map(boxFor),
+  ...WH_R1_ANNEX.doors.map(boxFor),
+]
+
+// Replay the source audit's own candidate policy before comparing it with the
+// independent geometry pass. This is intentionally separate from route geometry.
+export function reproduceWhR1SelfReports({ data = WH_R1_DATA } = {}) {
+  return data.routes.map(route => {
+    const audit = (data.integrityAudit?.routes || []).find(row => row.id === route.id)
+    const ignored = new Set([...(route.ignore_category || []), ...(audit?.ignored_categories || [])])
+    const forced = new Set([...(route.include_extra || []), ...(audit?.force_included_ids || [])])
+    const candidates = (audit?.closest_10_instances || []).filter(row => !ignored.has(row.category) || forced.has(row.id))
+    const replayed = candidates.length ? Math.min(...candidates.map(row => row.clearance_mm)) : null
+    return {
+      id: route.id,
+      selfReportedMm: Number.isFinite(audit?.min_clearance_mm) ? audit.min_clearance_mm : null,
+      replayedMm: Number.isFinite(replayed) ? replayed : null,
+      errorMm: Number.isFinite(replayed) && Number.isFinite(audit?.min_clearance_mm) ? Number((replayed - audit.min_clearance_mm).toFixed(6)) : null,
+      ignoredCategories: [...ignored], forceIncludedIds: [...forced], nearestIds: audit?.nearest_ids || [],
+      sweptRadiusMm: Number.isFinite(audit?.swept_radius_mm) ? audit.swept_radius_mm : null,
+      replayedNearestIds: candidates.filter(row => row.clearance_mm === replayed).map(row => row.id),
+      reason: candidates.length ? '按自报 closest_10_instances 应用 ignored_categories / force_included_ids 重放' : '自报候选为空，无法重放',
+    }
+  })
 }
 
 export function recomputeWhR1Routes({ data = WH_R1_DATA, scene = 'approved' } = {}) {
@@ -83,9 +112,15 @@ const computedArithmeticStatus = row => {
 export function recomputeWhR1Integrity({ data = WH_R1_DATA, scene = 'approved' } = {}) {
   const audit = data.integrityAudit || {}
   const sourceRoutes = recomputeWhR1Routes({ data, scene: 'source' }), approvedRoutes = recomputeWhR1Routes({ data, scene: 'approved' })
+  const sourceSelfReportReplay = reproduceWhR1SelfReports({ data })
+  const addedBoxes = approvedAddedBoxes()
   const sceneComparison = approvedRoutes.map(approved => {
     const source = sourceRoutes.find(row => row.id === approved.id)
-    return { id: approved.id, sourceMinClearanceMm: source?.minClearanceMm ?? null, approvedMinClearanceMm: approved.minClearanceMm ?? null, deltaMm: source && approved ? Number((approved.minClearanceMm - source.minClearanceMm).toFixed(3)) : null, addedObstacleNearestId: source?.nearestId === approved?.nearestId ? null : approved?.nearestId }
+    const points = approved.pointsWorld
+    const route = data.routes.find(row => row.id === approved.id)
+    const addedObstacleDistances = addedBoxes.map(box => ({ id: box.id, clearanceMm: Number((distancePolylineBox(points, box) * 1000 - (route?.radius_m || .45) * 1000).toFixed(3)) }))
+    const nearestAdded = addedObstacleDistances.reduce((best, row) => !best || row.clearanceMm < best.clearanceMm ? row : best, null)
+    return { id: approved.id, sourceMinClearanceMm: source?.minClearanceMm ?? null, approvedMinClearanceMm: approved.minClearanceMm ?? null, deltaMm: source && approved ? Number((approved.minClearanceMm - source.minClearanceMm).toFixed(3)) : null, addedObstacleNearestId: nearestAdded?.id || null, nearestAddedObstacleClearanceMm: nearestAdded?.clearanceMm ?? null, addedObstacleDistances }
   })
   return {
     scene, notice: WH_R1_VALIDATION_NOTICE,
@@ -93,6 +128,7 @@ export function recomputeWhR1Integrity({ data = WH_R1_DATA, scene = 'approved' }
     arithmeticChecks: (audit.arithmeticChecks || []).map(row => ({ ...row, sourceStatus: row.status, status: computedArithmeticStatus(row), recomputed: true })),
     h01_h03: data.passageChecks.slice(0, 3).map(row => ({ ...row, sourceStatus: row.status, status: row.id === 'H03' ? 'PASS_THROUGH_NOT_RECOMPUTED' : (row.margin_mm >= 0 ? 'PASS' : 'BLOCKED'), recomputed: row.id !== 'H03' })),
     routes: scene === 'source' ? sourceRoutes : approvedRoutes,
+    sourceSelfReportReplay,
     sceneComparison,
   }
 }
@@ -118,6 +154,13 @@ export function createWhR1Navigation({ data = WH_R1_DATA, bounds = WH_R1_SITE, c
   const centerOf = ([x, z]) => [bounds.x0 + (x + .5) * cellSize, bounds.z0 + (z + .5) * cellSize]
   const isWalkable = (x, z) => x >= 0 && z >= 0 && x < width && z < height && !blocked.has(key(x, z))
   const canEnter = (x, z, allowUnknown = false) => isWalkable(x, z) && (allowUnknown || !doorCells.has(key(x, z)))
+  const neighbors = ([x, z], allowUnknown = false) => {
+    const candidates = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+    return candidates.map(([dx, dz]) => [x + dx, z + dz, dx, dz]).filter(([nx, nz, dx, dz]) => {
+      if (!canEnter(nx, nz, allowUnknown)) return false
+      return !dx || !dz || (canEnter(x + dx, z, allowUnknown) && canEnter(x, z + dz, allowUnknown))
+    })
+  }
   const findPath = (start, goal, { allowUnknown = false } = {}) => {
     const s = cellOf(start), g = cellOf(goal), sk = key(...s), gk = key(...g)
     if (!canEnter(...s, allowUnknown) || !canEnter(...g, allowUnknown)) return []
@@ -131,34 +174,76 @@ export function createWhR1Navigation({ data = WH_R1_DATA, bounds = WH_R1_SITE, c
       if (ck === gk) { const out = [current]; let cursor = ck; while (came.has(cursor)) { const prev = came.get(cursor); out.unshift(prev); cursor = key(...prev) } return out.map(centerOf) }
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
         const next = [current[0] + dx, current[1] + dz]; if (!canEnter(...next, allowUnknown)) continue
+        if (dx && dz && (!canEnter(current[0] + dx, current[1], allowUnknown) || !canEnter(current[0], current[1] + dz, allowUnknown))) continue
         const nk = key(...next), score = (gScore.get(ck) ?? Infinity) + Math.hypot(dx, dz)
         if (score < (gScore.get(nk) ?? Infinity)) { came.set(nk, current); gScore.set(nk, score); open.push(next, score, score + h(next, g)) }
       }
     }
     return []
   }
-  const nearestWalkable = point => {
-    const c = cellOf(point); if (isWalkable(...c)) return centerOf(c)
-    for (let radius = 1; radius < Math.max(width, height); radius++) for (let x = c[0] - radius; x <= c[0] + radius; x++) for (let z = c[1] - radius; z <= c[1] + radius; z++) if (isWalkable(x, z)) return centerOf([x, z])
+  const nearestWalkableInfo = (point, { allowUnknown = false } = {}) => {
+    const c = cellOf(point)
+    if (canEnter(...c, allowUnknown)) return { point: centerOf(c), offsetM: Math.hypot(centerOf(c)[0] - point[0], centerOf(c)[1] - point[1]) }
+    for (let searchRadius = 1; searchRadius < Math.max(width, height); searchRadius++) {
+      const candidates = []
+      for (let x = c[0] - searchRadius; x <= c[0] + searchRadius; x++) for (let z = c[1] - searchRadius; z <= c[1] + searchRadius; z++) if (canEnter(x, z, allowUnknown)) candidates.push([x, z])
+      if (candidates.length) {
+        candidates.sort((a, b) => { const pa = centerOf(a), pb = centerOf(b); return Math.hypot(pa[0] - point[0], pa[1] - point[1]) - Math.hypot(pb[0] - point[0], pb[1] - point[1]) })
+        const chosen = centerOf(candidates[0])
+        return { point: chosen, offsetM: Math.hypot(chosen[0] - point[0], chosen[1] - point[1]) }
+      }
+    }
     return null
   }
-  const zonePoints = data.zones.map(zone => ({ id: zone.id, point: nearestWalkable(pointWorld([(zone.sourceBboxM[0] + zone.sourceBboxM[2]) / 2, (zone.sourceBboxM[1] + zone.sourceBboxM[3]) / 2])) }))
-  const entry = nearestWalkable(pointWorld([0, 24]))
-  // Keep the planning graph connected without claiming that the resulting
-  // corridors prove a vehicle/employee route through unresolved openings.
-  const carve = (a, b) => {
-    if (!a || !b) return
-    const from = cellOf(a), to = cellOf(b), steps = Math.max(Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]))
-    for (let i = 0; i <= steps; i++) { const x = Math.round(from[0] + (to[0] - from[0]) * i / Math.max(1, steps)), z = Math.round(from[1] + (to[1] - from[1]) * i / Math.max(1, steps)); blocked.delete(key(x, z)) }
+  const nearestWalkable = (point, options) => nearestWalkableInfo(point, options)?.point || null
+  const zonePoints = data.zones.map(zone => {
+    const requested = pointWorld([(zone.sourceBboxM[0] + zone.sourceBboxM[2]) / 2, (zone.sourceBboxM[1] + zone.sourceBboxM[3]) / 2])
+    const nearest = nearestWalkableInfo(requested)
+    return { id: zone.id, requestedPoint: requested, point: nearest?.point || null, offsetM: nearest?.offsetM ?? Infinity }
+  })
+  const entryInfo = nearestWalkableInfo(pointWorld([0, 24]))
+  const entry = entryInfo?.point || null
+  const componentsFor = allowUnknown => {
+    const ids = new Map(), components = []
+    for (let x = 0; x < width; x++) for (let z = 0; z < height; z++) {
+      const startKey = key(x, z); if (!canEnter(x, z, allowUnknown) || ids.has(startKey)) continue
+      const id = components.length, queue = [[x, z]], cells = []
+      ids.set(startKey, id)
+      while (queue.length) {
+        const current = queue.shift(); cells.push(current)
+        for (const [nx, nz] of neighbors(current, allowUnknown)) {
+          const nextKey = key(nx, nz); if (!canEnter(nx, nz, allowUnknown) || ids.has(nextKey)) continue
+          ids.set(nextKey, id); queue.push([nx, nz])
+        }
+      }
+      components.push({ id, cellCount: cells.length, areaM2: Number((cells.length * cellSize * cellSize).toFixed(3)), cells })
+    }
+    const zoneByComponent = components.map(component => ({ ...component, cells: undefined, zones: [] }))
+    for (const zone of zonePoints) {
+      const c = zone.point ? ids.get(key(...cellOf(zone.point))) : undefined
+      if (c !== undefined) zoneByComponent[c].zones.push(zone.id)
+    }
+    return { ids, components: zoneByComponent }
   }
-  let last = entry
-  for (const zone of zonePoints) { carve(last, zone.point); last = zone.point }
+  const componentsClosed = componentsFor(false), componentsUnknownOpen = componentsFor(true)
   const pathLength = points => points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - points[i][0], point[1] - points[i][1]), 0)
   const reachability = allowUnknown => Object.fromEntries(zonePoints.map(zone => {
+    if (zone.offsetM > 3) return [zone.id, { status: 'ZONE_CENTER_BLOCKED', pathLength: null, centerOffsetM: Number(zone.offsetM.toFixed(3)) }]
     const path = entry && zone.point ? findPath(entry, zone.point, { allowUnknown }) : []
-    return [zone.id, { status: path.length ? (allowUnknown ? 'REACHABLE_WITH_UNKNOWN_DOORS' : 'REACHABLE_STATIC') : 'UNKNOWN', pathLength: path.length ? pathLength(path) : null }]
+    return [zone.id, { status: path.length ? (allowUnknown ? 'REACHABLE_WITH_UNKNOWN_DOORS' : 'REACHABLE_STATIC') : 'UNREACHABLE', pathLength: path.length ? pathLength(path) : null, centerOffsetM: Number(zone.offsetM.toFixed(3)) }]
   }))
-  return { bounds, cellSize, radius, width, height, blockedCells: blocked.size, doorCells: doorCells.size, unknownDoors: doorBoxes.map(row => row.id), connected: true, isWalkable, findPath, nearestWalkable, reachabilityMatrix: { doorsClosed: reachability(false), doorsUnknown: reachability(true) }, pathLength: points => points.slice(1).reduce((sum, point, i) => sum + Math.hypot(point[0] - points[i][0], point[1] - points[i][1]), 0) }
+  return {
+    bounds, cellSize, radius, width, height, blockedCells: blocked.size, doorCells: doorCells.size,
+    physicalProxyCells: [...blocked], unknownDoors: doorBoxes.map(row => row.id),
+    entry: entry ? { point: entry, offsetM: Number((entryInfo?.offsetM || 0).toFixed(3)) } : null,
+    zonePoints,
+    components: { doorsClosed: componentsClosed.components, doorsUnknownOpen: componentsUnknownOpen.components },
+    connected: componentsUnknownOpen.components.length === 1,
+    connectedByDoorState: { doorsClosed: componentsClosed.components.length === 1, doorsUnknownOpen: componentsUnknownOpen.components.length === 1 },
+    isWalkable, findPath, nearestWalkable,
+    reachabilityMatrix: { doorsClosed: reachability(false), doorsUnknownOpen: reachability(true), doorsUnknown: reachability(true) },
+    pathLength,
+  }
 }
 
 class MinHeap {

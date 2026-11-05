@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { WH_R1_ASSIGNMENT, WH_R1_DATA } from '../wh-r1/data.js'
 import { WH_R1_SITE, WH_R1_ZONES } from '../dr-wh-r1-zones.js'
-import { WH_R1_VALIDATION_NOTICE, createWhR1Navigation, recomputeWhR1Integrity, recomputeWhR1Routes } from '../dr-wh-r1-validation.js'
+import { WH_R1_VALIDATION_NOTICE, createWhR1Navigation, recomputeWhR1Integrity, recomputeWhR1Routes, reproduceWhR1SelfReports } from '../dr-wh-r1-validation.js'
 import { buildWhR1Inspector, buildWhR1InspectorIndex } from '../dr-wh-r1-inspector.js'
 
 test('I8 preserves the source audit while independently recomputing all routes and checks', () => {
@@ -24,6 +24,15 @@ test('I8 preserves the source audit while independently recomputing all routes a
   assert.equal(result.routes.find(row => row.id === 'P05').status, 'BLOCKED')
   assert.equal(result.routes.find(row => row.id === 'TR01').status, 'BLOCKED')
   assert.equal(result.sceneComparison.length, 12)
+  const replay = result.sourceSelfReportReplay
+  for (const id of ['P03', 'TR03', 'TR04', 'FL01', 'FL03']) {
+    const row = replay.find(item => item.id === id)
+    assert.ok(row)
+    assert.equal(row.errorMm, 0)
+    assert.deepEqual(row.replayedNearestIds, row.nearestIds)
+  }
+  assert.ok(result.sceneComparison.every(row => row.addedObstacleDistances.length === 20))
+  assert.ok(result.sceneComparison.every(row => row.nearestAddedObstacleClearanceMm !== null))
 })
 
 test('I8 navigation is a WH-R1-only testable grid with body-radius inflation', () => {
@@ -36,9 +45,16 @@ test('I8 navigation is a WH-R1-only testable grid with body-radius inflation', (
   assert.equal(typeof navigation.findPath, 'function')
   assert.ok(Array.isArray(navigation.findPath(start, end)))
   assert.equal(navigation.pathLength([]), 0)
-  assert.equal(navigation.connected, true)
+  assert.equal(navigation.connected, false)
+  assert.equal(navigation.connectedByDoorState.doorsClosed, false)
+  assert.equal(navigation.connectedByDoorState.doorsUnknownOpen, false)
+  assert.ok(navigation.components.doorsClosed.length > 1)
+  assert.ok(navigation.components.doorsUnknownOpen.length > 1)
+  assert.ok(Object.values(navigation.reachabilityMatrix.doorsClosed).some(row => row.status === 'UNREACHABLE'))
+  assert.ok(Object.values(navigation.reachabilityMatrix.doorsUnknownOpen).some(row => row.status === 'REACHABLE_WITH_UNKNOWN_DOORS'))
+  assert.ok(navigation.physicalProxyCells.every(cell => !navigation.isWalkable(...cell.split(',').map(Number))))
   assert.equal(Object.keys(navigation.reachabilityMatrix.doorsClosed).length, 14)
-  assert.equal(Object.keys(navigation.reachabilityMatrix.doorsUnknown).length, 14)
+  assert.equal(Object.keys(navigation.reachabilityMatrix.doorsUnknownOpen).length, 14)
   assert.ok(navigation.unknownDoors.length > 0)
 })
 
@@ -68,6 +84,9 @@ test('I8 registry and dock wiring remain guarded to WH-R1', () => {
   assert.match(app, /showWhR1Inspect/)
   assert.match(app, /zoneOverlay/)
   assert.match(app, /warehouse-zones/)
+  assert.match(app, /dock-zone-picker/)
+  assert.match(app, /dock-zone-menu/)
+  assert.match(app, /warehouseZoneMenu/)
   assert.ok(WH_R1_ZONES.length === 14)
 })
 
@@ -82,5 +101,15 @@ test('I8 route recomputation keeps original self-reported data separate', () => 
   assert.equal(source.find(row => row.id === 'P05').status, 'BLOCKED')
   assert.equal(approved.find(row => row.id === 'TR02').status, 'BLOCKED')
   assert.ok(source.some(row => row.minClearanceMm !== null))
+})
+
+test('I8 replays the self-report policy independently of route geometry', () => {
+  const rows = reproduceWhR1SelfReports()
+  assert.equal(rows.length, 12)
+  const tr03 = rows.find(row => row.id === 'TR03')
+  assert.deepEqual(tr03.ignoredCategories, ['厢式货车'])
+  assert.deepEqual(tr03.forceIncludedIds, ['WH-01-VH-005'])
+  assert.equal(tr03.replayedMm, 350)
+  assert.equal(rows.find(row => row.id === 'P03').replayedMm, 86.931688)
 })
 

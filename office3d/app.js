@@ -1916,15 +1916,40 @@ if (DR_MODE) {
   PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
   if (PLACE_MODE.whr1) {
     const zoneGroup = dockGroup('仓配分区', 'warehouse-zones')
+    const picker = document.createElement('div')
+    picker.className = 'dock-zone-picker'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'; trigger.textContent = '仓配分区'; trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', 'warehouseZoneMenu')
+    const menu = document.createElement('div')
+    menu.className = 'dock-zone-menu'
+    menu.id = 'warehouseZoneMenu'
+    menu.hidden = true
+    menu.setAttribute('role', 'group')
+    menu.setAttribute('aria-label', '仓配 01–14 分区')
+    trigger.addEventListener('click', () => {
+      const open = menu.hidden
+      menu.hidden = !open
+      trigger.setAttribute('aria-expanded', String(open))
+      picker.classList.toggle('open', open)
+    })
     const overlay = document.createElement('button')
     overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
     overlay.addEventListener('click', () => { const on = campusRegistry.toggleWhR1Zones(); overlay.classList.toggle('on', on); overlay.setAttribute('aria-pressed', String(on)) })
-    zoneGroup.appendChild(overlay)
+    menu.appendChild(overlay)
     for (const zone of PLACE_MODE.zones || []) {
       const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
       const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
-      zoneBtn(zone.label, () => setGoal(view), false, zoneGroup, zone.id, '仓配分区')
+      const button = document.createElement('button')
+      button.type = 'button'; button.textContent = zone.label; button.dataset.destinationId = zone.id; button.setAttribute('aria-label', `仓配分区：${zone.label}`); button.setAttribute('aria-pressed', 'false')
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => { x.classList.remove('on'); if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false') })
+        button.classList.add('on'); button.setAttribute('aria-pressed', 'true'); setGoal(view)
+        menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); picker.classList.remove('open')
+      })
+      menu.appendChild(button)
     }
+    picker.append(trigger, menu)
+    zoneGroup.appendChild(picker)
   }
 } else {
   const cameraGroup = dockGroup('视角预设', 'views')
