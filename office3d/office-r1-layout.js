@@ -24,6 +24,17 @@ const stall = (id, from, to) => override(id, { xM: from[0], yM: from[1], yawDeg:
 const RECEP_REASON = '董事会 2026-10-28："前台的桌子反了。" 接待台 11-CT-001 翻转为凸面朝入口后，接待椅整组沿 −Y 平移 0.9 m 坐进凹面，离内半径弧 0.4 m（与翻转前的 0.4 m 规则相同）'
 const reception = (id, xM, yM) => override(id, { xM, yM }, { xM, yM: Number((yM - .9).toFixed(3)) }, RECEP_REASON)
 
+// STOOL10 2026-11-05：吧凳整体向咖啡台平移 0.65 m；世界坐标 z 因布局换算反向。
+// 家具、碰撞、itemBounds 与 MOVEFIX 进出点都消费这一个常量，避免两套数字漂移。
+export const R1_STOOL_WORLD_SHIFT_Z = -.65
+const STOOL_SHIFT_Y = -R1_STOOL_WORLD_SHIFT_Z
+const STOOL_SHIFT_REASON = '董事会 2026-11-05 激活 STOOL10：区 10 吧凳换高吧凳并贴近 10-CT-001 台边；向台边平移 0.65 m，座椅前缘仍与台面保持净距'
+const stoolPosition = (id, xM, yM) => override(id, { xM, yM }, { xM, yM: Number((yM + STOOL_SHIFT_Y).toFixed(3)) }, STOOL_SHIFT_REASON, '2026-11-05')
+export const R1_STOOL_POSITION_OVERRIDES = Object.freeze([
+  stoolPosition('10-CH-001', 10.7, 6.25), stoolPosition('10-CH-002', 12.05, 6.25), stoolPosition('10-CH-003', 13.4, 6.25),
+  stoolPosition('10-CH-004', 14.75, 6.25), stoolPosition('10-CH-005', 16.1, 6.25),
+])
+
 // DEPT 2026-10-30: reserved desks move into room 03 B; the old 08 desks revert to ordinary vacancies.
 const RESERVED_REASON = '董事会 2026-10-30：圆桌洽谈 B 改为董事办公室，Dr / 苏晨 / 大旺预留座位迁入，区 08 原三个空工位恢复登记位置'
 export const R1_RESERVED_TUCK_M = 0
@@ -72,7 +83,7 @@ export const R1_BOARD_FACING_OVERRIDES = Object.freeze([
   benchFlip('14-BN-003', { xM: 49, yawDeg: 90, facingLocal: [1, 0] }, { xM: 48.5, yawDeg: 270, facingLocal: Object.freeze([-1, 0]) }, `${BENCH_REASON}；MOVE R5：长椅与花境重叠，向西平移 0.50 m`),
   benchFlip('14-BN-004', { yawDeg: 0, facingLocal: [0, -1] }, { yawDeg: 180, facingLocal: Object.freeze([0, 1]) }),
 ])
-const BOARD_PATCH = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES].map(entry => [entry.id, entry.to]))
+const BOARD_PATCH = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES, ...R1_STOOL_POSITION_OVERRIDES].map(entry => [entry.id, entry.to]))
 export const R1_BOARD_ROUTE_OVERRIDES = Object.freeze([
   Object.freeze({ id: 'Z14', date: '2026-10-29', reason: '董事会 2026-10-29 广场中心建喷泉',
     from: Object.freeze([28, -10]), to: Object.freeze([28, -5]) }),
@@ -81,8 +92,8 @@ const ROUTE_PATCH = new Map(R1_BOARD_ROUTE_OVERRIDES.map(entry => [entry.id, ent
 
 // ── 公共座位进出点偏离表（冻结）──
 // 座位本身的登记位置不动，只改「人从哪一侧进出」；消费方是 office-r1-navigation.js 的 R1_PUBLIC_TRANSITIONS。
-const STOOL_REASON = '董事会 2026-10-30 截图"人坐进高桌"：区 10 吧凳 10-CH-001…005 的进出点原在咖啡台 10-CT-001 一侧（z = 10.9），离台边只有 0.10 m，人体半径 0.25 m 时约 0.15 m 落在台面里；改为从吧凳背后、远离咖啡台的一侧进出（z = 12.6），偏移量仍是 0.85 m，实测最小净空 0.95 m'
-const stoolTransition = (id, x) => Object.freeze({ id, date: '2026-10-31', reason: STOOL_REASON, from: Object.freeze([x, 10.9]), to: Object.freeze([x, 12.6]) })
+const STOOL_REASON = '董事会 2026-10-30 / 2026-11-05：区 10 吧凳位置向咖啡台平移 0.65 m；进出点与同一平移常量同步，仍从吧凳背后、远离咖啡台的一侧进出'
+const stoolTransition = (id, x) => Object.freeze({ id, date: '2026-11-05', reason: STOOL_REASON, from: Object.freeze([x, 10.9 + R1_STOOL_WORLD_SHIFT_Z]), to: Object.freeze([x, 12.6 + R1_STOOL_WORLD_SHIFT_Z]) })
 export const R1_BOARD_TRANSITION_OVERRIDES = Object.freeze([
   stoolTransition('10-CH-001', -15.3), stoolTransition('10-CH-002', -13.95), stoolTransition('10-CH-003', -12.6),
   stoolTransition('10-CH-004', -11.25), stoolTransition('10-CH-005', -9.9),

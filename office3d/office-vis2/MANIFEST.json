@@ -309,7 +309,7 @@
       "source": "OFFICE-R1-I3 R1-only baked repository GLB furniture, active workstation screens and real-geometry collision; OFFICE-R1-I6 excludes the region 14 outdoor benches rebuilt by r1-plaza.js; OFFICE-R1-AMBIENCE R2 leaves the three reserved desks without a personal item; OFFICE-R1-DESKSTATUS adds the brass desk-corner status lamps (two instanced batches, colour by instanceColor); OFFICE-R1-DESKSTATUS follow-up (CMP-750) flips the screen-atlas UV row so the flipY=true atlas texture stops making the 25 workstation screens sample each other's cells; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "DF95DC82183A4A5338946CC8F98FE764AD40D9F5E1E996B77D46CA4B7F5FA774"
+      "sha256": "286BA06A5D2D8A75E7622573407DEEACA8F822805FA16398F7F2AAA965405515"
     },
     {
       "file": "office-vis2/r1-zones.js",
@@ -323,7 +323,7 @@
       "source": "R1 registered island, arc seats and fitted existing banyan; OFFICE-R1-FOOD adds the counter-top Kenney appliances (kitchenCoffeeMachine / toaster / kitchenBlender, already-approved CC0 copies recorded in assets/ASSET_LEDGER.md), a procedural cup rack and two glass food display cases, plus the low-poly procedural food shapes shared with r1-plaza.js; no downloaded assets",
       "license": "Repository MIT for the source code; the counter-top appliance models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "9548FB16566AB6185E800E52EADD70CAAD46F84F196A010FA5265259128DAF13"
+      "sha256": "AE3B4D001ADC7EC07C2F947A53BF6C9164C4A8FC8F4489A3BFFC64C15CDEFBD7"
     },
     {
       "file": "office-vis2/r1-plants.js",
