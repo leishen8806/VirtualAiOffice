@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { C01_DELTA, R1_DATA } from '../office-r1/data.js'
-import { createR1Layout, R1_BOARD_REMOVALS, R1_BOARD_ADDED_WORKSTATIONS, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
+import { createR1Layout, R1_BOARD_REMOVALS, R1_BOARD_ADDED_WORKSTATIONS, R1_BACKWALL, R1_BOARD_ADDED_ELEMENTS, R1_BOARD_FACING_OVERRIDES, R1_BOARD_OVERRIDES, R1_BOARD_TRUNK_OVERRIDES, R1_PLANT_POSITION_OVERRIDES, R1_STOOL_POSITION_OVERRIDES, R1_GATE, r1ElementWorld, r1ToWorld, runtimeYawFromFacing } from '../office-r1-layout.js'
 
 const repo = fileURLToPath(new URL('../', import.meta.url))
 const world = (x, z) => ({ x, z })
@@ -73,7 +73,7 @@ test('I1 exposes the approved C-01 delta behind a single default-on candidate sw
   // office-r1-bench-facing.test.mjs 与 office-r1-backwall.test.mjs 的 BW-4 / BW-7 单独锁住，
   // 新增表由 office-r1-shelf.test.mjs 的 FD-6 锁住）。
   // TRUNK：再叠上室内 35 株绿植的树干直径偏离（表本身由 office-r1-trunk.test.mjs 的 TK-2 锁住）。
-  const boardPatch = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES].map(entry => [entry.id, entry.to]))
+  const boardPatch = new Map([...R1_BOARD_OVERRIDES, ...R1_BOARD_FACING_OVERRIDES, ...R1_STOOL_POSITION_OVERRIDES].map(entry => [entry.id, entry.to]))
   const gatePatch = new Map(R1_GATE.leafIds.map(id => [id, { heightM: R1_GATE.heightM }]))
   const trunkPatch = new Map(R1_BOARD_TRUNK_OVERRIDES.map(entry => [entry.id, entry.to]))
   assert.equal(trunkPatch.size, 35)

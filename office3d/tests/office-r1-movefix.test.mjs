@@ -6,7 +6,7 @@ import { createFurnitureCollision } from '../furniture-collision.js'
 import { createR1Navigation, R1_PUBLIC_TRANSITIONS } from '../office-r1-navigation.js'
 import { createR1Director, R1_HISTORY_LIMIT, pushCapped } from '../office-r1-director.js'
 import { createR1RuntimeLayout, r1SeatView } from '../office-r1-seating.js'
-import { r1ToWorld, R1_BOARD_TRANSITION_OVERRIDES } from '../office-r1-layout.js'
+import { createR1Layout, r1ToWorld, R1_BOARD_TRANSITION_OVERRIDES, R1_STOOL_WORLD_SHIFT_Z } from '../office-r1-layout.js'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { R1_DATA } from '../office-r1/data.js'
 
@@ -203,7 +203,7 @@ test('C 欢呼鼓掌跳过坐在公共座位、离座与正在走动的人，并
 
 test('D 区 10 五张吧凳从吧凳背后进出，不穿咖啡台，并登记在冻结偏离表里', () => {
   const stools = ['10-CH-001', '10-CH-002', '10-CH-003', '10-CH-004', '10-CH-005']
-  const rowOf = id => R1_DATA.elements.find(row => row.id === id)
+  const rowOf = id => createR1Layout({ candidateC01: false }).elements.find(row => row.id === id)
   const counter = rowOf('10-CT-001')
   assert.equal(counter.yawDeg, 0)
   const counterCentre = r1ToWorld(counter.xM, counter.yM)
@@ -225,7 +225,7 @@ test('D 区 10 五张吧凳从吧凳背后进出，不穿咖啡台，并登记�
     assert.match(entry.date, /^\d{4}-\d{2}-\d{2}$/)
     assert.ok(entry.reason.length > 10)
     assert.deepEqual(entry.to, [approach.x, approach.z])
-    assert.deepEqual(entry.from, [seat.x, 10.9])
+    assert.deepEqual(entry.from, [seat.x, 10.9 + R1_STOOL_WORLD_SHIFT_Z])
   }
 })
 

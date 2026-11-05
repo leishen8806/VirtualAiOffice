@@ -89,7 +89,12 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   assert.ok(Object.keys(furniture.instanceIds).length >= 10)
   // I6 起区 14 的室外长椅由 r1-plaza.js 重建，I3 不再画它的素色方块。
   assert.equal(Object.values(furniture.instanceIds).flat().length, layout.r1.elements.filter(item => ['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'].includes(item.category) && !(item.regionId === '07' && ['吧凳', '弧形座段'].includes(item.category)) && item.id !== '11-CT-001' && !(item.regionId === '12' && item.category === '弧形沙发段') && !(item.regionId === '14' && item.category === '室外长椅')).length)
-  for (const asset of ['chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'chairRounded', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']) assert.ok(calls.some(call => call.name === asset), asset)
+  for (const asset of ['chairDesk', 'computerScreen', 'table', 'chairModernCushion', 'bookcaseOpen', 'cabinetTelevision', 'computerKeyboard', 'computerMouse', 'books', 'lampRoundTable', 'plantSmall1']) assert.ok(calls.some(call => call.name === asset), asset)
+  // STOOL10 replaces only zone-10's old chairRounded asset with the shared high-stool geometry.
+  for (const id of ['10-CH-001', '10-CH-002', '10-CH-003', '10-CH-004', '10-CH-005']) {
+    assert.ok(furniture.itemBounds.get(id)?.isBox3, id)
+    assert.ok(furniture.itemCategories.get(id) === '吧凳', id)
+  }
   // R5 replaces only the office desk geometry; keep every other mapped asset and collision assertion.
   assert.equal(calls.filter(call => call.name === 'desk').length, 0)
   assert.equal(deskGroups.length, 81)

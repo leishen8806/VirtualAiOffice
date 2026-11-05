@@ -1,5 +1,6 @@
 import { r1ToWorld, isReservedDesk } from '../office-r1-layout.js'
 import { monitorPanelFit, workstationDesktop } from '../office-furniture-v2.js'
+import { r1HighStoolParts } from './r1-island.js'
 
 const FURNITURE = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '书架', '共享显示站', '协作桌', '咖啡台', '弧形接待台', '弧形座段', '弧形沙发段', '室外长椅', '吧凳'])
 const SOLID = new Set(['办公桌', '办公椅', '显示器', '端柜', '桌间屏风', '会议桌', '圆桌', '椅子', '吧凳'])
@@ -208,6 +209,12 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
   }
   const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, seatedProfile(station.business_id)?.seat || 0]))
   const movingChairs = new Map(), bucketMeshes = new Map()
+  const batchAdd = (part, world, yaw) => {
+    const mesh = new THREE.Mesh(part.geometry)
+    mesh.position.set(world.x, part.position[1], world.z); mesh.rotation.y = yaw
+    bake(THREE, buckets, mesh, 'fabric', new THREE.Color(part.tint))
+    part.geometry.dispose()
+  }
   const deskMaterials = {}
   A.furn.desk?.traverse(mesh => { const material = mesh.material; if (material?.name === 'wood') deskMaterials.wood = material; if (/^metal/.test(material?.name)) deskMaterials.metal = material })
   const addAsset = (name, item, bucket = bucketFor(item), size = dimensions(item), yaw = yawFor(item), placement = {}) => {
@@ -284,6 +291,18 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
     if (item.category === '显示器' && stationByDesk.has(item.parentId)) {
       const station = stationByDesk.get(item.parentId), desk = r1ToWorld(station.xM, station.yM), yaw = layout.seats[station.business_id][4].yaw
       addAsset(model, item, bucket, { x: .66, y: .46, z: .16 }, yaw, { world: workstationDesktop({ x: desk.x, z: desk.z, yaw }).monitor, y: .76 }); continue
+    }
+    if (item.category === '吧凳' && item.regionId === '10') {
+      const world = r1ToWorld(item.xM, item.yM), yaw = chairYaw.get(item.id) ?? yawFor(item)
+      const proxyGeometry = new THREE.CylinderGeometry(item.lengthM / 2, item.lengthM / 2, item.heightM, 20)
+      proxyGeometry.translate(0, item.heightM / 2, 0)
+      const proxy = new THREE.Mesh(proxyGeometry, new THREE.MeshBasicMaterial({ visible: false }))
+      proxy.position.set(world.x, 0, world.z); proxy.rotation.y = yaw; proxy.name = item.id; proxy.userData = { r1Id: item.id, collisionProxy: true }
+      proxy.updateWorldMatrix(true, true); itemBounds.set(item.id, new THREE.Box3().setFromObject(proxy)); itemCategories.set(item.id, item.category)
+      collision?.add(proxy, item.category); collisionGroups.push(proxy); ownedGeometries.push(proxyGeometry); proxy.material.dispose()
+      const stoolParts = r1HighStoolParts(THREE, item.heightM)
+      for (const part of stoolParts) batchAdd(part, world, yaw)
+      continue
     }
     if (model) { addAsset(model, item, bucket, item.category === '办公椅' ? { x: .62, y: 1.04, z: .6 } : size, deskYaw.get(item.id) ?? chairYaw.get(item.id) ?? yawFor(item)); continue }
     const world = r1ToWorld(item.xM, item.yM), fallback = fallbackBox(THREE, world.x, world.z, size, chairYaw.get(item.id) ?? yawFor(item), bucket, new THREE.Color(COLOR[bucket]), buckets)

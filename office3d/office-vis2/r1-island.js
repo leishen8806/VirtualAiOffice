@@ -170,6 +170,20 @@ export const R1_BAR_CASES = Object.freeze([
 
 const CASE_COLOR = Object.freeze({ body: '#4A3729', post: '#5A5F62', glass: '#CFE4E8', rack: '#6E7276', cup: '#F4EFE6' })
 
+// 共用高吧凳几何；区 07 保持原来的尺寸、分段和高度，区 10 只复用这组部件。
+export function r1HighStoolParts(THREE, seatTop = .75) {
+  const seat = new THREE.CylinderGeometry(.23, .23, .08, 24)
+  const stem = new THREE.CylinderGeometry(.045, .065, .63, 12)
+  const base = new THREE.CylinderGeometry(.23, .23, .04, 24)
+  const rest = new THREE.TorusGeometry(.17, .018, 6, 24); rest.rotateX(Math.PI / 2)
+  return [
+    { geometry: seat, tint: '#506a5a', position: [0, seatTop - .04, 0], roughness: .93, grain: 'fabric' },
+    { geometry: stem, tint: '#52534e', position: [0, .355, 0], roughness: .4, metalness: .65 },
+    { geometry: base, tint: '#52534e', position: [0, .02, 0], roughness: .4, metalness: .65 },
+    { geometry: rest, tint: '#8f8270', position: [0, .28, 0], roughness: .4, metalness: .6 },
+  ]
+}
+
 export function buildR1Island({ THREE, root, layout, collision, quality, low = false, A, placeFurniture }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
   const lowTier = quality ? quality.tier === 'low' : low
@@ -200,11 +214,7 @@ export function buildR1Island({ THREE, root, layout, collision, quality, low = f
     collision?.add(proxy, stool.id); proxies.push(proxy); ownGeometries.push(geometry)
     const bounds = new THREE.Box3().setFromObject(proxy), item = { id: stool.id, position: { x: p.x, y: 0, z: p.z }, yaw, bounds, startVertex: batch.triangles() * 3 }
     items.push(item)
-    batch.add(new THREE.CylinderGeometry(.23, .23, .08, 24), '#506a5a', [p.x, .71, p.z], yaw, .93, 0, 'fabric')
-    batch.add(new THREE.CylinderGeometry(.045, .065, .63, 12), '#52534e', [p.x, .355, p.z], yaw, .4, .65)
-    batch.add(new THREE.CylinderGeometry(.23, .23, .04, 24), '#52534e', [p.x, .02, p.z], yaw, .4, .65)
-    const rest = new THREE.TorusGeometry(.17, .018, 6, 24); rest.rotateX(Math.PI / 2)
-    batch.add(rest, '#8f8270', [p.x, .28, p.z], yaw, .4, .6)
+    for (const part of r1HighStoolParts(THREE, stool.heightM)) batch.add(part.geometry, part.tint, [p.x + part.position[0], part.position[1], p.z + part.position[2]], yaw, part.roughness, part.metalness, part.grain)
     item.count = batch.triangles() * 3 - item.startVertex
   }
   r1IslandSectors.forEach(([a0, a1], index) => {
