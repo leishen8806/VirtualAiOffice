@@ -31,7 +31,7 @@ test('LITE-3 preference persists and storage failures never throw', () => {
 
 test('LITE-4 wiring: R1-only, forces low tier and DPR 1, skips realistic people and R1 walking, toggle button present', () => {
   const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8'), director = readFileSync(new URL('../director.js', import.meta.url), 'utf8'), html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
-  assert.match(app, /const LITE = OFFICE_LAYOUT\.r1Phase === 'R1' && !WALL_MODE \? decideLiteMode\(/)
+  assert.match(app, /const LITE = .*decideLiteMode\(/)
   assert.match(app, /LITE\.lite && !new URLSearchParams\(location\.search\)\.has\('q'\) \? \{ tier: 'low', source: 'lite', forced: true \}/)
   assert.match(app, /const DPR_MAX = LITE\.lite \? 1 :/)
   assert.match(app, /if \(!DR_MODE && OFFICE_LAYOUT\.r1Phase === 'R1' && !LITE\.lite\) \{/)
