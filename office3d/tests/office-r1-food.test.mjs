@@ -140,7 +140,7 @@ test('FD-1 四个摊位主题各不相同，陈列与价目牌逐件落在本摊
   const layout = createOfficeR1Layout(), root = new THREE.Group()
   const plaza = buildR1Plaza({ THREE, root, layout })
   // 登记件的清单与包围盒保持 I6 验收时的逐值不变。
-  assert.equal(plaza.records.length, 60); assert.equal(plaza.proxies.length, 30)
+  assert.equal(plaza.records.length, 60); assert.equal(plaza.proxies.length, 45) // 摊亭逐构件碰撞，保留操作区。
   assert.deepEqual(R1_STALL_THEMES.map(stall => stall.theme), ['面包与咖啡', '水果与果汁', '甜品', '简餐'])
   assert.deepEqual(R1_STALL_THEMES.map(stall => stall.id).sort(), ['14-KS-001', '14-KS-002', '14-KS-003', '14-KS-004'])
   for (const stall of R1_STALL_THEMES) {

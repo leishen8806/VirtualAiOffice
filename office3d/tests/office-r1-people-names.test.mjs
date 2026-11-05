@@ -30,10 +30,17 @@ async function replace(nicknames, phase = 'R1') {
     PEOPLE: null, scene: { userData: {}, add() {} }, performance: { now: () => 1 },
     setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn),
     loadPeople: async () => ({}), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {},
-    officeV3: { get: () => ({ seatedProfile: name => { lookups.push(name); return R1_SEATED_PROFILES[name] }, chairAt: () => ({}) }) },
+    officeV3: { get: () => ({
+      seatedProfile: name => { lookups.push(name); return R1_SEATED_PROFILES[name] },
+      chairAt: () => ({}),
+      setChairBase: () => {},
+      chairBaseHome: () => ({ x: 0, z: 0, y: 0, yaw: 0 }),
+    }) },
     r1SeatedAssets: (loaded, avatar, profile, name) => profile ? { profile, name } : null,
     createPerson: (assets, avatar) => { builds++; return { avatar, assets, group: group(), pose: {} } },
-    placeSeated: (ch, home) => { ch.home = home }, fitR1SeatedPerson: (ch, options) => { ch.handY = options.handY },
+    placeSeated: (ch, home) => { ch.home = home },
+    fitR1Workstation: (ch, home) => home,
+    fitR1SeatedPerson: (ch, options) => { ch.handY = options.handY },
   }
   vm.runInNewContext(code, context)
   const flush = async () => { for (let i = 0; i < 160; i++) { callbacks.shift()?.(); await Promise.resolve(); await Promise.resolve() } }

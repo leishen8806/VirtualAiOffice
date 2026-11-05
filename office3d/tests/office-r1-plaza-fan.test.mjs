@@ -183,7 +183,14 @@ test('I6C-3 every moved body keeps 0.6 m of real-mesh clearance and the stalls b
   }
   assert.equal(table.length, 5)
   // 碰撞代理：4 个摊位与 2 根伞柱在真实碰撞引擎里挡住行人。
-  for (const [id, want] of Object.entries(STALLS)) assert.ok(collision.hit(want.xM - 26, 18 - want.yM), id)
+  for (const [id, want] of Object.entries(STALLS)) {
+    if (id === '14-KS-001') assert.ok(collision.hit(want.xM - 26, 18 - want.yM), id)
+    else {
+      const yaw = Math.atan2(-want.facingLocal[0], want.facingLocal[1])
+      for (const z of [-.8, .9]) assert.ok(collision.hit(want.xM - 26 + z * Math.sin(yaw), 18 - want.yM + z * Math.cos(yaw)), `${id} counter/cabinet`)
+      assert.equal(collision.hit(want.xM - 26 + .15 * Math.sin(yaw), 18 - want.yM + .15 * Math.cos(yaw)), null, `${id} operator aisle`)
+    }
+  }
   for (const pole of layout.r1.elements.filter(item => item.category === '伞柱')) assert.ok(collision.hit(pole.xM - 26, 18 - pole.yM), pole.id)
   // 中间步道（Z14）与正门两侧步道仍然通行。
   for (const id of ['Z14', 'entry_left', 'entry_right']) {

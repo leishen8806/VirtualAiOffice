@@ -7,7 +7,7 @@ import path from 'node:path'
 const TZ = 'Asia/Phnom_Penh'
 const localDate = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
 
-export function createStats({ dir, get, company }) {
+export function createStats({ dir, get, company, staggerMs = 0 }) {
   const FILE = path.join(dir, 'stats.json')
   let L = { runs: {}, done: {}, comments: {}, decisions: {}, since: null }
   try { L = { ...L, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch {}
@@ -34,7 +34,7 @@ export function createStats({ dir, get, company }) {
   }
   async function refreshDone() {
     try {
-      const r = await get(`/api/companies/${company}/issues?status=done`)
+      const r = await get(`/api/companies/${company}/issues?status=done&limit=40`)
       for (const i of Array.isArray(r) ? r : r.issues || []) {
         if (L.done[i.id]) continue
         L.done[i.id] = { a: i.assigneeAgentId || null, at: i.completedAt || i.updatedAt, ident: i.identifier, title: i.title, projectId: i.projectId || null }
@@ -43,10 +43,10 @@ export function createStats({ dir, get, company }) {
     } catch {}
   }
   async function seed() {
-    try { ingest({ runs: await get(`/api/companies/${company}/heartbeat-runs?limit=1000`) }) } catch {}
+    try { ingest({ runs: await get(`/api/companies/${company}/heartbeat-runs?limit=1000&summary=true`) }) } catch {}
     await refreshDone()
   }
-  seed()
+  if (staggerMs) { const starter = setTimeout(seed, staggerMs); starter.unref?.() } else seed()
   setInterval(refreshDone, 10 * 60 * 1000)
   setInterval(() => { if (dirty) { dirty = false; try { fs.writeFileSync(FILE, JSON.stringify(L)) } catch {} } }, 60 * 1000)
 

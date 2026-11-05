@@ -142,9 +142,18 @@
   #dock { flex:1 1 0; min-width:0; display:flex; gap:4px; padding:6px; border-radius:999px; overflow-x:auto; scrollbar-width:none; }
   #dock > :first-child { margin-left:auto; } #dock > :last-child { margin-right:auto; }
   #dock::-webkit-scrollbar { display:none; }
+  #dock .dock-group { display:flex; flex:0 0 auto; align-items:center; gap:4px; }
+  #dock .dock-group[data-kind="warehouse-zones"] { flex-wrap:wrap; max-width:min(calc(100vw - 24px), 920px); max-height:74px; overflow-y:auto; scrollbar-width:thin; }
+  #dock .dock-zone-picker { position:relative; display:flex; flex:0 0 auto; }
+  .dock-zone-menu-fixed { display:grid; grid-template-columns:repeat(2, minmax(118px, 1fr)); gap:4px; position:fixed; max-height:min(62vh, 430px); overflow-y:auto; padding:6px; border-radius:14px; background:rgba(20,20,18,.94); box-shadow:0 10px 28px rgba(0,0,0,.4); z-index:30; }
+  .dock-zone-menu-fixed[hidden] { display:none; }
+  .dock-zone-menu button { min-width:0; text-align:left; }
+  .dock-scroll-hint { display:none; color:var(--muted); font-size:10px; white-space:nowrap; }
+  #dock .dock-group-label { flex:0 0 auto; padding:0 5px; color:var(--muted); font-size:10px; white-space:nowrap; }
   #dock button, #tools button { border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; min-height:34px; }
   #dock button:hover, #tools button:hover { background:rgba(255,255,255,.1); }
   #dock button.on { background:var(--gold); color:#1b1606; font-weight:700; }
+  @media (max-width:640px) { #dock .dock-group[data-kind="warehouse-zones"] .dock-scroll-hint { display:inline-block; } }
   #tools { flex:none; max-width:100%; display:flex; gap:4px; padding:6px; border-radius:999px; }  /* 不能 overflow：分组菜单要向上展开 */
   #tools .grp { position:relative; display:flex; }
   #tools .gbtn::after { content:' ▴'; font-size:10px; opacity:.65; }
@@ -153,6 +162,29 @@
   #tools .grp.right .menu { left:auto; right:0; }
   #tools .grp.open > .menu { display:flex; }
   #tools .menu button { width:100%; text-align:left; border-radius:10px; padding:9px 12px; }
+  #tools .destination-picker > .gbtn { min-width:58px; }
+  #tools .destination-menu {
+    width:min(440px, calc(100vw - 24px));
+    min-width:0;
+    max-height:min(62vh, 440px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+  }
+  #tools .destination-menu-heading { padding:7px 9px 9px; color:var(--text); font-size:12px; font-weight:700; }
+  #tools .destination-menu-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:4px; }
+  #tools .destination-menu-grid button {
+    min-width:0;
+    min-height:42px;
+    padding:8px 10px;
+    border-radius:10px;
+    white-space:normal;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+  #tools .destination-menu-grid button.on { background:var(--gold); color:#1b1606; font-weight:700; }
+  #tools .destination-menu-grid button:focus-visible, #tools .destination-picker > .gbtn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  #tools .destination-menu-note { padding:8px 9px 4px; color:var(--muted); font-size:11px; line-height:1.4; }
   #tools::-webkit-scrollbar { display:none; }
   #replayHint { position:fixed; z-index:5; left:18px; bottom:64px; color:#ecdcb8; font-size:11px; }
   /* 操作提示放在底部栏的正上方（底部栏约 60px 高），不再压在镜头栏右端 */
@@ -254,6 +286,13 @@
   #loading.done { opacity:0; pointer-events:none; }
   #liteToggle { position:fixed; right:16px; bottom:62px; z-index:30; padding:6px 12px; border-radius:16px; border:1px solid rgba(182,154,100,.6); background:rgba(20,22,26,.78); color:#e0c88f; font-size:12px; cursor:pointer; }
   #liteToggle:hover { background:rgba(40,42,48,.9); }
+  #foodtruckDemo { position:fixed; left:50%; bottom:96px; z-index:30; transform:translateX(-50%); max-width:calc(100vw - 24px); padding:9px 14px; border:1px solid #c99542; border-radius:12px 12px 12px 3px; background:#352719; color:#ffe4ae; font:600 13px system-ui,sans-serif; box-shadow:0 5px 18px #0005; cursor:pointer; }
+  #foodtruckDemo:focus-visible { outline:2px solid #ffe4ae; outline-offset:3px; }
+  #foodtruckDemo:disabled { opacity:.68; cursor:wait; }
+  #foodtruckDemoNote { position:fixed; left:50%; bottom:146px; z-index:30; transform:translateX(-50%); max-width:min(280px,calc(100vw - 24px)); padding:10px 12px; border:1px solid #d3a35a; border-radius:10px; background:#3b2c1d; color:#fff2d8; font-size:13px; box-shadow:0 3px 12px #0006; }
+  .foodtruck-demo-bubble[hidden] { display:none; }
+  .foodtruck-demo-bubble { display:block; max-width:210px; margin:0 auto 4px; padding:5px 9px; border:1px solid #d3a35a; border-radius:10px 10px 10px 2px; background:#3b2c1d; color:#fff2d8; font-size:12px; font-weight:600; white-space:normal; box-shadow:0 3px 12px #0006; }
+  @media (max-width:760px) { #foodtruckDemo { bottom:204px; } #foodtruckDemoNote { bottom:258px; } }
   @media (max-width: 760px) { #liteToggle { bottom:104px; right:12px; } } /* 手机：让开底部两行工具栏 */
 
   /* 头顶标签与气泡 */
@@ -285,6 +324,11 @@
   .bubble.k-board { border-color:#ffb020; background:#fff7e0; }
   .bubble.k-chat { border-color:#c9b48a; background:#fbf8f1; font-size:11.5px; } .bubble.k-chat .b-head { color:#9a8660; }
   @media (max-width: 1180px) { #bottombar { flex-direction:column-reverse; align-items:stretch; gap:8px; } #tools { align-self:flex-start; max-width:100%; } #help { bottom:122px; } #quest { max-height:calc(100% - 240px); } }
+  @media (max-width: 560px) {
+    #tools .destination-menu { width:calc(100vw - 16px); max-height:min(64vh, 440px); }
+    #tools .destination-menu-grid { grid-template-columns:1fr; }
+    #tools .destination-menu-grid button { min-height:44px; }
+  }
   @media (max-width: 900px) {
     body { overflow:hidden; }
     #top { left:8px; right:8px; top:8px; }
@@ -370,6 +414,8 @@
 <div id="labels"></div>
 <div id="bubbles"></div>
 <button id="liteToggle" type="button" hidden></button>
+<button id="foodtruckDemo" type="button" hidden>▶ 餐车服务演示 · 未扣款</button>
+<div id="foodtruckDemoNote" role="status" aria-live="polite" hidden></div>
 <div id="loading"><img src="./assets/logo.png" alt="DR.LIFE+"><div class="bar"><i id="loadBar"></i></div><div class="note" id="loadText">正在布置办公室…</div></div>
 
 <div id="top">
@@ -392,7 +438,7 @@
 
 <section id="drPanel" class="glass" aria-label="仓配地点">
   <h2>DR 仓配服务中心</h2><div class="dr-sub">仓配地点 · 演示场景</div>
-  <div class="dr-actions"><a href="/dr-console.html">调度中心</a><a id="drControlRoomLink" href="/?place=drlife-warehouse&amp;controlRoom=1">进入调度中控室</a><a href="/town.html">返回小镇</a></div>
+  <div class="dr-actions"><a href="/dr-console.html">调度中心</a><a id="drControlRoomLink" href="/?place=drlife-warehouse&amp;whr1=1&amp;controlRoom=1">进入调度中控室</a><a href="/town.html">返回小镇</a></div>
   <div class="dr-flow"><b>W1</b> 入库、质检与智慧云仓流程</div><div class="dr-flow"><b>W2</b> 拣货、包装与周转流程</div><div class="dr-flow"><b>W3</b> 集货、发货与配送流程</div>
   <input id="drZoneSearch" type="search" autocomplete="off" placeholder="搜索 14 个园区功能区"><div id="drZoneResults"></div>
 </section>

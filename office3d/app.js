@@ -8,8 +8,9 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
 import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
+import { createFoodtruckDemo } from './foodtruck-demo.js'
 import { createFurnitureCollision } from './furniture-collision.js'
 import { startOfficeV2, OFFICE_LAYOUT, SEATS, buildWing, ROOMS, buildOfficePartitions, createDirector, createFun, holidayInfo, officeStand, officeExit, corridorPath, LOUNGE_AREA, LOUNGE_SEATS, loungeTrip, meetingTrip, createWaitingBoard, waitingPlan } from './office-v2-modules.js'
 import { buildWarehouseShell } from './warehouse-shell.js'
@@ -24,6 +25,7 @@ import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
 import { createReplay } from './replay.js' // T11 今日回放（真实事件账本）：回放入口 / 回放期间暂停实时事件的最小挂钩
 import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
+import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
 const APP_STARTED = performance.now()
 
@@ -968,6 +970,7 @@ let board = officeFurnitureV2?.board || (() => {
 // ───────────────────────── 人物视图 ─────────────────────────
 const labelsEl = $('labels')
 let r1Npcs = null // 服务人员 NPC（OFFICE-R1-I7B-A）：同事替换完成后才建；极速模式保持 null
+let foodtruckDemo = null
 const bubblesEl = $('bubbles')
 const views = new Map() // agentId -> view
 const boardViews = {}
@@ -994,6 +997,25 @@ function placeSeated(ch, home, view) {
   if (!view || view.char !== ch) r1SeatView({ char: ch }) // 新建的 char 还没挂到 view 上，至少复位它的姿态
   ch.solve(0)
 }
+function fitR1Workstation(ch, home, desk, handY, chairId) {
+  const furniture = officeV3.get('furniture3'), deskPos = { x: desk.group.position.x, z: desk.group.position.z }
+  let chair = furniture.chairAt(home.x, home.z)
+  fitR1SeatedPerson(ch, { handY, seatBase: 0, home, desk: deskPos, chair })
+  const seatBase = computeR1SeatBase(ch.r1Seated)
+  let appliedSeatBase = 0
+  let finalHome = home
+  if (chairId && seatBase > 0 && furniture.setChairBase && furniture.chairBaseHome) {
+    finalHome = { ...home, ...furniture.chairBaseHome(chairId) }
+    furniture.setChairBase(chairId, seatBase)
+    finalHome = { ...home, ...furniture.chairBaseHome(chairId) }
+    placeSeated(ch, finalHome)
+    chair = furniture.chairAt(finalHome.x, finalHome.z)
+    fitR1SeatedPerson(ch, { handY, seatBase, home: finalHome, desk: deskPos, chair })
+    appliedSeatBase = seatBase
+  }
+  if (ch.r1Seated) { ch.r1Seated.seatBase = appliedSeatBase; ch.r1Seated.seatBaseLimited = appliedSeatBase >= .2 - 1e-6 || !!ch.r1Seated.fitConflict }
+  return finalHome
+}
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
@@ -1018,7 +1040,8 @@ function createAgentView(a, index) {
     })
   const home = workHome(seat)
   placeSeated(ch, home)
-  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(a.name).handY, home, desk: { x: sx, z: sz }, chair: officeV3.get('furniture3').chairAt(home.x, home.z) })
+  let seatedHome = home
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -1036,7 +1059,7 @@ function createAgentView(a, index) {
   el.className = 'lab'
   el.innerHTML = '<span class="st" style="display:none"></span><span class="tk" style="display:none"></span><span class="nm"></span>'
   labelsEl.appendChild(el)
-  return { id: a.id, name: a.name, data: a, zone, home, stand: officeStand(home), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
+  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
 }
 function createBoardView(name, home, stand, via, skinI) {
   const ch = PEOPLE
@@ -1880,37 +1903,194 @@ miniEl.addEventListener('pointermove', (e) => { if (miniDown) miniGo(e) })
 miniEl.addEventListener('pointerup', () => { miniDown = false })
 setInterval(drawMini, 250)
 const zonesEl = $('dock')
-function zoneBtn(label, fn, first) {
+function dockGroup(label, kind) {
+  const group = document.createElement('div')
+  group.className = 'dock-group'
+  group.dataset.kind = kind
+  const heading = document.createElement('span')
+  heading.className = 'dock-group-label'
+  heading.textContent = label
+  group.appendChild(heading)
+  zonesEl.appendChild(group)
+  return group
+}
+function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', destinationKind = '目的地区域') {
   const b = document.createElement('button')
   b.textContent = label
-  b.addEventListener('click', () => { zonesEl.querySelectorAll('button').forEach((x) => x.classList.remove('on')); b.classList.add('on'); fn() })
+  if (destinationId) { b.dataset.destinationId = destinationId; b.setAttribute('aria-label', `${destinationKind}：${label}`) }
+  else b.setAttribute('aria-label', `视角：${label}`)
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => {
+      x.classList.remove('on')
+      if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false')
+    })
+    b.classList.add('on')
+    if (destinationId) b.setAttribute('aria-pressed', 'true')
+    fn()
+  })
   if (first) b.classList.add('on')
-  zonesEl.appendChild(b)
+  container.appendChild(b)
 }
 if (DR_MODE) {
-  PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0))
+  const cameraGroup = dockGroup('仓配场景视角', 'views')
+  PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
+  if (PLACE_MODE.whr1) {
+    const zoneGroup = dockGroup('仓配分区', 'warehouse-zones')
+    const picker = document.createElement('div')
+    picker.className = 'dock-zone-picker'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'; trigger.textContent = '仓配分区'; trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', 'warehouseZoneMenu')
+    const menu = document.createElement('div')
+    menu.className = 'dock-zone-menu dock-zone-menu-fixed'
+    menu.id = 'warehouseZoneMenu'
+    menu.hidden = true
+    menu.setAttribute('role', 'menu')
+    menu.setAttribute('aria-label', '仓配 01–14 分区')
+    menu.setAttribute('aria-labelledby', 'warehouseZoneTrigger')
+    trigger.id = 'warehouseZoneTrigger'
+    const zoneButtons = () => [...menu.querySelectorAll('button[data-destination-id]')]
+    const closeWarehouseMenu = (focus = false) => {
+      menu.hidden = true
+      trigger.setAttribute('aria-expanded', 'false')
+      picker.classList.remove('open')
+      if (focus) trigger.focus()
+    }
+    const positionWarehouseMenu = () => {
+      const anchor = trigger.getBoundingClientRect()
+      const width = Math.min(360, Math.max(0, innerWidth - 24))
+      menu.style.width = `${width}px`
+      const height = Math.min(menu.scrollHeight || 0, Math.min(innerHeight * 0.62, 430))
+      const left = Math.max(12, Math.min(innerWidth - width - 12, anchor.left))
+      const above = anchor.top - 10 - height
+      const top = above >= 12 ? above : Math.min(innerHeight - height - 12, anchor.bottom + 10)
+      menu.style.left = `${left}px`
+      menu.style.top = `${Math.max(12, top)}px`
+    }
+    const openWarehouseMenu = (focusFirst = false) => {
+      menu.hidden = false
+      trigger.setAttribute('aria-expanded', 'true')
+      picker.classList.add('open')
+      positionWarehouseMenu()
+      if (focusFirst) zoneButtons()[0]?.focus()
+    }
+    trigger.addEventListener('click', () => { if (menu.hidden) openWarehouseMenu(); else closeWarehouseMenu() })
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowDown') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowUp') { event.preventDefault(); openWarehouseMenu(false); zoneButtons().at(-1)?.focus() }
+    })
+    menu.addEventListener('keydown', (event) => {
+      const buttons = zoneButtons(), index = buttons.indexOf(document.activeElement)
+      if (event.key === 'Escape') { event.preventDefault(); closeWarehouseMenu(true); return }
+      if (!buttons.length || !['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+      event.preventDefault()
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + buttons.length) % buttons.length
+      buttons[next]?.focus()
+    })
+    document.addEventListener('pointerdown', (event) => { if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) closeWarehouseMenu() }, true)
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !menu.hidden) { event.preventDefault(); closeWarehouseMenu(true) } })
+    addEventListener('resize', () => { if (!menu.hidden) positionWarehouseMenu() })
+    addEventListener('scroll', () => { if (!menu.hidden) positionWarehouseMenu() }, true)
+    const overlay = document.createElement('button')
+    overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
+    overlay.addEventListener('click', () => { const on = campusRegistry.toggleWhR1Zones(); overlay.classList.toggle('on', on); overlay.setAttribute('aria-pressed', String(on)) })
+    menu.appendChild(overlay)
+    for (const zone of PLACE_MODE.zones || []) {
+      const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
+      const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
+      const button = document.createElement('button')
+      button.type = 'button'; button.textContent = zone.label; button.dataset.destinationId = zone.id; button.setAttribute('role', 'menuitem'); button.setAttribute('aria-label', `仓配分区：${zone.label}`); button.setAttribute('aria-pressed', 'false')
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#dock button, .destination-picker .menu button, .dock-zone-menu button').forEach((x) => { x.classList.remove('on'); if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false') })
+        button.classList.add('on'); button.setAttribute('aria-pressed', 'true'); setGoal(view)
+        closeWarehouseMenu()
+      })
+      menu.appendChild(button)
+    }
+    const hint = document.createElement('span')
+    hint.className = 'dock-scroll-hint'; hint.textContent = '↔ 分区'; hint.setAttribute('aria-hidden', 'true')
+    picker.append(trigger)
+    document.body.appendChild(menu)
+    zoneGroup.append(hint, picker)
+  }
 } else {
-  zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true)
-  zoneBtn('🔄 环绕巡航', () => { setGoal({ el: 30, r: homeR(), t: VIEW_CENTER }); camMode.tour = true })
-  zoneBtn('🔭 俯视', () => setGoal({ az: 0, el: 86, r: homeR(), t: VIEW_CENTER }))
-  zoneBtn('📐 等距', () => setGoal({ az: 45, el: 35, r: homeR(), t: VIEW_CENTER }))
-  zoneBtn('🎥 低机位', () => setGoal({ az: -25, el: 7, r: 26, t: [-4, 0, 2] }))
+  const cameraGroup = dockGroup('视角预设', 'views')
+  zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true, cameraGroup)
+  zoneBtn('🔄 环绕巡航', () => { setGoal({ el: 30, r: homeR(), t: VIEW_CENTER }); camMode.tour = true }, false, cameraGroup)
+  zoneBtn('🔭 俯视', () => setGoal({ az: 0, el: 86, r: homeR(), t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('📐 等距', () => setGoal({ az: 45, el: 35, r: homeR(), t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('🎥 低机位', () => setGoal({ az: -25, el: 7, r: 26, t: [-4, 0, 2] }), false, cameraGroup)
   zoneBtn('👤 跟随', () => {
-  // 跟随选中的人；没选就跟一个正在走动或正在干活的人
-  const all = [...views.values()].filter((v) => !v.away)
-  const v = views.get(selectedId) || all.find((x) => x.act) || all.find((x) => x.mode === 'run') || all[0]
-  if (!v) return
-  setGoal({ el: 22, r: 6.5 })
-  camMode.follow = v.id
-  selectedId = v.id
-  showDetail(v.id)
-})
-zoneBtn('🌇 室外', () => setGoal({ az: 18, el: 24, r: 78, t: VIEW_CENTER }))
-zoneBtn('🛕 高棉地标', () => setGoal({ az: 0, el: 12, r: 110, t: [0, 0, -20] }))
-zoneBtn('✨ 形象墙', () => setGoal({ az: 4, el: 22, r: 13, t: [CORRIDOR_X, 0, BACK_Z + 4] }))
-for (const z of Object.values(ZONES)) zoneBtn(z.label, () => setGoal({ az: 6, el: 36, r: z.focus.r, t: z.focus.t }))
-zoneBtn('🏛️ DR广场', () => { const focus = focusOf('plaza'); setGoal({ az: 8, el: 34, r: focus.r, t: focus.t }) })
-  zoneBtn('🛋️ 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }))
+    // 跟随选中的人；没选就跟一个正在走动或正在干活的人
+    const all = [...views.values()].filter((v) => !v.away)
+    const v = views.get(selectedId) || all.find((x) => x.act) || all.find((x) => x.mode === 'run') || all[0]
+    if (!v) return
+    setGoal({ el: 22, r: 6.5 })
+    camMode.follow = v.id
+    selectedId = v.id
+    showDetail(v.id)
+  }, false, cameraGroup)
+  zoneBtn('🌇 室外', () => setGoal({ az: 18, el: 24, r: 78, t: VIEW_CENTER }), false, cameraGroup)
+  zoneBtn('🛕 高棉地标', () => setGoal({ az: 0, el: 12, r: 110, t: [0, 0, -20] }), false, cameraGroup)
+  zoneBtn('✨ 形象墙', () => setGoal({ az: 4, el: 22, r: 13, t: [CORRIDOR_X, 0, BACK_Z + 4] }), false, cameraGroup)
+
+  const explicitDestinations = OFFICE_LAYOUT.variant === 'align' || OFFICE_LAYOUT.variant === 'r1'
+    ? officeDestinationsForLayout(OFFICE_LAYOUT)
+    : []
+  if (explicitDestinations.length) {
+    const picker = document.createElement('div')
+    picker.className = 'grp right destination-picker'
+    picker.dataset.kind = 'destinations'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'
+    trigger.className = 'gbtn'
+    trigger.textContent = '区域'
+    trigger.setAttribute('aria-expanded', 'false')
+    trigger.setAttribute('aria-controls', 'officeDestinationMenu')
+    trigger.setAttribute('aria-label', '打开当前办公室区域列表')
+    const menu = document.createElement('div')
+    menu.className = 'menu glass destination-menu'
+    menu.id = 'officeDestinationMenu'
+    menu.setAttribute('role', 'group')
+    menu.setAttribute('aria-label', '当前场景区域')
+    const heading = document.createElement('div')
+    heading.className = 'destination-menu-heading'
+    heading.textContent = OFFICE_LAYOUT.variant === 'r1' ? '当前 R1 场景区域' : '当前 V3 场景区域'
+    const grid = document.createElement('div')
+    grid.className = 'destination-menu-grid'
+    for (const [index, destination] of explicitDestinations.entries()) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.textContent = destination.label
+      button.dataset.destinationId = destination.id
+      button.setAttribute('aria-label', '当前场景区域：' + destination.label)
+      button.setAttribute('aria-pressed', String(index === 0))
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => {
+          x.classList.remove('on')
+          if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false')
+        })
+        button.classList.add('on')
+        button.setAttribute('aria-pressed', 'true')
+        setGoal(destination.focus)
+      })
+      if (index === 0) button.classList.add('on')
+      grid.appendChild(button)
+    }
+    const note = document.createElement('div')
+    note.className = 'destination-menu-note'
+    note.textContent = '目标按当前布局登记；与旧业务名称的对应关系待确认'
+    menu.append(heading, grid, note)
+    picker.append(trigger, menu)
+    $('tools').appendChild(picker)
+  } else {
+    const destinationGroup = dockGroup('目的地导航', 'destinations')
+    for (const [index, z] of Object.values(ZONES).entries()) {
+      zoneBtn(z.label, () => setGoal({ az: 6, el: 36, r: z.focus.r, t: z.focus.t }), index === 0, destinationGroup, z.focus.id || z.focus.label)
+    }
+    zoneBtn('入口 DR广场', () => { const focus = focusOf('plaza'); setGoal({ az: 8, el: 34, r: focus.r, t: focus.t }) }, false, destinationGroup, 'plaza')
+    zoneBtn('入口 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }), false, destinationGroup, 'lounge')
+  }
 }
 const qb = $('quality')
 board.beacon.userData.dynamic = true // 告警灯会变色，不进入静态渲染副本。
@@ -1942,13 +2122,33 @@ $('clean').addEventListener('click', toggleClean)
 // （画质 / 亮度 / 边缘滚动 / 镜头跟随这类连续切换的带 data-keep，保持打开）；点别处或按 Esc 也收起。
 {
   const grps = [...document.querySelectorAll('#tools .grp')]
-  const closeAll = (except) => grps.forEach((g) => { if (g !== except) g.classList.remove('open') })
+  const setOpen = (g, open) => {
+    g.classList.toggle('open', open)
+    g.querySelector('.gbtn')?.setAttribute('aria-expanded', String(open))
+  }
+  const closeAll = (except) => grps.forEach((g) => { if (g !== except) setOpen(g, false) })
   for (const g of grps) {
-    g.querySelector('.gbtn').addEventListener('click', (e) => { e.stopPropagation(); closeAll(g); g.classList.toggle('open') })
-    g.querySelector('.menu').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.hasAttribute('data-keep')) g.classList.remove('open') })
+    g.querySelector('.gbtn').addEventListener('click', (e) => {
+      e.stopPropagation()
+      const nextOpen = !g.classList.contains('open')
+      closeAll(g)
+      setOpen(g, nextOpen)
+    })
+    g.querySelector('.menu').addEventListener('click', (e) => {
+      const b = e.target.closest('button')
+      if (b && !b.hasAttribute('data-keep')) {
+        setOpen(g, false)
+        if (g.classList.contains('destination-picker')) g.querySelector('.gbtn')?.focus()
+      }
+    })
   }
   document.addEventListener('click', (e) => { if (!e.target.closest('#tools .grp')) closeAll() })
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll() })
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return
+    const opened = grps.find((g) => g.classList.contains('open'))
+    closeAll()
+    if (opened?.classList.contains('destination-picker')) opened.querySelector('.gbtn')?.focus()
+  })
 }
 document.addEventListener('fullscreenchange', () => { $('fs').textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏'; setTimeout(resize, 50) })
 addEventListener('keydown', (e) => {
@@ -1991,6 +2191,10 @@ function pick(cx, cy, shift = false) {
   for (const v of [...views.values(), ...Object.values(boardViews)]) v.char.group.traverse((o) => { if (o.isMesh) meshes.push(o) })
   if (fun.pick(ray)) { const response = fun.catReact(); ui.toast(`🐱 小橘（办公室猫，纯装饰）：${response || '刚玩过，等一下'}`); return }
   if (fun.catPlaying()) { const p = catGround(cx, cy); if (p) fun.catAim(p, shift); return }
+  if (PLACE_MODE.whr1) {
+    const whItem = campusRegistry?.pickWhR1?.(ray.ray)
+    if (whItem) { showWhR1Inspect(whItem); return }
+  }
   const panelHit = ray.intersectObjects([...foyerPanels.values()].map(panel => panel.mesh).filter(mesh => mesh.visible), false)[0]
   if (panelHit) {
     const access = panelAccess(WALL_MODE ? 'wall' : latestState?.lan ? 'lan' : 'local')
@@ -2010,9 +2214,17 @@ function pick(cx, cy, shift = false) {
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
+    document.getElementById('wh-r1-inspector-panel')?.remove()
+    if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
     const pt = new THREE.Vector3()
     if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) walkTo(pt.x, pt.z, false) // 点地面：镜头走过去
   }
+}
+function showWhR1Inspect(item) {
+  let panel = document.getElementById('wh-r1-inspector-panel')
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'wh-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:280px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · ${esc(item.useScope || '未分区')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>用途/状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.hidden = false
 }
 // 改名：放在人物卡片底部，单独渲染（每 3 秒刷新卡片时不会冲掉正在输入的内容）
 let nameBoxFor = null
@@ -2195,6 +2407,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     projectTo(bv.headPos, bv.label, 0)
   })
   if (r1Npcs) r1Npcs.update(dt, t, projectTo)
+  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) $('foodtruckDemo').disabled = false }
   for (const z of zoneLabels) projectTo(z.pos, z.el)
   declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
@@ -2330,6 +2543,12 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
 frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
+  const demoButton = $('foodtruckDemo'), note = $('foodtruckDemoNote')
+  demoButton.hidden = false
+  demoButton.textContent = '餐车文字演示 · 未扣款'
+  demoButton.onclick = () => { note.textContent = '演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。'; note.hidden = false }
+}
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
     if (!views.size) { setTimeout(ready, 100); return }
@@ -2349,7 +2568,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             const ch = createPerson(assets, avatar), previous = v.char
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home, v)
-            fitR1SeatedPerson(ch, { handY: officeV3.get('furniture3').seatedProfile(personName).handY, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) })
+            { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
@@ -2380,8 +2599,24 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
           const npcStatus = scene.userData.r1Npcs = { startedAt: performance.now() }
           try {
             await loadExtraAvatars(loaded, R1_NPC_AVATARS)
-            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson })
+            r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
+            const vendor = r1Npcs.members.find(m => m.station.id === 'npc-kiosk-4')
+            const demoButton = $('foodtruckDemo')
+            if (vendor && demoButton && !LITE.lite) {
+              const bubble = document.createElement('span')
+              bubble.className = 'foodtruck-demo-bubble'
+              bubble.hidden = true
+              vendor.label?.appendChild(bubble)
+              foodtruckDemo = createFoodtruckDemo(vendor, text => { bubble.textContent = text; bubble.hidden = !text })
+              demoButton.hidden = false
+              demoButton.onclick = async () => {
+                if (demoButton.disabled) return
+                demoButton.disabled = true
+                try { await loadFoodtruckDemoExtras(loaded, vendor.station.gender) } catch { /* 缺动作时由演示模块显示文字回退 */ }
+                if (!foodtruckDemo.start(performance.now())) demoButton.disabled = false
+              }
+            }
             npcStatus.completedAt = performance.now()
           } catch (e) { npcStatus.loadFailed = String(e && e.message || e) }
         }, 0)
@@ -2405,7 +2640,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
 window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()

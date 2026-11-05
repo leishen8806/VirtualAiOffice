@@ -5,6 +5,8 @@ import { buildWhR1Racks } from './dr-wh-r1-racks.js'
 import { buildWhR1Workflow } from './dr-wh-r1-workflow.js'
 import { buildWhR1Vehicles } from './dr-wh-r1-vehicles.js'
 import { buildWhR1Front } from './dr-wh-r1-front.js'
+import { buildWhR1Validation } from './dr-wh-r1-validation.js'
+import { buildWhR1Inspector } from './dr-wh-r1-inspector.js'
 import { whR1Requested } from './place-mode.js'
 
 const shape = geometry => Object.keys(geometry.attributes).filter(name => name !== 'color').sort().map(name => `${name}${geometry.attributes[name].itemSize}`).join(',')
@@ -100,7 +102,7 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const buildAll = (shared = {}) => {
     scene.add(root)
     const sources = whr1
-      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-site', buildWhR1Site], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-vehicles', buildWhR1Vehicles], ['wh-r1-front', buildWhR1Front]]
+      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-site', buildWhR1Site], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-vehicles', buildWhR1Vehicles], ['wh-r1-front', buildWhR1Front], ['wh-r1-validation', buildWhR1Validation], ['wh-r1-inspector', buildWhR1Inspector]]
       : modules
     for (const [name, factory] of sources) {
       try { built.set(name, factory({ THREE, root, layout, now, ...shared }) || {}) }
@@ -128,5 +130,12 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
     disposeMerged(); for (const value of built.values()) value.dispose?.(); built.clear(); root.removeFromParent()
   }
   const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged, motion: built.get('motion')?.summary?.() || null })
-  return { root, register, buildAll, dispose, summary, onFrame }
+  const module = name => built.get(name) || null
+  const inspectWhR1 = id => module('wh-r1-inspector')?.inspect?.(id) || null
+  const enableWhR1Picking = ids => module('wh-r1-inspector')?.enablePicking?.(ids) || null
+  const disableWhR1Picking = () => module('wh-r1-inspector')?.disablePicking?.()
+  const pickWhR1 = ray => module('wh-r1-inspector')?.pickRay?.(ray) || null
+  const toggleWhR1Zones = value => module('wh-r1-zones')?.setOverlay?.(value)
+  const whR1ZonesVisible = () => module('wh-r1-zones')?.overlayVisible?.() || false
+  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking, pickWhR1, toggleWhR1Zones, whR1ZonesVisible }
 }

@@ -192,7 +192,7 @@ export function createRework({ dir, company, get, send, notify, dutyOn, now = Da
   }
 
   async function context() {
-    return asList(await get(`/api/companies/${company}/issues`))
+    return asList(await get(`/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`))
   }
 
   async function run(manual = false) {

@@ -22,7 +22,8 @@ export const PLACE_LATEST = Object.freeze({
     r1: 1,
     subtitle: '最新版 · 办公室样板',
   }),
-  warehouse: Object.freeze({}),
+  // 地图上的仓配入口一定指向最新版：WH-R1 新图纸场景（旧园区场景仍可用 ?place=drlife-warehouse 直接打开）。
+  warehouse: Object.freeze({ whr1: 1 }),
 })
 
 const OFFICE_MODE = Object.freeze({

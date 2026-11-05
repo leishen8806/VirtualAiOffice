@@ -62,7 +62,7 @@ test('DR page control-room links use the latest canonical warehouse channel', ()
   )
   assert.equal(
     overviewDocument.nodes.drControlRoomLink.href,
-    '/?place=drlife-warehouse&controlRoom=1',
+    '/?place=drlife-warehouse&whr1=1&controlRoom=1',
   )
   assert.equal(
     overviewDocument.nodes.drControlRoomLink.textContent,
@@ -78,7 +78,7 @@ test('DR page control-room links use the latest canonical warehouse channel', ()
   )
   assert.equal(
     controlRoomDocument.nodes.drControlRoomLink.href,
-    '/?place=drlife-warehouse',
+    '/?place=drlife-warehouse&whr1=1',
   )
   assert.equal(
     controlRoomDocument.nodes.drControlRoomLink.textContent,

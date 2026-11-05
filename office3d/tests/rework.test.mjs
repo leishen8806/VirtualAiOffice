@@ -21,7 +21,7 @@ function setup(t, options = {}) {
   const ISSUE = add('CMP-1')
   const review = (issue, body, at) => { issue.comments.push({ id: 'c' + ++n, authorAgentId: 'reviewer', body, createdAt: new Date(Date.parse(at)).toISOString() }); issue.updatedAt = new Date(Date.parse(at)).toISOString() }
   const get = async (p) => {
-    if (p.endsWith('/companies/C/issues')) return structuredClone(Object.values(issues))
+    if (p.includes('/companies/C/issues?status=todo,in_progress,in_review,blocked')) return structuredClone(Object.values(issues))
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues[m[1]]; assert.ok(i, p); return structuredClone(m[2] ? i.comments : i) }
     throw new Error('未模拟 GET ' + p)

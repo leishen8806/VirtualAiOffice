@@ -34,9 +34,9 @@ test('HF-2 收到 SIGINT / SIGTERM / pm2 shutdown 时先关监听端口再退出
   assert.match(serverSource, /message === 'shutdown'/)
 })
 
-test('HF-3 /state 响应按访问范围分别缓存 1 秒', () => {
+test('HF-3 /state 响应按访问范围分别缓存 5 秒', () => {
   assert.match(serverSource, /const cacheKey = wallScope \? 'wall' : lanUser \? 'lan' : 'local'/)
-  assert.match(serverSource, /Date\.now\(\) - cached\.at < 1000/)
+  assert.match(serverSource, /Date\.now\(\) - cached\.at < 5000/)
 })
 
 test('HF-4 工作量视图 60 秒内复用、返回独立副本，采集后失效', async t => {
