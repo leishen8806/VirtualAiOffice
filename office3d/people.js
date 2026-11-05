@@ -421,9 +421,15 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
-export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatForward = 0 }) {
+export function computeR1SeatBase(report, targetGap = .38) {
+  if (Array.isArray(report?.pelvisOverflow) && report.pelvisOverflow.some(value => Number(value) > 1e-6)) return 0
+  if (!report?.hands?.length) return 0
+  const gap = Math.max(...report.hands.map(hand => Number(hand.deskGap) || 0))
+  return Math.min(.2, Math.max(0, gap - targetGap))
+}
+export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase = 0 }) {
   if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
-  if (!Number.isFinite(seatForward) || seatForward < 0 || seatForward > .15) throw new Error('R1 seat forward outside approved range')
+  if (!Number.isFinite(seatBase) || seatBase < 0 || seatBase > .2) throw new Error('R1 seat base outside approved range')
   const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
   model.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return
@@ -483,7 +489,7 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatForw
   const pivot = new THREE.Vector3(), current = new THREE.Vector3(), wanted = new THREE.Vector3(), scale = new THREE.Vector3()
   const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
   const before = new THREE.Vector3(), target = new THREE.Vector3(), handWorld = new THREE.Quaternion(), rotation = new THREE.Quaternion()
-  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, seatForward, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
+  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, seatBase, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
   // 骨盆最低点（世界 Y）：组的 y 先置 0 再量，返回值用来把骨盆贴到座面上。
   const measurePelvis = () => {
     ch.group.updateMatrixWorld(true)
@@ -520,7 +526,7 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatForw
   const updateSeatFit = () => {
     // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
     const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
-    depth.shift = THREE.MathUtils.clamp(depth.shift + seatForward, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
+    depth.shift = THREE.MathUtils.clamp(depth.shift, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
     const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
     ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
     ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift

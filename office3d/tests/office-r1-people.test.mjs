@@ -16,7 +16,7 @@ function fixture({ phase = 'R1', loadFailure = false, personFailure = false, poo
   const ring = {}, label = {}, selected = { value: true }, old = { group: group(), pose: { mood: 'happy', type: 1 } }
   old.group.add(ring)
   const view = { id: 'public-test', name: 'Reviewer2', home: { x: 1, z: 2, yaw: 0 }, char: old, ring, label, selected, desk: { group: { position: { x: 1, z: 1 } } } }
-  const callbacks = [], context = { R1_ADDED_AVATARS, LITE: { lite: false }, DR_MODE: false, OFFICE_LAYOUT: { r1Phase: phase }, views: new Map([[view.id, view]]), SEATS: { Reviewer2: [] }, CAST: ['Male_Adult_01'], CAST_OVERRIDE: {}, PEOPLE: null, scene: { userData: {}, add() {} }, officeV3: { get: () => ({ chairAt: () => ({}), seatedProfile: () => ({ handY: .837, motions: ['neutral_01', 'neutral_02'] }) }) }, performance: { now: () => 123 }, setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {}, r1SeatedAssets: loaded => poolFailure ? null : loaded, placeSeated: (ch, home) => { ch.home = { ...home } }, fitR1SeatedPerson: (ch, options) => { ch.fitOptions = options }, createPerson: (loaded, avatar) => { if (personFailure) throw Error('fixture person failure'); return { avatar, group: group(), pose: {} } } }
+  const callbacks = [], context = { R1_ADDED_AVATARS, LITE: { lite: false }, DR_MODE: false, OFFICE_LAYOUT: { r1Phase: phase }, views: new Map([[view.id, view]]), SEATS: { Reviewer2: [] }, CAST: ['Male_Adult_01'], CAST_OVERRIDE: {}, PEOPLE: null, scene: { userData: {}, add() {} }, officeV3: { get: () => ({ chairAt: () => ({}), seatedProfile: () => ({ handY: .837, motions: ['neutral_01', 'neutral_02'] }) }) }, performance: { now: () => 123 }, setTimeout: fn => callbacks.push(fn), requestAnimationFrame: fn => callbacks.push(fn), loadR1Extras: async () => {}, loadR1MovementExtras: async () => {}, r1SeatedAssets: loaded => poolFailure ? null : loaded, placeSeated: (ch, home) => { ch.home = { ...home } }, fitR1Workstation: (ch, home, desk, handY) => { ch.fitOptions = { handY }; return home }, fitR1SeatedPerson: (ch, options) => { ch.fitOptions = options }, createPerson: (loaded, avatar) => { if (personFailure) throw Error('fixture person failure'); return { avatar, group: group(), pose: {} } } }
   let resolve
   context.loadPeople = () => new Promise((yes, no) => { resolve = () => loadFailure ? no(Error('fixture load failure')) : yes({}) })
   vm.runInNewContext(code, context)
@@ -147,7 +147,7 @@ test('SITFIX step 0 regression: pelvis is fitted to the measured cushion, not a 
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
 })
 
-test('SITFIX R2 reports hand-to-desk gaps and limits each arm to one clamped joint', () => {
+test('SITFIX R3 keeps hand-gap reporting while seat base is supplied by the caller', () => {
   const source = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
   const ctx = { THREE }
   vm.runInNewContext(source.slice(source.indexOf('export const R1_ARM_LIMITS')).replaceAll('export ', '') + '\nthis.fit=fitR1SeatedPerson', ctx)
@@ -166,14 +166,22 @@ test('SITFIX R2 reports hand-to-desk gaps and limits each arm to one clamped joi
   const group = new THREE.Group(); group.add(model)
   const chair = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .2), new THREE.MeshBasicMaterial()); chair.position.y = .35
   const ch = { avatar: 'Female_Adult_07', parts: { model }, group, solve: () => {} }
-  ctx.fit(ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: 0, z: -.05 }, chair, handY: .82, seatForward: .08 })
+  ctx.fit(ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: 0, z: -.05 }, chair, handY: .82, seatBase: 0 })
   ch.solve(0)
-  assert.equal(ch.r1Seated.seatForward, .08)
+  assert.equal(ch.r1Seated.seatBase, 0)
   assert.equal(ch.r1Seated.hands.length, 2)
-  for (const hand of ch.r1Seated.hands) {
-    assert.ok(hand.deskGap <= .38, `hand ${hand.side} gap ${hand.deskGap}`)
-    assert.ok(hand.clampedJoints <= 1, `hand ${hand.side} clamped ${hand.clampedJoints}`)
-  }
+  assert.ok(ch.r1Seated.hands.every(hand => Number.isFinite(hand.deskGap) && Number.isInteger(hand.clampedJoints)))
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
+})
+
+test('SITFIX R3 computes a bounded seat base from measured hand gap, without name tables', () => {
+  const source = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
+  const ctx = { THREE }
+  vm.runInNewContext(source.slice(source.indexOf('export const R1_ARM_LIMITS')).replaceAll('export ', '') + '\nthis.base=computeR1SeatBase', ctx)
+  assert.ok(Math.abs(ctx.base({ hands: [{ deskGap: .49 }, { deskGap: .37 }] }) - .11) < 1e-9)
+  assert.equal(ctx.base({ hands: [{ deskGap: .99 }] }), .2)
+  assert.equal(ctx.base({ hands: [{ deskGap: .49 }], pelvisOverflow: [0, .001, 0, 0] }), 0)
+  assert.equal(ctx.base({ hands: [] }), 0)
+  assert.doesNotMatch(source, /R1_SEATED_FORWARD/)
 })

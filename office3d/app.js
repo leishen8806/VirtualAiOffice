@@ -8,7 +8,7 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
 import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
 import { createFoodtruckDemo } from './foodtruck-demo.js'
 import { createFurnitureCollision } from './furniture-collision.js'
@@ -997,6 +997,25 @@ function placeSeated(ch, home, view) {
   if (!view || view.char !== ch) r1SeatView({ char: ch }) // 新建的 char 还没挂到 view 上，至少复位它的姿态
   ch.solve(0)
 }
+function fitR1Workstation(ch, home, desk, handY, chairId) {
+  const furniture = officeV3.get('furniture3'), deskPos = { x: desk.group.position.x, z: desk.group.position.z }
+  let chair = furniture.chairAt(home.x, home.z)
+  fitR1SeatedPerson(ch, { handY, seatBase: 0, home, desk: deskPos, chair })
+  const seatBase = computeR1SeatBase(ch.r1Seated)
+  let appliedSeatBase = 0
+  let finalHome = home
+  if (chairId && seatBase > 0 && furniture.setChairBase && furniture.chairBaseHome) {
+    finalHome = { ...home, ...furniture.chairBaseHome(chairId) }
+    furniture.setChairBase(chairId, seatBase)
+    finalHome = { ...home, ...furniture.chairBaseHome(chairId) }
+    placeSeated(ch, finalHome)
+    chair = furniture.chairAt(finalHome.x, finalHome.z)
+    fitR1SeatedPerson(ch, { handY, seatBase, home: finalHome, desk: deskPos, chair })
+    appliedSeatBase = seatBase
+  }
+  if (ch.r1Seated) { ch.r1Seated.seatBase = appliedSeatBase; ch.r1Seated.seatBaseLimited = appliedSeatBase >= .2 - 1e-6 || !!ch.r1Seated.fitConflict }
+  return finalHome
+}
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
@@ -1021,7 +1040,8 @@ function createAgentView(a, index) {
     })
   const home = workHome(seat)
   placeSeated(ch, home)
-  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) { const profile = officeV3.get('furniture3').seatedProfile(a.name); fitR1SeatedPerson(ch, { handY: profile.handY, seatForward: profile.seatForward, home, desk: { x: sx, z: sz }, chair: officeV3.get('furniture3').chairAt(home.x, home.z) }) }
+  let seatedHome = home
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -1039,7 +1059,7 @@ function createAgentView(a, index) {
   el.className = 'lab'
   el.innerHTML = '<span class="st" style="display:none"></span><span class="tk" style="display:none"></span><span class="nm"></span>'
   labelsEl.appendChild(el)
-  return { id: a.id, name: a.name, data: a, zone, home, stand: officeStand(home), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
+  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
 }
 function createBoardView(name, home, stand, via, skinI) {
   const ch = PEOPLE
@@ -2457,7 +2477,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             const ch = createPerson(assets, avatar), previous = v.char
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home, v)
-            { const profile = officeV3.get('furniture3').seatedProfile(personName); fitR1SeatedPerson(ch, { handY: profile.handY, seatForward: profile.seatForward, home: v.home, desk: { x: v.desk.group.position.x, z: v.desk.group.position.z }, chair: officeV3.get('furniture3').chairAt(v.home.x, v.home.z) }) }
+            { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
