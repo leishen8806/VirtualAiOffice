@@ -1934,6 +1934,85 @@ function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', dest
 if (DR_MODE) {
   const cameraGroup = dockGroup('仓配场景视角', 'views')
   PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
+  if (PLACE_MODE.whr1) {
+    const zoneGroup = dockGroup('仓配分区', 'warehouse-zones')
+    const picker = document.createElement('div')
+    picker.className = 'dock-zone-picker'
+    const trigger = document.createElement('button')
+    trigger.type = 'button'; trigger.textContent = '仓配分区'; trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', 'warehouseZoneMenu')
+    const menu = document.createElement('div')
+    menu.className = 'dock-zone-menu dock-zone-menu-fixed'
+    menu.id = 'warehouseZoneMenu'
+    menu.hidden = true
+    menu.setAttribute('role', 'menu')
+    menu.setAttribute('aria-label', '仓配 01–14 分区')
+    menu.setAttribute('aria-labelledby', 'warehouseZoneTrigger')
+    trigger.id = 'warehouseZoneTrigger'
+    const zoneButtons = () => [...menu.querySelectorAll('button[data-destination-id]')]
+    const closeWarehouseMenu = (focus = false) => {
+      menu.hidden = true
+      trigger.setAttribute('aria-expanded', 'false')
+      picker.classList.remove('open')
+      if (focus) trigger.focus()
+    }
+    const positionWarehouseMenu = () => {
+      const anchor = trigger.getBoundingClientRect()
+      const width = Math.min(360, Math.max(0, innerWidth - 24))
+      menu.style.width = `${width}px`
+      const height = Math.min(menu.scrollHeight || 0, Math.min(innerHeight * 0.62, 430))
+      const left = Math.max(12, Math.min(innerWidth - width - 12, anchor.left))
+      const above = anchor.top - 10 - height
+      const top = above >= 12 ? above : Math.min(innerHeight - height - 12, anchor.bottom + 10)
+      menu.style.left = `${left}px`
+      menu.style.top = `${Math.max(12, top)}px`
+    }
+    const openWarehouseMenu = (focusFirst = false) => {
+      menu.hidden = false
+      trigger.setAttribute('aria-expanded', 'true')
+      picker.classList.add('open')
+      positionWarehouseMenu()
+      if (focusFirst) zoneButtons()[0]?.focus()
+    }
+    trigger.addEventListener('click', () => { if (menu.hidden) openWarehouseMenu(); else closeWarehouseMenu() })
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowDown') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowUp') { event.preventDefault(); openWarehouseMenu(false); zoneButtons().at(-1)?.focus() }
+    })
+    menu.addEventListener('keydown', (event) => {
+      const buttons = zoneButtons(), index = buttons.indexOf(document.activeElement)
+      if (event.key === 'Escape') { event.preventDefault(); closeWarehouseMenu(true); return }
+      if (!buttons.length || !['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+      event.preventDefault()
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + buttons.length) % buttons.length
+      buttons[next]?.focus()
+    })
+    document.addEventListener('pointerdown', (event) => { if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) closeWarehouseMenu() }, true)
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !menu.hidden) { event.preventDefault(); closeWarehouseMenu(true) } })
+    addEventListener('resize', () => { if (!menu.hidden) positionWarehouseMenu() })
+    addEventListener('scroll', () => { if (!menu.hidden) positionWarehouseMenu() }, true)
+    const overlay = document.createElement('button')
+    overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
+    overlay.addEventListener('click', () => { const on = campusRegistry.toggleWhR1Zones(); overlay.classList.toggle('on', on); overlay.setAttribute('aria-pressed', String(on)) })
+    menu.appendChild(overlay)
+    for (const zone of PLACE_MODE.zones || []) {
+      const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
+      const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
+      const button = document.createElement('button')
+      button.type = 'button'; button.textContent = zone.label; button.dataset.destinationId = zone.id; button.setAttribute('role', 'menuitem'); button.setAttribute('aria-label', `仓配分区：${zone.label}`); button.setAttribute('aria-pressed', 'false')
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#dock button, .destination-picker .menu button, .dock-zone-menu button').forEach((x) => { x.classList.remove('on'); if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false') })
+        button.classList.add('on'); button.setAttribute('aria-pressed', 'true'); setGoal(view)
+        closeWarehouseMenu()
+      })
+      menu.appendChild(button)
+    }
+    const hint = document.createElement('span')
+    hint.className = 'dock-scroll-hint'; hint.textContent = '↔ 分区'; hint.setAttribute('aria-hidden', 'true')
+    picker.append(trigger)
+    document.body.appendChild(menu)
+    zoneGroup.append(hint, picker)
+  }
 } else {
   const cameraGroup = dockGroup('视角预设', 'views')
   zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true, cameraGroup)
@@ -2112,6 +2191,10 @@ function pick(cx, cy, shift = false) {
   for (const v of [...views.values(), ...Object.values(boardViews)]) v.char.group.traverse((o) => { if (o.isMesh) meshes.push(o) })
   if (fun.pick(ray)) { const response = fun.catReact(); ui.toast(`🐱 小橘（办公室猫，纯装饰）：${response || '刚玩过，等一下'}`); return }
   if (fun.catPlaying()) { const p = catGround(cx, cy); if (p) fun.catAim(p, shift); return }
+  if (PLACE_MODE.whr1) {
+    const whItem = campusRegistry?.pickWhR1?.(ray.ray)
+    if (whItem) { showWhR1Inspect(whItem); return }
+  }
   const panelHit = ray.intersectObjects([...foyerPanels.values()].map(panel => panel.mesh).filter(mesh => mesh.visible), false)[0]
   if (panelHit) {
     const access = panelAccess(WALL_MODE ? 'wall' : latestState?.lan ? 'lan' : 'local')
@@ -2131,9 +2214,17 @@ function pick(cx, cy, shift = false) {
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
+    document.getElementById('wh-r1-inspector-panel')?.remove()
+    if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
     const pt = new THREE.Vector3()
     if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) walkTo(pt.x, pt.z, false) // 点地面：镜头走过去
   }
+}
+function showWhR1Inspect(item) {
+  let panel = document.getElementById('wh-r1-inspector-panel')
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'wh-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:280px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · ${esc(item.useScope || '未分区')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>用途/状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.hidden = false
 }
 // 改名：放在人物卡片底部，单独渲染（每 3 秒刷新卡片时不会冲掉正在输入的内容）
 let nameBoxFor = null
@@ -2549,7 +2640,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
 window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()

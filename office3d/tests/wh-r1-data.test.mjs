@@ -114,7 +114,7 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
   assert.equal(new Set(WH_R1_ASSIGNMENT.map(row => row.id)).size, 1244)
   assert.deepEqual([...new Set(WH_R1_ASSIGNMENT.map(row => row.card))].sort(), ['I2', 'I3', 'I4', 'I5', 'I6', 'I7'])
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(item => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)])
-  const allowedRuntime = new Set(['dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'place-mode.js'])
+  const allowedRuntime = new Set(['app.js', 'dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'place-mode.js'])
   const references = []
   for (const file of walk(repo).filter(file => /\.(?:js|mjs)$/.test(file.replaceAll('/', '\\')))) {
     const path = relative(repo, file).replaceAll('\\', '/')
@@ -123,5 +123,5 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
     references.push(path)
     assert.ok(path.startsWith('wh-r1/') || path === 'wh-r1-layout.js' || path === 'wh-r1-site-plan.js' || allowedRuntime.has(path) || /^dr-wh-r1-[^/]+\.js$/.test(path), path)
   }
-  assert.deepEqual(references.sort(), ['dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-front.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-site.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js', 'wh-r1-site-plan.js'])
+  assert.deepEqual(references.sort(), ['app.js', 'dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-front.js', 'dr-wh-r1-inspector.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-site.js', 'dr-wh-r1-validation.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js', 'wh-r1-site-plan.js'])
 })
