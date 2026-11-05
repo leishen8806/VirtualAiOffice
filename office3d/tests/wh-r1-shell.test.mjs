@@ -110,6 +110,48 @@ test('WH-R1 environment inventory includes and hides sphere crowns within the si
   assert.equal(crown.visible, false); assert.equal(outside.visible, true); assert.equal(crown.castShadow, false); assert.equal(outside.castShadow, false)
 })
 
+test('WH-R1 hides the complete tower group but preserves sky and very large world planes', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const tower = new THREE.Group(); tower.position.set(-150, -.6, 40)
+  const hill = new THREE.Mesh(new THREE.SphereGeometry(30, 8, 4), new THREE.MeshBasicMaterial()); hill.name = 'tower-hill'
+  const body = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(1, 2)], 8), new THREE.MeshBasicMaterial()); body.name = 'tower-body'; body.position.y = 13.4
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(.6, 4, 8), new THREE.MeshBasicMaterial()); tip.name = 'tower-tip'; tip.position.y = 36.9
+  tower.add(hill, body, tip)
+  const sky = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial()); sky.isSky = true; sky.scale.setScalar(3000)
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshBasicMaterial()); ground.rotation.x = -Math.PI / 2; ground.position.y = -.62
+  const small = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); small.name = 'whr1-small-object'; small.position.set(-180, 1, 0)
+  scene.add(root, tower, sky, ground, small)
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
+  try {
+    const hidden = hideCampusEnvironment(THREE, scene, root)
+    assert.equal(hidden['tower-body'], 1)
+    assert.equal(hidden['tower-tip'], 1)
+    assert.equal(hill.visible, false); assert.equal(body.visible, false); assert.equal(tip.visible, false)
+    assert.equal(sky.visible, true); assert.equal(ground.visible, true)
+    assert.equal(small.visible, false)
+    assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === sky), false)
+    assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === ground), false)
+  } finally { globalThis.location = prior }
+})
+
+test('non WH-R1 hidden environment type counts remain exact', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const geometries = [
+    ...Array.from({ length: 10 }, () => new THREE.BoxGeometry()),
+    new THREE.SphereGeometry(), new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(1, 1)], 8),
+    new THREE.ConeGeometry(1, 1), ...Array.from({ length: 11 }, () => new THREE.IcosahedronGeometry()),
+    new THREE.CylinderGeometry(), ...Array.from({ length: 14 }, () => new THREE.CircleGeometry()),
+  ]
+  for (const geometry of geometries) scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial()))
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse' }
+  try {
+    assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), {
+      BoxGeometry: 10, SphereGeometry: 1, LatheGeometry: 1, ConeGeometry: 1,
+      IcosahedronGeometry: 11, CylinderGeometry: 1, CircleGeometry: 14,
+    })
+  } finally { globalThis.location = prior }
+})
+
 test('non WH-R1 environment shadow state remains unchanged', () => {
   const scene = new THREE.Scene(), root = new THREE.Group(), tree = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
   tree.position.set(0, 1, 0); tree.castShadow = true; scene.add(root, tree)
