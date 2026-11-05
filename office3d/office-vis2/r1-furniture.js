@@ -40,6 +40,11 @@ export const R1_SEATED_PROFILES = Object.freeze(Object.fromEntries([
   ['GoSenior2', 0.077, 0.84, ['neutral_01', 'nervous_01', 'neutral_02']],
   ['React2', 0.079, 0.842, ['neutral_01', 'nervous_01', 'neutral_02']],
 ].map(([name, seat, handY, motions]) => [name, Object.freeze({ seat, handY, motions: Object.freeze(motions) })])))
+// R2 measured per-seat forward offsets; keyed by workstation name, never by gender.
+const R1_SEATED_FORWARD = Object.freeze({
+  G1: .05, KK: .08, Rea1: .08, GS: .08, SecurityReviewer2: .08,
+  OE: .08, PM: .08, F2: .08, LA: .08, R1: .08, DBE: .08, B1: .08, Reviewer3: .08,
+})
 const yawFor = item => -Number(item.yawDeg || 0) * Math.PI / 180
 const dimensions = item => ({ x: Math.max(.02, Number(item.lengthM) || .1), y: Math.max(.02, Number(item.heightM) || .1), z: Math.max(.02, Number(item.widthM) || .1) })
 const bucketFor = item => item.category === '显示器' || item.category === '共享显示站' ? 'screen' : item.category === '办公椅' || item.category === '椅子' || item.category === '弧形座段' || item.category === '弧形沙发段' || item.category === '吧凳' ? 'fabric' : item.category === '桌间屏风' ? 'trim' : 'wood'
@@ -202,7 +207,10 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
     return [item.id, Math.atan2(chair.x - desk.x, chair.z - desk.z)]
   }))
   const stationByDesk = new Map(layout.r1.workstations.map(station => [station.desk_id, station]))
-  const seatedProfile = name => R1_SEATED_PROFILES[name] || (layout.r1.workstations.some(s => s.business_id === name && s.temporary) ? R1_SEATED_PROFILES.ReactSenior : null)
+  const seatedProfile = name => {
+    const base = R1_SEATED_PROFILES[name] || (layout.r1.workstations.some(s => s.business_id === name && s.temporary) ? R1_SEATED_PROFILES.ReactSenior : null)
+    return base ? Object.freeze({ ...base, seatForward: R1_SEATED_FORWARD[name] || 0 }) : null
+  }
   const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, seatedProfile(station.business_id)?.seat || 0]))
   const movingChairs = new Map(), bucketMeshes = new Map()
   const deskMaterials = {}

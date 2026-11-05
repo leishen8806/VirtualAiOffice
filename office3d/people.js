@@ -421,8 +421,9 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
-export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
+export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatForward = 0 }) {
   if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
+  if (!Number.isFinite(seatForward) || seatForward < 0 || seatForward > .15) throw new Error('R1 seat forward outside approved range')
   const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
   model.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return
@@ -482,7 +483,7 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
   const pivot = new THREE.Vector3(), current = new THREE.Vector3(), wanted = new THREE.Vector3(), scale = new THREE.Vector3()
   const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
   const before = new THREE.Vector3(), target = new THREE.Vector3(), handWorld = new THREE.Quaternion(), rotation = new THREE.Quaternion()
-  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
+  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, seatForward, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
   // 骨盆最低点（世界 Y）：组的 y 先置 0 再量，返回值用来把骨盆贴到座面上。
   const measurePelvis = () => {
     ch.group.updateMatrixWorld(true)
@@ -517,7 +518,9 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
     return { shift: THREE.MathUtils.clamp(centreShift, low, high), conflict: false }
   }
   const updateSeatFit = () => {
-    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax)
+    // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
+    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
+    depth.shift = THREE.MathUtils.clamp(depth.shift + seatForward, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
     const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
     ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
     ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift
@@ -585,7 +588,9 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
         bones.forEach((bone, i) => bone.quaternion.slerpQuaternions(original[i], rotation.copy(bone.quaternion), weight))
         bones[0].updateWorldMatrix(false, true)
       }
-      report.hands.push({ side: arm.side, before: before.toArray(), after: current.setFromMatrixPosition(hand.matrixWorld).toArray(), angles: bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians), weight })
+      const after = current.setFromMatrixPosition(hand.matrixWorld).clone()
+      const angles = bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians)
+      report.hands.push({ side: arm.side, before: before.toArray(), after: after.toArray(), deskGap: Math.hypot(after.x - desk.x, after.z - desk.z), clampedJoints: angles.reduce((sum, angle, i) => sum + (angle >= [20, 30, 15][i] - 1e-4 ? 1 : 0), 0), angles, weight })
     }
   }
   ch.solve(0)

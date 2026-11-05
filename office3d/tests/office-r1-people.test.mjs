@@ -146,3 +146,34 @@ test('SITFIX step 0 regression: pelvis is fitted to the measured cushion, not a 
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6), JSON.stringify(ch.r1Seated.pelvisOverflow))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
 })
+
+test('SITFIX R2 reports hand-to-desk gaps and limits each arm to one clamped joint', () => {
+  const source = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
+  const ctx = { THREE }
+  vm.runInNewContext(source.slice(source.indexOf('export const R1_ARM_LIMITS')).replaceAll('export ', '') + '\nthis.fit=fitR1SeatedPerson', ctx)
+  const model = new THREE.Group(), pelvis = new THREE.Bone(); pelvis.name = 'Bip01_Pelvis'; model.add(pelvis)
+  for (const side of ['L', 'R']) {
+    const upper = new THREE.Bone(), forearm = new THREE.Bone(), hand = new THREE.Bone()
+    ;[upper, forearm, hand].forEach((b, i) => { b.name = `Bip01_${side}_${['UpperArm', 'Forearm', 'Hand'][i]}` })
+    upper.position.set(side === 'L' ? -.2 : .2, .82, 0); forearm.position.y = 0; hand.position.y = 0
+    pelvis.add(upper); upper.add(forearm); forearm.add(hand)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, .3, 0, .02, .3, 0, 0, .32, .01], 3))
+  geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4))
+  geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], 4))
+  const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshBasicMaterial()); model.add(mesh); mesh.bind(new THREE.Skeleton([pelvis]))
+  const group = new THREE.Group(); group.add(model)
+  const chair = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .2), new THREE.MeshBasicMaterial()); chair.position.y = .35
+  const ch = { avatar: 'Female_Adult_07', parts: { model }, group, solve: () => {} }
+  ctx.fit(ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: 0, z: -.05 }, chair, handY: .82, seatForward: .08 })
+  ch.solve(0)
+  assert.equal(ch.r1Seated.seatForward, .08)
+  assert.equal(ch.r1Seated.hands.length, 2)
+  for (const hand of ch.r1Seated.hands) {
+    assert.ok(hand.deskGap <= .38, `hand ${hand.side} gap ${hand.deskGap}`)
+    assert.ok(hand.clampedJoints <= 1, `hand ${hand.side} clamped ${hand.clampedJoints}`)
+  }
+  assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6))
+  geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
+})
