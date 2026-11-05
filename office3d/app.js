@@ -1914,6 +1914,14 @@ function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', dest
 if (DR_MODE) {
   const cameraGroup = dockGroup('仓配场景视角', 'views')
   PLACE_MODE.cameraViews.forEach((view, index) => zoneBtn(view.label, () => setGoal(view), index === 0, cameraGroup))
+  if (PLACE_MODE.whr1) {
+    const zoneGroup = dockGroup('仓配分区', 'warehouse-zones')
+    for (const zone of PLACE_MODE.zones || []) {
+      const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
+      const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
+      zoneBtn(zone.label, () => setGoal(view), false, zoneGroup, zone.id, '仓配分区')
+    }
+  }
 } else {
   const cameraGroup = dockGroup('视角预设', 'views')
   zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true, cameraGroup)
@@ -2529,7 +2537,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
 window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()
