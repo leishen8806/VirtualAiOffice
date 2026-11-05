@@ -145,13 +145,15 @@
   #dock .dock-group { display:flex; flex:0 0 auto; align-items:center; gap:4px; }
   #dock .dock-group[data-kind="warehouse-zones"] { flex-wrap:wrap; max-width:min(calc(100vw - 24px), 920px); max-height:74px; overflow-y:auto; scrollbar-width:thin; }
   #dock .dock-zone-picker { position:relative; display:flex; flex:0 0 auto; }
-  #dock .dock-zone-picker > .dock-zone-menu { display:grid; grid-template-columns:repeat(2, minmax(118px, 1fr)); gap:4px; position:absolute; left:0; bottom:calc(100% + 10px); width:min(360px, calc(100vw - 24px)); max-height:min(62vh, 430px); overflow-y:auto; padding:6px; border-radius:14px; background:rgba(20,20,18,.94); box-shadow:0 10px 28px rgba(0,0,0,.4); z-index:9; }
-  #dock .dock-zone-picker > .dock-zone-menu[hidden] { display:none; }
-  #dock .dock-zone-menu button { min-width:0; text-align:left; }
+  .dock-zone-menu-fixed { display:grid; grid-template-columns:repeat(2, minmax(118px, 1fr)); gap:4px; position:fixed; max-height:min(62vh, 430px); overflow-y:auto; padding:6px; border-radius:14px; background:rgba(20,20,18,.94); box-shadow:0 10px 28px rgba(0,0,0,.4); z-index:30; }
+  .dock-zone-menu-fixed[hidden] { display:none; }
+  .dock-zone-menu button { min-width:0; text-align:left; }
+  .dock-scroll-hint { display:none; color:var(--muted); font-size:10px; white-space:nowrap; }
   #dock .dock-group-label { flex:0 0 auto; padding:0 5px; color:var(--muted); font-size:10px; white-space:nowrap; }
   #dock button, #tools button { border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; white-space:nowrap; min-height:34px; }
   #dock button:hover, #tools button:hover { background:rgba(255,255,255,.1); }
   #dock button.on { background:var(--gold); color:#1b1606; font-weight:700; }
+  @media (max-width:640px) { #dock .dock-group[data-kind="warehouse-zones"] .dock-scroll-hint { display:inline-block; } }
   #tools { flex:none; max-width:100%; display:flex; gap:4px; padding:6px; border-radius:999px; }  /* 不能 overflow：分组菜单要向上展开 */
   #tools .grp { position:relative; display:flex; }
   #tools .gbtn::after { content:' ▴'; font-size:10px; opacity:.65; }

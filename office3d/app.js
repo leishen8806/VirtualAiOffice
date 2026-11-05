@@ -1941,17 +1941,56 @@ if (DR_MODE) {
     const trigger = document.createElement('button')
     trigger.type = 'button'; trigger.textContent = '仓配分区'; trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', 'warehouseZoneMenu')
     const menu = document.createElement('div')
-    menu.className = 'dock-zone-menu'
+    menu.className = 'dock-zone-menu dock-zone-menu-fixed'
     menu.id = 'warehouseZoneMenu'
     menu.hidden = true
-    menu.setAttribute('role', 'group')
+    menu.setAttribute('role', 'menu')
     menu.setAttribute('aria-label', '仓配 01–14 分区')
-    trigger.addEventListener('click', () => {
-      const open = menu.hidden
-      menu.hidden = !open
-      trigger.setAttribute('aria-expanded', String(open))
-      picker.classList.toggle('open', open)
+    menu.setAttribute('aria-labelledby', 'warehouseZoneTrigger')
+    trigger.id = 'warehouseZoneTrigger'
+    const zoneButtons = () => [...menu.querySelectorAll('button[data-destination-id]')]
+    const closeWarehouseMenu = (focus = false) => {
+      menu.hidden = true
+      trigger.setAttribute('aria-expanded', 'false')
+      picker.classList.remove('open')
+      if (focus) trigger.focus()
+    }
+    const positionWarehouseMenu = () => {
+      const anchor = trigger.getBoundingClientRect()
+      const width = Math.min(360, Math.max(0, innerWidth - 24))
+      menu.style.width = `${width}px`
+      const height = Math.min(menu.scrollHeight || 0, Math.min(innerHeight * 0.62, 430))
+      const left = Math.max(12, Math.min(innerWidth - width - 12, anchor.left))
+      const above = anchor.top - 10 - height
+      const top = above >= 12 ? above : Math.min(innerHeight - height - 12, anchor.bottom + 10)
+      menu.style.left = `${left}px`
+      menu.style.top = `${Math.max(12, top)}px`
+    }
+    const openWarehouseMenu = (focusFirst = false) => {
+      menu.hidden = false
+      trigger.setAttribute('aria-expanded', 'true')
+      picker.classList.add('open')
+      positionWarehouseMenu()
+      if (focusFirst) zoneButtons()[0]?.focus()
+    }
+    trigger.addEventListener('click', () => { if (menu.hidden) openWarehouseMenu(); else closeWarehouseMenu() })
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowDown') { event.preventDefault(); openWarehouseMenu(true) }
+      if (event.key === 'ArrowUp') { event.preventDefault(); openWarehouseMenu(false); zoneButtons().at(-1)?.focus() }
     })
+    menu.addEventListener('keydown', (event) => {
+      const buttons = zoneButtons(), index = buttons.indexOf(document.activeElement)
+      if (event.key === 'Escape') { event.preventDefault(); closeWarehouseMenu(true); return }
+      if (!buttons.length || !['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+      event.preventDefault()
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1) + buttons.length) % buttons.length
+      buttons[next]?.focus()
+    })
+    document.addEventListener('pointerdown', (event) => { if (!menu.hidden && !menu.contains(event.target) && event.target !== trigger) closeWarehouseMenu() }, true)
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !menu.hidden) { event.preventDefault(); closeWarehouseMenu(true) } })
+    addEventListener('resize', () => { if (!menu.hidden) positionWarehouseMenu() })
+    addEventListener('scroll', () => { if (!menu.hidden) positionWarehouseMenu() }, true)
     const overlay = document.createElement('button')
     overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
     overlay.addEventListener('click', () => { const on = campusRegistry.toggleWhR1Zones(); overlay.classList.toggle('on', on); overlay.setAttribute('aria-pressed', String(on)) })
@@ -1960,16 +1999,19 @@ if (DR_MODE) {
       const width = zone.x1 - zone.x0, depth = zone.z1 - zone.z0
       const view = { az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(width, depth) * 1.15)), t: [(zone.x0 + zone.x1) / 2, 0, (zone.z0 + zone.z1) / 2] }
       const button = document.createElement('button')
-      button.type = 'button'; button.textContent = zone.label; button.dataset.destinationId = zone.id; button.setAttribute('aria-label', `仓配分区：${zone.label}`); button.setAttribute('aria-pressed', 'false')
+      button.type = 'button'; button.textContent = zone.label; button.dataset.destinationId = zone.id; button.setAttribute('role', 'menuitem'); button.setAttribute('aria-label', `仓配分区：${zone.label}`); button.setAttribute('aria-pressed', 'false')
       button.addEventListener('click', () => {
-        document.querySelectorAll('#dock button, .destination-picker .menu button').forEach((x) => { x.classList.remove('on'); if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false') })
+        document.querySelectorAll('#dock button, .destination-picker .menu button, .dock-zone-menu button').forEach((x) => { x.classList.remove('on'); if (x.hasAttribute('data-destination-id')) x.setAttribute('aria-pressed', 'false') })
         button.classList.add('on'); button.setAttribute('aria-pressed', 'true'); setGoal(view)
-        menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); picker.classList.remove('open')
+        closeWarehouseMenu()
       })
       menu.appendChild(button)
     }
-    picker.append(trigger, menu)
-    zoneGroup.appendChild(picker)
+    const hint = document.createElement('span')
+    hint.className = 'dock-scroll-hint'; hint.textContent = '↔ 分区'; hint.setAttribute('aria-hidden', 'true')
+    picker.append(trigger)
+    document.body.appendChild(menu)
+    zoneGroup.append(hint, picker)
   }
 } else {
   const cameraGroup = dockGroup('视角预设', 'views')

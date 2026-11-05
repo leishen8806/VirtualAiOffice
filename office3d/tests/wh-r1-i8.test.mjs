@@ -87,6 +87,13 @@ test('I8 registry and dock wiring remain guarded to WH-R1', () => {
   assert.match(app, /dock-zone-picker/)
   assert.match(app, /dock-zone-menu/)
   assert.match(app, /warehouseZoneMenu/)
+  assert.match(app, /document\.body\.appendChild\(menu\)/)
+  assert.match(app, /dock-zone-menu-fixed/)
+  assert.match(app, /getBoundingClientRect\(\)/)
+  assert.match(app, /positionWarehouseMenu/)
+  assert.match(app, /ArrowDown/)
+  assert.match(app, /event\.key === 'Escape'/)
+  assert.match(app, /dock-scroll-hint/)
   assert.ok(WH_R1_ZONES.length === 14)
 })
 
