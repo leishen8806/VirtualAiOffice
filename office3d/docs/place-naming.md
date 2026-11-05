@@ -11,7 +11,7 @@
 | 地点 | 规范 URL | 兼容旧值 |
 |---|---|---|
 | 智序工场·办公室 | `/?place=drlife-office` | `/?place=office` |
-| DR 仓配服务中心 | `/?place=drlife-warehouse` | `/?place=dr`、`/?campus=1&place=dr` |
+| DR 仓配服务中心 | `/?place=drlife-warehouse&whr1=1`（WH-R1 新图纸场景） | `/?place=dr`、`/?campus=1&place=dr` |
 
 不带 `place` 的默认页与 `?campus=1` 联合预览保持原行为。未知租户、未知类型、非法字符、大小写异常或重复 `place` 参数均回退默认办公室。
 
@@ -26,7 +26,7 @@
 
 2026-10-27，按董事会“更新的版本全部展示”要求，办公室最新通道切到新办公室样板；入口页显示中性副标题「最新版 · 办公室样板」，不把随阶段变化的 L2/L2B 写死。稳定 V3 仍可直接通过 `?place=drlife-office&layout=3` 访问。
 
-仓配最新通道 = 当前园区场景，随仓配整合更新；本次保持 `?place=drlife-warehouse` 不变。
+仓配最新通道 = WH-R1 新图纸场景（2026-11-05 董事会：地图上的入口一定是最新版本展示）；直接输入 `?place=drlife-warehouse` 仍打开旧园区场景，`?whr1=1` 仍可显式指定。
 
 最新通道仅用于导航入口。默认页面 `/` 与直接输入 `/?place=drlife-office` 仍为布局 1；`?layout=2` 行为不变。稳定 V3 仍可直接使用 `?place=drlife-office&layout=3`。以后切换展示版本，只修改 `PLACE_LATEST`。
 
