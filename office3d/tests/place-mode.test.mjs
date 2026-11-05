@@ -182,7 +182,7 @@ test('latest channel is frozen and generates complete place searches', () => {
       r1: 1,
       subtitle: '最新版 · 办公室样板',
     },
-    warehouse: {},
+    warehouse: { whr1: 1 },
   })
   assert.ok(Object.isFrozen(PLACE_LATEST))
   assert.ok(Object.isFrozen(PLACE_LATEST.office))
@@ -193,7 +193,7 @@ test('latest channel is frozen and generates complete place searches', () => {
   )
   assert.equal(
     latestSearch('drlife-warehouse'),
-    '?place=drlife-warehouse',
+    '?place=drlife-warehouse&whr1=1',
   )
   assert.equal(
     latestSearch('unknown-place'),

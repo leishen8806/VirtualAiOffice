@@ -30,7 +30,7 @@ test('place navigation maps both locations and their professional workbenches', 
     '/?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
   assert.equal(PLACE_NAVIGATION.office.workbenchHref, '/command-view.html')
-  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?place=drlife-warehouse')
+  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?place=drlife-warehouse&whr1=1')
   assert.equal(PLACE_NAVIGATION.dr.workbenchHref, '/dr-console.html')
   assert.equal(currentPlace({ pathname: '/command-view.html', search: '' }).id, 'office')
   assert.equal(currentPlace({ pathname: '/', search: '?campus=1&place=dr' }).id, 'dr')
@@ -86,7 +86,7 @@ test('place bar renders canonical place hrefs', () => {
     officeLinks.map((link) => [link.textContent, link.href]),
     [
       ['返回小镇', '/town.html'],
-      ['前往DR 仓配服务中心', '/?place=drlife-warehouse'],
+      ['前往DR 仓配服务中心', '/?place=drlife-warehouse&whr1=1'],
       ['AI 团队指挥中心', '/command-view.html'],
     ],
   )

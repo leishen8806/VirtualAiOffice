@@ -42,7 +42,7 @@ test('replacement completes before optional movement loading; failure retains pe
   const context={R1_ADDED_AVATARS,LITE:{lite:false},DR_MODE:false,OFFICE_LAYOUT:{r1Phase:'R1'},views:new Map([['fixture',v]]),SEATS:{OpsLead:[]},CAST:['Male_Adult_11'],CAST_OVERRIDE:{},PEOPLE:null,
     scene:{userData:{},add(){}},performance:{now:()=>1},setTimeout:f=>callbacks.push(f),requestAnimationFrame:f=>callbacks.push(f),loadPeople:async()=>({}),loadR1Extras:async()=>{},
     loadR1MovementExtras:()=>{assert.ok(context.scene.userData.r1People.completedAt);events.push('extras');return new Promise((_,reject)=>rejectMovement=reject)},
-    officeV3:{get:()=>({seatedProfile:()=>({handY:.82}),chairAt:()=>({})})},r1SeatedAssets:p=>p,createPerson:()=>{events.push('person');return{group:group(),pose:{},avatar:'Male_Adult_11'}},placeSeated(){},fitR1SeatedPerson(){}}
+    officeV3:{get:()=>({seatedProfile:()=>({handY:.82}),chairAt:()=>({})})},r1SeatedAssets:p=>p,createPerson:()=>{events.push('person');return{group:group(),pose:{},avatar:'Male_Adult_11'}},placeSeated(){},fitR1SeatedPerson(){},fitR1Workstation(_ch, home){return home}}
   vm.runInNewContext(source.slice(start,source.indexOf('\nwindow.__office =',start)),context)
   for(let i=0;i<40;i++){callbacks.shift()?.();await Promise.resolve()}
   assert.deepEqual(events,['person','extras']);assert.equal(v.char.avatar,'Male_Adult_11')

@@ -421,8 +421,15 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
-export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
+export function computeR1SeatBase(report, targetGap = .38) {
+  if (Array.isArray(report?.pelvisOverflow) && report.pelvisOverflow.some(value => Number(value) > 1e-6)) return 0
+  if (!report?.hands?.length) return 0
+  const gap = Math.max(...report.hands.map(hand => Number(hand.deskGap) || 0))
+  return Math.min(.2, Math.max(0, gap - targetGap))
+}
+export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase = 0 }) {
   if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
+  if (!Number.isFinite(seatBase) || seatBase < 0 || seatBase > .2) throw new Error('R1 seat base outside approved range')
   const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
   model.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return
@@ -448,6 +455,27 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
   chair.updateWorldMatrix(true, true)
   const hit = new THREE.Raycaster(new THREE.Vector3(home.x, 2, home.z), new THREE.Vector3(0, -1, 0)).intersectObject(chair, true).find(h => h.face.normal.y > .8)
   if (!hit || !pelvis.length) throw new Error('R1 cannot measure the actual seat or pelvis')
+  const radians = Math.PI / 180, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw)
+  const forwardAxis = new THREE.Vector3(-sin, 0, -cos), lateralAxis = new THREE.Vector3(cos, 0, -sin)
+  const cushion = { depthMin: Infinity, depthMax: -Infinity, lateralMin: Infinity, lateralMax: -Infinity }
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), normal = new THREE.Vector3(), centre = new THREE.Vector3()
+  chair.traverse(mesh => {
+    if (!mesh.isMesh || !mesh.geometry?.attributes.position) return
+    const position = mesh.geometry.attributes.position, index = mesh.geometry.index
+    for (let i = 0; i < (index ? index.count : position.count); i += 3) {
+      const read = j => new THREE.Vector3().fromBufferAttribute(position, index ? index.getX(i + j) : i + j).applyMatrix4(mesh.matrixWorld)
+      a.copy(read(0)); b.copy(read(1)); c.copy(read(2)); centre.copy(a).add(b).add(c).multiplyScalar(1 / 3)
+      normal.copy(b).sub(a).cross(c.clone().sub(a)).normalize()
+      if (normal.y < .8 || Math.abs(centre.y - hit.point.y) > .06) continue
+      for (const point of [a, b, c]) {
+        const dx = point.x - home.x, dz = point.z - home.z
+        const depth = dx * forwardAxis.x + dz * forwardAxis.z, lateral = dx * lateralAxis.x + dz * lateralAxis.z
+        cushion.depthMin = Math.min(cushion.depthMin, depth); cushion.depthMax = Math.max(cushion.depthMax, depth)
+        cushion.lateralMin = Math.min(cushion.lateralMin, lateral); cushion.lateralMax = Math.max(cushion.lateralMax, lateral)
+      }
+    }
+  })
+  if (!Number.isFinite(cushion.depthMin) || !Number.isFinite(cushion.lateralMin)) throw new Error('R1 cannot measure the actual cushion outline')
   for (const side of ['L', 'R']) {
     const bones = ['UpperArm', 'Forearm', 'Hand'].map(name => model.getObjectByName(`Bip01_${side}_${name}`))
     if (bones.some(b => !b)) throw new Error(`R1 missing ${side} arm bones`)
@@ -455,14 +483,13 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
     for (let bone = bones[2]; bone && bone !== bones[0].parent; bone = bone.parent) chain.unshift(bone)
     arms.push({ side, bones, chain, original: bones.map(b => b.quaternion.clone()) })
   }
-  const forward = ch.avatar === 'Female_Adult_09' ? .24 : ch.avatar.startsWith('Female_') ? .28 : .12
   const spread = ch.avatar === 'Female_Adult_09' ? .08 : 0
-  const solve = ch.solve, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw), radians = Math.PI / 180
+  const solve = ch.solve
   const limits = [R1_ARM_LIMITS.upperArm, R1_ARM_LIMITS.forearm, R1_ARM_LIMITS.wrist].map(v => v * radians)
   const pivot = new THREE.Vector3(), current = new THREE.Vector3(), wanted = new THREE.Vector3(), scale = new THREE.Vector3()
   const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
   const before = new THREE.Vector3(), target = new THREE.Vector3(), handWorld = new THREE.Quaternion(), rotation = new THREE.Quaternion()
-  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, forward, limits: R1_ARM_LIMITS, hands: [] }
+  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, seatBase, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
   // 骨盆最低点（世界 Y）：组的 y 先置 0 再量，返回值用来把骨盆贴到座面上。
   const measurePelvis = () => {
     ch.group.updateMatrixWorld(true)
@@ -473,16 +500,38 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
       basis.multiplyMatrices(mesh.matrixWorld, mesh.bindMatrixInverse)
       for (const [index, matrix] of rows) matrix.multiplyMatrices(mesh.skeleton.bones[index].matrixWorld, mesh.skeleton.boneInverses[index]).premultiply(basis)
     }
-    let bottom = Infinity
+    let bottom = Infinity, depthMin = Infinity, depthMax = -Infinity, lateralMin = Infinity, lateralMax = -Infinity
     // Same skinning as THREE, computing only world Y and reusing each bone matrix across vertices.
     for (const { mesh, i, influences, basis, cache, dynamicMorph, point } of pelvis) {
       // Cache only unchanged bind-space vertices; animated garments and nonzero morphs stay live.
       if (cache.changed || dynamicMorph) THREE.Mesh.prototype.getVertexPosition.call(mesh, i, point).applyMatrix4(mesh.bindMatrix)
-      let y = 0, sum = 0
+      let x = 0, y = 0, z = 0, sum = 0
       for (const [w, m] of influences) { y += w * (m[1] * point.x + m[5] * point.y + m[9] * point.z + m[13]); sum += w }
+      for (const [w, m] of influences) { x += w * (m[0] * point.x + m[4] * point.y + m[8] * point.z + m[12]); z += w * (m[2] * point.x + m[6] * point.y + m[10] * point.z + m[14]) }
+      const worldX = x + basis.elements[12] * (1 - sum), worldZ = z + basis.elements[14] * (1 - sum)
       bottom = Math.min(bottom, y + basis.elements[13] * (1 - sum))
+      const dx = worldX - home.x, dz = worldZ - home.z
+      depthMin = Math.min(depthMin, dx * forwardAxis.x + dz * forwardAxis.z); depthMax = Math.max(depthMax, dx * forwardAxis.x + dz * forwardAxis.z)
+      lateralMin = Math.min(lateralMin, dx * lateralAxis.x + dz * lateralAxis.z); lateralMax = Math.max(lateralMax, dx * lateralAxis.x + dz * lateralAxis.z)
     }
+    lastPelvisBounds = { depthMin, depthMax, lateralMin, lateralMax }
     return bottom
+  }
+  let lastPelvisBounds = null
+  const fitAxis = (min, max, cushionMin, cushionMax) => {
+    const low = cushionMin - min, high = cushionMax - max, centreShift = (cushionMin + cushionMax - min - max) / 2
+    if (low > high) return { shift: centreShift, conflict: true }
+    return { shift: THREE.MathUtils.clamp(centreShift, low, high), conflict: false }
+  }
+  const updateSeatFit = () => {
+    // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
+    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
+    depth.shift = THREE.MathUtils.clamp(depth.shift, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
+    const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
+    ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
+    ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift
+    report.forward = depth.shift; report.lateral = lateral.shift; report.fitConflict = depth.conflict || lateral.conflict
+    return { depth, lateral }
   }
   ch.solve = dt => {
     // Remove last frame's correction before the original mixer updates its pose.
@@ -504,11 +553,18 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
       return
     }
     report.active = true; report.publicSeatY = null
-    ch.group.position.set(home.x - sin * forward, 0, home.z - cos * forward)
+    ch.group.position.set(home.x, 0, home.z)
     const bottom = measurePelvis()
+    updateSeatFit()
+    measurePelvis()
     ch.group.position.y = hit.point.y + .015 - bottom
     ch.group.updateWorldMatrix(false, false)
     report.offset = ch.group.position.toArray(); report.pelvisY = hit.point.y + .015; report.hands = []
+    report.pelvis = lastPelvisBounds
+    report.pelvisOverflow = [
+      Math.max(0, cushion.depthMin - lastPelvisBounds.depthMin), Math.max(0, lastPelvisBounds.depthMax - cushion.depthMax),
+      Math.max(0, cushion.lateralMin - lastPelvisBounds.lateralMin), Math.max(0, lastPelvisBounds.lateralMax - cushion.lateralMax),
+    ]
     for (const arm of arms) {
       const { bones, original, chain } = arm, hand = bones[2]
       bones.forEach((bone, i) => original[i].copy(bone.quaternion))
@@ -538,7 +594,9 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82 }) {
         bones.forEach((bone, i) => bone.quaternion.slerpQuaternions(original[i], rotation.copy(bone.quaternion), weight))
         bones[0].updateWorldMatrix(false, true)
       }
-      report.hands.push({ side: arm.side, before: before.toArray(), after: current.setFromMatrixPosition(hand.matrixWorld).toArray(), angles: bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians), weight })
+      const after = current.setFromMatrixPosition(hand.matrixWorld).clone()
+      const angles = bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians)
+      report.hands.push({ side: arm.side, before: before.toArray(), after: after.toArray(), deskGap: Math.hypot(after.x - desk.x, after.z - desk.z), clampedJoints: angles.reduce((sum, angle, i) => sum + (angle >= [20, 30, 15][i] - 1e-4 ? 1 : 0), 0), angles, weight })
     }
   }
   ch.solve(0)

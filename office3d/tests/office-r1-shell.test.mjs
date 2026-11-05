@@ -122,6 +122,25 @@ test('I3 furniture bakes mapped assets into a few meshes, exposes desks and regi
   furniture.dispose()
 })
 
+test('SITFIX R3 applies one measured chair base to mesh, bounds, collision and chairAt', () => {
+  const layout = createOfficeR1Layout(), root = new THREE.Group(), collision = createFurnitureCollision()
+  const furniture = buildR1Furniture({ THREE, root, layout, collision, A: r1Assets(THREE), placeFurniture: r1PlaceFurniture(THREE), makeScreenTexture: () => ({ ctx: {}, tex: { dispose() {} } }) })
+  const station = layout.r1.workstations[0], raw = r1ToWorld(station.chairXM, station.chairYM), before = furniture.itemBounds.get(station.chair_id).getCenter(new THREE.Vector3())
+  const base = furniture.setChairBase(station.chair_id, .1), yaw = layout.seats[station.business_id][4].yaw
+  assert.ok(Math.abs(base.x - (raw.x - Math.sin(yaw) * .1)) < 1e-9)
+  assert.ok(Math.abs(base.z - (raw.z - Math.cos(yaw) * .1)) < 1e-9)
+  assert.ok(furniture.chairAt(base.x, base.z)?.children.some(child => child.isMesh))
+  const shifted = furniture.itemBounds.get(station.chair_id).getCenter(new THREE.Vector3())
+  assert.ok(Math.hypot(shifted.x - before.x, shifted.z - before.z) > .099)
+  assert.ok(collision.hit(base.x, base.z), 'collision proxy follows the measured base')
+  furniture.moveChair(station.chair_id, .1, 0, 0)
+  furniture.moveChair(station.chair_id, 0, 0, 0)
+  const reset = furniture.itemBounds.get(station.chair_id).getCenter(new THREE.Vector3())
+  assert.ok(Math.hypot(reset.x - shifted.x, reset.z - shifted.z) < 1e-9)
+  assert.doesNotMatch(readFileSync(new URL('../office-vis2/r1-furniture.js', import.meta.url), 'utf8'), /R1_SEATED_FORWARD/)
+  furniture.dispose()
+})
+
 test('MOVE refuses to create an R1 director without the real collision and furniture wiring', () => {
   assert.throws(() => createDirector({ views: new Map(), board: {}, layer: { appendChild() {} }, project: { tmp: new THREE.Vector3(), fn() {} }, layout: r1() }), /requires real collision, furniture and doors/)
 })

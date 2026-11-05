@@ -202,7 +202,10 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
     return [item.id, Math.atan2(chair.x - desk.x, chair.z - desk.z)]
   }))
   const stationByDesk = new Map(layout.r1.workstations.map(station => [station.desk_id, station]))
-  const seatedProfile = name => R1_SEATED_PROFILES[name] || (layout.r1.workstations.some(s => s.business_id === name && s.temporary) ? R1_SEATED_PROFILES.ReactSenior : null)
+  const seatedProfile = name => {
+    const base = R1_SEATED_PROFILES[name] || (layout.r1.workstations.some(s => s.business_id === name && s.temporary) ? R1_SEATED_PROFILES.ReactSenior : null)
+    return base ? Object.freeze({ ...base }) : null
+  }
   const chairAdjustments = new Map(layout.r1.workstations.map(station => [station.chair_id, seatedProfile(station.business_id)?.seat || 0]))
   const movingChairs = new Map(), bucketMeshes = new Map()
   const deskMaterials = {}
@@ -228,7 +231,7 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
     bake(THREE, buckets, f.group, bucket, new THREE.Color(COLOR[bucket]), ['办公椅', '椅子', '吧凳'].includes(item.category) || placement.preserveColor)
     if (chairAdjustments.has(item.id)) {
       const end = buckets.get(bucket).reduce((sum, g) => sum + g.attributes.position.count, 0)
-      movingChairs.set(item.id, { source: f.group, bucket, first, count: end - first, home: f.group.position.clone(), baseYaw: f.group.rotation.y, dx: 0, dz: 0, yaw: 0 })
+      movingChairs.set(item.id, { source: f.group, bucket, first, count: end - first, home: f.group.position.clone(), baseYaw: f.group.rotation.y, baseDx: 0, baseDz: 0, baseForward: 0, dx: 0, dz: 0, yaw: 0 })
     }
     if (SOLID.has(item.category)) { collision?.add(f.group, item.category); collisionGroups.push(f.group) }
     return f.group
@@ -304,23 +307,41 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
   for (const mesh of new Set([...movingChairs.values()].map(row => row.mesh))) {
     mesh.geometry.computeBoundingSphere(); mesh.geometry.boundingSphere.radius += .8
   }
-  function moveChair(id, dx, dz, yaw = 0) {
-    const row = movingChairs.get(id)
-    if (!row || ![dx, dz, yaw].every(Number.isFinite) || Math.hypot(dx, dz) > .800001 || Math.abs(yaw) > Math.PI / 2) throw new Error(`Invalid R1 chair pose: ${id}`)
-    if (row.dx === dx && row.dz === dz && row.yaw === yaw) return false
+  function applyChairPose(row, dx, dz, yaw) {
     const p = row.mesh.geometry.attributes.position, normals = row.mesh.geometry.attributes.normal, co = Math.cos(yaw), si = Math.sin(yaw)
+    const tx = row.baseDx + dx, tz = row.baseDz + dz
     for (let i = 0; i < row.count; i++) {
       const x = row.original[i * 3] - row.home.x, z = row.original[i * 3 + 2] - row.home.z, nx = row.normals[i * 3], nz = row.normals[i * 3 + 2]
-      p.setXYZ(row.first + i, row.home.x + co * x + si * z + dx, row.original[i * 3 + 1], row.home.z - si * x + co * z + dz)
+      p.setXYZ(row.first + i, row.home.x + co * x + si * z + tx, row.original[i * 3 + 1], row.home.z - si * x + co * z + tz)
       normals.setXYZ(row.first + i, co * nx + si * nz, row.normals[i * 3 + 1], -si * nx + co * nz)
     }
     p.addUpdateRange(row.first * 3, row.count * 3); p.needsUpdate = true
     normals.addUpdateRange(row.first * 3, row.count * 3); normals.needsUpdate = true
-    row.source.position.set(row.home.x + dx, row.home.y, row.home.z + dz); row.source.updateWorldMatrix(true, true)
+    row.source.position.set(row.home.x + tx, row.home.y, row.home.z + tz); row.source.updateWorldMatrix(true, true)
     row.source.rotation.y = row.baseYaw + yaw; row.source.updateWorldMatrix(true, true)
-    collision?.poseNavigationBody(row.source, row.home, dx, dz, yaw)
-    itemBounds.get(id).setFromObject(row.source)
-    row.dx = dx; row.dz = dz; row.yaw = yaw; return true
+    collision?.poseNavigationBody(row.source, row.home, tx, tz, yaw)
+    itemBounds.get(row.source.userData.r1Id).setFromObject(row.source)
+    row.dx = dx; row.dz = dz; row.yaw = yaw
+  }
+  function setChairBase(id, forwardM) {
+    const row = movingChairs.get(id)
+    if (!row || !Number.isFinite(forwardM) || forwardM < 0 || forwardM > .2) throw new Error(`Invalid R1 chair base: ${id}`)
+    const station = layout.r1.workstations.find(value => value.chair_id === id)
+    const yaw = station ? layout.seats[station.business_id][4].yaw : 0
+    row.baseForward = forwardM; row.baseDx = -Math.sin(yaw) * forwardM; row.baseDz = -Math.cos(yaw) * forwardM
+    applyChairPose(row, row.dx, row.dz, row.yaw)
+    return chairBaseHome(id)
+  }
+  function chairBaseHome(id) {
+    const row = movingChairs.get(id); if (!row) return null
+    const station = layout.r1.workstations.find(value => value.chair_id === id)
+    return { x: row.home.x + row.baseDx, z: row.home.z + row.baseDz, y: row.home.y, yaw: station ? layout.seats[station.business_id][4].yaw : 0 }
+  }
+  function moveChair(id, dx, dz, yaw = 0) {
+    const row = movingChairs.get(id)
+    if (!row || ![dx, dz, yaw].every(Number.isFinite) || Math.hypot(dx, dz) > .800001 || Math.abs(yaw) > Math.PI / 2) throw new Error(`Invalid R1 chair pose: ${id}`)
+    if (row.dx === dx && row.dz === dz && row.yaw === yaw) return false
+    applyChairPose(row, dx, dz, yaw); return true
   }
   const stations = layout.r1.workstations, screens = screenAtlas(THREE, stations, makeScreenTexture), badges = badgeBatch(THREE, stations), handles = new Map()
   // 状态灯落位：避让本桌的桌面件（键盘 / 鼠标 / 鼠标垫 / 个人物品）和显示器。
@@ -344,6 +365,6 @@ function buildFurnitureSnapshot({ THREE, root, layout, collision, makeScreenText
       setStatusLight(color) { lamps.caps.setColorAt(index, new THREE.Color(color)); lamps.caps.instanceColor.needsUpdate = true } })
   })
   root.add(group); let disposed = false
-  return { root: group, moveChair, chairMotion: id => { const r = movingChairs.get(id); return r ? { dx: r.dx, dz: r.dz, yaw: r.yaw } : null }, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings,
-    statusLamps: { posts: lamps.posts, caps: lamps.caps, spots: lampSpots, metrics: LAMP, monitorByDesk }, seatedProfile, chairAt(x, z) { const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); lamps.posts.geometry.dispose(); lamps.posts.material.dispose(); lamps.caps.geometry.dispose(); lamps.caps.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
+  return { root: group, moveChair, setChairBase, chairBase: id => { const r = movingChairs.get(id); return r ? { forward: r.baseForward, dx: r.baseDx, dz: r.baseDz } : null }, chairBaseHome, chairMotion: id => { const r = movingChairs.get(id); return r ? { dx: r.dx, dz: r.dz, yaw: r.yaw } : null }, instanceIds: Object.freeze(Object.fromEntries([...ids].map(([category, value]) => [`r1-${category}`, Object.freeze(value)]))), itemBounds, itemCategories, desktopItems, chairFacings,
+    statusLamps: { posts: lamps.posts, caps: lamps.caps, spots: lampSpots, metrics: LAMP, monitorByDesk }, seatedProfile, chairAt(x, z) { const row = [...movingChairs.entries()].find(([, value]) => Math.hypot((value.home.x + value.baseDx) - x, (value.home.z + value.baseDz) - z) < .03); if (row) return chairModels.get(row[0]) || null; const station = stations.find(value => { const chair = r1ToWorld(value.chairXM, value.chairYM); return chair.x === x && chair.z === z }); return station ? chairModels.get(station.chair_id) || null : null }, deskAt(x, z) { return handles.get(key(x, z)) || null }, dispose() { if (disposed) return; disposed = true; collisionGroups.forEach(value => collision?.remove?.(value)); ownedGeometries.forEach(geometry => geometry.dispose()); handles.forEach(handle => handle.scr.tex.dispose?.()); screens.mesh.geometry.dispose(); screens.mesh.material.dispose(); screens.atlas.tex.dispose?.(); badges.geometry.dispose(); badges.material.dispose(); lamps.posts.geometry.dispose(); lamps.posts.material.dispose(); lamps.caps.geometry.dispose(); lamps.caps.material.dispose(); merged.forEach(mesh => mesh.geometry.dispose()); materials.forEach(material => material.dispose()); group.removeFromParent() } }
 }
