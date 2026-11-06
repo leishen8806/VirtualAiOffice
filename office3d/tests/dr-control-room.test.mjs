@@ -13,7 +13,7 @@ test('control room is an explicit opt-in place mode with a return path', () => {
       ...resolvePlaceMode('?campus=1&place=dr&controlRoom=1'),
       legacy: false,
     },
-    resolvePlaceMode('?place=drlife-warehouse&controlRoom=1'),
+    resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus&controlRoom=1'),
   )
   assert.equal(CONTROL_ROOM_SPEC.consoleSeats, 4)
   assert.equal(CONTROL_ROOM_SPEC.camera.az, 0)
@@ -72,7 +72,7 @@ test('DR page control-room links use the latest canonical warehouse channel', ()
   const controlRoomDocument = mockDrDocument()
   prepareDrPage(
     resolvePlaceMode(
-      '?place=drlife-warehouse&controlRoom=1',
+      '?place=drlife-warehouse&legacy=drcampus&controlRoom=1',
     ),
     controlRoomDocument,
   )

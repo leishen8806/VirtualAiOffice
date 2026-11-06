@@ -108,7 +108,7 @@ test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable 
 })
 test('I5 non-WH registry preserves registration order and does not build vehicle data',()=>{
  const prior=globalThis.location
- try{for(const search of ['','?place=drlife-warehouse','?campus=1','?whr1=0','?whr1=1&whr1=1']){globalThis.location={search};const scene=new THREE.Scene(),r=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}});for(const name of ['shell','yard','racks','motion'])r.register(name,()=>({}));r.buildAll();assert.deepEqual(r.summary().modules,['shell','yard','racks','motion']);assert.equal(scene.getObjectByName('wh-r1-vehicles'),undefined);r.dispose()}}finally{globalThis.location=prior}
+ try{for(const search of ['','?place=drlife-warehouse&legacy=drcampus','?campus=1','?whr1=0','?whr1=1&whr1=1']){globalThis.location={search};const scene=new THREE.Scene(),r=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}});for(const name of ['shell','yard','racks','motion'])r.register(name,()=>({}));r.buildAll();assert.deepEqual(r.summary().modules,['shell','yard','racks','motion']);assert.equal(scene.getObjectByName('wh-r1-vehicles'),undefined);r.dispose()}}finally{globalThis.location=prior}
  const manifest=JSON.parse(readFileSync(new URL('../wh-r1/MANIFEST.json',import.meta.url)));const code=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8').replace(/\r\n/g,'\n')
  assert.equal(manifest.runtimeModules['dr-wh-r1-vehicles.js'].sha256,createHash('sha256').update(code).digest('hex'))
 })

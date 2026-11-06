@@ -84,6 +84,12 @@ test('place mode resolves strict URL parameter matrix', () => {
   assert.equal(resolvePlaceMode('?campus=1&place=dr').place, 'dr')
 })
 
+test('WH-R1 canonical warehouse defaults to the new scene while legacy is explicit', () => {
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+})
+
 test('ENTRANCE-1 preserves the baseline parse matrix except the new latest office query', () => {
   const baseline = [
     ['empty', '', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
@@ -91,7 +97,7 @@ test('ENTRANCE-1 preserves the baseline parse matrix except the new latest offic
     ['stable V3', '?place=drlife-office&layout=3', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3'],
     // OFFICE-L2B-B3 起，精确样板入口默认解析到 L2B（ENTRANCE-1 写这条测试时还是 L2 样板）。
     ['new latest sample', '?place=drlife-office&layout=3&align=1&officeSample=1', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3_ALIGN_L2B'],
-    ['warehouse latest', '?place=drlife-warehouse', '9a611052a0767ced059d37faba83ff6c42442bf870be0b9cc71ebb174bccd612', 'LAYOUT_V1'],
+    ['warehouse latest', '?place=drlife-warehouse', '710a41efc0df550ec93f3562e5a122cd5142f7846f98b49daec16fef1da32457', 'LAYOUT_V1'],
     ['layout 2', '?layout=2', '4a4415a9df99c3d5263f66afddf4ee20432379ee9901d8fa97ac5efe9af430b0', 'LAYOUT_V2'],
     ['ALIGN without sample', '?layout=3&align=1', '3f4e4925cee7cb49874f475a0782610dd3fcdc2a356f19e31ff50d9839b02598', 'LAYOUT_V3_ALIGN'],
     ['campus preview', '?campus=1', '97a90876ce07b7b6639a5326f49f79a116d8e54c565b977de7c12c2ee5b0bb04', 'LAYOUT_V1'],
@@ -157,8 +163,8 @@ test('legacy URLs preserve every pre-NAV-2 field', () => {
 test('canonical and legacy place spellings are equivalent', () => {
   const equivalents = [
     ['?place=office', '?place=drlife-office'],
-    ['?place=dr', '?place=drlife-warehouse'],
-    ['?campus=1&place=dr', '?campus=1&place=drlife-warehouse'],
+    ['?place=dr', '?place=drlife-warehouse&legacy=drcampus'],
+    ['?campus=1&place=dr', '?campus=1&place=drlife-warehouse&legacy=drcampus'],
   ]
   for (const [legacySearch, canonicalSearch] of equivalents) {
     const legacy = resolvePlaceMode(legacySearch)
@@ -305,6 +311,9 @@ test('canonical place metadata and invalid values fail closed', () => {
   assert.equal(warehouse.kind, 'warehouse')
   assert.equal(warehouse.layout, null)
   assert.equal(warehouse.campus, true)
+  assert.equal(warehouse.whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').cameraViews, DR_CAMERA_VIEWS)
 
   const invalid = [
     '?place=acme-office',
@@ -323,6 +332,22 @@ test('canonical place metadata and invalid values fail closed', () => {
     assert.equal(mode.placeId, 'drlife-office', search)
     assert.equal(mode.campus, false, search)
   }
+})
+
+test('WH-R1 entry aliases and preview combinations resolve consistently', () => {
+  for (const search of [
+    '?place=drlife-warehouse',
+    '?place=drlife-warehouse&whr1=1',
+    '?place=drlife-warehouse&controlRoom=1',
+    '?campus=1&place=drlife-warehouse&whr1=1',
+    '?campus=1&place=dr&whr1=1',
+  ]) {
+    const mode = resolvePlaceMode(search)
+    assert.equal(mode.whr1, true, search)
+    assert.ok(mode.cameraViews?.length >= 1, search)
+  }
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1&whr1=1').whr1, undefined)
 })
 
 test('camera storage keys are place-scoped with one legacy DR fallback', () => {

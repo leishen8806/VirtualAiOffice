@@ -10,7 +10,7 @@ export const PLACE_TENANTS = Object.freeze({
   drlife: Object.freeze({ id: 'drlife' }),
 })
 export const DEFAULT_PLACE_TENANT = 'drlife'
-// The default route remains unchanged; the latest office channel is explicit.
+// The default office route remains unchanged; the warehouse canonical route is WH-R1.
 export const DEFAULT_OFFICE_LAYOUT = 1
 export const LEGACY_DR_CAMERA_KEY = 'office3d.camera.dr'
 const STABLE_V3_SUBTITLE = '最新版 · rev3 开发中'
@@ -46,6 +46,7 @@ export const DR_CAMERA_VIEWS = Object.freeze([
   Object.freeze({ id: 'frontPlaza', label: '前广场', az: -18, el: 42, r: 42, t: Object.freeze([-124, 0, 34]) }),
 ])
 
+// Archived legacy DR line: retained only for explicit ?place=dr or legacy=drcampus.
 const DR_MODE = Object.freeze({
   place: 'dr',
   campus: true,
@@ -82,7 +83,12 @@ function officeMode(campus, legacy, layout = DEFAULT_OFFICE_LAYOUT, latest = fal
 export function whR1Requested(paramsOrSearch = '') {
   const params = paramsOrSearch instanceof URLSearchParams ? paramsOrSearch : new URLSearchParams(String(paramsOrSearch || ''))
   const values = params.getAll('whr1')
-  return values.length === 1 && values[0] === '1'
+  const legacyValues = params.getAll('legacy')
+  if (legacyValues.length > 0) return false
+  const alias = values.length === 1 && values[0] === '1'
+  const aliasOmitted = values.length === 0
+  const canonicalWarehouse = params.getAll('place').length === 1 && params.get('place') === 'drlife-warehouse'
+  return alias || canonicalWarehouse && aliasOmitted
 }
 
 function warehouseMode(controlRoom, legacy, whr1 = false) {
