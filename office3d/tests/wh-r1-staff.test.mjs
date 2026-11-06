@@ -43,3 +43,33 @@ test('WH-R1 staff uses only short grid paths and has no Paperclip binding', () =
     assert.equal(member.char.group.userData.agentId, undefined)
   }
 })
+
+test('WH-R1 R2 uses two shared placeholder meshes and click-time labels only', () => {
+  const { value } = context()
+  assert.equal(value.summary().placeholderCalls, 2)
+  assert.equal(value.members.filter(member => member.label).length, 0)
+})
+
+test('WH-R1 R2 loads at most two nearest realistic people and low quality loads none', async () => {
+  const { value } = context()
+  const calls = []
+  const makePeople = name => ({ avatars: { [name]: {} }, clips: { male: {}, female: {} }, extras: { male: {}, female: {} } })
+  const makeReal = () => {
+    const group = new THREE.Group()
+    return { group, pose: { sit: 0, walk: 0, phase: 0, talk: 0, carry: 0 }, solve() {} }
+  }
+  value.configureRealistic({ tier: 'high', load: async name => { calls.push(name); return makePeople(name) }, createPerson: makeReal })
+  const camera = new THREE.PerspectiveCamera()
+  camera.position.copy(value.members[0].placeholder.group.position)
+  value.onFrame(.2, { camera })
+  await new Promise(resolve => setTimeout(resolve, 220))
+  value.onFrame(.2, { camera })
+  assert.ok(value.summary().loadedReal <= 2)
+  assert.ok(calls.length <= 2)
+
+  const low = context().value
+  low.configureRealistic({ tier: 'low', load: async () => { throw new Error('must not load') }, createPerson: makeReal })
+  low.onFrame(.2, { camera })
+  await new Promise(resolve => setTimeout(resolve, 20))
+  assert.equal(low.summary().loadedReal, 0)
+})

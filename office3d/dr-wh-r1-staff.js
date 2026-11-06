@@ -18,97 +18,106 @@ export const WH_R1_STAFF_ROSTER = Object.freeze([
 
 const STAFF_TEXT = '演示人物'
 const toWorld = ([xM, yM]) => { const p = whToWorld(xM, yM); return [p.x, WH_R1_FLOOR_Y, p.z] }
-const fallbackOptions = (member, index) => ({
-  gender: /^Female_/.test(member.avatar) ? 'female' : 'male',
-  tone: index % 3 === 0 ? 'light' : index % 3 === 1 ? 'mid' : 'dark',
-  shirt: member.role === 'forklift' ? 0xd46b32 : member.role === 'lead' ? 0x2f5c73 : 0x263743,
-  pants: member.role === 'forklift' ? 0x3a2c25 : 0x1e252c,
-  accent: 0xb69a64,
-})
 
-function makeLabel(THREE, canvasTex, text) {
-  if (typeof canvasTex !== 'function') return null
-  const texture = canvasTex(512, 96, (ctx, width, height) => {
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = 'rgba(19,29,35,.86)'; ctx.fillRect(4, 4, width - 8, height - 8)
-    ctx.strokeStyle = '#b69a64'; ctx.lineWidth = 5; ctx.strokeRect(4, 4, width - 8, height - 8)
-    ctx.fillStyle = '#f4f1eb'; ctx.font = '600 34px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`${text} · ${STAFF_TEXT}`, width / 2, height / 2)
-  })
-  const mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }))
-  mesh.scale.set(1.9, .36, 1)
-  mesh.name = 'wh-r1-staff-label'; mesh.position.y = 2.15; mesh.userData.dynamic = true; mesh.userData.displayOnly = true
-  return mesh
+function makePlaceholderMeshes(THREE, group, members) {
+  // 两个共享材质的实例网格：默认入口只保留 2 个 draw call。
+  const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.16, .46, 3, 6), new THREE.MeshStandardMaterial({ color: 0x536673, roughness: .86 }), members.length)
+  const head = new THREE.InstancedMesh(new THREE.SphereGeometry(.13, 8, 6), new THREE.MeshStandardMaterial({ color: 0xc7936e, roughness: .9 }), members.length)
+  body.name = 'wh-r1-staff-placeholder-body'; head.name = 'wh-r1-staff-placeholder-head'
+  body.userData.dynamic = head.userData.dynamic = true
+  body.userData.whR1StaffPlaceholder = head.userData.whR1StaffPlaceholder = true
+  body.castShadow = head.castShadow = false; body.receiveShadow = head.receiveShadow = false
+  group.add(body, head)
+  return { body, head, dummy: new THREE.Object3D() }
 }
 
-export function buildWhR1Staff({ THREE, root, canvasTex, A, createCharacter3D, createCharacter, data = WH_R1_DATA, navigation = null, lite = false } = {}) {
+export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharacter, data = WH_R1_DATA, navigation = null, lite = false } = {}) {
   const group = new THREE.Group(); group.name = 'wh-r1-staff'; group.userData.dynamic = true; group.userData.noMerge = true
   root.add(group)
-  if (lite) return { root: group, members: [], avatarNames: () => [], hydrate: () => false, onFrame: () => {}, pickRay: () => null, summary: () => ({ count: 0, loadedReal: 0, roles: [], displayOnly: true, agentIds: [], collision: false, lite: true }), dispose: () => group.removeFromParent(), staffText: STAFF_TEXT, lite: true }
+  if (lite) return { root: group, members: [], avatarNames: () => [], hydrate: () => false, configureRealistic: () => {}, cameraIntent: () => {}, onFrame: () => {}, pickRay: () => null, summary: () => ({ count: 0, loadedReal: 0, placeholderCalls: 0, roles: [], displayOnly: true, agentIds: [], collision: false, lite: true }), dispose: () => group.removeFromParent(), staffText: STAFF_TEXT, lite: true }
   const nav = navigation || createWhR1Navigation({ data, bounds: WH_R1_SITE, cellSize: .6, radius: .3 })
   const members = []
-  const createFallback = (member, index) => {
-    if (typeof createCharacter === 'function') {
-      const o = fallbackOptions(member, index)
-      return createCharacter({ outfit: o.shirt, pants: o.pants, trim: o.accent, skin: member.gender === 'female' ? 0xd9a27f : 0xc98d67, hair: 0x1b1b1f })
-    }
-    return typeof createCharacter3D === 'function' && A ? createCharacter3D(A, fallbackOptions(member, index)) : null
+  const placeholders = makePlaceholderMeshes(THREE, group, WH_R1_STAFF_ROSTER)
+  const placeholderChar = (member, index) => {
+    const placeholder = new THREE.Group()
+    placeholder.userData = { dynamic: true, displayOnly: true, warehouseStaffId: member.id, staffRole: member.role, label: STAFF_TEXT }
+    return { group: placeholder, pose: { sit: member.sit ? 1 : 0, walk: member.target ? 1 : 0, phase: 0, talk: member.role === 'lead' ? .7 : 0, carry: member.role === 'receiving' ? 1 : 0 }, solve() {}, isPlaceholder: true, placeholderIndex: index }
   }
-  const place = (member, index, char) => {
+  const place = (member, char) => {
     const requested = toWorld(member.source), nearest = nav.nearestWalkable?.([requested[0], requested[2]], { allowUnknown: true })
     const position = nearest ? [nearest[0], WH_R1_FLOOR_Y, nearest[1]] : requested
     char.group.position.set(...position); char.group.rotation.y = (member.yawDeg || 0) * Math.PI / 180
-    char.group.userData = { ...(char.group.userData || {}), dynamic: true, displayOnly: true, warehouseStaffId: member.id, staffRole: member.role, label: STAFF_TEXT }
-    char.pose.sit = member.sit ? 1 : 0; char.pose.walk = member.target ? 1 : 0; char.pose.talk = member.role === 'lead' ? 0.7 : 0; char.pose.carry = member.role === 'receiving' ? 1 : 0
     return { requested, nearest, position }
   }
   for (const [index, member] of WH_R1_STAFF_ROSTER.entries()) {
-    const char = createFallback(member, index)
-    if (!char) continue
-    const placement = place(member, index, char); const label = makeLabel(THREE, canvasTex, member.label); if (label) char.group.add(label)
-    group.add(char.group)
+    const char = placeholderChar(member, index), placement = place(member, char)
     const requestedTarget = member.target ? toWorld(member.target) : null
     const targetPoint = requestedTarget && nav.nearestWalkable?.([requestedTarget[0], requestedTarget[2]], { allowUnknown: true })
     const target = targetPoint ? [targetPoint[0], WH_R1_FLOOR_Y, targetPoint[1]] : requestedTarget
     const path = target ? nav.findPath([placement.position[0], placement.position[2]], [target[0], target[2]], { allowUnknown: true }) : []
-    members.push({ ...member, char, label, placement, target, path, pathIndex: 0, progress: 0, pause: 0, loaded: false })
+    members.push({ ...member, char, placeholder: char, label: null, placement, target, path, pathIndex: 0, pause: 0, state: { sit: member.sit ? 1 : 0, walk: member.target ? 1 : 0, phase: 0, talk: member.role === 'lead' ? .7 : 0, carry: member.role === 'receiving' ? 1 : 0 }, loaded: false, pending: false, people: null, realChar: null })
+  }
+  const syncPose = member => { if (member.char?.pose) Object.assign(member.char.pose, member.state) }
+  const syncPlaceholders = () => {
+    const { body, head, dummy } = placeholders
+    for (const member of members) {
+      const index = member.placeholder.placeholderIndex, p = member.placeholder.group.position, hidden = member.loaded
+      dummy.position.set(p.x, p.y + (member.state.sit ? .46 : .72), p.z); dummy.rotation.y = member.placeholder.group.rotation.y; dummy.scale.setScalar(hidden ? 0 : 1); dummy.updateMatrix(); body.setMatrixAt(index, dummy.matrix)
+      dummy.position.set(p.x, p.y + (member.state.sit ? .98 : 1.42), p.z); dummy.scale.setScalar(hidden ? 0 : 1); dummy.updateMatrix(); head.setMatrixAt(index, dummy.matrix)
+    }
+    body.instanceMatrix.needsUpdate = true; head.instanceMatrix.needsUpdate = true
+  }
+  const applyPlacement = (member, char) => {
+    char.group.position.copy(member.placeholder.group.position); char.group.rotation.copy(member.placeholder.group.rotation)
+    char.group.userData = { ...(char.group.userData || {}), dynamic: true, displayOnly: true, warehouseStaffId: member.id, staffRole: member.role, label: STAFF_TEXT }; syncPose(member)
+  }
+  const switchToReal = (member, people, createPerson) => {
+    if (!people || typeof createPerson !== 'function') return false
+    const next = member.realChar || (people.avatars?.[member.avatar] ? createPerson(people, member.avatar) : null); if (!next) return false
+    member.people = people; member.realChar = next; applyPlacement(member, next); group.add(next.group); member.char = next; member.loaded = true; syncPlaceholders(); return true
+  }
+  const switchToPlaceholder = member => {
+    if (!member.loaded) return
+    member.placeholder.group.position.copy(member.char.group.position); member.placeholder.group.rotation.copy(member.char.group.rotation); member.char.group.removeFromParent(); member.char = member.placeholder; member.loaded = false; syncPlaceholders()
   }
   const move = (member, dt) => {
-    if (!member.path.length || member.char.pose.sit > .5) return
+    if (!member.path.length || member.state.sit) return
     const points = member.path
-    if (member.pause > 0) { member.pause -= dt; member.char.pose.walk = 0; member.char.pose.talk = member.role === 'lead' ? .7 : 0; return }
-    const current = member.char.group.position, next = points[Math.min(member.pathIndex + 1, points.length - 1)]
-    if (!next) return
+    if (member.pause > 0) { member.pause -= dt; member.state.walk = 0; member.state.talk = member.role === 'lead' ? .7 : 0; syncPose(member); return }
+    const current = member.char.group.position, next = points[Math.min(member.pathIndex + 1, points.length - 1)]; if (!next) return
     const dx = next[0] - current.x, dz = next[1] - current.z, distance = Math.hypot(dx, dz)
-    if (distance <= .04) {
-      member.pathIndex++
-      if (member.pathIndex >= points.length - 1) { member.pause = 2.5; member.path = [...points].reverse(); member.pathIndex = 0 }
-      return
-    }
-    const step = Math.min(distance, dt * .7); current.x += dx / distance * step; current.z += dz / distance * step; member.char.pose.phase += step; member.char.group.rotation.y = Math.atan2(dx, dz); member.char.pose.walk = 1; member.char.pose.talk = 0
+    if (distance <= .04) { member.pathIndex++; if (member.pathIndex >= points.length - 1) { member.pause = 2.5; member.path = [...points].reverse(); member.pathIndex = 0 }; return }
+    const step = Math.min(distance, dt * .7); current.x += dx / distance * step; current.z += dz / distance * step; member.state.phase += step; member.char.group.rotation.y = Math.atan2(dx, dz); member.state.walk = 1; member.state.talk = 0; syncPose(member); member.placeholder.group.position.copy(member.char.group.position); member.placeholder.group.rotation.copy(member.char.group.rotation)
   }
-  const onFrame = (dt) => { for (const member of members) { move(member, dt); member.char.solve?.(Math.min(.1, Math.max(0, dt))) } }
-  const hydrate = (people, createPerson) => {
-    if (typeof createPerson !== 'function' || !people) return false
-    for (const member of members) {
-      const next = people.avatars?.[member.avatar] ? createPerson(people, member.avatar) : null
-      if (!next) continue
-      const old = member.char, placement = member.placement
-      next.group.position.copy(old.group.position); next.group.rotation.copy(old.group.rotation); next.pose.sit = member.sit ? 1 : 0; next.pose.walk = member.target ? 1 : 0; next.pose.talk = member.role === 'lead' ? .7 : 0; next.pose.carry = member.role === 'receiving' ? 1 : 0
-      next.group.userData = { ...(next.group.userData || {}), dynamic: true, displayOnly: true, warehouseStaffId: member.id, staffRole: member.role, label: STAFF_TEXT }
-      if (member.label) next.group.add(member.label)
-      group.add(next.group); old.parent?.remove(old); member.char = next; member.loaded = true; member.placement = placement
+  let realistic = null, hydrationAt = 0, armed = false
+  const updateHydration = camera => {
+    if (!armed || !realistic || !camera || realistic.maxReal <= 0) return
+    const now = globalThis.performance?.now?.() || Date.now(); if (now - hydrationAt < 180) return; hydrationAt = now
+    const rows = members.map(member => ({ member, distance: camera.position.distanceTo(member.placeholder.group.position) })).sort((a, b) => a.distance - b.distance)
+    for (const row of rows) row.member.want = false
+    const keep = rows.filter(row => row.member.loaded && row.distance < 28).slice(0, realistic.maxReal)
+    for (const row of rows) if (!keep.includes(row) && row.member.loaded) switchToPlaceholder(row.member)
+    const wanted = [...keep, ...rows.filter(row => !row.member.loaded && row.distance < 20)].sort((a, b) => a.distance - b.distance).slice(0, realistic.maxReal)
+    for (const { member } of wanted) {
+      if (member.loaded || member.pending || typeof realistic.load !== 'function') continue
+      member.want = true
+      member.pending = true
+      Promise.resolve(realistic.load(member.avatar)).then(people => { member.pending = false; if (member.want) switchToReal(member, people, realistic.createPerson) }).catch(() => { member.pending = false })
     }
-    return true
   }
+  const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => { realistic = { maxReal: tier === 'high' ? 1 : tier === 'medium' ? 1 : 0, load, createPerson }; armed = false; hydrationAt = 0; syncPlaceholders() }
+  const cameraIntent = () => { armed = true }
+  const onFrame = (dt, context = {}) => { for (const member of members) { move(member, dt); member.char.solve?.(Math.min(.1, Math.max(0, dt))) }; updateHydration(context.camera); syncPlaceholders() }
+  const hydrate = (people, createPerson) => { if (typeof createPerson !== 'function' || !people) return false; for (const member of members) switchToReal(member, people, createPerson); return true }
   const pickRay = ray => {
-    const hit = ray.intersectObjects(members.map(m => m.char.group), true)[0]
-    if (!hit) return null
-    let owner = hit.object
-    while (owner && !owner.userData?.warehouseStaffId) owner = owner.parent
-    const member = members.find(row => row.id === owner?.userData?.warehouseStaffId)
+    const hits = ray.intersectObjects([placeholders.body, placeholders.head, ...members.filter(m => m.loaded).map(m => m.char.group)], true), hit = hits[0]; if (!hit) return null
+    let member
+    if (hit.object.userData.whR1StaffPlaceholder && Number.isInteger(hit.instanceId)) member = members[hit.instanceId]
+    else { let owner = hit.object; while (owner && !owner.userData?.warehouseStaffId) owner = owner.parent; member = members.find(row => row.id === owner?.userData?.warehouseStaffId) }
     return member ? { id: member.id, category: `${member.role} · ${STAFF_TEXT}`, displayOnly: true, staff: true, label: STAFF_TEXT, status: '仅供参观' } : null
   }
-  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
-  const dispose = () => { for (const member of members) member.char.group.traverse?.(o => { if (o.isMesh) { o.geometry?.dispose?.(); if (Array.isArray(o.material)) o.material.forEach(m => m.dispose?.()); else o.material?.dispose?.() } }); group.parent?.remove(group) }
-  return { root: group, members, avatarNames: () => WH_R1_STAFF_ROSTER.map(member => member.avatar), navigation: nav, hydrate, onFrame, pickRay, summary, dispose, staffText: STAFF_TEXT, lite: !!lite }
+  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, placeholderCalls: 2, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
+  const dispose = () => { placeholders.body.geometry.dispose(); placeholders.body.material.dispose(); placeholders.head.geometry.dispose(); placeholders.head.material.dispose(); group.parent?.remove(group) }
+  syncPlaceholders()
+  return { root: group, members, avatarNames: () => WH_R1_STAFF_ROSTER.map(member => member.avatar), navigation: nav, hydrate, configureRealistic, cameraIntent, onFrame, pickRay, summary, dispose, staffText: STAFF_TEXT, lite: !!lite }
 }

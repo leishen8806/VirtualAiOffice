@@ -8,7 +8,7 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, loadStaffPerson, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
 import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
 import { createFoodtruckDemo } from './foodtruck-demo.js'
 import { createFurnitureCollision } from './furniture-collision.js'
@@ -827,6 +827,7 @@ buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
 const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: PLACE_MODE.miniBounds, building: PLACE_MODE.building || CAMPUS_BUILDING, zones: PLACE_MODE.zones, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
 if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy, renderer, env: env3d, A, createCharacter3D, createCharacter, createPerson, lite: LITE.lite }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
+if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: loadStaffPerson, createPerson })
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
 
@@ -1669,6 +1670,7 @@ const inertia = { az: 0, el: 0 }
 // 方位角不再限制：预设机位走「最近的那一圈」，不会绕远路
 const nearestAz = (target, from) => target + Math.round((from - target) / 360) * 360
 function setGoal(p, keepMode) {
+  if (PLACE_MODE.whr1) campusRegistry?.module('wh-r1-staff')?.cameraIntent?.()
   if (!keepMode) { camMode.tour = false; camMode.follow = null }
   if (p.az !== undefined) goal.az = nearestAz(p.az, goal.az)
   if (p.el !== undefined) goal.el = clampTo(p.el, LIM.el)
@@ -2542,19 +2544,7 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
   if (rp && /^\d{4}-\d{2}-\d{2}$/.test(rp)) setTimeout(() => replay.openDate(rp), 900)
 }
 frame()
-// 仓配展示人员在首屏就绪后后台替换为紧凑写实人物；极速模式保持不加载。
-if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) {
-  setTimeout(async () => {
-    const staff = campusRegistry.module('wh-r1-staff')
-    if (!staff?.avatarNames) return
-    try {
-      const assets = await loadPeople(undefined, [], staff.avatarNames())
-      staff.hydrate(assets, createPerson)
-    } catch (error) {
-      console.warn(`[wh-r1-staff] 写实人物后台加载失败，保留程序占位：${error?.message || error}`)
-    }
-  }, 0)
-}
+// 仓配展示人员由模块按相机距离异步换入；默认全景只显示实例化占位，不阻塞首屏。
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {

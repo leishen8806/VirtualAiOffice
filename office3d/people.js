@@ -80,6 +80,13 @@ export async function loadExtraAvatars(P, list) {
   return P
 }
 
+// 仓配展示人员按距离加载：只拉指定的一张脸与共享动作，默认入口不触发。
+const warehouseStaffPeople = new Map()
+export async function loadStaffPerson(name) {
+  if (!warehouseStaffPeople.has(name)) warehouseStaffPeople.set(name, loadPeople(undefined, [], [name]))
+  return warehouseStaffPeople.get(name)
+}
+
 // 首屏之后再慢慢加载日常小动作；加载到一个就能用一个
 export async function loadExtras(P) {
   for (const g of ['male', 'female']) {
