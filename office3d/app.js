@@ -8,7 +8,7 @@ import { keepFullscreenAwake, awakeMessage } from './screen-awake.js'
 import { snapshot, mergeStatic } from './merge.js'
 import { decideLiteMode, setLitePreference } from './lite-mode.js'
 import { initialQuality, createQualityPolicy, createSceneQuality, cappedDpr, qualityStartupPlan, renderLimit, takeQualityWork } from './quality.js'
-import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
+import { loadPeople, loadExtras, loadR1Extras, loadR1MovementExtras, loadFoodtruckDemoExtras, loadExtraAvatars, loadStaffPerson, r1SeatedAssets, fitR1SeatedPerson, computeR1SeatBase, createPerson, CAST } from './people.js'
 import { createR1Npcs, R1_NPC_AVATARS } from './office-r1-npc.js'
 import { createFoodtruckDemo } from './foodtruck-demo.js'
 import { createFurnitureCollision } from './furniture-collision.js'
@@ -96,8 +96,8 @@ const rnd = (() => { let s = 11; return () => ((s = (s * 16807) % 2147483647) / 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
 let qualityStorage
 try { qualityStorage = localStorage } catch {}
-// 低配极速模式（只作用于 R1 办公室）：不加载写实人物和走动导航，低档起步、DPR 1；网址 ?q= 仍可强制档位。
-const LITE = OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE ? decideLiteMode({ search: location.search, storage: qualityStorage, nav: navigator, screen, coarsePointer: matchMedia('(pointer: coarse)').matches }) : { lite: false, source: 'n/a', reason: '' }
+// 低配极速模式（R1 办公室与 WH-R1）：不加载写实人物和走动导航，低档起步、DPR 1；网址 ?q= 仍可强制档位。
+const LITE = ((OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) || PLACE_MODE.whr1) ? decideLiteMode({ search: location.search, storage: qualityStorage, nav: navigator, screen, coarsePointer: matchMedia('(pointer: coarse)').matches }) : { lite: false, source: 'n/a', reason: '' }
 const qualitySelection = LITE.lite && !new URLSearchParams(location.search).has('q') ? { tier: 'low', source: 'lite', forced: true } : initialQuality({ search:location.search, storage:qualityStorage, wall:WALL_MODE })
 const debugGPU = renderer.getContext().getExtension('WEBGL_debug_renderer_info')
 const qualityPolicy = createQualityPolicy({ selection:qualitySelection, wall:WALL_MODE, signals:{ cores:navigator.hardwareConcurrency, memory:navigator.deviceMemory, gpu:debugGPU ? renderer.getContext().getParameter(debugGPU.UNMASKED_RENDERER_WEBGL) : '' } })
@@ -826,7 +826,8 @@ function buildFoyerScene() {
 buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
 const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: PLACE_MODE.miniBounds, building: PLACE_MODE.building || CAMPUS_BUILDING, zones: PLACE_MODE.zones, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
-if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy, renderer, env: env3d }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
+if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy, renderer, env: env3d, A, createCharacter3D, createCharacter, createPerson, lite: LITE.lite }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
+if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: loadStaffPerson, createPerson })
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
 
@@ -1669,6 +1670,7 @@ const inertia = { az: 0, el: 0 }
 // 方位角不再限制：预设机位走「最近的那一圈」，不会绕远路
 const nearestAz = (target, from) => target + Math.round((from - target) / 360) * 360
 function setGoal(p, keepMode) {
+  if (PLACE_MODE.whr1) campusRegistry?.module('wh-r1-staff')?.cameraIntent?.()
   if (!keepMode) { camMode.tour = false; camMode.follow = null }
   if (p.az !== undefined) goal.az = nearestAz(p.az, goal.az)
   if (p.el !== undefined) goal.el = clampTo(p.el, LIM.el)
@@ -2221,6 +2223,7 @@ function pick(cx, cy, shift = false) {
   }
 }
 function showWhR1Inspect(item) {
+  if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }
   let panel = document.getElementById('wh-r1-inspector-panel')
   if (!panel) { panel = document.createElement('aside'); panel.id = 'wh-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:280px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
   panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · ${esc(item.useScope || '未分区')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>用途/状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
@@ -2541,6 +2544,7 @@ if (!WALL_MODE && !DR_MODE) { // T11 直入：?replay=YYYY-MM-DD（?wall=1 时�
   if (rp && /^\d{4}-\d{2}-\d{2}$/.test(rp)) setTimeout(() => replay.openDate(rp), 900)
 }
 frame()
+// 仓配展示人员由模块按相机距离异步换入；默认全景只显示实例化占位，不阻塞首屏。
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
@@ -2640,7 +2644,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
 window.__office.officeV2 = officeFurnitureV2?.registry || null
 window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
 window.__office.warehouseShell = warehouseShell
-window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
+window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), staff: () => campusRegistry.module('wh-r1-staff')?.summary?.() || null, staffMembers: () => campusRegistry.module('wh-r1-staff')?.members || [], select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
 window.__office.placeMode = { mode: PLACE_MODE, officeRoots: officeSceneRoots, visibleOfficeRoots: () => officeSceneRoots.filter((root) => root.visible), zones: PLACE_MODE.zones }
 window.__office.foyerSpec = foyerSceneSpec()

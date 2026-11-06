@@ -72,7 +72,7 @@ test('every referenced appearance has a compact model and source/output manifest
   const manifest=JSON.parse(fs.readFileSync(new URL('assets/compact/MANIFEST.json',root)))
   assert.ok(names.size>=27)
   for(const name of names){const suffix=`/people/${name}.glb.gz`;assert.ok(manifest.files.some(r=>r.kind==='model'&&r.file.endsWith(suffix)),name);assert.ok(fs.existsSync(new URL(`assets/compact/people/${name}.glb.gz`,root)),name)}
-  const people=sources[0];assert.match(people,/loadPeople\(onProgress, extraAvatars = \[\]\)/);assert.match(people,/extraAvatars\.map/)
+  const people=sources[0];assert.match(people,/loadPeople\(onProgress, extraAvatars = \[\], baseAvatars = null\)/);assert.match(people,/extraAvatars\.(?:filter\([^\n]*\)\.)?map/)
   const fallback=fs.readFileSync(new URL('original-people.js',root),'utf8');assert.match(fallback,/await import\('\.\/vendor\/three\/jsm\/loaders\/FBXLoader.js'\)/)
 })
 test('reused avatar instances retain the shared PBR material preparation',()=>{

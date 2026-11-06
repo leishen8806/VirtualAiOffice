@@ -30,9 +30,10 @@ const LOOSE_GARMENT = /Female_Adult_10$/
 async function loadAnimation(name) { return { animations: await loadCompactClips(name) } }
 
 const cache = new Map()
-export async function loadPeople(onProgress, extraAvatars = []) {
+export async function loadPeople(onProgress, extraAvatars = [], baseAvatars = null) {
   const out = { avatars: {}, clips: { male: {}, female: {} } }
-  const all = [...AVATARS.male.map((a) => ['male', a]), ...AVATARS.female.map((a) => ['female', a]), ...extraAvatars.map(a => [/Female_/.test(a) ? 'female' : 'male', a])]
+  const selected = baseAvatars ? [...new Set(baseAvatars)] : [...AVATARS.male, ...AVATARS.female]
+  const all = [...selected.map(a => [/Female_/.test(a) ? 'female' : 'male', a]), ...extraAvatars.filter(a => !selected.includes(a)).map(a => [/Female_/.test(a) ? 'female' : 'male', a])]
   let done = 0
   const total = all.length + Object.keys(CLIPS).length * 2
   const tick = () => onProgress && onProgress(++done / total)
@@ -77,6 +78,13 @@ export async function loadExtraAvatars(P, list) {
     P.avatars[name] = { obj, gender, scale: HEIGHT[gender] / obj.userData.compactHeight }
   }))
   return P
+}
+
+// 仓配展示人员按距离加载：只拉指定的一张脸与共享动作，默认入口不触发。
+const warehouseStaffPeople = new Map()
+export async function loadStaffPerson(name) {
+  if (!warehouseStaffPeople.has(name)) warehouseStaffPeople.set(name, loadPeople(undefined, [], [name]))
+  return warehouseStaffPeople.get(name)
 }
 
 // 首屏之后再慢慢加载日常小动作；加载到一个就能用一个
