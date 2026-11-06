@@ -19,16 +19,65 @@ export const WH_R1_STAFF_ROSTER = Object.freeze([
 const STAFF_TEXT = '演示人物'
 const toWorld = ([xM, yM]) => { const p = whToWorld(xM, yM); return [p.x, WH_R1_FLOOR_Y, p.z] }
 
+function makePlaceholderGeometry(THREE, seated = false) {
+  const positions = [], normals = [], colors = []
+  const add = (source, x, y, z, sx = 1, sy = 1, sz = 1, color = 0xffffff, rotZ = 0) => {
+    const geometry = source.index ? source.toNonIndexed() : source.clone()
+    const matrix = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rotZ), new THREE.Vector3(sx, sy, sz))
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix), c = new THREE.Color(color)
+    const p = geometry.getAttribute('position'), n = geometry.getAttribute('normal')
+    for (let i = 0; i < p.count; i++) {
+      const point = new THREE.Vector3().fromBufferAttribute(p, i).applyMatrix4(matrix)
+      const normal = new THREE.Vector3().fromBufferAttribute(n, i).applyNormalMatrix(normalMatrix).normalize()
+      positions.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z); colors.push(c.r, c.g, c.b)
+    }
+    geometry.dispose()
+  }
+  const box = (w, h, d, x, y, z, color, rotZ = 0) => add(new THREE.BoxGeometry(w, h, d), x, y, z, 1, 1, 1, color, rotZ)
+  const skin = 0xd3a080, shirt = 0xf2f0e9, pants = 0x3e4a54, hair = 0x273039, shoe = 0x202326, accent = 0xd18b35
+  if (!seated) {
+    box(.38, .58, .24, 0, 1.04, 0, shirt)
+    box(.44, .12, .26, 0, 1.35, 0, accent)
+    box(.10, .52, .10, -.25, 1.05, 0, shirt, -.10); box(.10, .52, .10, .25, 1.05, 0, shirt, .10)
+    box(.13, .70, .14, -.10, .37, 0, pants); box(.13, .70, .14, .10, .37, 0, pants)
+    box(.16, .08, .25, -.10, .035, -.035, shoe); box(.16, .08, .25, .10, .035, -.035, shoe)
+    add(new THREE.SphereGeometry(.14, 6, 4), 0, 1.57, 0, 1, 1, 1, skin)
+    box(.22, .07, .22, 0, 1.72, 0, hair)
+  } else {
+    box(.36, .48, .24, 0, .91, 0, shirt)
+    box(.42, .11, .25, 0, 1.17, 0, accent)
+    box(.10, .46, .10, -.24, .91, 0, shirt, -.15); box(.10, .46, .10, .24, .91, 0, shirt, .15)
+    box(.14, .18, .14, -.10, .60, .14, pants, -.15); box(.14, .18, .14, .10, .60, .14, pants, .15)
+    box(.13, .42, .14, -.18, .38, .30, pants, -.35); box(.13, .42, .14, .18, .38, .30, pants, .35)
+    box(.16, .08, .25, -.18, .16, .43, shoe); box(.16, .08, .25, .18, .16, .43, shoe)
+    add(new THREE.SphereGeometry(.14, 6, 4), 0, 1.38, 0, 1, 1, 1, skin)
+    box(.22, .07, .22, 0, 1.53, 0, hair)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
 function makePlaceholderMeshes(THREE, group, members) {
-  // 两个共享材质的实例网格：默认入口只保留 2 个 draw call。
-  const body = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.16, .46, 3, 6), new THREE.MeshStandardMaterial({ color: 0x536673, roughness: .86 }), members.length)
-  const head = new THREE.InstancedMesh(new THREE.SphereGeometry(.13, 8, 6), new THREE.MeshStandardMaterial({ color: 0xc7936e, roughness: .9 }), members.length)
-  body.name = 'wh-r1-staff-placeholder-body'; head.name = 'wh-r1-staff-placeholder-head'
-  body.userData.dynamic = head.userData.dynamic = true
-  body.userData.whR1StaffPlaceholder = head.userData.whR1StaffPlaceholder = true
-  body.castShadow = head.castShadow = false; body.receiveShadow = head.receiveShadow = false
-  group.add(body, head)
-  return { body, head, dummy: new THREE.Object3D() }
+  // Two shared, vertex-coloured instanced meshes: one standing and one seated draw call.
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .86 })
+  const standing = new THREE.InstancedMesh(makePlaceholderGeometry(THREE, false), material, members.length)
+  const seated = new THREE.InstancedMesh(makePlaceholderGeometry(THREE, true), material.clone(), members.length)
+  standing.name = 'wh-r1-staff-placeholder-standing'; seated.name = 'wh-r1-staff-placeholder-seated'
+  standing.userData.dynamic = seated.userData.dynamic = true
+  standing.userData.whR1StaffPlaceholder = seated.userData.whR1StaffPlaceholder = true
+  standing.castShadow = seated.castShadow = false; standing.receiveShadow = seated.receiveShadow = false
+  const roleColor = { receiving: 0xffa63a, picking: 0x5f88b0, packing: 0x7b8792, shipping: 0xffa63a, forklift: 0xd6b24c, lead: 0xe3e7eb }
+  for (const [index, member] of members.entries()) {
+    const color = new THREE.Color(roleColor[member.role] || 0xffffff)
+    standing.setColorAt(index, color); seated.setColorAt(index, color)
+  }
+  standing.instanceColor.needsUpdate = true; seated.instanceColor.needsUpdate = true
+  group.add(standing, seated)
+  return { standing, seated, dummy: new THREE.Object3D(), triangles: Math.round(standing.geometry.getAttribute('position').count / 3 + seated.geometry.getAttribute('position').count / 3) }
 }
 
 export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharacter, data = WH_R1_DATA, navigation = null, lite = false } = {}) {
@@ -59,13 +108,16 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   }
   const syncPose = member => { if (member.char?.pose) Object.assign(member.char.pose, member.state) }
   const syncPlaceholders = () => {
-    const { body, head, dummy } = placeholders
+    const { standing, seated, dummy } = placeholders
     for (const member of members) {
       const index = member.placeholder.placeholderIndex, p = member.placeholder.group.position, hidden = member.loaded
-      dummy.position.set(p.x, p.y + (member.state.sit ? .46 : .72), p.z); dummy.rotation.y = member.placeholder.group.rotation.y; dummy.scale.setScalar(hidden ? 0 : 1); dummy.updateMatrix(); body.setMatrixAt(index, dummy.matrix)
-      dummy.position.set(p.x, p.y + (member.state.sit ? .98 : 1.42), p.z); dummy.scale.setScalar(hidden ? 0 : 1); dummy.updateMatrix(); head.setMatrixAt(index, dummy.matrix)
+      dummy.position.set(p.x, p.y + (member.state.walk ? Math.sin(member.state.phase * 8) * .018 : Math.sin(member.state.phase * 2) * .006), p.z)
+      dummy.rotation.y = member.placeholder.group.rotation.y
+      const active = member.state.sit ? seated : standing
+      dummy.scale.setScalar(hidden ? 0 : 1); dummy.updateMatrix(); active.setMatrixAt(index, dummy.matrix)
+      dummy.scale.setScalar(0); dummy.updateMatrix(); (active === seated ? standing : seated).setMatrixAt(index, dummy.matrix)
     }
-    body.instanceMatrix.needsUpdate = true; head.instanceMatrix.needsUpdate = true
+    standing.instanceMatrix.needsUpdate = true; seated.instanceMatrix.needsUpdate = true
   }
   const applyPlacement = (member, char) => {
     char.group.position.copy(member.placeholder.group.position); char.group.rotation.copy(member.placeholder.group.rotation)
@@ -110,14 +162,14 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   const onFrame = (dt, context = {}) => { for (const member of members) { move(member, dt); member.char.solve?.(Math.min(.1, Math.max(0, dt))) }; updateHydration(context.camera); syncPlaceholders() }
   const hydrate = (people, createPerson) => { if (typeof createPerson !== 'function' || !people) return false; for (const member of members) switchToReal(member, people, createPerson); return true }
   const pickRay = ray => {
-    const hits = ray.intersectObjects([placeholders.body, placeholders.head, ...members.filter(m => m.loaded).map(m => m.char.group)], true), hit = hits[0]; if (!hit) return null
+    const hits = ray.intersectObjects([placeholders.standing, placeholders.seated, ...members.filter(m => m.loaded).map(m => m.char.group)], true), hit = hits[0]; if (!hit) return null
     let member
     if (hit.object.userData.whR1StaffPlaceholder && Number.isInteger(hit.instanceId)) member = members[hit.instanceId]
     else { let owner = hit.object; while (owner && !owner.userData?.warehouseStaffId) owner = owner.parent; member = members.find(row => row.id === owner?.userData?.warehouseStaffId) }
     return member ? { id: member.id, category: `${member.role} · ${STAFF_TEXT}`, displayOnly: true, staff: true, label: STAFF_TEXT, status: '仅供参观' } : null
   }
-  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, placeholderCalls: 2, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
-  const dispose = () => { placeholders.body.geometry.dispose(); placeholders.body.material.dispose(); placeholders.head.geometry.dispose(); placeholders.head.material.dispose(); group.parent?.remove(group) }
+  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, placeholderCalls: 2, placeholderTriangles: placeholders.triangles, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
+  const dispose = () => { placeholders.standing.geometry.dispose(); placeholders.standing.material.dispose(); placeholders.seated.geometry.dispose(); placeholders.seated.material.dispose(); group.parent?.remove(group) }
   syncPlaceholders()
   return { root: group, members, avatarNames: () => WH_R1_STAFF_ROSTER.map(member => member.avatar), navigation: nav, hydrate, configureRealistic, cameraIntent, onFrame, pickRay, summary, dispose, staffText: STAFF_TEXT, lite: !!lite }
 }

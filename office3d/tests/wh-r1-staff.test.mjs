@@ -73,3 +73,26 @@ test('WH-R1 R2 loads at most two nearest realistic people and low quality loads 
   await new Promise(resolve => setTimeout(resolve, 20))
   assert.equal(low.summary().loadedReal, 0)
 })
+
+test('WH-R1 R3 uses two batched human silhouettes with vertex colours and role accents', () => {
+  const { value } = context()
+  const standing = value.root.getObjectByName('wh-r1-staff-placeholder-standing')
+  const seated = value.root.getObjectByName('wh-r1-staff-placeholder-seated')
+  assert.ok(standing && seated)
+  for (const mesh of [standing, seated]) {
+    assert.ok(mesh.geometry.getAttribute('color'))
+    assert.ok(mesh.geometry.getAttribute('position').count / 3 <= 400)
+  }
+  assert.equal(value.summary().placeholderCalls, 2)
+  assert.ok(value.summary().placeholderTriangles <= 4000)
+  assert.notDeepEqual(standing.instanceColor.array.slice(0, 3), standing.instanceColor.array.slice(6, 9))
+})
+
+test('WH-R1 R3 placeholder motion only updates the two shared instance buffers', () => {
+  const { value } = context()
+  const before = value.root.children.map(mesh => mesh.instanceMatrix.array.slice())
+  value.onFrame(.25, { camera: new THREE.PerspectiveCamera() })
+  const after = value.root.children.map(mesh => mesh.instanceMatrix.array.slice())
+  assert.equal(value.summary().placeholderCalls, 2)
+  assert.ok(after.some((array, index) => array.some((v, i) => v !== before[index][i])))
+})
