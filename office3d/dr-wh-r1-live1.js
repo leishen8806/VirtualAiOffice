@@ -2,6 +2,7 @@ import { WH_R1_DATA } from './wh-r1/data.js'
 import { WH_R1_VEHICLES, forkliftParts } from './dr-wh-r1-vehicles.js'
 import { whToWorld, WH_R1_FLOOR_Y } from './wh-r1-layout.js'
 import { WH_R1_CONVEYOR_PATH } from './dr-wh-r1-workflow.js'
+import { pathPoint } from './dr-campus-motion-logic.js'
 import { SHUTTLE_MAX_LIFT, shuttleFrame } from './dr-campus-shuttle-logic.js'
 import { createLive2Simulation } from './wh-r1/live2-sim.js'
 
@@ -19,7 +20,10 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const forkliftCount = low ? 2 : 3, forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7 }; group.add(rootNode); return rootNode })
   const forkliftRows = forkliftParts(), forkliftMeshes = new Map(), forkliftDummy = new THREE.Object3D()
   for (const partName of [...new Set(forkliftRows.map(row => row.part))]) { const rows = forkliftRows.filter(row => row.part === partName), mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: rows[0].color, roughness: .74 }), forkliftCount); mesh.name = `wh-r1-live2-forklift-${partName}`; mesh.userData = { dynamic: true, live2Role: 'forklift', realModelPart: partName }; group.add(mesh); forkliftMeshes.set(partName, { mesh, rows: rows[0] }) }
-  const staff = low ? null : new THREE.InstancedMesh(new THREE.CylinderGeometry(.18, .18, 1.08, 8), new THREE.MeshStandardMaterial({ color: 0x496f83, roughness: .88 }), 12); if (staff) { staff.name = 'wh-r1-live2-staff'; staff.userData = { dynamic: true, live2Role: 'warehouse-staff', displayOnly: true }; group.add(staff) }
+  // Staff are supplied by the registered WH-R1 staff module.  Do not create a
+  // visual fallback here: a primitive fallback hides missing registration and
+  // violates the requirement that LIVE-2 uses the roster's real actors.
+  const staff = null
   const shuttleStates = Array.from({ length: shuttleCount }, () => ({ position: 0, target: 0, movingFrom: 0, movingAt: 0, lastAt: 0, carrying: false, occupied: [false], status: 'idle' }))
   const qcSource = whToWorld(39, 39), qc = { x: qcSource.x, y: WH_R1_FLOOR_Y + 1.05, z: qcSource.z }, sink = WH_R1_CONVEYOR_PATH[0] || qc, carried = []
   let board = null, boardTexture = null, disposed = false, dirty = true, lastBoardSecond = -1, runtimeStaff = null, runtimeVehicles = null
@@ -64,7 +68,9 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
       const task = moving[index], shuttleState = shuttleStates[index]; let position = { ...qc }, lift = 0
       if (task) {
         const row = slotById.get(task.slotId), slot = row ? pointForSlot(row) : qc, progress = Math.max(0, Math.min(1, (state.nowMs - task.startedAt) / Math.max(1, task.completeAt - task.startedAt)))
-        position = ['retrieve', 'putaway'].includes(task.stage) ? corridorPosition(slot, progress, task.stage) : { x: slot.x + (sink.x - slot.x) * progress, y: slot.y + (sink.y - slot.y) * progress, z: slot.z + (sink.z - slot.z) * progress }
+        if (['retrieve', 'putaway'].includes(task.stage)) position = corridorPosition(slot, progress, task.stage)
+        else if (task.stage === 'conveyor') { const p = pathPoint(WH_R1_CONVEYOR_PATH, state.nowMs, 1); position = { x: p.x, y: slot.y, z: p.z } }
+        else position = { x: slot.x + (sink.x - slot.x) * progress, y: slot.y + (sink.y - slot.y) * progress, z: slot.z + (sink.z - slot.z) * progress }
         shuttleState.movingFrom = slot.z; shuttleState.target = sink.z; shuttleState.position = position.z; shuttleState.movingAt = task.startedAt; shuttleState.lastAt = task.startedAt; shuttleState.carrying = progress > .45; shuttleState.status = progress > .5 ? 'delivery' : 'pickup'; lift = shuttleFrame(shuttleState, state.nowMs).lift
         if (progress > .05 && progress < .98) carried.push({ type: task.boxType, position: { ...position, y: position.y + SHUTTLE_MAX_LIFT + lift } })
       }
