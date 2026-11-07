@@ -253,7 +253,7 @@ test('RC-10 the low tier drops the real spotlights for a glow texture and a miss
 test('RC-6 r1Brand is registered only for the R1 layout and marks its node dynamic', () => {
   const r1 = officeV3ModulesFor({ r1Phase: 'R1' }).map(([name]) => name)
   assert.ok(r1.includes('r1Brand'))
-  assert.equal(r1[r1.length - 1], 'r1Brand', '新模块加在 R1 列表末尾')
+  assert.ok(r1.indexOf('r1Brand') < r1.indexOf('r1Zones'), 'I7 modules append after the existing brand module')
   assert.ok(!officeV3ModulesFor({}).some(([name]) => name === 'r1Brand'))
   const { module } = brand()
   assert.equal(module.root.userData.dynamic, true)

@@ -38,7 +38,8 @@ function zoneLabels(THREE, zones) {
 
 export function buildR1Zones({ THREE, root, layout }) {
   const group = new THREE.Group(); group.name = 'r1-zones'; group.userData.dynamic = true
+  group.visible = false
   const ground = zoneGround(THREE, layout.r1.data.zones), labels = zoneLabels(THREE, layout.r1.data.zones)
   group.add(ground.mesh, labels.mesh); root.add(group)
-  return { root: group, dispose() { group.removeFromParent(); ground.dispose(); labels.dispose() } }
+  return { root: group, setOverlay(value) { group.visible = value === undefined ? !group.visible : !!value; return group.visible }, overlayVisible() { return group.visible }, dispose() { group.removeFromParent(); ground.dispose(); labels.dispose() } }
 }

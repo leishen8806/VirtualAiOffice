@@ -2094,6 +2094,28 @@ if (DR_MODE) {
     zoneBtn('入口 休息区', () => setGoal({ az: 10, el: 38, r: 13, t: [LOUNGE_AREA.x, 0, LOUNGE_AREA.z] }), false, destinationGroup, 'lounge')
   }
 }
+// R1 I7：分区叠加与聚焦按需挂载到 body，避免被 #dock 的横向 overflow 裁切；默认不绘制。
+if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && officeV3) {
+  const group = dockGroup('R1 分区', 'office-r1-zones')
+  const picker = document.createElement('div'); picker.className = 'dock-zone-picker'
+  const trigger = document.createElement('button'); trigger.type = 'button'; trigger.textContent = 'R1 分区'; trigger.setAttribute('aria-expanded', 'false'); trigger.setAttribute('aria-controls', 'officeR1ZoneMenu'); trigger.id = 'officeR1ZoneTrigger'
+  const menu = document.createElement('div'); menu.className = 'dock-zone-menu dock-zone-menu-fixed'; menu.id = 'officeR1ZoneMenu'; menu.hidden = true; menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', '办公室 R1 01–14 分区')
+  const close = (focus = false) => { menu.hidden = true; trigger.setAttribute('aria-expanded', 'false'); picker.classList.remove('open'); if (focus) trigger.focus() }
+  const position = () => { const a = trigger.getBoundingClientRect(), width = Math.min(360, Math.max(0, innerWidth - 24)), h = Math.min(menu.scrollHeight || 0, Math.min(innerHeight * .62, 430)); menu.style.width = `${width}px`; menu.style.left = `${Math.max(12, Math.min(innerWidth - width - 12, a.left))}px`; menu.style.top = `${Math.max(12, Math.min(innerHeight - h - 12, a.bottom + 8))}px` }
+  const open = () => { menu.hidden = false; trigger.setAttribute('aria-expanded', 'true'); picker.classList.add('open'); position() }
+  trigger.addEventListener('click', () => menu.hidden ? open() : close())
+  document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== trigger) close() }, true)
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { e.preventDefault(); close(true) } })
+  addEventListener('resize', () => { if (!menu.hidden) position() })
+  const overlay = document.createElement('button'); overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
+  overlay.addEventListener('click', () => { const on = officeV3.get('r1Zones')?.setOverlay?.(); overlay.setAttribute('aria-pressed', String(on)); overlay.classList.toggle('on', on) }); menu.appendChild(overlay)
+  for (const [index, zone] of OFFICE_LAYOUT.r1.data.zones.entries()) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = `${zone.id} · ${zone.name}`; b.dataset.destinationId = zone.id; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-label', `办公室 R1 分区：${zone.id} ${zone.name}`); b.setAttribute('aria-pressed', 'false')
+    b.addEventListener('click', () => { const [x0, y0, x1, y1] = zone.worldBboxXZ; setGoal({ az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(x1 - x0, y1 - y0) * 1.15)), t: [(x0 + x1) / 2, 0, (y0 + y1) / 2] }); document.querySelectorAll('#officeR1ZoneMenu [aria-pressed="true"]').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); close() })
+    menu.appendChild(b)
+  }
+  picker.appendChild(trigger); document.body.appendChild(menu); group.appendChild(picker)
+}
 const qb = $('quality')
 board.beacon.userData.dynamic = true // 告警灯会变色，不进入静态渲染副本。
 const sceneQuality = createSceneQuality(THREE, { scene, renderer, camera, env:env3d, characters:()=>[...views.values()].map(v=>v.char).concat(Object.values(boardViews).map(v=>v.char)), mergeStatic })
@@ -2214,6 +2236,8 @@ function pick(cx, cy, shift = false) {
     walkTo(plazaHit.x, plazaHit.z, false)
     return
   }
+  const officeItem = !hit && !plazaHit && OFFICE_LAYOUT.r1Phase === 'R1' ? officeV3?.get('r1Inspector')?.pickRay?.(ray.ray) : null
+  if (officeItem) { showOfficeR1Inspect(officeItem); return }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     document.getElementById('wh-r1-inspector-panel')?.remove()
@@ -2221,6 +2245,12 @@ function pick(cx, cy, shift = false) {
     const pt = new THREE.Vector3()
     if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) walkTo(pt.x, pt.z, false) // 点地面：镜头走过去
   }
+}
+function showOfficeR1Inspect(item) {
+  let panel = document.getElementById('office-r1-inspector-panel')
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55' ; document.body.appendChild(panel) }
+  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.hidden = false
 }
 function showWhR1Inspect(item) {
   if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }
@@ -2642,7 +2672,7 @@ if (OFFICE_LAYOUT.r1Phase === 'R1' && !WALL_MODE) {
   }
 }
 window.__office.officeV2 = officeFurnitureV2?.registry || null
-window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose }
+window.__office.officeV3 = officeV3 && { root: officeV3.root, summary: officeV3.summary, dispose: officeV3.dispose, r1Validation: () => officeV3.get('r1Validation')?.validation || null, r1Routes: () => officeV3.get('r1Validation')?.validation?.routes || [], r1Inspector: () => officeV3.get('r1Inspector')?.state || null, inspectR1: id => officeV3.get('r1Inspector')?.inspect?.(id) || null, pickR1: ray => officeV3.get('r1Inspector')?.pickRay?.(ray) || null, enableR1Picking: ids => officeV3.get('r1Inspector')?.enablePicking?.(ids) || null, disableR1Picking: () => officeV3.get('r1Inspector')?.disablePicking?.(), r1ZonesOverlay: on => officeV3.get('r1Zones')?.setOverlay?.(on), r1ZonesVisible: () => officeV3.get('r1Zones')?.overlayVisible?.() || false }
 window.__office.warehouseShell = warehouseShell
 window.__office.campus = campusRegistry && { summary: () => campusRegistry.summary(), hiddenEnvironment: campusRegistry.hiddenEnvironment, inspect: id => campusRegistry.inspectWhR1(id), staff: () => campusRegistry.module('wh-r1-staff')?.summary?.() || null, staffMembers: () => campusRegistry.module('wh-r1-staff')?.members || [], select: id => campusRegistry.module('wh-r1-inspector')?.selectById?.(id), enablePicking: ids => campusRegistry.enableWhR1Picking(ids), disablePicking: () => campusRegistry.disableWhR1Picking(), pick: ray => campusRegistry.pickWhR1(ray), zonesOverlay: on => campusRegistry.toggleWhR1Zones(on), zonesOverlayVisible: () => campusRegistry.whR1ZonesVisible(), focus: () => setGoal(PLACE_MODE.whr1 ? PLACE_MODE.homeCamera : { az: 35, el: 48, r: CAMPUS_FOCUS.r, t: CAMPUS_FOCUS.t }) }
 window.__office.controlRoom = controlRoom && { root: controlRoom.root, summary: () => ({ enabled: true, seats: 4, watermark: '模拟数据 · 示意' }), dispose: controlRoom.dispose }
