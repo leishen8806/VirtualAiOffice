@@ -1,5 +1,5 @@
 import { WH_R1_DATA } from './wh-r1/data.js'
-import { WH_R1_VEHICLES } from './dr-wh-r1-vehicles.js'
+import { WH_R1_VEHICLES, forkliftParts } from './dr-wh-r1-vehicles.js'
 import { whToWorld, WH_R1_FLOOR_Y } from './wh-r1-layout.js'
 import { WH_R1_CONVEYOR_PATH } from './dr-wh-r1-workflow.js'
 import { SHUTTLE_MAX_LIFT, shuttleFrame } from './dr-campus-shuttle-logic.js'
@@ -16,8 +16,9 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const slotById = new Map(slots.map(row => [row.id, row])), cargoMeshes = [], shuttleCount = low ? 2 : 4
   if (!low) for (let type = 0; type < 3; type++) { const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: BOX_COLORS[type], roughness: .82 }), slots.length + shuttleCount); mesh.name = `wh-r1-live1-cargo-${type}`; mesh.userData = { dynamic: true, live1Inventory: true, boxType: type }; group.add(mesh); cargoMeshes.push(mesh) }
   const shuttle = new THREE.InstancedMesh(new THREE.BoxGeometry(.82, .18, 1.08), new THREE.MeshStandardMaterial({ color: 0x56636d, metalness: .35, roughness: .58 }), shuttleCount); shuttle.name = 'wh-r1-live1-shuttles'; shuttle.userData = { dynamic: true, live1Shuttles: shuttleCount }; group.add(shuttle)
-  const forkliftCount = low ? 2 : 3
-  const forklifts = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, .72, 1.45), new THREE.MeshStandardMaterial({ color: 0xe2ad3d, roughness: .74 }), forkliftCount); forklifts.name = 'wh-r1-live2-forklifts'; forklifts.userData = { dynamic: true, live2Role: 'forklift', collisionRadius: .7 }; group.add(forklifts)
+  const forkliftCount = low ? 2 : 3, forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7 }; group.add(rootNode); return rootNode })
+  const forkliftRows = forkliftParts(), forkliftMeshes = new Map(), forkliftDummy = new THREE.Object3D()
+  for (const partName of [...new Set(forkliftRows.map(row => row.part))]) { const rows = forkliftRows.filter(row => row.part === partName), mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: rows[0].color, roughness: .74 }), forkliftCount); mesh.name = `wh-r1-live2-forklift-${partName}`; mesh.userData = { dynamic: true, live2Role: 'forklift', realModelPart: partName }; group.add(mesh); forkliftMeshes.set(partName, { mesh, rows: rows[0] }) }
   const staff = low ? null : new THREE.InstancedMesh(new THREE.CylinderGeometry(.18, .18, 1.08, 8), new THREE.MeshStandardMaterial({ color: 0x496f83, roughness: .88 }), 12); if (staff) { staff.name = 'wh-r1-live2-staff'; staff.userData = { dynamic: true, live2Role: 'warehouse-staff', displayOnly: true }; group.add(staff) }
   const shuttleStates = Array.from({ length: shuttleCount }, () => ({ position: 0, target: 0, movingFrom: 0, movingAt: 0, lastAt: 0, carrying: false, occupied: [false], status: 'idle' }))
   const qcSource = whToWorld(39, 39), qc = { x: qcSource.x, y: WH_R1_FLOOR_Y + 1.05, z: qcSource.z }, sink = WH_R1_CONVEYOR_PATH[0] || qc, carried = []
@@ -41,8 +42,8 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const updateActors = state => {
     const moving = state.tasks.filter(task => task.status === 'moving'), inbound = moving.filter(task => task.kind === 'inbound' && ['arrival', 'quality', 'putaway'].includes(task.stage))
     const object = new THREE.Object3D()
-    for (let index = 0; index < forkliftCount; index++) { const task = inbound[index % Math.max(1, inbound.length)], row = task && slotById.get(task.slotId); let position = { x: qc.x, y: WH_R1_FLOOR_Y + .38, z: qc.z }; if (row) { const target = pointForSlot(row), p = Math.max(0, Math.min(1, (state.nowMs - (task.startedAt || state.nowMs)) / Math.max(1, (task.completeAt || state.nowMs + 1) - (task.startedAt || state.nowMs)))); position = corridorPosition(target, p, task.stage); position.y = WH_R1_FLOOR_Y + .38 } object.position.set(position.x, position.y, position.z); object.updateMatrix(); forklifts.setMatrixAt(index, object.matrix) }
-    forklifts.instanceMatrix.needsUpdate = true
+    for (let index = 0; index < forkliftCount; index++) { const task = inbound[index % Math.max(1, inbound.length)], row = task && slotById.get(task.slotId); let position = { x: qc.x, y: WH_R1_FLOOR_Y + .38, z: qc.z }; if (row) { const target = pointForSlot(row), p = Math.max(0, Math.min(1, (state.nowMs - (task.startedAt || state.nowMs)) / Math.max(1, (task.completeAt || state.nowMs + 1) - (task.startedAt || state.nowMs)))); position = corridorPosition(target, p, task.stage); position.y = WH_R1_FLOOR_Y + .38 } forkliftRoots[index].position.set(position.x, position.y, position.z); forkliftRoots[index].userData.stage = task?.stage || 'idle'; for (const { mesh, rows: part } of forkliftMeshes.values()) { forkliftDummy.position.set(position.x + part.x, position.y + part.y - .38, position.z + part.z); forkliftDummy.scale.set(part.sx, part.sy, part.sz); forkliftDummy.updateMatrix(); mesh.setMatrixAt(index, forkliftDummy.matrix) } }
+    for (const { mesh } of forkliftMeshes.values()) { mesh.instanceMatrix.needsUpdate = true }
     const roles = [{ x: qc.x, z: qc.z }, { x: qc.x + 2, z: qc.z }, { x: -111, z: -1 }, { x: -116, z: -1 }, { x: -120, z: -1 }, { x: -112, z: 5 }, { x: -118, z: 5 }, { x: -108, z: 5 }, { x: -102, z: 5 }, { x: -92, z: 2 }, { x: -86, z: 2 }, { x: -98, z: 8 }]
     if (runtimeStaff?.members?.length) {
       if (staff) staff.visible = false
@@ -78,6 +79,6 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
     summary: () => { const state = simulation.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high' } },
     toggleBoard(value) { if (board) board.visible = value === undefined ? !board.visible : Boolean(value); return board?.visible ?? false },
     onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); dirty = true; if (dirty) update() },
-    dispose() { if (disposed) return; disposed = true; simulation.dispose(); cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklifts.geometry.dispose(); forklifts.material.dispose(); staff?.geometry.dispose(); staff?.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); group.removeFromParent() },
+    dispose() { if (disposed) return; disposed = true; simulation.dispose(); cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); for (const { mesh } of forkliftMeshes.values()) { mesh.geometry.dispose(); mesh.material.dispose() }; staff?.geometry.dispose(); staff?.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); group.removeFromParent() },
   }
 }

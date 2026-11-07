@@ -20,7 +20,7 @@ export const WH_R1_SEMITRAILER_BAYS = Object.freeze(WH_R1_PARKING_BAYS.map((bay,
 }).filter(row => row.id.startsWith('WH-01-')))
 export const WH_R1_OUTBOUND_FLEET = Object.freeze(WH_R1_VEHICLES.filter(row => row.displayVehicleType?.startsWith('delivery-')))
 
-function forkliftParts() {
+export function forkliftParts() {
   const parts=[],add=(part,x,y,z,sx,sy,sz,color,shape='box',detail=false)=>parts.push({part,x,y,z,sx,sy,sz,color,shape,detail})
   add('counterweight',0,.57,-.89,1.05,.66,.96,0xe4a844)
   add('chassis',0,.33,-.60,1.1,.20,1.6,0x34404a)
