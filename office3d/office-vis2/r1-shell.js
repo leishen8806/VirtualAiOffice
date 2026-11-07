@@ -48,7 +48,10 @@ const addInstanced = (THREE, root, name, entries, material) => {
   entries.forEach((entry, index) => mesh.setMatrixAt(index, entry.matrix))
   mesh.instanceMatrix.needsUpdate = true
   mesh.name = name
-  mesh.userData.dynamic = true
+  // Wall instances are static visual surfaces.  Collision and ledger proxies
+  // remain explicitly dynamic/no-merge below; keeping the render mesh static
+  // lets the registry combine equal materials without changing wall records.
+  mesh.userData.dynamic = false
   mesh.userData.wallIds = entries.map(entry => entry.id)
   // 带门洞的墙被切成多段，每段一个实例；partIds 让每个实例还能单独定位，wallIds 仍然是台账用的墙 ID。
   mesh.userData.partIds = entries.map(entry => entry.partId ?? entry.id)
@@ -207,7 +210,7 @@ function buildFrontFence(THREE, shell, front, faces, walls, opaque, collision) {
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=8
   const signGeometry=new THREE.BufferGeometry();signGeometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));signGeometry.setAttribute('normal',new THREE.Float32BufferAttribute(normal,3));signGeometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));signGeometry.setIndex(indices)
   const signMaterial=new THREE.MeshStandardMaterial({map:texture,metalness:.35,roughness:.5}),signs=new THREE.Mesh(signGeometry,signMaterial);signs.name='r1-fence-signs';signs.userData.signs=r1FenceSigns;meshes.push(signs)
-  for(const mesh of meshes){Object.assign(mesh.userData,{dynamic:true,wallIds:front.ids,faceIds:faces});mesh.castShadow=true;mesh.receiveShadow=true;shell.add(mesh)}
+  for(const mesh of meshes){Object.assign(mesh.userData,{dynamic:false,wallIds:front.ids,faceIds:faces});mesh.castShadow=true;mesh.receiveShadow=true;shell.add(mesh)}
   return {proxies, dispose(){proxies.forEach(p=>{collision?.remove?.(p);p.geometry.dispose();p.removeFromParent()});meshes.forEach(m=>{m.geometry.dispose();if(m.isInstancedMesh)m.dispose()});for(const m of [bronze,stone,plants,concrete,signMaterial])m.dispose();texture.dispose()}}
 }
 
@@ -266,7 +269,9 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   const shell = new THREE.Group()
   shell.name = 'r1-shell-root'
   // mergeStatic honours dynamic ancestors; this retains the wall/face ledger after the app-wide merge.
-  shell.userData.dynamic = true
+  // The shell's visible surfaces do not animate; only the hidden collision
+  // proxies and the explicitly marked overlay nodes below are dynamic.
+  shell.userData.dynamic = false
   const opaque = new THREE.MeshStandardMaterial({ color: '#DED4C5', roughness: .78 })
   const glass = new THREE.MeshPhysicalMaterial({ color: '#DDE8EA', transparent: true, opacity: .24, roughness: .12, depthWrite: false })
   const innerGlassMaterial = new THREE.MeshPhysicalMaterial({ color: '#DDE8EA', transparent: true, opacity: r1Glazing.interiorOpacity, roughness: .12, depthWrite: false })
@@ -320,7 +325,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
   ]
   const cornerGeometry = thickPathsGeometry(THREE, cornerPaths, .1, () => 2.7 - r1Glazing.interiorBand)
   const cornerWall = new THREE.Mesh(cornerGeometry, innerGlassMaterial)
-  cornerWall.name = 'r1-corner-walls'; cornerWall.userData.dynamic = true; cornerWall.userData.wallIds = ['00-W-021', '00-W-016']; cornerWall.userData.faceIds = [...plan.faces['00-W-021'], ...plan.faces['00-W-016']].map(face => face.id); shell.add(cornerWall)
+  cornerWall.name = 'r1-corner-walls'; cornerWall.userData.dynamic = false; cornerWall.userData.wallIds = ['00-W-021', '00-W-016']; cornerWall.userData.faceIds = [...plan.faces['00-W-021'], ...plan.faces['00-W-016']].map(face => face.id); shell.add(cornerWall)
   cornerPaths.forEach((path, index) => {
     const id = cornerWall.userData.wallIds[index], faceIds = plan.faces[id].map(face => face.id)
     tops.push({ id, wallId: id, geometry: thickPathsGeometry(THREE, [path], .1, () => r1Glazing.interiorBand).translate(0, 2.7 - r1Glazing.interiorBand, 0) })
@@ -332,7 +337,7 @@ export function buildR1Shell({ THREE, root, layout, collision }) {
     }
   })
   const bands = joinedSurfaces(THREE, tops), topBands = new THREE.Mesh(bands.geometry, bandMaterial)
-  topBands.name = 'r1-top-bands'; topBands.userData = { dynamic: true, wallIds: tops.map(row => row.wallId), partIds: tops.map(row => row.id), faceIds: tops.flatMap(row => plan.faces[row.wallId].map(face => face.id)), ranges: bands.ranges }; shell.add(topBands)
+  topBands.name = 'r1-top-bands'; topBands.userData = { dynamic: false, wallIds: tops.map(row => row.wallId), partIds: tops.map(row => row.id), faceIds: tops.flatMap(row => plan.faces[row.wallId].map(face => face.id)), ranges: bands.ranges }; shell.add(topBands)
   const innerFrames = addInstanced(THREE, shell, 'r1-interior-frames', partitionFrames, frame)
   addInstanced(THREE, shell, 'r1-door-frames', layout.r1.data.doors.flatMap(door => doorFrameEntries(THREE, door)), frame)
   const site = buildR1Site({ THREE, root: shell, layout })
