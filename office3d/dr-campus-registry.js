@@ -8,6 +8,7 @@ import { buildWhR1Front } from './dr-wh-r1-front.js'
 import { buildWhR1Validation } from './dr-wh-r1-validation.js'
 import { buildWhR1Inspector } from './dr-wh-r1-inspector.js'
 import { buildWhR1Staff } from './dr-wh-r1-staff.js'
+import { buildWhR1Live1 } from './dr-wh-r1-live1.js'
 import { whR1Requested } from './place-mode.js'
 
 const shape = geometry => Object.keys(geometry.attributes).filter(name => name !== 'color').sort().map(name => `${name}${geometry.attributes[name].itemSize}`).join(',')
@@ -103,7 +104,7 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const buildAll = (shared = {}) => {
     scene.add(root)
     const sources = whr1
-      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-site', buildWhR1Site], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-vehicles', buildWhR1Vehicles], ['wh-r1-front', buildWhR1Front], ['wh-r1-validation', buildWhR1Validation], ['wh-r1-inspector', buildWhR1Inspector], ['wh-r1-staff', buildWhR1Staff]]
+      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-site', buildWhR1Site], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-live1', buildWhR1Live1], ['wh-r1-vehicles', buildWhR1Vehicles], ['wh-r1-front', buildWhR1Front], ['wh-r1-validation', buildWhR1Validation], ['wh-r1-inspector', buildWhR1Inspector], ['wh-r1-staff', buildWhR1Staff]]
       : modules
     for (const [name, factory] of sources) {
       try { built.set(name, factory({ THREE, root, layout, now, navigation: built.get('wh-r1-validation')?.navigation, ...shared }) || {}) }

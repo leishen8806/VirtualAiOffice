@@ -35,7 +35,7 @@ test('I5 high and low actual full merge retain every ID, registered envelope, or
  try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'}
   for(const tier of ['high','low']){
    const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier},layout:{}});registry.buildAll({quality:{tier},canvasTex:texture});mergeStatic(scene);if(tier==='low')mergeStatic(scene)
-    assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-vehicles','wh-r1-front','wh-r1-validation','wh-r1-inspector','wh-r1-staff'])
+    assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-live1','wh-r1-vehicles','wh-r1-front','wh-r1-validation','wh-r1-inspector','wh-r1-staff'])
    const root=scene.getObjectByName('wh-r1-vehicles'),rendered=boxes(root);assert.equal(rendered.size,23)
    for(const r of WH_R1_VEHICLES){
     const p=whToWorld(r.xM,r.yM),b=rendered.get(r.id),expected=new THREE.Box3(new THREE.Vector3(-r.lengthM/2,0,-r.widthM/2),new THREE.Vector3(r.lengthM/2,r.heightM,r.widthM/2)).applyMatrix4(new THREE.Matrix4().makeRotationY(r.yawDeg*Math.PI/180)).translate(new THREE.Vector3(p.x,WH_R1_FLOOR_Y+r.zM,p.z))
