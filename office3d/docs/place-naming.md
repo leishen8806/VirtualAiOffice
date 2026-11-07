@@ -11,7 +11,7 @@
 | 地点 | 规范 URL | 兼容旧值 |
 |---|---|---|
 | 智序工场·办公室 | `/?place=drlife-office` | `/?place=office` |
-| DR 仓配服务中心 | `/?place=drlife-warehouse&whr1=1`（WH-R1 新图纸场景） | `/?place=dr`、`/?campus=1&place=dr` |
+| DR 仓配服务中心 | `/?place=drlife-warehouse`（WH-R1 新图纸场景；`&whr1=1` 为兼容别名） | `/?place=drlife-warehouse&legacy=drcampus`、`/?place=dr`、`/?campus=1&place=dr` |
 
 不带 `place` 的默认页与 `?campus=1` 联合预览保持原行为。未知租户、未知类型、非法字符、大小写异常或重复 `place` 参数均回退默认办公室。
 
@@ -26,9 +26,11 @@
 
 2026-10-27，按董事会“更新的版本全部展示”要求，办公室最新通道切到新办公室样板；入口页显示中性副标题「最新版 · 办公室样板」，不把随阶段变化的 L2/L2B 写死。稳定 V3 仍可直接通过 `?place=drlife-office&layout=3` 访问。
 
-仓配最新通道 = WH-R1 新图纸场景（2026-11-05 董事会：地图上的入口一定是最新版本展示）；直接输入 `?place=drlife-warehouse` 仍打开旧园区场景，`?whr1=1` 仍可显式指定。
+仓配最新通道 = WH-R1 新图纸场景（2026-11-05 董事会：地图上的入口一定是最新版本展示）；直接输入 `?place=drlife-warehouse` 默认打开 WH-R1，`?whr1=1` 保留为别名，显式 `legacy=drcampus` 回到旧园区。
 
 最新通道仅用于导航入口。默认页面 `/` 与直接输入 `/?place=drlife-office` 仍为布局 1；`?layout=2` 行为不变。稳定 V3 仍可直接使用 `?place=drlife-office&layout=3`。以后切换展示版本，只修改 `PLACE_LATEST`。
+
+旧 DR 线（`CAMPUS_*_DATA` 与 B-R1 / DR-PLAN-1 阶段数据）标记为 archived，仅由旧别名或 `legacy=drcampus` 调用；不删除任何旧模块、数据或测试。
 
 `resolvePlaceMode()` 保留现有 `place` 值（`office` 或 `dr`），并返回：
 

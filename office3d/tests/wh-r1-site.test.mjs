@@ -111,7 +111,7 @@ test('SITE changes only the explicit WH-R1 place metadata and clamps saved camer
   assert.deepEqual(normalizeCameraState(inside, mode.homeCamera, mode.miniBounds), inside)
   assert.equal(normalizeCameraState({ ...inside, t: [-250, 0, -60] }, mode.homeCamera, mode.miniBounds), mode.homeCamera)
   assert.equal(resolvePlaceMode('?place=drlife-office').whr1, undefined)
-  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, true)
   assert.equal(WH_R1_SITE.x1 - -40, -32)
   const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
   assert.match(app, /CAMPUS_MODE \? PLACE_MODE\.miniBounds : ENVELOPE/)

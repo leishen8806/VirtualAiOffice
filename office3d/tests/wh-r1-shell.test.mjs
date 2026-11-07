@@ -143,7 +143,7 @@ test('non WH-R1 hidden environment type counts remain exact', () => {
     new THREE.CylinderGeometry(), ...Array.from({ length: 14 }, () => new THREE.CircleGeometry()),
   ]
   for (const geometry of geometries) scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial()))
-  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse' }
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
   try {
     assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), {
       BoxGeometry: 10, SphereGeometry: 1, LatheGeometry: 1, ConeGeometry: 1,
@@ -155,7 +155,7 @@ test('non WH-R1 hidden environment type counts remain exact', () => {
 test('non WH-R1 environment shadow state remains unchanged', () => {
   const scene = new THREE.Scene(), root = new THREE.Group(), tree = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
   tree.position.set(0, 1, 0); tree.castShadow = true; scene.add(root, tree)
-  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse' }
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
   try { hideCampusEnvironment(THREE, scene, root) } finally { globalThis.location = prior }
   assert.equal(tree.castShadow, true)
 })
@@ -201,7 +201,7 @@ test('CMP-868 keeps the non-WH-R1 point-based environment hide rule exact', () =
   inside.position.set(0, 0, 0); outside.position.set(3, 0, 0); enclosing.position.set(0, 0, 0)
   scene.add(root, inside, outside, enclosing)
   const prior = globalThis.location
-  globalThis.location = { search: '?place=drlife-warehouse' }
+  globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
   try {
     assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), { inside: 1, enclosing: 1 })
   } finally { globalThis.location = prior }
