@@ -17,7 +17,8 @@ function arc(THREE, inner, outer, start, end, height) {
 
 export function buildR1Lounge({ THREE, root, layout, collision }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
-  const group = new THREE.Group(); group.name = 'r1-lounge'; group.userData.dynamic = true
+  // Lounge surfaces are immutable after build; only the hidden collision proxies are stateful.
+  const group = new THREE.Group(); group.name = 'r1-lounge'; group.userData.dynamic = false
   const batch = createSampleBatch(THREE), proxies = [], items = [], proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
   const add = (id, center, inner, outer, angles, layers) => {
     const row = layout.r1.elements.find(item => item.id === id), p = r1ToWorld(...center), startVertex = batch.triangles() * 3
