@@ -1,11 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { WH_R1_DATA } from '../wh-r1/data.js'
-import { WH_R1_PARKING_BAYS, WH_R1_ANNEX, WH_R1_I7_ROWS } from '../wh-r1-site-plan.js'
+import { WH_R1_PARKING_BAYS, WH_R1_ANNEX, WH_R1_I7_ROWS, whR1VehicleForSite } from '../wh-r1-site-plan.js'
 
 const OUT = process.env.MOTION_EVIDENCE_DIR || path.resolve('E:/VirtualAIOffice/review-artifacts/WH-R1-MOTION-R2-01')
 fs.mkdirSync(OUT, { recursive: true })
-const M = Object.freeze({ tractorLength: 4.65, tractorWheelbase: 3.3, kingpinToRearAxle: 7.7, trailerLength: 13.6, width: 2.55, totalLength: 16.5, outerRadius: 12.5, innerRadius: 5.3, articulationLimit: 70, sampleStepM: .25 })
+const M = Object.freeze({ tractorLength: 4.65, tractorWheelbase: 3.3, kingpinToRearAxle: 7.7, trailerLength: 13.6, width: 2.55, height: 4, totalLength: 16.5, outerRadius: 12.5, innerRadius: 5.3, articulationLimit: 70, sampleStepM: .25 })
 const rad = d => d * Math.PI / 180
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n))
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1])
@@ -33,6 +33,7 @@ function signedPolyDistance(a, b) {
   for (const axis of [...axes(a), ...axes(b)]) {
     const [amin, amax] = project(a, axis), [bmin, bmax] = project(b, axis)
     const gap = Math.max(bmin - amax, amin - bmax)
+    if (a?.[0]?.[0] === 131.275 && b?.[0]?.[0] === 153.55) console.log('AX', b.id, b.source, axis, amin, amax, bmin, bmax, gap)
     if (gap > 0) separating = Math.min(separating, gap)
     else overlap = Math.min(overlap, -gap)
   }
@@ -51,17 +52,27 @@ function smoothPolyline(points, step = M.sampleStepM) {
 // expanded external yard; the old WH-14-D-001 interior connection is deliberately excluded.
 const SITE_GATE = [154, 6]
 const WAIT = [140, 6]
+function vehicleSpecForBay(bay) {
+  if (bay.id.startsWith('WH-01-')) return { kind: 'semitrailer', articulated: true, xM: bay.xM, yM: bay.yM, yawDeg: bay.yawDeg, lengthM: M.totalLength, widthM: M.width, heightM: M.height }
+  const row = whR1VehicleForSite(bay)
+  const type = row.displayVehicleType
+  return { kind: type, articulated: false, xM: row.xM, yM: row.yM, yawDeg: row.yawDeg, lengthM: row.lengthM, widthM: row.widthM, heightM: row.heightM, outerRadiusM: type === 'delivery-train' ? 7 : 4 }
+}
 function candidatePath(bay) {
+  const vehicle = vehicleSpecForBay(bay)
   if (bay.id.startsWith('WH-01-')) {
     const northApproach = [bay.xM, 70]
     return smoothPolyline([SITE_GATE, WAIT, [130, 6], [130, 70], northApproach, [bay.xM, bay.yM]])
   }
-  return smoothPolyline([SITE_GATE, WAIT, [130, 6], [130, bay.yM], [bay.xM, bay.yM]])
+  return smoothPolyline([SITE_GATE, WAIT, [130, 6], [130, vehicle.yM], [vehicle.xM, vehicle.yM]])
 }
-function poseFor(pathPoints, i) {
+function poseFor(pathPoints, i, vehicle) {
   const point = pathPoints[i], j = Math.max(0, i - Math.ceil(7.7 / M.sampleStepM))
   const before = pathPoints[Math.max(0, i - 1)], after = pathPoints[Math.min(pathPoints.length - 1, i + 1)]
   const theta = angleOf(before, after), trailerTheta = angleOf(pathPoints[j], point)
+  if (!vehicle.articulated) {
+    return { vehicle: box(point[0], point[1], vehicle.lengthM, vehicle.widthM, theta * 180 / Math.PI, 'vehicle', 'swept_vehicle'), articulationDeg: 0, center: point, thetaDeg: theta * 180 / Math.PI }
+  }
   const articulation = clamp(normAngle(theta - trailerTheta) * 180 / Math.PI, -M.articulationLimit, M.articulationLimit)
   const forward = [-Math.cos(theta), -Math.sin(theta)]
   const kingpin = [point[0] + forward[0] * (M.trailerLength / 2), point[1] + forward[1] * (M.trailerLength / 2)]
@@ -69,40 +80,44 @@ function poseFor(pathPoints, i) {
   return { trailer: box(point[0], point[1], M.trailerLength, M.width, theta * 180 / Math.PI, 'trailer', 'swept_vehicle'), tractor: box(tractor[0], tractor[1], M.tractorLength, M.width, theta * 180 / Math.PI, 'tractor', 'swept_vehicle'), articulationDeg: articulation, center: point, thetaDeg: theta * 180 / Math.PI }
 }
 const inExpandedSite = e => Number.isFinite(e.xM) && e.xM >= -6 && e.xM <= 160 && e.yM >= -12 && e.yM <= 104
+const I7_IDS = new Set(WH_R1_I7_ROWS.map(row => row.id))
 function obstacleSet(target, occupied) {
   const out = []
   const siteCategories = new Set(['隔离栏杆', '连续花池', '冠幅', '盆器', '树干', '长椅', '入口标识', '小汽车占位'])
   for (const e of WH_R1_DATA.elements) {
     // Interior racks, desks and screens cannot be hit by an external-yard route.
     // Keep the registered shell walls and the site-facing landscape/vehicle proxies.
-    if (e.collisionRole !== 'physical_proxy' || e.category === '厢式货车' || !e.lengthM || !e.widthM || !inExpandedSite(e)) continue
+    if (I7_IDS.has(e.id) || e.collisionRole !== 'physical_proxy' || e.category === '厢式货车' || !e.lengthM || !e.widthM || !inExpandedSite(e)) continue
     if (!(e.category === '墙体' || siteCategories.has(e.category))) continue
     out.push(e.geometry?.points ? wallBox(e) : box(e.xM, e.yM, e.lengthM, e.widthM, e.yawDeg, e.id, 'registered_site_geometry'))
   }
   for (const wall of WH_R1_ANNEX.walls) out.push(box(wall.xM, wall.yM, wall.lengthM, wall.widthM, wall.yawDeg, wall.id, 'site_annex_wall'))
   for (const door of WH_R1_ANNEX.doors) if (door.id !== target.doorId) out.push(box(door.xM, door.yM, door.lengthM, door.widthM, door.yawDeg, door.id, 'site_annex_door_unknown'))
   for (const row of WH_R1_I7_ROWS) if (row.collisionRole === 'physical_proxy' && row.lengthM && row.widthM) out.push(box(row.xM, row.yM, row.lengthM, row.widthM, row.yawDeg, row.id, 'site_i7_geometry'))
-  for (const bay of WH_R1_PARKING_BAYS) if (occupied.has(bay.id) && bay.id !== target.id) out.push(box(bay.xM, bay.yM, M.trailerLength, M.width, bay.yawDeg, bay.id, 'adjacent_occupied_vehicle'))
+  for (const bay of WH_R1_PARKING_BAYS) if (occupied.has(bay.id) && bay.id !== target.id) { const v = vehicleSpecForBay(bay); out.push(box(v.xM, v.yM, v.lengthM, v.widthM, v.yawDeg, bay.id, 'adjacent_occupied_vehicle')) }
   return out
 }
 function sweptUnion(poses) {
-  return poses.flatMap((pose, sample) => [
-    { sample, part: 'tractor', polygon: pose.tractor.corners.map(([x, y]) => [round(x), round(y)]) },
-    { sample, part: 'trailer', polygon: pose.trailer.corners.map(([x, y]) => [round(x), round(y)]) },
-  ])
+  return poses.flatMap((pose, sample) => {
+    if (pose.vehicle) return [{ sample, part: 'vehicle', polygon: pose.vehicle.corners.map(([x, y]) => [round(x), round(y)]) }]
+    return [
+      { sample, part: 'tractor', polygon: pose.tractor.corners.map(([x, y]) => [round(x), round(y)]) },
+      { sample, part: 'trailer', polygon: pose.trailer.corners.map(([x, y]) => [round(x), round(y)]) },
+    ]
+  })
 }
 function measure(target, occupied) {
-  const pathPoints = candidatePath(target), poses = pathPoints.map((_, i) => poseFor(pathPoints, i)), obs = obstacleSet(target, occupied)
-  let min = Infinity, nearest = null, maxArt = 0
-  for (const pose of poses) {
+  const vehicle = vehicleSpecForBay(target), pathPoints = candidatePath(target), poses = pathPoints.map((_, i) => poseFor(pathPoints, i, vehicle)), obs = obstacleSet(target, occupied)
+  let min = Infinity, nearest = null, nearestSample = -1, nearestPart = null, maxArt = 0
+  for (const [sample, pose] of poses.entries()) {
     maxArt = Math.max(maxArt, Math.abs(pose.articulationDeg))
-    for (const part of [pose.trailer, pose.tractor]) for (const o of obs) {
+    for (const part of (pose.vehicle ? [pose.vehicle] : [pose.trailer, pose.tractor])) for (const o of obs) {
       const d = signedPolyDistance(part.corners, o.corners)
-      if (d < min) { min = d; nearest = o }
+      if (d < min) { min = d; nearest = o; nearestSample = sample; nearestPart = part }
     }
   }
   const finiteMin = Number.isFinite(min) ? min : 99.999
-  return { minClearanceM: round(finiteMin), minClearanceMm: Math.round(finiteMin * 1000), nearestObstacle: nearest ? { id: nearest.id, source: nearest.source } : null, sweptEnvelope: sweptUnion(poses), obstacles: obs.map(o => ({ id: o.id, source: o.source, polygon: o.corners.map(([x, y]) => [round(x), round(y)]) })), poses: { entry: pathPoints, exit: [...pathPoints].reverse(), all: pathPoints, articulationMaxDeg: round(maxArt) } }
+  return { vehicle, minClearanceM: round(finiteMin), minClearanceMm: Math.round(finiteMin * 1000), nearestObstacle: nearest ? { id: nearest.id, source: nearest.source } : null, nearestSample, nearestCenter: nearest ? poses[nearestSample].center : null, nearestObstacleCorners: nearest?.corners?.map(([x, y]) => [round(x), round(y)]) ?? null, nearestPartCorners: nearestPart?.corners?.map(([x, y]) => [round(x), round(y)]) ?? null, sweptEnvelope: sweptUnion(poses), obstacles: obs.map(o => ({ id: o.id, source: o.source, polygon: o.corners.map(([x, y]) => [round(x), round(y)]) })), poses: { entry: pathPoints, exit: [...pathPoints].reverse(), all: pathPoints, articulationMaxDeg: round(maxArt) } }
 }
 function svgFor(bay, result) {
   const w = 900, h = 650, sx = 4.4, ox = 28, oy = 560
@@ -122,7 +137,8 @@ for (const bay of WH_R1_PARKING_BAYS) {
   const minClearanceMm = Math.min(empty.minClearanceMm, occupied.minClearanceMm, simultaneous.minClearanceMm)
   const nearest = [empty, occupied, simultaneous].sort((a, b) => a.minClearanceMm - b.minClearanceMm)[0]
   const status = minClearanceMm < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR'
-  const result = { bayId: bay.id, doorId: bay.doorId, model: M, entryPoints: nearest.poses.entry, exitPoints: nearest.poses.exit, sweptEnvelope: nearest.sweptEnvelope, minClearanceMm, minClearanceM: round(minClearanceMm / 1000), status, nearestObstacle: nearest.nearestObstacle, articulationMaxDeg: nearest.poses.articulationMaxDeg, scenarios: { adjacentEmpty: { minClearanceMm: empty.minClearanceMm, nearestObstacle: empty.nearestObstacle, articulationMaxDeg: empty.poses.articulationMaxDeg }, adjacentOccupied: { minClearanceMm: occupied.minClearanceMm, nearestObstacle: occupied.nearestObstacle, articulationMaxDeg: occupied.poses.articulationMaxDeg }, simultaneousM5: { minClearanceMm: simultaneous.minClearanceMm, nearestObstacle: simultaneous.nearestObstacle, articulationMaxDeg: simultaneous.poses.articulationMaxDeg } } }
+  const scenario = x => ({ minClearanceMm: x.minClearanceMm, nearestObstacle: x.nearestObstacle, nearestSample: x.nearestSample, nearestCenter: x.nearestCenter, nearestObstacleCorners: x.nearestObstacleCorners, nearestPartCorners: x.nearestPartCorners, articulationMaxDeg: x.poses.articulationMaxDeg })
+  const result = { bayId: bay.id, doorId: bay.doorId, model: nearest.vehicle, entryPoints: nearest.poses.entry, exitPoints: nearest.poses.exit, sweptEnvelope: nearest.sweptEnvelope, minClearanceMm, minClearanceM: round(minClearanceMm / 1000), status, nearestObstacle: nearest.nearestObstacle, articulationMaxDeg: nearest.poses.articulationMaxDeg, scenarios: { adjacentEmpty: scenario(empty), adjacentOccupied: scenario(occupied), simultaneousM5: scenario(simultaneous) } }
   results.push(result); fs.writeFileSync(path.join(OUT, `${bay.id}.svg`), svgFor(bay, { ...nearest, status }))
 }
 const by = id => results.find(r => r.bayId === id)
@@ -135,9 +151,18 @@ const vh005 = [
 ]
 const receiving = results.filter(r => r.bayId.startsWith('WH-01-') && r.status !== 'BLOCKED').length
 const shipping = results.filter(r => r.bayId.startsWith('WH-06-') && r.status !== 'BLOCKED').length
-const out = { schema: 'WH-R1-MOTION-STAGE-A/v3', generatedAt: new Date().toISOString(), units: 'source metres; clearance millimetres', assumptions: { model: M, entryGate: SITE_GATE, waitingPoint: WAIT, entranceRule: 'SITE 临街物流出入口 → 东侧外部等待区 → 建筑外调车区；不穿主仓或附建区', doors: 'target door excluded only for final bay; all other doors/door sweeps are UNKNOWN static obstacles', occupancy: 'adjacentEmpty / adjacentOccupied / simultaneousM5 are all measured; status is the minimum over the three', method: 'articulated tractor/trailer polygons sampled at ≤0.25 m; sweptEnvelope is the union of each sampled tractor and trailer polygon, never a route convex hull; expanded SITE geometry, annex, I7 fixtures and occupied bays included' }, bays: results, vh005Comparison: vh005, feasibility: { receiving, shipping, total: receiving + shipping, stopCondition: receiving < 2 || shipping < 2 || receiving + shipping < 4 } }
+const out = { schema: 'WH-R1-MOTION-STAGE-A/v3', generatedAt: new Date().toISOString(), units: 'source metres; clearance millimetres', assumptions: { model: M, vehicleRule: 'WH-01-VH-001…005 = 6×4 tractor + 13.6 m semitrailer; WH-06-VH-001…002 = whR1VehicleForSite delivery-train; WH-06-VH-003…004 = whR1VehicleForSite delivery-tricycle; train radius 7 m, tricycle radius 4 m', entryGate: SITE_GATE, waitingPoint: WAIT, entranceRule: 'SITE 临街物流出入口 → 东侧外部等待区 → 建筑外调车区；不穿主仓或附建区', doors: 'target door excluded only for final bay; all other doors/door sweeps are UNKNOWN static obstacles', occupancy: 'adjacentEmpty / adjacentOccupied / simultaneousM5 are all measured; status is the minimum over the three', method: 'articulated tractor/trailer or rigid delivery vehicle polygons sampled at ≤0.25 m; sweptEnvelope is the union of each sampled polygon, never a route convex hull; expanded SITE geometry, annex, I7 fixtures and occupied bays included' }, bays: results, vh005Comparison: vh005, feasibility: { receiving, shipping, total: receiving + shipping, stopCondition: receiving < 2 || shipping < 2 || receiving + shipping < 4 } }
 fs.writeFileSync(path.join(OUT, 'wh-r1-motion-stage-a.json'), JSON.stringify(out, null, 2))
 if (process.env.MOTION_WRITE_REPO !== '0') fs.writeFileSync(path.resolve('office3d/docs/wh-r1-motion-stage-a.json'), JSON.stringify(out, null, 2))
 const overallRows = results.map((r, i) => `<text x="20" y="${32 + i * 19}" font-family="sans-serif" font-size="12" fill="${r.status === 'BLOCKED' ? '#b91c1c' : '#166534'}">${r.bayId}  ${r.status}  ${r.minClearanceMm} mm</text>`).join('')
 fs.writeFileSync(path.join(OUT, 'overall.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 220"><rect width="100%" height="100%" fill="#fbfaf7"/><text x="20" y="18" font-family="sans-serif" font-size="14" font-weight="700">WH-R1 MOTION R2 · Stage A result</text>${overallRows}<text x="20" y="208" font-family="sans-serif" font-size="10" fill="#555">SITE gate, external yard network, sampled articulated vehicle union; negative clearance = BLOCKED.</text></svg>`)
+function entranceSvg(title, moved, low) {
+  const w = 900, h = low ? 520 : 650, sx = 6, ox = 55, oy = low ? 390 : 500
+  const p = ([x, y]) => `${(ox + x * sx).toFixed(1)},${(oy - y * sx).toFixed(1)}`
+  const rows = moved ? [{ id: 'WH-14-BED-001', xM: 154.5, yM: -2, lengthM: 1, widthM: 5, yawDeg: 0 }, { id: 'WH-14-PL-001*', xM: 154, yM: -2, lengthM: 2.6, widthM: 2.6, yawDeg: 0 }, { id: 'WH-14-PL-002*', xM: 154, yM: 14, lengthM: 2.6, widthM: 2.6, yawDeg: 0 }, { id: 'WH-14-GT-001', xM: 158.5, yM: 14.5, lengthM: 6, widthM: .15, yawDeg: 90 }] : [{ id: 'WH-14-BED-001', xM: 154.5, yM: 6, lengthM: 1, widthM: 5, yawDeg: 0 }, { id: 'WH-14-PL-001*', xM: 155, yM: 1, lengthM: 2.6, widthM: 2.6, yawDeg: 0 }, { id: 'WH-14-PL-002*', xM: 155, yM: 11, lengthM: 2.6, widthM: 2.6, yawDeg: 0 }, { id: 'WH-14-GT-001', xM: 158.5, yM: 6, lengthM: 6, widthM: .15, yawDeg: 90 }]
+  const obstacle = rows.map(row => { const c = box(row.xM, row.yM, row.lengthM, row.widthM, row.yawDeg); return `<polygon points="${c.corners.map(p).join(' ')}" fill="#d97706" fill-opacity=".72" stroke="#92400e" stroke-width=".45"/><text x="${p([row.xM, row.yM]).split(',')[0]}" y="${p([row.xM, row.yM]).split(',')[1]}" font-size="9" text-anchor="middle" fill="#111">${row.id}</text>` }).join('')
+  const lane = box(140, 6, 30, 8, 0)
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}"><rect width="100%" height="100%" fill="#fbfaf7"/><text x="20" y="24" font-family="sans-serif" font-size="17" fill="#111">${title} · ${low ? '低机位' : '入口俯视'} · lane width 8 m</text><polygon points="${lane.corners.map(p).join(' ')}" fill="#dbeafe" stroke="#2563eb" stroke-width=".8"/>${obstacle}<circle cx="${p(SITE_GATE).split(',')[0]}" cy="${p(SITE_GATE).split(',')[1]}" r="3" fill="#16a34a"/><text x="${p(SITE_GATE).split(',')[0]}" y="${Number(p(SITE_GATE).split(',')[1]) - 8}" font-size="10" text-anchor="middle">SITE gate</text><text x="20" y="${h - 18}" font-size="11" fill="#555">orange = registered furniture/landscape/turnstile · blue = 8 m two-way truck lane</text></svg>`
+}
+for (const low of [false, true]) { fs.writeFileSync(path.join(OUT, `entrance-before-${low ? 'low' : 'top'}.svg`), entranceSvg('R3 logistics entrance · before', false, low)); fs.writeFileSync(path.join(OUT, `entrance-after-${low ? 'low' : 'top'}.svg`), entranceSvg('R3 logistics entrance · after', true, low)) }
 console.log(JSON.stringify({ feasibility: out.feasibility, table: results.map(r => ({ bayId: r.bayId, status: r.status, minClearanceMm: r.minClearanceMm, nearest: r.nearestObstacle })) }, null, 2))

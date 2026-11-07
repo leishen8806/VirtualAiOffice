@@ -32,10 +32,12 @@ export const WH_R1_ANNEX = Object.freeze({
 
 const i7 = new Set(WH_R1_ASSIGNMENT.filter(row => row.card === 'I7').map(row => row.id))
 const logisticsOverride = row => {
-  if (row.id === 'WH-14-BED-001') return { ...row, xM: 154.5, yM: 6 }
-  if (row.id === 'WH-14-GT-001') return { ...row, xM: 158.5, yM: 6, yawDeg: 90 }
-  if (row.id.startsWith('WH-14-PL-001')) return { ...row, xM: 155, yM: 1 }
-  if (row.id.startsWith('WH-14-PL-002')) return { ...row, xM: 155, yM: 11 }
+  // R3: keep an 8 m two-way truck lane centered on the SITE logistics gate.
+  // Landscape stays registered and is moved to the two road shoulders.
+  if (row.id === 'WH-14-BED-001') return { ...row, xM: 154.5, yM: -2 }
+  if (row.id === 'WH-14-GT-001') return { ...row, xM: 158.5, yM: 14.5, yawDeg: 90 }
+  if (row.id.startsWith('WH-14-PL-001')) return { ...row, xM: 154, yM: -2 }
+  if (row.id.startsWith('WH-14-PL-002')) return { ...row, xM: 154, yM: 14 }
   return row
 }
 export const WH_R1_I7_ROWS = frozenRows(WH_R1_DATA.elements.filter(row => i7.has(row.id)).map(logisticsOverride))
@@ -50,6 +52,7 @@ export const WH_R1_DEVIATIONS = Object.freeze([
   Object.freeze({ id: 'WH-14-D-001', date: '2026-10-31', from: '外部车辆接口', to: '主仓与东侧附建区连接口', reason: '外部靠泊转移到 R5-SHIP-D-1…4' }),
   Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '5 辆进货牵引半挂 + 4 辆出货配送车', reason: '董事会明确进货用大半挂，出货用园区小火车与三轮车；车尾对门且高差仍 UNKNOWN' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路' }),
+  Object.freeze({ id: 'WH-14-LOGISTICS-GATE-R3-CLEARANCE', date: '2026-11-07', from: 'WH-14-BED-001 / WH-14-PL-001* / WH-14-PL-002* 与 WH-14-GT-001 原坐标', to: '入口通道两侧：花池 [154.5,-2]、南侧盆栽 [154,-2]、北侧盆栽 [154,14]、道闸 [158.5,14.5]', reason: '董事会 2026-11-07：物流出入口改为货车通道，保留登记件并为双向 8 m 车道让行' }),
 ])
 
 export function whR1VehicleForSite(row) {
