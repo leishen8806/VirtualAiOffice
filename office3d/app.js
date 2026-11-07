@@ -27,6 +27,7 @@ import { createReplay } from './replay.js' // T11 今日回放（真实事件账
 import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
 import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
+import { chooseOfficeR1InspectorRect } from './office-r1-ui.js'
 const APP_STARTED = performance.now()
 
 // ───────────────────────── 品牌色（DR.LIFE+ VI 1.0 · 标准色）─────────────────────────
@@ -2112,7 +2113,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && officeV3) {
   menu.addEventListener('keydown', event => { const buttons = [...menu.querySelectorAll('button[data-destination-id]')], index = buttons.indexOf(document.activeElement); if (event.key === 'Escape') { event.preventDefault(); close(true); return } if (!buttons.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length; buttons[next]?.focus() })
   for (const [index, zone] of OFFICE_LAYOUT.r1.data.zones.entries()) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = `${zone.id} · ${zone.name}`; b.dataset.destinationId = zone.id; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-label', `办公室 R1 分区：${zone.id} ${zone.name}`); b.setAttribute('aria-pressed', 'false')
-    b.addEventListener('click', () => { const [x0, y0, x1, y1] = zone.worldBboxXZ; setGoal({ az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(x1 - x0, y1 - y0) * 1.15)), t: [(x0 + x1) / 2, 0, (y0 + y1) / 2] }); document.querySelectorAll('#officeR1ZoneMenu [aria-pressed="true"]').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); close() })
+    b.addEventListener('click', () => { const [x0, y0, x1, y1] = zone.worldBboxXZ; setGoal({ az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(x1 - x0, y1 - y0) * 1.15)), t: [(x0 + x1) / 2, 0, (y0 + y1) / 2] }); const on = officeV3.get('r1Zones')?.setOverlay?.(true); overlay.setAttribute('aria-pressed', String(on)); overlay.classList.toggle('on', on); document.querySelectorAll('#officeR1ZoneMenu [aria-pressed="true"]').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); close() })
     menu.appendChild(b)
   }
   picker.appendChild(trigger); document.body.appendChild(menu); group.appendChild(picker)
@@ -2247,11 +2248,21 @@ function pick(cx, cy, shift = false) {
     if (ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) walkTo(pt.x, pt.z, false) // 点地面：镜头走过去
   }
 }
+function placeOfficeR1Inspector(panel) {
+  const obstacles = ['top', 'todayPanel', 'quest', 'dock', 'detail'].map((id) => document.getElementById(id)?.getBoundingClientRect()).filter((rect) => rect && rect.width > 0 && rect.height > 0)
+  const current = panel.getBoundingClientRect()
+  const placed = chooseOfficeR1InspectorRect({ viewportWidth: innerWidth, viewportHeight: innerHeight, panelWidth: current.width, panelHeight: current.height, obstacles })
+  panel.style.left = `${Math.round(placed.left)}px`
+  panel.style.top = `${Math.round(placed.top)}px`
+  panel.style.right = 'auto'
+}
 function showOfficeR1Inspect(item) {
   let panel = document.getElementById('office-r1-inspector-panel')
-  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:absolute;right:12px;top:70px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55' ; document.body.appendChild(panel) }
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
   panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
   panel.hidden = false
+  requestAnimationFrame(() => placeOfficeR1Inspector(panel))
+  if (!panel.dataset.repositionBound) { addEventListener('resize', () => placeOfficeR1Inspector(panel)); panel.dataset.repositionBound = 'true' }
 }
 function showWhR1Inspect(item) {
   if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }

@@ -5,6 +5,7 @@ import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { OFFICE_R1_VALIDATION_NOTICE, compareOfficeR1SelfReport, recomputeOfficeR1Integrity, recomputeOfficeR1Routes } from '../office-r1-validation.js'
 import { buildOfficeR1Inspector, buildOfficeR1InspectorIndex } from '../office-vis2/r1-inspector.js'
 import { r1ToWorld } from '../office-r1-layout.js'
+import { chooseOfficeR1InspectorRect, rectsOverlap } from '../office-r1-ui.js'
 
 const layout = createOfficeR1Layout()
 
@@ -80,4 +81,25 @@ test('I7 UI wiring is R1 guarded, lazy, and uses body-fixed menu', () => {
   assert.match(app, /r1ZonesOverlay/)
   assert.match(modules, /r1Validation/)
   assert.match(modules, /r1Inspector/)
+})
+
+test('I7 R2-02 zone buttons expose readable names and selecting a zone enables its overlay', () => {
+  const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  assert.match(app, /b\.textContent = `\$\{zone\.id\} · \$\{zone\.name\}`/)
+  assert.match(app, /setOverlay\?\.\(true\)/)
+  assert.match(html, /\.dock-zone-menu-fixed button \{[^}]*color:#fff4d6/s)
+  assert.match(html, /\.dock-zone-menu-fixed button \{[^}]*background:rgba\(255,255,255,\.08\)/s)
+})
+
+test('I7 R2-02 inspector placement avoids status, waiting, dock, and detail panels', () => {
+  const obstacles = [
+    { left: 14, top: 14, right: 600, bottom: 54 },
+    { left: 920, top: 76, right: 1266, bottom: 430 },
+    { left: 14, top: 70, right: 344, bottom: 360 },
+    { left: 14, top: 700, right: 1266, bottom: 786 },
+  ]
+  const placed = chooseOfficeR1InspectorRect({ viewportWidth: 1280, viewportHeight: 800, panelWidth: 300, panelHeight: 120, obstacles })
+  assert.equal(obstacles.some((obstacle) => rectsOverlap(placed, obstacle)), false)
+  assert.ok(placed.left >= 0 && placed.top >= 0 && placed.right <= 1280 && placed.bottom <= 800)
 })
