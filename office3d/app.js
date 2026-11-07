@@ -2249,7 +2249,7 @@ function pick(cx, cy, shift = false) {
   }
 }
 function placeOfficeR1Inspector(panel) {
-  const obstacles = ['top', 'todayPanel', 'quest', 'dock', 'detail'].map((id) => document.getElementById(id)?.getBoundingClientRect()).filter((rect) => rect && rect.width > 0 && rect.height > 0)
+  const obstacles = ['top', 'todayPanel', 'quest', 'dock', 'minimap', 'detail'].map((id) => document.getElementById(id)?.getBoundingClientRect()).filter((rect) => rect && rect.width > 0 && rect.height > 0)
   const current = panel.getBoundingClientRect()
   const placed = chooseOfficeR1InspectorRect({ viewportWidth: innerWidth, viewportHeight: innerHeight, panelWidth: current.width, panelHeight: current.height, obstacles })
   panel.style.left = `${Math.round(placed.left)}px`

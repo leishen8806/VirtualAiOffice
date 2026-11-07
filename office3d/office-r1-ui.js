@@ -5,8 +5,20 @@ export function rectsOverlap(a, b) {
 export function chooseOfficeR1InspectorRect({ viewportWidth, viewportHeight, panelWidth, panelHeight, obstacles = [], margin = 14, gap = 12 }) {
   const maxLeft = Math.max(margin, viewportWidth - panelWidth - margin)
   const maxTop = Math.max(margin, viewportHeight - panelHeight - margin)
-  const xs = [margin, maxLeft, ...obstacles.map((r) => Math.min(maxLeft, Math.max(margin, r.right + gap)))]
-  const ys = [76, maxTop, ...obstacles.map((r) => Math.min(maxTop, Math.max(76, r.bottom + gap)))]
+  const clampX = value => Math.min(maxLeft, Math.max(margin, value))
+  const clampY = value => Math.min(maxTop, Math.max(margin, value))
+  const xs = [
+    (viewportWidth - panelWidth) / 2,
+    margin,
+    maxLeft,
+    ...obstacles.flatMap((r) => [r.right + gap, r.left - panelWidth - gap]),
+  ].map(clampX)
+  const ys = [
+    margin,
+    (viewportHeight - panelHeight) / 2,
+    maxTop,
+    ...obstacles.flatMap((r) => [r.bottom + gap, r.top - panelHeight - gap]),
+  ].map(clampY)
   const seen = new Set()
   for (const left of xs) for (const top of ys) {
     const key = `${left}|${top}`

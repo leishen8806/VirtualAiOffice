@@ -316,7 +316,7 @@
       "source": "OFFICE-R1-I2 R1-only data-driven floor-zone marks and labels; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "E909FFE3AF419968F9C7DD5D1ABDDE2E44412456086583135FB01CAE543BD492"
+      "sha256": "AEC1255F46B7303252D987A265FB10A323F6825AF18104D5089B8D1E34A7D403"
     },
     {
       "file": "office-vis2/r1-island.js",

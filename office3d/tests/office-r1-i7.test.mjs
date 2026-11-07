@@ -93,13 +93,26 @@ test('I7 R2-02 zone buttons expose readable names and selecting a zone enables i
 })
 
 test('I7 R2-02 inspector placement avoids status, waiting, dock, and detail panels', () => {
-  const obstacles = [
-    { left: 14, top: 14, right: 600, bottom: 54 },
-    { left: 920, top: 76, right: 1266, bottom: 430 },
-    { left: 14, top: 70, right: 344, bottom: 360 },
-    { left: 14, top: 700, right: 1266, bottom: 786 },
-  ]
-  const placed = chooseOfficeR1InspectorRect({ viewportWidth: 1280, viewportHeight: 800, panelWidth: 300, panelHeight: 120, obstacles })
-  assert.equal(obstacles.some((obstacle) => rectsOverlap(placed, obstacle)), false)
-  assert.ok(placed.left >= 0 && placed.top >= 0 && placed.right <= 1280 && placed.bottom <= 800)
+  for (const [viewportWidth, viewportHeight] of [[1280, 800], [768, 1024], [390, 844]]) {
+    const narrow = viewportWidth < 900
+    const edge = narrow ? 8 : 14
+    const obstacles = [
+      { left: edge, top: narrow ? 8 : 14, right: viewportWidth - edge, bottom: narrow ? 58 : 54 },
+      { left: edge, top: narrow ? 68 : 70, right: narrow ? viewportWidth - edge : 344, bottom: narrow ? 112 : 136 },
+      { left: narrow ? edge : viewportWidth - 354, top: narrow ? 112 : 76, right: viewportWidth - edge, bottom: narrow ? 151 : 241 },
+      { left: edge, top: viewportHeight - (narrow ? 194 : 166), right: narrow ? 168 : 234, bottom: viewportHeight - (narrow ? 126 : 72) },
+      { left: edge, top: viewportHeight - (narrow ? 89 : 64), right: viewportWidth - edge, bottom: viewportHeight - edge },
+    ]
+    const placed = chooseOfficeR1InspectorRect({ viewportWidth, viewportHeight, panelWidth: 300, panelHeight: 120, obstacles })
+    assert.equal(obstacles.some((obstacle) => rectsOverlap(placed, obstacle)), false, `${viewportWidth}x${viewportHeight}`)
+    assert.ok(placed.left >= 0 && placed.top >= 0 && placed.right <= viewportWidth && placed.bottom <= viewportHeight)
+  }
+})
+
+test('I7 R2-03 overlay uses visible upward-facing ground and outlines', () => {
+  const zones = readFileSync(new URL('../office-vis2/r1-zones.js', import.meta.url), 'utf8')
+  assert.match(zones, /start, start \+ 2, start \+ 1, start, start \+ 3, start \+ 2/)
+  assert.match(zones, /opacity: \.24/)
+  assert.match(zones, /new THREE\.Mesh\(geometry, material\)/)
+  assert.match(zones, /side: THREE\.DoubleSide/)
 })
