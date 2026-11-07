@@ -223,7 +223,7 @@ test('git 命令失败（超时/非 git 仓库）→ 无法核对（git 命令�
   const repo = path.join(w.root, 'pool'); fs.mkdirSync(repo, { recursive: true })
   const comments = [{ authorAgentId: 'a', body: ev2(repo, 'a'.repeat(40)), createdAt: '' }]
   const get = async (p) => {
-    if (p.endsWith('/companies/C/issues')) return [{ id: 'is-C', identifier: 'CMP-1', title: 't', status: 'in_review', updatedAt: '', comments }]
+    if (p.split('?')[0].endsWith('/companies/C/issues')) return /offset=[1-9]/.test(p) ? [] : [{ id: 'is-C', identifier: 'CMP-1', title: 't', status: 'in_review', updatedAt: '', comments }]
     if (p.endsWith('/issues/is-C/comments')) return comments
     throw new Error('unmocked ' + p)
   }

@@ -10,6 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { isChatSessionTask } from './chat.mjs'
 import { MEMBERS } from './committee.mjs'
+import { createIssuePager } from './issue-pagination.mjs'
 
 const PROJECT_NAME = '运营与知识库'
 const LEAD = 'Lead'
@@ -41,6 +42,7 @@ export function createStandup({ dir, workhoursFile, company, get, send, notify, 
   try { db = { ...db, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch {}
   const save = () => fs.writeFileSync(FILE, JSON.stringify(db, null, 1))
   let busy = false
+  const issues = createIssuePager({ company, get, warn: log, label: 'standup' })
 
   const workday = (dow) => { try { return (JSON.parse(fs.readFileSync(workhoursFile, 'utf8')).days || [1, 2, 3, 4, 5, 6]).includes(DOW[dow]) } catch { return dow !== 'Sun' } }
   const asList = (r) => (Array.isArray(r) ? r : r.issues || r.comments || [])
@@ -85,7 +87,7 @@ export function createStandup({ dir, workhoursFile, company, get, send, notify, 
       if (none) { day.state = 'void'; day.note = `Lead 说今天没有合适的待排期任务：${clip(none[1], 120)}`; save(); notify && notify(`ℹ️ 晨会 ${day.id}：Lead 认为今天没有合适的待排期任务（${clip(none[1], 80) || '未说明原因'}），没有派发。`); return true }
       return false
     }
-    const all = asList(await get(`/api/companies/${company}/issues`))
+    const all = await issues.all()
     const byIdent = new Map(all.map((i) => [i.identifier, i]))
     const projNames = new Map(asList(await get(`/api/companies/${company}/projects`)).map((p) => [p.id, p.name]))
     const cands = [], dropped = []
@@ -153,7 +155,7 @@ export function createStandup({ dir, workhoursFile, company, get, send, notify, 
     if (!['backlog', 'todo'].includes(iss.status)) return `状态已变成 ${iss.status}，没有派`
     const agent = await get(`/api/agents/${c.assigneeId}`)
     if (['paused', 'error', 'terminated'].includes(agent.status)) return `${c.assignee} 现在是 ${agent.status}，没有派`
-    const open = asList(await get(`/api/companies/${company}/issues`)).filter((i) => i.assigneeAgentId === c.assigneeId && ['todo', 'in_progress', 'in_review', 'blocked'].includes(i.status) && i.id !== c.issueId)
+    const open = (await issues.all()).filter((i) => i.assigneeAgentId === c.assigneeId && ['todo', 'in_progress', 'in_review', 'blocked'].includes(i.status) && i.id !== c.issueId)
     if (open.length >= PERSON_CAP) return `${c.assignee} 手上已有 ${open.length} 个未完成任务（上限 ${PERSON_CAP}），没有派`
     await send('POST', `/api/issues/${c.issueId}/comments`, { body: `晨会 ${day.id} 决定：今天做。${how}\nLead 的理由：${c.why}\n负责人：${c.assignee}。` })
     await send('PATCH', `/api/issues/${c.issueId}`, { assigneeAgentId: c.assigneeId, status: 'todo' })
