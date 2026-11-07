@@ -24,7 +24,19 @@ export function weatherText(code) {
   if (code >= 95) return ['⛈️', '雷阵雨']
   return ['🌡️', '—']
 }
-const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
+export const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
+export const RAIN_AREA = Object.freeze({ width: 120, depth: 100, height: 40 })
+export const rainAnchorFor = (position = {}) => ({
+  x: Number.isFinite(position.x) ? position.x : 0,
+  z: Number.isFinite(position.z) ? position.z : 0,
+})
+export const rainVisibleFor = (quality, rain) => quality !== 'low' && rain > 0.05
+export function forceRainRequested(search = '', hostname = '') {
+  const host = String(hostname || '').toLowerCase()
+  const localHost = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.localhost')
+  const params = new URLSearchParams(String(search).replace(/^\?/, ''))
+  return localHost && params.getAll('rain').length === 1 && params.get('rain') === '1'
+}
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 const hm = (s) => { if (!s) return null; const m = String(s).match(/T(\d\d):(\d\d)/); return m ? +m[1] * 60 + +m[2] : null }
 export const r1EnvironmentRequested = (search = '') => {
@@ -293,19 +305,25 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   clouds.userData.dynamic = true
   scene.add(clouds)
 
-  // ── 雨：一团跟着建筑走的雨丝 ──
+  // ── 雨：覆盖当前镜头的雨丝（只在中/高档绘制） ──
   const RAIN_N = 7000
   const rainPos = new Float32Array(RAIN_N * 6)
   for (let i = 0; i < RAIN_N; i++) {
-    const x = (rnd() - 0.5) * 120, y = rnd() * 40, z = (rnd() - 0.5) * 100
-    rainPos.set([x, y, z, x + 0.05, y - 0.7, z], i * 6)
+    const x = (rnd() - 0.5) * RAIN_AREA.width, y = rnd() * RAIN_AREA.height, z = (rnd() - 0.5) * RAIN_AREA.depth
+    rainPos.set([x, y, z, x + 0.05, y - 1.05, z], i * 6)
   }
   const rainGeo = new THREE.BufferGeometry()
   rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3))
-  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xaab8c8, transparent: true, opacity: 0.45 }))
+  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xd7ecff, transparent: true, opacity: 0.5, depthWrite: false, fog: false }))
   rain.visible = false
   rain.frustumCulled = false
   scene.add(rain)
+  const forceRain = forceRainRequested(typeof location === 'undefined' ? '' : location.search, typeof location === 'undefined' ? '' : location.hostname)
+  const moveRain = () => {
+    const anchor = rainAnchorFor(camera.position)
+    rain.position.x = anchor.x
+    rain.position.z = anchor.z
+  }
 
   // ── 室内灯：天黑或阴雨时亮 ──
   const indoor = []
@@ -329,7 +347,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   scene.add(stars)
 
   // ── 世界状态：金边时间 + 天气 ──
-  const W = { minutes: 12 * 60, sunrise: 6 * 60, sunset: 18 * 60, cloud: 20, rain: 0, code: 1, wind: 8, got: false, gotAt: 0 }
+  const W = { minutes: 12 * 60, sunrise: 6 * 60, sunset: 18 * 60, cloud: 20, rain: forceRain ? 1 : 0, code: forceRain ? 63 : 1, wind: 8, got: forceRain, gotAt: 0 }
   const cur = { day: 1, cloud: 0.2, rain: 0 } // 平滑过渡用
   let lastEnv = { elev: 999, cloud: -1 }
   let flash = 0
@@ -356,6 +374,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
       W.code = w.code
       W.wind = w.windKmh ?? W.wind
     }
+    if (forceRain) { W.rain = 1; W.code = 63 }
     W.got = true
   }
 
@@ -371,6 +390,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     cur.cloud += (W.cloud / 100 - cur.cloud) * k
     cur.rain += (W.rain - cur.rain) * k
     const overcast = Math.min(1, cur.cloud * 0.8 + cur.rain * 0.6)
+    moveRain()
     u.turbidity.value = 3 + overcast * 9
     u.rayleigh.value = 1.2 + overcast * 1.6 + (1 - cur.day) * 0.8
     // 阳光：高度越低越暖，云越厚越弱
@@ -407,9 +427,9 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     cloudMat.color.setHex(0xffffff).lerp(new THREE.Color(0x6d7480), cur.rain * 0.8).multiplyScalar(0.25 + 0.75 * cur.day)
     cloudTex.offset.x += dt * (W.wind / 3600) * 0.02
     // 雨
-    rain.visible = quality !== 'low' && cur.rain > 0.05
+    rain.visible = rainVisibleFor(quality, cur.rain)
     if (rain.visible) {
-      rain.material.opacity = 0.2 + cur.rain * 0.4
+      rain.material.opacity = 0.34 + cur.rain * 0.46
       const p = rainGeo.attributes.position.array
       const fall = dt * (22 + cur.rain * 10)
       for (let i = 0; i < RAIN_N; i++) {
