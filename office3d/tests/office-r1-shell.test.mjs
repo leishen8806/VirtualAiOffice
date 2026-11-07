@@ -35,7 +35,7 @@ test('I3 retains the old V3 module order and isolates R1 to its shell and furnit
   assert.deepEqual(officeV3Modules.map(([name]) => name), ['shell3', 'furniture3', 'island', 'zones', 'plaza', 'displayDepartments', 'displayStaff'])
   assert.deepEqual(officeV3ModulesFor(LAYOUT_V3_ALIGN_L2B).map(([name]) => name), officeV3Modules.map(([name]) => name))
   // r1Books（OFFICE-R1-FOOD 补充 R2 的书架书籍）插在 r1Decor 与 r1Plaza 之间，非 R1 入口照旧取不到。
-  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Books', 'r1Plaza', 'r1Lights', 'r1Brand'])
+  assert.deepEqual(officeV3ModulesFor(r1()).map(([name]) => name), ['shell3', 'furniture3', 'r1Island', 'r1Plants', 'r1Doors', 'r1Lounge', 'r1Decor', 'r1Books', 'r1Plaza', 'r1Lights', 'r1Brand', 'r1Zones', 'r1Validation', 'r1Inspector'])
 })
 
 test('MOVE preserves registered seats and old navigation while exposing R1 destinations', () => {
