@@ -91,6 +91,6 @@ test('I3 appends racks only to the WH-R1 registry source order', () => {
   globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
   try {
     const registry = createCampusRegistry({ THREE, scene, quality: { tier: 'low' }, layout: {} })
-    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-site', 'wh-r1-racks', 'wh-r1-workflow', 'wh-r1-vehicles', 'wh-r1-front', 'wh-r1-validation', 'wh-r1-inspector', 'wh-r1-staff']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
+    registry.buildAll(); assert.deepEqual(registry.summary().modules, ['wh-r1-shell', 'wh-r1-zones', 'wh-r1-site', 'wh-r1-racks', 'wh-r1-workflow', 'wh-r1-live1', 'wh-r1-vehicles', 'wh-r1-front', 'wh-r1-validation', 'wh-r1-inspector', 'wh-r1-staff']); assert.deepEqual(registry.summary().skipped, []); registry.dispose()
   } finally { globalThis.location = prior }
 })

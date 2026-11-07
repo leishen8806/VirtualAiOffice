@@ -225,7 +225,7 @@ test('I6-7 the real registry builds wh-r1-front only under whr1=1 and leaves the
       const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier},layout:{}})
       registry.buildAll({quality:{tier},canvasTex:texture});mergeStatic(scene)
       assert.deepEqual(registry.summary().skipped,[])
-      assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-vehicles','wh-r1-front','wh-r1-validation','wh-r1-inspector','wh-r1-staff'])
+      assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-live1','wh-r1-vehicles','wh-r1-front','wh-r1-validation','wh-r1-inspector','wh-r1-staff'])
       const boxes=rendered(scene.getObjectByName('wh-r1-front'))
       for(const id of I6){const row=source(id),box=boxes.get(id),want=expectedBox(row)
         assert.ok(box,`${tier} merged ${id}`)
