@@ -19,7 +19,10 @@ function world({ busy = [] } = {}) {
   const get = async (p) => {
     if (p.endsWith('/agents')) return agents
     if (p.endsWith('/projects')) return [{ id: 'p1', name: '运营与知识库' }]
-    if (p.endsWith('/issues')) return Object.values(issues)
+    if (p.split('?')[0].endsWith('/issues')) { // 支持 issue-pagination 的 limit / offset / status 查询
+      const q = new URLSearchParams(p.split('?')[1] || ''), all = Object.values(issues).filter((i) => !q.get('status') || i.status === q.get('status'))
+      return q.has('limit') ? all.slice(Number(q.get('offset') || 0), Number(q.get('offset') || 0) + Number(q.get('limit'))) : all
+    }
     let m
     if ((m = p.match(/^\/api\/issues\/([\w-]+)\/comments$/))) return (issues[m[1]]?.comments || []).map((c) => (typeof c === 'string' ? { authorAgentId: 'x', body: c } : c))
     if ((m = p.match(/^\/api\/issues\/([\w-]+)$/))) return issues[m[1]]

@@ -17,6 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { execFile } from 'node:child_process'
+import { createIssuePager } from './issue-pagination.mjs'
 
 export const DEFAULT_CFG = Object.freeze({
   enabled: false,
@@ -141,10 +142,11 @@ function run(cmd, args, opts = {}) {
 }
 
 // ── 工厂：接线用（server.mjs 里只读 GET /evidence-version）──
-export function createEvidenceVersion({ dir, company, get = async () => { throw new Error('no get') }, now = Date.now, redactText = (s) => s, runGit = run }) {
+export function createEvidenceVersion({ dir, company, get = async () => { throw new Error('no get') }, now = Date.now, redactText = (s) => s, runGit = run, warn = console.warn }) {
   const FILE = path.join(dir, 'evidence-version.json')
   const readCfg = () => { try { return { ...DEFAULT_CFG, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch { return { ...DEFAULT_CFG, corrupt: true } } } // 缺省 / 损坏都按关闭；损坏置 corrupt 供面板提示
   const cache = new Map() // `${issueId}@${updatedAt}@${commentAt}` -> { at, result }；结果缓存 60 秒，git HEAD 因此也最多过期 60 秒
+  const issues = createIssuePager({ company, get, warn, label: 'evidence-version' })
 
   const git = async (repo, args) => runGit('git', ['-C', repo, '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=NUL', ...args], { timeout: readCfg().gitTimeoutMs })
   const sha256Of = (file, cfg) => {
@@ -289,8 +291,7 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
     checkByIdent: async (ident) => {
       const cfg = readCfg()
       if (!cfg.enabled) return { disabled: true }
-      const raw = await get(`/api/companies/${company}/issues`)
-      const all = asList(raw)
+      const all = await issues.all()
       const i = all.find((x) => x.identifier === ident || x.id === ident)
       if (!i) return null
       return check(i)
@@ -298,8 +299,7 @@ export function createEvidenceVersion({ dir, company, get = async () => { throw 
     batch: async (max = 20) => {
       const cfg = readCfg()
       if (!cfg.enabled) return { disabled: true }
-      const raw = await get(`/api/companies/${company}/issues?status=in_review`)
-      const list = asList(raw).slice(0, max)
+      const list = (await issues.all({ status: 'in_review' })).slice(0, max)
       const items = []
       for (const i of list) {
         try { items.push(await check(i)) } catch (e) { items.push({ issueId: i.id, ident: i.identifier, title: clip(i.title, 120), status: i.status, result: '无法核对（读取失败）', note: String((e && e.message) || e).slice(0, 120) }) }

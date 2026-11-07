@@ -3,6 +3,7 @@
 // 统计从账本里最早的一条开始算，页面会写明「统计自 …」。
 import fs from 'node:fs'
 import path from 'node:path'
+import { createIssuePager } from './issue-pagination.mjs'
 
 const TZ = 'Asia/Phnom_Penh'
 const localDate = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
@@ -12,6 +13,7 @@ export function createStats({ dir, get, company, staggerMs = 0 }) {
   let L = { runs: {}, done: {}, comments: {}, decisions: {}, since: null }
   try { L = { ...L, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch {}
   let dirty = false
+  const issues = createIssuePager({ company, get, label: 'stats:done' })
   const note = (iso) => { if (iso && (!L.since || iso < L.since)) L.since = iso }
 
   function ingest({ runs = [], activity = [] }) {
@@ -34,8 +36,8 @@ export function createStats({ dir, get, company, staggerMs = 0 }) {
   }
   async function refreshDone() {
     try {
-      const r = await get(`/api/companies/${company}/issues?status=done&limit=40`)
-      for (const i of Array.isArray(r) ? r : r.issues || []) {
+      const doneIssues = await issues.all({ status: 'done' })
+      for (const i of doneIssues) {
         if (L.done[i.id]) continue
         L.done[i.id] = { a: i.assigneeAgentId || null, at: i.completedAt || i.updatedAt, ident: i.identifier, title: i.title, projectId: i.projectId || null }
         note(i.completedAt || i.updatedAt); dirty = true
@@ -47,7 +49,7 @@ export function createStats({ dir, get, company, staggerMs = 0 }) {
     await refreshDone()
   }
   if (staggerMs) { const starter = setTimeout(seed, staggerMs); starter.unref?.() } else seed()
-  setInterval(refreshDone, 10 * 60 * 1000)
+  setInterval(refreshDone, 2 * 60 * 1000)
   setInterval(() => { if (dirty) { dirty = false; try { fs.writeFileSync(FILE, JSON.stringify(L)) } catch {} } }, 60 * 1000)
 
   const within = (iso, from, to) => iso && iso >= from && iso < to
