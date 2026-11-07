@@ -187,7 +187,9 @@ export function r1HighStoolParts(THREE, seatTop = .75) {
 export function buildR1Island({ THREE, root, layout, collision, quality, low = false, A, placeFurniture }) {
   if (layout?.r1Phase !== 'R1') return { dispose() {} }
   const lowTier = quality ? quality.tier === 'low' : low
-  const group = new THREE.Group(); group.name = 'r1-island'; group.userData.dynamic = true
+  // All visible island surfaces are baked once; collision proxies remain independent.
+  // The island has no per-frame visual mutation, so static registry batching is safe.
+  const group = new THREE.Group(); group.name = 'r1-island'; group.userData.dynamic = false
   const batch = createSampleBatch(THREE), proxies = [], items = [], ownGeometries = []
   const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
   const center = r1ToWorld(...layout.r1.data.central.center_m), radii = layout.r1.data.central.radii_m

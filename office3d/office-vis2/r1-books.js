@@ -206,7 +206,8 @@ export function buildR1Books({ THREE, root, layout, collision, quality, low = fa
   const lowTier = quality ? quality.tier === 'low' : low
   const rows = R1_BOOK_SHELF_IDS.map(id => layout.r1.elements.find(item => item.id === id)).filter(Boolean)
   if (!rows.length) return empty
-  const group = new THREE.Group(); group.name = 'r1-books'; group.userData.dynamic = true
+  // Book placement is immutable; picking metadata and collision proxies stay attached to the module.
+  const group = new THREE.Group(); group.name = 'r1-books'; group.userData.dynamic = false
   const metrics = r1BookcaseMetrics(THREE, A.furn.bookcaseOpen)
   const instances = [], coverQuads = [], shelves = [], proxies = []
   const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false })
