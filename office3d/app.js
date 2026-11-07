@@ -2109,6 +2109,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && officeV3) {
   addEventListener('resize', () => { if (!menu.hidden) position() })
   const overlay = document.createElement('button'); overlay.type = 'button'; overlay.textContent = '区号叠加'; overlay.dataset.zoneOverlay = 'true'; overlay.setAttribute('aria-pressed', 'false')
   overlay.addEventListener('click', () => { const on = officeV3.get('r1Zones')?.setOverlay?.(); overlay.setAttribute('aria-pressed', String(on)); overlay.classList.toggle('on', on) }); menu.appendChild(overlay)
+  menu.addEventListener('keydown', event => { const buttons = [...menu.querySelectorAll('button[data-destination-id]')], index = buttons.indexOf(document.activeElement); if (event.key === 'Escape') { event.preventDefault(); close(true); return } if (!buttons.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return; event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length; buttons[next]?.focus() })
   for (const [index, zone] of OFFICE_LAYOUT.r1.data.zones.entries()) {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = `${zone.id} · ${zone.name}`; b.dataset.destinationId = zone.id; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-label', `办公室 R1 分区：${zone.id} ${zone.name}`); b.setAttribute('aria-pressed', 'false')
     b.addEventListener('click', () => { const [x0, y0, x1, y1] = zone.worldBboxXZ; setGoal({ az: -28, el: 48, r: Math.max(10, Math.min(32, Math.hypot(x1 - x0, y1 - y0) * 1.15)), t: [(x0 + x1) / 2, 0, (y0 + y1) / 2] }); document.querySelectorAll('#officeR1ZoneMenu [aria-pressed="true"]').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); close() })
@@ -2230,14 +2231,14 @@ function pick(cx, cy, shift = false) {
   }
   const hit = ray.intersectObjects(meshes, false)[0]
   const plazaHit = !hit && officeV3?.get('plaza')?.pick(ray)
+  const officeItem = !PLACE_MODE.whr1 && !plazaHit && OFFICE_LAYOUT.r1Phase === 'R1' ? officeV3?.get('r1Inspector')?.pickRay?.(ray.ray) : null
+  if (officeItem) { showOfficeR1Inspect(officeItem); return }
   if (plazaHit) {
     const labels = { vendors: '广场轻食亭', cafe: '户外休闲桌', benches: '广场长椅', lamps: '景观灯', flowers: '花箱' }
     ui.toast(`${labels[plazaHit.kind] || '广场设施'} · 仅供参观`)
     walkTo(plazaHit.x, plazaHit.z, false)
     return
   }
-  const officeItem = !hit && !plazaHit && OFFICE_LAYOUT.r1Phase === 'R1' ? officeV3?.get('r1Inspector')?.pickRay?.(ray.ray) : null
-  if (officeItem) { showOfficeR1Inspect(officeItem); return }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     document.getElementById('wh-r1-inspector-panel')?.remove()

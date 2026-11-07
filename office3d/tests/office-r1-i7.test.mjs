@@ -2,8 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
-import { OFFICE_R1_VALIDATION_NOTICE, recomputeOfficeR1Integrity, recomputeOfficeR1Routes } from '../office-r1-validation.js'
-import { buildOfficeR1InspectorIndex } from '../office-vis2/r1-inspector.js'
+import { OFFICE_R1_VALIDATION_NOTICE, compareOfficeR1SelfReport, recomputeOfficeR1Integrity, recomputeOfficeR1Routes } from '../office-r1-validation.js'
+import { buildOfficeR1Inspector, buildOfficeR1InspectorIndex } from '../office-vis2/r1-inspector.js'
+import { r1ToWorld } from '../office-r1-layout.js'
 
 const layout = createOfficeR1Layout()
 
@@ -16,6 +17,17 @@ test('I7 independently recomputes all 17 R1 routes and derives blocked state fro
   assert.equal(rows.some(row => row.status === 'PASS'), false)
 })
 
+test('I7 recomputes reverse routes and both door-state scenarios from geometry', () => {
+  const forward = recomputeOfficeR1Routes({ layout, direction: 'forward', doorMode: 'doorsUnknownOpen' })
+  const reverse = recomputeOfficeR1Routes({ layout, direction: 'reverse', doorMode: 'doorsUnknownOpen' })
+  const closed = recomputeOfficeR1Routes({ layout, doorMode: 'doorsClosed' })
+  assert.equal(reverse.length, forward.length)
+  assert.deepEqual(reverse[0].pointsWorld, [...forward[0].pointsWorld].reverse())
+  assert.ok(closed.every(row => row.doorMode === 'doorsClosed'))
+  assert.ok(forward.every(row => row.segments.length === row.pointsWorld.length - 1))
+  assert.ok(forward.some(row => row.minClearanceMm < 0 && row.status === 'BLOCKED'))
+})
+
 test('I7 keeps the 29 source checks visible while recomputing route checks', () => {
   const result = recomputeOfficeR1Integrity({ layout })
   assert.equal(result.routeCount, 17)
@@ -24,6 +36,16 @@ test('I7 keeps the 29 source checks visible while recomputing route checks', () 
   assert.ok(result.checks.some(row => row.recomputed && row.status === 'BLOCKED'))
   assert.ok(result.checks.some(row => row.status === 'PASS_THROUGH_NOT_RECOMPUTED'))
   assert.equal(result.notice, OFFICE_R1_VALIDATION_NOTICE)
+  assert.deepEqual(Object.keys(result.scenarios).sort(), ['doorsClosed', 'doorsUnknownOpen'])
+  assert.equal(result.reverseRoutes.length, 17)
+  assert.equal(result.selfReportComparison.length, 17)
+})
+
+test('I7 self-report comparison is derived and reports numeric deltas', () => {
+  const result = recomputeOfficeR1Integrity({ layout })
+  const compared = compareOfficeR1SelfReport({ recomputed: result.routes, selfReported: result.selfReported })
+  assert.equal(compared.length, 17)
+  assert.ok(compared.some(row => Number.isFinite(row.deltaMm)))
 })
 
 test('I7 inspector covers every registered element and has no default picking proxies', () => {
@@ -34,11 +56,26 @@ test('I7 inspector covers every registered element and has no default picking pr
   assert.equal(index.records.get('00-D-001').id, '00-D-001')
 })
 
+test('I7 inspector uses oriented ray hits and reports overlap candidates', () => {
+  class BoxGeometry { constructor() {} dispose() {} }
+  class MeshBasicMaterial { constructor() {} dispose() {} }
+  class Mesh { constructor(geometry, material) { this.geometry = geometry; this.material = material; this.userData = {}; this.position = { set() {} }; this.rotation = { y: 0 }; } removeFromParent() {} }
+  const root = { userData: {}, add() {} }
+  const THREE = { BoxGeometry, MeshBasicMaterial, Mesh }
+  const inspector = buildOfficeR1Inspector({ THREE, root, layout })
+  const row = layout.r1.data.elements.find(item => item.id === '00-D-001')
+  const p = r1ToWorld(row.xM, row.yM)
+  const hit = inspector.pickRay({ origin: { x: p.x, y: row.heightM + 5, z: p.z }, direction: { x: 0, y: -1, z: 0 } })
+  assert.equal(hit?.id, row.id)
+  assert.ok(hit.pick.candidateCount >= 1)
+})
+
 test('I7 UI wiring is R1 guarded, lazy, and uses body-fixed menu', () => {
   const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8')
   const modules = readFileSync(new URL('../office-v3-modules.js', import.meta.url), 'utf8')
   assert.match(app, /officeR1ZoneMenu/)
   assert.match(app, /document\.body\.appendChild\(menu\)/)
+  assert.match(app, /officeR1ZoneMenu.*menu\.addEventListener\('keydown'/s)
   assert.match(app, /officeV3\.get\('r1Inspector'\)/)
   assert.match(app, /r1ZonesOverlay/)
   assert.match(modules, /r1Validation/)
