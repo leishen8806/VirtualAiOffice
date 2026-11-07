@@ -110,6 +110,7 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
       try { built.set(name, factory({ THREE, root, layout, now, navigation: built.get('wh-r1-validation')?.navigation, ...shared }) || {}) }
       catch (error) { skipped.push({ name, error: String(error?.message || error) }); console.warn(`[campus:${name}] 已跳过：${error.message}`) }
     }
+    built.get('wh-r1-live1')?.bindRuntime?.({ staff: built.get('wh-r1-staff'), vehicles: built.get('wh-r1-vehicles') })
     merged = mergeCampusStatic(THREE, root); disposeMerged = merged.dispose
     if (!frameHook && [...built.values()].some(value => value.onFrame)) {
       previousFrame = scene.onBeforeRender
