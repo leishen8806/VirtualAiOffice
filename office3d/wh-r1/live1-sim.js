@@ -22,7 +22,8 @@ const slotIdList = ids => Array.isArray(ids) && ids.length ? ids.slice() : Array
 
 export function createLive1Simulation({ seed = LIVE1_DEFAULT_SEED, slotIds, multiplier = 8, orderSource = genericOrder({ seed }), nowMs = 0 } = {}) {
   const ids = slotIdList(slotIds), random = mulberry32(seed ^ 0x9e3779b9), listeners = new Set(), events = []
-  const slots = ids.map((id, index) => ({ id, status: index < Math.round(ids.length * .6) ? 'occupied' : 'empty', sku: index < Math.round(ids.length * .6) ? `SKU-${index % 3 + 1}` : null, boxType: index % 3 }))
+  const initialCount = Math.round(ids.length * .6), initialSlots = new Set(Array.from({ length: initialCount }, (_, index) => Math.floor(index * ids.length / initialCount)))
+  const slots = ids.map((id, index) => ({ id, status: initialSlots.has(index) ? 'occupied' : 'empty', sku: initialSlots.has(index) ? `SKU-${index % 3 + 1}` : null, boxType: index % 3 }))
   const initialOnHand = slots.filter(slot => slot.status === 'occupied').length, tasks = [], counters = { inboundCompleted: 0, outboundCompleted: 0, created: 0, completed: 0 }
   let time = Number.isFinite(nowMs) ? Math.max(0, nowMs) : 0, rate = clamp(Number(multiplier) || 1, 0, 64), paused = false, sequence = 0, nextOrderAt = time + 2500, disposed = false
   const emit = event => { events.push(Object.freeze({ ...event })); for (const listener of listeners) { try { listener(event) } catch {} } }

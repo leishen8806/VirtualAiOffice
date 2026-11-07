@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createLive1Simulation, inventoryDelta } from '../wh-r1/live1-sim.js'
+import { WH_R1_DATA } from '../wh-r1/data.js'
 
 const run = seed => { const sim = createLive1Simulation({ seed, multiplier: 8 }); for (let i = 0; i < 600; i++) sim.advance(100); return sim }
 
@@ -9,6 +10,12 @@ test('LIVE-1 fixed seed replays ten minutes and keeps a populated start', () => 
   assert.deepEqual(bootEvents.slice(0, 3), ['task_created', 'task_assigned', 'task_started'])
   const a = run(42).snapshot(), b = run(42).snapshot()
   assert.deepEqual(a, b); assert.ok(a.slots.filter(slot => slot.status === 'occupied').length >= 110); assert.ok(a.counters.completed > 0)
+})
+
+test('LIVE-1 starts with inventory across all four high-rack rows', () => {
+  const slotIds = WH_R1_DATA.elements.filter(row => row.category === '托位载荷控制体').map(row => row.id)
+  const occupied = createLive1Simulation({ slotIds }).snapshot().slots.filter(slot => slot.status === 'occupied')
+  for (const rackId of ['WH-03-RK-01', 'WH-03-RK-02', 'WH-03-RK-03', 'WH-03-RK-04']) assert.ok(occupied.some(slot => slot.id.startsWith(rackId)), rackId)
 })
 
 test('LIVE-1 inventory conservation and no slot races', () => {
