@@ -36,7 +36,7 @@ export function buildR1DenseGarden({ THREE, root, layout, collision, quality, lo
     }
     const built = [batch.build(host, 'r1-dense-pots'), leaves.build(host,'r1-tropical-leaves')]
     // Pots and beds share one opaque material; two-sided foliage needs no duplicate reverse triangles.
-    built.forEach(b => { b.mesh.material.side = THREE.DoubleSide; b.mesh.userData.itemIds = records.map(r => r.id); b.mesh.castShadow = false })
+    built.forEach(b => { b.mesh.material.side = THREE.DoubleSide; b.mesh.userData.itemIds = records.map(r => r.id); b.mesh.userData.r1LodDetail = true; b.mesh.castShadow = false })
     host.name = lowTier ? 'r1-dense-low' : 'r1-dense-high'; group.add(host)
     return { root: host, plan, records, proxies, built }
   }

@@ -293,6 +293,7 @@ export function buildR1Books({ THREE, root, layout, collision, quality, low = fa
   const coverMaterial = new THREE.MeshBasicMaterial({ map: coverMap, color: coverMap ? 0xffffff : new THREE.Color(COVER_FACE[0]), toneMapped: false, side: THREE.DoubleSide })
   const coverMesh = new THREE.Mesh(coverGeometry, coverMaterial)
   coverMesh.name = 'r1-books-covers'; coverMesh.userData.itemIds = coverQuads.map(quad => `${quad.shelfId}/${quad.title}`)
+  coverMesh.userData.r1LodDetail = true
   group.add(coverMesh)
   root.add(group)
   const triangles = instances.length * 12 + coverQuads.length * 2

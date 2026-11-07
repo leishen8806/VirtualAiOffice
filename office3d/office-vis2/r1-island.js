@@ -229,6 +229,7 @@ export function buildR1Island({ THREE, root, layout, collision, quality, low = f
   const tree = buildHeartBanyan({ THREE, root: group, center, low: lowTier,
     fit: { crownDiameter: crown.lengthM, crownBase: crown.zM, totalHeight: plant.heightM, poolDiameter: pot.lengthM, poolHeight: pot.heightM, trunkDiameter: trunk.lengthM, trunkTop: trunk.zM + trunk.heightM } })
   tree.root.userData.r1Id = plant.id
+  tree.root.userData.r1LodDetail = true
   const potGeometry = new THREE.CylinderGeometry(pot.lengthM / 2, pot.lengthM / 2, pot.heightM, 48)
   const potProxy = new THREE.Mesh(potGeometry, proxyMaterial); potProxy.position.set(center.x, pot.heightM / 2, center.z); potProxy.userData.collisionProxy = true
   collision?.add(potProxy, pot.id); proxies.push(potProxy); ownGeometries.push(potGeometry)

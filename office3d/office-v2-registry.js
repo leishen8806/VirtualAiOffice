@@ -76,7 +76,11 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
       const distance = camera.position.distanceTo(centre), previous = distanceLod.get(name)
       const detail = previous === undefined ? distance <= far : previous ? distance < far : distance < near
       distanceLod.set(name, detail)
-      node.visible = detail
+      // Keep the base mesh, picking records and collision proxies alive. Only
+      // meshes explicitly marked as decorative detail participate in the LOD.
+      node.traverse(child => {
+        if (child.userData?.r1LodDetail) child.visible = detail
+      })
     }
   }
   const resetFrame = () => { lastFrame = null }
