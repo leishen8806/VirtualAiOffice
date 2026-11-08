@@ -91,6 +91,7 @@ export function takeQualityWork(queue, run, { budgetMs = 8, now = () => performa
 // 原场景和碰撞引用保留，中低档只切换渲染副本；恢复高档不重新装载模型。
 export function createSceneQuality(THREE, { scene, renderer, camera, env, characters, mergeStatic }) {
   let tier = 'high', prepared = false, cooldownUntil = 0
+  const HIGH_CHARACTER_SHADOW_AGENTS = 2
   const compiled = new Set()
   const originals = [], variants = {}, sourceMaterials = new Map(), sourceShadows = new Map(), lightVisibility = new Map(), shadowSizes = new Map(), lowMaterials = new Map(), lowTextures = new Map(), fakeShadows = new Map()
   const originalsGeometry = new Map(), compactGeometry = new Map(), box = new THREE.Box3(), center = new THREE.Vector3(), size = new THREE.Vector3()
@@ -177,6 +178,23 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
     for(const l of lights){l.visible=lightVisibility.get(l)&&selected.has(l);if(l.shadow){const scale=q==='medium'?.5:1, original=shadowSizes.get(l);const x=Math.max(1,Math.round(original.x*scale)),y=Math.max(1,Math.round(original.y*scale));if(l.shadow.mapSize.x!==x||l.shadow.mapSize.y!==y){l.shadow.mapSize.set(x,y);l.shadow.map?.dispose();l.shadow.map=null} }}
     renderer.shadowMap.enabled=q!=='low'
     for(const [mesh,mat]of sourceMaterials){mesh.material=q==='low'?(Array.isArray(mat)?mat.map(lightMaterial):lightMaterial(mat)):mat;if(originalsGeometry.has(mesh))mesh.geometry=q==='high'?originalsGeometry.get(mesh):compactGeometry.get(mesh);const shadow=sourceShadows.get(mesh);mesh.castShadow=q==='high'?shadow.cast:q==='medium'&&shadow.mediumCast;mesh.receiveShadow=q!=='low'&&shadow.receive}
+    if (q === 'high') {
+      // 写实人物的投影按人物限额保留，避免 25 个蒙皮人物各自触发阴影通道。
+      // 以相机距离选最近的两个 agent；大型静态物件仍沿用上面的原始阴影预算。
+      const byAgent = new Map()
+      for (const [mesh] of sourceMaterials) {
+        const agentId = mesh.userData.agentId
+        if (!agentId || !mesh.castShadow) continue
+        const list = byAgent.get(agentId) || []
+        list.push(mesh); byAgent.set(agentId, list)
+      }
+      const ranked = [...byAgent.entries()].map(([agentId, meshes]) => {
+        const point = new THREE.Vector3(); meshes[0].getWorldPosition(point)
+        return { agentId, meshes, distance: point.distanceTo(camera.position) }
+      }).sort((a, b) => a.distance - b.distance)
+      const keep = new Set(ranked.slice(0, HIGH_CHARACTER_SHADOW_AGENTS).map(row => row.agentId))
+      for (const [agentId, meshes] of byAgent) for (const mesh of meshes) mesh.castShadow = keep.has(agentId)
+    }
     for(const o of originals)o.visible=q==='high'||!variants[q]
     for(const [name,v]of Object.entries(variants)){
       v.root.visible=name===q
