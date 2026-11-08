@@ -978,8 +978,8 @@ const views = new Map() // agentId -> view
 // R1 人物远近级：保留滞回避免 12–15 m 边界闪烁。远处使用单一低面数人形代理，
 // 近处恢复完整写实人物；非 R1 场景不进入这条路径。
 // 总览机位只保留轻量人形；近景在 6m 内恢复写实模型，避免 25 个 GLB 同时占用总览预算。
-const R1_PERSON_LOD_RESTORE_M = 6
-const R1_PERSON_LOD_REDUCE_M = 8
+const R1_PERSON_LOD_RESTORE_M = 2
+const R1_PERSON_LOD_REDUCE_M = 3
 function syncR1PersonLod(view) {
   if (OFFICE_LAYOUT.r1Phase !== 'R1' || !view?.char?.group || !view.lodProxy) return
   const p = view.char.group.getWorldPosition(animationPoint)
@@ -2696,6 +2696,8 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             // replaceCharacter swaps the group; rebuild its LOD proxy or the old detached proxy would hide the real model.
             v.lodProxy = makeR1PersonProxy(ch, v.id)
             v.lodProxy.visible = false
+            // The placeholder may already have cached a LOD decision; reset it so the new avatar is initialized on the next frame.
+            v.r1PersonDetailed = undefined
             ch.group.add(v.lodProxy)
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
             if (typeof sceneQuality !== 'undefined') try { sceneQuality.replaceCharacter(previous, ch) } catch {}
