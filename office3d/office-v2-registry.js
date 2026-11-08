@@ -68,7 +68,7 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
   const distanceLod = new Map()
   const updateDistanceLod = camera => {
     if (!camera) return
-    const lowTier = quality?.tier === 'low', far = lowTier ? 30 : Infinity, near = lowTier ? 22 : Infinity, targetNames = ['r1Plants', 'r1Books', 'r1Brand', 'r1Doors']
+    const lowTier = quality?.tier === 'low', far = lowTier ? 0 : Infinity, near = lowTier ? 0 : Infinity, targetNames = ['r1Plants', 'r1Books', 'r1Brand', 'r1Doors']
     for (const name of targetNames) {
       const node = [...root.children].find(child => child.name.includes(`-${name}-root`))
       if (!node) continue

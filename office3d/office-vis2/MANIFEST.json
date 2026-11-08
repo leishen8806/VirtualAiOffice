@@ -260,7 +260,7 @@
       "source": "Existing shared office registry: forward asynchronous collision registrations after factory commit, retain failure isolation",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "7C7F884CC1BB7491CB7543FACD5E2D88589673D4C6416E1EB6442A93C387DD3F"
+      "sha256": "1700DB020FBF57D2B1DFFA4A8C87BA076564F5B46DAA2E3795CCD976C5667631"
     },
     {
       "file": "office-furniture-v2.js",
