@@ -49,7 +49,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const forkliftCount = low ? 2 : 3, registeredForklifts = WH_R1_VEHICLES.filter(row => row.category === '搬运设备占位'), forkliftRows = forkliftParts()
   const forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const row = registeredForklifts[i]; const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7, registeredId: row?.id || null }; group.add(rootNode); return rootNode })
   const forklift = new THREE.InstancedMesh(combinedForkliftGeometry(THREE, forkliftRows), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .74 }), forkliftCount)
-  forklift.name = 'wh-r1-live2-forklifts'; forklift.userData = { dynamic: true, live2Role: 'forklift', realModel: true, mergedParts: true, registeredIds: registeredForklifts.slice(0, forkliftCount).map(row => row.id) }; group.add(forklift)
+  forklift.name = 'wh-r1-live2-forklifts'; forklift.userData = { dynamic: true, live2Role: 'forklift', realModel: true, mergedParts: true, collisionRadius: .7, registeredIds: registeredForklifts.slice(0, forkliftCount).map(row => row.id), live2State: [] }; group.add(forklift)
   const forkliftDummy = new THREE.Object3D()
   // Staff are supplied by the registered WH-R1 staff module.  Do not create a
   // visual fallback here: a primitive fallback hides missing registration and
@@ -85,6 +85,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
       forkliftDummy.position.set(position.x, 0, position.z); forkliftDummy.rotation.y = (row?.yawDeg ?? parked?.yawDeg ?? 0) * Math.PI / 180; forkliftDummy.scale.setScalar(1); forkliftDummy.updateMatrix(); forklift.setMatrixAt(index, forkliftDummy.matrix)
     }
     forklift.instanceMatrix.needsUpdate = true
+    forklift.userData.live2State = registeredForklifts.slice(0, forkliftCount).map((row, index) => ({ id: row.id, stage: forkliftRoots[index].userData.stage, itemId: forkliftRoots[index].userData.taskId }))
     if (runtimeStaff?.members?.length) {
       if (staff) staff.visible = false
       runtimeStaff.members.forEach(member => { const target = member.char?.group || member.placeholder?.group; if (target) target.userData.live2Stage = state.tasks.find(task => task.stage === member.role)?.stage || 'idle' })
