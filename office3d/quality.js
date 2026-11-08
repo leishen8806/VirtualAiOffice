@@ -91,6 +91,7 @@ export function takeQualityWork(queue, run, { budgetMs = 8, now = () => performa
 // 原场景和碰撞引用保留，中低档只切换渲染副本；恢复高档不重新装载模型。
 export function createSceneQuality(THREE, { scene, renderer, camera, env, characters, mergeStatic }) {
   let tier = 'high', prepared = false, cooldownUntil = 0
+  const HIGH_CHARACTER_SHADOW_AGENTS = 2
   const compiled = new Set()
   const originals = [], variants = {}, sourceMaterials = new Map(), sourceShadows = new Map(), lightVisibility = new Map(), shadowSizes = new Map(), lowMaterials = new Map(), lowTextures = new Map(), fakeShadows = new Map()
   const originalsGeometry = new Map(), compactGeometry = new Map(), box = new THREE.Box3(), center = new THREE.Vector3(), size = new THREE.Vector3()
