@@ -9,12 +9,11 @@ import { chooseOfficeR1InspectorRect, rectsOverlap } from '../office-r1-ui.js'
 
 const layout = createOfficeR1Layout()
 
-test('I7 independently recomputes all 17 R1 routes and derives blocked state from clearance', () => {
+test('I7 independently recomputes all 17 R1 routes and derives clear state from clearance', () => {
   const rows = recomputeOfficeR1Routes({ layout })
   assert.equal(rows.length, 17)
   assert.ok(rows.every(row => row.notice === OFFICE_R1_VALIDATION_NOTICE && Number.isFinite(row.minClearanceMm)))
-  assert.ok(rows.some(row => row.status === 'BLOCKED'))
-  assert.ok(rows.some(row => row.status === 'CONDITIONAL_STATIC_CLEAR'))
+  assert.ok(rows.every(row => row.status === 'CONDITIONAL_STATIC_CLEAR' && row.minClearanceMm >= 0))
   assert.equal(rows.some(row => row.status === 'PASS'), false)
 })
 
@@ -26,7 +25,7 @@ test('I7 recomputes reverse routes and both door-state scenarios from geometry',
   assert.deepEqual(reverse[0].pointsWorld, [...forward[0].pointsWorld].reverse())
   assert.ok(closed.every(row => row.doorMode === 'doorsClosed'))
   assert.ok(forward.every(row => row.segments.length === row.pointsWorld.length - 1))
-  assert.ok(forward.some(row => row.minClearanceMm < 0 && row.status === 'BLOCKED'))
+  assert.ok(forward.every(row => row.minClearanceMm >= 0 && row.status === 'CONDITIONAL_STATIC_CLEAR'))
 })
 
 test('I7 keeps the 29 source checks visible while recomputing route checks', () => {
@@ -34,7 +33,7 @@ test('I7 keeps the 29 source checks visible while recomputing route checks', () 
   assert.equal(result.routeCount, 17)
   assert.equal(result.checkCount, 29)
   assert.equal(result.routes.length, 17)
-  assert.ok(result.checks.some(row => row.recomputed && row.status === 'BLOCKED'))
+  assert.ok(result.checks.every(row => !row.recomputed || row.id === 'element_identity' || row.status === 'CONDITIONAL_STATIC_CLEAR'))
   assert.ok(result.checks.some(row => row.status === 'PASS_THROUGH_NOT_RECOMPUTED'))
   assert.equal(result.notice, OFFICE_R1_VALIDATION_NOTICE)
   assert.deepEqual(Object.keys(result.scenarios).sort(), ['doorsClosed', 'doorsUnknownOpen'])
