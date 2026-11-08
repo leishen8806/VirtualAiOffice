@@ -2694,11 +2694,13 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
             // replaceCharacter swaps the group; rebuild its LOD proxy or the old detached proxy would hide the real model.
-            v.lodProxy = makeR1PersonProxy(ch, v.id)
-            v.lodProxy.visible = false
-            // The placeholder may already have cached a LOD decision; reset it so the new avatar is initialized on the next frame.
-            v.r1PersonDetailed = undefined
-            ch.group.add(v.lodProxy)
+            if (typeof THREE !== 'undefined') {
+              v.lodProxy = makeR1PersonProxy(ch, v.id)
+              v.lodProxy.visible = false
+              // The placeholder may already have cached a LOD decision; reset it so the new avatar is initialized on the next frame.
+              v.r1PersonDetailed = undefined
+              ch.group.add(v.lodProxy)
+            }
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
             if (typeof sceneQuality !== 'undefined') try { sceneQuality.replaceCharacter(previous, ch) } catch {}
             v.char = ch
