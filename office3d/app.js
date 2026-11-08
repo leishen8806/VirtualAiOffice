@@ -2693,6 +2693,10 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
+            // replaceCharacter swaps the group; rebuild its LOD proxy or the old detached proxy would hide the real model.
+            v.lodProxy = makeR1PersonProxy(ch, v.id)
+            v.lodProxy.visible = false
+            ch.group.add(v.lodProxy)
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
             if (typeof sceneQuality !== 'undefined') try { sceneQuality.replaceCharacter(previous, ch) } catch {}
             v.char = ch

@@ -9,4 +9,5 @@ test('R1 overview uses a hysteresis band that keeps people visible without loadi
   assert.match(source, /R1_PERSON_LOD_REDUCE_M\s*=\s*8/)
   assert.match(source, /lodProxy\.visible\s*=\s*!detailed/)
   assert.match(source, /mesh\.renderOrder\s*=\s*2/)
+  assert.match(source, /v\.lodProxy\s*=\s*makeR1PersonProxy\(ch, v\.id\)/)
 })
