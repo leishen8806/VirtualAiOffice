@@ -63,7 +63,7 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
   if(!plaza&&species<4){
     if(species===1)stem([0,potHeight,0],[.04,height*.85,0],.04)
     if(species===2)for(let k=0;k<3;k++)for(let j=0;j<6;j++){const a=j*.65+k*2.094,b=a+.65;stem([Math.cos(a)*.035,potHeight+j*.12,Math.sin(a)*.035],[Math.cos(b)*.035,potHeight+(j+1)*.12,Math.sin(b)*.035],.021)}
-    const count=low?3:12
+    const count=low?7:12
     for(let j=0;j<count;j++){
       const a=j*2.399+rng()*.4,rr=species===1?.18:species===2?.22:.3,x=Math.cos(a)*rr,z=Math.sin(a)*rr
       const y=species===3?potHeight+.18-j/count*.40:species===1?height*(.48+.4*j/count):species===2?height*(.64+.22*j/count):potHeight+.22+.6*j/count
@@ -71,11 +71,11 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
       leaf(species,x,y,z,species===2?.55:.42,species===1?.55:.42,a,species===3?.25:-.35)
     }
   } else if(!plaza&&species===5){
-    for(let j=0;j<(low?3:11);j++){const a=j*2.399,r=.04+rng()*.12;blade([Math.cos(a)*r,potHeight,Math.sin(a)*r],[Math.cos(a)*(.16+rng()*.15),potHeight+.4+rng()*.35,Math.sin(a)*.25],.055,green,true)}
+    for(let j=0;j<(low?7:11);j++){const a=j*2.399,r=.04+rng()*.12;blade([Math.cos(a)*r,potHeight,Math.sin(a)*r],[Math.cos(a)*(.16+rng()*.15),potHeight+.4+rng()*.35,Math.sin(a)*.25],.055,green,true)}
   } else if((!plaza&&species===4)||(plaza&&species===3)){
     if(plaza)stem([0,potHeight,0],[.06,height*.7,0],.07)
     else for(let k=0;k<5;k++){const a=k*2.399;stem([Math.cos(a)*.07,potHeight,Math.sin(a)*.07],[Math.cos(a)*.18,height*(.52+k*.045),Math.sin(a)*.18],.018,'#799153')}
-    for(let j=0;j<(low?3:8);j++){
+    for(let j=0;j<(low?5:8);j++){
       const a=j*2.399,base=plaza?[0,height*.68,0]:[Math.cos(a)*.18,height*(.52+j%5*.045),Math.sin(a)*.18],end=[Math.cos(a)*.7,height*(.65+rng()*.22),Math.sin(a)*.7];stem(base,end,.008,green)
       for(let k=1;k<=7;k++){const t=k/8,x=base[0]+(end[0]-base[0])*t,z=base[2]+(end[2]-base[2])*t,y=base[1]+(end[1]-base[1])*t;for(const s of [-1,1])blade([x,y,z],[x+Math.cos(a+s*1.1)*.28*(1-t*.5),y-.12,z+Math.sin(a+s*1.1)*.28*(1-t*.5)],plaza?.085:.024,green)}
     }
@@ -83,7 +83,7 @@ export function appendTropicalPlant({THREE,batch,leaves,row,low=false,plaza=fals
     for(let j=0;j<(low?6:9);j++){const a=(j%2?1:-1)*.3+Math.PI*(j%2),h=height*(.65+rng()*.35);stem([0,0,0],[Math.cos(a)*.18,h*.6,Math.sin(a)*.18],.025,green);blade([0,h*.5,0],[Math.cos(a)*.9,h,Math.sin(a)*.9],.24,green)}
   } else {
     stem([0,0,0],[0,height*.65,0],.065)
-    for(let j=0;j<(low?3:10);j++){const a=j*2.399,x=Math.cos(a)*.5,z=Math.sin(a)*.5,y=height*(.6+rng()*.3);stem([0,height*.4,0],[x,y,z],.025);for(let k=0;k<3;k++)blade([x,y,z],[x+Math.cos(a+k)*.28,y+.12,z+Math.sin(a+k)*.28],.09,green);flower(x,y+.16,z,species===0?'#F7F0DA':j%2?'#D04B82':'#E7914C')}
+    for(let j=0;j<(low?6:10);j++){const a=j*2.399,x=Math.cos(a)*.5,z=Math.sin(a)*.5,y=height*(.6+rng()*.3);stem([0,height*.4,0],[x,y,z],.025);for(let k=0;k<3;k++)blade([x,y,z],[x+Math.cos(a+k)*.28,y+.12,z+Math.sin(a+k)*.28],.09,green);flower(x,y+.16,z,species===0?'#F7F0DA':j%2?'#D04B82':'#E7914C')}
   }
   // Fit every actual vertex into its certified horizontal disk, and keep the varied height.
   const all=[...parts,...leafParts],box=new THREE.Box3();let radial=0
