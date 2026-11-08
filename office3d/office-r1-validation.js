@@ -1,9 +1,10 @@
 import { createR1Navigation } from './office-r1-navigation.js'
 import { createOfficeR1Layout } from './office-vis2/r1-site.js'
 import { r1ToWorld } from './office-r1-layout.js'
-import { R1_CLUSTER_PLANTS } from './office-vis2/r1-cluster-plan.js'
-import { R1_LANDSCAPE } from './office-vis2/r1-landscape-plan.js'
+import { r1DensePlan } from './office-vis2/r1-dense-garden.js'
+import { r1LookPlantElements } from './office-vis2/r1-look.js'
 import { R1_DECOR } from './office-vis2/r1-decor.js'
+import { plantFootprintSamples } from './office-vis2/r1-plant-footprints.js'
 
 export const OFFICE_R1_VALIDATION_NOTICE = '静态局部几何，不是端到端动态验收'
 const finite = value => Number.isFinite(value) ? value : 0
@@ -40,42 +41,41 @@ const obstacleRowsFor = (data, doorMode) => {
   return rows
 }
 
-// Keep the route checker on the same footprint sampling rule used by the foliage tests.
-const plantFootprintSamples = (row, step = .05) => {
-  if (Number.isFinite(row.r)) return [{ x: row.x, z: row.z, r: row.r }]
-  const n = Math.ceil(row.length / step), width = row.wall ? .3 : row.width
-  if (!Number.isFinite(row.length) || row.length <= 0 || !Number.isFinite(width) || width <= 0) return []
-  return Array.from({ length: n + 1 }, (_, i) => {
-    const u = (i / n - .5) * row.length
-    if (row.shape === 'arc') { const a = row.startDeg * Math.PI / 180 + (u + row.length / 2) / row.radius; return { x: row.x + row.radius * Math.cos(a), z: row.z + row.radius * Math.sin(a), r: width / 2 } }
-    const a = (row.angle ?? (row.d > row.w ? 90 : 0)) * Math.PI / 180
-    return { x: row.x + u * Math.cos(a), z: row.z + u * Math.sin(a), r: width / 2 }
-  })
-}
-
-const plantObstaclesFor = () => {
+export const plantObstaclesFor = (layout) => {
   const obstacles = []
-  for (const row of R1_CLUSTER_PLANTS) for (const sample of plantFootprintSamples(row)) obstacles.push({ id: row.id, x0: sample.x - sample.r, x1: sample.x + sample.r, z0: sample.z - sample.r, z1: sample.z + sample.r })
-  for (const row of [...R1_LANDSCAPE.troughs, ...R1_LANDSCAPE.gardens]) for (const sample of plantFootprintSamples(row)) obstacles.push({ id: row.id, x0: sample.x - sample.r, x1: sample.x + sample.r, z0: sample.z - sample.r, z1: sample.z + sample.r })
+  const addFoliage = (row) => plantFootprintSamples(row).forEach(sample => obstacles.push({ id: row.id, kind: 'foliage', x: sample.x, z: sample.z, r: sample.r }))
+  const dense = r1DensePlan(layout)
+  for (const row of dense.plants) addFoliage(row)
+  for (const row of [...dense.troughs, ...dense.gardens]) addFoliage(row)
+  for (const row of r1LookPlantElements().filter(item => item.category === '植物总成')) addFoliage({ id: row.id, x: row.xM - 26, z: 18 - row.yM, r: Math.max(row.lengthM, row.widthM) / 2 })
+  const allRegistered = [...layout.r1.elements, ...r1LookPlantElements()]
+  for (const row of allRegistered.filter(item => item.category === '植物总成' && item.id.match(/^\d{2}-PL-/))) {
+    const kin = allRegistered.filter(item => item.id === row.id || item.parentId === row.id)
+    const half = Math.max(...kin.map(item => Math.max(item.lengthM || 0, item.widthM || 0) / 2))
+    const p = r1ToWorld(row.xM, row.yM)
+    obstacles.push({ id: row.id, kind: 'registered', x: p.x, z: p.z, r: half })
+  }
   return obstacles
 }
 
 // These are the measured low (<=2.1 m) model extents after the house FURN_SCALE=2 transform.
 // Keeping the certified extents here avoids loading GLB data in the pure route validator.
-const DECOR_EXTENTS = Object.freeze({ coatRack: [0.896, 0.268], trashcan: [0.4154, 0.4682], speaker: [0.296, 0.296], lampSquareFloor: [0.24, 0.24], sideTable: [1.0689, 0.44], rugRectangle: [3.14, 1.84] })
+export const DECOR_EXTENTS = Object.freeze({ coatRack: [0.896, 0.268], trashcan: [0.4154, 0.4682], speaker: [0.296, 0.296], lampSquareFloor: [0.24, 0.24], sideTable: [1.0689, 0.44], rugRectangle: [3.14, 1.84] })
 const decorObstaclesFor = () => R1_DECOR.filter(row => row.collide).map(row => {
   const world = r1ToWorld(row.xM, row.yM), [width, depth] = DECOR_EXTENTS[row.model] || [0, 0], angle = (row.rotYDeg || 0) * Math.PI / 180
   const halfX = (Math.abs(Math.cos(angle) * width) + Math.abs(Math.sin(angle) * depth)) / 2
   const halfZ = (Math.abs(Math.sin(angle) * width) + Math.abs(Math.cos(angle) * depth)) / 2
   return { id: row.id, x0: world.x - halfX, x1: world.x + halfX, z0: world.z - halfZ, z1: world.z + halfZ }
 })
-const PLANT_OBSTACLES = plantObstaclesFor()
 const DECOR_OBSTACLES = decorObstaclesFor()
 
 export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direction = 'forward', doorMode = 'doorsUnknownOpen' } = {}) {
   const data = layout.r1.data
   const boxes = obstacleRowsFor(data, doorMode).map(boxFor)
-  const plants = PLANT_OBSTACLES, decor = DECOR_OBSTACLES
+  const plants = plantObstaclesFor(layout), decor = DECOR_OBSTACLES
+  const plantClearance = (a, b, obstacle) => obstacle.kind === 'registered'
+    ? pointSegmentDistance([obstacle.x, obstacle.z], a, b) - obstacle.r - .6
+    : pointSegmentDistance([obstacle.x, obstacle.z], a, b) - obstacle.r - .6 - .3
   return layout.r1.routes.map(route => {
     const forwardPoints = route.points_m.map(worldPoint), points = direction === 'reverse' ? [...forwardPoints].reverse() : forwardPoints, radius = Number(data.bodyProfiles[route.body_profile]?.radius_m || .6)
     let min = Infinity, nearest = null, plantMin = Infinity, nearestPlant = null, decorMin = Infinity, nearestDecor = null
@@ -85,7 +85,7 @@ export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direc
       if (clearance < min) { min = clearance; nearest = box.id }
     }
     for (let i = 1; i < points.length; i++) {
-      for (const obstacle of plants) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .3; if (clearance < plantMin) { plantMin = clearance; nearestPlant = obstacle.id } }
+      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < plantMin) { plantMin = clearance; nearestPlant = obstacle.id } }
       for (const obstacle of decor) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .6; if (clearance < decorMin) { decorMin = clearance; nearestDecor = obstacle.id } }
     }
     for (let i = 1; i < points.length; i++) {
@@ -95,14 +95,16 @@ export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direc
         if (clearance < segmentMin) { segmentMin = clearance; segmentNearest = box.id }
       }
       let segmentPlant = Infinity, segmentPlantId = null, segmentDecor = Infinity, segmentDecorId = null
-      for (const obstacle of plants) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .3; if (clearance < segmentPlant) { segmentPlant = clearance; segmentPlantId = obstacle.id } }
+      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < segmentPlant) { segmentPlant = clearance; segmentPlantId = obstacle.id } }
       for (const obstacle of decor) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .6; if (clearance < segmentDecor) { segmentDecor = clearance; segmentDecorId = obstacle.id } }
       const worst = Math.min(segmentMin, segmentPlant, segmentDecor)
-      segments.push({ index: i, start: points[i - 1], end: points[i], minClearanceMm: Number((segmentMin * 1000).toFixed(3)), nearestId: segmentNearest, plantClearanceMm: Number((segmentPlant * 1000).toFixed(3)), nearestPlantId: segmentPlantId, decorClearanceMm: Number((segmentDecor * 1000).toFixed(3)), nearestDecorId: segmentDecorId, status: worst < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR' })
+      const metric = plants.find(p => p.id === segmentPlantId)?.kind === 'registered' ? 'registered-low-canopy-vertex-0.6m' : 'foliage-radius-plus-human-0.6m-threshold-0.3m'
+      segments.push({ index: i, start: points[i - 1], end: points[i], minClearanceMm: Number((segmentMin * 1000).toFixed(3)), nearestId: segmentNearest, plantClearanceMm: Number((segmentPlant * 1000).toFixed(3)), nearestPlantId: segmentPlantId, plantMetric: metric, decorClearanceMm: Number((segmentDecor * 1000).toFixed(3)), nearestDecorId: segmentDecorId, status: worst < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR' })
     }
     const minClearanceM = Number.isFinite(min) ? Number(min.toFixed(6)) : null
     const worst = Math.min(min, plantMin, decorMin)
-    return { id: route.id, bodyProfile: route.body_profile, direction, doorMode, pointsWorld: points, segments, minClearanceMm: minClearanceM === null ? null : Number((minClearanceM * 1000).toFixed(3)), nearestId: nearest, plantClearanceMm: Number((plantMin * 1000).toFixed(3)), nearestPlantId: nearestPlant, decorClearanceMm: Number((decorMin * 1000).toFixed(3)), nearestDecorId: nearestDecor, status: worst < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR', notice: OFFICE_R1_VALIDATION_NOTICE }
+    const metric = plants.find(p => p.id === nearestPlant)?.kind === 'registered' ? 'registered-low-canopy-vertex-0.6m' : 'foliage-radius-plus-human-0.6m-threshold-0.3m'
+    return { id: route.id, bodyProfile: route.body_profile, direction, doorMode, pointsWorld: points, segments, minClearanceMm: minClearanceM === null ? null : Number((minClearanceM * 1000).toFixed(3)), nearestId: nearest, plantClearanceMm: Number((plantMin * 1000).toFixed(3)), nearestPlantId: nearestPlant, plantMetric: metric, decorClearanceMm: Number((decorMin * 1000).toFixed(3)), nearestDecorId: nearestDecor, status: worst < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR', notice: OFFICE_R1_VALIDATION_NOTICE }
   })
 }
 

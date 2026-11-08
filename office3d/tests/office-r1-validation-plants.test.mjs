@@ -4,7 +4,7 @@ import { createOfficeR1Layout } from '../office-vis2/r1-site.js'
 import { R1_CLUSTER_PLANTS } from '../office-vis2/r1-cluster-plan.js'
 import { R1_DECOR } from '../office-vis2/r1-decor.js'
 import { r1ToWorld } from '../office-r1-layout.js'
-import { recomputeOfficeR1Routes } from '../office-r1-validation.js'
+import { recomputeOfficeR1Routes, plantObstaclesFor } from '../office-r1-validation.js'
 
 const base = createOfficeR1Layout()
 const routeAtWorld = (id, x, z) => ({ id, body_profile: 'H2', points_m: [[x + 26, 18 - z], [x + 26 + .1, 18 - z]] })
@@ -38,4 +38,26 @@ test('validator blocks a colliding decor counterexample and reports its id', () 
   assert.equal(result.status, 'BLOCKED')
   assert.equal(result.nearestDecorId, row.id)
   assert.ok(result.decorClearanceMm < 0)
+})
+
+for (const [label, row] of [
+  ['DENSE edge', R1_CLUSTER_PLANTS.find(item => item.id === 'DENSE-08-7')],
+  ['LOOK edge', R1_CLUSTER_PLANTS.find(item => item.id === 'LOOK-06-1')],
+  ['registered edge', R1_CLUSTER_PLANTS.find(item => item.id === '07-PL-002')],
+]) {
+  test(`validator rejects a ${label} scrape at 0.5m`, () => {
+    const x = row.x + row.r + .5
+    const result = recomputeOfficeR1Routes({ layout: layoutWith(routeAtWorld('scrape', x, row.z)) })[0]
+    assert.equal(result.status, 'BLOCKED')
+    assert.ok(result.plantClearanceMm < 0)
+  })
+}
+
+test('validator exposes the same plant source and metric labels used by the tests', () => {
+  const obstacles = plantObstaclesFor(base)
+  assert.ok(obstacles.some(row => row.id === 'DENSE-08-7' && row.kind === 'foliage'))
+  assert.ok(obstacles.some(row => row.id === 'LOOK-06-1' && row.kind === 'foliage'))
+  assert.ok(obstacles.some(row => row.id === '07-PL-002' && row.kind === 'registered'))
+  const rows = recomputeOfficeR1Routes({ layout: base })
+  assert.ok(rows.every(row => row.plantMetric.includes('0.6m')))
 })
