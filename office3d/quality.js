@@ -120,6 +120,8 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
     const root = new THREE.Group(); root.name = `quality-${q}`; root.userData.dynamic = true
     const buckets = new Map(), canonical = new Map(), unitBox = new THREE.BoxGeometry(1,1,1), scaling = new THREE.Matrix4()
     for (const o of originals) {
+      // 人物在 low/medium 由可见的 per-person LOD proxy 承担，禁止把完整 GLB 再复制进低档副本。
+      if (q !== 'high' && o.userData.agentId) continue
       const original = sourceMaterials.get(o)
       if (Array.isArray(original)) continue
       let mat = q === 'low' ? lightMaterial(original) : original
