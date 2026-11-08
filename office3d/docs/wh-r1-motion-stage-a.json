@@ -1,6 +1,6 @@
 {
   "schema": "WH-R1-MOTION-STAGE-A/v3",
-  "generatedAt": "2026-11-08T13:39:27.471Z",
+  "generatedAt": "2026-11-08T14:23:43.659Z",
   "units": "source metres; clearance millimetres",
   "assumptions": {
     "model": {
@@ -45862,207 +45862,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 950,
+      "minClearanceM": 0.95,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-14-PL-002-POT",
-        "source": "site_i7_geometry"
+        "id": "WH-01-VH-005",
+        "source": "adjacent_occupied_vehicle"
       },
       "articulationMaxDeg": 70,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-002",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 880,
           "nearestCenter": [
-            130,
-            6.75
+            8.975,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              5.8,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              7.175,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              7.175,
+              48
             ],
             [
-              153.55,
-              14.45
+              5.8,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              9.239,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              6.225,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              8.711,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              11.725,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 950,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-005",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 880,
           "nearestCenter": [
-            130,
-            6.75
+            8.975,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              2.725,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              2.725,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              5.275,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              5.275,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              9.239,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              6.225,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              8.711,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              11.725,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-002",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 832,
           "nearestCenter": [
-            130,
-            6.75
+            11.593181818181819,
+            68.32
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              13.55,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              13.55,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              16.1,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              16.1,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              11.857,
+              75.233
             ],
             [
-              131.275,
-              13.55
+              8.843,
+              61.972
             ],
             [
-              128.725,
-              13.55
+              11.329,
+              61.407
             ],
             [
-              128.725,
-              -0.05
+              14.343,
+              74.668
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-002",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 832,
           "nearestCenter": [
-            130,
-            6.75
+            11.593181818181819,
+            68.32
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              13.55,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              13.55,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              16.1,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              16.1,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              11.857,
+              75.233
             ],
             [
-              131.275,
-              13.55
+              8.843,
+              61.972
             ],
             [
-              128.725,
-              13.55
+              11.329,
+              61.407
             ],
             [
-              128.725,
-              -0.05
+              14.343,
+              74.668
             ]
           ],
           "articulationMaxDeg": 70
@@ -90652,207 +90652,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 1358,
+      "minClearanceM": 1.358,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-14-PL-002-POT",
-        "source": "site_i7_geometry"
+        "id": "WH-01-VH-003",
+        "source": "adjacent_occupied_vehicle"
       },
       "articulationMaxDeg": 70,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-003",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 856,
           "nearestCenter": [
-            130,
-            6.75
+            14.825,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              10.775,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              13.025,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              13.025,
+              48
             ],
             [
-              153.55,
-              14.45
+              10.775,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              15.089,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              12.075,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              14.561,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              17.575,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-003",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 839,
           "nearestCenter": [
-            130,
-            6.75
+            15.752272727272727,
+            60.879999999999995
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              19.4,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              19.4,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              21.95,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              21.95,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              16.016,
+              67.793
             ],
             [
-              131.275,
-              13.55
+              13.002,
+              54.532
             ],
             [
-              128.725,
-              13.55
+              15.489,
+              53.967
             ],
             [
-              128.725,
-              -0.05
+              18.503,
+              67.228
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1825,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-001",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 856,
           "nearestCenter": [
-            130,
-            6.75
+            14.825,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              7.7,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              7.7,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              10.25,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              10.25,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              15.089,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              12.075,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              14.561,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              17.575,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-003",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 839,
           "nearestCenter": [
-            130,
-            6.75
+            15.752272727272727,
+            60.879999999999995
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              19.4,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              19.4,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              21.95,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              21.95,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              16.016,
+              67.793
             ],
             [
-              131.275,
-              13.55
+              13.002,
+              54.532
             ],
             [
-              128.725,
-              13.55
+              15.489,
+              53.967
             ],
             [
-              128.725,
-              -0.05
+              18.503,
+              67.228
             ]
           ],
           "articulationMaxDeg": 70
@@ -134246,207 +134246,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 1358,
+      "minClearanceM": 1.358,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-14-PL-002-POT",
-        "source": "site_i7_geometry"
+        "id": "WH-01-VH-004",
+        "source": "adjacent_occupied_vehicle"
       },
       "articulationMaxDeg": 70,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-004",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 833,
           "nearestCenter": [
-            130,
-            6.75
+            20.675,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              16.625,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              18.875,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              18.875,
+              48
             ],
             [
-              153.55,
-              14.45
+              16.625,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              20.939,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              17.925,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              20.411,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              23.425,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-004",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 813,
           "nearestCenter": [
-            130,
-            6.75
+            21.76590909090909,
+            61.599999999999994
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              25.25,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              25.25,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              27.8,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              27.8,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              22.03,
+              68.513
             ],
             [
-              131.275,
-              13.55
+              20.999,
+              63.979
             ],
             [
-              128.725,
-              13.55
+              23.486,
+              63.414
             ],
             [
-              128.725,
-              -0.05
+              24.516,
+              67.948
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1825,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-002",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 833,
           "nearestCenter": [
-            130,
-            6.75
+            20.675,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              13.55,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              13.55,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              16.1,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              16.1,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              20.939,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              17.925,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              20.411,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              23.425,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1358,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-004",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 813,
           "nearestCenter": [
-            130,
-            6.75
+            21.76590909090909,
+            61.599999999999994
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              25.25,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              25.25,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              27.8,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              27.8,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              22.03,
+              68.513
             ],
             [
-              131.275,
-              13.55
+              20.999,
+              63.979
             ],
             [
-              128.725,
-              13.55
+              23.486,
+              63.414
             ],
             [
-              128.725,
-              -0.05
+              24.516,
+              67.948
             ]
           ],
           "articulationMaxDeg": 70
@@ -176592,207 +176592,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 1825,
+      "minClearanceM": 1.825,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-14-PL-002-POT",
-        "source": "site_i7_geometry"
+        "id": "WH-01-VH-003",
+        "source": "adjacent_occupied_vehicle"
       },
       "articulationMaxDeg": 70,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-005",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 809,
           "nearestCenter": [
-            130,
-            6.75
+            26.525,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              22.475,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              24.725,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              24.725,
+              48
             ],
             [
-              153.55,
-              14.45
+              22.475,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              26.789,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              23.775,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              26.261,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              29.275,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1825,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-003",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 809,
           "nearestCenter": [
-            130,
-            6.75
+            26.525,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              19.4,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              19.4,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              21.95,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              21.95,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              26.789,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              23.775,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              26.261,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              29.275,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-005",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 809,
           "nearestCenter": [
-            130,
-            6.75
+            26.525,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              22.475,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              24.725,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              24.725,
+              48
             ],
             [
-              153.55,
-              14.45
+              22.475,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              26.789,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              23.775,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              26.261,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              29.275,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1825,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-003",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 809,
           "nearestCenter": [
-            130,
-            6.75
+            26.525,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              19.4,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              19.4,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              21.95,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              21.95,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              26.789,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              23.775,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              26.261,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              29.275,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
@@ -223618,207 +223618,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 505,
+      "minClearanceM": 0.505,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-14-PL-002-POT",
-        "source": "site_i7_geometry"
+        "id": "WH-01-VH-001",
+        "source": "adjacent_occupied_vehicle"
       },
       "articulationMaxDeg": 70,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 2180,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-00-W-001",
+            "source": "site_wall"
           },
-          "nearestSample": 99,
+          "nearestSample": 899,
           "nearestCenter": [
-            130,
-            6.75
+            4,
+            56.8
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              0.14,
+              47.72
             ],
             [
-              154.45,
-              13.55
+              2.2,
+              47.72
             ],
             [
-              154.45,
-              14.45
+              2.2,
+              48
             ],
             [
-              153.55,
-              14.45
+              0.14,
+              48
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              4.264,
+              63.713
             ],
             [
-              131.275,
-              13.55
+              1.25,
+              50.452
             ],
             [
-              128.725,
-              13.55
+              3.736,
+              49.887
             ],
             [
-              128.725,
-              -0.05
+              6.75,
+              63.148
             ]
           ],
           "articulationMaxDeg": 70
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 505,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-001",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 885,
           "nearestCenter": [
-            130,
-            6.75
+            4.763636363636364,
+            60.16
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              7.7,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              7.7,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              10.25,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              10.25,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              5.027,
+              67.073
             ],
             [
-              131.275,
-              13.55
+              3.997,
+              62.539
             ],
             [
-              128.725,
-              13.55
+              6.483,
+              61.974
             ],
             [
-              128.725,
-              -0.05
+              7.514,
+              66.508
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 505,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-001",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 885,
           "nearestCenter": [
-            130,
-            6.75
+            4.763636363636364,
+            60.16
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              7.7,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              7.7,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              10.25,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              10.25,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              5.027,
+              67.073
             ],
             [
-              131.275,
-              13.55
+              3.997,
+              62.539
             ],
             [
-              128.725,
-              13.55
+              6.483,
+              61.974
             ],
             [
-              128.725,
-              -0.05
+              7.514,
+              66.508
             ]
           ],
           "articulationMaxDeg": 70
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 505,
           "nearestObstacle": {
-            "id": "WH-14-PL-002-POT",
-            "source": "site_i7_geometry"
+            "id": "WH-01-VH-001",
+            "source": "adjacent_occupied_vehicle"
           },
-          "nearestSample": 99,
+          "nearestSample": 885,
           "nearestCenter": [
-            130,
-            6.75
+            4.763636363636364,
+            60.16
           ],
           "nearestObstacleCorners": [
             [
-              153.55,
-              13.55
+              7.7,
+              65.05
             ],
             [
-              154.45,
-              13.55
+              7.7,
+              48.55
             ],
             [
-              154.45,
-              14.45
+              10.25,
+              48.55
             ],
             [
-              153.55,
-              14.45
+              10.25,
+              65.05
             ]
           ],
           "nearestPartCorners": [
             [
-              131.275,
-              -0.05
+              5.027,
+              67.073
             ],
             [
-              131.275,
-              13.55
+              3.997,
+              62.539
             ],
             [
-              128.725,
-              13.55
+              6.483,
+              61.974
             ],
             [
-              128.725,
-              -0.05
+              7.514,
+              66.508
             ]
           ],
           "articulationMaxDeg": 70
@@ -229665,207 +229665,207 @@
           ]
         }
       ],
-      "minClearanceMm": 4,
-      "minClearanceM": 0.004,
+      "minClearanceMm": 1389,
+      "minClearanceM": 1.389,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-06-VH-003",
-        "source": "adjacent_occupied_vehicle"
+        "id": "R5-SHIP-W-E-2",
+        "source": "site_annex_wall"
       },
       "articulationMaxDeg": 0,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-2",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 193,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            16
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              12
             ],
             [
-              6.1,
-              9.925
+              112,
+              13.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              13.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              12
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              16.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              16.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              15.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              15.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "adjacentOccupied": {
-          "minClearanceMm": 4,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-06-VH-003",
-            "source": "adjacent_occupied_vehicle"
+            "id": "R5-SHIP-W-E-2",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 180,
+          "nearestSample": 193,
           "nearestCenter": [
-            119.15438596491228,
+            115.95,
             16
           ],
           "nearestObstacleCorners": [
             [
-              115.75,
-              30.625
+              112,
+              12
             ],
             [
-              112.55,
-              30.625
+              112,
+              13.9
             ],
             [
-              112.55,
-              29.375
+              111.72,
+              13.9
             ],
             [
-              115.75,
-              29.375
+              111.72,
+              12
             ]
           ],
           "nearestPartCorners": [
             [
-              122.554,
+              119.35,
               16.825
             ],
             [
-              115.754,
+              112.55,
               16.825
             ],
             [
-              115.754,
+              112.55,
               15.175
             ],
             [
-              122.554,
+              119.35,
               15.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousM5": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-2",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 193,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            16
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              12
             ],
             [
-              6.1,
-              9.925
+              112,
+              13.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              13.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              12
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              16.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              16.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              15.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              15.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-2",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 193,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            16
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              12
             ],
             [
-              6.1,
-              9.925
+              112,
+              13.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              13.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              12
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              16.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              16.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              15.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              15.175
             ]
           ],
           "articulationMaxDeg": 0
@@ -236552,207 +236552,207 @@
           ]
         }
       ],
-      "minClearanceMm": 4,
-      "minClearanceM": 0.004,
+      "minClearanceMm": 1389,
+      "minClearanceM": 1.389,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-06-VH-003",
-        "source": "adjacent_occupied_vehicle"
+        "id": "R5-SHIP-W-E-3",
+        "source": "site_annex_wall"
       },
       "articulationMaxDeg": 0,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-3",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 221,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            23
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              18.1
             ],
             [
-              6.1,
-              9.925
+              112,
+              20.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              20.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              18.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              23.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              23.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              22.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              22.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "adjacentOccupied": {
-          "minClearanceMm": 4,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-06-VH-003",
-            "source": "adjacent_occupied_vehicle"
+            "id": "R5-SHIP-W-E-3",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 208,
+          "nearestSample": 221,
           "nearestCenter": [
-            119.15438596491228,
+            115.95,
             23
           ],
           "nearestObstacleCorners": [
             [
-              115.75,
-              30.625
+              112,
+              18.1
             ],
             [
-              112.55,
-              30.625
+              112,
+              20.9
             ],
             [
-              112.55,
-              29.375
+              111.72,
+              20.9
             ],
             [
-              115.75,
-              29.375
+              111.72,
+              18.1
             ]
           ],
           "nearestPartCorners": [
             [
-              122.554,
+              119.35,
               23.825
             ],
             [
-              115.754,
+              112.55,
               23.825
             ],
             [
-              115.754,
+              112.55,
               22.175
             ],
             [
-              122.554,
+              119.35,
               22.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousM5": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-3",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 221,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            23
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              18.1
             ],
             [
-              6.1,
-              9.925
+              112,
+              20.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              20.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              18.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              23.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              23.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              22.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              22.175
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 25,
+          "minClearanceMm": 1389,
           "nearestObstacle": {
-            "id": "WH-08-W-002",
-            "source": "site_wall"
+            "id": "R5-SHIP-W-E-3",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 221,
           "nearestCenter": [
-            130,
-            6.5
+            115.95,
+            23
           ],
           "nearestObstacleCorners": [
             [
-              0.14,
-              9.925
+              112,
+              18.1
             ],
             [
-              6.1,
-              9.925
+              112,
+              20.9
             ],
             [
-              6.1,
-              10.075
+              111.72,
+              20.9
             ],
             [
-              0.14,
-              10.075
+              111.72,
+              18.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.825,
-              3.1
+              119.35,
+              23.825
             ],
             [
-              130.825,
-              9.9
+              112.55,
+              23.825
             ],
             [
-              129.175,
-              9.9
+              112.55,
+              22.175
             ],
             [
-              129.175,
-              3.1
+              119.35,
+              22.175
             ]
           ],
           "articulationMaxDeg": 0
@@ -244489,207 +244489,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 1574,
+      "minClearanceM": 1.574,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-10-PL-001-CROWN",
-        "source": "registered_site_geometry"
+        "id": "R5-SHIP-W-E-4",
+        "source": "site_annex_wall"
       },
       "articulationMaxDeg": 0,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-4",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 256,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            30
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              25.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              27.9
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              27.9
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              25.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              30.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              30.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              29.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              29.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-4",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 256,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            30
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              25.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              27.9
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              27.9
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              25.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              30.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              30.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              29.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              29.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-4",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 256,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            30
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              25.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              27.9
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              27.9
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              25.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              30.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              30.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              29.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              29.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-4",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 256,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            30
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              25.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              27.9
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              27.9
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              25.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              30.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              30.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              29.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              29.375
             ]
           ],
           "articulationMaxDeg": 0
@@ -253266,207 +253266,207 @@
           ]
         }
       ],
-      "minClearanceMm": 0,
-      "minClearanceM": 0,
+      "minClearanceMm": 1574,
+      "minClearanceM": 1.574,
       "status": "CONDITIONAL_STATIC_CLEAR",
       "nearestObstacle": {
-        "id": "WH-10-PL-001-CROWN",
-        "source": "registered_site_geometry"
+        "id": "R5-SHIP-W-E-END",
+        "source": "site_annex_wall"
       },
       "articulationMaxDeg": 0,
       "scenarios": {
         "adjacentEmpty": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-END",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 284,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            37
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              39.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              42
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              42
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              39.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              37.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              37.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              36.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              36.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "adjacentOccupied": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-END",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 284,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            37
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              39.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              42
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              42
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              39.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              37.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              37.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              36.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              36.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousM5": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-END",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 284,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            37
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              39.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              42
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              42
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              39.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              37.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              37.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              36.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              36.375
             ]
           ],
           "articulationMaxDeg": 0
         },
         "simultaneousR4Receiving": {
-          "minClearanceMm": 0,
+          "minClearanceMm": 1574,
           "nearestObstacle": {
-            "id": "WH-10-PL-001-CROWN",
-            "source": "registered_site_geometry"
+            "id": "R5-SHIP-W-E-END",
+            "source": "site_annex_wall"
           },
-          "nearestSample": 98,
+          "nearestSample": 284,
           "nearestCenter": [
-            130,
-            6.5
+            114.14999999999999,
+            37
           ],
           "nearestObstacleCorners": [
             [
-              38.8,
-              8.1
+              112,
+              39.1
             ],
             [
-              40.2,
-              8.1
+              112,
+              42
             ],
             [
-              40.2,
-              9.5
+              111.72,
+              42
             ],
             [
-              38.8,
-              9.5
+              111.72,
+              39.1
             ]
           ],
           "nearestPartCorners": [
             [
-              130.625,
-              4.9
+              115.75,
+              37.625
             ],
             [
-              130.625,
-              8.1
+              112.55,
+              37.625
             ],
             [
-              129.375,
-              8.1
+              112.55,
+              36.375
             ],
             [
-              129.375,
-              4.9
+              115.75,
+              36.375
             ]
           ],
           "articulationMaxDeg": 0
@@ -253479,7 +253479,7 @@
       "routeId": "TR01",
       "bayId": "WH-01-VH-001",
       "registeredMinClearanceMm": -1250,
-      "articulatedModelMinClearanceMm": 0,
+      "articulatedModelMinClearanceMm": 950,
       "blocker": "WH-01-VH-005",
       "status": "CONDITIONAL_STATIC_CLEAR"
     },
@@ -253487,7 +253487,7 @@
       "routeId": "TR02",
       "bayId": "WH-01-VH-002",
       "registeredMinClearanceMm": -1250,
-      "articulatedModelMinClearanceMm": 0,
+      "articulatedModelMinClearanceMm": 1358,
       "blocker": "WH-01-VH-005",
       "status": "CONDITIONAL_STATIC_CLEAR"
     },
@@ -253495,7 +253495,7 @@
       "routeId": "TR03",
       "bayId": "WH-01-VH-003",
       "registeredMinClearanceMm": 350,
-      "articulatedModelMinClearanceMm": 0,
+      "articulatedModelMinClearanceMm": 1358,
       "blocker": "WH-04-LR-006",
       "status": "CONDITIONAL_STATIC_CLEAR"
     },
@@ -253503,7 +253503,7 @@
       "routeId": "TR04",
       "bayId": "WH-01-VH-004",
       "registeredMinClearanceMm": 115,
-      "articulatedModelMinClearanceMm": 0,
+      "articulatedModelMinClearanceMm": 1825,
       "blocker": "WH-04-CV-001",
       "status": "CONDITIONAL_STATIC_CLEAR"
     },
@@ -253511,7 +253511,7 @@
       "routeId": "VH-005",
       "bayId": "WH-01-VH-005",
       "registeredMinClearanceMm": -1250,
-      "articulatedModelMinClearanceMm": 0,
+      "articulatedModelMinClearanceMm": 505,
       "blocker": "VH-005 crosswise occupancy retained",
       "status": "CONDITIONAL_STATIC_CLEAR"
     }

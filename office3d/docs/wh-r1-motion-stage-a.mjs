@@ -28,7 +28,25 @@ function wallBox(e) {
 }
 function project(poly, axis) { const v = poly.map(p => p[0] * axis[0] + p[1] * axis[1]); return [Math.min(...v), Math.max(...v)] }
 function axes(poly) { return poly.map((p, i) => { const q = poly[(i + 1) % poly.length]; const e = [q[0] - p[0], q[1] - p[1]]; const n = [-e[1], e[0]], l = Math.hypot(...n) || 1; return [n[0] / l, n[1] / l] }) }
+const pointSegmentDistance = (p, a, b) => {
+  const dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy
+  if (!length2) return Math.hypot(p[0] - a[0], p[1] - a[1])
+  const t = clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length2, 0, 1)
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy))
+}
+const polygonArea = poly => Math.abs(poly.reduce((sum, p, i) => { const q = poly[(i + 1) % poly.length]; return sum + p[0] * q[1] - q[0] * p[1] }, 0)) / 2
+const boundaryDistance = (a, b) => {
+  const edges = poly => poly.length < 2 ? poly.map(point => [point, point]) : poly.map((point, i) => [point, poly[(i + 1) % poly.length]])
+  let min = Infinity
+  for (const [p, q] of [[a, b], [b, a]]) for (const point of p) for (const [s, e] of edges(q)) min = Math.min(min, pointSegmentDistance(point, s, e))
+  return min
+}
 function signedPolyDistance(a, b) {
+  const degenerate = a.length < 3 || b.length < 3 || polygonArea(a) < 1e-9 || polygonArea(b) < 1e-9
+  if (degenerate) {
+    const distance = boundaryDistance(a, b)
+    return distance > 1e-9 ? distance : -0.001
+  }
   let separating = Infinity, overlap = Infinity
   for (const axis of [...axes(a), ...axes(b)]) {
     const [amin, amax] = project(a, axis), [bmin, bmax] = project(b, axis)
@@ -36,7 +54,18 @@ function signedPolyDistance(a, b) {
     if (gap > 0) separating = Math.min(separating, gap)
     else overlap = Math.min(overlap, -gap)
   }
-  return separating < Infinity ? separating : -overlap
+  return separating < Infinity ? boundaryDistance(a, b) : -overlap
+}
+
+if (process.env.MOTION_TEST_ONLY === '1') {
+  const assert = (await import('node:assert/strict')).default
+  const square = (x, y, size, yaw = 0) => box(x, y, size, size, yaw).corners
+  assert.ok(Math.abs(signedPolyDistance(square(0, 0, 1), square(2, 0, 1)) - 1) < 1e-6)
+  const diagonal = signedPolyDistance(square(0, 0, 1, 35), square(2, 0, 1, -20))
+  assert.ok(diagonal > 0 && Number.isFinite(diagonal))
+  assert.ok(Math.abs(signedPolyDistance(square(0, 0, 1), square(.7, 0, 1)) + .3) < 1e-6)
+  assert.notEqual(signedPolyDistance([[0, 0]], square(0, 0, 1)), 0)
+  process.exit(0)
 }
 function smoothPolyline(points, step = M.sampleStepM) {
   const out = []
