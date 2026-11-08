@@ -231,7 +231,7 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
   }
   function prepareTier(q) {
     if(!prepared)prepare(q)
-    else if(q!=='high'&&!variants[q]){const started=performance.now();buildVariant(q);cooldownUntil=performance.now()+Math.max(1000,performance.now()-started)}
+    else if(q!=='high'&&!variants[q]){const started=performance.now();buildVariant(q);if(q===tier)apply(q);cooldownUntil=performance.now()+Math.max(1000,performance.now()-started)}
   }
   function activate(q) {
     if(!prepared)return
