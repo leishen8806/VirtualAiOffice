@@ -73,9 +73,9 @@ export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direc
   const data = layout.r1.data
   const boxes = obstacleRowsFor(data, doorMode).map(boxFor)
   const plants = plantObstaclesFor(layout), decor = DECOR_OBSTACLES
-  const plantClearance = (a, b, obstacle) => obstacle.kind === 'registered'
+  const plantClearance = (a, b, obstacle, bodyRadius) => obstacle.kind === 'registered'
     ? pointSegmentDistance([obstacle.x, obstacle.z], a, b) - obstacle.r - .6
-    : pointSegmentDistance([obstacle.x, obstacle.z], a, b) - obstacle.r - .6 - .3
+    : pointSegmentDistance([obstacle.x, obstacle.z], a, b) - obstacle.r - bodyRadius - .3
   return layout.r1.routes.map(route => {
     const forwardPoints = route.points_m.map(worldPoint), points = direction === 'reverse' ? [...forwardPoints].reverse() : forwardPoints, radius = Number(data.bodyProfiles[route.body_profile]?.radius_m || .6)
     let min = Infinity, nearest = null, plantMin = Infinity, nearestPlant = null, decorMin = Infinity, nearestDecor = null
@@ -85,7 +85,7 @@ export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direc
       if (clearance < min) { min = clearance; nearest = box.id }
     }
     for (let i = 1; i < points.length; i++) {
-      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < plantMin) { plantMin = clearance; nearestPlant = obstacle.id } }
+      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle, radius); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < plantMin) { plantMin = clearance; nearestPlant = obstacle.id } }
       for (const obstacle of decor) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .6; if (clearance < decorMin) { decorMin = clearance; nearestDecor = obstacle.id } }
     }
     for (let i = 1; i < points.length; i++) {
@@ -95,7 +95,7 @@ export function recomputeOfficeR1Routes({ layout = createOfficeR1Layout(), direc
         if (clearance < segmentMin) { segmentMin = clearance; segmentNearest = box.id }
       }
       let segmentPlant = Infinity, segmentPlantId = null, segmentDecor = Infinity, segmentDecorId = null
-      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < segmentPlant) { segmentPlant = clearance; segmentPlantId = obstacle.id } }
+      for (const obstacle of plants) { const clearance = plantClearance(points[i - 1], points[i], obstacle, radius); if (obstacle.kind !== 'registered' || clearance < 0) if (clearance < segmentPlant) { segmentPlant = clearance; segmentPlantId = obstacle.id } }
       for (const obstacle of decor) { const clearance = segmentBox(points[i - 1], points[i], obstacle) - .6; if (clearance < segmentDecor) { segmentDecor = clearance; segmentDecorId = obstacle.id } }
       const worst = Math.min(segmentMin, segmentPlant, segmentDecor)
       const metric = plants.find(p => p.id === segmentPlantId)?.kind === 'registered' ? 'registered-low-canopy-vertex-0.6m' : 'foliage-radius-plus-human-0.6m-threshold-0.3m'

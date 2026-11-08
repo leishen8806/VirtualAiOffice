@@ -7,7 +7,7 @@ import { r1ToWorld } from '../office-r1-layout.js'
 import { recomputeOfficeR1Routes, plantObstaclesFor } from '../office-r1-validation.js'
 
 const base = createOfficeR1Layout()
-const routeAtWorld = (id, x, z) => ({ id, body_profile: 'H2', points_m: [[x + 26, 18 - z], [x + 26 + .1, 18 - z]] })
+const routeAtWorld = (id, x, z, body_profile = 'H2') => ({ id, body_profile, points_m: [[x + 26, 18 - z], [x + 26 + .1, 18 - z]] })
 const layoutWith = route => ({ ...base, r1: { ...base.r1, routes: [route] } })
 
 test('validator reports three clearance classes and keeps all 17 merged routes clear', () => {
@@ -60,4 +60,26 @@ test('validator exposes the same plant source and metric labels used by the test
   assert.ok(obstacles.some(row => row.id === '07-PL-002' && row.kind === 'registered'))
   const rows = recomputeOfficeR1Routes({ layout: base })
   assert.ok(rows.every(row => row.plantMetric.includes('0.6m')))
+})
+
+test('H3 route uses its own body radius for plant clearance', () => {
+  const result = recomputeOfficeR1Routes({
+    layout: layoutWith({
+      id: 'entry_carrying_example',
+      body_profile: 'H3',
+      points_m: base.r1.routes.find(route => route.id === 'entry_carrying_example').points_m
+    })
+  })[0]
+  assert.equal(result.nearestPlantId, 'DENSE-11-6')
+  assert.ok(Math.abs(result.plantClearanceMm - 203) <= 1)
+})
+
+test('H3 edge scrape is blocked where H2 would still be clear', () => {
+  const row = R1_CLUSTER_PLANTS.find(item => item.id === 'DENSE-11-7')
+  const x = row.x + row.r + 1
+  const h2 = recomputeOfficeR1Routes({ layout: layoutWith(routeAtWorld('scrape-h2', x, row.z, 'H2')) })[0]
+  const h3 = recomputeOfficeR1Routes({ layout: layoutWith(routeAtWorld('scrape-h3', x, row.z, 'H3')) })[0]
+  assert.ok(h2.plantClearanceMm > 0)
+  assert.equal(h3.status, 'BLOCKED')
+  assert.ok(h3.plantClearanceMm < 0)
 })
