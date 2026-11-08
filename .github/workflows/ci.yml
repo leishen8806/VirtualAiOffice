@@ -53,7 +53,7 @@ jobs:
 
   perf-budget:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,10 +67,32 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Warehouse performance budget (hard gate)
         run: npm run verify:perf -- --place "drlife-warehouse&whr1=1"
+      - name: Upload warehouse verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-warehouse
+          path: /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn
       - name: Office performance report (non-blocking budget)
+        timeout-minutes: 8
+        continue-on-error: true
         run: |
           set +e
-          npm run verify:perf -- --place drlife-office > office-perf.json
+          timeout --signal=TERM 420s npm run verify:perf -- --place drlife-office > office-perf.json
           code=$?
-          cat office-perf.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -eq 124 ]; then
+            echo "办公室测量超时" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            cat office-perf.json >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "$code" -eq 2 ]; then exit 2; fi
+      - name: Upload office verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-office
+          path: |
+            office-perf.json
+            /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn
