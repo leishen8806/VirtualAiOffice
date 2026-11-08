@@ -4,7 +4,7 @@ import { WH_R1_DATA } from '../wh-r1/data.js'
 import { WH_R1_PARKING_BAYS, WH_R1_ANNEX, WH_R1_I7_ROWS, whR1VehicleForSite } from '../wh-r1-site-plan.js'
 
 const OUT = process.env.MOTION_EVIDENCE_DIR || path.resolve('E:/VirtualAIOffice/review-artifacts/WH-R1-MOTION-R2-01')
-fs.mkdirSync(OUT, { recursive: true })
+if (process.env.MOTION_TEST_ONLY !== '1') fs.mkdirSync(OUT, { recursive: true })
 const M = Object.freeze({ tractorLength: 4.65, tractorWheelbase: 3.3, kingpinToRearAxle: 7.7, trailerLength: 13.6, width: 2.55, height: 4, totalLength: 16.5, outerRadius: 12.5, innerRadius: 5.3, articulationLimit: 70, sampleStepM: .25 })
 const rad = d => d * Math.PI / 180
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n))
