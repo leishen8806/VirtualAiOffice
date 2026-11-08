@@ -179,7 +179,7 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
     const selected=new Set(q==='high'?lights:q==='low'?essential.slice(0,4):[...essential,...points.filter((_,i)=>[0,3,8,10].includes(i))].slice(0,8))
     for(const l of lights){l.visible=lightVisibility.get(l)&&selected.has(l);if(l.shadow){const scale=q==='medium'?.5:1, original=shadowSizes.get(l);const x=Math.max(1,Math.round(original.x*scale)),y=Math.max(1,Math.round(original.y*scale));if(l.shadow.mapSize.x!==x||l.shadow.mapSize.y!==y){l.shadow.mapSize.set(x,y);l.shadow.map?.dispose();l.shadow.map=null} }}
     renderer.shadowMap.enabled=q!=='low'
-    for(const [mesh,mat]of sourceMaterials){mesh.material=q==='low'?(Array.isArray(mat)?mat.map(lightMaterial):lightMaterial(mat)):mat;if(originalsGeometry.has(mesh))mesh.geometry=q==='high'?originalsGeometry.get(mesh):compactGeometry.get(mesh);const shadow=sourceShadows.get(mesh);mesh.castShadow=q==='high'&&(shadow.cast&&(!!mesh.userData.agentId||shadow.largeStatic));if(q==='medium')mesh.castShadow=shadow.mediumCast;mesh.receiveShadow=q!=='low'&&shadow.receive}
+    for(const [mesh,mat]of sourceMaterials){mesh.material=q==='low'?(Array.isArray(mat)?mat.map(lightMaterial):lightMaterial(mat)):mat;if(originalsGeometry.has(mesh))mesh.geometry=q==='high'?originalsGeometry.get(mesh):compactGeometry.get(mesh);const shadow=sourceShadows.get(mesh);mesh.castShadow=q==='high'&&(shadow.cast&&!!mesh.userData.agentId);if(q==='medium')mesh.castShadow=shadow.mediumCast;mesh.receiveShadow=q!=='low'&&shadow.receive}
     if (q === 'high') {
       // 写实人物的投影按人物限额保留，避免 25 个蒙皮人物各自触发阴影通道。
       // 以相机距离选最近的两个 agent；大型静态物件仍沿用上面的原始阴影预算。
