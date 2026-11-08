@@ -22,6 +22,12 @@ test('PERF-OFFICE C1b builds a per-person colored low-poly proxy', () => {
   assert.doesNotMatch(app, /new THREE\.CylinderGeometry\(0\.2, 0\.24, 1\.55, 8\)/)
 })
 
+test('PERF-OFFICE C1c keeps overview decorations in high and medium tiers', () => {
+  const registry = readFileSync(fileURLToPath(new URL('../office-v2-registry.js', import.meta.url)), 'utf8')
+  assert.match(registry, /lowTier\s*=\s*quality\?\.tier\s*===\s*'low'/)
+  assert.match(registry, /far\s*=\s*lowTier\s*\?\s*30\s*:\s*Infinity/)
+})
+
 test('PERF-OFFICE C2 merges equivalent opaque materials by visible signature', () => {
   assert.match(merge, /function materialSignature\(mat\)/)
   assert.match(merge, /materialSignature\(mat\)/)
