@@ -975,6 +975,32 @@ let r1Npcs = null // 服务人员 NPC（OFFICE-R1-I7B-A）：同事替换完成�
 let foodtruckDemo = null
 const bubblesEl = $('bubbles')
 const views = new Map() // agentId -> view
+// R1 人物远近级：保留滞回避免 12–15 m 边界闪烁。远处使用单一低面数人形代理，
+// 近处恢复完整写实人物；非 R1 场景不进入这条路径。
+const R1_PERSON_LOD_RESTORE_M = 12
+const R1_PERSON_LOD_REDUCE_M = 15
+function syncR1PersonLod(view) {
+  if (OFFICE_LAYOUT.r1Phase !== 'R1' || !view?.char?.group || !view.lodProxy) return
+  const p = view.char.group.getWorldPosition(animationPoint)
+  const distance = p.distanceTo(camera.position)
+  const previous = view.r1PersonDetailed
+  const detailed = previous === undefined
+    ? distance <= R1_PERSON_LOD_REDUCE_M
+    : previous
+      ? distance <= R1_PERSON_LOD_REDUCE_M
+      : distance < R1_PERSON_LOD_RESTORE_M
+  if (detailed === previous) return
+  view.r1PersonDetailed = detailed
+  view.char.group.traverse(node => {
+    if (node === view.lodProxy) return
+    if (node.isMesh || node.isSkinnedMesh || node.isLine) node.visible = detailed
+  })
+  view.lodProxy.visible = !detailed
+}
+function syncAllR1PersonLod() {
+  if (OFFICE_LAYOUT.r1Phase !== 'R1') return
+  for (const view of views.values()) syncR1PersonLod(view)
+}
 const boardViews = {}
 let fallbackIdx = 0
 
@@ -1050,6 +1076,17 @@ function createAgentView(a, index) {
   ring.rotation.x = Math.PI / 2
   ring.visible = false
   ch.group.add(ring)
+  const lodProxy = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.24, 1.55, 8),
+    new THREE.MeshLambertMaterial({ color: zone === 'drlife' ? 0x6f7f91 : ZONES[zone].accent })
+  )
+  lodProxy.position.y = 0.78
+  lodProxy.userData.qualityProxy = true
+  lodProxy.userData.agentId = a.id
+  lodProxy.castShadow = false
+  lodProxy.receiveShadow = false
+  lodProxy.visible = false
+  ch.group.add(lodProxy)
   if (desk.setBadge) desk.setBadge(MODEL_BADGE[modelFamily(a)])
   else {
     const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.012, 6), new THREE.MeshBasicMaterial({ color: MODEL_BADGE[modelFamily(a)], toneMapped: false }))
@@ -1061,7 +1098,7 @@ function createAgentView(a, index) {
   el.className = 'lab'
   el.innerHTML = '<span class="st" style="display:none"></span><span class="tk" style="display:none"></span><span class="nm"></span>'
   labelsEl.appendChild(el)
-  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
+  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, lodProxy, r1PersonDetailed: undefined, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
 }
 function createBoardView(name, home, stand, via, skinI) {
   const ch = PEOPLE
@@ -2128,6 +2165,7 @@ const showQ = () => { qb.textContent = '画质：' + qualityNames[qualityPolicy.
 function applyQuality() {
   sceneQuality.activate(qualityPolicy.tier)
   dpr=cappedDpr(qualityPolicy.tier,DPR_MAX,innerWidth,innerHeight);renderer.setPixelRatio(dpr);resize();showQ()
+  syncAllR1PersonLod()
 }
 const qualityStatus = () => `${qualityNames[qualityPolicy.tier]}档 · ${qualityMetrics.fps.toFixed(1)} FPS · ${qualityMetrics.frameMs.toFixed(1)}ms · calls ${qualityMetrics.calls} · 三角形 ${qualityMetrics.triangles} · 灯 ${qualityMetrics.lights} · ${qualityPolicy.reason}`
 if(new URLSearchParams(location.search).has('perf')){
@@ -2398,6 +2436,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
   director.update(dt)
   for (const v of views.values()) {
     const ch = v.char, p = ch.pose
+    syncR1PersonLod(v)
     if (!v.act) {
       // 没有互动时：按真实状态坐着干活 / 发呆
       p.sit = THREE.MathUtils.lerp(p.sit, OFFICE_LAYOUT.r1Phase === 'R1' && v.r1Standing ? 0 : 1, ease(dt, 6))
