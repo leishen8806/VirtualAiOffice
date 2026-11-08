@@ -14,6 +14,14 @@ test('PERF-OFFICE C1 uses 12/15m hysteresis and a quality-excluded person proxy'
   assert.match(app, /r1PersonDetailed/)
 })
 
+test('PERF-OFFICE C1b builds a per-person colored low-poly proxy', () => {
+  assert.match(app, /function makeR1PersonProxy\(ch, agentId\)/)
+  assert.match(app, /vertexColors:\s*true/)
+  assert.match(app, /slice\(0, 24\)/)
+  assert.match(app, /r1-person-proxy-mesh/)
+  assert.doesNotMatch(app, /new THREE\.CylinderGeometry\(0\.2, 0\.24, 1\.55, 8\)/)
+})
+
 test('PERF-OFFICE C2 merges equivalent opaque materials by visible signature', () => {
   assert.match(merge, /function materialSignature\(mat\)/)
   assert.match(merge, /materialSignature\(mat\)/)

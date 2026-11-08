@@ -1046,6 +1046,47 @@ function fitR1Workstation(ch, home, desk, handY, chairId) {
   if (ch.r1Seated) { ch.r1Seated.seatBase = appliedSeatBase; ch.r1Seated.seatBaseLimited = appliedSeatBase >= .2 - 1e-6 || !!ch.r1Seated.fitConflict }
   return finalHome
 }
+function makeR1PersonProxy(ch, agentId) {
+  const boxes = []
+  ch.group.updateMatrixWorld(true)
+  const rootWorld = ch.group.matrixWorld.clone().invert()
+  ch.group.traverse(node => {
+    if (!node.isMesh || node.userData?.qualityProxy || !node.geometry) return
+    const box = new THREE.Box3().setFromObject(node)
+    if (box.isEmpty()) return
+    const corners = []
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z).applyMatrix4(rootWorld))
+    const local = new THREE.Box3().setFromPoints(corners)
+    if (local.getSize(new THREE.Vector3()).lengthSq() < 1e-5) return
+    const material = Array.isArray(node.material) ? node.material[0] : node.material
+    boxes.push({ box: local, color: material?.color?.clone?.() || new THREE.Color(0x7b8794), area: local.getSize(new THREE.Vector3()).lengthSq() })
+  })
+  boxes.sort((a, b) => b.area - a.area)
+  const selected = boxes.slice(0, 24)
+  const positions = [], colors = []
+  const pushBox = ({ box, color }) => {
+    const { min, max } = box, c = [color.r, color.g, color.b]
+    const v = [[min.x,min.y,min.z],[max.x,min.y,min.z],[max.x,max.y,min.z],[min.x,max.y,min.z],[min.x,min.y,max.z],[max.x,min.y,max.z],[max.x,max.y,max.z],[min.x,max.y,max.z]]
+    for (const face of [[0,1,2,3],[4,7,6,5],[0,4,5,1],[3,2,6,7],[1,5,6,2],[0,3,7,4]]) for (const i of face) { positions.push(...v[i]); colors.push(...c) }
+  }
+  for (const item of selected) pushBox(item)
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.computeVertexNormals()
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, roughness: 0.9 }))
+  mesh.name = 'r1-person-proxy-mesh'
+  mesh.userData.qualityProxy = true
+  mesh.userData.agentId = agentId
+  mesh.castShadow = false
+  mesh.receiveShadow = false
+  const proxy = new THREE.Group()
+  proxy.name = 'r1-person-proxy'
+  proxy.userData.qualityProxy = true
+  proxy.userData.agentId = agentId
+  proxy.add(mesh)
+  return proxy
+}
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
@@ -1078,15 +1119,7 @@ function createAgentView(a, index) {
   ring.rotation.x = Math.PI / 2
   ring.visible = false
   ch.group.add(ring)
-  const lodProxy = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.24, 1.55, 8),
-    new THREE.MeshLambertMaterial({ color: zone === 'drlife' ? 0x6f7f91 : ZONES[zone].accent })
-  )
-  lodProxy.position.y = 0.78
-  lodProxy.userData.qualityProxy = true
-  lodProxy.userData.agentId = a.id
-  lodProxy.castShadow = false
-  lodProxy.receiveShadow = false
+  const lodProxy = makeR1PersonProxy(ch, a.id)
   lodProxy.visible = false
   ch.group.add(lodProxy)
   if (desk.setBadge) desk.setBadge(MODEL_BADGE[modelFamily(a)])
