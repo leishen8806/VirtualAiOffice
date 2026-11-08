@@ -33,7 +33,6 @@ function signedPolyDistance(a, b) {
   for (const axis of [...axes(a), ...axes(b)]) {
     const [amin, amax] = project(a, axis), [bmin, bmax] = project(b, axis)
     const gap = Math.max(bmin - amax, amin - bmax)
-    if (a?.[0]?.[0] === 131.275 && b?.[0]?.[0] === 153.55) console.log('AX', b.id, b.source, axis, amin, amax, bmin, bmax, gap)
     if (gap > 0) separating = Math.min(separating, gap)
     else overlap = Math.min(overlap, -gap)
   }
@@ -61,7 +60,7 @@ function vehicleSpecForBay(bay) {
 function candidatePath(bay) {
   const vehicle = vehicleSpecForBay(bay)
   if (bay.id.startsWith('WH-01-')) {
-    const northApproach = [bay.xM, 70]
+    const northApproach = [bay.xM + 3, 70]
     return smoothPolyline([SITE_GATE, WAIT, [130, 6], [130, 70], northApproach, [bay.xM, bay.yM]])
   }
   return smoothPolyline([SITE_GATE, WAIT, [130, 6], [130, vehicle.yM], [vehicle.xM, vehicle.yM]])
@@ -134,11 +133,12 @@ for (const bay of WH_R1_PARKING_BAYS) {
   const empty = measure(bay, new Set()), occupied = measure(bay, siblings)
   const active = new Set(['WH-01-VH-001', 'WH-01-VH-002', 'WH-06-VH-001', 'WH-06-VH-002']); active.delete(bay.id)
   const simultaneous = measure(bay, active)
+  const r4Receiving = measure(bay, new Set(['WH-01-VH-001', 'WH-01-VH-002', 'WH-01-VH-003', 'WH-01-VH-004']))
   const minClearanceMm = Math.min(empty.minClearanceMm, occupied.minClearanceMm, simultaneous.minClearanceMm)
   const nearest = [empty, occupied, simultaneous].sort((a, b) => a.minClearanceMm - b.minClearanceMm)[0]
   const status = minClearanceMm < 0 ? 'BLOCKED' : 'CONDITIONAL_STATIC_CLEAR'
   const scenario = x => ({ minClearanceMm: x.minClearanceMm, nearestObstacle: x.nearestObstacle, nearestSample: x.nearestSample, nearestCenter: x.nearestCenter, nearestObstacleCorners: x.nearestObstacleCorners, nearestPartCorners: x.nearestPartCorners, articulationMaxDeg: x.poses.articulationMaxDeg })
-  const result = { bayId: bay.id, doorId: bay.doorId, model: nearest.vehicle, entryPoints: nearest.poses.entry, exitPoints: nearest.poses.exit, sweptEnvelope: nearest.sweptEnvelope, minClearanceMm, minClearanceM: round(minClearanceMm / 1000), status, nearestObstacle: nearest.nearestObstacle, articulationMaxDeg: nearest.poses.articulationMaxDeg, scenarios: { adjacentEmpty: scenario(empty), adjacentOccupied: scenario(occupied), simultaneousM5: scenario(simultaneous) } }
+  const result = { bayId: bay.id, doorId: bay.doorId, model: nearest.vehicle, entryPoints: nearest.poses.entry, exitPoints: nearest.poses.exit, sweptEnvelope: nearest.sweptEnvelope, minClearanceMm, minClearanceM: round(minClearanceMm / 1000), status, nearestObstacle: nearest.nearestObstacle, articulationMaxDeg: nearest.poses.articulationMaxDeg, scenarios: { adjacentEmpty: scenario(empty), adjacentOccupied: scenario(occupied), simultaneousM5: scenario(simultaneous), simultaneousR4Receiving: scenario(r4Receiving) } }
   results.push(result); fs.writeFileSync(path.join(OUT, `${bay.id}.svg`), svgFor(bay, { ...nearest, status }))
 }
 const by = id => results.find(r => r.bayId === id)

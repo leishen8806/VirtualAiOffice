@@ -3,10 +3,10 @@ import { WH_R1_ASSIGNMENT, WH_R1_DATA } from './wh-r1/data.js'
 const frozenRows = rows => Object.freeze(rows.map(row => Object.freeze(row)))
 
 export const WH_R1_PARKING_BAYS = frozenRows([
-  { id: 'WH-01-VH-001', doorId: 'WH-01-D-002', xM: 9.5, yM: 56.8, displayXM: 9.5, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
-  { id: 'WH-01-VH-002', doorId: 'WH-01-D-003', xM: 15, yM: 56.8, displayXM: 15, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
-  { id: 'WH-01-VH-003', doorId: 'WH-01-D-004', xM: 20.5, yM: 56.8, displayXM: 20.5, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
-  { id: 'WH-01-VH-004', doorId: 'WH-01-D-005', xM: 26, yM: 56.8, displayXM: 26, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
+  { id: 'WH-01-VH-001', doorId: 'WH-01-D-002', xM: 8.975, yM: 56.8, displayXM: 8.975, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
+  { id: 'WH-01-VH-002', doorId: 'WH-01-D-003', xM: 14.825, yM: 56.8, displayXM: 14.825, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
+  { id: 'WH-01-VH-003', doorId: 'WH-01-D-004', xM: 20.675, yM: 56.8, displayXM: 20.675, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
+  { id: 'WH-01-VH-004', doorId: 'WH-01-D-005', xM: 26.525, yM: 56.8, displayXM: 26.525, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
   { id: 'WH-01-VH-005', doorId: 'WH-01-D-001', xM: 4, yM: 56.8, displayXM: 4, displayYM: 52.55, yawDeg: 270, lengthM: 16.5, widthM: 2.55, heightM: 4 },
   { id: 'WH-06-VH-001', doorId: 'R5-SHIP-D-1', xM: 120.8, yM: 16, displayXM: 116.55, displayYM: 16, yawDeg: 180, lengthM: 16.5, widthM: 2.55, heightM: 4 },
   { id: 'WH-06-VH-002', doorId: 'R5-SHIP-D-2', xM: 120.8, yM: 23, displayXM: 116.55, displayYM: 23, yawDeg: 180, lengthM: 16.5, widthM: 2.55, heightM: 4 },
@@ -53,6 +53,7 @@ export const WH_R1_DEVIATIONS = Object.freeze([
   Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '5 辆进货牵引半挂 + 4 辆出货配送车', reason: '董事会明确进货用大半挂，出货用园区小火车与三轮车；车尾对门且高差仍 UNKNOWN' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE-R3-CLEARANCE', date: '2026-11-07', from: 'WH-14-BED-001 / WH-14-PL-001* / WH-14-PL-002* 与 WH-14-GT-001 原坐标', to: '入口通道两侧：花池 [154.5,-2]、南侧盆栽 [154,-2]、北侧盆栽 [154,14]、道闸 [158.5,14.5]', reason: '董事会 2026-11-07：物流出入口改为货车通道，保留登记件并为双向 8 m 车道让行' }),
+  Object.freeze({ id: 'WH-R1-RECEIVING-BAY-WIDEN-R4', date: '2026-11-08', from: '收货车位中心 9.5 / 15 / 20.5 / 26.0 m；门中心同值', to: '收货车位中心 8.975 / 14.825 / 20.675 / 26.525 m；对应门同步移动', reason: '董事会选择以中间对称将中心间距加宽至 5.85 m，消除四车同时倒车时的相邻车位刮擦风险' }),
 ])
 
 export function whR1VehicleForSite(row) {

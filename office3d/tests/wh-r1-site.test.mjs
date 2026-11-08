@@ -41,9 +41,9 @@ test('SITE uses one conversion offset and leaves the WH-R1 root at the origin', 
 
 test('SITE keeps source data immutable and records every approved deviation', () => {
   const source = readFileSync(new URL('../wh-r1/data.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
-  assert.equal(createHash('sha256').update(source).digest('hex'), 'c0475dd2e964cda89c2592dcf37f89baa4a005b8b8457c4c5a90cf7267d67b07')
-  assert.deepEqual(WH_R1_DEVIATIONS.map(row => row.id), ['WH-R1-WORLD-ORIGIN', 'WH-14-D-001', 'WH-R1-PARKING-BAYS', 'WH-14-LOGISTICS-GATE'])
-  assert.ok(WH_R1_DEVIATIONS.every(row => row.date === '2026-10-31' && row.reason))
+  assert.equal(createHash('sha256').update(source).digest('hex'), '18665f57b8b4f286b13044f64b4562b55034cc5202b8a9dbde959e988f25d465')
+  assert.deepEqual(WH_R1_DEVIATIONS.map(row => row.id), ['WH-R1-WORLD-ORIGIN', 'WH-14-D-001', 'WH-R1-PARKING-BAYS', 'WH-14-LOGISTICS-GATE', 'WH-14-LOGISTICS-GATE-R3-CLEARANCE', 'WH-R1-RECEIVING-BAY-WIDEN-R4'])
+  assert.ok(WH_R1_DEVIATIONS.every(row => row.reason && ['2026-10-31', '2026-11-07', '2026-11-08'].includes(row.date)))
   assert.equal(WH_R1_DATA.elements.find(row => row.id === 'WH-01-VH-001').lengthM, 8)
 })
 
@@ -60,9 +60,21 @@ test('SITE freezes nine 16.5 m bays with the approved clearances and no static i
     const door = [...WH_R1_DATA.doors, ...WH_R1_ANNEX.doors].find(row => row.id === bay.doorId)
     near(gap(box, bounds(door)), .6, `${bay.id} door clearance`)
   }
-  const north = WH_R1_PARKING_BAYS.slice(0, 5).sort((a, b) => a.xM - b.xM), east = WH_R1_PARKING_BAYS.slice(5).sort((a, b) => a.yM - b.yM)
-  for (let index = 1; index < north.length; index++) near(gap(bounds(north[index - 1]), bounds(north[index])), 2.95, 'north neighbour')
+  const north = WH_R1_PARKING_BAYS.slice(0, 4).sort((a, b) => a.xM - b.xM), east = WH_R1_PARKING_BAYS.slice(5).sort((a, b) => a.yM - b.yM)
+  for (let index = 1; index < north.length; index++) near(gap(bounds(north[index - 1]), bounds(north[index])), 3.3, 'north neighbour')
   for (let index = 1; index < east.length; index++) near(gap(bounds(east[index - 1]), bounds(east[index])), 4.45, 'east neighbour')
+})
+
+test('R4 widens receiving bays symmetrically and keeps dock registration aligned', () => {
+  const expected = [8.975, 14.825, 20.675, 26.525]
+  const receiving = WH_R1_PARKING_BAYS.slice(0, 4)
+  assert.deepEqual(receiving.map(row => row.xM), expected)
+  assert.deepEqual(receiving.map(row => WH_R1_DATA.doors.find(door => door.id === row.doorId)?.xM), expected)
+  assert.deepEqual(WH_R1_DATA.elements.filter(row => receiving.some(bay => bay.id === row.id)).map(row => row.xM), expected)
+  const manifest = JSON.parse(readFileSync(new URL('../wh-r1/MANIFEST.json', import.meta.url)))
+  assert.equal(manifest.registrationOverrides.receivingBays['WH-01-VH-001'], 8.975)
+  assert.equal(manifest.runtimeData.registration, 'WH-R1-R4 receiving bay and dock alignment')
+  assert.equal(manifest.runtimeData.sha256, createHash('sha256').update(readFileSync(new URL('../wh-r1/data.js', import.meta.url)).toString().replace(/\r\n/g, '\n')).digest('hex'))
 })
 
 test('SITE annex, I7 objects and planning yards are complete and collidable', () => {
