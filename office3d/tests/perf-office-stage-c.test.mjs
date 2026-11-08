@@ -24,4 +24,6 @@ test('PERF-OFFICE C3 caps high-tier character shadow agents and keeps low shadow
   assert.match(quality, /HIGH_CHARACTER_SHADOW_AGENTS\s*=\s*2/)
   assert.match(quality, /renderer\.shadowMap\.enabled=q!==\'low\'/)
   assert.match(quality, /agentId\s*=\s*mesh\.userData\.agentId/)
+  assert.match(quality, /largeStatic:!o\.userData\.agentId/)
+  assert.match(quality, /shadow\.largeStatic/)
 })
