@@ -984,7 +984,9 @@ function syncR1PersonLod(view) {
   const p = view.char.group.getWorldPosition(animationPoint)
   const distance = p.distanceTo(camera.position)
   const previous = view.r1PersonDetailed
-  const detailed = previous === undefined
+  // low 档不保留近处写实网格；high/medium 才使用 15m 降级、12m 恢复滞回。
+  const forcedLow = typeof qualityPolicy !== 'undefined' && qualityPolicy.tier === 'low'
+  const detailed = forcedLow ? false : previous === undefined
     ? distance <= R1_PERSON_LOD_REDUCE_M
     : previous
       ? distance <= R1_PERSON_LOD_REDUCE_M

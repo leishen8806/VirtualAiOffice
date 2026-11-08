@@ -15,4 +15,6 @@ test('PERF-OFFICE C1 independently guards person LOD thresholds and proxy toggle
   assert.match(body, /distance\s*<=\s*R1_PERSON_LOD_REDUCE_M/)
   assert.match(body, /distance\s*<\s*R1_PERSON_LOD_RESTORE_M/)
   assert.match(body, /view\.lodProxy\.visible\s*=\s*!detailed/)
+  assert.match(body, /qualityPolicy\.tier\s*===\s*'low'/)
+  assert.match(body, /forcedLow\s*\?\s*false/)
 })
