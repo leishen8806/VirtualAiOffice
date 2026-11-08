@@ -28,3 +28,8 @@ $env:VERIFY_CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
 `budgets.json` is the single source for thresholds. `qv1-cost.mjs` and
 `qv1-route-plant-probe.mjs` remain standalone diagnostics; the latter is also
 covered by `tests/verify-route-plant.test.mjs`.
+
+For the office measurement, readiness requires all 25 views to have a
+replaced, visible character within 1 m of its seat. A timeout exits 2 and the
+JSON reports the counters that were still below 25. The current office high
+ceiling is 300 calls / 1,200,000 triangles; low remains 120 / 200,000.

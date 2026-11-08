@@ -4,7 +4,7 @@
     "low": { "calls": 100, "triangles": 100000 }
   },
   "office": {
-    "high": { "calls": 300, "triangles": 600000 },
+    "high": { "calls": 300, "triangles": 1200000 },
     "low": { "calls": 120, "triangles": 200000 }
   }
 }

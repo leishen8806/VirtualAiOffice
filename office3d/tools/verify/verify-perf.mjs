@@ -21,12 +21,17 @@ const label = `verify-${scene}-${Date.now()}`
 const runner = path.join(import.meta.dirname, 'qv1-measure.mjs')
 const run = spawnSync(process.execPath, [runner, root, label, place, outputDir], { encoding: 'utf8', stdio: 'inherit' })
 const jsonPath = path.join(outputDir, `${label}.json`)
-if (run.error || run.status !== 0 || !fs.existsSync(jsonPath)) {
+if (run.error || !fs.existsSync(jsonPath)) {
   console.error(JSON.stringify({ scene, place, status: 'unable', step: 'measurement', reason: run.error?.message || `exit ${run.status}` }))
   process.exit(2)
 }
 
 const measured = JSON.parse(fs.readFileSync(jsonPath, 'utf8'))
+if (run.status !== 0) {
+  const blockedOn = Object.fromEntries(Object.entries(measured.tiers || {}).filter(([, sample]) => !sample.ready).map(([tier, sample]) => [tier, sample.blockedOn || []]))
+  console.error(JSON.stringify({ scene, place, status: 'unable', step: 'measurement', reason: 'timeout_or_page_error', blockedOn, tiers: measured.tiers || {}, errors: measured.errors || [] }, null, 2))
+  process.exit(2)
+}
 const budgets = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'budgets.json'), 'utf8'))[scene]
 const result = {
   scene,
@@ -47,7 +52,7 @@ for (const tier of tiers) {
   const budget = budgets[tier]
   const withinBudget = Boolean(sample?.ready) && calls <= budget.calls && triangles <= budget.triangles
   if (!withinBudget) over = true
-  result.tiers[tier] = { ready: Boolean(sample?.ready), median: { calls, triangles }, budget, withinBudget }
+  result.tiers[tier] = { ready: Boolean(sample?.ready), people: sample?.people || null, waitedMs: sample?.waitedMs || null, median: { calls, triangles }, budget, withinBudget }
 }
 console.log(JSON.stringify(result, null, 2))
 if (unable) process.exit(2)
