@@ -11,15 +11,46 @@ const BOX_COLORS = [0xb98a58, 0x6d9c91, 0xd69a50]
 const pointForSlot = row => { const p = whToWorld(row.xM, row.yM); return { x: p.x, y: row.zM + .63, z: p.z } }
 const setMatrix = (mesh, index, THREE, position, scale = [.72, .58, .82]) => { const object = new THREE.Object3D(); object.position.set(position.x, position.y, position.z); object.scale.set(...scale); object.updateMatrix(); mesh.setMatrixAt(index, object.matrix) }
 
+function combinedForkliftGeometry(THREE, rows) {
+  const positions = [], normals = [], colors = []
+  const add = (row, source) => {
+    const geometry = source.index ? source.toNonIndexed() : source
+    const matrix = new THREE.Matrix4().compose(new THREE.Vector3(row.x, row.y, row.z), new THREE.Quaternion(), new THREE.Vector3(row.sx, row.sy, row.sz))
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(matrix), position = geometry.getAttribute('position'), normal = geometry.getAttribute('normal'), color = new THREE.Color(row.color)
+    for (let i = 0; i < position.count; i++) {
+      const p = new THREE.Vector3().fromBufferAttribute(position, i).applyMatrix4(matrix)
+      const n = new THREE.Vector3().fromBufferAttribute(normal, i).applyNormalMatrix(normalMatrix).normalize()
+      positions.push(p.x, p.y, p.z); normals.push(n.x, n.y, n.z); colors.push(color.r, color.g, color.b)
+    }
+    geometry.dispose(); if (geometry !== source) source.dispose()
+  }
+  for (const row of rows) {
+    const source = row.shape === 'wheel'
+      ? new THREE.CylinderGeometry(.5, .5, 1, 12).rotateX(Math.PI / 2)
+      : row.shape === 'steering'
+        ? new THREE.TorusGeometry(.5, .1, 6, 12).rotateY(Math.PI / 2)
+        : row.shape === 'lamp' ? new THREE.CylinderGeometry(.5, .5, 1, 8) : new THREE.BoxGeometry(1, 1, 1)
+    add(row, source)
+  }
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
 export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const group = new THREE.Group(); group.name = 'wh-r1-live1'; group.userData.dynamic = true; group.userData.noMerge = true; group.position.y = WH_R1_FLOOR_Y; root.add(group)
   const low = quality?.tier === 'low', slots = WH_R1_DATA.elements.filter(row => row.category === SLOT_CATEGORY), simulation = createLive2Simulation({ slotIds: slots.map(row => row.id), multiplier: 8 })
   const slotById = new Map(slots.map(row => [row.id, row])), cargoMeshes = [], shuttleCount = low ? 2 : 4
   if (!low) for (let type = 0; type < 3; type++) { const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: BOX_COLORS[type], roughness: .82 }), slots.length + shuttleCount); mesh.name = `wh-r1-live1-cargo-${type}`; mesh.userData = { dynamic: true, live1Inventory: true, boxType: type }; group.add(mesh); cargoMeshes.push(mesh) }
   const shuttle = new THREE.InstancedMesh(new THREE.BoxGeometry(.82, .18, 1.08), new THREE.MeshStandardMaterial({ color: 0x56636d, metalness: .35, roughness: .58 }), shuttleCount); shuttle.name = 'wh-r1-live1-shuttles'; shuttle.userData = { dynamic: true, live1Shuttles: shuttleCount }; group.add(shuttle)
-  const forkliftCount = low ? 2 : 3, forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7 }; group.add(rootNode); return rootNode })
-  const forkliftRows = forkliftParts(), forkliftMeshes = new Map(), forkliftDummy = new THREE.Object3D()
-  for (const partName of [...new Set(forkliftRows.map(row => row.part))]) { const rows = forkliftRows.filter(row => row.part === partName), mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: rows[0].color, roughness: .74 }), forkliftCount); mesh.name = `wh-r1-live2-forklift-${partName}`; mesh.userData = { dynamic: true, live2Role: 'forklift', realModelPart: partName }; group.add(mesh); forkliftMeshes.set(partName, { mesh, rows: rows[0] }) }
+  const forkliftCount = low ? 2 : 3, registeredForklifts = WH_R1_VEHICLES.filter(row => row.category === '搬运设备占位'), forkliftRows = forkliftParts()
+  const forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const row = registeredForklifts[i]; const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7, registeredId: row?.id || null }; group.add(rootNode); return rootNode })
+  const forklift = new THREE.InstancedMesh(combinedForkliftGeometry(THREE, forkliftRows), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .74 }), forkliftCount)
+  forklift.name = 'wh-r1-live2-forklifts'; forklift.userData = { dynamic: true, live2Role: 'forklift', realModel: true, mergedParts: true, registeredIds: registeredForklifts.slice(0, forkliftCount).map(row => row.id) }; group.add(forklift)
+  const forkliftDummy = new THREE.Object3D()
   // Staff are supplied by the registered WH-R1 staff module.  Do not create a
   // visual fallback here: a primitive fallback hides missing registration and
   // violates the requirement that LIVE-2 uses the roster's real actors.
@@ -45,15 +76,20 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   }
   const updateActors = state => {
     const moving = state.tasks.filter(task => task.status === 'moving'), inbound = moving.filter(task => task.kind === 'inbound' && ['arrival', 'quality', 'putaway'].includes(task.stage))
-    const object = new THREE.Object3D()
-    for (let index = 0; index < forkliftCount; index++) { const task = inbound[index % Math.max(1, inbound.length)], row = task && slotById.get(task.slotId); let position = { x: qc.x, y: WH_R1_FLOOR_Y + .38, z: qc.z }; if (row) { const target = pointForSlot(row), p = Math.max(0, Math.min(1, (state.nowMs - (task.startedAt || state.nowMs)) / Math.max(1, (task.completeAt || state.nowMs + 1) - (task.startedAt || state.nowMs)))); position = corridorPosition(target, p, task.stage); position.y = WH_R1_FLOOR_Y + .38 } forkliftRoots[index].position.set(position.x, position.y, position.z); forkliftRoots[index].userData.stage = task?.stage || 'idle'; for (const { mesh, rows: part } of forkliftMeshes.values()) { forkliftDummy.position.set(position.x + part.x, position.y + part.y - .38, position.z + part.z); forkliftDummy.scale.set(part.sx, part.sy, part.sz); forkliftDummy.updateMatrix(); mesh.setMatrixAt(index, forkliftDummy.matrix) } }
-    for (const { mesh } of forkliftMeshes.values()) { mesh.instanceMatrix.needsUpdate = true }
-    const roles = [{ x: qc.x, z: qc.z }, { x: qc.x + 2, z: qc.z }, { x: -111, z: -1 }, { x: -116, z: -1 }, { x: -120, z: -1 }, { x: -112, z: 5 }, { x: -118, z: 5 }, { x: -108, z: 5 }, { x: -102, z: 5 }, { x: -92, z: 2 }, { x: -86, z: 2 }, { x: -98, z: 8 }]
+    const taskForForklift = index => inbound.find(task => { const sequence = Number(String(task.itemId || '').match(/(\d+)$/)?.[1] || 0); return sequence % forkliftCount === index })
+    for (let index = 0; index < forkliftCount; index++) {
+      const task = taskForForklift(index), row = task && slotById.get(task.slotId), parked = registeredForklifts[index], parkedPoint = parked && whToWorld(parked.xM, parked.yM)
+      let position = parkedPoint ? { x: parkedPoint.x, y: 0, z: parkedPoint.z } : { x: qc.x, y: 0, z: qc.z }
+      if (row) { const target = pointForSlot(row), p = Math.max(0, Math.min(1, (state.nowMs - (task.startedAt || state.nowMs)) / Math.max(1, (task.completeAt || state.nowMs + 1) - (task.startedAt || state.nowMs)))); position = corridorPosition(target, p, task.stage); position.y = 0 }
+      forkliftRoots[index].position.set(position.x, 0, position.z); forkliftRoots[index].rotation.y = ((row?.yawDeg ?? parked?.yawDeg ?? 0) * Math.PI / 180); forkliftRoots[index].userData.stage = task?.stage || 'standby'; forkliftRoots[index].userData.taskId = task?.taskId || null
+      forkliftDummy.position.set(position.x, 0, position.z); forkliftDummy.rotation.y = (row?.yawDeg ?? parked?.yawDeg ?? 0) * Math.PI / 180; forkliftDummy.scale.setScalar(1); forkliftDummy.updateMatrix(); forklift.setMatrixAt(index, forkliftDummy.matrix)
+    }
+    forklift.instanceMatrix.needsUpdate = true
     if (runtimeStaff?.members?.length) {
       if (staff) staff.visible = false
-      runtimeStaff.members.forEach((member, index) => { const p = roles[index % roles.length], target = member.char?.group || member.placeholder?.group; if (target) { target.position.x = p.x; target.position.y = WH_R1_FLOOR_Y; target.position.z = p.z; target.userData.live2Stage = state.tasks.find(task => task.stage === member.role)?.stage || 'idle' } })
-    } else if (staff) { staff.visible = true; roles.forEach((p, index) => { const actor = new THREE.Object3D(); actor.position.set(p.x, WH_R1_FLOOR_Y + .62, p.z); actor.updateMatrix(); staff.setMatrixAt(index, actor.matrix) }); staff.instanceMatrix.needsUpdate = true }
-    if (runtimeVehicles?.root?.userData?.forklifts) runtimeVehicles.root.userData.forklifts.live2State = inbound.slice(0, forkliftCount).map((task, index) => ({ id: WH_R1_VEHICLES.filter(row => row.category === '搬运设备占位')[index]?.id || `forklift-${index + 1}`, stage: task?.stage || 'idle', itemId: task?.itemId || null }))
+      runtimeStaff.members.forEach(member => { const target = member.char?.group || member.placeholder?.group; if (target) target.userData.live2Stage = state.tasks.find(task => task.stage === member.role)?.stage || 'idle' })
+    }
+    if (runtimeVehicles?.root?.userData?.forklifts) runtimeVehicles.root.userData.forklifts.live2State = registeredForklifts.slice(0, forkliftCount).map((row, index) => ({ id: row.id, stage: forkliftRoots[index].userData.stage, itemId: forkliftRoots[index].userData.taskId }))
   }
   const updateCargo = () => {
     if (low) return
@@ -69,7 +105,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
       if (task) {
         const row = slotById.get(task.slotId), slot = row ? pointForSlot(row) : qc, progress = Math.max(0, Math.min(1, (state.nowMs - task.startedAt) / Math.max(1, task.completeAt - task.startedAt)))
         if (['retrieve', 'putaway'].includes(task.stage)) position = corridorPosition(slot, progress, task.stage)
-        else if (task.stage === 'conveyor') { const p = pathPoint(WH_R1_CONVEYOR_PATH, state.nowMs, 1); position = { x: p.x, y: slot.y, z: p.z } }
+        else if (task.stage === 'conveyor') { const p = pathPoint(WH_R1_CONVEYOR_PATH, Math.max(0, state.nowMs - task.startedAt), 1); position = { x: p.x, y: slot.y, z: p.z } }
         else position = { x: slot.x + (sink.x - slot.x) * progress, y: slot.y + (sink.y - slot.y) * progress, z: slot.z + (sink.z - slot.z) * progress }
         shuttleState.movingFrom = slot.z; shuttleState.target = sink.z; shuttleState.position = position.z; shuttleState.movingAt = task.startedAt; shuttleState.lastAt = task.startedAt; shuttleState.carrying = progress > .45; shuttleState.status = progress > .5 ? 'delivery' : 'pickup'; lift = shuttleFrame(shuttleState, state.nowMs).lift
         if (progress > .05 && progress < .98) carried.push({ type: task.boxType, position: { ...position, y: position.y + SHUTTLE_MAX_LIFT + lift } })
@@ -85,6 +121,6 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
     summary: () => { const state = simulation.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high' } },
     toggleBoard(value) { if (board) board.visible = value === undefined ? !board.visible : Boolean(value); return board?.visible ?? false },
     onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); dirty = true; if (dirty) update() },
-    dispose() { if (disposed) return; disposed = true; simulation.dispose(); cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); for (const { mesh } of forkliftMeshes.values()) { mesh.geometry.dispose(); mesh.material.dispose() }; staff?.geometry.dispose(); staff?.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); group.removeFromParent() },
+    dispose() { if (disposed) return; disposed = true; simulation.dispose(); cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklift.geometry.dispose(); forklift.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); group.removeFromParent() },
   }
 }

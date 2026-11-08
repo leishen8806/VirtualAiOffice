@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { createLive2Simulation, LIVE2_STAGES, live2QueueTotal } from '../wh-r1/live2-sim.js'
 
 const run = seed => { const sim = createLive2Simulation({ seed, multiplier: 8 }); for (let i = 0; i < 1800; i++) sim.advance(100); return sim.snapshot() }
@@ -35,4 +36,14 @@ test('LIVE-2 keeps inventory conservation explicit at each completion boundary',
 
 test('LIVE-2 pause belongs to the shared simulation clock', () => {
   const sim = createLive2Simulation({ seed: 9, multiplier: 4 }), before = sim.snapshot(); sim.pause(); sim.advance(5000); assert.equal(sim.snapshot().nowMs, before.nowMs); sim.resume(); sim.advance(100); assert.ok(sim.snapshot().nowMs > before.nowMs)
+})
+
+test('LIVE-2 renderer uses registered actors, one merged forklift mesh, and per-task conveyor progress', () => {
+  const source = readFileSync(new URL('../dr-wh-r1-live1.js', import.meta.url), 'utf8')
+  assert.match(source, /new THREE\.InstancedMesh\(combinedForkliftGeometry\(/)
+  assert.match(source, /registeredForklifts/)
+  assert.match(source, /taskForForklift/)
+  assert.match(source, /state\.nowMs - task\.startedAt/)
+  assert.doesNotMatch(source, /const roles =/)
+  assert.doesNotMatch(source, /CylinderGeometry\(\.18, \.18, 1\.08/)
 })
