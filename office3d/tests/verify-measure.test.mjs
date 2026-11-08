@@ -17,3 +17,11 @@ test('office high budget is the current 1.2M triangle ceiling', () => {
   const budgets = JSON.parse(fs.readFileSync(path.join(root, 'tools', 'verify', 'budgets.json'), 'utf8'))
   assert.deepEqual(budgets.office.high, { calls: 300, triangles: 1200000 })
 })
+
+test('warehouse readiness does not wait for office people counters', () => {
+  const source = fs.readFileSync(path.join(root, 'tools', 'verify', 'qv1-measure.mjs'), 'utf8')
+  assert.match(source, /const peopleReady = place !== 'drlife-office' \|\| \(lastState\.people\.views >= 25/)
+  const ci = fs.readFileSync(path.join(root, '..', '.github', 'workflows', 'ci.yml'), 'utf8')
+  assert.match(ci, /Office performance report \(local-only; CI skipped\)/)
+  assert.match(ci, /if:\s*\$\{\{ false \}\}/)
+})

@@ -33,3 +33,8 @@ For the office measurement, readiness requires all 25 views to have a
 replaced, visible character within 1 m of its seat. A timeout exits 2 and the
 JSON reports the counters that were still below 25. The current office high
 ceiling is 300 calls / 1,200,000 triangles; low remains 120 / 200,000.
+
+CI intentionally skips the office measurement because this checkout does not
+contain the real-person assets needed to satisfy that readiness predicate. Run
+the local command above when those assets are available; the warehouse path
+does not wait on office people counters.

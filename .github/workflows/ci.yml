@@ -74,7 +74,10 @@ jobs:
           name: verify-warehouse
           path: /tmp/office3d-verify-perf-*/*
           if-no-files-found: warn
-      - name: Office performance report (non-blocking budget)
+      # The repository checkout has no real-person assets; office readiness can never complete in CI.
+      # Keep the local command documented and runnable, but do not spend the CI job's 8-minute budget waiting.
+      - name: Office performance report (local-only; CI skipped)
+        if: ${{ false }}
         timeout-minutes: 8
         continue-on-error: true
         run: |
