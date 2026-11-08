@@ -50,3 +50,27 @@ jobs:
         run: npm run test:packages
       - name: Packaged layout verification
         run: npm run verify:packaged-layout
+
+  perf-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Warehouse performance budget (hard gate)
+        run: npm run verify:perf -- --place "drlife-warehouse&whr1=1"
+      - name: Office performance report (non-blocking budget)
+        run: |
+          set +e
+          npm run verify:perf -- --place drlife-office > office-perf.json
+          code=$?
+          cat office-perf.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -eq 2 ]; then exit 2; fi
