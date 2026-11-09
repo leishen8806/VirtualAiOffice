@@ -223,7 +223,7 @@ test('FD-6f r1Books 只注册给 R1 布局，拿不到素材或非 R1 时安静�
   assert.equal(buildR1Books({ THREE, root, layout: createOfficeR1Layout(), A: { furn: {} } }).books, 0)
   assert.equal(root.children.length, 0)
   const built = books({ root })
-  assert.equal(built.root.userData.dynamic, false)
+  assert.equal(built.root.userData.dynamic, true)
   built.dispose()
   assert.equal(root.children.length, 0, 'dispose 之后要把自己从场景里摘掉')
 })

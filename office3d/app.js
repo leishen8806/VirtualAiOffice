@@ -975,35 +975,6 @@ let r1Npcs = null // 服务人员 NPC（OFFICE-R1-I7B-A）：同事替换完成�
 let foodtruckDemo = null
 const bubblesEl = $('bubbles')
 const views = new Map() // agentId -> view
-// R1 人物远近级：保留滞回避免 12–15 m 边界闪烁。远处使用单一低面数人形代理，
-// 近处恢复完整写实人物；非 R1 场景不进入这条路径。
-// 总览机位只保留轻量人形；近景在 6m 内恢复写实模型，避免 25 个 GLB 同时占用总览预算。
-const R1_PERSON_LOD_RESTORE_M = 2
-const R1_PERSON_LOD_REDUCE_M = 3
-function syncR1PersonLod(view) {
-  if (OFFICE_LAYOUT.r1Phase !== 'R1' || !view?.char?.group || !view.lodProxy) return
-  const p = view.char.group.getWorldPosition(animationPoint)
-  const distance = p.distanceTo(camera.position)
-  const previous = view.r1PersonDetailed
-  // low 档不保留近处写实网格；high/medium 才使用 15m 降级、12m 恢复滞回。
-  const forcedLow = typeof qualityPolicy !== 'undefined' && qualityPolicy.tier === 'low'
-  const detailed = forcedLow ? false : previous === undefined
-    ? distance <= R1_PERSON_LOD_REDUCE_M
-    : previous
-      ? distance <= R1_PERSON_LOD_REDUCE_M
-      : distance < R1_PERSON_LOD_RESTORE_M
-  if (detailed === previous) return
-  view.r1PersonDetailed = detailed
-  view.char.group.traverse(node => {
-    if (node === view.lodProxy) return
-    if (node.isMesh || node.isSkinnedMesh || node.isLine) node.visible = detailed
-  })
-  view.lodProxy.visible = !detailed
-}
-function syncAllR1PersonLod() {
-  if (OFFICE_LAYOUT.r1Phase !== 'R1') return
-  for (const view of views.values()) syncR1PersonLod(view)
-}
 const boardViews = {}
 let fallbackIdx = 0
 
@@ -1047,48 +1018,6 @@ function fitR1Workstation(ch, home, desk, handY, chairId) {
   if (ch.r1Seated) { ch.r1Seated.seatBase = appliedSeatBase; ch.r1Seated.seatBaseLimited = appliedSeatBase >= .2 - 1e-6 || !!ch.r1Seated.fitConflict }
   return finalHome
 }
-function makeR1PersonProxy(ch, agentId) {
-  const boxes = []
-  ch.group.updateMatrixWorld(true)
-  const rootWorld = ch.group.matrixWorld.clone().invert()
-  ch.group.traverse(node => {
-    if (!node.isMesh || node.userData?.qualityProxy || !node.geometry) return
-    const box = new THREE.Box3().setFromObject(node)
-    if (box.isEmpty()) return
-    const corners = []
-    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z).applyMatrix4(rootWorld))
-    const local = new THREE.Box3().setFromPoints(corners)
-    if (local.getSize(new THREE.Vector3()).lengthSq() < 1e-5) return
-    const material = Array.isArray(node.material) ? node.material[0] : node.material
-    boxes.push({ box: local, color: material?.color?.clone?.() || new THREE.Color(0x7b8794), area: local.getSize(new THREE.Vector3()).lengthSq() })
-  })
-  boxes.sort((a, b) => b.area - a.area)
-  const selected = boxes.slice(0, 24)
-  const positions = [], colors = []
-  const pushBox = ({ box, color }) => {
-    const { min, max } = box, c = [color.r, color.g, color.b]
-    const v = [[min.x,min.y,min.z],[max.x,min.y,min.z],[max.x,max.y,min.z],[min.x,max.y,min.z],[min.x,min.y,max.z],[max.x,min.y,max.z],[max.x,max.y,max.z],[min.x,max.y,max.z]]
-    for (const face of [[0,1,2,3],[4,7,6,5],[0,4,5,1],[3,2,6,7],[1,5,6,2],[0,3,7,4]]) for (const i of face) { positions.push(...v[i]); colors.push(...c) }
-  }
-  for (const item of selected) pushBox(item)
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-  geometry.computeVertexNormals()
-  const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, roughness: 0.9 }))
-  mesh.name = 'r1-person-proxy-mesh'
-  mesh.userData.qualityProxy = true
-  mesh.userData.agentId = agentId
-  mesh.renderOrder = 2
-  mesh.castShadow = false
-  mesh.receiveShadow = false
-  const proxy = new THREE.Group()
-  proxy.name = 'r1-person-proxy'
-  proxy.userData.qualityProxy = true
-  proxy.userData.agentId = agentId
-  proxy.add(mesh)
-  return proxy
-}
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
@@ -1121,9 +1050,6 @@ function createAgentView(a, index) {
   ring.rotation.x = Math.PI / 2
   ring.visible = false
   ch.group.add(ring)
-  const lodProxy = makeR1PersonProxy(ch, a.id)
-  lodProxy.visible = false
-  ch.group.add(lodProxy)
   if (desk.setBadge) desk.setBadge(MODEL_BADGE[modelFamily(a)])
   else {
     const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.012, 6), new THREE.MeshBasicMaterial({ color: MODEL_BADGE[modelFamily(a)], toneMapped: false }))
@@ -1135,7 +1061,7 @@ function createAgentView(a, index) {
   el.className = 'lab'
   el.innerHTML = '<span class="st" style="display:none"></span><span class="tk" style="display:none"></span><span class="nm"></span>'
   labelsEl.appendChild(el)
-  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, lodProxy, r1PersonDetailed: undefined, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
+  return { id: a.id, name: a.name, data: a, zone, home: seatedHome, stand: officeStand(seatedHome), char: ch, desk, chair, ring, label: el, nm: el.querySelector('.nm'), tk: el.querySelector('.tk'), st: el.querySelector('.st'), why: '', mode: 'idle', act: null, phase: rnd() * 10, headPos: new THREE.Vector3() }
 }
 function createBoardView(name, home, stand, via, skinI) {
   const ch = PEOPLE
@@ -2202,7 +2128,6 @@ const showQ = () => { qb.textContent = '画质：' + qualityNames[qualityPolicy.
 function applyQuality() {
   sceneQuality.activate(qualityPolicy.tier)
   dpr=cappedDpr(qualityPolicy.tier,DPR_MAX,innerWidth,innerHeight);renderer.setPixelRatio(dpr);resize();showQ()
-  syncAllR1PersonLod()
 }
 const qualityStatus = () => `${qualityNames[qualityPolicy.tier]}档 · ${qualityMetrics.fps.toFixed(1)} FPS · ${qualityMetrics.frameMs.toFixed(1)}ms · calls ${qualityMetrics.calls} · 三角形 ${qualityMetrics.triangles} · 灯 ${qualityMetrics.lights} · ${qualityPolicy.reason}`
 if(new URLSearchParams(location.search).has('perf')){
@@ -2473,7 +2398,6 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
   director.update(dt)
   for (const v of views.values()) {
     const ch = v.char, p = ch.pose
-    syncR1PersonLod(v)
     if (!v.act) {
       // 没有互动时：按真实状态坐着干活 / 发呆
       p.sit = THREE.MathUtils.lerp(p.sit, OFFICE_LAYOUT.r1Phase === 'R1' && v.r1Standing ? 0 : 1, ease(dt, 6))
@@ -2693,14 +2617,6 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
             ch.group.visible = previous.group.visible
             ch.group.traverse(o => { o.userData.agentId = v.id })
-            // replaceCharacter swaps the group; rebuild its LOD proxy or the old detached proxy would hide the real model.
-            if (typeof THREE !== 'undefined') {
-              v.lodProxy = makeR1PersonProxy(ch, v.id)
-              v.lodProxy.visible = false
-              // The placeholder may already have cached a LOD decision; reset it so the new avatar is initialized on the next frame.
-              v.r1PersonDetailed = undefined
-              ch.group.add(v.lodProxy)
-            }
             ch.group.add(v.ring); scene.add(ch.group); previous.group.removeFromParent()
             if (typeof sceneQuality !== 'undefined') try { sceneQuality.replaceCharacter(previous, ch) } catch {}
             v.char = ch

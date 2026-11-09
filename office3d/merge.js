@@ -11,20 +11,6 @@ function signature(g) {
   return Object.keys(g.attributes).sort().map((k) => `${k}${g.attributes[k].itemSize}`).join(',')
 }
 
-// 不再用材质实例 uuid 作为合批键：不同模块可能各自 clone 出外观完全相同的
-// 不透明材质。把可见材质属性和贴图身份纳入签名后，才能安全地共用一个批次。
-// 透明 / Shader 材质仍在下方被排除，动态改色也不会被错误合并。
-function materialSignature(mat) {
-  return JSON.stringify([
-    mat.type, mat.color?.getHex?.(), mat.emissive?.getHex?.(), mat.emissiveIntensity,
-    mat.roughness, mat.metalness, mat.opacity, mat.transparent, mat.side,
-    mat.alphaTest, mat.depthWrite, mat.depthTest, mat.blending, mat.vertexColors,
-    mat.toneMapped, mat.map?.uuid, mat.alphaMap?.uuid, mat.normalMap?.uuid,
-    mat.roughnessMap?.uuid, mat.metalnessMap?.uuid, mat.emissiveMap?.uuid,
-    mat.aoMap?.uuid, mat.lightMap?.uuid
-  ])
-}
-
 export function snapshot(scene) {
   const m = new Map()
   scene.updateMatrixWorld(true)
@@ -49,7 +35,7 @@ export function mergeStatic(scene, before) {
     box.setFromObject(o).getCenter(c)
     const far = c.length() > 150
     const cell = far ? `F${Math.round(Math.atan2(c.z, c.x) * 4)}` : `${Math.floor(c.x / CELL)},${Math.floor(c.z / CELL)}`
-    const key = [materialSignature(mat), signature(o.geometry), o.castShadow, o.receiveShadow, o.renderOrder, o.layers.mask, o.frustumCulled, cell].join('|')
+    const key = [mat.uuid, signature(o.geometry), o.castShadow, o.receiveShadow, o.renderOrder, o.layers.mask, o.frustumCulled, cell].join('|')
     if (!buckets.has(key)) buckets.set(key, [])
     buckets.get(key).push(o)
   })

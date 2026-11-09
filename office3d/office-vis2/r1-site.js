@@ -46,9 +46,7 @@ export function createOfficeR1Layout({ candidateC01 = true } = {}) {
 export function buildR1Site({ THREE, root, layout }) {
   const group = new THREE.Group()
   group.name = 'r1-site'
-  // Floor and perimeter buffer are immutable scene surfaces; collision and
-  // picking data are owned by the shell and remain separate.
-  group.userData.dynamic = false
+  group.userData.dynamic = true
   const marble = r1MarbleTexture(THREE)
   const floorMaterial = new THREE.MeshStandardMaterial({ color: '#FFFFFF', map: marble, roughness: .3, metalness: .02 })
   const greenMaterial = new THREE.MeshStandardMaterial({ color: '#789467', roughness: .95 })

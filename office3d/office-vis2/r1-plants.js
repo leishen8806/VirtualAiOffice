@@ -65,7 +65,7 @@ function buildPlantSet({ THREE, root, layout, A, quality, low = false, collision
     collision?.add(proxy, pot.id); proxies.push(proxy); records.push(record)
   }
   Object.values(parts).flat().forEach(part => part.geometry.dispose()); foliage.dispose()
-  const built = batch.build(group, name === 'r1-plants' ? 'r1-indoor-plants' : name + '-surfaces'); built.mesh.material.side = THREE.DoubleSide; built.mesh.userData.r1LodDetail = true
+  const built = batch.build(group, name === 'r1-plants' ? 'r1-indoor-plants' : name + '-surfaces'); built.mesh.material.side = THREE.DoubleSide
   built.mesh.userData.itemIds = records.map(row => row.id)
   root.add(group); let disposed = false
   return { root: group, records, proxies, dispose() { if (disposed) return; disposed = true; proxies.forEach(proxy => { collision?.remove?.(proxy); proxy.geometry.dispose() }); proxyMaterial.dispose(); built.dispose(); group.removeFromParent() } }
