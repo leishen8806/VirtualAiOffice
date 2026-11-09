@@ -1,11 +1,14 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createLive3StageA, LIVE3_WORKER_ASSIGNMENTS, live3Board, live3ConveyorPose } from '../wh-r1/live3-stage-a.js'
-import { LIVE3_STATIONS, stationPoint } from '../wh-r1/live3-stations.js'
+import { createLive3StageA, LIVE3_DEMO_WARMUP_MS, LIVE3_WORKER_ASSIGNMENTS, live3Board, live3ConveyorPose } from '../wh-r1/live3-stage-a.js'
+import { LIVE3_STATIONS, live3BeltPoint, stationPoint } from '../wh-r1/live3-stations.js'
 import { createWhR1Navigation } from '../dr-wh-r1-validation.js'
 import { WH_R1_STAFF_ROSTER } from '../dr-wh-r1-staff.js'
 import { runtimeYawFromFacing, whToWorld } from '../wh-r1-layout.js'
 import { WH_R1_DATA } from '../wh-r1/data.js'
+import { buildWhR1Live1 } from '../dr-wh-r1-live1.js'
+import { buildWhR1Staff } from '../dr-wh-r1-staff.js'
+import * as THREE from '../vendor/three/three.module.js'
 
 test('LIVE-3 stage A carries a deterministic waybill through one shared clock', () => {
   const slotIds = WH_R1_DATA.elements.filter(row => row.category === '托位载荷控制体').map(row => row.id)
@@ -23,7 +26,10 @@ test('LIVE-3 stage A carries a deterministic waybill through one shared clock', 
 test('LIVE-3 stage A assigns workers by stage and keeps cargo from racing for a slot', () => {
   const sim = createLive3StageA({ seed: 7, multiplier: 12 })
   const initial = sim.snapshot()
-  for (const [stage, workers] of Object.entries(LIVE3_WORKER_ASSIGNMENTS)) assert.equal(initial.workerAssignments[stage].length, workers.length)
+  for (const [stage, workers] of Object.entries(LIVE3_WORKER_ASSIGNMENTS)) {
+    assert.equal(initial.workerAssignments[stage].length, workers.length)
+    assert.ok(workers.every(id => WH_R1_STAFF_ROSTER.some(member => member.id === 'wh-staff-' + id)))
+  }
   for (let frame = 0; frame < 600; frame++) {
     const state = sim.advance(100)
     const moving = state.tasks.filter(task => task.status === 'moving')
@@ -48,6 +54,46 @@ test('LIVE-3 scale dwell and scan movement come from the same quality task', () 
   assert.ok(frames.some(frame => frame.action === 'scan'))
   assert.equal(new Set(dwell.map(frame => frame.x)).size, 1)
   assert.ok(frames.every((frame, i) => i === 0 || frame.x >= frames[i - 1].x))
+})
+
+test('LIVE-3 warmed belt keeps boxes spaced and dispatches packing work to distinct benches', () => {
+  const sim = createLive3StageA()
+  sim.advance(LIVE3_DEMO_WARMUP_MS)
+  const start = live3BeltPoint(7), end = live3BeltPoint(16)
+  for (let tick = 0; tick < 600; tick++) {
+    const state = sim.advance(100)
+    const active = state.tasks.filter(task => task.status === 'moving')
+    const cargo = active.map(task => live3ConveyorPose(task, state.nowMs)).filter(Boolean)
+    const straight = cargo.filter(box => Math.abs(box.z - start.z) < .3 && box.x > start.x && box.x < end.x)
+    assert.ok(straight.filter(box => box.action !== 'weigh').length >= 3, state.nowMs)
+    for (const [i, box] of cargo.entries()) for (const other of cargo.slice(i + 1)) {
+      assert.ok(Math.abs(box.x - other.x) >= .22 || Math.abs(box.z - other.z) >= .22, state.nowMs)
+    }
+    const assigned = active.filter(task => task.stage === 'packing').map(task => task.workerIndex)
+    assert.equal(new Set(assigned).size, assigned.length)
+    assert.ok(assigned.every(index => index === 0 || index === 1))
+  }
+})
+
+test('LIVE-3 runtime suppresses both mannequin meshes and renders simulation boxes at the benches and pallet', () => {
+  const root = new THREE.Group()
+  const staff = buildWhR1Staff({ THREE, root })
+  const live = buildWhR1Live1({ THREE, root, quality: { tier: 'high' } })
+  live.bindRuntime({ staff })
+  live.onFrame(.1); staff.onFrame(.1)
+  assert.equal(staff.summary().placeholderCalls, 0)
+  for (const posture of ['standing', 'seated']) assert.equal(root.getObjectByName('wh-r1-staff-placeholder-' + posture).visible, false)
+  const mesh = root.getObjectByName('wh-r1-live3-belt-cargo')
+  assert.ok(mesh.userData.items.some(box => box.action === 'packing'))
+  assert.ok(mesh.userData.items.some(box => box.action === 'staged'))
+  const cargo = [...mesh.userData.items, ...mesh.userData.rackCargo]
+  assert.equal(new Set(cargo.map(box => box.waybill)).size, cargo.length)
+  const actions = new Set()
+  for (let i = 0; i < 600; i++) {
+    live.onFrame(.1); staff.onFrame(.1)
+    for (const member of staff.members) actions.add(member.char.group.userData.live3Action)
+  }
+  for (const action of ['arrival', 'scan', 'weigh', 'retrieve', 'packing', 'carry', 'stack']) assert.ok(actions.has(action), action)
 })
 
 test('LIVE-3 board reconciles inventory and active work for 600 ticks', () => {

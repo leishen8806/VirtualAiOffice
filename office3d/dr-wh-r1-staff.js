@@ -141,35 +141,58 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
     if (distance <= .04) { member.pathIndex++; if (member.pathIndex >= points.length - 1) { member.pause = 2.5; member.path = [...points].reverse(); member.pathIndex = 0 }; return }
     const step = Math.min(distance, dt * .7); current.x += dx / distance * step; current.z += dz / distance * step; member.state.phase += step; member.char.group.rotation.y = Math.atan2(dx, dz); member.state.walk = 1; member.state.talk = 0; syncPose(member); member.placeholder.group.position.copy(member.char.group.position); member.placeholder.group.rotation.copy(member.char.group.rotation)
   }
-  let realistic = null, hydrationAt = 0, armed = false
+  let realistic = null, hydrationAt = 0, armed = false, realOnly = false, disposed = false
   const updateHydration = camera => {
     if (!armed || !realistic || !camera || realistic.maxReal <= 0) return
     const now = globalThis.performance?.now?.() || Date.now(); if (now - hydrationAt < 180) return; hydrationAt = now
-    const rows = members.map(member => ({ member, distance: camera.position.distanceTo(member.placeholder.group.position) })).sort((a, b) => a.distance - b.distance)
+    const direction = realOnly && camera.getWorldDirection(new THREE.Vector3())
+    const rows = members.map(member => {
+      const position = member.placeholder.group.position, distance = camera.position.distanceTo(position)
+      const alignment = direction ? direction.dot(position.clone().sub(camera.position)) / Math.max(distance, .01) : 1
+      return { member, distance, score: distance + (1 - alignment) * 190 }
+    }).sort((a, b) => a.score - b.score)
     for (const row of rows) row.member.want = false
-    const keep = rows.filter(row => row.member.loaded && row.distance < 28).slice(0, realistic.maxReal)
+    const keep = rows.filter(row => row.member.loaded && row.distance < (realOnly ? 34 : 28)).slice(0, realistic.maxReal)
     for (const row of rows) if (!keep.includes(row) && row.member.loaded) switchToPlaceholder(row.member)
-    const wanted = [...keep, ...rows.filter(row => !row.member.loaded && row.distance < 20)].sort((a, b) => a.distance - b.distance).slice(0, realistic.maxReal)
+    const wanted = [...keep, ...rows.filter(row => !row.member.loaded && row.distance < (realOnly ? 30 : 20))].sort((a, b) => a.score - b.score).slice(0, realistic.maxReal)
+    if (realOnly) for (const row of keep) if (!wanted.includes(row)) switchToPlaceholder(row.member)
     for (const { member } of wanted) {
-      if (member.loaded || member.pending || typeof realistic.load !== 'function') continue
       member.want = true
+      if (member.loaded || member.pending || typeof realistic.load !== 'function') continue
+      if (member.realChar) { switchToReal(member, member.people, realistic.createPerson); continue }
       member.pending = true
-      Promise.resolve(realistic.load(member.avatar)).then(people => { member.pending = false; if (member.want) switchToReal(member, people, realistic.createPerson) }).catch(() => { member.pending = false })
+      Promise.resolve(realistic.load(member.avatar)).then(people => { member.pending = false; if (!disposed && member.want) switchToReal(member, people, realistic.createPerson) }).catch(() => { member.pending = false })
     }
   }
-  const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => { realistic = { maxReal: tier === 'high' ? 1 : tier === 'medium' ? 1 : 0, load, createPerson }; armed = false; hydrationAt = 0; syncPlaceholders() }
+  const requireRealistic = () => { realOnly = true; placeholders.standing.visible = placeholders.seated.visible = false }
+  const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => {
+    realistic = { maxReal: tier === 'low' && !realOnly ? 0 : 1, load, createPerson }
+    armed = realOnly; hydrationAt = 0; syncPlaceholders()
+  }
   const cameraIntent = () => { armed = true }
-  const onFrame = (dt, context = {}) => { for (const member of members) { move(member, dt); member.char.solve?.(Math.min(.1, Math.max(0, dt))) }; updateHydration(context.camera); syncPlaceholders() }
+  const onFrame = (dt, context = {}) => {
+    updateHydration(context.camera)
+    for (const member of members) {
+      move(member, dt)
+      member.char.solve?.(Math.min(.1, Math.max(0, dt)))
+      member.afterSolve?.()
+    }
+    if (!realOnly) syncPlaceholders()
+    result.afterSolve?.()
+  }
   const hydrate = (people, createPerson) => { if (typeof createPerson !== 'function' || !people) return false; for (const member of members) switchToReal(member, people, createPerson); return true }
   const pickRay = ray => {
-    const hits = ray.intersectObjects([placeholders.standing, placeholders.seated, ...members.filter(m => m.loaded).map(m => m.char.group)], true), hit = hits[0]; if (!hit) return null
+    const candidates = members.filter(m => m.loaded).map(m => m.char.group)
+    if (!realOnly) candidates.unshift(placeholders.standing, placeholders.seated)
+    const hits = ray.intersectObjects(candidates, true), hit = hits[0]; if (!hit) return null
     let member
     if (hit.object.userData.whR1StaffPlaceholder && Number.isInteger(hit.instanceId)) member = members[hit.instanceId]
     else { let owner = hit.object; while (owner && !owner.userData?.warehouseStaffId) owner = owner.parent; member = members.find(row => row.id === owner?.userData?.warehouseStaffId) }
     return member ? { id: member.id, category: `${member.role} · ${STAFF_TEXT}`, displayOnly: true, staff: true, label: STAFF_TEXT, status: '仅供参观' } : null
   }
-  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, placeholderCalls: 2, placeholderTriangles: placeholders.triangles, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
-  const dispose = () => { placeholders.standing.geometry.dispose(); placeholders.standing.material.dispose(); placeholders.seated.geometry.dispose(); placeholders.seated.material.dispose(); group.parent?.remove(group) }
+  const summary = () => ({ count: members.length, loadedReal: members.filter(m => m.loaded).length, placeholderCalls: realOnly ? 0 : 2, placeholderTriangles: realOnly ? 0 : placeholders.triangles, roles: members.map(m => m.role), displayOnly: true, agentIds: [], collision: false, lite: !!lite })
+  const dispose = () => { disposed = true; placeholders.standing.geometry.dispose(); placeholders.standing.material.dispose(); placeholders.seated.geometry.dispose(); placeholders.seated.material.dispose(); group.parent?.remove(group) }
   syncPlaceholders()
-  return { root: group, members, avatarNames: () => WH_R1_STAFF_ROSTER.map(member => member.avatar), navigation: nav, hydrate, configureRealistic, cameraIntent, onFrame, pickRay, summary, dispose, staffText: STAFF_TEXT, lite: !!lite }
+  const result = { root: group, members, avatarNames: () => WH_R1_STAFF_ROSTER.map(member => member.avatar), navigation: nav, hydrate, requireRealistic, configureRealistic, cameraIntent, onFrame, pickRay, summary, dispose, staffText: STAFF_TEXT, lite: !!lite }
+  return result
 }
