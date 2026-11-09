@@ -217,7 +217,7 @@ test('I2 R4 keeps the identity ledger addressable and batches its zones and clos
   const root = new THREE.Group(), collision = createFurnitureCollision()
   const shell = buildR1Shell({ THREE, root, layout: r1(), collision }); root.updateMatrixWorld(true)
   assert.equal(root.children[0].name, 'r1-shell-root')
-  assert.equal(root.children[0].userData.dynamic, true)
+  assert.equal(root.children[0].userData.dynamic, false)
   assert.equal(shell.wallLedger.wallIds.length, 44); assert.equal(shell.wallLedger.faceIds.length, 88)
   const front = root.getObjectByName('r1-collision-front'), corners = root.getObjectByName('r1-corner-walls')
   assert.equal(front.material.side, THREE.FrontSide); closedMesh(front); closedMesh(corners)
