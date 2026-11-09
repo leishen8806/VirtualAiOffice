@@ -37,7 +37,7 @@ export function buildR1Doors({ THREE, root, layout }) {
   })
   const geometry = new THREE.BoxGeometry(1, 1, 1), glassMaterial = new THREE.MeshPhysicalMaterial({ color: '#dce9e7', transparent: true, opacity: .28, depthWrite: false, roughness: .15 }), metalMaterial = new THREE.MeshStandardMaterial({ color: '#705735', metalness: .55, roughness: .45 })
   const glass = new THREE.InstancedMesh(geometry, glassMaterial, records.length), metal = new THREE.InstancedMesh(geometry, metalMaterial, records.length * 4 + tracks.length + posts.length)
-  glass.name = 'r1-door-glass'; metal.name = 'r1-door-metal'; glass.userData.itemIds = records.map(row => row.id); glass.userData.r1LodDetail = true; metal.userData.itemIds = records.flatMap(row => Array(4).fill(row.id)).concat(tracks.map(pair => pair[0].doorId), posts.map(post => post.id))
+  glass.name = 'r1-door-glass'; metal.name = 'r1-door-metal'; glass.userData.itemIds = records.map(row => row.id); metal.userData.itemIds = records.flatMap(row => Array(4).fill(row.id)).concat(tracks.map(pair => pair[0].doorId), posts.map(post => post.id))
   const transform = new THREE.Object3D(), positionAt = (row, p) => ({ ...row.closed, [row.normal]: row.closed[row.normal] + row.offset * Math.min(1, p * 5), [row.axis]: row.closed[row.axis] + (row.open[row.axis] - row.closed[row.axis]) * Math.max(0, (p - .2) / .8) })
   const box = (mesh, index, row, p, along, y, width, height, thickness) => {
     transform.position.set(p.x + (row.vertical ? 0 : along), y, p.z + (row.vertical ? along : 0)); transform.rotation.set(0, 0, 0)

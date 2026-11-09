@@ -36,7 +36,7 @@ function skinTexture(gender, tone) {
 }
 
 function prepShadow(root) {
-  root.traverse((o) => { if (o.isMesh) { const plant = /plant|foliage|leaf|crown/i.test(`${o.name || ''} ${o.material?.name || ''}`); o.castShadow = !plant; o.receiveShadow = true; o.frustumCulled = false } })
+  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false } })
 }
 
 // ───────────── 衣服：从身体网格里按骨骼权重挑出三角形，外扩一层做成「壳」，共用同一副骨架 ─────────────
