@@ -41,7 +41,7 @@ test('SITE uses one conversion offset and leaves the WH-R1 root at the origin', 
 
 test('SITE keeps source data immutable and records every approved deviation', () => {
   const source = readFileSync(new URL('../wh-r1/data.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
-  assert.equal(createHash('sha256').update(source).digest('hex'), '18665f57b8b4f286b13044f64b4562b55034cc5202b8a9dbde959e988f25d465')
+  assert.equal(createHash('sha256').update(source).digest('hex'), '43e78b849387c939369812325a6cc1f5d433952cd24887f392c638876429ce3f')
   assert.deepEqual(WH_R1_DEVIATIONS.map(row => row.id), ['WH-R1-WORLD-ORIGIN', 'WH-14-D-001', 'WH-R1-PARKING-BAYS', 'WH-14-LOGISTICS-GATE', 'WH-14-LOGISTICS-GATE-R3-CLEARANCE', 'WH-R1-RECEIVING-BAY-WIDEN-R4'])
   assert.ok(WH_R1_DEVIATIONS.every(row => row.reason && ['2026-10-31', '2026-11-07', '2026-11-08'].includes(row.date)))
   assert.equal(WH_R1_DATA.elements.find(row => row.id === 'WH-01-VH-001').lengthM, 8)
@@ -82,10 +82,10 @@ test('SITE annex, I7 objects and planning yards are complete and collidable', ()
   assert.equal(WH_R1_ANNEX.walls.length, 7); assert.equal(WH_R1_ANNEX.doors.length, 4)
   assert.deepEqual(WH_R1_ANNEX.doors.map(row => row.id), ['R5-SHIP-D-1', 'R5-SHIP-D-2', 'R5-SHIP-D-3', 'R5-SHIP-D-4'])
   assert.ok(WH_R1_ANNEX.doors.every(row => row.sweep === 'UNKNOWN'))
-  assert.equal(WH_R1_I7_ROWS.length, 69); assert.equal(WH_R1_RESERVED_YARDS.length, 2)
+  assert.equal(WH_R1_I7_ROWS.length, 70); assert.equal(WH_R1_RESERVED_YARDS.length, 2)
   assert.deepEqual(WH_R1_RESERVED_YARDS.map(row => row.bboxSource), [[-6, 74, 34, 104], [130, 12, 160, 42]])
   const root = new THREE.Group(), collision = createFurnitureCollision(), value = buildWhR1Site({ THREE, root, collision, quality: { tier: 'high' } })
-  assert.deepEqual(value.root.getObjectByName('wh-r1-site-boxes').userData.groups, { fixtures: 32, annexWalls: 7, annexDoors: 4, bayEdges: 36 })
+  assert.deepEqual(value.root.getObjectByName('wh-r1-site-boxes').userData.groups, { fixtures: 33, annexWalls: 7, annexDoors: 4, bayEdges: 36 })
   assert.equal(value.root.children.filter(row => row.visible && !row.userData.collisionProxy && (row.isMesh || row.isInstancedMesh)).length, 5, 'labels are the optional sixth SITE draw call')
   assert.ok(collision.stats().bodies >= 60)
   for (const row of [...WH_R1_ANNEX.walls, ...WH_R1_ANNEX.doors]) { const p = whToWorld(row.xM, row.yM); assert.equal(collision.hit(p.x, p.z)?.group.userData.whR1Id, row.id, row.id) }
