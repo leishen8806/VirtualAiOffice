@@ -323,7 +323,7 @@
       "source": "R1 registered island, arc seats and fitted existing banyan; OFFICE-R1-FOOD adds the counter-top Kenney appliances (kitchenCoffeeMachine / toaster / kitchenBlender, already-approved CC0 copies recorded in assets/ASSET_LEDGER.md), a procedural cup rack and two glass food display cases, plus the low-poly procedural food shapes shared with r1-plaza.js; no downloaded assets",
       "license": "Repository MIT for the source code; the counter-top appliance models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "AE3B4D001ADC7EC07C2F947A53BF6C9164C4A8FC8F4489A3BFFC64C15CDEFBD7"
+      "sha256": "A314E95CB8D791AAD95C996948BE9B361197919EB489609362AAF8066D3C7588"
     },
     {
       "file": "office-vis2/r1-plants.js",
@@ -344,7 +344,7 @@
       "source": "R1 registered procedural r1-lounge; OFFICE-R1-RECEP flips 11-CT-001 so its convex face meets the entrance; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "6FA92947FE5A1D96394035BA1180CD2FB7933567F251BB0ACF1F62C50BD31F1A"
+      "sha256": "6C2082D52AA20FE6B8613121091C46F13A8B909D038ECEF729F28599E8B6E60D"
     },
     {
       "file": "office-vis2/r1-decor.js",
