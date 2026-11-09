@@ -4,7 +4,7 @@ import { createLive3StageA, LIVE3_WORKER_ASSIGNMENTS, live3Board, live3ConveyorP
 import { LIVE3_STATIONS, stationPoint } from '../wh-r1/live3-stations.js'
 import { createWhR1Navigation } from '../dr-wh-r1-validation.js'
 import { WH_R1_STAFF_ROSTER } from '../dr-wh-r1-staff.js'
-import { whToWorld } from '../wh-r1-layout.js'
+import { runtimeYawFromFacing, whToWorld } from '../wh-r1-layout.js'
 import { WH_R1_DATA } from '../wh-r1/data.js'
 
 test('LIVE-3 stage A carries a deterministic waybill through one shared clock', () => {
@@ -154,7 +154,7 @@ test('R2 packing staff stand on the closed-door grid facing registered benches',
     assert.ok(Math.abs(member.source[1] - table.yM) < table.widthM / 2)
     const gap = table.xM - table.lengthM / 2 - member.source[0]
     assert.ok(gap >= .3 && gap <= .81, member.id)
-    assert.equal(member.yawDeg, 90)
+    assert.equal(member.yawDeg, runtimeYawFromFacing(1, 0) * 180 / Math.PI)
     assert.ok(!member.sit)
   }
 })
