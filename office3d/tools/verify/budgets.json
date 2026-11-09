@@ -5,6 +5,6 @@
   },
   "office": {
     "high": { "calls": 300, "triangles": 1200000 },
-    "low": { "calls": 120, "triangles": 200000 }
+    "low": { "calls": 150, "triangles": 300000 }
   }
 }
