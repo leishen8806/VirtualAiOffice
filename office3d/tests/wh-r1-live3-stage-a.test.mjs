@@ -142,3 +142,19 @@ test('R2 station working side is connected on the existing closed-door grid', ()
     }
   }
 })
+
+test('R2 packing staff stand on the closed-door grid facing registered benches', () => {
+  const nav = createWhR1Navigation()
+  for (const member of WH_R1_STAFF_ROSTER.filter(row => row.role === 'packing')) {
+    const p = whToWorld(...member.source)
+    const table = WH_R1_DATA.elements.find(row => row.id === member.workbench)
+    assert.ok(table, member.id)
+    const point = nav.nearestWalkable([p.x, p.z])
+    assert.ok(point && Math.hypot(point[0] - p.x, point[1] - p.z) < .001, member.id)
+    assert.ok(Math.abs(member.source[1] - table.yM) < table.widthM / 2)
+    const gap = table.xM - table.lengthM / 2 - member.source[0]
+    assert.ok(gap >= .3 && gap <= .81, member.id)
+    assert.equal(member.yawDeg, 90)
+    assert.ok(!member.sit)
+  }
+})
