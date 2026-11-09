@@ -181,7 +181,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
     const weighed = rows.find(row => row.position.action === 'weigh')?.task
     if (weightLabel) {
       weightLabel.visible = Boolean(weighed)
-      if (weighed && lastWaybill !== weighed.waybill) {
+      if (weighed && weightTexture?.image?.getContext && lastWaybill !== weighed.waybill) {
         lastWaybill = weighed.waybill
         const ctx = weightTexture.image.getContext('2d')
         ctx.fillStyle = '#14353d'; ctx.fillRect(0, 0, 384, 96)
