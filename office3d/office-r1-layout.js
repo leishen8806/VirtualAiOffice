@@ -211,6 +211,25 @@ const BACKWALL_ROUTES = Object.freeze(new Map([
   ['Z09', Object.freeze([[25.7, -1], [25.7, .8], [23.9, 2.7], [23.9, 11], [20.2, 10.8], [18.8, 11.2], [16.8, 12], [8.4, 10.7], [8.4, 7.8], [6, 7.8], [5.275, 7.8]].map(Object.freeze))],
   ['Z13', Object.freeze([[30.3, -1], [30.3, .8], [32.1, 2.7], [32.1, 11], [47.6, 11], [47.6, 8.7], [49.2, 8.7], [49.2, 7.8], [50, 7.8], [50.725, 7.8]].map(Object.freeze))],
 ]))
+
+// ROUTEFIX R1：沿现有通道绕开中央休息区；不改墙体、门洞或家具登记位置。
+const ROUTEFIX_DATE = '2026-11-07'
+const ROUTEFIX_REASON = 'OFFICE-R1-ROUTEFIX：优先改路线绕开既有家具与墙角；门关闭时仍按静态门体阻断如实回报'
+const routefix = points => Object.freeze(points.map(Object.freeze))
+export const R1_ROUTEFIX_ROUTES = Object.freeze(new Map([
+  ['entry_carrying_example', routefix([[25.7, -1], [25.7, .8], [25.7, 2.7], [23.9, 2.7], [23.9, 11], [23.9, 15.7]])],
+  // ㉝ plan-grid 生成后固定为通道站立点；家具全部恢复登记原位。
+  ['Z01', routefix([[25.7, -1], [25.7, 1.8], [23.9, 1.8], [23.9, 11.3], [18.8, 11.3], [18.8, 11.5], [17.5, 11.5], [17.5, 27.1], [13, 27.1], [13, 30.2], [3, 30.2], [3, 33.2]])],
+  ['Z02', routefix([[25.7, -1], [25.7, 1.8], [23.9, 1.8], [23.9, 11.3], [18.8, 11.3], [18.8, 11.5], [17.5, 11.5], [17.5, 27.1], [14.8, 27.1], [14.8, 33.2]])],
+  ['Z03_lower', routefix([[30.3, -1], [30.3, 1.8], [32.8, 1.8], [32.8, 11.3], [43, 11.3], [43, 27.9], [39.2, 27.9], [39.2, 30.1], [28, 30.1], [28, 33.4], [24.8, 33.4]])],
+  ['Z03_upper', routefix([[30.3, -1], [30.3, 1.8], [32.8, 1.8], [32.8, 11.3], [43, 11.3], [43, 27.9], [39.2, 27.9], [39.2, 30.1], [28, 30.1], [28, 39.4], [24.8, 39.4]])],
+  ['Z04', routefix([[30.3, -1], [30.3, 1.8], [32.8, 1.8], [32.8, 11.3], [43, 11.3], [43, 27.9], [39.2, 27.9], [39.2, 33], [36, 33]])],
+  ['Z05', routefix([[30.3, -1], [30.3, 1.8], [32.8, 1.8], [32.8, 11.3], [43, 11.3], [43, 27.9], [40.2, 27.9], [40.2, 30.1], [53, 30.1], [53, 33.2]])],
+  ['Z06', routefix([[25.7, -1], [25.7, 1.8], [23.9, 1.8], [23.9, 11.3], [18.8, 11.3], [18.8, 11.5], [17.5, 11.5], [17.5, 19.9], [11.5, 19.9]])],
+  ['Z07_staff', routefix([[30.3, -1], [30.3, 1.4], [32.1, 1.4], [32.1, 15.8], [28, 15.8], [28, 17.2]])],
+  ['Z08', routefix([[30.3, -1], [30.3, 1.8], [32.8, 1.8], [32.8, 11.3], [43.1, 11.3], [43.1, 19.5]])],
+  ['Z09', routefix([[25.7, -1], [25.7, .8], [23.9, 2.7], [23.9, 11], [23.9, 11.2], [19, 11.2], [18.7, 11.45], [8.4, 11.45], [8.4, 7.8], [6, 7.8], [5.275, 7.8]])],
+]))
 export const R1_BACKWALL = Object.freeze({
   date: BACKWALL_DATE, reason: BACKWALL_REASON, walls: BACKWALL_WALLS, doors: BACKWALL_DOORS,
   wallFaces: Object.freeze(BACKWALL_WALLS.flatMap(backwallFaces)),
@@ -273,8 +292,10 @@ export function createR1Layout({ candidateC01 = DEFAULT_CANDIDATE_C01 } = {}) {
   // 树干表只落在 <id>-TR 上，与位置表 / 门扇表的 ID 不相交。
   const deviate = item => { const patch = BOARD_PATCH.get(item.id) || GATE_PATCH.get(item.id) || TRUNK_PATCH.get(item.id), plant = plantPositions.get(item.id) || plantPositions.get(item.parentId); return patch || plant ? Object.freeze({ ...item, ...patch, ...(plant ? { xM: coordinate(item.xM + plant.to.xM - plant.from.xM), yM: coordinate(item.yM + plant.to.yM - plant.from.yM) } : {}) }) : item }
   // 背墙改道（Z09 / Z13）已并进 mergedData.routes；喷泉只改 Z14 终点，两者不重叠。
-  const routes = Object.freeze(mergedData.routes.map(route => ROUTE_PATCH.has(route.id)
-    ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
+  const routes = Object.freeze(mergedData.routes.map(route => R1_ROUTEFIX_ROUTES.has(route.id)
+    ? Object.freeze({ ...route, points_m: R1_ROUTEFIX_ROUTES.get(route.id), routefixDate: ROUTEFIX_DATE, routefixReason: ROUTEFIX_REASON })
+    : ROUTE_PATCH.has(route.id)
+      ? Object.freeze({ ...route, points_m: Object.freeze([...route.points_m.slice(0, -1), ROUTE_PATCH.get(route.id)]) }) : route))
   // 追加顺序固定：登记行 → 背墙门扇（OFFICE-R1-BACKWALL）→ 董事会新增件（本卡 R2）。
   return Object.freeze({ candidateC01, data: mergedData, reservedSeats: R1_RESERVED_SEATS, elements: Object.freeze([...R1_DATA.elements.filter(item => !REMOVED_IDS.has(item.id)).map(item => deviate(replacements.get(item.id) || item)), ...R1_BACKWALL.leaves, ...R1_BOARD_ADDED_ELEMENTS]), workstations: Object.freeze([...(candidateC01 ? C01_DELTA.workstations.reduce((rows, delta) => rows.map(row => row.business_id === delta.businessId ? delta.candidate : row), R1_DATA.workstations) : R1_DATA.workstations), ...R1_BOARD_ADDED_WORKSTATIONS.map(w => candidateC01 ? r1RegisteredStation(w.business_id, replacements.get(w.desk_id) || R1_DATA.elements.find(e => e.id === w.desk_id), replacements.get(w.chair_id) || R1_DATA.elements.find(e => e.id === w.chair_id), w.group, { island: w.island, status: w.status, date: w.date, reason: w.reason }) : w)]), controls: Object.freeze(candidateC01 ? { ...R1_DATA.controls, ...C01_DELTA.controls } : R1_DATA.controls), routes })
 }

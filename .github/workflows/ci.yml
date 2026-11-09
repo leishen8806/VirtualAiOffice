@@ -50,3 +50,52 @@ jobs:
         run: npm run test:packages
       - name: Packaged layout verification
         run: npm run verify:packaged-layout
+
+  perf-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Warehouse performance budget (hard gate)
+        run: npm run verify:perf -- --place "drlife-warehouse&whr1=1"
+      - name: Upload warehouse verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-warehouse
+          path: /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn
+      # The repository checkout has no real-person assets; office readiness can never complete in CI.
+      # Keep the local command documented and runnable, but do not spend the CI job's 8-minute budget waiting.
+      - name: Office performance report (local-only; CI skipped)
+        if: ${{ false }}
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          set +e
+          timeout --signal=TERM 420s npm run verify:perf -- --place drlife-office > office-perf.json
+          code=$?
+          if [ "$code" -eq 124 ]; then
+            echo "办公室测量超时" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            cat office-perf.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$code" -eq 2 ]; then exit 2; fi
+      - name: Upload office verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-office
+          path: |
+            office-perf.json
+            /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn

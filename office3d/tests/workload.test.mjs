@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createIssuePager } from '../issue-pagination.mjs'
 import { test } from 'node:test'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -175,7 +176,7 @@ test('stats补字段保留同状态旧记录的a/s/at及每日计数，不启动
   const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))), source=fs.readFileSync(path.join(root,'stats.mjs'),'utf8').replace(/^import .*$/gm,'').replace('export function createStats','function createStats')
   assert.match(source,/heartbeat-runs\?limit=1000&summary=true/)
   const old={runs:{r:{a:'a',s:'succeeded',at:iso('2026-10-15','10:00')}},done:{},comments:{},decisions:{},since:iso('2026-10-15','10:00')}
-  const context={fs:{readFileSync:()=>JSON.stringify(old)},path,structuredClone,setInterval:()=>0}
+  const context={fs:{readFileSync:()=>JSON.stringify(old)},path,structuredClone,setInterval:()=>0,createIssuePager} // stats.mjs 的 import 被去掉了，这里补上分页函数
   vm.runInNewContext(source+'\nthis.make=createStats',context)
   const stats=context.make({dir:'unused',get:async()=>[],company:'fake'})
   stats.ingest({runs:[{id:'r',agentId:'a',status:'succeeded',startedAt:iso('2026-10-15','09:00'),finishedAt:iso('2026-10-16','10:00')}]})
