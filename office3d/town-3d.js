@@ -6,6 +6,20 @@ if (!canvas) throw new Error('town3d canvas missing')
 const quality = new URLSearchParams(location.search).get('q') === 'low' ? 'low' : 'high'
 const captureMode = new URLSearchParams(location.search).get('capture') === '1'
 const status = document.querySelector('#town3dStatus')
+const loader = document.querySelector('#town3dLoader')
+const loaderStep = document.querySelector('#town3dLoaderStep')
+const loaderProgress = document.querySelector('#town3dLoaderProgress')
+const loaderError = document.querySelector('#town3dLoaderError')
+const loaderActions = loader?.querySelector('.town3d-loader-actions')
+const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+const loaderApi = window.town3dLoader = {
+  progress(value, step) { if (loaderProgress) loaderProgress.value = value; if (loaderStep) loaderStep.textContent = step },
+  done() { if (!loader) return; loader.setAttribute('aria-busy','false'); loader.classList.add('is-leaving'); const ms = prefersReducedMotion || quality === 'low' ? 0 : 1800; const start = performance.now(); const tick = now => { const t = Math.min(1, (now - start) / Math.max(1, ms)); const eased = t * (2 - t); const base = quality === 'low' ? 250 : 320; const y = quality === 'low' || prefersReducedMotion ? 0 : eased * 55; camera.position.y = base - y; if (t < 1) requestAnimationFrame(tick); }; if (ms) requestAnimationFrame(tick); setTimeout(() => loader.remove(), 650) },
+  fail(error) { if (!loader) return; loader.setAttribute('aria-busy','false'); loaderError.hidden = false; loaderError.textContent = `加载失败：${error?.message || error}`; loaderActions.hidden = false; loaderProgress.value = 0; loaderStep.textContent = '无法完成城市数据加载'; }
+}
+document.querySelector('#town3dRetry')?.addEventListener('click', () => location.reload())
+document.querySelector('#town3dBack2d')?.addEventListener('click', () => { location.href = 'town.html' })
+loader?.addEventListener('pointerdown', () => { loaderApi.done() }, { once: true })
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: quality !== 'low', powerPreference: 'high-performance' })
 renderer.setPixelRatio(Math.min(devicePixelRatio, quality === 'low' ? 1 : 1.5))
 renderer.setSize(innerWidth, innerHeight - 86, false)
@@ -84,17 +98,19 @@ function extrudedBuildings(items, simplified = false) {
 function addRoads(data) { mergedRoads(data) }
 function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon);const m=new THREE.Mesh(new THREE.BoxGeometry(8,height,8),material);m.position.set(p.x,height/2,p.z);m.name=label;worldGroup.add(m); const el=document.createElement('div'); el.className='town3d-label'; el.textContent=label; el.dataset.world=`${p.x},${height},${p.z}`; document.body.append(el); return m }
 async function boot(){
-  const res=await fetch('/town-3d-data.json'); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json()
+  loaderApi.progress(8, '下载城市数据…')
+  const res=await fetch('/town-3d-data.json'); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
   const buildings=data.buildings.map(b=>{const [lon0,lat0,lon1,lat1]=b.bbox;const a=geoToWorld(lat0,lon0),z=geoToWorld(lat1,lon1);return {...b,bboxWorld:[Math.min(a.x,z.x),Math.min(a.z,z.z),Math.max(a.x,z.x),Math.max(a.z,z.z)],heightWorld:b.height/10}})
-  const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; for(const chunk of chunks) worldGroup.add(new THREE.Mesh(mergedBoxes(chunk.items),mat.building))
+  const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
-  for(const chunk of chunks) worldGroup.add(new THREE.Mesh(extrudedBuildings(chunk.items, quality === 'low'),mat.building))
+  chunks.forEach((chunk, index) => { worldGroup.add(new THREE.Mesh(extrudedBuildings(chunk.items, quality === 'low'),mat.building)); loaderApi.progress(40 + Math.round((index + 1) / Math.max(1, chunks.length) * 45), `生成建筑（${index + 1}/${chunks.length}）…`) })
   mergedPolygons(data.water,.02,mat.water); mergedPolygons(data.green,.04,mat.green); addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
   const landmarks=[['王宫',11.5627,104.9303],['独立纪念碑',11.5561,104.9176],['中央市场',11.5681,104.9215],['塔仔山',11.5759,104.9234],['国家博物馆',11.5657,104.9272],['奥林匹克',11.5514,104.9143],['河滨',11.5745,104.9277],['金边港',11.578,104.933],['夜市',11.571,104.925],['俄罗斯市场',11.547,104.916],['机场方向',11.528,104.969],['物流走廊',11.535,104.974],['铁桥',11.548,104.934],['学校',11.56,104.946],['医院',11.558,104.955],['公园',11.566,104.944],['体育场',11.55,104.946],['寺院',11.579,104.95],['老城',11.57,104.915],['南城',11.545,104.935],['东市',11.565,104.97],['西市',11.56,104.9],['北门',11.588,104.93],['仓配入口',11.534,104.968]]
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(1100,900),mat.ground); floor.rotation.x=-Math.PI/2; floor.position.y=-.02; worldGroup.add(floor); fitCamera()
-  status.textContent=`3D ${quality}｜建筑 ${sampled.length}/${buildings.length}｜分块 ${chunks.length}（${Object.keys(data.chunks||{}).length} 数据块）｜calls – / tris –`
+  status.textContent=`3D ${quality}｜建筑 ${sampled.length}/${buildings.length}｜分块 ${chunks.length}（${Object.keys(data.chunks||{}).length} 数据块）｜calls – / tris –`; loaderApi.progress(95, '画出第一帧…')
+  loaderApi.progress(100, '场景就绪'); loaderApi.done()
   animate()
 }
 let dragging=false,lastX=0,lastY=0,theta=.72,phi=.72,radius=320
@@ -104,4 +120,4 @@ canvas.addEventListener('pointermove',e=>{if(!dragging)return;theta+=(e.clientX-
 canvas.addEventListener('wheel',e=>{radius=Math.max(120,Math.min(700,radius+e.deltaY*.25))},{passive:true})
 function animate(){if(!captureMode)requestAnimationFrame(animate);const x=Math.cos(theta)*Math.cos(phi)*radius,y=Math.sin(phi)*radius,z=Math.sin(theta)*Math.cos(phi)*radius;camera.position.set(x,y,z);camera.lookAt(target);renderer.render(scene,camera);const i=renderer.info.render;if(status)status.textContent=`3D ${quality}｜建筑 ${scene.userData.buildings||'—'}｜calls ${i.calls} / tris ${i.triangles}`;for(const el of document.querySelectorAll('.town3d-label')){const [wx,wy,wz]=el.dataset.world.split(',').map(Number),p=new THREE.Vector3(wx,wy,wz).project(camera);el.style.transform=`translate(${(p.x*.5+.5)*innerWidth}px,${(-p.y*.5+.5)*(innerHeight-86)}px)`;el.hidden=p.z<0||p.z>1}}
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight-86,false);camera.aspect=innerWidth/Math.max(1,innerHeight-86);camera.updateProjectionMatrix()})
-boot().catch(e=>{status.textContent=`3D 数据未载入：${e.message}`})
+boot().catch(e=>{status.textContent=`3D 数据未载入：${e.message}`; loaderApi.fail(e)})
