@@ -260,7 +260,7 @@
       "source": "Existing shared office registry: forward asynchronous collision registrations after factory commit, retain failure isolation",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "52441BE6A08B3CBBDE8F33AE751D5A0EB8882AA8CBE97BCA4776FE12B6A33104"
+      "sha256": "1700DB020FBF57D2B1DFFA4A8C87BA076564F5B46DAA2E3795CCD976C5667631"
     },
     {
       "file": "office-furniture-v2.js",
@@ -295,14 +295,14 @@
       "source": "OFFICE-R1-I2 data-driven R1 shell, glazing, slope wall, corner closures and collision proxies; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "C2777AFD0FCF4141872A8467757C0BF6D23EB177E4AB487ED5CEC6A118CEF88D"
+      "sha256": "B1EA6C35956088EEBCC3179E0374AA94DD84E7B87C9EC85E236AD756E20D6AB3"
     },
     {
       "file": "office-vis2/r1-site.js",
       "source": "OFFICE-R1-I2 R1-only paved site, green buffer and isolated layout adapter; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "6E10EB19BBE4EDE9C0ED241BB1E390F2B98C8238468E942ACC386256A1B4B78D"
+      "sha256": "280AAEEB0CD0EDD55EC7A739F370664B79176C8BF10CA4FD3C24A227FBF0274B"
     },
     {
       "file": "office-vis2/r1-furniture.js",
@@ -323,28 +323,28 @@
       "source": "R1 registered island, arc seats and fitted existing banyan; OFFICE-R1-FOOD adds the counter-top Kenney appliances (kitchenCoffeeMachine / toaster / kitchenBlender, already-approved CC0 copies recorded in assets/ASSET_LEDGER.md), a procedural cup rack and two glass food display cases, plus the low-poly procedural food shapes shared with r1-plaza.js; no downloaded assets",
       "license": "Repository MIT for the source code; the counter-top appliance models retain the CC0 licence recorded in assets/ASSET_LEDGER.md",
       "photographicTexture": false,
-      "sha256": "AE3B4D001ADC7EC07C2F947A53BF6C9164C4A8FC8F4489A3BFFC64C15CDEFBD7"
+      "sha256": "02D78A2791857BAD771CE88003B2D39D83F697EB06F97824DA5C26D276B2AD03"
     },
     {
       "file": "office-vis2/r1-plants.js",
       "source": "R1 registered indoor pots with existing pottedPlant foliage, densified inside the registered crown envelope; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "633AA26D79B91D8C9E98163FF1FD9E0A17FAF5E8AADD48D659E3EEA629333DE7"
+      "sha256": "C269666CE71C5AF5ED65D913E849D0B4117197A5F84F5EC3B1F18501C515590D"
     },
     {
       "file": "office-vis2/r1-doors.js",
       "source": "R1 registered procedural r1-doors; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "49632C10D357E1B7429E0AEA786A44D5FBA6917C27377649AF85CC65D5E1ADA0"
+      "sha256": "53AAD34CE4FB34538B8B3F701E71EE3AA0BC3EF4B37E73E1C1544F33B9DD3040"
     },
     {
       "file": "office-vis2/r1-lounge.js",
       "source": "R1 registered procedural r1-lounge; OFFICE-R1-RECEP flips 11-CT-001 so its convex face meets the entrance; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "6FA92947FE5A1D96394035BA1180CD2FB7933567F251BB0ACF1F62C50BD31F1A"
+      "sha256": "6C2082D52AA20FE6B8613121091C46F13A8B909D038ECEF729F28599E8B6E60D"
     },
     {
       "file": "office-vis2/r1-decor.js",
@@ -372,7 +372,7 @@
       "source": "OFFICE-R1-RECEP R1-only brand backdrop on the registered screen wall 00-W-036: procedural black panel, copper trim, canvas slogan and three hidden spotlights; OFFICE-R1-AMBIENCE adds the courtyard-face emblem and planter, seven room nameplates, the gate welcome inlay, the meeting-room wall screen and the three reserved-seat desk plates, all procedural canvas art; reuses the existing assets/logo.png and the office-vis2 leaf geometry; no downloaded assets",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": false,
-      "sha256": "CE7FFBD94D69169DB306D049B96BECAB8BAE62A50DDF0413E0C272DEA1043D01"
+      "sha256": "5776DE93AD3EBF4BACC77187DF52139C5F05E19526587E306DC74AB2BDFC2B94"
     },
     {
       "file": "office-vis2/r1-look.js",
@@ -393,7 +393,7 @@
       "source": "R1-only merged tropical pots, alpha-tested approved atlas leaves and existing garden-bed geometry; deterministic density LOD and ordinary Mesh collision; no downloads",
       "license": "Repository MIT; see ../../LICENSE",
       "photographicTexture": true,
-      "sha256": "6C9F41473C5274F2275ECC6555101E520E930BBF50408B92D9EC2A6544A8BA0E"
+      "sha256": "78B78658A9991A4091739C83499A0DF9E78D337E2072BC4ED1A3EFA56BFBAA33"
     },
     {
       "file": "office-vis2/r1-landscape-plan.js",

@@ -62,11 +62,33 @@ export function createOfficeV2Registry({ THREE, scene, quality, layout, rootName
   let merged = { removed: 0, added: 0 }, builtOnce = false, disposed = false
   let frameHook = null, previousFrame = null, sourceNow = null, lastFrame = null, animationMs = 0
   const stopped = new Set(), bounds = new THREE.Box3(), frustum = new THREE.Frustum(), projection = new THREE.Matrix4()
+  // R2 Stage B: low tier only; high/medium retain the approved overview art.
+  // The hysteresis prevents camera jitter from rebuilding visibility every frame;
+  // collision/picking records remain owned by their modules and are never removed.
+  const distanceLod = new Map()
+  const updateDistanceLod = camera => {
+    if (!camera) return
+    const lowTier = quality?.tier === 'low', far = lowTier ? 0 : Infinity, near = lowTier ? 0 : Infinity, targetNames = ['r1Plants', 'r1Books', 'r1Brand', 'r1Doors']
+    for (const name of targetNames) {
+      const node = [...root.children].find(child => child.name.includes(`-${name}-root`))
+      if (!node) continue
+      const centre = new THREE.Vector3(); node.getWorldPosition(centre)
+      const distance = camera.position.distanceTo(centre), previous = distanceLod.get(name)
+      const detail = previous === undefined ? distance <= far : previous ? distance < far : distance < near
+      distanceLod.set(name, detail)
+      // Keep the base mesh, picking records and collision proxies alive. Only
+      // meshes explicitly marked as decorative detail participate in the LOD.
+      node.traverse(child => {
+        if (child.userData?.r1LodDetail) child.visible = detail
+      })
+    }
+  }
   const resetFrame = () => { lastFrame = null }
   const onFrame = (dt, { camera } = {}) => {
     if (globalThis.document?.hidden || !root.visible) { resetFrame(); return }
     for (let parent = root.parent; parent; parent = parent.parent) if (!parent.visible) { resetFrame(); return }
     if (camera) {
+      updateDistanceLod(camera)
       root.updateWorldMatrix(true, true)
       frustum.setFromProjectionMatrix(projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse))
       if (!frustum.intersectsBox(bounds.setFromObject(root))) { resetFrame(); return }

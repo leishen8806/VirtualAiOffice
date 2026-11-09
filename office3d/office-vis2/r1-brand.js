@@ -388,6 +388,7 @@ export function buildR1Brand({ THREE, root, layout, quality, low = false, canvas
   const logoMaterial = new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, metalness: .3, roughness: .35, emissive: new THREE.Color('#ffffff'), emissiveIntensity: L.emissiveIntensity })
   const logo = new THREE.Mesh(new THREE.PlaneGeometry(L.width, logoHeight), logoMaterial)
   logo.name = 'r1-brand-logo'
+  logo.userData.r1LodDetail = true
   logo.position.set(centre.x, L.centerY, face + gap.art)
   logo.visible = false
 
@@ -396,6 +397,7 @@ export function buildR1Brand({ THREE, root, layout, quality, low = false, canvas
   const slogan = new THREE.Mesh(new THREE.PlaneGeometry(S.width, S.width * S.canvas[1] / S.canvas[0]),
     new THREE.MeshBasicMaterial({ map: sloganTexture, transparent: true, depthWrite: false, toneMapped: false }))
   slogan.name = 'r1-brand-slogan'
+  slogan.userData.r1LodDetail = true
   slogan.position.set(centre.x, S.centerY, face + gap.art)
   group.add(logo, slogan)
 
@@ -418,6 +420,7 @@ export function buildR1Brand({ THREE, root, layout, quality, low = false, canvas
     const glow = new THREE.Mesh(new THREE.PlaneGeometry(width, height),
       new THREE.MeshBasicMaterial({ map: glowTexture, transparent: true, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }))
     glow.name = 'r1-brand-glow'
+    glow.userData.r1LodDetail = true
     glow.position.set(centre.x, height / 2, face + gap.glow)
     group.add(glow)
   } else {
@@ -593,11 +596,13 @@ function buildR1Ambience({ THREE, group, layout, wall, collision, canvasSurface,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   const atlasMesh = new THREE.Mesh(mergeGeometries(THREE, [...quads.map(quad => atlasQuad(THREE, quad)), ...glowPieces], true), atlasMaterial)
   atlasMesh.name = 'r1-ambience-art'
+  atlasMesh.userData.r1LodDetail = true
 
   const surface = screenSurface(THREE, canvasSurface, ...SC.canvas)
   const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(SC.width, SC.height),
     new THREE.MeshBasicMaterial({ map: surface?.texture || null, toneMapped: false }))
   screenMesh.name = 'r1-ambience-screen'
+  screenMesh.userData.r1LodDetail = true
   screenMesh.position.set(screenX, SC.centerY, inner + SC.gap.face)
   const faceBox = boxOf(THREE, screenMesh.position, [SC.width, SC.height, 0])
   group.add(atlasMesh, screenMesh)
