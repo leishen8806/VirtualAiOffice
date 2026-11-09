@@ -15,6 +15,8 @@ button:focus-visible,a:focus-visible,#townMap:focus-visible { outline:3px solid 
 .map-shell { position:relative; isolation:isolate }
 #townMap { display:block; width:100%; height:100%; touch-action:none; cursor:grab; background:var(--bg) }
 #town3dCanvas { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; background:#cfe2e7 }
+.mode-3d .detail,.mode-3d .map-controls,.mode-3d .zoom-status,.mode-3d .map-fallback,.mode-3d .legend,.mode-3d #perf,.mode-3d .label-switch { display:none !important }
+.town3d-label { position:fixed; z-index:4; transform:translate(-50%,-100%); padding:3px 6px; border-radius:4px; background:rgba(22,32,38,.78); color:#fff; font-size:11px; pointer-events:none; white-space:nowrap }
 #townMap.dragging { cursor:grabbing }
 body[data-place-hover="true"] #townMap { cursor:pointer }
 body[data-place-transition="true"] .map-shell { opacity:.96; transform:scale(.995); transition:opacity .16s ease,transform .16s ease }

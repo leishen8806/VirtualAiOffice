@@ -64,15 +64,15 @@
     </div>
     <footer class="attribution glass">© OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">ODbL</a></footer>
   </main>
-  <script type="module" src="/town.js"></script>
   <script type="module">
     if (new URLSearchParams(location.search).get('mode') === '3d') {
+      document.body.classList.add('mode-3d')
       document.querySelector('#townMap').hidden = true
       document.querySelector('#town3dCanvas').hidden = false
       document.querySelector('#town3dStatus').hidden = false
       document.querySelector('.subtitle').textContent = '金边 3D 城市沙盘 · OSM/ODbL'
       import('./town-3d.js')
-    }
+    } else import('./town.js')
   </script>
 </body>
 </html>

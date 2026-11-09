@@ -18,8 +18,9 @@ export function defaultBuildingHeight(tags = {}) {
 }
 
 export function qualitySample(buildings, quality = 'high') {
-  if (quality !== 'low') return buildings
-  return buildings.filter((_, index) => index % 2 === 0)
+  // Low quality keeps every building footprint; the renderer simplifies each
+  // footprint to a box instead of deleting alternating buildings.
+  return buildings.map((building) => ({ ...building, simplified: quality === 'low' }))
 }
 
 export function chunkPlan(buildings, { grid = 200 } = {}) {
