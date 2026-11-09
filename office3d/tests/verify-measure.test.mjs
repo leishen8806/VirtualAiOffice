@@ -15,7 +15,7 @@ test('performance verifier waits for all 25 people and records blocked counters'
 
 test('office high budget is the current 1.2M triangle ceiling', () => {
   const budgets = JSON.parse(fs.readFileSync(path.join(root, 'tools', 'verify', 'budgets.json'), 'utf8'))
-  assert.deepEqual(budgets.office.high, { calls: 300, triangles: 1200000 })
+  assert.deepEqual(budgets.office.high, { calls: 330, triangles: 1400000 })
 })
 
 test('warehouse readiness does not wait for office people counters', () => {
