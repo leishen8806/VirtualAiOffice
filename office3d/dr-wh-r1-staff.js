@@ -110,7 +110,7 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   const syncPlaceholders = () => {
     const { standing, seated, dummy } = placeholders
     for (const member of members) {
-      const index = member.placeholder.placeholderIndex, p = member.placeholder.group.position, hidden = member.loaded
+      const index = member.placeholder.placeholderIndex, p = member.placeholder.group.position, hidden = false
       dummy.position.set(p.x, p.y + (member.state.walk ? Math.sin(member.state.phase * 8) * .018 : Math.sin(member.state.phase * 2) * .006), p.z)
       dummy.rotation.y = member.placeholder.group.rotation.y
       const active = member.state.sit ? seated : standing
@@ -166,7 +166,7 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   }
   const requireRealistic = () => { realOnly = true; placeholders.standing.visible = placeholders.seated.visible = false }
   const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => {
-    realistic = { maxReal: tier === 'low' && !realOnly ? 0 : 1, load, createPerson }
+    realistic = { maxReal: tier === 'low' && !realOnly ? 2 : 4, load, createPerson }
     armed = realOnly; hydrationAt = 0; syncPlaceholders()
   }
   const cameraIntent = () => { armed = true }

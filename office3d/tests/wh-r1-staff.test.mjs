@@ -50,7 +50,7 @@ test('WH-R1 R2 uses two shared placeholder meshes and click-time labels only', (
   assert.equal(value.members.filter(member => member.label).length, 0)
 })
 
-test('WH-R1 R2 loads at most two nearest realistic people and low quality loads none', async () => {
+test('WH-R1 88 keeps all nine staff visible and limits realistic hydration', async () => {
   const { value } = context()
   const calls = []
   const makePeople = name => ({ avatars: { [name]: {} }, clips: { male: {}, female: {} }, extras: { male: {}, female: {} } })
@@ -64,14 +64,16 @@ test('WH-R1 R2 loads at most two nearest realistic people and low quality loads 
   value.onFrame(.2, { camera })
   await new Promise(resolve => setTimeout(resolve, 220))
   value.onFrame(.2, { camera })
-  assert.ok(value.summary().loadedReal <= 2)
-  assert.ok(calls.length <= 2)
+  assert.ok(value.summary().loadedReal <= 4)
+  assert.ok(calls.length <= 4)
 
   const low = context().value
   low.configureRealistic({ tier: 'low', load: async () => { throw new Error('must not load') }, createPerson: makeReal })
   low.onFrame(.2, { camera })
   await new Promise(resolve => setTimeout(resolve, 20))
-  assert.equal(low.summary().loadedReal, 0)
+  assert.ok(low.summary().loadedReal <= 2)
+  assert.equal(low.members.length, 9)
+  assert.equal(low.members.filter(member => member.placeholder.group.visible).length, 9)
 })
 
 test('WH-R1 R3 uses two batched human silhouettes with vertex colours and role accents', () => {
