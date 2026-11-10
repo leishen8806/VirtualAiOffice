@@ -28,7 +28,9 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xcfe2e7)
 const camera = new THREE.PerspectiveCamera(46, innerWidth / Math.max(1, innerHeight - 86), 0.1, 3000)
 camera.position.set(180, 150, 220)
-const target = new THREE.Vector3(0, 220, 0)
+// Keep the camera aimed at street level; aiming above the city makes the first
+// frame look empty even though the geometry is loaded.
+const target = new THREE.Vector3(360, 10, 120)
 scene.add(new THREE.HemisphereLight(0xeaf7ff, 0x6b5a49, 1.2))
 const sun = new THREE.DirectionalLight(0xfff4dd, 1.7); sun.position.set(120, 260, 80); scene.add(sun)
 const worldGroup = new THREE.Group(); scene.add(worldGroup)
@@ -81,7 +83,12 @@ function extrudedBuildings(items, simplified = false) {
   const positions = [], indices = []; let vertex = 0
   for (const item of items) {
     const h = Math.max(1, item.heightWorld), pts = simplified ? null : (item.geometry || []).map(pointWorld).map(p => new THREE.Vector2(p.x, p.z))
-    if (!pts || pts.length < 3) {
+    const triangulated = pts && pts.length >= 3 ? THREE.ShapeUtils.triangulateShape(pts, []) : []
+    const area = pts && pts.length >= 3 ? Math.abs(pts.reduce((sum, p, i) => { const q = pts[(i + 1) % pts.length]; return sum + p.x * q.y - q.x * p.y }, 0)) / 2 : 0
+    const triArea = triangulated.reduce((sum, tri) => { const a = pts[tri[0]], b = pts[tri[1]], c = pts[tri[2]]; return sum + Math.abs((b.x-a.x)*(c.y-a.y)-(c.x-a.x)*(b.y-a.y))/2 }, 0)
+    // OSM clips can contain self-intersecting rings; a bbox is safer than a
+    // giant fan of crossed triangles for those individual buildings.
+    if (!pts || pts.length < 3 || !triangulated.length || !area || triArea < area * .55 || triArea > area * 1.45) {
       const [x0, z0, x1, z1] = item.bboxWorld, w = Math.max(.35, x1 - x0), d = Math.max(.35, z1 - z0), x = (x0 + x1) / 2, z = (z0 + z1) / 2
       const v = [[x-w/2,0,z-d/2],[x+w/2,0,z-d/2],[x+w/2,0,z+d/2],[x-w/2,0,z+d/2],[x-w/2,h,z-d/2],[x+w/2,h,z-d/2],[x+w/2,h,z+d/2],[x-w/2,h,z+d/2]]
       for (const p of v) positions.push(...p)
@@ -89,7 +96,7 @@ function extrudedBuildings(items, simplified = false) {
     }
     for (const p of pts) positions.push(p.x, 0, p.y)
     for (const p of pts) positions.push(p.x, h, p.y)
-    for (const tri of THREE.ShapeUtils.triangulateShape(pts, [])) indices.push(vertex + tri[0], vertex + tri[1], vertex + tri[2], vertex + pts.length + tri[2], vertex + pts.length + tri[1], vertex + pts.length + tri[0])
+    for (const tri of triangulated) indices.push(vertex + tri[0], vertex + tri[1], vertex + tri[2], vertex + pts.length + tri[2], vertex + pts.length + tri[1], vertex + pts.length + tri[0])
     for (let i = 0; i < pts.length; i++) { const j = (i + 1) % pts.length; indices.push(vertex + i, vertex + j, vertex + pts.length + j, vertex + i, vertex + pts.length + j, vertex + pts.length + i) }
     vertex += pts.length * 2
   }
