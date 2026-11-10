@@ -151,10 +151,11 @@ test('each optional source failure stays 200 with ordered gaps and unknown depen
     if (name === 'backlog') assert.deepEqual(reply.body.today.backlog, { value: null, reason: 'UPSTREAM_UNAVAILABLE' })
   }
   for (const required of ['agents', 'dashboard', 'issues']) {
-    await assert.rejects(loadStateComponents({ company: 'demo', backlog: async () => [], get: async p => {
+    const degraded = await loadStateComponents({ company: 'demo', backlog: async () => [], get: async p => {
       if (p.includes(`/${required}`)) throw new Error('fixture required')
       return required === 'dashboard' || !p.endsWith('/dashboard') ? [] : { tasks: {} }
-    } }))
+    } })
+    assert.equal(degraded.gaps.some(gap => gap.source === required), true)
   }
 })
 
@@ -293,6 +294,36 @@ test('/state keeps one upstream build for one, three, and five concurrent pages'
     await Promise.all(Array.from({ length: pages }, () => stateRoute(read, false, false, new Map(), () => start)))
     assert.equal(builds, 1)
   }
+})
+
+test('background state refresh serves last success, coalesces work, and marks stale after three failures', async t => {
+  let ms = start, builds = 0, fail = false
+  const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 10000, staleAfterMs: 60000, log() {} })
+  const build = async () => { builds++; if (fail) throw new Error('fixture timeout'); return { ...fixture(), at: new Date(ms).toISOString() } }
+  await manager.run(build)
+  ms += 10000; const first = await manager.run(build)
+  assert.equal(first.stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 25))
+  fail = true
+  ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 25))
+  ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 25))
+  ms += 10000; await manager.run(build)
+  await new Promise(resolve => setTimeout(resolve, 25))
+  assert.equal((await manager.run(build)).stale.reason, 'UPSTREAM_UNAVAILABLE')
+  assert.ok(builds >= 4)
+})
+
+test('background refresh failures append a bounded rolling log line', async t => {
+  let ms = start, fail = false
+  const file = temp(t), logFile = file + '.refresh.log'
+  const manager = createLastGoodState({ file, logFile, now: () => ms, backgroundMs: 1, staleAfterMs: 60000, log() {} })
+  await manager.run(async () => fixture())
+  fail = true; ms += 2
+  await manager.run(async () => { if (fail) throw new Error('fixture refresh failure'); return fixture() })
+  await new Promise(resolve => setTimeout(resolve, 15))
+  assert.match(fs.readFileSync(logFile, 'utf8'), /\[state-refresh\] component=state .*fixture refresh failure/)
 })
 
 test('/state five-second response cache halves work at a three-second poll cadence', async () => {

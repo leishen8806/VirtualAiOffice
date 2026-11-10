@@ -868,7 +868,12 @@ function voteSessions(agents) {
 
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
-const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
+const lastGoodState = createLastGoodState({
+  file: path.join(HERE, 'state-last-good.json'),
+  backgroundMs: 10000,
+  staleAfterMs: 60000,
+  logFile: path.join(HERE, 'state-refresh.log'),
+})
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
   try {

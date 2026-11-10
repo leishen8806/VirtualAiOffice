@@ -7,8 +7,8 @@ export function stripStateCredentials(value) {
   return Object.fromEntries(Object.keys(value).filter(key => !credential(key)).map(key => [key, stripStateCredentials(value[key])]))
 }
 
-export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000 }) {
-  let saved = null, degraded = false, flight = null, flightStartedAt = 0, writes = Promise.resolve()
+export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null }) {
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve()
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
@@ -41,39 +41,64 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
       active: true, since: saved.at, ageMs, reason: ageMs > 30 * 60000 ? 'STALE_DATA' : 'UPSTREAM_UNAVAILABLE',
     } }
   }
-  return {
-    async run(build) {
-      if (!flight) {
-        flightStartedAt = now()
-        flight = (async () => {
-        let out
-        try { out = await build() } catch { return fallback() }
+  const clone = value => {
+    const copy = structuredClone(value)
+    if (value?._schedulerSource) Object.defineProperty(copy, '_schedulerSource', { value: structuredClone(value._schedulerSource), enumerable: false })
+    return copy
+  }
+  const rollingFailure = (durationMs, error) => {
+    const message = `[state-refresh] component=state durationMs=${Math.round(durationMs)} error=${String(error?.message || error).replace(/[\r\n]+/g, ' ').slice(0, 240)}`
+    log(message)
+    if (!logFile) return
+    try {
+      fs.appendFileSync(logFile, message + '\n', { encoding: 'utf8' })
+      const text = fs.readFileSync(logFile, 'utf8')
+      if (text.length > 200000) fs.writeFileSync(logFile, text.slice(-180000))
+    } catch {}
+  }
+  const start = build => {
+    if (flight) return flight
+    flightStartedAt = now(); refreshAt = flightStartedAt
+    flight = (async () => {
+      const started = flightStartedAt
+      try {
+        const out = await build()
         const snapshot = stripStateCredentials(out)
         delete snapshot.stale
-        saved = snapshot
+        saved = snapshot; failures = 0
         await persist(snapshot)
         if (degraded) log('[state] 恢复')
         degraded = false
         return out
-        })().finally(() => { flight = null; flightStartedAt = 0 })
+      } catch (error) {
+        failures++
+        if (backgroundMs > 0) rollingFailure(now() - started, error)
+        return fallback()
       }
+    })().finally(() => { flight = null; flightStartedAt = 0 })
+    return flight
+  }
+  return {
+    async run(build) {
+      if (backgroundMs > 0 && !backgroundTimer) {
+        backgroundTimer = setInterval(() => { if (saved && !flight) start(build) }, backgroundMs)
+        backgroundTimer.unref?.()
+      }
+      if (backgroundMs > 0 && saved) {
+        if (!flight && now() - refreshAt >= backgroundMs) start(build)
+        const ageMs = Math.max(0, now() - refreshAt)
+        if (failures < 3 && ageMs <= staleAfterMs) return clone(saved)
+        return clone({ ...structuredClone(saved), actToken: '', stale: { active: true, since: saved.at, ageMs, reason: failures >= 3 ? 'UPSTREAM_UNAVAILABLE' : 'STALE_DATA' } })
+      }
+      start(build)
       const remaining = Math.max(0, timeoutMs - (now() - flightStartedAt))
-      if (remaining === 0) {
-        const value = fallback()
-        const copy = structuredClone(value)
-        if (value._schedulerSource) Object.defineProperty(copy, '_schedulerSource', { value: structuredClone(value._schedulerSource), enumerable: false })
-        return copy
-      }
+      if (remaining === 0) return clone(fallback())
       let timer
       const timeout = new Promise((resolve, reject) => {
-        timer = setTimeout(() => {
-          try { resolve(fallback()) } catch (error) { reject(error) }
-        }, remaining)
+        timer = setTimeout(() => { try { resolve(fallback()) } catch (error) { reject(error) } }, remaining)
       })
       const value = await Promise.race([flight, timeout]).finally(() => clearTimeout(timer))
-      const copy = structuredClone(value)
-      if (value._schedulerSource) Object.defineProperty(copy, '_schedulerSource', { value: structuredClone(value._schedulerSource), enumerable: false })
-      return copy
+      return clone(value)
     },
   }
 }
@@ -89,14 +114,13 @@ export async function loadStateComponents({ get, company, backlog }) {
     ['approvalsAll', `${base}/approvals`, 'approvals'], ['backlog', null, null],
   ]
   const gaps = [], values = {}
-  await Promise.all(entries.map(async ([name, route, arrayKey], index) => {
+  await Promise.all(entries.map(async ([name, route, arrayKey]) => {
     try {
       const raw = await (route ? get(route) : backlog())
       const rows = arrayKey ? (Array.isArray(raw) ? raw : raw?.[arrayKey]) : raw
       if (arrayKey ? !Array.isArray(rows) : name === 'backlog' ? !Array.isArray(rows) : !rows || !rows.tasks) throw new Error('INVALID_SOURCE')
       values[name] = rows
     } catch (error) {
-      if (index < 3) throw error
       values[name] = []
       gaps.push({ source: name, reason: 'UPSTREAM_UNAVAILABLE' })
     }
