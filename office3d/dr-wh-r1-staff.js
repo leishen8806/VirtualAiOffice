@@ -161,7 +161,8 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   const cameraIntent = () => { armed = true }
   const onFrame = (dt, context = {}) => { for (const member of members) { move(member, dt); member.char.solve?.(Math.min(.1, Math.max(0, dt))) }; updateHydration(context.camera); syncPlaceholders() }
   const hydrate = (people, createPerson) => { if (typeof createPerson !== 'function' || !people) return false; for (const member of members) switchToReal(member, people, createPerson); return true }
-  const pickRay = ray => {
+  const pickRay = input => {
+    const ray = input?.isRaycaster ? input : (() => { const rc = new THREE.Raycaster(); rc.ray.copy(input?.ray || input); return rc })()
     const hits = ray.intersectObjects([placeholders.standing, placeholders.seated, ...members.filter(m => m.loaded).map(m => m.char.group)], true), hit = hits[0]; if (!hit) return null
     let member
     if (hit.object.userData.whR1StaffPlaceholder && Number.isInteger(hit.instanceId)) member = members[hit.instanceId]
