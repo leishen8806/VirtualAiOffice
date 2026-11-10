@@ -60,9 +60,12 @@ function mergedBoxes(items) {
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3)); g.setIndex(indices); g.computeVertexNormals(); return g
 }
-function mergedPolygons(items, y, material) {
+function mergedPolygons(items, y, material, options = {}) {
+  const maxSpan = Number.isFinite(options.maxSpan) ? options.maxSpan : Infinity
   const positions = [], indices = []; let vertex = 0
   for (const item of items) {
+    const bbox = item.bbox || []
+    if (bbox.length === 4 && Math.max(Math.abs(Number(bbox[2]) - Number(bbox[0])), Math.abs(Number(bbox[3]) - Number(bbox[1]))) > maxSpan) continue
     const pts = item.geometry.map(pointWorld).map(p => new THREE.Vector2(p.x, p.z)).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)); if (pts.length < 3) continue
     for (const p of pts) positions.push(p.x, y, p.y)
     for (const tri of THREE.ShapeUtils.triangulateShape(pts, [])) indices.push(vertex + tri[0], vertex + tri[1], vertex + tri[2])
@@ -116,7 +119,11 @@ async function boot(){
   const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
   chunks.forEach((chunk, index) => { worldGroup.add(new THREE.Mesh(extrudedBuildings(chunk.items, quality === 'low'),mat.building)); loaderApi.progress(40 + Math.round((index + 1) / Math.max(1, chunks.length) * 45), `生成建筑（${index + 1}/${chunks.length}）…`) })
-  mergedPolygons(data.water,.02,mat.water); mergedPolygons(data.green,.04,mat.green); addRoads(data)
+  mergedPolygons(data.water,.02,mat.water)
+  // Some OSM green-area relations are incomplete open rings; skip only the
+  // oversized malformed spans so they cannot triangulate into city-wide strips.
+  mergedPolygons(data.green,.04,mat.green,{ maxSpan: .004 })
+  addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
   const landmarks=[['王宫',11.5627,104.9303],['独立纪念碑',11.5561,104.9176],['中央市场',11.5681,104.9215],['塔仔山寺',11.5759,104.9234],['国家博物馆',11.5657,104.9272],['奥林匹克体育场',11.5514,104.9143],['洞里萨河滨',11.5745,104.9277],['金边港',11.578,104.933],['夜市',11.571,104.925],['俄罗斯市场',11.547,104.916],['机场方向',11.528,104.969],['东部物流走廊',11.535,104.974],['铁桥',11.548,104.934],['学校',11.56,104.946],['医院',11.558,104.955],['公园',11.566,104.944],['体育场',11.55,104.946],['寺院',11.579,104.95],['老城',11.57,104.915],['南城',11.545,104.935],['三河交汇',11.565,104.94],['西市',11.56,104.9],['北门',11.588,104.93],['仓配入口',11.534,104.968]]
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
