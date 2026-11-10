@@ -28,6 +28,7 @@ import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
 import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
 import { chooseOfficeR1InspectorRect } from './office-r1-ui.js'
+import { setLoading, finishLoading } from './dr-loading.js'
 const APP_STARTED = performance.now()
 
 // ───────────────────────── 品牌色（DR.LIFE+ VI 1.0 · 标准色）─────────────────────────
@@ -334,7 +335,7 @@ hangingSign(-6.5, 3.05, -0.2, 3.9, 0.9, (g) => {
 
 // ───────────────────────── 素材（CC0，失败则退回程序生成的造型）─────────────────────────
 let A = null
-const loadText = (t, p) => { const el = $('loadText'); if (el) el.textContent = t; const b = $('loadBar'); if (b && p !== undefined) b.style.width = Math.round(p * 100) + '%' }
+const loadText = setLoading
 try {
   loadText('正在搬家具…', 0.05)
   A = await loadAssets({ lite: LITE.lite })
@@ -2538,7 +2539,7 @@ async function poll() {
       if(deferred.length)schedule(work,{timeout:15000})
       console.info(`[office3d] 静态网格合并：${merged.removed} → ${merged.added}，用时 ${Math.round(performance.now() - t0)} ms`)
     }
-    $('loading').classList.add('done')
+    finishLoading({ reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches || LITE.lite })
     $('conn').className = 'dot live'
     setText('connText', '实时 · 每 3 秒刷新')
     $('err').style.display = 'none'
@@ -2569,7 +2570,7 @@ if (DR_MODE) {
   const snap = snapshot(scene), merged = mergeStatic(scene, snap)
   sceneQuality.prepare(startupQualityPlan.current); applyQuality(); qualityMetrics.qualityReadyMs = performance.now() - APP_STARTED
   console.info(`[office3d] 仓配模式静态网格合并：${merged.removed} → ${merged.added}`)
-  $('loading').classList.add('done')
+  finishLoading({ reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches || LITE.lite })
   $('conn').className = 'dot live'
   setText('connText', PLACE_MODE.subtitle)
 } else {

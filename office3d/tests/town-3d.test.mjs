@@ -32,3 +32,17 @@ test('3d town exposes real progress loader, retry/back buttons, and reduced-moti
   assert.match(js, /场景就绪/)
   assert.match(js, /prefers-reduced-motion/)
 })
+
+test('river data is area-unioned and keeps holes-ready rings', () => {
+  const data = JSON.parse(readFileSync(new URL('../town-3d/town-3d-data.json', import.meta.url), 'utf8'))
+  assert.ok(data.waterSource.inputAreaCount > 0)
+  assert.ok(data.waterSource.largest10.length >= 3)
+  assert.ok(data.water.some((item) => Array.isArray(item.rings) && item.rings[0].length >= 3))
+  assert.ok(data.waterSource.largest10[0].id && data.waterSource.largest10[0].sourceIds.length > 0)
+})
+
+test('town renderer uses ShapeGeometry for water and green areas without span skipping', () => {
+  const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
+  assert.match(js, /new THREE\.ShapeGeometry\(shape\)/)
+  assert.doesNotMatch(js, /maxSpan/)
+})

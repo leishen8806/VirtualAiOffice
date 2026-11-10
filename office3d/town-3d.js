@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three/three.module.js'
 import { chunkPlan, defaultBuildingHeight, geoToWorld, qualitySample } from './town-3d-core.mjs'
+import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
 if (!canvas) throw new Error('town3d canvas missing')
@@ -13,8 +14,8 @@ const loaderError = document.querySelector('#town3dLoaderError')
 const loaderActions = loader?.querySelector('.town3d-loader-actions')
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
 const loaderApi = window.town3dLoader = {
-  progress(value, step) { if (loaderProgress) loaderProgress.value = value; if (loaderStep) loaderStep.textContent = step },
-  done() { if (!loader) return; loader.setAttribute('aria-busy','false'); loader.classList.add('is-leaving'); const ms = prefersReducedMotion || quality === 'low' ? 0 : 1800; const start = performance.now(); const tick = now => { const t = Math.min(1, (now - start) / Math.max(1, ms)); const eased = t * (2 - t); const base = quality === 'low' ? 250 : 320; const y = quality === 'low' || prefersReducedMotion ? 0 : eased * 55; camera.position.y = base - y; if (t < 1) requestAnimationFrame(tick); }; if (ms) requestAnimationFrame(tick); setTimeout(() => loader.remove(), 650) },
+  progress(value, step) { setLoading(step, value / 100) },
+  done() { if (!loader) return; loader.setAttribute('aria-busy','false'); const ms = prefersReducedMotion || quality === 'low' ? 0 : 1800; finishLoading({ reduceMotion: !ms, pushCamera: duration => { const start = performance.now(); const base = quality === 'low' ? 250 : 320; const tick = now => { const t = Math.min(1, (now - start) / Math.max(1, duration)); const eased = t * (2 - t); camera.position.y = base - eased * 55; if (t < 1) requestAnimationFrame(tick) }; requestAnimationFrame(tick) } }) },
   fail(error) { if (!loader) return; loader.setAttribute('aria-busy','false'); loaderError.hidden = false; loaderError.textContent = `加载失败：${error?.message || error}`; loaderActions.hidden = false; loaderProgress.value = 0; loaderStep.textContent = '无法完成城市数据加载'; }
 }
 document.querySelector('#town3dRetry')?.addEventListener('click', () => location.reload())
@@ -60,18 +61,28 @@ function mergedBoxes(items) {
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3)); g.setIndex(indices); g.computeVertexNormals(); return g
 }
-function mergedPolygons(items, y, material, options = {}) {
-  const maxSpan = Number.isFinite(options.maxSpan) ? options.maxSpan : Infinity
+function mergedPolygons(items, y, material) {
   const positions = [], indices = []; let vertex = 0
   for (const item of items) {
-    const bbox = item.bbox || []
-    if (bbox.length === 4 && Math.max(Math.abs(Number(bbox[2]) - Number(bbox[0])), Math.abs(Number(bbox[3]) - Number(bbox[1]))) > maxSpan) continue
-    const pts = item.geometry.map(pointWorld).map(p => new THREE.Vector2(p.x, p.z)).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y)); if (pts.length < 3) continue
-    for (const p of pts) positions.push(p.x, y, p.y)
-    for (const tri of THREE.ShapeUtils.triangulateShape(pts, [])) indices.push(vertex + tri[0], vertex + tri[1], vertex + tri[2])
-    vertex += pts.length
+    const rings = Array.isArray(item.rings) ? item.rings : [item.geometry || []]
+    const toPoint = ([lon, lat]) => { const p = geoToWorld(Number(lat), Number(lon), 10); return new THREE.Vector2(p.x, p.z) }
+    const outer = rings[0].map(toPoint).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+    if (outer.length < 3) continue
+    const shape = new THREE.Shape(outer)
+    shape.holes = rings.slice(1).map(ring => new THREE.Path(ring.map(toPoint)))
+    const geometry = new THREE.ShapeGeometry(shape)
+    geometry.rotateX(-Math.PI / 2)
+    geometry.translate(0, y, 0)
+    const attr = geometry.getAttribute('position')
+    for (let i = 0; i < attr.count; i++) positions.push(attr.getX(i), attr.getY(i), attr.getZ(i))
+    const index = geometry.getIndex()
+    if (index) for (let i = 0; i < index.count; i += 3) indices.push(vertex + index.getX(i), vertex + index.getX(i + 1), vertex + index.getX(i + 2))
+    else for (let i = 0; i < attr.count; i += 3) indices.push(vertex + i, vertex + i + 1, vertex + i + 2)
+    vertex += attr.count
+    geometry.dispose()
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3)); g.setIndex(indices); g.computeVertexNormals(); const m = new THREE.Mesh(g,material); worldGroup.add(m); return m
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setIndex(indices); g.computeVertexNormals()
+  const m = new THREE.Mesh(g, material); worldGroup.add(m); return m
 }
 function mergedRoads(data) {
   const positions = [], indices = []; let vertex = 0
@@ -114,7 +125,7 @@ function addRoads(data) { mergedRoads(data) }
 function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon);const m=new THREE.Mesh(new THREE.BoxGeometry(8,height,8),material);m.position.set(p.x,height/2,p.z);m.name=label;worldGroup.add(m); const el=document.createElement('div'); el.className='town3d-label'; el.textContent=label; el.dataset.world=`${p.x},${height},${p.z}`; document.body.append(el); return m }
 async function boot(){
   loaderApi.progress(8, '下载城市数据…')
-  const res=await fetch('/town-3d-data.json'); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
+  const [res, mapRes] = await Promise.all([fetch('/town-3d-data.json'), fetch('/town-map.json')]); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); const mapData=mapRes.ok ? await mapRes.json() : null; loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
   const buildings=data.buildings.map(b=>{const [lon0,lat0,lon1,lat1]=(b.bbox||[]).map(Number); if(![lon0,lat0,lon1,lat1].every(Number.isFinite)) return null; const a=geoToWorld(lat0,lon0),z=geoToWorld(lat1,lon1); return {...b,bboxWorld:[Math.min(a.x,z.x),Math.min(a.z,z.z),Math.max(a.x,z.x),Math.max(a.z,z.z)],heightWorld:Number(b.height)/10}}).filter(Boolean)
   const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
@@ -122,10 +133,10 @@ async function boot(){
   mergedPolygons(data.water,.02,mat.water)
   // Some OSM green-area relations are incomplete open rings; skip only the
   // oversized malformed spans so they cannot triangulate into city-wide strips.
-  mergedPolygons(data.green,.04,mat.green,{ maxSpan: .004 })
+  mergedPolygons(data.green,.04,mat.green)
   addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
-  const landmarks=[['王宫',11.5627,104.9303],['独立纪念碑',11.5561,104.9176],['中央市场',11.5681,104.9215],['塔仔山寺',11.5759,104.9234],['国家博物馆',11.5657,104.9272],['奥林匹克体育场',11.5514,104.9143],['洞里萨河滨',11.5745,104.9277],['金边港',11.578,104.933],['夜市',11.571,104.925],['俄罗斯市场',11.547,104.916],['机场方向',11.528,104.969],['东部物流走廊',11.535,104.974],['铁桥',11.548,104.934],['学校',11.56,104.946],['医院',11.558,104.955],['公园',11.566,104.944],['体育场',11.55,104.946],['寺院',11.579,104.95],['老城',11.57,104.915],['南城',11.545,104.935],['三河交汇',11.565,104.94],['西市',11.56,104.9],['北门',11.588,104.93],['仓配入口',11.534,104.968]]
+  const landmarks = (mapData?.layers?.landmarks || []).map(item => [item.name, item.lat, item.lon]).filter(([, lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon))
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
   const landmarkList=document.querySelector('#town3dLandmarkList'); if (landmarkList) landmarkList.remove()
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(1100,900),mat.ground); floor.rotation.x=-Math.PI/2; floor.position.y=-.02; worldGroup.add(floor); fitCamera()
