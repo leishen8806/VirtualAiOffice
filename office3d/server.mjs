@@ -404,6 +404,7 @@ async function act(a, options = {}) {
     const run = (Array.isArray(runRows) ? runRows : runRows.runs || []).find((row) => row.id === a.runId)
     const liveness = run && runAlive(run, await readProcessTable())
     if (shouldBlockCancel(liveness)) {
+      if (liveness.via === 'adapter') throw Object.assign(new Error('运行由 Paperclip 控制器托管，不能按本地进程号取消。'), { status: 409 })
       const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
       throw Object.assign(new Error(`进程仍在运行：${names}（${liveness.descendants.length} 个后代）；取消只会把记录标掉，进程会继续跑。`), { status: 409 })
     }

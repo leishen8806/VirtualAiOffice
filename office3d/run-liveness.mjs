@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
 const CACHE_MS = 15_000
+const NON_LOCAL_ADAPTERS = new Set(['paperclip_runner', 'remote', 'automation', 'github_actions'])
 let cached = { at: 0, current: null, previous: null }
 let pending = null
 
@@ -34,6 +35,10 @@ function descendantsOf(run, processTable) {
 }
 
 export function runAlive(run, processTable, checkPid = pidAlive) {
+  const adapterType = run?.runnerProfileJson?.adapterDispatch?.adapterType
+  if (NON_LOCAL_ADAPTERS.has(String(adapterType || '').toLowerCase())) {
+    return { alive: true, via: 'adapter', descendants: [] }
+  }
   if (checkPid(run && run.processPid)) return { alive: true, via: 'pid', descendants: [] }
   if (!Array.isArray(processTable)) return { alive: false, via: null, descendants: [] }
   const descendants = descendantsOf(run, processTable).map(({ pid, name }) => ({ pid, name }))
@@ -55,7 +60,7 @@ export function runBusy(run, previousTable, processTable) {
 }
 
 export function shouldBlockCancel(liveness) {
-  return liveness && liveness.via === 'descendant'
+  return liveness && ['adapter', 'descendant'].includes(liveness.via)
 }
 
 export async function readProcessTable({ wait = true } = {}) {
