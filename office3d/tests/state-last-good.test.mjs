@@ -20,7 +20,7 @@ const fixture = () => ({ at: new Date(start).toISOString(), agents: [{ id: 'demo
 })
 function temp(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'h2-state-'))
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }))
   return path.join(dir, 'state-last-good.json')
 }
 function context(extra = {}) {
