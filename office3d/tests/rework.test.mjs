@@ -38,6 +38,13 @@ function setup(t, options = {}) {
   return { dir, file: path.join(dir, 'rework.json'), add, ISSUE, review, get, send, writes, notices, factory, enable, advance }
 }
 
+test('isCapped uses the current view without an undefined view reference', (t) => {
+  const { factory } = setup(t)
+  const rework = factory()
+  assert.doesNotThrow(() => rework.isCapped('CMP-1'))
+  assert.equal(rework.isCapped('CMP-1'), false)
+})
+
 // ───── 纯函数：三类评论解析 ─────
 test('三类评论解析：全角括号、第二轮、修复、复验，分别抽出轮次与 R 项状态', () => {
   const s = parseReworkComments([
