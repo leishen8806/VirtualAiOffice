@@ -73,7 +73,10 @@ function mergedPolygons(items, y, material) {
 function mergedRoads(data) {
   const positions = [], indices = []; let vertex = 0
   for (const road of data.roads) for (let i = 1; i < (road.line || []).length; i++) {
-    const a = pointWorld([road.line[i - 1][1], road.line[i - 1][0]]), b = pointWorld([road.line[i][1], road.line[i][0]])
+    const p0 = road.line[i - 1], p1 = road.line[i]
+    const inside = p => Array.isArray(p) && p.length >= 2 && p[0] >= 104.9 && p[0] <= 104.985 && p[1] >= 11.52 && p[1] <= 11.59
+    if (!inside(p0) || !inside(p1)) continue
+    const a = pointWorld([p0[1], p0[0]]), b = pointWorld([p1[1], p1[0]])
     if (![a.x,a.z,b.x,b.z].every(Number.isFinite)) continue
     const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz) || 1, w = road.primary ? 1.8 : .75, nx = -dz / len * w / 2, nz = dx / len * w / 2
     positions.push(a.x - nx, .03, a.z - nz, a.x + nx, .03, a.z + nz, b.x + nx, .03, b.z + nz, b.x - nx, .03, b.z - nz)
@@ -105,12 +108,6 @@ function extrudedBuildings(items, simplified = false) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setIndex(indices); g.computeVertexNormals(); return g
 }
 function addRoads(data) { mergedRoads(data) }
-function addVisualOrientationOverlays() {
-  const riverMat = new THREE.MeshStandardMaterial({ color: 0x4c9eb1, roughness: .25, transparent: true, opacity: .9, side: THREE.DoubleSide })
-  ;[[80,-220,110,700],[300,-260,70,620],[520,210,58,520]].forEach(([x,z,w,d]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d),riverMat); m.rotation.x=-Math.PI/2; m.position.set(x,.07,z); worldGroup.add(m) })
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x776f68, roughness: 1, side: THREE.DoubleSide })
-  ;[[-120,0,18,900],[160,40,16,900],[420,60,14,900]].forEach(([x,z,w,d]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d),roadMat); m.rotation.x=-Math.PI/2; m.position.set(x,.08,z); worldGroup.add(m) })
-}
 function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon);const m=new THREE.Mesh(new THREE.BoxGeometry(8,height,8),material);m.position.set(p.x,height/2,p.z);m.name=label;worldGroup.add(m); const el=document.createElement('div'); el.className='town3d-label'; el.textContent=label; el.dataset.world=`${p.x},${height},${p.z}`; document.body.append(el); return m }
 async function boot(){
   loaderApi.progress(8, '下载城市数据…')
@@ -119,11 +116,11 @@ async function boot(){
   const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
   chunks.forEach((chunk, index) => { worldGroup.add(new THREE.Mesh(extrudedBuildings(chunk.items, quality === 'low'),mat.building)); loaderApi.progress(40 + Math.round((index + 1) / Math.max(1, chunks.length) * 45), `生成建筑（${index + 1}/${chunks.length}）…`) })
-  mergedPolygons(data.water,.02,mat.water); mergedPolygons(data.green,.04,mat.green); addRoads(data); addVisualOrientationOverlays()
+  mergedPolygons(data.water,.02,mat.water); mergedPolygons(data.green,.04,mat.green); addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
   const landmarks=[['王宫',11.5627,104.9303],['独立纪念碑',11.5561,104.9176],['中央市场',11.5681,104.9215],['塔仔山寺',11.5759,104.9234],['国家博物馆',11.5657,104.9272],['奥林匹克体育场',11.5514,104.9143],['洞里萨河滨',11.5745,104.9277],['金边港',11.578,104.933],['夜市',11.571,104.925],['俄罗斯市场',11.547,104.916],['机场方向',11.528,104.969],['东部物流走廊',11.535,104.974],['铁桥',11.548,104.934],['学校',11.56,104.946],['医院',11.558,104.955],['公园',11.566,104.944],['体育场',11.55,104.946],['寺院',11.579,104.95],['老城',11.57,104.915],['南城',11.545,104.935],['三河交汇',11.565,104.94],['西市',11.56,104.9],['北门',11.588,104.93],['仓配入口',11.534,104.968]]
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
-  const landmarkList=document.querySelector('#town3dLandmarkList'); landmarkList.hidden=false; landmarkList.innerHTML=`<strong>城市地标</strong><span>${landmarks.map(([label])=>label).join(' · ')}</span>`
+  const landmarkList=document.querySelector('#town3dLandmarkList'); if (landmarkList) landmarkList.remove()
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(1100,900),mat.ground); floor.rotation.x=-Math.PI/2; floor.position.y=-.02; worldGroup.add(floor); fitCamera()
   status.textContent=`3D ${quality}｜建筑 ${sampled.length}/${buildings.length}｜分块 ${chunks.length}（${Object.keys(data.chunks||{}).length} 数据块）｜calls – / tris –`; loaderApi.progress(95, '画出第一帧…')
   loaderApi.progress(100, '场景就绪'); loaderApi.done()
