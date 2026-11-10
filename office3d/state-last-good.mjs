@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { performance } from 'node:perf_hooks'
 
 const credential = key => /token|password|passphrase|secret|credential|authorization|cookie|csrf|jwt|bearer|access.?(code|key)|api.?key|访问码|令牌|口令|密钥/i.test(key)
 export function stripStateCredentials(value) {
@@ -111,7 +112,7 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
   }
 }
 
-export async function loadStateComponents({ get, company, backlog }) {
+export async function loadStateComponents({ get, company, backlog, timings = null }) {
   const base = `/api/companies/${company}`
   const entries = [
     ['agents', `${base}/agents`, 'agents'], ['dashboard', `${base}/dashboard`, null],
@@ -123,14 +124,17 @@ export async function loadStateComponents({ get, company, backlog }) {
   ]
   const gaps = [], values = {}
   await Promise.all(entries.map(async ([name, route, arrayKey]) => {
+    const started = performance.now()
     try {
       const raw = await (route ? get(route) : backlog())
       const rows = arrayKey ? (Array.isArray(raw) ? raw : raw?.[arrayKey]) : raw
       if (arrayKey ? !Array.isArray(rows) : name === 'backlog' ? !Array.isArray(rows) : !rows || !rows.tasks) throw new Error('INVALID_SOURCE')
       values[name] = rows
+      timings?.({ name, ok: true, ms: performance.now() - started })
     } catch (error) {
       values[name] = []
       gaps.push({ source: name, reason: 'UPSTREAM_UNAVAILABLE' })
+      timings?.({ name, ok: false, ms: performance.now() - started, error: String(error?.message || error).slice(0, 120) })
     }
   }))
   gaps.sort((a, b) => entries.findIndex(row => row[0] === a.source) - entries.findIndex(row => row[0] === b.source))

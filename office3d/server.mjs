@@ -1006,8 +1006,11 @@ async function healthReport() {
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
   return lastGoodState.run(async () => {
+  const stateStarted = performance.now()
+  const timings = []
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true) })
+    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
+  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
