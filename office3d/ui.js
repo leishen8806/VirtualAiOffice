@@ -155,7 +155,6 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     modal.innerHTML = `<button class="close" data-x>×</button>${html}`
     wrap.classList.add('show')
     modal.querySelector('[data-x]').onclick = close
-    const stale = staleView(state?.stale)
     if (state?.lan) modal.querySelectorAll('.actions .btn, #nameSave').forEach((b) => { if (!['mView', 'govHistory'].includes(b.id)) { b.disabled = true; b.title = '局域网只读，请在运行服务的电脑上操作' } })
   }
   function close() { if (chatPoll) clearTimeout(chatPoll); chatPoll = null; wrap.classList.remove('show'); modal.innerHTML = '' }
