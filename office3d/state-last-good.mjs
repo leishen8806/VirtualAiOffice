@@ -91,6 +91,17 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
         if (failures < 3 && ageMs <= staleAfterMs) return clone(saved)
         return clone({ ...structuredClone(saved), actToken: '', stale: { active: true, since: saved.at, ageMs, reason: failures >= 3 ? 'UPSTREAM_UNAVAILABLE' : 'STALE_DATA' } })
       }
+      // 首次无快照时给后台刷新一次完整机会；超时才返回 503，避免把冷启动误报成已降级。
+      if (backgroundMs > 0 && !saved) {
+        const pending = start(build)
+        const waitMs = Math.min(timeoutMs, 5000)
+        let timer
+        const timeout = new Promise((resolve, reject) => {
+          timer = setTimeout(() => { try { resolve(fallback()) } catch (error) { reject(error) } }, waitMs)
+        })
+        const value = await Promise.race([pending, timeout]).finally(() => clearTimeout(timer))
+        return clone(value)
+      }
       start(build)
       const remaining = Math.max(0, timeoutMs - (now() - flightStartedAt))
       if (remaining === 0) return clone(fallback())

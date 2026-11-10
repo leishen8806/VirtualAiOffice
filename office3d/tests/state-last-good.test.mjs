@@ -117,6 +117,20 @@ test('missing corrupt invalid files yield 503, persisted credentials are removed
   assert.equal(out.actToken, '')
 })
 
+test('first background request waits for the initial refresh and returns a fresh snapshot', async t => {
+  const manager = createLastGoodState({ file: temp(t), backgroundMs: 20, timeoutMs: 100, log() {} })
+  const reply = await manager.run(async () => { await new Promise(resolve => setTimeout(resolve, 5)); return fixture() })
+  assert.equal(reply.stale, undefined)
+  assert.equal(reply.agents.length, 1)
+})
+
+test('first background request returns 503 after the bounded initial wait', async t => {
+  const manager = createLastGoodState({ file: temp(t), backgroundMs: 20, timeoutMs: 40, log() {} })
+  const started = Date.now()
+  await assert.rejects(() => manager.run(() => new Promise(() => {})), error => error?.status === 503 && error?.message === 'STATE_UNAVAILABLE_NO_SNAPSHOT')
+  assert.ok(Date.now() - started >= 35)
+})
+
 test('atomic writes exclude credentials, final snapshot survives restart and failed write keeps memory', async t => {
   const file = temp(t)
   const manager = createLastGoodState({ file, now: () => start, log() {} })
