@@ -400,9 +400,9 @@ async function act(a, options = {}) {
   }
   if (a.type === 'cancel_run') { // 取消一次运行：进程还在就停掉；进程已退出的残留记录就把它标掉
     need(UUID.test(a.runId || ''), '运行 id 不对')
-    const runRows = await get(`/api/companies/${COMPANY}/heartbeat-runs?limit=1000`)
-    const run = (Array.isArray(runRows) ? runRows : runRows.runs || []).find((row) => row.id === a.runId)
-    const liveness = run && runAlive(run, await readProcessTable())
+    const run = await fullRunDetail(a.runId)
+    if (!run) throw Object.assign(new Error('运行状态未知，不能取消。'), { status: 409 })
+    const liveness = runAlive(run, await readProcessTable())
     if (shouldBlockCancel(liveness)) {
       if (liveness.via === 'adapter') throw Object.assign(new Error('运行由 Paperclip 控制器托管，不能按本地进程号取消。'), { status: 409 })
       const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
@@ -943,6 +943,34 @@ async function backlogRows(strict = false) {
   return rows
 }
 
+const runDetailCache = new Map()
+const runDetailFlights = new Map()
+const RUN_DETAIL_TTL_MS = 60 * 1000
+
+async function fullRunDetail(runId, getRun = get) {
+  const cached = runDetailCache.get(runId)
+  if (cached && Date.now() - cached.at < RUN_DETAIL_TTL_MS) return cached.value
+  if (runDetailFlights.has(runId)) return runDetailFlights.get(runId)
+  const flight = Promise.resolve(getRun(`/api/heartbeat-runs/${encodeURIComponent(runId)}`))
+    .then(value => { runDetailCache.set(runId, { at: Date.now(), value }); return value })
+    .finally(() => runDetailFlights.delete(runId))
+  runDetailFlights.set(runId, flight)
+  return flight
+}
+
+async function attachRunDetails(rows, getRun = get) {
+  const out = new Map()
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < rows.length) {
+      const row = rows[cursor++]
+      try { out.set(row.id, await fullRunDetail(row.id, getRun)) } catch { out.set(row.id, null) }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, rows.length) }, worker))
+  return out
+}
+
 async function schedulerEnrichRows(rows) {
   const queue = rows.slice(0, 200)
   const out = Array(queue.length)
@@ -1022,10 +1050,12 @@ async function state() {
   const lastRun = new Map()
   const liveRun = new Map()
   const processTables = await readProcessTables({ wait: false })
+  const details = await attachRunDetails(runs.filter(r => r.status === 'running'), moduleGet('state'))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
     if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      const liveness = runAlive(r, processTables.current)
+      const detail = details.get(r.id)
+      const liveness = detail ? runAlive({ ...r, ...detail }, processTables.current) : { alive: null, via: 'unknown', descendants: [] }
       const busy = runBusy(r, processTables.previous, processTables.current)
       liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via, busy: busy.busy, busyName: busy.busyName })
     }

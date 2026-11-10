@@ -417,7 +417,7 @@ test('act auth and body are unchanged; fake unavailable upstream never returns s
   const actNow = extract(source, 'async function act(a', '// 任务详情（只读）')
   assert.match(actNow, /^async function act\(a, options = \{\}\)/)
   assert.match(actNow, /need\(!nameConflict\(names, key, name\), '[^']*'\)/, 'rename 分支必须保留显示名查重')
-  assert.match(actNow, /const liveness = run && runAlive\(run, await readProcessTable\(\)\)/)
+  assert.match(actNow, /const run = await fullRunDetail\(a\.runId\)/)
   assert.match(actNow, /if \(shouldBlockCancel\(liveness\)\)/)
   assert.equal(actBody(actNow), actBody(extract(backup, 'async function act(a)', '// 任务详情（只读）')))
   const normalizeActCall = (text) => text.replace(/\r\n/g, '\n').replace(/await act\(body, \{ localFullAccess: !lanUser && !wallScope \}\)/, 'await act(body)') // DS-7：仅此一处调用点改动
