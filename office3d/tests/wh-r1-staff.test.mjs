@@ -98,3 +98,16 @@ test('WH-R1 R3 placeholder motion only updates the two shared instance buffers',
   assert.equal(value.summary().placeholderCalls, 2)
   assert.ok(after.some((array, index) => array.some((v, i) => v !== before[index][i])))
 })
+
+test('WH-R1 R4 real-only mode hydrates every registered worker without proxy visibility', async () => {
+  const { value } = context()
+  value.requireRealistic()
+  const makeReal = () => ({ group: new THREE.Group(), pose: { sit: 0, walk: 0, phase: 0, talk: 0, carry: 0 }, solve() {} })
+  value.configureRealistic({ tier: 'low', load: async name => ({ avatars: { [name]: {} }, clips: { male: {}, female: {} }, extras: { male: {}, female: {} } }), createPerson: makeReal })
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  await new Promise(resolve => setTimeout(resolve, 20))
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  assert.equal(value.summary().loadedReal, 9)
+  assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-standing').visible, false)
+  assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-seated').visible, false)
+})

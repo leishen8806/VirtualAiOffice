@@ -152,9 +152,9 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
       return { member, distance, score: distance + (1 - alignment) * 190 }
     }).sort((a, b) => a.score - b.score)
     for (const row of rows) row.member.want = false
-    const keep = rows.filter(row => row.member.loaded && row.distance < (realOnly ? 34 : 28)).slice(0, realistic.maxReal)
+    const keep = rows.filter(row => row.member.loaded && row.distance < (realOnly ? Infinity : 34)).slice(0, realistic.maxReal)
     for (const row of rows) if (!keep.includes(row) && row.member.loaded) switchToPlaceholder(row.member)
-    const wanted = [...keep, ...rows.filter(row => !row.member.loaded && row.distance < (realOnly ? 30 : 20))].sort((a, b) => a.score - b.score).slice(0, realistic.maxReal)
+    const wanted = [...keep, ...rows.filter(row => !row.member.loaded && row.distance < (realOnly ? Infinity : 20))].sort((a, b) => a.score - b.score).slice(0, realistic.maxReal)
     if (realOnly) for (const row of keep) if (!wanted.includes(row)) switchToPlaceholder(row.member)
     for (const { member } of wanted) {
       member.want = true
@@ -166,7 +166,8 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   }
   const requireRealistic = () => { realOnly = true; placeholders.standing.visible = placeholders.seated.visible = false }
   const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => {
-    realistic = { maxReal: tier === 'low' && !realOnly ? 2 : 4, load, createPerson }
+    // Real-only mode keeps every registered worker visible; no proxy mesh is used for distant rows.
+    realistic = { maxReal: realOnly ? members.length : (tier === 'low' ? 2 : 4), load, createPerson }
     armed = realOnly; hydrationAt = 0; syncPlaceholders()
   }
   const cameraIntent = () => { armed = true }
