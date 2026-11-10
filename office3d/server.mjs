@@ -907,7 +907,11 @@ async function backlogRows(strict = false) {
     if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
     return backlogCache.rows
   }
-  if (backlogFlight) return backlogFlight
+  if (backlogFlight) {
+    const rows = await backlogFlight
+    if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+    return rows
+  }
   backlogFlight = (async () => {
     try {
       const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
@@ -933,7 +937,9 @@ async function backlogRows(strict = false) {
     }
     return backlogCache.rows
   })()
-  return backlogFlight
+  const rows = await backlogFlight
+  if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+  return rows
 }
 
 async function schedulerEnrichRows(rows) {
