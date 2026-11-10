@@ -60,9 +60,9 @@ export async function loadCompactGltf(url, resourcePath, manager) {
   }
 }
 
-export async function loadCompactPerson(name) {
+export async function loadCompactPerson(name, variant = '') {
   let scene
-  try { scene = await readCompactPerson(name) }
+  try { scene = await readCompactPerson(name, variant) }
   catch {
     warnFallback(name)
     return (await import('./original-people.js')).loadOriginalPerson(name)
@@ -70,8 +70,9 @@ export async function loadCompactPerson(name) {
   return scene
 }
 
-async function readCompactPerson(name) {
-  const { scene } = await new GLTFLoader().parseAsync(await unpack(`./assets/compact/people/${name}.glb.gz`), '')
+async function readCompactPerson(name, variant = '') {
+  const folder = variant ? `people-${variant}` : 'people'
+  const { scene } = await new GLTFLoader().parseAsync(await unpack(`./assets/compact/${folder}/${name}.glb.gz`), '')
   const textureLoader = new CompactTextureLoader(), pending = [], materials = new Set()
   scene.traverse(o => {
     if (o.userData.compactHeight > 0) scene.userData.compactHeight = o.userData.compactHeight
