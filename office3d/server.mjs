@@ -272,7 +272,7 @@ const commandLive = createCommandLiveWiring({
     return { status: response.status, body: response.ok ? await response.json() : null }
   },
 })
-const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy'])
+const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
 // 静态文件白名单：页面、脚本、样式、图片、模型。目录里的 json / log / dpapi / md / mjs（访问码、Telegram 配置、审计日志、委员会数据……）一律不对外
@@ -867,6 +867,30 @@ function voteSessions(agents) {
 }
 
 let projectsCache = []
+const ROUTEFIT_PROJECT_ID = '520f5417-116e-41fa-a830-ddeac34e5268'
+let routefitCache = { at: 0, value: null }
+let routefitFlight = null
+async function refreshRoutefitSummary() {
+  if (routefitFlight) return routefitFlight
+  routefitFlight = (async () => {
+    try {
+      const [issuesRaw, agentsRaw] = await Promise.all([
+        moduleGet('routefit')(`/api/companies/${COMPANY}/issues?projectId=${ROUTEFIT_PROJECT_ID}&limit=1000`),
+        moduleGet('routefit')(`/api/companies/${COMPANY}/agents`),
+      ])
+      const issues = Array.isArray(issuesRaw) ? issuesRaw : issuesRaw?.issues || []
+      const agents = Array.isArray(agentsRaw) ? agentsRaw : agentsRaw?.agents || []
+      const counts = Object.fromEntries(['backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled'].map(status => [status, issues.filter(issue => issue.status === status).length]))
+      const running = agents.filter(agent => agent.status === 'running' && issues.some(issue => issue.projectId === ROUTEFIT_PROJECT_ID && issue.assigneeAgentId === agent.id)).map(agent => ({ id: agent.id, name: agent.name, title: agent.title || null }))
+      routefitCache = { at: Date.now(), value: { at: new Date().toISOString(), projectId: ROUTEFIT_PROJECT_ID, taskCounts: counts, runningAgents: running } }
+    } catch (error) {
+      routefitCache = { at: Date.now(), value: { at: new Date().toISOString(), projectId: ROUTEFIT_PROJECT_ID, unavailable: true, reason: 'UPSTREAM_UNAVAILABLE' } }
+      console.log('[routefit] refresh failed: ' + String(error?.message || error).slice(0, 240))
+    }
+  })().finally(() => { routefitFlight = null })
+  return routefitFlight
+}
+setInterval(() => { if (Date.now() - routefitCache.at >= 60000) refreshRoutefitSummary() }, 10000).unref?.()
 let backlogCache = { at: 0, rows: [] }
 const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
@@ -1234,6 +1258,11 @@ const server = http
         return json(200, stats.daily(d))
       }
       if (url.pathname === '/health') return json(200, await healthReport())
+      if (url.pathname === '/zone/routefit') {
+        if (Date.now() - routefitCache.at >= 60000) refreshRoutefitSummary()
+        if (!routefitCache.value) return json(200, { at: null, projectId: ROUTEFIT_PROJECT_ID, unavailable: true, reason: 'NOT_LOADED' })
+        return json(200, routefitCache.value)
+      }
       if (url.pathname === '/workload') return json(200, workload.reportView(url.searchParams.get('days') === '7' ? 7 : 14))
       if (url.pathname === '/chat/summary') return json(200, chat.summary())
       if (url.pathname === '/chat') return json(200, await chat.view(url.searchParams.get('agent') || ''))

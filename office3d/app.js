@@ -20,7 +20,7 @@ import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
 import { officeSampleRequested } from './office-vis2/host.js'
-import { buildRoutefitZone, routefitSeatAssignments } from './project-zones.js'
+import { buildRoutefitZone, routefitSeatAssignments, routefitWingNavigation } from './project-zones.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -1098,6 +1098,7 @@ if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   if (OFFICE_SAMPLE_MODE) boardViews['苏晨'] = createBoardView('苏晨', boss.chair, boss.stand, [], 1)
 }
 const routefitZone = buildRoutefitZone({ THREE, scene, quality: qualityPolicy })
+routefitZone.navigation = routefitWingNavigation()
 const ROUTEFIT_SEATS = routefitSeatAssignments([], SEATS)
 
 // ───────────────────────── 区域标牌 ─────────────────────────
@@ -2675,7 +2676,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   }
   ready()
 }
-window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, routefitZone, enqueue: (e) => director.enqueue(e) }
+window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, routefitZone, routefitNavigation: routefitZone.navigation, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
 window.__office.r1Npcs = () => (r1Npcs ? r1Npcs.summary() : { count: 0, lite: !!LITE.lite })
 window.__office.r1NpcMembers = () => (r1Npcs ? r1Npcs.members : []) // 验收采样要读真实的 char.pose，不能靠场景反查重建

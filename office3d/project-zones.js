@@ -23,6 +23,22 @@ export function routefitSeatAssignments(names, oldSeats) {
   return result
 }
 
+// The wing has one real doorway; keep a deterministic orthogonal route for the
+// inspector and for callers that need to hand a worker into the existing grid.
+export function routefitWingNavigation() {
+  const { x0, z0, door } = ROUTEFIT_ZONE.wing
+  const doorway = { x: x0 - 0.8, z: door.z }
+  return Object.freeze({
+    doorway,
+    inside: { x: x0 + 0.8, z: door.z },
+    route(from, to) {
+      const via = { x: doorway.x, z: from.z }
+      const enter = { x: x0 + 0.8, z: from.z }
+      return [via, { x: doorway.x, z: door.z }, { x: x0 + 0.8, z: door.z }, enter, { x: enter.x, z: to.z }, { x: to.x, z: to.z }]
+    },
+  })
+}
+
 export function buildRoutefitZone({ THREE, scene, quality }) {
   const root = new THREE.Group(); root.name = 'routefit-wing-zone'
   const wall = new THREE.MeshStandardMaterial({ color: 0xe6dfd2, roughness: 0.9 })
