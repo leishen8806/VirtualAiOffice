@@ -1,13 +1,14 @@
 export const ROUTEFIT_ZONE = Object.freeze({
-  routefit: Object.freeze(['Lead2', 'PM', 'Architect', 'BackendSenior', 'Backend1', 'DBEngineer', 'ReactSenior', 'React1', 'React2', 'Frontend1', 'UIUX', 'Localizer', 'LedgerAuditor', 'QAAutomation', 'OpsEngineer', 'Reviewer1', 'Reviewer2', 'SecurityReviewer']),
-  platform: Object.freeze(['Lead', 'FrontendSenior', 'Frontend2', 'Backend2', 'KnowledgeKeeper', 'OpsLead', 'Reviewer3', 'SecurityReviewer2']),
+  routefit: Object.freeze(['Lead2', 'PM', 'Architect', 'BackendSenior', 'Backend1', 'DBEngineer', 'ReactSenior', 'React1', 'React2', 'Frontend1', 'UIUX', 'Localizer', 'LedgerAuditor', 'QAAutomation', 'OpsEngineer', 'Reviewer1', 'Reviewer2', 'SecurityReviewer', 'FrontendSenior', 'Frontend2', 'Backend2']),
+  platform: Object.freeze(['Lead', 'KnowledgeKeeper', 'OpsLead', 'Reviewer3', 'SecurityReviewer2']),
   paused: Object.freeze(['GoSenior', 'GoSenior2', 'Go1', 'Go2']),
   groups: Object.freeze({
-    'command-product': Object.freeze(['Lead2', 'PM', 'Architect', 'UIUX', 'Localizer']),
-    'backend-data': Object.freeze(['BackendSenior', 'Backend1', 'DBEngineer', 'LedgerAuditor']),
-    'mobile-web': Object.freeze(['ReactSenior', 'React1', 'React2', 'Frontend1']),
-    'qa-review': Object.freeze(['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer']),
-    ops: Object.freeze(['OpsEngineer']),
+    'driver-client': Object.freeze(['ReactSenior', 'React1', 'React2', 'Frontend1']),
+    client: Object.freeze(['UIUX', 'Localizer', 'FrontendSenior', 'Frontend2']),
+    'admin-backend': Object.freeze(['Lead2', 'PM', 'Architect', 'Backend2']),
+    server: Object.freeze(['BackendSenior', 'Backend1', 'OpsEngineer']),
+    database: Object.freeze(['DBEngineer', 'LedgerAuditor']),
+    'test-review-coordination': Object.freeze(['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer']),
   }),
   wing: Object.freeze({ x0: 28, x1: 46, z0: -6, z1: 6, door: Object.freeze({ x: 27.2, z: 0, width: 3.2 }), emptySeats: 2 }),
 })

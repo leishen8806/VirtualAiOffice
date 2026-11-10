@@ -4,10 +4,10 @@ import { ROUTEFIT_ZONE, routefitSeatAssignments, routefitWingNavigation } from '
 import fs from 'node:fs'
 
 test('RouteFit wing config keeps the approved roster and groups', () => {
-  assert.equal(ROUTEFIT_ZONE.routefit.length, 18)
-  assert.equal(ROUTEFIT_ZONE.platform.length, 8)
+  assert.equal(ROUTEFIT_ZONE.routefit.length, 21)
+  assert.equal(ROUTEFIT_ZONE.platform.length, 5)
   assert.equal(ROUTEFIT_ZONE.paused.length, 4)
-  assert.equal(Object.values(ROUTEFIT_ZONE.groups).flat().length, 18)
+  assert.equal(Object.values(ROUTEFIT_ZONE.groups).flat().length, 21)
   assert.equal(ROUTEFIT_ZONE.wing.x1 - ROUTEFIT_ZONE.wing.x0, 18)
 })
 
