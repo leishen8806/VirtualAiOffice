@@ -20,7 +20,7 @@ const fixture = () => ({ at: new Date(start).toISOString(), agents: [{ id: 'demo
 })
 function temp(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'h2-state-'))
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
   return path.join(dir, 'state-last-good.json')
 }
 function context(extra = {}) {
@@ -299,18 +299,19 @@ test('/state keeps one upstream build for one, three, and five concurrent pages'
 test('background state refresh serves last success, coalesces work, and marks stale after three failures', async t => {
   let ms = start, builds = 0, fail = false
   const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 10000, staleAfterMs: 60000, log() {} })
+  t.after(() => manager.close())
   const build = async () => { builds++; if (fail) throw new Error('fixture timeout'); return { ...fixture(), at: new Date(ms).toISOString() } }
   await manager.run(build)
   ms += 10000; const first = await manager.run(build)
   assert.equal(first.stale, undefined)
-  await new Promise(resolve => setTimeout(resolve, 25))
+  await new Promise(resolve => setTimeout(resolve, 100))
   fail = true
   ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
-  await new Promise(resolve => setTimeout(resolve, 25))
+  await new Promise(resolve => setTimeout(resolve, 100))
   ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
-  await new Promise(resolve => setTimeout(resolve, 25))
+  await new Promise(resolve => setTimeout(resolve, 100))
   ms += 10000; await manager.run(build)
-  await new Promise(resolve => setTimeout(resolve, 25))
+  await new Promise(resolve => setTimeout(resolve, 100))
   assert.equal((await manager.run(build)).stale.reason, 'UPSTREAM_UNAVAILABLE')
   assert.ok(builds >= 4)
 })
@@ -319,6 +320,7 @@ test('background refresh failures append a bounded rolling log line', async t =>
   let ms = start, fail = false
   const file = temp(t), logFile = file + '.refresh.log'
   const manager = createLastGoodState({ file, logFile, now: () => ms, backgroundMs: 1, staleAfterMs: 60000, log() {} })
+  t.after(() => manager.close())
   await manager.run(async () => fixture())
   fail = true; ms += 2
   await manager.run(async () => { if (fail) throw new Error('fixture refresh failure'); return fixture() })
@@ -447,6 +449,20 @@ test('strict state backlog reports a failed older cache rather than calling it f
   })
   await assert.rejects(strictRead(true), /BACKLOG_UNAVAILABLE/)
   assert.deepEqual(JSON.parse(JSON.stringify(await strictRead())), [{ id: 'old' }])
+})
+
+test('backlogRows coalesces concurrent cache misses into one list request', async () => {
+  const code = extract(source, 'async function backlogRows(', 'async function schedulerEnrichRows')
+  let calls = 0
+  const strictRead = vm.runInNewContext(code + '\nbacklogRows', {
+    Date: fixedDate,
+    backlogCache: { at: 0, rows: [] },
+    backlogFlight: null,
+    moduleGet: () => async () => { calls++; await new Promise(resolve => setTimeout(resolve, 5)); return { issues: [{ id: '1', identifier: 'CMP-1', projectId: 'p', title: 'x' }] } },
+    COMPANY: 'demo', CONTRACT_VIEW_ENABLED: false, SCHEDULER_VIEW_ENABLED: false,
+  })
+  await Promise.all([strictRead(true), strictRead(true), strictRead(true)])
+  assert.equal(calls, 1)
 })
 
 test('snapshot static paths denied and new helper has no Paperclip write or random/eval paths', () => {

@@ -100,6 +100,14 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
       const value = await Promise.race([flight, timeout]).finally(() => clearTimeout(timer))
       return clone(value)
     },
+    async close() {
+      if (backgroundTimer) {
+        clearInterval(backgroundTimer)
+        backgroundTimer = null
+      }
+      if (flight) await flight.catch(() => {})
+      await writes.catch(() => {})
+    },
   }
 }
 

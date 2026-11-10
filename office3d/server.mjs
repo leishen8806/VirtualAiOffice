@@ -868,6 +868,7 @@ function voteSessions(agents) {
 
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
+let backlogFlight = null
 const lastGoodState = createLastGoodState({
   file: path.join(HERE, 'state-last-good.json'),
   backgroundMs: 10000,
@@ -906,24 +907,33 @@ async function backlogRows(strict = false) {
     if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
     return backlogCache.rows
   }
-  try {
-    const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
-    const rows = Array.isArray(result) ? result : result.issues || []
-    backlogCache = { at: Date.now(), rows: rows.map((i) => ({
-      id: i.identifier,
-      issueId: i.id,
-      projectId: i.projectId || null,
-      title: i.title,
-      status: 'backlog',
-      ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
-      ...(SCHEDULER_VIEW_ENABLED ? {
-        priority: i.priority || null,
-        createdAt: i.createdAt || null,
-        assigneeAgentId: i.assigneeAgentId || null,
-      } : {}),
-    })) }
-  } catch (error) { if (strict) throw error; backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true } }
-  return backlogCache.rows
+  if (backlogFlight) return backlogFlight
+  backlogFlight = (async () => {
+    try {
+      const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
+      const rows = Array.isArray(result) ? result : result.issues || []
+      backlogCache = { at: Date.now(), rows: rows.map((i) => ({
+        id: i.identifier,
+        issueId: i.id,
+        projectId: i.projectId || null,
+        title: i.title,
+        status: 'backlog',
+        ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
+        ...(SCHEDULER_VIEW_ENABLED ? {
+          priority: i.priority || null,
+          createdAt: i.createdAt || null,
+          assigneeAgentId: i.assigneeAgentId || null,
+        } : {}),
+      })) }
+    } catch (error) {
+      if (strict) throw error
+      backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true }
+    } finally {
+      backlogFlight = null
+    }
+    return backlogCache.rows
+  })()
+  return backlogFlight
 }
 
 async function schedulerEnrichRows(rows) {
