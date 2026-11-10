@@ -1119,16 +1119,34 @@ const boardState = { approvals: 0, titles: [], waiting: 0 }
 let selectedId = null
 let NAMES = {}
 let r1SeatsRefreshing = false
+let r1SeatNoticeTimer = null
 function updateR1AutomaticSeats(agents) {
   if (!OFFICE_LAYOUT.assignAgents || r1SeatsRefreshing || !agents.some(a => !Object.hasOwn(SEATS, a.name))) return
   // MOVEFIX I：极速模式没有走动导演，不该等导航就绪——否则新同事永远分不到座位。
   const walking = director.r1 === true
   if (walking && (!director.stats().prepared || !director.canRefreshSeats())) return
   const added = OFFICE_LAYOUT.assignAgents(agents)
+  if (!added.length) return
   let notice = document.getElementById('r1-auto-seat-notice')
   if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
-  notice.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
-  if (!added.length) return
+  const unseatedCount = OFFICE_LAYOUT.unseated.length
+  notice.replaceChildren()
+  const summary = document.createElement('span')
+  summary.textContent = `${added.length} 位新同事暂用自动座位${unseatedCount ? `，${unseatedCount} 位本组暂无空桌` : ''}，详情见面板`
+  const details = document.createElement('details')
+  const summaryNode = document.createElement('summary')
+  summaryNode.textContent = '详情'
+  details.append(summaryNode)
+  const list = document.createElement('div')
+  list.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
+  details.append(list)
+  const close = document.createElement('button')
+  close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '关闭提示'); close.style.cssText = 'float:right;margin-left:8px'
+  close.onclick = () => { notice.hidden = true }
+  notice.append(close, summary, details)
+  notice.hidden = false
+  if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
+  r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
   r1SeatsRefreshing = true
   try {
     const furniture = officeV3.get('furniture3'); furniture.refresh()
