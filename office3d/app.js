@@ -2163,6 +2163,8 @@ const toggleClean = () => document.body.classList.toggle('clean')
 $('fs').addEventListener('click', toggleFullscreen)
 keepFullscreenAwake({ onStatus: status => { $('fs').title = awakeMessage(status); if (['unsupported', 'denied', 'released'].includes(status)) ui.toast(awakeMessage(status), false) } })
 $('clean').addEventListener('click', toggleClean)
+const foodtruckDemoMenu = $('foodtruckDemoMenu')
+document.querySelector('#tools .grp .menu')?.appendChild(foodtruckDemoMenu)
 // 底部工具栏分组（查看 / 治理 / 设置）：点组按钮展开 / 收起菜单，同时只开一个；点菜单里的按钮后自动收起
 // （画质 / 亮度 / 边缘滚动 / 镜头跟随这类连续切换的带 data-keep，保持打开）；点别处或按 Esc 也收起。
 {
@@ -2475,7 +2477,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     projectTo(bv.headPos, bv.label, 0)
   })
   if (r1Npcs) r1Npcs.update(dt, t, projectTo)
-  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) $('foodtruckDemo').disabled = false }
+  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) { foodtruckDemoMenu.disabled = false; foodtruckDemoMenu.textContent = '▶ 餐车服务演示（未扣款）' } }
   for (const z of zoneLabels) projectTo(z.pos, z.el)
   declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
@@ -2622,10 +2624,10 @@ frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
-  const demoButton = $('foodtruckDemo'), note = $('foodtruckDemoNote')
+  const demoButton = foodtruckDemoMenu, note = $('foodtruckDemoNote')
   demoButton.hidden = false
   demoButton.textContent = '餐车文字演示 · 未扣款'
-  demoButton.onclick = () => { note.textContent = '演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。'; note.hidden = false }
+  demoButton.onclick = () => { note.innerHTML = '<button type="button" aria-label="关闭提示">✕</button><span>演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。</span>'; note.hidden = false; note.querySelector('button').onclick = () => { note.hidden = true }; setTimeout(() => { note.hidden = true }, 5000) }
 }
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
@@ -2681,7 +2683,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
             const vendor = r1Npcs.members.find(m => m.station.id === 'npc-kiosk-4')
-            const demoButton = $('foodtruckDemo')
+            const demoButton = foodtruckDemoMenu
             if (vendor && demoButton && !LITE.lite) {
               const bubble = document.createElement('span')
               bubble.className = 'foodtruck-demo-bubble'
@@ -2691,9 +2693,10 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
               demoButton.hidden = false
               demoButton.onclick = async () => {
                 if (demoButton.disabled) return
+                demoButton.textContent = '演示进行中…'
                 demoButton.disabled = true
                 try { await loadFoodtruckDemoExtras(loaded, vendor.station.gender) } catch { /* 缺动作时由演示模块显示文字回退 */ }
-                if (!foodtruckDemo.start(performance.now())) demoButton.disabled = false
+                if (!foodtruckDemo.start(performance.now())) { demoButton.disabled = false; demoButton.textContent = '▶ 餐车服务演示（未扣款）' }
               }
             }
             npcStatus.completedAt = performance.now()
