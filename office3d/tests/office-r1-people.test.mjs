@@ -141,7 +141,7 @@ test('SITFIX step 0 regression: pelvis is fitted to the measured cushion, not a 
   const ch = { avatar: 'Male_Adult_01', parts: { model }, group, solve: () => {} }
   ctx.fit(ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: 0, z: -.6 }, chair, handY: .84 })
   ch.solve(0)
-  assert.ok(Math.abs(ch.group.position.z) < .03, `seat correction should undo the old .12 m shift: ${ch.group.position.z}`)
+  assert.ok(ch.r1Seated.pelvis.depthMin - ch.r1Seated.cushion.depthMin <= .025 + 1e-6, 'the measured pelvis must sit against the cushion back without a gender offset')
   assert.ok(ch.r1Seated.cushion, 'the measured cushion bounds must be recorded')
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6), JSON.stringify(ch.r1Seated.pelvisOverflow))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
@@ -171,6 +171,7 @@ test('SITFIX R3 keeps hand-gap reporting while seat base is supplied by the call
   assert.equal(ch.r1Seated.seatBase, 0)
   assert.equal(ch.r1Seated.hands.length, 2)
   assert.ok(ch.r1Seated.hands.every(hand => Number.isFinite(hand.deskGap) && Number.isInteger(hand.clampedJoints)))
+  assert.ok(ch.r1Seated.pelvis.depthMin - ch.r1Seated.cushion.depthMin <= .025 + 1e-6)
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
 })

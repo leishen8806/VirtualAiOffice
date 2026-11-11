@@ -532,9 +532,10 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase
     return { shift: THREE.MathUtils.clamp(centreShift, low, high), conflict: false }
   }
   const updateSeatFit = () => {
-    // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
-    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
-    depth.shift = THREE.MathUtils.clamp(depth.shift, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
+    // Seat against the measured cushion back; centring left a visible gap to the backrest.
+    const depthMax = cushion.depthMax - .05
+    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, depthMax)
+    if (!depth.conflict) depth.shift = THREE.MathUtils.clamp(cushion.depthMin + .025 - lastPelvisBounds.depthMin, cushion.depthMin - lastPelvisBounds.depthMin, depthMax - lastPelvisBounds.depthMax)
     const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
     ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
     ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift
