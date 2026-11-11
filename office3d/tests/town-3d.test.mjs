@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkInBounds, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.mjs'
 import { readFileSync } from 'node:fs'
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
@@ -104,4 +104,13 @@ test('landmark labels choose visible silhouette profiles', () => {
   assert.equal(landmarkProfile('Independence Monument'), 'spire')
   assert.equal(landmarkProfile('Olympic Stadium'), 'stadium')
   assert.equal(landmarkProfile('Central Market'), 'block')
+})
+
+test('town renderer excludes landmarks outside the city data bounds', () => {
+  const data = JSON.parse(readFileSync(new URL('../town-3d/town-3d-data.json', import.meta.url), 'utf8'))
+  const map = JSON.parse(readFileSync(new URL('../town-map.json', import.meta.url), 'utf8'))
+  const inside = map.layers.landmarks.filter((item) => landmarkInBounds(item, data.bbox))
+  assert.ok(inside.some((item) => item.name === 'Independence Monument'))
+  assert.ok(!inside.some((item) => item.name === 'AEON Mall 2'))
+  assert.ok(!inside.some((item) => item.name === 'Wat Indochina'))
 })
