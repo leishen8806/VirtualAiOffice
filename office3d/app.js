@@ -1135,7 +1135,7 @@ function updateR1AutomaticSeats(agents) {
   const added = OFFICE_LAYOUT.assignAgents(agents)
   if (!added.length) return
   let notice = document.getElementById('r1-auto-seat-notice')
-  if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
+  if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:min(246px,calc(65vw - 12px));max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
   const unseatedCount = OFFICE_LAYOUT.unseated.length
   notice.replaceChildren()
   const summary = document.createElement('span')
