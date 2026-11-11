@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from './town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.mjs'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -66,12 +66,8 @@ function mergedBoxes(items) {
 function mergedPolygons(items, y, material) {
   const positions = [], indices = []; let vertex = 0
   for (const item of items) {
-    const rings = Array.isArray(item.rings) ? item.rings : [item.geometry || []]
-    const toPoint = ([lon, lat]) => { const p = geoToWorld(Number(lat), Number(lon), 10); return new THREE.Vector2(p.x, p.z) }
-    const outer = rings[0].map(toPoint).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
-    if (outer.length < 3) continue
-    const shape = new THREE.Shape(outer)
-    shape.holes = rings.slice(1).map(ring => new THREE.Path(ring.map(toPoint)))
+    const shape = polygonShape(THREE, item, (point) => polygonWorldPoint(THREE, point))
+    if (!shape) continue
     const geometry = new THREE.ShapeGeometry(shape)
     geometry.rotateX(-Math.PI / 2)
     geometry.translate(0, y, 0)

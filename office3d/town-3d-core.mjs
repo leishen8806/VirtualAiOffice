@@ -9,6 +9,20 @@ export function geoToWorld(lat, lon, unit = 10) {
   }
 }
 
+export function polygonShape(THREE, item, toPoint) {
+  const rings = Array.isArray(item.rings) ? item.rings : [item.geometry || []]
+  const outer = rings[0].map(toPoint).filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+  if (outer.length < 3) return null
+  const shape = new THREE.Shape(outer)
+  shape.holes = rings.slice(1).map((ring) => new THREE.Path(ring.map(toPoint)))
+  return shape
+}
+
+export function polygonWorldPoint(THREE, [lon, lat]) {
+  const point = geoToWorld(Number(lat), Number(lon), 10)
+  return new THREE.Vector2(point.x, -point.z)
+}
+
 export function defaultBuildingHeight(tags = {}) {
   const levels = Number.parseFloat(tags['building:levels'])
   const parsedHeight = Number.parseFloat(String(tags.height ?? '').replace(/m$/i, ''))
