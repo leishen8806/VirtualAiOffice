@@ -1466,13 +1466,23 @@ const server = http
     }
   })
 
+server.on('error', (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(`[office3d] EADDRINUSE: port ${PORT} is already in use; inspect the owning PID before retrying`)
+    process.exitCode = 1
+    process.exit(1)
+  }
+  else console.error('[office3d] server error', error)
+})
+
 let shuttingDown = false
 function shutdown() {
   if (shuttingDown) return
   shuttingDown = true
   server.close(() => process.exit(0))
-  setTimeout(() => process.exit(1), 5000).unref()
+  setTimeout(() => process.exit(0), 4000).unref()
 }
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 process.on('message', (message) => { if (message === 'shutdown') shutdown() })
+process.once('disconnect', shutdown)
