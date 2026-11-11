@@ -1388,6 +1388,7 @@ const server = http
         return json(200, await issueDetail(id))
       }
       if (url.pathname === '/state') {
+        // Cache the already-serialized, scope-specific body; access tokens and stale flags are set before this boundary.
         const cacheKey = wallScope ? 'wall' : lanUser ? 'lan' : 'local'
         const cached = typeof stateResponseCache === 'undefined' ? null : stateResponseCache.get(cacheKey)
         if (cached && Date.now() - cached.at < 5000) {
