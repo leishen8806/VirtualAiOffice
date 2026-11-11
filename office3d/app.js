@@ -1040,6 +1040,7 @@ function createAgentView(a, index) {
       outfit: a.name === 'Lead' ? 0x1b1e22 : 0x25292e, trim: VI.gold, skin: SKIN[index % SKIN.length], hair: HAIR[(index * 3) % HAIR.length], hairStyle: [0, 1, 0, 2, 0][index % 5],
       markTexture: zone === 'drlife' ? markTex : null, accent: ZONE_BADGE[zone] || VI.gold,
     })
+  ;(ch.group.userData ||= {}).agentId = a.id
   const home = workHome(seat)
   placeSeated(ch, home)
   let seatedHome = home
@@ -2523,10 +2524,19 @@ async function pollDailyBoard() {
 }
 
 async function poll() {
+  let response
   try {
-    const r = await fetch('/state', { cache: 'no-store' })
-    if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    applyState(await r.json())
+    response = await fetch('/state', { cache: 'no-store' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  } catch (e) {
+    $('conn').className = 'dot off'
+    setText('connText', '断开')
+    $('err').style.display = 'block'
+    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    return
+  }
+  try {
+    applyState(await response.json())
     if (!poll.merged) { // 首次有数据后、首帧之前完成当前档需要的合并与编译，避免先画完整重场景。
       poll.merged = true
       const snap = snapshot(scene)
@@ -2543,10 +2553,10 @@ async function poll() {
     setText('connText', '实时 · 每 3 秒刷新')
     $('err').style.display = 'none'
   } catch (e) {
-    $('conn').className = 'dot off'
-    setText('connText', '断开')
+    $('conn').className = 'dot live'
+    setText('connText', '实时 · 画面下轮重试')
     $('err').style.display = 'block'
-    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    $('err').textContent = `画面更新出错：${e.message}`
   }
 }
 function resize() {
@@ -2612,6 +2622,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
             if (!assets) { status.failed.push(personName); return }
             const ch = createPerson(assets, avatar), previous = v.char
+            ;(ch.group.userData ||= {}).agentId = v.id
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home, v)
             { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
