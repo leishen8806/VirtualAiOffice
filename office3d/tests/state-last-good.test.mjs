@@ -304,6 +304,16 @@ test('activity snapshot is cached for one minute and uses the reduced page size'
   assert.equal(upstream, 2)
 })
 
+test('close flushes the latest pending snapshot without waiting for the write interval', async t => {
+  const file = temp(t), first = fixture(), second = { ...fixture(), at: '2026-11-11T10:00:00.000Z' }
+  const manager = createLastGoodState({ file, persistMinMs: 60000, log() {} })
+  await manager.run(async () => first)
+  const pending = manager.run(async () => second)
+  await manager.close()
+  await pending
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, second.at)
+})
+
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
   let ms = start, builds = 0
   const cache = new Map(), read = async () => { builds++; return fixture() }
