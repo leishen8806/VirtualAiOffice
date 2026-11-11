@@ -232,13 +232,14 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
   const mergeRuns = fresh => {
     const key = run => run.id || `${run.agentId || ''}|${run.finishedAt || run.updatedAt || run.startedAt || run.createdAt || ''}|${run.status || ''}`
     const byId = new Map(runs.map(run => [key(run), run]))
-    let added = false
+    let changed = false
     for (const run of fresh) if (run) {
       const id = key(run)
-      if (!byId.has(id)) added = true
+      const old = byId.get(id)
+      if (!old || old.status !== run.status || old.finishedAt !== run.finishedAt || old.updatedAt !== run.updatedAt) changed = true
       byId.set(id, run)
     }
-    if (!added) return
+    if (!changed) return
     const cutoff = now() - 24 * 3600000
     runs = [...byId.values()].filter(run => runAt(run) >= cutoff).sort((a, b) => runAt(b) - runAt(a))
     persist()

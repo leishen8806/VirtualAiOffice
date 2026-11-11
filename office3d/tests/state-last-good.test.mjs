@@ -324,6 +324,18 @@ test('first request after an idle pause waits for a fresh background snapshot', 
   assert.equal(value.stale, undefined)
 })
 
+test('health persistence records status changes for an existing run id', async t => {
+  const file = temp(t), calls = []
+  const first = { id: 'r1', agentId: 'a', status: 'running', updatedAt: '2026-11-11T09:00:00Z' }
+  const second = { ...first, status: 'succeeded', finishedAt: '2026-11-11T09:01:00Z', updatedAt: '2026-11-11T09:01:00Z' }
+  const cache = createBackgroundHealth({ file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), get: async p => { calls.push(p); return p.endsWith('/agents') ? [{ id: 'a' }] : [first] } })
+  await cache.refresh()
+  cache.read()
+  const changed = createBackgroundHealth({ file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), get: async p => p.endsWith('/agents') ? [{ id: 'a' }] : [second] })
+  await changed.refresh()
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).runs[0].status, 'succeeded')
+})
+
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
   let ms = start, builds = 0
   const cache = new Map(), read = async () => { builds++; return fixture() }
