@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
+import { GLTFLoader } from './vendor/three/jsm/loaders/GLTFLoader.js'
 import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.mjs'
 import { setLoading, finishLoading } from './dr-loading.js'
 
@@ -36,6 +37,7 @@ scene.add(new THREE.HemisphereLight(0xeaf7ff, 0x6b5a49, 1.2))
 const sun = new THREE.DirectionalLight(0xfff4dd, 1.7); sun.position.set(120, 260, 80); scene.add(sun)
 const worldGroup = new THREE.Group(); scene.add(worldGroup)
 window.__town3d = { scene, worldGroup, renderer }
+if (captureMode) window.__town3d.camera = camera
 const mat = {
   ground: new THREE.MeshStandardMaterial({ color: 0xe5dccb, roughness: 1 }),
   building: new THREE.MeshStandardMaterial({ color: 0xf2eee5, roughness: .9 }),
@@ -128,11 +130,13 @@ function extrudedBuildings(items, simplified = false) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setIndex(indices); g.computeVertexNormals(); return g
 }
 function addRoads(data) { mergedRoads(data) }
-function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon),profile=landmarkProfile(label),group=new THREE.Group();group.name=label;group.position.set(p.x,0,p.z);const add=(geometry,y)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.y=y;group.add(mesh)};if(profile==='stadium'){add(new THREE.CylinderGeometry(5,5,1.5,16),.75);const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.65,5,20),material);ring.rotation.x=Math.PI/2;ring.position.y=1.7;group.add(ring)}else if(profile==='spire'){add(new THREE.BoxGeometry(8,1.2,8),.6);add(new THREE.CylinderGeometry(1.8,3.2,height*.5,8),1.2+height*.25);add(new THREE.ConeGeometry(3.1,height*.38,8),1.2+height*.69)}else{add(new THREE.BoxGeometry(8,height*.58,8),height*.29);add(new THREE.BoxGeometry(5,height*.36,5),height*.76)}worldGroup.add(group);const el=document.createElement('div');el.className='town3d-label';el.textContent=label;el.dataset.world=`${p.x},${height},${p.z}`;document.body.append(el);return group}
+function marker(lat,lon,height,material,label,model){const p=geoToWorld(lat,lon),profile=landmarkProfile(label),group=new THREE.Group();group.name=label;group.position.set(p.x,model ? -.02 : 0,p.z);const add=(geometry,y)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.y=y;group.add(mesh)};if(model)group.add(model.clone(true));else if(profile==='stadium'){add(new THREE.CylinderGeometry(5,5,1.5,16),.75);const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.65,5,20),material);ring.rotation.x=Math.PI/2;ring.position.y=1.7;group.add(ring)}else if(profile==='spire'){add(new THREE.BoxGeometry(8,1.2,8),.6);add(new THREE.CylinderGeometry(1.8,3.2,height*.5,8),1.2+height*.25);add(new THREE.ConeGeometry(3.1,height*.38,8),1.2+height*.69)}else{add(new THREE.BoxGeometry(8,height*.58,8),height*.29);add(new THREE.BoxGeometry(5,height*.36,5),height*.76)}worldGroup.add(group);const el=document.createElement('div');el.className='town3d-label';el.textContent=label;el.dataset.world=`${p.x},${height},${p.z}`;document.body.append(el);return group}
 async function boot(){
   loaderApi.progress(8, '下载城市数据…')
   const [res, mapRes] = await Promise.all([fetch('/town-3d/town-3d-data.json'), fetch('/town-map.json')]); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); const mapData=mapRes.ok ? await mapRes.json() : null; loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
-  const buildings=data.buildings.map(b=>{const [lon0,lat0,lon1,lat1]=(b.bbox||[]).map(Number); if(![lon0,lat0,lon1,lat1].every(Number.isFinite)) return null; const a=geoToWorld(lat0,lon0),z=geoToWorld(lat1,lon1); return {...b,bboxWorld:[Math.min(a.x,z.x),Math.min(a.z,z.z),Math.max(a.x,z.x),Math.max(a.z,z.z)],heightWorld:Number(b.height)/10}}).filter(Boolean)
+  const monument = mapData?.layers?.landmarks?.find(item => item.name === 'Independence Monument')
+  const monumentModel = await new GLTFLoader().loadAsync('./assets/models/landmarks/independence-monument.glb').then(result => result.scene).catch(error => { console.warn('Independence Monument model unavailable; using the town placeholder', error); return null })
+  const buildings=data.buildings.map(b=>{const [lon0,lat0,lon1,lat1]=(b.bbox||[]).map(Number); if(![lon0,lat0,lon1,lat1].every(Number.isFinite)) return null; const a=geoToWorld(lat0,lon0),z=geoToWorld(lat1,lon1); return {...b,bboxWorld:[Math.min(a.x,z.x),Math.min(a.z,z.z),Math.max(a.x,z.x),Math.max(a.z,z.z)],heightWorld:Number(b.height)/10}}).filter(Boolean).filter(building => building.id !== monument?.osm)
   const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
   chunks.forEach((chunk, index) => { worldGroup.add(new THREE.Mesh(extrudedBuildings(chunk.items, quality === 'low'),mat.building)); loaderApi.progress(40 + Math.round((index + 1) / Math.max(1, chunks.length) * 45), `生成建筑（${index + 1}/${chunks.length}）…`) })
@@ -143,7 +147,7 @@ async function boot(){
   addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
   const landmarks = (mapData?.layers?.landmarks || []).map(item => [item.name, item.lat, item.lon]).filter(([, lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon))
-  landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
+  landmarks.forEach(([label,lat,lon])=>marker(lat,lon,label === 'Independence Monument' ? 25.47 : 10,mat.markerWarehouse,label,label === 'Independence Monument' ? monumentModel : null))
   const landmarkList=document.querySelector('#town3dLandmarkList'); if (landmarkList) landmarkList.remove()
   const ground=groundPlan(buildings),floor=new THREE.Mesh(new THREE.PlaneGeometry(ground.width,ground.depth),mat.ground); floor.name='town-ground'; floor.rotation.x=-Math.PI/2; floor.position.set(ground.x,-.02,ground.z); worldGroup.add(floor); fitCamera()
   status.textContent=`3D ${quality}｜建筑 ${sampled.length}/${buildings.length}｜分块 ${chunks.length}（${Object.keys(data.chunks||{}).length} 数据块）｜calls – / tris –`; loaderApi.progress(95, '画出第一帧…')
