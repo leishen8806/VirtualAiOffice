@@ -1535,11 +1535,21 @@ function shutdown() {
     try { service?.stop?.() } catch (error) { console.error('[shutdown] service stop failed', error) }
   }
   const closeState = Promise.resolve(lastGoodState.close()).catch((error) => console.error('[shutdown] state close failed', error))
+  try { server.closeAllConnections?.() } catch (error) { console.error('[shutdown] close connections failed', error) }
   const closed = new Promise(resolve => server.close(() => resolve()))
-  Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 10000))])
+  Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 4000))])
     .then(() => process.exit(0))
     .catch(() => process.exit(1))
 }
+server.on('error', (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(`[office3d] EADDRINUSE: port ${PORT} is already in use; inspect the owning PID before retrying`)
+    process.exitCode = 1
+    process.exit(1)
+  }
+  else console.error('[office3d] server error', error)
+})
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 process.on('message', (message) => { if (message === 'shutdown') shutdown() })
+process.once('disconnect', shutdown)
