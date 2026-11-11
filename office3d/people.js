@@ -429,15 +429,28 @@ export function r1SeatedAssets(P, avatar, profile, personName) {
 }
 
 export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
+const R1_SEAT_WARNED = new Set()
 export function computeR1SeatBase(report, targetGap = .38) {
   if (Array.isArray(report?.pelvisOverflow) && report.pelvisOverflow.some(value => Number(value) > 1e-6)) return 0
   if (!report?.hands?.length) return 0
   const gap = Math.max(...report.hands.map(hand => Number(hand.deskGap) || 0))
   return Math.min(.2, Math.max(0, gap - targetGap))
 }
-export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase = 0 }) {
+export function fitR1SeatedPerson(ch, options) {
+  const { home, handY = .82, seatBase = 0 } = options
   if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
   if (!Number.isFinite(seatBase) || seatBase < 0 || seatBase > .2) throw new Error('R1 seat base outside approved range')
+  const solve = ch.solve
+  try { return fitR1SeatedPersonMeasured(ch, options) }
+  catch (error) {
+    ch.solve = solve
+    ch.group.position.set(home.x, 0, home.z)
+    const identity = ch.group.userData.agentId || ch.avatar || 'unknown', key = `${identity}@${home.x},${home.z}`
+    if (!R1_SEAT_WARNED.has(key)) { R1_SEAT_WARNED.add(key); console.warn(`R1 ${identity} 座椅测量失败，保留默认坐姿：${error.message}`) }
+    return ch.r1Seated = { fallback: true, seatBase: 0, error: error.message }
+  }
+}
+function fitR1SeatedPersonMeasured(ch, { home, desk, chair, handY = .82, seatBase = 0 }) {
   const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
   model.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return
@@ -461,7 +474,8 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase
     }
   })
   chair.updateWorldMatrix(true, true)
-  const hit = new THREE.Raycaster(new THREE.Vector3(home.x, 2, home.z), new THREE.Vector3(0, -1, 0)).intersectObject(chair, true).find(h => h.face.normal.y > .8)
+  const chairCentre = new THREE.Box3().setFromObject(chair).getCenter(new THREE.Vector3())
+  const hit = [[home.x, home.z], [chairCentre.x, chairCentre.z]].map(([x, z]) => new THREE.Raycaster(new THREE.Vector3(x, 2, z), new THREE.Vector3(0, -1, 0)).intersectObject(chair, true).find(h => h.face.normal.y > .8 && h.point.y < .75)).find(Boolean)
   if (!hit || !pelvis.length) throw new Error('R1 cannot measure the actual seat or pelvis')
   const radians = Math.PI / 180, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw)
   const forwardAxis = new THREE.Vector3(-sin, 0, -cos), lateralAxis = new THREE.Vector3(cos, 0, -sin)
@@ -532,9 +546,10 @@ export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase
     return { shift: THREE.MathUtils.clamp(centreShift, low, high), conflict: false }
   }
   const updateSeatFit = () => {
-    // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
-    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
-    depth.shift = THREE.MathUtils.clamp(depth.shift, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
+    // Seat against the measured cushion back; centring left a visible gap to the backrest.
+    const depthMax = cushion.depthMax - .05
+    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, depthMax)
+    if (!depth.conflict) depth.shift = THREE.MathUtils.clamp(cushion.depthMin + .025 - lastPelvisBounds.depthMin, cushion.depthMin - lastPelvisBounds.depthMin, depthMax - lastPelvisBounds.depthMax)
     const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
     ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
     ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift

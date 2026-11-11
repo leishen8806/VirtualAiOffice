@@ -141,7 +141,7 @@ test('SITFIX step 0 regression: pelvis is fitted to the measured cushion, not a 
   const ch = { avatar: 'Male_Adult_01', parts: { model }, group, solve: () => {} }
   ctx.fit(ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: 0, z: -.6 }, chair, handY: .84 })
   ch.solve(0)
-  assert.ok(Math.abs(ch.group.position.z) < .03, `seat correction should undo the old .12 m shift: ${ch.group.position.z}`)
+  assert.ok(ch.r1Seated.pelvis.depthMin - ch.r1Seated.cushion.depthMin <= .025 + 1e-6, 'the measured pelvis must sit against the cushion back without a gender offset')
   assert.ok(ch.r1Seated.cushion, 'the measured cushion bounds must be recorded')
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6), JSON.stringify(ch.r1Seated.pelvisOverflow))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
@@ -171,6 +171,7 @@ test('SITFIX R3 keeps hand-gap reporting while seat base is supplied by the call
   assert.equal(ch.r1Seated.seatBase, 0)
   assert.equal(ch.r1Seated.hands.length, 2)
   assert.ok(ch.r1Seated.hands.every(hand => Number.isFinite(hand.deskGap) && Number.isInteger(hand.clampedJoints)))
+  assert.ok(ch.r1Seated.pelvis.depthMin - ch.r1Seated.cushion.depthMin <= .025 + 1e-6)
   assert.ok(ch.r1Seated.pelvisOverflow.every(value => value <= 1e-6))
   geometry.dispose(); mesh.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
 })
@@ -184,4 +185,40 @@ test('SITFIX R3 computes a bounded seat base from measured hand gap, without nam
   assert.equal(ctx.base({ hands: [{ deskGap: .49 }], pelvisOverflow: [0, .001, 0, 0] }), 0)
   assert.equal(ctx.base({ hands: [] }), 0)
   assert.doesNotMatch(source, /R1_SEATED_FORWARD/)
+})
+
+test('PANEL-RENDER-CRASH measures a moved chair at its live bounds and contains a broken rig', () => {
+  const source = readFileSync(new URL('../people.js', import.meta.url), 'utf8')
+  const warnings = [], ctx = { THREE, console: { warn: message => warnings.push(message) } }
+  vm.runInNewContext(source.slice(source.indexOf('export const R1_ARM_LIMITS')).replaceAll('export ', '') + '\nthis.fit=fitR1SeatedPerson', ctx)
+  const makeCharacter = ({ pelvisName = 'Bip01_Pelvis', id = 'agent-ok' } = {}) => {
+    const model = new THREE.Group(), pelvis = new THREE.Bone(); pelvis.name = pelvisName; model.add(pelvis)
+    for (const side of ['L', 'R']) {
+      const upper = new THREE.Bone(), forearm = new THREE.Bone(), hand = new THREE.Bone()
+      ;[upper, forearm, hand].forEach((bone, index) => { bone.name = `Bip01_${side}_${['UpperArm', 'Forearm', 'Hand'][index]}` })
+      upper.position.set(side === 'L' ? -.2 : .2, .8, 0); forearm.position.y = -.25; hand.position.y = -.25
+      pelvis.add(upper); upper.add(forearm); forearm.add(hand)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, .3, 0, .02, .3, 0, 0, .32, .01], 3))
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4))
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], 4))
+    const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshBasicMaterial()); model.add(mesh); mesh.bind(new THREE.Skeleton([pelvis]))
+    const group = new THREE.Group(); group.userData.agentId = id; group.add(model)
+    return { ch: { avatar: 'Male_Adult_01', parts: { model }, group, solve: () => {} }, geometry, material: mesh.material }
+  }
+  const chair = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .6), new THREE.MeshBasicMaterial()); chair.position.set(.8, .35, 0)
+  const good = makeCharacter()
+  assert.doesNotThrow(() => ctx.fit(good.ch, { home: { x: 0, z: 0, yaw: 0 }, desk: { x: .8, z: -.6 }, chair, handY: .84 }))
+  assert.equal(good.ch.r1Seated.fallback, undefined)
+  assert.ok(good.ch.group.position.x > .4, 'the person follows the chair instead of raycasting the stale seat anchor')
+
+  const broken = makeCharacter({ pelvisName: 'Pelvis-without-approved-name', id: 'agent-broken' })
+  const options = { home: { x: 2, z: 3, yaw: 0 }, desk: { x: 2, z: 2.4 }, chair, handY: .84 }
+  assert.doesNotThrow(() => ctx.fit(broken.ch, options))
+  assert.doesNotThrow(() => ctx.fit(broken.ch, options))
+  assert.equal(broken.ch.r1Seated.fallback, true)
+  assert.equal(warnings.length, 1, 'the same person and seat warns only once')
+  assert.match(warnings[0], /agent-broken/)
+  good.geometry.dispose(); good.material.dispose(); broken.geometry.dispose(); broken.material.dispose(); chair.geometry.dispose(); chair.material.dispose()
 })
