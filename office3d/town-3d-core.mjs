@@ -18,6 +18,11 @@ export function polygonShape(THREE, item, toPoint) {
   return shape
 }
 
+export function polygonWorldPoint(THREE, [lon, lat]) {
+  const point = geoToWorld(Number(lat), Number(lon), 10)
+  return new THREE.Vector2(point.x, -point.z)
+}
+
 export function defaultBuildingHeight(tags = {}) {
   const levels = Number.parseFloat(tags['building:levels'])
   const parsedHeight = Number.parseFloat(String(tags.height ?? '').replace(/m$/i, ''))
