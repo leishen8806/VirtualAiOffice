@@ -155,7 +155,8 @@ function world() {
 }
 const PAPERCLIP = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
 const PORT = Number(process.env.OFFICE3D_PORT || 3200)
-const COMPANY = fs.readFileSync(path.join(HERE, '..', 'company-id.txt'), 'utf8').trim()
+const COMPANY_ID_FILE = process.env.OFFICE3D_COMPANY_ID_FILE || path.join(HERE, '..', 'company-id.txt')
+const COMPANY = fs.readFileSync(COMPANY_ID_FILE, 'utf8').trim()
 const townMap = loadTownMap({ file: path.join(HERE, 'town-map.json'), log: console.log })
 const tenancy = createTenancy({ dir: HERE, now: Date.now, log: console.log, paperclipBaseUrl: PAPERCLIP })
 tenancy.warnIfPaperclipNotLoopback()
