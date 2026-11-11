@@ -1041,6 +1041,7 @@ function createAgentView(a, index) {
       outfit: a.name === 'Lead' ? 0x1b1e22 : 0x25292e, trim: VI.gold, skin: SKIN[index % SKIN.length], hair: HAIR[(index * 3) % HAIR.length], hairStyle: [0, 1, 0, 2, 0][index % 5],
       markTexture: zone === 'drlife' ? markTex : null, accent: ZONE_BADGE[zone] || VI.gold,
     })
+  ;(ch.group.userData ||= {}).agentId = a.id
   const home = workHome(seat)
   placeSeated(ch, home)
   let seatedHome = home
@@ -1120,16 +1121,34 @@ const boardState = { approvals: 0, titles: [], waiting: 0 }
 let selectedId = null
 let NAMES = {}
 let r1SeatsRefreshing = false
+let r1SeatNoticeTimer = null
 function updateR1AutomaticSeats(agents) {
   if (!OFFICE_LAYOUT.assignAgents || r1SeatsRefreshing || !agents.some(a => !Object.hasOwn(SEATS, a.name))) return
   // MOVEFIX I：极速模式没有走动导演，不该等导航就绪——否则新同事永远分不到座位。
   const walking = director.r1 === true
   if (walking && (!director.stats().prepared || !director.canRefreshSeats())) return
   const added = OFFICE_LAYOUT.assignAgents(agents)
+  if (!added.length) return
   let notice = document.getElementById('r1-auto-seat-notice')
   if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
-  notice.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
-  if (!added.length) return
+  const unseatedCount = OFFICE_LAYOUT.unseated.length
+  notice.replaceChildren()
+  const summary = document.createElement('span')
+  summary.textContent = `${added.length} 位新同事暂用自动座位${unseatedCount ? `，${unseatedCount} 位本组暂无空桌` : ''}，详情见面板`
+  const details = document.createElement('details')
+  const summaryNode = document.createElement('summary')
+  summaryNode.textContent = '详情'
+  details.append(summaryNode)
+  const list = document.createElement('div')
+  list.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
+  details.append(list)
+  const close = document.createElement('button')
+  close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '关闭提示'); close.style.cssText = 'float:right;margin-left:8px'
+  close.onclick = () => { notice.hidden = true }
+  notice.append(close, summary, details)
+  notice.hidden = false
+  if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
+  r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
   r1SeatsRefreshing = true
   try {
     const furniture = officeV3.get('furniture3'); furniture.refresh()
@@ -2145,6 +2164,8 @@ const toggleClean = () => document.body.classList.toggle('clean')
 $('fs').addEventListener('click', toggleFullscreen)
 keepFullscreenAwake({ onStatus: status => { $('fs').title = awakeMessage(status); if (['unsupported', 'denied', 'released'].includes(status)) ui.toast(awakeMessage(status), false) } })
 $('clean').addEventListener('click', toggleClean)
+const foodtruckDemoMenu = $('foodtruckDemoMenu')
+document.querySelector('#tools .grp .menu')?.appendChild(foodtruckDemoMenu)
 // 底部工具栏分组（查看 / 治理 / 设置）：点组按钮展开 / 收起菜单，同时只开一个；点菜单里的按钮后自动收起
 // （画质 / 亮度 / 边缘滚动 / 镜头跟随这类连续切换的带 data-keep，保持打开）；点别处或按 Esc 也收起。
 {
@@ -2242,6 +2263,7 @@ function pick(cx, cy, shift = false) {
     return
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
+    closeOfficeR1Inspect()
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     document.getElementById('wh-r1-inspector-panel')?.remove()
     if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
@@ -2257,14 +2279,17 @@ function placeOfficeR1Inspector(panel) {
   panel.style.top = `${Math.round(placed.top)}px`
   panel.style.right = 'auto'
 }
+function closeOfficeR1Inspect() { document.getElementById('office-r1-inspector-panel')?.remove() }
 function showOfficeR1Inspect(item) {
   let panel = document.getElementById('office-r1-inspector-panel')
-  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
-  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px 34px 10px 10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  panel.innerHTML = `<button type="button" class="office-r1-inspector-close" aria-label="关闭区域卡片" style="position:absolute;right:5px;top:5px;min-width:24px;min-height:24px;border:0;border-radius:6px;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer">×</button><strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.querySelector('.office-r1-inspector-close').addEventListener('click', closeOfficeR1Inspect)
   panel.hidden = false
   requestAnimationFrame(() => placeOfficeR1Inspector(panel))
   if (!panel.dataset.repositionBound) { addEventListener('resize', () => placeOfficeR1Inspector(panel)); panel.dataset.repositionBound = 'true' }
 }
+addEventListener('keydown', e => { if (e.key === 'Escape') closeOfficeR1Inspect() })
 function showWhR1Inspect(item) {
   if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }
   let panel = document.getElementById('wh-r1-inspector-panel')
@@ -2453,7 +2478,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     projectTo(bv.headPos, bv.label, 0)
   })
   if (r1Npcs) r1Npcs.update(dt, t, projectTo)
-  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) $('foodtruckDemo').disabled = false }
+  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) { foodtruckDemoMenu.disabled = false; foodtruckDemoMenu.textContent = '▶ 餐车服务演示（未扣款）' } }
   for (const z of zoneLabels) projectTo(z.pos, z.el)
   declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
@@ -2524,10 +2549,19 @@ async function pollDailyBoard() {
 }
 
 async function poll() {
+  let response
   try {
-    const r = await fetch('/state', { cache: 'no-store' })
-    if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    applyState(await r.json())
+    response = await fetch('/state', { cache: 'no-store' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  } catch (e) {
+    $('conn').className = 'dot off'
+    setText('connText', '断开')
+    $('err').style.display = 'block'
+    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    return
+  }
+  try {
+    applyState(await response.json())
     if (!poll.merged) { // 首次有数据后、首帧之前完成当前档需要的合并与编译，避免先画完整重场景。
       poll.merged = true
       const snap = snapshot(scene)
@@ -2544,10 +2578,10 @@ async function poll() {
     setText('connText', '实时 · 每 3 秒刷新')
     $('err').style.display = 'none'
   } catch (e) {
-    $('conn').className = 'dot off'
-    setText('connText', '断开')
+    $('conn').className = 'dot live'
+    setText('connText', '实时 · 画面下轮重试')
     $('err').style.display = 'block'
-    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    $('err').textContent = `画面更新出错：${e.message}`
   }
 }
 function resize() {
@@ -2591,10 +2625,10 @@ frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
-  const demoButton = $('foodtruckDemo'), note = $('foodtruckDemoNote')
+  const demoButton = foodtruckDemoMenu, note = $('foodtruckDemoNote')
   demoButton.hidden = false
   demoButton.textContent = '餐车文字演示 · 未扣款'
-  demoButton.onclick = () => { note.textContent = '演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。'; note.hidden = false }
+  demoButton.onclick = () => { note.innerHTML = '<button type="button" aria-label="关闭提示">✕</button><span>演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。</span>'; note.hidden = false; note.querySelector('button').onclick = () => { note.hidden = true }; setTimeout(() => { note.hidden = true }, 5000) }
 }
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
@@ -2613,6 +2647,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
             if (!assets) { status.failed.push(personName); return }
             const ch = createPerson(assets, avatar), previous = v.char
+            ;(ch.group.userData ||= {}).agentId = v.id
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home, v)
             { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
@@ -2649,7 +2684,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
             const vendor = r1Npcs.members.find(m => m.station.id === 'npc-kiosk-4')
-            const demoButton = $('foodtruckDemo')
+            const demoButton = foodtruckDemoMenu
             if (vendor && demoButton && !LITE.lite) {
               const bubble = document.createElement('span')
               bubble.className = 'foodtruck-demo-bubble'
@@ -2659,9 +2694,10 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
               demoButton.hidden = false
               demoButton.onclick = async () => {
                 if (demoButton.disabled) return
+                demoButton.textContent = '演示进行中…'
                 demoButton.disabled = true
                 try { await loadFoodtruckDemoExtras(loaded, vendor.station.gender) } catch { /* 缺动作时由演示模块显示文字回退 */ }
-                if (!foodtruckDemo.start(performance.now())) demoButton.disabled = false
+                if (!foodtruckDemo.start(performance.now())) { demoButton.disabled = false; demoButton.textContent = '▶ 餐车服务演示（未扣款）' }
               }
             }
             npcStatus.completedAt = performance.now()
