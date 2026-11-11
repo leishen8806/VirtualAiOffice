@@ -15,7 +15,7 @@ import { createIssuePager } from './issue-pagination.mjs'
 const PROJECT_NAME = '运营与知识库'
 const LEAD = 'Lead'
 const MAX_CANDIDATES = 8, DAILY_CAP = 5, PERSON_CAP = 2
-const AT_MIN = 8 * 60 + 35 // 8:35
+const DEFAULT_AT_MIN = 8 * 60 + 35 // 8:35
 const MONEY_ROLES = ['GoSenior', 'DBEngineer']
 export const MONEY_RE = /资金|账务|入账|提现|鉴权|IAM|迁移|密钥|ledger|withdraw|payout|migration|secret/i
 const clip = (t, n) => { const s = String(t || '').replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s }
@@ -45,6 +45,13 @@ export function createStandup({ dir, workhoursFile, company, get, send, notify, 
   const issues = createIssuePager({ company, get, warn: log, label: 'standup' })
 
   const workday = (dow) => { try { return (JSON.parse(fs.readFileSync(workhoursFile, 'utf8')).days || [1, 2, 3, 4, 5, 6]).includes(DOW[dow]) } catch { return dow !== 'Sun' } }
+  const standupMinute = () => {
+    try {
+      const at = JSON.parse(fs.readFileSync(workhoursFile, 'utf8')).standup?.at || '08:35'
+      const [h, m] = String(at).split(':').map(Number)
+      return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : DEFAULT_AT_MIN
+    } catch { return DEFAULT_AT_MIN }
+  }
   const asList = (r) => (Array.isArray(r) ? r : r.issues || r.comments || [])
   const comments = async (id) => asList(await get(`/api/issues/${id}/comments`)).filter((c) => c.authorAgentId)
 
@@ -211,7 +218,7 @@ export function createStandup({ dir, workhoursFile, company, get, send, notify, 
     try {
       const n = phnom()
       const today = db.days.filter((d) => d.date === n.date)
-      if (workday(n.dow) && n.min >= AT_MIN && n.min < 12 * 60 && !today.length) await open(false)
+      if (workday(n.dow) && n.min >= standupMinute() && n.min < 12 * 60 && !today.length) await open(false)
       for (const day of db.days.filter((d) => ['proposing', 'voting', 'awaiting'].includes(d.state))) {
         if (day.state === 'proposing') {
           const iss = await get(`/api/issues/${day.leadIssueId}`)
