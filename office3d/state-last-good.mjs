@@ -91,12 +91,22 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
   }
   return {
     async run(build) {
+      const idleResume = lastRequestAt > 0 && now() - lastRequestAt > 90000
       lastRequestAt = now()
       if (backgroundMs > 0 && !backgroundTimer) {
         backgroundTimer = setInterval(() => { if (saved && !flight && lastRequestAt && now() - lastRequestAt <= 90000) start(build) }, backgroundMs)
         backgroundTimer.unref?.()
       }
       if (backgroundMs > 0 && saved) {
+        if (idleResume) {
+          const pending = start(build)
+          let timer
+          const timeout = new Promise((resolve, reject) => {
+            timer = setTimeout(() => { try { resolve(fallback()) } catch (error) { reject(error) } }, timeoutMs)
+          })
+          const value = await Promise.race([pending, timeout]).finally(() => clearTimeout(timer))
+          return clone(value)
+        }
         if (!flight && now() - refreshAt >= backgroundMs) start(build)
         const ageMs = Math.max(0, now() - refreshAt)
         if (failures < 3 && ageMs <= staleAfterMs) return clone(saved)

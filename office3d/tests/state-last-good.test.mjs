@@ -314,6 +314,16 @@ test('close flushes the latest pending snapshot without waiting for the write in
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, second.at)
 })
 
+test('first request after an idle pause waits for a fresh background snapshot', async t => {
+  let ms = start, builds = 0
+  const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 1000, timeoutMs: 100, log() {} })
+  await manager.run(async () => { builds++; return fixture() })
+  ms += 120000
+  const value = await manager.run(async () => { builds++; return { ...fixture(), at: new Date(ms).toISOString() } })
+  assert.equal(builds, 2)
+  assert.equal(value.stale, undefined)
+})
+
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
   let ms = start, builds = 0
   const cache = new Map(), read = async () => { builds++; return fixture() }
