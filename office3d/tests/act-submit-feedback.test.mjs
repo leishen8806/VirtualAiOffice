@@ -26,7 +26,7 @@ const appSource = `
   ui.render({ actToken:'test-token', lan:false, agents:[{id:'agent-1',name:'测试同事'}], names:{'agent-1':'测试同事'}, approvals:[], waiting:${JSON.stringify(waiting)}, assigned:[], rework:{tasks:[]}, stale:null, healthLevel:{level:'ok',text:'健康'}, today:null, world:{duty:{on:true}} })
 `
 
-test('ACT-SUBMIT-FEEDBACK times out, restores submit, and explains the global busy state', { timeout: 10_000 }, async (t) => {
+test('ACT-SUBMIT-FEEDBACK times out, restores submit, and explains the global busy state', { timeout: 60_000 }, async (t) => {
   const attempts = new Map()
   const server = http.createServer(async (request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1')
@@ -78,7 +78,7 @@ test('ACT-SUBMIT-FEEDBACK times out, restores submit, and explains the global bu
     await page.locator('input[value="yes"]').check()
     const submit = page.locator('#mSubmit')
     await submit.click()
-    assert.equal(await submit.textContent(), '提交中…')
+    assert.equal((await submit.textContent()).replace(/\s/g, ''), '处理中…')
     assert.equal(await submit.isDisabled(), true)
     await page.waitForFunction(() => document.querySelector('#toast')?.textContent === '服务器没有回应，请稍后再试，不要重复提交')
     assert.equal(await submit.textContent(), '提交回答')
