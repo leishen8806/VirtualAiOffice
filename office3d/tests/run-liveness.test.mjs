@@ -48,6 +48,19 @@ test('a missing process table preserves the prior pid check', () => {
   assert.deepEqual(runAlive(run, null, () => false), { alive: false, via: null, descendants: [] })
 })
 
+test('a controller-managed adapter is alive without a local process id', () => {
+  const managed = { status: 'running', processPid: null, runnerProfileJson: { adapterDispatch: { adapterType: 'paperclip_runner' } } }
+  assert.deepEqual(runAlive(managed, [], () => false), { alive: true, via: 'adapter', descendants: [] })
+  assert.equal(shouldBlockCancel(runAlive(managed, [], () => false)), true)
+})
+
+test('a summary row without pid is alive when the full run detail has a pid', () => {
+  const summary = { id: 'run-full-detail', status: 'running', processPid: null }
+  const full = { ...summary, processPid: 4321, processStartedAt: startedAt, runnerProfileJson: { adapterDispatch: { adapterType: 'codex_local' } } }
+  assert.equal(summary.processPid, null)
+  assert.equal(runAlive(full, [], pid => pid === 4321).alive, true)
+})
+
 test('a descendant with at least one second of CPU growth marks a run busy', () => {
   const previous = table([[101, 100, 'node.exe']]).map((row) => ({ ...row, cpuSeconds: 10 }))
   const current = table([[101, 100, 'node.exe']]).map((row) => ({ ...row, cpuSeconds: 11 }))

@@ -61,6 +61,8 @@ let weather = null
 let nowcast = null
 let sun = { sunrise: null, sunset: null }
 let radar = null // { ms, level, nearby }
+const backgroundTimers = new Set()
+const trackTimer = timer => { backgroundTimers.add(timer); return timer }
 const RAIN_CODE = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
 const cloudCode = (cloud) => (cloud >= 75 ? 3 : cloud >= 45 ? 2 : cloud >= 20 ? 1 : 0)
 function pnhIso(ms) { const t = localParts(new Date(ms), PNH.tz); return `${t.y}-${String(t.mo).padStart(2, '0')}-${String(t.d).padStart(2, '0')}T${String(t.h).padStart(2, '0')}:${String(t.mi).padStart(2, '0')}` }
@@ -139,7 +141,7 @@ async function refreshWeather() {
   if (w) weather = { ...w, sunrise: sun.sunrise, sunset: sun.sunset, fetchedAt: new Date(fetchedAt).toISOString() }
 }
 refreshWeather()
-setInterval(refreshWeather, 60 * 1000) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
+trackTimer(setInterval(refreshWeather, 60 * 1000)) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
 
 function world() {
   let cfg = null
@@ -153,7 +155,8 @@ function world() {
 }
 const PAPERCLIP = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
 const PORT = Number(process.env.OFFICE3D_PORT || 3200)
-const COMPANY = fs.readFileSync(path.join(HERE, '..', 'company-id.txt'), 'utf8').trim()
+const COMPANY_ID_FILE = process.env.OFFICE3D_COMPANY_ID_FILE || path.join(HERE, '..', 'company-id.txt')
+const COMPANY = fs.readFileSync(COMPANY_ID_FILE, 'utf8').trim()
 const townMap = loadTownMap({ file: path.join(HERE, 'town-map.json'), log: console.log })
 const tenancy = createTenancy({ dir: HERE, now: Date.now, log: console.log, paperclipBaseUrl: PAPERCLIP })
 tenancy.warnIfPaperclipNotLoopback()
@@ -400,10 +403,11 @@ async function act(a, options = {}) {
   }
   if (a.type === 'cancel_run') { // 取消一次运行：进程还在就停掉；进程已退出的残留记录就把它标掉
     need(UUID.test(a.runId || ''), '运行 id 不对')
-    const runRows = await get(`/api/companies/${COMPANY}/heartbeat-runs?limit=1000`)
-    const run = (Array.isArray(runRows) ? runRows : runRows.runs || []).find((row) => row.id === a.runId)
-    const liveness = run && runAlive(run, await readProcessTable())
+    const run = await fullRunDetail(a.runId)
+    if (!run) throw Object.assign(new Error('运行状态未知，不能取消。'), { status: 409 })
+    const liveness = runAlive(run, await readProcessTable())
     if (shouldBlockCancel(liveness)) {
+      if (liveness.via === 'adapter') throw Object.assign(new Error('运行由 Paperclip 控制器托管，不能按本地进程号取消。'), { status: 409 })
       const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
       throw Object.assign(new Error(`进程仍在运行：${names}（${liveness.descendants.length} 个后代）；取消只会把记录标掉，进程会继续跑。`), { status: 409 })
     }
@@ -736,7 +740,7 @@ async function refreshSchedule() {
   } catch {}
 }
 refreshSchedule()
-setInterval(refreshSchedule, 2 * 60 * 1000)
+trackTimer(setInterval(refreshSchedule, 2 * 60 * 1000))
 
 // ── 企业知识库（只读）：E:\VirtualAIOffice\knowledge 里的 Markdown；页面只能看 public / internal，confidential 只显示标题 ──
 const KB_DIR = path.resolve(HERE, '..', '..', 'knowledge')
@@ -829,7 +833,7 @@ const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: modu
 mem.start()
 const chatGet = moduleGet('chat')
 const chat = createChat({ dir: HERE, company: COMPANY, get: chatGet, send, dutyOn: () => Boolean(world().duty?.on), agents: () => chatGet(`/api/companies/${COMPANY}/agents`), redactText })
-const chatStart = setTimeout(() => chat.start(), 60000); chatStart.unref?.()
+const chatStart = trackTimer(setTimeout(() => chat.start(), 60000)); chatStart.unref?.()
 // 前厅两项新数据（见 foyer.mjs）：匿名访客登记 + 董事会手写公告。默认关闭；foyer.json 原子写入、不在静态白名单里
 const foyer = createFoyer({ dir: HERE, now: Date.now, redactText, scanMemoryText, log: console.log })
 const workload = createWorkload({ dir: HERE, company: COMPANY, get: moduleGet('workload'), stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
@@ -868,7 +872,13 @@ function voteSessions(agents) {
 
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
-const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
+let backlogFlight = null
+const lastGoodState = createLastGoodState({
+  file: path.join(HERE, 'state-last-good.json'),
+  backgroundMs: 10000,
+  staleAfterMs: 60000,
+  logFile: path.join(HERE, 'state-refresh.log'),
+})
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
   try {
@@ -876,9 +886,9 @@ async function refreshProjects() {
     projectsCache = (Array.isArray(p) ? p : p.projects || []).map((x) => ({ id: x.id, name: x.name, status: x.status }))
   } catch {}
 }
-const projectStart = setTimeout(refreshProjects, 15000); projectStart.unref?.()
-setInterval(refreshProjects, 5 * 60 * 1000)
-const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000); snapshotLog.unref?.()
+const projectStart = trackTimer(setTimeout(refreshProjects, 15000)); projectStart.unref?.()
+trackTimer(setInterval(refreshProjects, 5 * 60 * 1000))
+const snapshotLog = trackTimer(setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000)); snapshotLog.unref?.()
 if (process.env.OFFICE3D_LOAD_METRICS === '1') {
   let gcCount = 0
   const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
@@ -901,24 +911,67 @@ async function backlogRows(strict = false) {
     if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
     return backlogCache.rows
   }
-  try {
-    const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
-    const rows = Array.isArray(result) ? result : result.issues || []
-    backlogCache = { at: Date.now(), rows: rows.map((i) => ({
-      id: i.identifier,
-      issueId: i.id,
-      projectId: i.projectId || null,
-      title: i.title,
-      status: 'backlog',
-      ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
-      ...(SCHEDULER_VIEW_ENABLED ? {
-        priority: i.priority || null,
-        createdAt: i.createdAt || null,
-        assigneeAgentId: i.assigneeAgentId || null,
-      } : {}),
-    })) }
-  } catch (error) { if (strict) throw error; backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true } }
-  return backlogCache.rows
+  if (backlogFlight) {
+    const rows = await backlogFlight
+    if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+    return rows
+  }
+  backlogFlight = (async () => {
+    try {
+      const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
+      const rows = Array.isArray(result) ? result : result.issues || []
+      backlogCache = { at: Date.now(), rows: rows.map((i) => ({
+        id: i.identifier,
+        issueId: i.id,
+        projectId: i.projectId || null,
+        title: i.title,
+        status: 'backlog',
+        ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
+        ...(SCHEDULER_VIEW_ENABLED ? {
+          priority: i.priority || null,
+          createdAt: i.createdAt || null,
+          assigneeAgentId: i.assigneeAgentId || null,
+        } : {}),
+      })) }
+    } catch (error) {
+      if (strict) throw error
+      backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true }
+    } finally {
+      backlogFlight = null
+    }
+    return backlogCache.rows
+  })()
+  const rows = await backlogFlight
+  if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+  return rows
+}
+
+const runDetailCache = new Map()
+const runDetailFlights = new Map()
+const RUN_DETAIL_TTL_MS = 60 * 1000
+
+async function fullRunDetail(runId, getRun = get) {
+  const cached = runDetailCache.get(runId)
+  if (cached && Date.now() - cached.at < RUN_DETAIL_TTL_MS) return cached.value
+  if (runDetailFlights.has(runId)) return runDetailFlights.get(runId)
+  const flight = Promise.resolve(getRun(`/api/heartbeat-runs/${encodeURIComponent(runId)}`))
+    .then(value => { runDetailCache.set(runId, { at: Date.now(), value }); return value })
+    .finally(() => runDetailFlights.delete(runId))
+  runDetailFlights.set(runId, flight)
+  return flight
+}
+
+async function attachRunDetails(rows, getRun = get) {
+  const out = new Map()
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < rows.length) {
+      const row = rows[cursor++]
+      try { out.set(row.id, await fullRunDetail(row.id, getRun)) } catch { out.set(row.id, null) }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, rows.length) }, worker))
+  return out
 }
 
 async function schedulerEnrichRows(rows) {
@@ -984,8 +1037,11 @@ async function healthReport() {
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
   return lastGoodState.run(async () => {
+  const stateStarted = performance.now()
+  const timings = []
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true) })
+    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
+  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -997,10 +1053,12 @@ async function state() {
   const lastRun = new Map()
   const liveRun = new Map()
   const processTables = await readProcessTables({ wait: false })
+  const details = await attachRunDetails(runs.filter(r => r.status === 'running'), moduleGet('state'))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
     if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      const liveness = runAlive(r, processTables.current)
+      const detail = details.get(r.id)
+      const liveness = detail ? runAlive({ ...r, ...detail }, processTables.current) : { alive: null, via: 'unknown', descendants: [] }
       const busy = runBusy(r, processTables.previous, processTables.current)
       liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via, busy: busy.busy, busyName: busy.busyName })
     }
@@ -1313,7 +1371,9 @@ const server = http
           return json(503, { error: 'STATE_UNAVAILABLE_NO_SNAPSHOT', reason: 'UPSTREAM_UNAVAILABLE' })
         }
         st.foyer = foyer.summary() // S1-2：前厅摘要（无哈希、无逐设备信息、无 IP / UA）
-        if (lanUser) { st.lan = true; if (!LAN.write) st.actToken = '' } // 局域网设备：不下发操作令牌
+        // 令牌不持久化：每次按访问者身份重新下发，过期快照也不能把本机令牌清空。
+        st.actToken = (!lanUser && !wallScope) || (lanUser && LAN.write) ? ACT_TOKEN : ''
+        if (lanUser) st.lan = true // 局域网设备：只读时令牌为空
         if (lanUser && !LAN.write && st.memory) st.memory = redactState({ memory: st.memory }).memory
         const restricted = lanUser || wallScope
         const view = restricted ? { ...st, world: restrictedWorld(st.world) } : st
@@ -1470,9 +1530,27 @@ let shuttingDown = false
 function shutdown() {
   if (shuttingDown) return
   shuttingDown = true
-  server.close(() => process.exit(0))
-  setTimeout(() => process.exit(1), 5000).unref()
+  for (const timer of backgroundTimers) { clearTimeout(timer); clearInterval(timer) }
+  backgroundTimers.clear()
+  for (const service of [acceptance, patrol, handoff, mem, chat, workload, backgroundHealth]) {
+    try { service?.stop?.() } catch (error) { console.error('[shutdown] service stop failed', error) }
+  }
+  const closeState = Promise.resolve(lastGoodState.close()).catch((error) => console.error('[shutdown] state close failed', error))
+  try { server.closeAllConnections?.() } catch (error) { console.error('[shutdown] close connections failed', error) }
+  const closed = new Promise(resolve => server.close(() => resolve()))
+  Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 4000))])
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
+server.on('error', (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(`[office3d] EADDRINUSE: port ${PORT} is already in use; inspect the owning PID before retrying`)
+    process.exitCode = 1
+    process.exit(1)
+  }
+  else console.error('[office3d] server error', error)
+})
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 process.on('message', (message) => { if (message === 'shutdown') shutdown() })
+process.once('disconnect', shutdown)
