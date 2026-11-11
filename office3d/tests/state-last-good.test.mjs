@@ -26,12 +26,14 @@ function temp(t) {
 function context(extra = {}) {
   const empty = () => ({}), view = { view: empty, summary: empty }
   const value = { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
+    performance: { now: () => 0 }, process: { env: {} },
     get: async p => p.endsWith('/dashboard') ? { tasks: { todo: 1 }, costs: { total: 2 }, pendingApprovals: 0 }
       : p.endsWith('/agents') ? [{ id: 'demo-agent', name: 'demo-name', status: 'idle' }] : [],
     backlogRows: async () => [], world: () => ({ duty: { on: false, days: [1] } }),
     readNames: empty, pidAlive: () => null, readProcessTable: async () => null,
     readProcessTables: async () => ({ previous: null, current: null }), runBusy: () => ({ busy: false, busyName: null }),
     runAlive: run => ({ alive: null, via: null, descendants: [] }), gossip: { maybeGenerate() {}, recent: () => [] },
+    attachRunDetails: async () => new Map(),
     stats: { ingest() {}, daily: () => ({ done: [] }), awards: () => [] },
     telegram: { view: empty, onState: async () => {} }, committee: view, standup: view, acceptance: { ...view, onState() {} },
     patrol: view, rework: view, handoff: view, mem: view, chat: view, workload: view,
