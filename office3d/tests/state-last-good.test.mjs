@@ -57,7 +57,7 @@ function stateRoute(state, lanUser = false, wallScope = false, cache = new Map()
   let response
   const res = { writeHead(status) { response = { status }; return this }, end(body) { response.body = JSON.parse(body); return this } }
   const run = vm.runInNewContext(`(async () => { ${code} })`, {
-    url: { pathname: '/state' }, state, lanUser, wallScope, stateResponseCache: cache, Date: { now }, LAN: { write: false }, foyer: { summary: () => ({}) },
+    url: { pathname: '/state' }, state, lanUser, wallScope, stateResponseCache: cache, Date: { now }, LAN: { write: false }, ACT_TOKEN: 'fixture-only', foyer: { summary: () => ({}) },
     redactState, restrictedWorld: value => ({ ...value, weather: { ...value.weather,
       location: coarsenGeo(value.weather.location.lat, value.weather.location.lon) } }),
     TYPES: { '.json': 'application/json' }, res, json: (status, body) => { response = { status, body } },
@@ -93,7 +93,8 @@ test('required failure returns last good 200, grows age, recovers and logs once 
   const reply = await stateRoute(fail)
   assert.equal(reply.status, 200)
   assert.deepEqual(reply.body.stale, { active: true, since: fixture().at, ageMs: 60000, reason: 'UPSTREAM_UNAVAILABLE' })
-  assert.equal(reply.body.actToken, '')
+  assert.equal(reply.body.actToken, 'fixture-only')
+  assert.equal((await stateRoute(fail, true)).body.actToken, '')
   reply.body.agents.length = 0
   assert.equal((await fail()).agents.length, 1)
   assert.equal(logs.length, 1)
@@ -116,7 +117,7 @@ test('missing corrupt invalid files yield 503, persisted credentials are removed
   const manager = createLastGoodState({ file, now: () => start, log() {} })
   const out = await manager.run(async () => { throw new Error('fixture') })
   assert.deepEqual(out.child, { safe: 3 })
-  assert.equal(out.actToken, '')
+  assert.equal(out.actToken, undefined)
 })
 
 test('first background request waits for the initial refresh and returns a fresh snapshot', async t => {
@@ -499,7 +500,7 @@ test('a stuck refresh falls back to last good after the timeout instead of hangi
   assert.ok(Date.now() - started < 1000, 'must not wait for the stuck refresh')
   assert.equal(reply.stale.active, true)
   assert.equal(reply.stale.reason === 'UPSTREAM_UNAVAILABLE' || reply.stale.reason === 'STALE_DATA', true)
-  assert.equal(reply.actToken, '')
+  assert.equal(reply.actToken, undefined)
 })
 
 test('state auxiliary Paperclip reads are time-bounded (live hotfix 11-02)', () => {
