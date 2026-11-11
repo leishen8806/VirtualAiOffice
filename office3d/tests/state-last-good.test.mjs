@@ -291,6 +291,19 @@ test('shared collection snapshot coalesces modules and exposes a read-only share
   assert.equal(upstream, 2)
 })
 
+test('activity snapshot is cached for one minute and uses the reduced page size', async () => {
+  let ms = start, upstream = 0
+  const snapshots = createSnapshotGet({ now: () => ms, get: async p => { upstream++; return [{ p }] } })
+  const get = snapshots.forModule('state')
+  const first = await get('/api/companies/demo/activity?limit=200')
+  const second = await get('/api/companies/demo/activity?limit=200')
+  assert.deepEqual(first, second)
+  assert.equal(upstream, 1)
+  ms += 60001
+  await get('/api/companies/demo/activity?limit=200')
+  assert.equal(upstream, 2)
+})
+
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
   let ms = start, builds = 0
   const cache = new Map(), read = async () => { builds++; return fixture() }

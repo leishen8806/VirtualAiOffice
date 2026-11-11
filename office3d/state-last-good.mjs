@@ -130,7 +130,7 @@ export async function loadStateComponents({ get, company, backlog, timings = nul
     ['issues', `${base}/issues?status=todo,in_progress,in_review,blocked`, 'issues'],
     ['runs', `${base}/heartbeat-runs?limit=40&summary=true`, 'runs'],
     ['approvals', `${base}/approvals?status=pending`, 'approvals'],
-    ['activity', `${base}/activity?limit=500`, 'activity'],
+    ['activity', `${base}/activity?limit=200`, 'activity'],
     ['approvalsAll', `${base}/approvals`, 'approvals'], ['backlog', null, null],
   ]
   const gaps = [], values = {}
@@ -167,9 +167,9 @@ export function createSnapshotGet({ get, now = Date.now }) {
       return `${url.pathname}${url.search}`
     } catch { return p }
   }
-  const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs)(?:\?|$)/.test(p)
+  const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs|activity)(?:\?|$)/.test(p)
   const ttl = p => {
-    try { return new URL(p, 'http://snapshot.local').searchParams.get('limit') === '1000' ? 10 * 60 * 1000 : 45000 } catch { return 45000 }
+    try { const url = new URL(p, 'http://snapshot.local'); return url.pathname.endsWith('/activity') ? 60 * 1000 : (url.searchParams.get('limit') === '1000' ? 10 * 60 * 1000 : 45000) } catch { return 45000 }
   }
   const mark = (module, key) => {
     const row = modules.get(module) || { requests: 0, hits: 0, upstream: 0 }
