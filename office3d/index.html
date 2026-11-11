@@ -289,13 +289,12 @@
   #loading.done { opacity:0; pointer-events:none; }
   #liteToggle { position:fixed; right:16px; bottom:62px; z-index:30; padding:6px 12px; border-radius:16px; border:1px solid rgba(182,154,100,.6); background:rgba(20,22,26,.78); color:#e0c88f; font-size:12px; cursor:pointer; }
   #liteToggle:hover { background:rgba(40,42,48,.9); }
-  #foodtruckDemo { position:fixed; left:50%; bottom:96px; z-index:30; transform:translateX(-50%); max-width:calc(100vw - 24px); padding:9px 14px; border:1px solid #c99542; border-radius:12px 12px 12px 3px; background:#352719; color:#ffe4ae; font:600 13px system-ui,sans-serif; box-shadow:0 5px 18px #0005; cursor:pointer; }
-  #foodtruckDemo:focus-visible { outline:2px solid #ffe4ae; outline-offset:3px; }
-  #foodtruckDemo:disabled { opacity:.68; cursor:wait; }
-  #foodtruckDemoNote { position:fixed; left:50%; bottom:146px; z-index:30; transform:translateX(-50%); max-width:min(280px,calc(100vw - 24px)); padding:10px 12px; border:1px solid #d3a35a; border-radius:10px; background:#3b2c1d; color:#fff2d8; font-size:13px; box-shadow:0 3px 12px #0006; }
+  #foodtruckDemoMenu:disabled { opacity:.68; cursor:wait; }
+  #foodtruckDemoNote { position:fixed; left:16px; bottom:76px; z-index:20; max-width:min(300px,calc(100vw - 32px)); padding:10px 12px; border:1px solid #d3a35a; border-radius:10px; background:#3b2c1d; color:#fff2d8; font-size:13px; box-shadow:0 3px 12px #0006; }
+  #foodtruckDemoNote button { float:right; margin:-4px -5px 0 8px; border:0; background:transparent; color:#ffe4ae; cursor:pointer; }
   .foodtruck-demo-bubble[hidden] { display:none; }
   .foodtruck-demo-bubble { display:block; max-width:210px; margin:0 auto 4px; padding:5px 9px; border:1px solid #d3a35a; border-radius:10px 10px 10px 2px; background:#3b2c1d; color:#fff2d8; font-size:12px; font-weight:600; white-space:normal; box-shadow:0 3px 12px #0006; }
-  @media (max-width:760px) { #foodtruckDemo { bottom:204px; } #foodtruckDemoNote { bottom:258px; } }
+  @media (max-width:760px) { #foodtruckDemoNote { left:12px; bottom:112px; max-width:calc(100vw - 24px); } }
   @media (max-width: 760px) { #liteToggle { bottom:104px; right:12px; } } /* 手机：让开底部两行工具栏 */
 
   /* 头顶标签与气泡 */
@@ -417,8 +416,8 @@
 <div id="labels"></div>
 <div id="bubbles"></div>
 <button id="liteToggle" type="button" hidden></button>
-<button id="foodtruckDemo" type="button" hidden>▶ 餐车服务演示 · 未扣款</button>
 <div id="foodtruckDemoNote" role="status" aria-live="polite" hidden></div>
+<button id="foodtruckDemoMenu" type="button" hidden title="视觉演示，不会扣款">▶ 餐车服务演示（未扣款）</button>
 <div id="loading"><img src="./assets/logo.png" alt="DR.LIFE+"><div class="bar"><i id="loadBar"></i></div><div class="note" id="loadText">正在布置办公室…</div></div>
 
 <div id="top">
