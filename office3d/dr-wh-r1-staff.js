@@ -184,7 +184,8 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
     result.afterSolve?.()
   }
   const hydrate = (people, createPerson) => { if (typeof createPerson !== 'function' || !people) return false; for (const member of members) switchToReal(member, people, createPerson); return true }
-  const pickRay = ray => {
+  const pickRay = input => {
+    const ray = input?.isRaycaster ? input : (() => { const rc = new THREE.Raycaster(); rc.ray.copy(input?.ray || input); return rc })()
     const candidates = members.filter(m => m.loaded).map(m => m.char.group)
     if (!realOnly) candidates.unshift(placeholders.standing, placeholders.seated)
     const hits = ray.intersectObjects(candidates, true), hit = hits[0]; if (!hit) return null

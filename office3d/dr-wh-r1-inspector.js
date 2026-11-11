@@ -31,8 +31,9 @@ export function buildWhR1Inspector({ THREE, root, data = WH_R1_DATA, assignment 
   }
   const disablePicking = () => { for (const mesh of proxies.values()) { mesh.removeFromParent(); mesh.geometry.dispose(); mesh.material.dispose() } proxies.clear(); state.enabled = false }
   const selectById = id => { disablePicking(); const value = detail(id); if (value) enablePicking([id]); return value }
-  const pickRay = ray => {
+  const pickRay = input => {
     if (!THREE || !root) return null
+    const ray = input?.ray || input
     const candidates = [...index.records.keys()]
     for (const id of candidates) {
       const row = index.records.get(id), p = whToWorld(row.xM || 0, row.yM || 0), halfX = Math.max(.01, (row.lengthM || .1) / 2), halfZ = Math.max(.01, (row.widthM || .1) / 2), y = (row.zM || 0) + (row.heightM || .1) / 2
