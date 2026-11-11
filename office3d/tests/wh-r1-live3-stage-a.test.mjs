@@ -96,6 +96,17 @@ test('LIVE-3 runtime suppresses both mannequin meshes and renders simulation box
   for (const action of ['arrival', 'scan', 'weigh', 'retrieve', 'packing', 'carry', 'stack']) assert.ok(actions.has(action), action)
 })
 
+test('LIVE-3 weight label faces the south-side inspection camera', () => {
+  const root = new THREE.Group()
+  const context = { fillRect() {}, fillText() {} }
+  const canvasTex = () => new THREE.CanvasTexture({ getContext: () => context })
+  const live = buildWhR1Live1({ THREE, root, quality: { tier: 'high' }, canvasTex })
+  const label = root.getObjectByName('wh-r1-live3-weight-label')
+  const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(label.getWorldQuaternion(new THREE.Quaternion()))
+  assert.ok(normal.z < -.99)
+  live.dispose()
+})
+
 test('LIVE-3 board reconciles inventory and active work for 600 ticks', () => {
   const sim = createLive3StageA({ multiplier: 8 })
   for (let frame = 0; frame < 600; frame++) {
