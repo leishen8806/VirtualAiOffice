@@ -69,3 +69,11 @@ export function landmarkProfile(label = '') {
   if (/wat\b|pagoda|stupa|palace|monument/.test(value)) return 'spire'
   return 'block'
 }
+
+export function landmarkInBounds(item, bbox = []) {
+  const [lat0, lon0, lat1, lon1] = bbox.map(Number)
+  const lat = Number(item?.lat), lon = Number(item?.lon)
+  return [lat0, lon0, lat1, lon1, lat, lon].every(Number.isFinite)
+    && lat >= Math.min(lat0, lat1) && lat <= Math.max(lat0, lat1)
+    && lon >= Math.min(lon0, lon1) && lon <= Math.max(lon0, lon1)
+}

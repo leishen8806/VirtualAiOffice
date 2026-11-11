@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkInBounds, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.mjs'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -142,7 +142,7 @@ async function boot(){
   mergedPolygons(data.green,.04,mat.green)
   addRoads(data)
   marker(11.5536458,104.9318027,24,mat.markerOffice,'智序工场·办公室'); marker(11.5337037,104.9725248,24,mat.markerWarehouse,'DR 仓配服务中心')
-  const landmarks = (mapData?.layers?.landmarks || []).map(item => [item.name, item.lat, item.lon]).filter(([, lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon))
+  const landmarks = (mapData?.layers?.landmarks || []).filter(item => landmarkInBounds(item, data.bbox)).map(item => [item.name, item.lat, item.lon])
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
   const landmarkList=document.querySelector('#town3dLandmarkList'); if (landmarkList) landmarkList.remove()
   const ground=groundPlan(buildings),floor=new THREE.Mesh(new THREE.PlaneGeometry(ground.width,ground.depth),mat.ground); floor.name='town-ground'; floor.rotation.x=-Math.PI/2; floor.position.set(ground.x,-.02,ground.z); worldGroup.add(floor); fitCamera()
