@@ -9,8 +9,22 @@
   <link rel="stylesheet" href="/town.css">
 </head>
 <body>
+  <section id="town3dLoader" class="town3d-loader" aria-live="polite" aria-busy="true">
+    <div class="town3d-loader-card">
+      <div class="town3d-loader-brand">DR LIFE+</div>
+      <h2 id="town3dLoaderTitle">正在铺开金边街区…</h2>
+      <p id="town3dLoaderStep">准备城市数据</p>
+      <progress id="town3dLoaderProgress" max="100" value="0">0%</progress>
+      <div id="town3dLoaderError" class="town3d-loader-error" hidden></div>
+      <div class="town3d-loader-actions" hidden>
+        <button id="town3dRetry" type="button">重试</button>
+        <button id="town3dBack2d" type="button">回到平面地图</button>
+      </div>
+    </div>
+  </section>
   <main class="map-shell">
     <canvas id="townMap" tabindex="0" aria-label="金边小镇地图。可拖动、缩放并点选智序工场·办公室、DR 仓配服务中心、行政区或其它地标。"></canvas>
+    <canvas id="town3dCanvas" tabindex="0" aria-label="金边 3D 城市沙盘" hidden></canvas>
     <header class="map-head glass">
       <a class="back" href="/">← 回到办公室</a>
       <div class="map-title">
@@ -56,12 +70,23 @@
     </details>
     <div id="zoomStatus" class="zoom-status glass" aria-live="polite">100%</div>
     <div id="perf" class="perf glass" hidden>绘制 – ms</div>
+    <div id="town3dStatus" class="perf glass" hidden></div>
+    <aside id="town3dLandmarkList" class="town3d-landmark-list" hidden aria-label="城市地标"></aside>
     <div id="mapError" class="map-error glass" role="alert" hidden>
       <strong>地图数据未能载入</strong><span>请检查本地地图模块后重试。</span>
       <button id="reloadMap" type="button">重新加载</button>
     </div>
     <footer class="attribution glass">© OpenStreetMap contributors · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">ODbL</a></footer>
   </main>
-  <script type="module" src="/town.js"></script>
+  <script type="module">
+    if (new URLSearchParams(location.search).get('mode') === '3d') {
+      document.body.classList.add('mode-3d')
+      document.querySelector('#townMap').hidden = true
+      document.querySelector('#town3dCanvas').hidden = false
+      document.querySelector('#town3dStatus').hidden = false
+      document.querySelector('.subtitle').textContent = '金边 3D 城市沙盘 · OSM/ODbL'
+      import('./town-3d.js').catch((error) => window.town3dLoader?.fail(error))
+    } else import('./town.js')
+  </script>
 </body>
 </html>
