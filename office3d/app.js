@@ -20,6 +20,7 @@ import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
 import { officeSampleRequested } from './office-vis2/host.js'
+import { buildRoutefitZone, routefitSeatAssignments, routefitWingNavigation } from './project-zones.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -28,6 +29,7 @@ import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
 import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
 import { chooseOfficeR1InspectorRect } from './office-r1-ui.js'
+import { setLoading, finishLoading } from './dr-loading.js'
 const APP_STARTED = performance.now()
 
 // ───────────────────────── 品牌色（DR.LIFE+ VI 1.0 · 标准色）─────────────────────────
@@ -334,7 +336,7 @@ hangingSign(-6.5, 3.05, -0.2, 3.9, 0.9, (g) => {
 
 // ───────────────────────── 素材（CC0，失败则退回程序生成的造型）─────────────────────────
 let A = null
-const loadText = (t, p) => { const el = $('loadText'); if (el) el.textContent = t; const b = $('loadBar'); if (b && p !== undefined) b.style.width = Math.round(p * 100) + '%' }
+const loadText = setLoading
 try {
   loadText('正在搬家具…', 0.05)
   A = await loadAssets({ lite: LITE.lite })
@@ -828,7 +830,7 @@ buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
 const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: PLACE_MODE.miniBounds, building: PLACE_MODE.building || CAMPUS_BUILDING, zones: PLACE_MODE.zones, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
 if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy, renderer, env: env3d, A, createCharacter3D, createCharacter, createPerson, lite: LITE.lite }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
-if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: loadStaffPerson, createPerson })
+if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: name => loadStaffPerson(name, 'lod'), createPerson })
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
 
@@ -979,6 +981,7 @@ const boardViews = {}
 let fallbackIdx = 0
 
 function seatFor(name) {
+  if (ROUTEFIT_SEATS[name]) return ROUTEFIT_SEATS[name]
   if (SEATS[name]) return SEATS[name]
   return [FALLBACK[0], FALLBACK[1] + (fallbackIdx++) * 3, FALLBACK[2] + 3.2]
 }
@@ -1021,9 +1024,9 @@ function fitR1Workstation(ch, home, desk, handY, chairId) {
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
-  const desk = LAYOUT3_MODE ? officeV3?.get('furniture3')?.deskAt(sx, sz) : makeDesk(sx, sz, ZONES[zone].accent)
+  const desk = LAYOUT3_MODE ? (officeV3?.get('furniture3')?.deskAt(sx, sz) || (ROUTEFIT_SEATS[a.name] ? makeDeskModel(sx, sz, ZONES.drlife.accent) : null)) : makeDesk(sx, sz, ZONES[zone].accent)
   if (!desk) return null
-  const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
+  const chair = LAYOUT3_MODE ? (desk.chair || makeChair(sx, sz + 1)) : makeChair(sx, sz + 1)
   const gender = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1][index % 10] ? 'female' : 'male'
   const seatIdx = Object.keys(SEATS).indexOf(a.name)
   const avatar = (OFFICE_LAYOUT.r1Phase === 'R1' && ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10', ...R1_ADDED_AVATARS })[a.name]) || (OFFICE_LAYOUT.temporary?.some(w => w.business_id === a.name) ? 'Male_Adult_12' : null) || CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length]
@@ -1040,10 +1043,11 @@ function createAgentView(a, index) {
       outfit: a.name === 'Lead' ? 0x1b1e22 : 0x25292e, trim: VI.gold, skin: SKIN[index % SKIN.length], hair: HAIR[(index * 3) % HAIR.length], hairStyle: [0, 1, 0, 2, 0][index % 5],
       markTexture: zone === 'drlife' ? markTex : null, accent: ZONE_BADGE[zone] || VI.gold,
     })
+  ;(ch.group.userData ||= {}).agentId = a.id
   const home = workHome(seat)
   placeSeated(ch, home)
   let seatedHome = home
-  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar && !ROUTEFIT_SEATS[a.name]) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -1095,6 +1099,9 @@ if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   const boss = officeV3.get('furniture3').spec.boss
   if (OFFICE_SAMPLE_MODE) boardViews['苏晨'] = createBoardView('苏晨', boss.chair, boss.stand, [], 1)
 }
+const routefitZone = buildRoutefitZone({ THREE, scene, quality: qualityPolicy })
+routefitZone.navigation = routefitWingNavigation()
+const ROUTEFIT_SEATS = routefitSeatAssignments([], SEATS)
 
 // ───────────────────────── 区域标牌 ─────────────────────────
 const zoneLabels = []
@@ -1119,16 +1126,34 @@ const boardState = { approvals: 0, titles: [], waiting: 0 }
 let selectedId = null
 let NAMES = {}
 let r1SeatsRefreshing = false
+let r1SeatNoticeTimer = null
 function updateR1AutomaticSeats(agents) {
   if (!OFFICE_LAYOUT.assignAgents || r1SeatsRefreshing || !agents.some(a => !Object.hasOwn(SEATS, a.name))) return
   // MOVEFIX I：极速模式没有走动导演，不该等导航就绪——否则新同事永远分不到座位。
   const walking = director.r1 === true
   if (walking && (!director.stats().prepared || !director.canRefreshSeats())) return
   const added = OFFICE_LAYOUT.assignAgents(agents)
+  if (!added.length) return
   let notice = document.getElementById('r1-auto-seat-notice')
   if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
-  notice.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
-  if (!added.length) return
+  const unseatedCount = OFFICE_LAYOUT.unseated.length
+  notice.replaceChildren()
+  const summary = document.createElement('span')
+  summary.textContent = `${added.length} 位新同事暂用自动座位${unseatedCount ? `，${unseatedCount} 位本组暂无空桌` : ''}，详情见面板`
+  const details = document.createElement('details')
+  const summaryNode = document.createElement('summary')
+  summaryNode.textContent = '详情'
+  details.append(summaryNode)
+  const list = document.createElement('div')
+  list.textContent = [...OFFICE_LAYOUT.temporary.map(w => `新同事 ${w.business_id} 暂用自动座位`), ...[...OFFICE_LAYOUT.unseated].map(name => `新同事 ${name}：本组暂无空桌`)].join('；')
+  details.append(list)
+  const close = document.createElement('button')
+  close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '关闭提示'); close.style.cssText = 'float:right;margin-left:8px'
+  close.onclick = () => { notice.hidden = true }
+  notice.append(close, summary, details)
+  notice.hidden = false
+  if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
+  r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
   r1SeatsRefreshing = true
   try {
     const furniture = officeV3.get('furniture3'); furniture.refresh()
@@ -2144,6 +2169,8 @@ const toggleClean = () => document.body.classList.toggle('clean')
 $('fs').addEventListener('click', toggleFullscreen)
 keepFullscreenAwake({ onStatus: status => { $('fs').title = awakeMessage(status); if (['unsupported', 'denied', 'released'].includes(status)) ui.toast(awakeMessage(status), false) } })
 $('clean').addEventListener('click', toggleClean)
+const foodtruckDemoMenu = $('foodtruckDemoMenu')
+document.querySelector('#tools .grp .menu')?.appendChild(foodtruckDemoMenu)
 // 底部工具栏分组（查看 / 治理 / 设置）：点组按钮展开 / 收起菜单，同时只开一个；点菜单里的按钮后自动收起
 // （画质 / 亮度 / 边缘滚动 / 镜头跟随这类连续切换的带 data-keep，保持打开）；点别处或按 Esc 也收起。
 {
@@ -2246,6 +2273,7 @@ function pick(cx, cy, shift = false) {
     return
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
+    closeOfficeR1Inspect()
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     document.getElementById('wh-r1-inspector-panel')?.remove()
     if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
@@ -2261,19 +2289,21 @@ function placeOfficeR1Inspector(panel) {
   panel.style.top = `${Math.round(placed.top)}px`
   panel.style.right = 'auto'
 }
+function closeOfficeR1Inspect() { document.getElementById('office-r1-inspector-panel')?.remove() }
 function showOfficeR1Inspect(item) {
   let panel = document.getElementById('office-r1-inspector-panel')
-  if (panel?.dataset.itemId === item.id) { panel.remove(); return }
-  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  if (panel?.dataset.itemId === item.id) { closeOfficeR1Inspect(); return }
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px 34px 10px 10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
   panel.dataset.itemId = item.id
   panel.style.pointerEvents = 'auto'
   panel.setAttribute('role', 'dialog')
-  panel.innerHTML = `<button type="button" aria-label="关闭" class="inspector-close" style="float:right">×</button>` + `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
-  panel.querySelector('.inspector-close').onclick = () => panel.remove()
+  panel.innerHTML = `<button type="button" class="office-r1-inspector-close" aria-label="关闭区域卡片" style="position:absolute;right:5px;top:5px;min-width:24px;min-height:24px;border:0;border-radius:6px;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer">×</button><strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.querySelector('.office-r1-inspector-close').addEventListener('click', closeOfficeR1Inspect)
   panel.hidden = false
   requestAnimationFrame(() => placeOfficeR1Inspector(panel))
   if (!panel.dataset.repositionBound) { addEventListener('resize', () => placeOfficeR1Inspector(panel)); panel.dataset.repositionBound = 'true' }
 }
+addEventListener('keydown', e => { if (e.key === 'Escape') closeOfficeR1Inspect() })
 function showWhR1Inspect(item) {
   if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }
   let panel = document.getElementById('wh-r1-inspector-panel')
@@ -2474,7 +2504,7 @@ function step(dt, t = (simT += dt)) { // 单步推进：页面不可见时 rAF �
     projectTo(bv.headPos, bv.label, 0)
   })
   if (r1Npcs) r1Npcs.update(dt, t, projectTo)
-  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) $('foodtruckDemo').disabled = false }
+  if (foodtruckDemo?.active) { foodtruckDemo.update(dt); if (!foodtruckDemo.active) { foodtruckDemoMenu.disabled = false; foodtruckDemoMenu.textContent = '▶ 餐车服务演示（未扣款）' } }
   for (const z of zoneLabels) projectTo(z.pos, z.el)
   declutter([...[...views.values()].map((v) => v.label), ...Object.values(boardViews).map((b) => b.label), ...(r1Npcs ? r1Npcs.members.map((m) => m.label).filter(Boolean) : [])])
   }
@@ -2545,10 +2575,19 @@ async function pollDailyBoard() {
 }
 
 async function poll() {
+  let response
   try {
-    const r = await fetch('/state', { cache: 'no-store' })
-    if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    applyState(await r.json())
+    response = await fetch('/state', { cache: 'no-store' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  } catch (e) {
+    $('conn').className = 'dot off'
+    setText('connText', '断开')
+    $('err').style.display = 'block'
+    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    return
+  }
+  try {
+    applyState(await response.json())
     if (!poll.merged) { // 首次有数据后、首帧之前完成当前档需要的合并与编译，避免先画完整重场景。
       poll.merged = true
       const snap = snapshot(scene)
@@ -2560,15 +2599,15 @@ async function poll() {
       if(deferred.length)schedule(work,{timeout:15000})
       console.info(`[office3d] 静态网格合并：${merged.removed} → ${merged.added}，用时 ${Math.round(performance.now() - t0)} ms`)
     }
-    $('loading').classList.add('done')
+    finishLoading({ reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches || LITE.lite })
     $('conn').className = 'dot live'
     setText('connText', '实时 · 每 3 秒刷新')
     $('err').style.display = 'none'
   } catch (e) {
-    $('conn').className = 'dot off'
-    setText('connText', '断开')
+    $('conn').className = 'dot live'
+    setText('connText', '实时 · 画面下轮重试')
     $('err').style.display = 'block'
-    $('err').textContent = `读取 Paperclip 数据失败：${e.message}（确认 Paperclip 在 127.0.0.1:3100 运行）`
+    $('err').textContent = `画面更新出错：${e.message}`
   }
 }
 function resize() {
@@ -2591,7 +2630,7 @@ if (DR_MODE) {
   const snap = snapshot(scene), merged = mergeStatic(scene, snap)
   sceneQuality.prepare(startupQualityPlan.current); applyQuality(); qualityMetrics.qualityReadyMs = performance.now() - APP_STARTED
   console.info(`[office3d] 仓配模式静态网格合并：${merged.removed} → ${merged.added}`)
-  $('loading').classList.add('done')
+  finishLoading({ reduceMotion: matchMedia('(prefers-reduced-motion: reduce)').matches || LITE.lite })
   $('conn').className = 'dot live'
   setText('connText', PLACE_MODE.subtitle)
 } else {
@@ -2612,10 +2651,10 @@ frame()
 if (!DR_MODE && !LAYOUT3_MODE && PEOPLE) loadExtras(PEOPLE).catch((e) => console.warn('日常小动作加载失败：', e)) // 首屏后再加载，不挡打开速度
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) scene.userData.r1People = { lite: true, startedAt: performance.now(), completedAt: performance.now(), replaced: [], failed: [] } // 极速模式保留轻量人物
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && LITE.lite) {
-  const demoButton = $('foodtruckDemo'), note = $('foodtruckDemoNote')
+  const demoButton = foodtruckDemoMenu, note = $('foodtruckDemoNote')
   demoButton.hidden = false
   demoButton.textContent = '餐车文字演示 · 未扣款'
-  demoButton.onclick = () => { note.textContent = '演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。'; note.hidden = false }
+  demoButton.onclick = () => { note.innerHTML = '<button type="button" aria-label="关闭提示">✕</button><span>演示 · 未扣款：低配模式仅显示文字，摊主递出咖啡后以手机动作演示。</span>'; note.hidden = false; note.querySelector('button').onclick = () => { note.hidden = true }; setTimeout(() => { note.hidden = true }, 5000) }
 }
 if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   const ready = () => {
@@ -2634,6 +2673,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             const assets = r1SeatedAssets(loaded, avatar, officeV3.get('furniture3').seatedProfile(personName), personName)
             if (!assets) { status.failed.push(personName); return }
             const ch = createPerson(assets, avatar), previous = v.char
+            ;(ch.group.userData ||= {}).agentId = v.id
             Object.assign(ch.pose, previous.pose)
             placeSeated(ch, v.home, v)
             { const profile = officeV3.get('furniture3').seatedProfile(personName); v.home = fitR1Workstation(ch, v.home, v.desk, profile.handY, v.desk.group.userData?.r1ChairId); if (typeof officeStand === 'function') v.stand = officeStand(v.home) }
@@ -2670,7 +2710,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
             r1Npcs = createR1Npcs({ THREE, scene, layout: OFFICE_LAYOUT.r1, people: loaded, labelsEl, createPerson, collision: activeCollision, navigation: director.navigation })
             npcStatus.count = r1Npcs.members.length
             const vendor = r1Npcs.members.find(m => m.station.id === 'npc-kiosk-4')
-            const demoButton = $('foodtruckDemo')
+            const demoButton = foodtruckDemoMenu
             if (vendor && demoButton && !LITE.lite) {
               const bubble = document.createElement('span')
               bubble.className = 'foodtruck-demo-bubble'
@@ -2680,9 +2720,10 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
               demoButton.hidden = false
               demoButton.onclick = async () => {
                 if (demoButton.disabled) return
+                demoButton.textContent = '演示进行中…'
                 demoButton.disabled = true
                 try { await loadFoodtruckDemoExtras(loaded, vendor.station.gender) } catch { /* 缺动作时由演示模块显示文字回退 */ }
-                if (!foodtruckDemo.start(performance.now())) demoButton.disabled = false
+                if (!foodtruckDemo.start(performance.now())) { demoButton.disabled = false; demoButton.textContent = '▶ 餐车服务演示（未扣款）' }
               }
             }
             npcStatus.completedAt = performance.now()
@@ -2693,7 +2734,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   }
   ready()
 }
-window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
+window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, routefitZone, routefitNavigation: routefitZone.navigation, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
 window.__office.r1Npcs = () => (r1Npcs ? r1Npcs.summary() : { count: 0, lite: !!LITE.lite })
 window.__office.r1NpcMembers = () => (r1Npcs ? r1Npcs.members : []) // 验收采样要读真实的 char.pose，不能靠场景反查重建

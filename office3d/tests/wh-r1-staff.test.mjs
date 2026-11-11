@@ -50,7 +50,7 @@ test('WH-R1 R2 uses two shared placeholder meshes and click-time labels only', (
   assert.equal(value.members.filter(member => member.label).length, 0)
 })
 
-test('WH-R1 R2 loads at most two nearest realistic people and low quality loads none', async () => {
+test('WH-R1 88 keeps all nine staff visible and limits realistic hydration', async () => {
   const { value } = context()
   const calls = []
   const makePeople = name => ({ avatars: { [name]: {} }, clips: { male: {}, female: {} }, extras: { male: {}, female: {} } })
@@ -64,14 +64,16 @@ test('WH-R1 R2 loads at most two nearest realistic people and low quality loads 
   value.onFrame(.2, { camera })
   await new Promise(resolve => setTimeout(resolve, 220))
   value.onFrame(.2, { camera })
-  assert.ok(value.summary().loadedReal <= 2)
-  assert.ok(calls.length <= 2)
+  assert.ok(value.summary().loadedReal <= 4)
+  assert.ok(calls.length <= 4)
 
   const low = context().value
   low.configureRealistic({ tier: 'low', load: async () => { throw new Error('must not load') }, createPerson: makeReal })
   low.onFrame(.2, { camera })
   await new Promise(resolve => setTimeout(resolve, 20))
-  assert.equal(low.summary().loadedReal, 0)
+  assert.ok(low.summary().loadedReal <= 2)
+  assert.equal(low.members.length, 9)
+  assert.equal(low.members.filter(member => member.placeholder.group.visible).length, 9)
 })
 
 test('WH-R1 R3 uses two batched human silhouettes with vertex colours and role accents', () => {
@@ -95,4 +97,34 @@ test('WH-R1 R3 placeholder motion only updates the two shared instance buffers',
   const after = value.root.children.map(mesh => mesh.instanceMatrix.array.slice())
   assert.equal(value.summary().placeholderCalls, 2)
   assert.ok(after.some((array, index) => array.some((v, i) => v !== before[index][i])))
+})
+
+test('WH-R1 R4 real-only mode hydrates every registered worker without proxy visibility', async () => {
+  const { value } = context()
+  value.requireRealistic()
+  const makeReal = () => ({ group: new THREE.Group(), pose: { sit: 0, walk: 0, phase: 0, talk: 0, carry: 0 }, solve() {} })
+  value.configureRealistic({ tier: 'low', load: async name => ({ avatars: { [name]: {} }, clips: { male: {}, female: {} }, extras: { male: {}, female: {} } }), createPerson: makeReal })
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  await new Promise(resolve => setTimeout(resolve, 20))
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  assert.equal(value.summary().loadedReal, 9)
+  assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-standing').visible, false)
+  assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-seated').visible, false)
+})
+
+test('WH-R1 low real-only mode omits the transparent model pass', async () => {
+  const { value } = context()
+  value.requireRealistic()
+  const opacityMeshes = []
+  const makeReal = () => {
+    const group = new THREE.Group(), model = new THREE.Group(), opacity = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+    opacity.isSkinnedMesh = true; opacity.material.name = 'worker_opacity'; model.add(opacity); group.add(model); opacityMeshes.push(opacity)
+    return { group, parts: { model }, pose: { sit: 0, walk: 0, phase: 0, talk: 0, carry: 0 }, solve() {} }
+  }
+  value.configureRealistic({ tier: 'low', load: async name => ({ avatars: { [name]: {} } }), createPerson: makeReal })
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  await new Promise(resolve => setTimeout(resolve, 20))
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  assert.equal(opacityMeshes.length, 9)
+  assert.ok(opacityMeshes.every(mesh => !mesh.visible))
 })

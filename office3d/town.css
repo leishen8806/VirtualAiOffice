@@ -14,6 +14,23 @@ button { color:var(--text) }
 button:focus-visible,a:focus-visible,#townMap:focus-visible { outline:3px solid var(--focus); outline-offset:3px }
 .map-shell { position:relative; isolation:isolate }
 #townMap { display:block; width:100%; height:100%; touch-action:none; cursor:grab; background:var(--bg) }
+#town3dCanvas { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab; background:#cfe2e7 }
+.town3d-loader { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:#111820; opacity:1; transition:opacity .6s ease; }
+.town3d-loader.is-leaving { opacity:0; pointer-events:none }
+.town3d-loader-card { width:min(460px,calc(100vw - 32px)); padding:30px; border:1px solid rgba(223,194,125,.35); border-radius:18px; background:rgba(18,27,36,.95); box-shadow:0 20px 70px rgba(0,0,0,.35); text-align:center }
+.town3d-loader-brand { color:var(--gold); letter-spacing:.22em; font-weight:800; font-size:12px }
+.town3d-loader-card h2 { margin:14px 0 8px; color:var(--text); font-size:clamp(20px,4vw,30px) }
+.town3d-loader-card p { margin:0 0 18px; color:var(--muted); font-size:13px }
+.town3d-loader-card progress { width:100%; height:10px; accent-color:var(--gold) }
+.town3d-loader-error { color:#ffb4a8; margin:12px 0; font-size:13px }
+.town3d-loader-actions { display:flex; justify-content:center; gap:10px; margin-top:16px }
+.town3d-loader-actions button { border:1px solid var(--line); border-radius:10px; padding:9px 14px; background:var(--gold); color:#172028; font-weight:700; cursor:pointer }
+.town3d-loader-actions button + button { background:transparent; color:var(--text) }
+.mode-3d .detail,.mode-3d .map-controls,.mode-3d .zoom-status,.mode-3d .map-fallback,.mode-3d .legend,.mode-3d #perf,.mode-3d .label-switch { display:none !important }
+.town3d-label { position:fixed; z-index:4; transform:translate(-50%,-100%); padding:3px 6px; border-radius:4px; background:rgba(22,32,38,.78); color:#fff; font-size:11px; pointer-events:none; white-space:nowrap }
+.town3d-landmark-list { position:fixed; z-index:6; right:16px; top:112px; width:min(420px,calc(100vw - 32px)); padding:10px 12px; border-radius:10px; background:rgba(22,32,38,.82); color:#fff; font-size:11px; line-height:1.5 }
+.town3d-landmark-list strong { color:var(--gold-strong); margin-right:8px }
+.town3d-landmark-list span { color:#e9eef0 }
 #townMap.dragging { cursor:grabbing }
 body[data-place-hover="true"] #townMap { cursor:pointer }
 body[data-place-transition="true"] .map-shell { opacity:.96; transform:scale(.995); transition:opacity .16s ease,transform .16s ease }
@@ -71,3 +88,4 @@ body[data-place-transition="true"] .map-shell { opacity:.96; transform:scale(.99
   .perf { top:162px; left:8px }
 }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important } }
+@media (prefers-reduced-motion:reduce) { .town3d-loader { transition:none } }
