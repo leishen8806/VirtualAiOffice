@@ -125,12 +125,18 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     toast.h = setTimeout(() => { t.className = '' }, 3200)
   }
   let lastResult = null
+  const ACT_TIMEOUT_MS = 20_000
   async function post(body, errors = {}) {
     if (state?.lan) { toast('局域网只读，请在运行服务的电脑上操作', false); return false }
-    if (busy) return false
+    if (busy) { toast('上一个操作还在提交中', false); return false }
     busy = true
     try {
-      const send = () => fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body) })
+      const send = async () => {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
+        try { return await fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body), signal: controller.signal }) }
+        finally { clearTimeout(timer) }
+      }
       let r = await send()
       let j = await r.json().catch(() => ({}))
       if (r.status === 403 && /令牌/.test(j.error || '')) { // 服务重启后页面里缓存的操作令牌过期：重新取一次令牌再发一次（被拒的请求没有产生任何效果，重发不会重复操作）
@@ -143,7 +149,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       lastResult = j.result || null
       return true
     } catch (e) {
-      toast('没有成功：' + e.message, false)
+      toast(e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message, false)
       return false
     } finally {
       busy = false
@@ -378,7 +384,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       o.oninput = () => { if (o.value.trim()) radios.forEach((r) => (r.checked = false)) }
       if (radios.length) o.placeholder = `${o.placeholder}（和上面的选项二选一）`
     })
-    modal.querySelector('#mSubmit').onclick = async () => {
+    const submit = modal.querySelector('#mSubmit')
+    submit.onclick = async () => {
       const answers = ask.questions.map((q, qi) => {
         const optionIds = [...modal.querySelectorAll(`input[name="q${qi}"]:checked`)].map((x) => x.value)
         const o = modal.querySelector('#o' + qi)
@@ -386,7 +393,13 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       })
       if (answers.some((a) => !a.optionIds.length && !a.otherText)) { toast('每道题都要选一个（或写上回答）', false); return }
       if (ask.questions.some((q, qi) => !q.multi && answers[qi].optionIds.length && answers[qi].otherText)) { toast('这道题是单选：选项和自己写的回答只能二选一', false); return }
-      if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
+      submit.textContent = '提交中…'
+      submit.disabled = true
+      try {
+        if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
+      } finally {
+        if (submit.isConnected) { submit.textContent = '提交回答'; submit.disabled = false }
+      }
     }
   }
 

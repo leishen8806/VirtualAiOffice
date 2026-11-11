@@ -73,7 +73,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
     weightTexture = canvasTex(384, 96, () => {})
     weightLabel = new THREE.Mesh(new THREE.PlaneGeometry(1.45, .36), new THREE.MeshBasicMaterial({ map: weightTexture, side: THREE.DoubleSide }))
     const scale = stationPoint(LIVE3_STATIONS[1])
-    weightLabel.name = 'wh-r1-live3-weight-label'; weightLabel.position.set(scale.x, 1.53, scale.z); weightLabel.visible = false
+    weightLabel.name = 'wh-r1-live3-weight-label'; weightLabel.position.set(scale.x, 1.53, scale.z); weightLabel.rotation.y = Math.PI; weightLabel.visible = false
     weightLabel.userData = { noMerge: true, dynamic: true }; group.add(weightLabel)
 
   }
