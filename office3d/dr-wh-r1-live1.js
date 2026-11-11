@@ -2,9 +2,10 @@ import { WH_R1_DATA } from './wh-r1/data.js'
 import { WH_R1_VEHICLES, forkliftParts } from './dr-wh-r1-vehicles.js'
 import { whToWorld, WH_R1_FLOOR_Y } from './wh-r1-layout.js'
 import { WH_R1_CONVEYOR_PATH } from './dr-wh-r1-workflow.js'
-import { pathPoint } from './dr-campus-motion-logic.js'
+import { buildLive3Stations, LIVE3_STATIONS, stationPoint } from './wh-r1/live3-stations.js'
 import { SHUTTLE_MAX_LIFT, shuttleFrame } from './dr-campus-shuttle-logic.js'
-import { createLive2Simulation } from './wh-r1/live2-sim.js'
+import { createLive3StageA, LIVE3_DEMO_WARMUP_MS, live3Board, live3ConveyorPose, live3DemonstrationSlot } from './wh-r1/live3-stage-a.js'
+import { bindLive3Staff, live3PalletBox } from './wh-r1/live3-staff-motion.js'
 
 const SLOT_CATEGORY = '托位载荷控制体'
 const BOX_COLORS = [0xb98a58, 0x6d9c91, 0xd69a50]
@@ -42,7 +43,15 @@ function combinedForkliftGeometry(THREE, rows) {
 
 export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const group = new THREE.Group(); group.name = 'wh-r1-live1'; group.userData.dynamic = true; group.userData.noMerge = true; group.position.y = WH_R1_FLOOR_Y; root.add(group)
-  const low = quality?.tier === 'low', slots = WH_R1_DATA.elements.filter(row => row.category === SLOT_CATEGORY), simulation = createLive2Simulation({ slotIds: slots.map(row => row.id), multiplier: 8 })
+  const low = quality?.tier === 'low', slots = WH_R1_DATA.elements.filter(row => row.category === SLOT_CATEGORY), simulation = createLive3StageA({ slotIds: slots.map(row => row.id) })
+  const stations = buildLive3Stations({ THREE, group })
+  const previousCargo = root.getObjectByName?.('wh-r1-workflow-cargo')
+  if (previousCargo) previousCargo.visible = false
+  const beltCargo = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: .84 }), 112)
+  beltCargo.name = 'wh-r1-live3-belt-cargo'; beltCargo.userData.dynamic = true; group.add(beltCargo)
+  const boardRegister = WH_R1_DATA.elements.find(row => row.id === 'WH-02-MON-005')
+  const boardLocation = whToWorld(boardRegister.xM, boardRegister.yM)
+  const boardWidth = boardRegister.lengthM, boardHeight = boardRegister.heightM
   const slotById = new Map(slots.map(row => [row.id, row])), cargoMeshes = [], shuttleCount = low ? 2 : 4
   if (!low) for (let type = 0; type < 3; type++) { const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: BOX_COLORS[type], roughness: .82 }), slots.length + shuttleCount); mesh.name = `wh-r1-live1-cargo-${type}`; mesh.userData = { dynamic: true, live1Inventory: true, boxType: type }; group.add(mesh); cargoMeshes.push(mesh) }
   const shuttle = new THREE.InstancedMesh(new THREE.BoxGeometry(.82, .18, 1.08), new THREE.MeshStandardMaterial({ color: 0x56636d, metalness: .35, roughness: .58 }), shuttleCount); shuttle.name = 'wh-r1-live1-shuttles'; shuttle.userData = { dynamic: true, live1Shuttles: shuttleCount }; group.add(shuttle)
@@ -54,74 +63,155 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   // Staff are supplied by the registered WH-R1 staff module.  Do not create a
   // visual fallback here: a primitive fallback hides missing registration and
   // violates the requirement that LIVE-2 uses the roster's real actors.
-  const staff = null
   const shuttleStates = Array.from({ length: shuttleCount }, () => ({ position: 0, target: 0, movingFrom: 0, movingAt: 0, lastAt: 0, carrying: false, occupied: [false], status: 'idle' }))
-  const qcSource = whToWorld(39, 39), qc = { x: qcSource.x, y: WH_R1_FLOOR_Y + 1.05, z: qcSource.z }, sink = WH_R1_CONVEYOR_PATH[0] || qc, carried = []
-  let board = null, boardTexture = null, disposed = false, dirty = true, lastBoardSecond = -1, runtimeStaff = null, runtimeVehicles = null
+  const qcSource = whToWorld(39, 39), qc = { x: qcSource.x, y: WH_R1_FLOOR_Y + 1.05, z: qcSource.z }, sink = WH_R1_CONVEYOR_PATH[0] || qc, carried = [], forkCargo = []
+  let board = null, boardTexture = null, disposed = false, lastBoardSecond = -1, runtimeStaff = null, runtimeVehicles = null, staffMotion = null, currentState = null
+  let weightLabel = null, weightTexture = null, lastWaybill = null
   if (canvasTex) {
-    boardTexture = canvasTex(768, 192, (ctx, w, h) => { ctx.fillStyle = '#10252d'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#d9f3e6'; ctx.font = 'bold 30px sans-serif'; ctx.fillText('仓配仿真 · 演示', 20, 42); ctx.font = '24px sans-serif'; ctx.fillText('模拟时间 00:00 · 在库 60% · 任务 4', 20, 84); ctx.fillText('可收起 · LIVE-1', 20, 126) })
-    board = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 1.4), new THREE.MeshBasicMaterial({ map: boardTexture, transparent: true, depthWrite: false })); board.name = 'wh-r1-live1-status-board'; board.position.set(-72, 4.8, 27); board.userData = { collapsible: true, noMerge: true }; group.add(board)
-    board.rotation.y = Math.PI
+    boardTexture = canvasTex(768, 360, () => {})
+    board = new THREE.Mesh(new THREE.PlaneGeometry(boardWidth, boardHeight), new THREE.MeshBasicMaterial({ map: boardTexture })); board.name = 'wh-r1-live1-status-board'; board.position.set(boardLocation.x, boardRegister.zM + boardHeight / 2, boardLocation.z + boardRegister.widthM / 2 + .02); board.userData = { collapsible: true, noMerge: true, sourceId: boardRegister.id }; group.add(board)
+    weightTexture = canvasTex(384, 96, () => {})
+    weightLabel = new THREE.Mesh(new THREE.PlaneGeometry(1.45, .36), new THREE.MeshBasicMaterial({ map: weightTexture, side: THREE.DoubleSide }))
+    const scale = stationPoint(LIVE3_STATIONS[1])
+    weightLabel.name = 'wh-r1-live3-weight-label'; weightLabel.position.set(scale.x, 1.53, scale.z); weightLabel.visible = false
+    weightLabel.userData = { noMerge: true, dynamic: true }; group.add(weightLabel)
+
   }
-  const updateBoard = () => {
+  const updateBoard = state => {
     if (!boardTexture?.image || !boardTexture.image.getContext) return
-    const state = simulation.snapshot(), second = Math.floor(state.nowMs / 1000); if (second === lastBoardSecond) return; lastBoardSecond = second
-    const ctx = boardTexture.image.getContext('2d'), occupied = state.slots.filter(slot => slot.status === 'occupied').length, active = state.tasks.filter(task => task.status === 'moving').length
-    ctx.fillStyle = '#10252d'; ctx.fillRect(0, 0, 768, 192); ctx.fillStyle = '#d9f3e6'; ctx.font = 'bold 30px sans-serif'; ctx.fillText('仓配仿真 · LIVE-2', 20, 42); ctx.font = '24px sans-serif'; const queues = Object.values(state.queues || {}).reduce((sum, count) => sum + count, 0); ctx.fillText(`模拟时间 ${String(Math.floor(second / 60)).padStart(2, '0')}:${String(second % 60).padStart(2, '0')} · 在库 ${Math.round(occupied / state.slots.length * 100)}% · 在途 ${active} · 排队 ${queues}`, 20, 84); ctx.fillText(`今日入库 ${state.counters.received} · 出库 ${state.counters.shipped} · 可收起`, 20, 126); boardTexture.needsUpdate = true
+    const second = Math.floor(state.nowMs / 1000); if (second === lastBoardSecond) return; lastBoardSecond = second
+    const ctx = boardTexture.image.getContext('2d'), model = live3Board(state)
+    ctx.fillStyle = '#10252d'; ctx.fillRect(0, 0, 768, 360)
+    ctx.fillStyle = '#d9f3e6'; ctx.font = 'bold 32px sans-serif'
+    ctx.fillText('仓配运营看板 · 仿真', 20, 42)
+    ctx.font = '22px sans-serif'
+    ctx.fillText('今日入库 ' + model.inbound + '   今日出库 ' + model.outbound + '   在库 ' + model.inventory + '   异常待处理 ' + model.exceptions, 20, 85)
+    ctx.fillText('期初 ' + model.opening + '   平均工序 ' + (model.averageProcessingMs / 1000).toFixed(1) + ' 秒', 20, 118)
+    const labels = ['收货', '质检', '上架', '取货', '拣货', '输送', '打包', '集货']
+    Object.values(model.active).forEach((count, i) => {
+      const x = 25 + i * 93, height = 145 * count / Math.max(5, ...Object.values(model.active))
+      ctx.fillStyle = '#57c8b1'; ctx.fillRect(x, 300 - height, 52, height)
+      ctx.fillStyle = '#d9f3e6'; ctx.fillText(String(count), x + 14, 292 - height)
+      ctx.fillText(labels[i], x, 332)
+    })
+    board.userData.metrics = model
+    boardTexture.needsUpdate = true
+
   }
-  const corridorPosition = (slot, progress, stage) => {
+  const corridorPosition = (slot, progress, stage, id) => {
     const aisle = { x: slot.x, y: slot.y, z: slot.z + (slot.z > qc.z ? -1.15 : 1.15) }, t = Math.max(0, Math.min(1, progress))
+    if (live3DemonstrationSlot(id)) return { ...slot, x: slot.x - .91 * (stage === 'retrieve' ? t : 1 - t) }
     if (stage === 'retrieve' || stage === 'putaway') return t < .5 ? { x: slot.x, y: slot.y, z: slot.z + (aisle.z - slot.z) * t * 2 } : { x: aisle.x, y: aisle.y, z: aisle.z + (qc.z - aisle.z) * (t - .5) * 2 }
     return { x: slot.x, y: slot.y, z: slot.z }
   }
   const updateActors = state => {
-    const moving = state.tasks.filter(task => task.status === 'moving'), inbound = moving.filter(task => task.kind === 'inbound' && ['arrival', 'quality', 'putaway'].includes(task.stage))
+    const inbound = state.tasks.filter(task => task.status === 'moving' && task.stage === 'arrival')
     const taskForForklift = index => inbound.find(task => { const sequence = Number(String(task.itemId || '').match(/(\d+)$/)?.[1] || 0); return sequence % forkliftCount === index })
+    forkCargo.length = 0
     for (let index = 0; index < forkliftCount; index++) {
-      const task = taskForForklift(index), row = task && slotById.get(task.slotId), parked = registeredForklifts[index], parkedPoint = parked && whToWorld(parked.xM, parked.yM)
-      let position = parkedPoint ? { x: parkedPoint.x, y: 0, z: parkedPoint.z } : { x: qc.x, y: 0, z: qc.z }
-      if (row) { const target = pointForSlot(row), p = Math.max(0, Math.min(1, (state.nowMs - (task.startedAt || state.nowMs)) / Math.max(1, (task.completeAt || state.nowMs + 1) - (task.startedAt || state.nowMs)))); position = corridorPosition(target, p, task.stage); position.y = 0 }
-      forkliftRoots[index].position.set(position.x, 0, position.z); forkliftRoots[index].rotation.y = ((row?.yawDeg ?? parked?.yawDeg ?? 0) * Math.PI / 180); forkliftRoots[index].userData.stage = task?.stage || 'standby'; forkliftRoots[index].userData.taskId = task?.taskId || null
-      forkliftDummy.position.set(position.x, 0, position.z); forkliftDummy.rotation.y = (row?.yawDeg ?? parked?.yawDeg ?? 0) * Math.PI / 180; forkliftDummy.scale.setScalar(1); forkliftDummy.updateMatrix(); forklift.setMatrixAt(index, forkliftDummy.matrix)
+      const task = taskForForklift(index), parked = registeredForklifts[index], parkedPoint = parked && whToWorld(parked.xM, parked.yM)
+      const yaw = (parked?.yawDeg ?? 0) * Math.PI / 180
+      const base = parkedPoint || qc
+      const fraction = task ? (state.nowMs - task.startedAt) / (task.completeAt - task.startedAt) : 0
+      const travel = .48 * Math.sin(Math.PI * fraction)
+      const fx = Math.sin(yaw), fz = Math.cos(yaw)
+      const position = { x: base.x + fx * travel, z: base.z + fz * travel }
+      forkliftRoots[index].position.set(position.x, 0, position.z); forkliftRoots[index].rotation.y = yaw; forkliftRoots[index].userData.stage = task?.stage || 'standby'; forkliftRoots[index].userData.taskId = task?.taskId || null
+      forkliftDummy.position.set(position.x, 0, position.z); forkliftDummy.rotation.y = yaw; forkliftDummy.scale.setScalar(1); forkliftDummy.updateMatrix(); forklift.setMatrixAt(index, forkliftDummy.matrix)
+      if (task) forkCargo.push({ task, size: [.72, .32, .72], position: { x: position.x + fx * .84, z: position.z + fz * .84, y: .08, action: 'forklift' } })
     }
     forklift.instanceMatrix.needsUpdate = true
     forklift.userData.live2State = registeredForklifts.slice(0, forkliftCount).map((row, index) => ({ id: row.id, stage: forkliftRoots[index].userData.stage, itemId: forkliftRoots[index].userData.taskId }))
-    if (runtimeStaff?.members?.length) {
-      if (staff) staff.visible = false
-      runtimeStaff.members.forEach(member => { const target = member.char?.group || member.placeholder?.group; if (target) target.userData.live2Stage = state.tasks.find(task => task.stage === member.role)?.stage || 'idle' })
-    }
     if (runtimeVehicles?.root?.userData?.forklifts) runtimeVehicles.root.userData.forklifts.live2State = registeredForklifts.slice(0, forkliftCount).map((row, index) => ({ id: row.id, stage: forkliftRoots[index].userData.stage, itemId: forkliftRoots[index].userData.taskId }))
   }
-  const updateCargo = () => {
+  const updateCargo = state => {
     if (low) return
-    const rows = [[], [], []], state = simulation.snapshot(), moving = new Map(state.tasks.filter(task => task.status === 'moving').map(task => [task.slotId, task]))
-    state.slots.forEach(slot => { if (slot.status === 'occupied' || slot.status === 'reserved_out') { const task = moving.get(slot.id), progress = task ? Math.max(0, Math.min(1, (state.nowMs - task.startedAt) / Math.max(1, task.completeAt - task.startedAt))) : 0; if (slot.status === 'reserved_out' && progress > .05) return; const row = slotById.get(slot.id); if (row) rows[slot.boxType].push({ position: pointForSlot(row), type: slot.boxType }) } })
+    const rows = [[], [], []], moving = new Map(state.tasks.map(task => [task.slotId, task]))
+    state.slots.forEach(slot => {
+      if (slot.status === 'reserved_out') {
+        const task = moving.get(slot.id)
+        if (task && (task.stage !== 'retrieve' || task.startedAt !== null && state.nowMs - task.startedAt > (task.completeAt - task.startedAt) * .05)) return
+      } else if (slot.status !== 'occupied') return
+      const row = slotById.get(slot.id)
+      if (row) rows[slot.boxType].push({ position: pointForSlot(row), type: slot.boxType })
+    })
     carried.forEach(item => rows[item.type].push(item))
     rows.forEach((items, type) => { const mesh = cargoMeshes[type]; items.forEach((item, index) => setMatrix(mesh, index, THREE, item.position)); mesh.count = items.length; mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere() })
   }
-  const updateShuttles = () => {
-    const state = simulation.snapshot(), moving = state.tasks.filter(task => task.status === 'moving'); carried.length = 0
+  const updateShuttles = state => {
+    const moving = state.tasks.filter(task => task.status === 'moving' && ['retrieve', 'putaway'].includes(task.stage))
+    moving.sort((a, b) => Number(live3DemonstrationSlot(b.slotId)) - Number(live3DemonstrationSlot(a.slotId)))
+    carried.length = 0
     for (let index = 0; index < shuttleCount; index++) {
       const task = moving[index], shuttleState = shuttleStates[index]; let position = { ...qc }, lift = 0
       if (task) {
         const row = slotById.get(task.slotId), slot = row ? pointForSlot(row) : qc, progress = Math.max(0, Math.min(1, (state.nowMs - task.startedAt) / Math.max(1, task.completeAt - task.startedAt)))
-        if (['retrieve', 'putaway'].includes(task.stage)) position = corridorPosition(slot, progress, task.stage)
-        else if (task.stage === 'conveyor') { const p = pathPoint(WH_R1_CONVEYOR_PATH, Math.max(0, state.nowMs - task.startedAt), 1); position = { x: p.x, y: slot.y, z: p.z } }
-        else position = { x: slot.x + (sink.x - slot.x) * progress, y: slot.y + (sink.y - slot.y) * progress, z: slot.z + (sink.z - slot.z) * progress }
+        if (['retrieve', 'putaway'].includes(task.stage)) position = corridorPosition(slot, progress, task.stage, task.slotId)
+
+
         shuttleState.movingFrom = slot.z; shuttleState.target = sink.z; shuttleState.position = position.z; shuttleState.movingAt = task.startedAt; shuttleState.lastAt = task.startedAt; shuttleState.carrying = progress > .45; shuttleState.status = progress > .5 ? 'delivery' : 'pickup'; lift = shuttleFrame(shuttleState, state.nowMs).lift
-        if (progress > .05 && progress < .98) carried.push({ type: task.boxType, position: { ...position, y: position.y + SHUTTLE_MAX_LIFT + lift } })
+        if (progress > .05 && progress < .98) carried.push({ task, type: task.boxType, position: { ...position, y: position.y + SHUTTLE_MAX_LIFT + lift, action: task.stage } })
       }
       setMatrix(shuttle, index, THREE, { ...position, y: position.y + lift }, [.82, .18, 1.08])
     }
     shuttle.instanceMatrix.needsUpdate = true; shuttle.computeBoundingSphere()
   }
-  const update = () => { const state = simulation.snapshot(); updateCargo(); updateShuttles(); updateActors(state); updateBoard(); dirty = false }
+  const updateBeltCargo = state => {
+    const rows = state.tasks.filter(task => task.status === 'moving').map(task => {
+      const position = live3ConveyorPose(task, state.nowMs)
+      return position && { task, position }
+    }).filter(Boolean)
+    rows.push(...forkCargo, ...(staffMotion?.cargo(state) || []))
+    const owned = new Set(rows.map(row => row.task.itemId))
+    const stacked = state.items.filter(item => item.stage === 'shipped' && !owned.has(item.itemId)).slice(-12)
+    stacked.forEach((task, index) => {
+      const position = { ...live3PalletBox(index), action: 'staged' }
+      rows.push({ task, position })
+    })
+    beltCargo.count = rows.length
+    beltCargo.userData.items = rows.map(({ task, position, size = [.22, .18, .22], carrierId = null }, index) => {
+      setMatrix(beltCargo, index, THREE, { ...position, y: position.y + size[1] / 2 }, size)
+      beltCargo.setColorAt(index, new THREE.Color(task.anomaly ? 0xc83b32 : BOX_COLORS[task.boxType]))
+      return { waybill: task.waybill, action: position.action || (task.anomaly ? 'exception' : null), weightKg: task.weightKg, destination: task.destination, position, size, carrierId }
+    })
+    beltCargo.userData.rackCargo = low ? [] : carried.map(({ task, position }) => ({ waybill: task.waybill, action: task.stage, position, size: [.72, .58, .82] }))
+    beltCargo.instanceMatrix.needsUpdate = true
+    if (beltCargo.instanceColor) beltCargo.instanceColor.needsUpdate = true
+    beltCargo.computeBoundingSphere()
+    const weighed = rows.find(row => row.position.action === 'weigh')?.task
+    if (weightLabel) {
+      weightLabel.visible = Boolean(weighed)
+      if (weighed && weightTexture?.image?.getContext && lastWaybill !== weighed.waybill) {
+        lastWaybill = weighed.waybill
+        const ctx = weightTexture.image.getContext('2d')
+        ctx.fillStyle = '#14353d'; ctx.fillRect(0, 0, 384, 96)
+        ctx.fillStyle = '#ebfffb'; ctx.font = 'bold 26px sans-serif'
+        ctx.fillText(weighed.waybill + ' · ' + weighed.weightKg + ' kg', 12, 42)
+        ctx.font = '22px sans-serif'; ctx.fillText(weighed.destination + ' · 称重', 12, 76)
+        weightTexture.needsUpdate = true
+      }
+    }
+  }
+  const update = (dt = 0) => {
+    const state = currentState = simulation.snapshot()
+    updateShuttles(state); updateCargo(state); updateActors(state)
+    if (!state.paused) staffMotion?.update(state, dt, slotById, carried)
+    if (!staffMotion) updateBeltCargo(state)
+    updateBoard(state)
+  }
+  simulation.advance(LIVE3_DEMO_WARMUP_MS)
   update()
   return { root: group, simulation, cargoMeshes, shuttle, statusBoard: board, qc, sink,
-    bindRuntime({ staff: nextStaff, vehicles: nextVehicles } = {}) { runtimeStaff = nextStaff || null; runtimeVehicles = nextVehicles || null; return { staff: Boolean(runtimeStaff), vehicles: Boolean(runtimeVehicles) } },
+    bindRuntime({ staff: nextStaff, vehicles: nextVehicles } = {}) {
+      runtimeStaff = nextStaff || null; runtimeVehicles = nextVehicles || null
+      runtimeStaff?.requireRealistic?.()
+      staffMotion = bindLive3Staff(runtimeStaff)
+      if (staffMotion) runtimeStaff.afterSolve = () => updateBeltCargo(currentState)
+      return { staff: Boolean(runtimeStaff), vehicles: Boolean(runtimeVehicles) }
+    },
     summary: () => { const state = simulation.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high' } },
     toggleBoard(value) { if (board) board.visible = value === undefined ? !board.visible : Boolean(value); return board?.visible ?? false },
-    onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); dirty = true; if (dirty) update() },
-    dispose() { if (disposed) return; disposed = true; simulation.dispose(); cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklift.geometry.dispose(); forklift.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); group.removeFromParent() },
+    onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); update(dt) },
+    dispose() { if (disposed) return; disposed = true; simulation.dispose(); stations.dispose(); beltCargo.geometry.dispose(); beltCargo.material.dispose(); beltCargo.dispose(); if (previousCargo) previousCargo.visible = true; cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklift.geometry.dispose(); forklift.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); weightLabel?.geometry.dispose(); weightLabel?.material.dispose(); weightTexture?.dispose?.(); group.removeFromParent() },
   }
 }

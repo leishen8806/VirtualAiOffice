@@ -66,6 +66,9 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
       list.push(mesh);group.add(mesh)
     });batches.push(list)
   }
+  const view = new THREE.Frustum(), viewProjection = new THREE.Matrix4()
+  const vehicleBounds = new THREE.Sphere(new THREE.Vector3(), Math.hypot(SEMITRAILER_SIZE.length / 2, SEMITRAILER_SIZE.width / 2, SEMITRAILER_SIZE.height / 2) + .45)
+  const visibleBays = bays.map(() => true)
   let lastNight=-1,lastTier,disposed=false
   function update(camera) {
     if(disposed)return
@@ -75,9 +78,18 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
     const lowLod=truckLod(nearest,states.every(s=>s===2)?2:1,true)
     const next=low?bays.map(()=>lowLod):capNearTruckLods(bays.map((_,i)=>truckLod(distances[i],states[i])),distances,nearOwners)
     if(low)nearOwners.clear()
-    for(let i=0;i<bays.length;i++){if(next[i]!==states[i])changed=true;states[i]=next[i]}
+    camera.updateMatrixWorld()
+    group.updateWorldMatrix(true, false)
+    view.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse))
+    for(let i=0;i<bays.length;i++){
+      const b=bays[i]
+      vehicleBounds.center.set(b.x,b.y+SEMITRAILER_SIZE.height/2,b.z).applyMatrix4(group.matrixWorld)
+      const visible=view.intersectsSphere(vehicleBounds)
+      if(next[i]!==states[i]||visible!==visibleBays[i])changed=true
+      states[i]=next[i];visibleBays[i]=visible
+    }
     if(changed)for(let lod=0;lod<3;lod++){
-      const selected=bays.map((b,i)=>({b,i})).filter(({i})=>states[i]===lod)
+      const selected=bays.map((b,i)=>({b,i})).filter(({i})=>visibleBays[i]&&states[i]===lod)
       for(const mesh of batches[lod]){
         mesh.count=selected.length;mesh.visible=!!selected.length;mesh.userData.instanceToVehicleId=selected.map(({b})=>b.id)
         selected.forEach(({b},j)=>{matrix.compose(position.set(b.x,b.y,b.z),quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,b.yaw),scale);mesh.setMatrixAt(j,matrix)
