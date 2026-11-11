@@ -830,7 +830,7 @@ buildFoyerScene()
 const warehouseShell = buildWarehouseShell({ THREE, scene, collision: furnitureCollision, canvasTex, VI })
 const campusRegistry = CAMPUS_MODE ? createCampusRegistry({ THREE, scene, quality: qualityPolicy, layout: { campus: PLACE_MODE.miniBounds, building: PLACE_MODE.building || CAMPUS_BUILDING, zones: PLACE_MODE.zones, shuttle: CAMPUS_SHUTTLE_STRIP } }) : null
 if (campusRegistry) { campusModules.forEach(([name, factory]) => campusRegistry.register(name, factory)); campusRegistry.buildAll({ canvasTex, quality: qualityPolicy, renderer, env: env3d, A, createCharacter3D, createCharacter, createPerson, lite: LITE.lite }); campusRegistry.hiddenEnvironment = hideCampusEnvironment(THREE, scene, campusRegistry.root) }
-if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: loadStaffPerson, createPerson })
+if (PLACE_MODE.whr1 && campusRegistry && !LITE.lite) campusRegistry.module('wh-r1-staff')?.configureRealistic?.({ tier: qualityPolicy.tier, load: name => loadStaffPerson(name, 'lod'), createPerson })
 const controlRoom = CONTROL_ROOM_MODE ? buildDrControlRoom({ THREE, scene, canvasTex, origin: { x: -161, z: 8 } }) : null
 if (controlRoom && campusRegistry) campusRegistry.root.visible = false
 

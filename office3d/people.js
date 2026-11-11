@@ -82,9 +82,25 @@ export async function loadExtraAvatars(P, list) {
 
 // 仓配展示人员按距离加载：只拉指定的一张脸与共享动作，默认入口不触发。
 const warehouseStaffPeople = new Map()
-export async function loadStaffPerson(name) {
-  if (!warehouseStaffPeople.has(name)) warehouseStaffPeople.set(name, loadPeople(undefined, [], [name]))
-  return warehouseStaffPeople.get(name)
+export async function loadStaffPerson(name, variant = '') {
+  const key = `${variant}:${name}`
+  if (!warehouseStaffPeople.has(key)) {
+    warehouseStaffPeople.set(key, (async () => {
+      const out = { avatars: {}, clips: { male: {}, female: {} } }
+      const gender = /Female_/.test(name) ? 'female' : 'male'
+      const obj = await loadCompactPerson(name, variant)
+      out.avatars[name] = { obj, gender, scale: HEIGHT[gender] / obj.userData.compactHeight }
+      for (const [kind, file] of Object.entries(CLIPS)) {
+        const f = `${gender === 'male' ? 'm' : 'f'}_${file}`
+        const a = await loadAnimation(f), clip = a.animations[0]
+        clip.tracks = clip.tracks.filter((t) => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || (t.name.endsWith('.position') && /^Bip01\.position$/.test(t.name)))
+        if (kind === 'walk') flattenRoot(clip)
+        clip.name = kind; out.clips[gender][kind] = clip
+      }
+      out.extras = { male: {}, female: {} }; return out
+    })())
+  }
+  return warehouseStaffPeople.get(key)
 }
 
 // 首屏之后再慢慢加载日常小动作；加载到一个就能用一个

@@ -123,5 +123,5 @@ test('I1 assigns every record once to I2 through I7 and leaves runtime modules i
     references.push(path)
     assert.ok(path.startsWith('wh-r1/') || path === 'wh-r1-layout.js' || path === 'wh-r1-site-plan.js' || path === 'docs/wh-r1-motion-stage-a.mjs' || allowedRuntime.has(path) || /^dr-wh-r1-[^/]+\.js$/.test(path), path)
   }
-  assert.deepEqual(references.sort(), ['app.js', 'docs/wh-r1-motion-stage-a.mjs', 'dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-front.js', 'dr-wh-r1-inspector.js', 'dr-wh-r1-live1.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-site.js', 'dr-wh-r1-staff.js', 'dr-wh-r1-validation.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js', 'wh-r1-site-plan.js'])
+  assert.deepEqual(references.sort(), ['app.js', 'docs/wh-r1-motion-stage-a.mjs', 'dr-campus-registry.js', 'dr-campus-shell.js', 'dr-place-view.js', 'dr-wh-r1-front.js', 'dr-wh-r1-inspector.js', 'dr-wh-r1-live1.js', 'dr-wh-r1-racks.js', 'dr-wh-r1-semitrailers.js', 'dr-wh-r1-shell.js', 'dr-wh-r1-site.js', 'dr-wh-r1-staff.js', 'dr-wh-r1-validation.js', 'dr-wh-r1-vehicles.js', 'dr-wh-r1-workflow.js', 'dr-wh-r1-zones.js', 'place-mode.js', 'wh-r1-layout.js', 'wh-r1-site-plan.js', 'wh-r1/live3-staff-motion.js', 'wh-r1/live3-stations.js'])
 })
