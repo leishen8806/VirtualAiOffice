@@ -126,6 +126,8 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   const switchToReal = (member, people, createPerson) => {
     if (!people || typeof createPerson !== 'function') return false
     const next = member.realChar || (people.avatars?.[member.avatar] ? createPerson(people, member.avatar) : null); if (!next) return false
+    // Low tier keeps the full model but omits its transparent hair/accessory pass.
+    if (realistic?.tier === 'low') next.parts?.model?.traverse?.(node => { if (node.isSkinnedMesh && /_opacity$/i.test(node.material?.name || '')) node.visible = false })
     member.people = people; member.realChar = next; applyPlacement(member, next); group.add(next.group); member.char = next; member.loaded = true; syncPlaceholders(); return true
   }
   const switchToPlaceholder = member => {
@@ -167,7 +169,7 @@ export function buildWhR1Staff({ THREE, root, A, createCharacter3D, createCharac
   const requireRealistic = () => { realOnly = true; placeholders.standing.visible = placeholders.seated.visible = false }
   const configureRealistic = ({ tier = 'high', load, createPerson } = {}) => {
     // Real-only mode keeps every registered worker visible; no proxy mesh is used for distant rows.
-    realistic = { maxReal: realOnly ? members.length : (tier === 'low' ? 2 : 4), load, createPerson }
+    realistic = { tier, maxReal: realOnly ? members.length : (tier === 'low' ? 2 : 4), load, createPerson }
     armed = realOnly; hydrationAt = 0; syncPlaceholders()
   }
   const cameraIntent = () => { armed = true }

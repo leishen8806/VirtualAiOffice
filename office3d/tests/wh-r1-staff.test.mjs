@@ -111,3 +111,20 @@ test('WH-R1 R4 real-only mode hydrates every registered worker without proxy vis
   assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-standing').visible, false)
   assert.equal(value.root.getObjectByName('wh-r1-staff-placeholder-seated').visible, false)
 })
+
+test('WH-R1 low real-only mode omits the transparent model pass', async () => {
+  const { value } = context()
+  value.requireRealistic()
+  const opacityMeshes = []
+  const makeReal = () => {
+    const group = new THREE.Group(), model = new THREE.Group(), opacity = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+    opacity.isSkinnedMesh = true; opacity.material.name = 'worker_opacity'; model.add(opacity); group.add(model); opacityMeshes.push(opacity)
+    return { group, parts: { model }, pose: { sit: 0, walk: 0, phase: 0, talk: 0, carry: 0 }, solve() {} }
+  }
+  value.configureRealistic({ tier: 'low', load: async name => ({ avatars: { [name]: {} } }), createPerson: makeReal })
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  await new Promise(resolve => setTimeout(resolve, 20))
+  value.onFrame(.2, { camera: new THREE.PerspectiveCamera() })
+  assert.equal(opacityMeshes.length, 9)
+  assert.ok(opacityMeshes.every(mesh => !mesh.visible))
+})
