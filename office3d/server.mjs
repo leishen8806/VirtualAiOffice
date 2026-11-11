@@ -890,7 +890,6 @@ async function refreshRoutefitSummary() {
   })().finally(() => { routefitFlight = null })
   return routefitFlight
 }
-setInterval(() => { if (Date.now() - routefitCache.at >= 60000) refreshRoutefitSummary() }, 10000).unref?.()
 let backlogCache = { at: 0, rows: [] }
 const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
@@ -1259,7 +1258,7 @@ const server = http
       }
       if (url.pathname === '/health') return json(200, await healthReport())
       if (url.pathname === '/zone/routefit') {
-        if (Date.now() - routefitCache.at >= 60000) refreshRoutefitSummary()
+        if (Date.now() - routefitCache.at >= 60000 || !routefitCache.value) await refreshRoutefitSummary()
         if (!routefitCache.value) return json(200, { at: null, projectId: ROUTEFIT_PROJECT_ID, unavailable: true, reason: 'NOT_LOADED' })
         return json(200, routefitCache.value)
       }

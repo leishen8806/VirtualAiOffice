@@ -15,11 +15,11 @@ export const ROUTEFIT_ZONE = Object.freeze({
 
 export function routefitSeatAssignments(names, oldSeats) {
   const result = { ...oldSeats }
-  const slots = ROUTEFIT_ZONE.routefit
+  const slots = names.length ? names : ROUTEFIT_ZONE.routefit
   slots.forEach((name, i) => {
-    if (Object.hasOwn(result, name)) return
-    const col = i % 6, row = Math.floor(i / 6)
-    result[name] = ['routefit', 30.1 + col * 2.45, -4.3 + row * 3.6, col % 2 ? 0 : Math.PI, { x: 30.1 + col * 2.45, z: -3.2 + row * 3.6, yaw: col % 2 ? 0 : Math.PI }]
+    const col = i % 7, row = Math.floor(i / 7)
+    const x = 30.1 + col * 2.45, z = -3.6 + row * 3.6, yaw = col % 2 ? 0 : Math.PI
+    result[name] = ['routefit', x, z, yaw, { x, z: z + 1.1, yaw }]
   })
   return result
 }
