@@ -28,7 +28,7 @@ function fixture({ fetchError = null, applyErrors = ['seat measurement failed'] 
     },
     $: id => elements[id],
     setText: (id, value) => { elements[id].textContent = value },
-    snapshot() {}, mergeStatic() {}, scene: {}, sceneQuality: {}, startupQualityPlan: { current: 'low' }, applyQuality() {}, qualityMetrics: {}, performance: { now: () => 0 }, APP_STARTED: 0, qualityStartupPlan: () => ({ deferred: [] }), window: {}, takeQualityWork() {}, setTimeout() {}, console,
+    snapshot() {}, mergeStatic() {}, scene: {}, sceneQuality: {}, startupQualityPlan: { current: 'low' }, applyQuality() {}, qualityMetrics: {}, performance: { now: () => 0 }, APP_STARTED: 0, qualityStartupPlan: () => ({ deferred: [] }), window: {}, takeQualityWork() {}, finishLoading() {}, matchMedia: () => ({ matches: false }), LITE: { lite: false }, setTimeout() {}, console,
   }
   vm.runInNewContext(`${pollSource}\nthis.poll = poll`, context)
   context.poll.merged = true
