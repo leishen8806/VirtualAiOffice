@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 import { staleView } from '../ui.js'
 
-test('H2b stale banner uses server age and disables writes', () => {
+test('H2b stale banner reports server age without disabling writes', () => {
   assert.deepEqual(staleView(), { active: false, text: '' })
   assert.deepEqual(staleView({ active: true, ageMs: 125000, reason: 'UPSTREAM_UNAVAILABLE' }), { active: true, text: '数据来自 2 分钟前 · Paperclip 暂不可用' })
   assert.deepEqual(staleView({ active: true, ageMs: 1860000, reason: 'STALE_DATA' }), { active: true, text: '数据已过期 31 分钟' })
@@ -15,8 +15,11 @@ test('H2b hook stays client-only and fail-closed', () => {
   const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8')
   const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
   assert.match(html, /id="staleBanner"[^>]*role="status"/)
-  assert.match(ui, /staleView\(state\?\.stale\)\.active/)
-  assert.match(ui, /dispatchBtn'\)\.disabled = !!s\.lan \|\| stale\.active/)
-  assert.match(app, /detailDispatch'\)\.disabled = .*latestState\?\.stale\?\.active/)
+  assert.match(ui, /export function staleView\(stale\)/)
+  assert.match(ui, /dispatchBtn'\)\.disabled = !!s\.lan/)
+  assert.match(ui, /if \(state\?\.lan\) modal\.querySelectorAll/)
+  assert.doesNotMatch(ui, /if \(staleView\(state\?\.stale\)\.active\)/)
+  assert.match(app, /detailDispatch'\)\.disabled = document\.body\.classList\.contains\('lan'\)/)
+  assert.doesNotMatch(app, /detailDispatch'\)\.disabled = .*latestState\?\.stale\?\.active/)
   assert.doesNotMatch([ui, app, html].join('\n'), /\/state\?stale|stale\/state/)
 })

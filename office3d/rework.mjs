@@ -241,8 +241,8 @@ export function createRework({ dir, company, get, send, notify, dutyOn, now = Da
   }
 
   const timer = { ref: null }
-  return {
-    isCapped: (issueId) => isCappedView(view(), issueId),
+  const api = {
+    isCapped: (issueId) => isCappedView(api.view(), issueId),
     run: () => run(true),
     tick: () => run(false),
     start() { if (timer.ref) return; timer.ref = setInterval(() => { run(false).catch(() => {}) }, 30 * 60000); timer.ref.unref() },
@@ -261,4 +261,5 @@ export function createRework({ dir, company, get, send, notify, dutyOn, now = Da
       }
     },
   }
+  return api
 }
