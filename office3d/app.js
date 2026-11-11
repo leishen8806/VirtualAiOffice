@@ -1135,7 +1135,7 @@ function updateR1AutomaticSeats(agents) {
   const added = OFFICE_LAYOUT.assignAgents(agents)
   if (!added.length) return
   let notice = document.getElementById('r1-auto-seat-notice')
-  if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:12px;max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
+  if (!notice) { notice = document.createElement('div'); notice.id = 'r1-auto-seat-notice'; notice.setAttribute('role', 'status'); notice.style.cssText = 'position:fixed;bottom:70px;left:min(246px,calc(65vw - 12px));max-width:35vw;padding:8px;background:#fff8e8;color:#473b2f;z-index:20;font-size:12px'; document.body.appendChild(notice) }
   const unseatedCount = OFFICE_LAYOUT.unseated.length
   notice.replaceChildren()
   const summary = document.createElement('span')
@@ -1152,8 +1152,6 @@ function updateR1AutomaticSeats(agents) {
   close.onclick = () => { notice.hidden = true }
   notice.append(close, summary, details)
   notice.hidden = false
-  if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
-  r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
   r1SeatsRefreshing = true
   try {
     const furniture = officeV3.get('furniture3'); furniture.refresh()
@@ -1163,6 +1161,19 @@ function updateR1AutomaticSeats(agents) {
     if (walking) director.refreshSeats().finally(() => { r1SeatsRefreshing = false })
     else r1SeatsRefreshing = false
   } catch (error) { r1SeatsRefreshing = false; notice.textContent += `；座位准备失败：${error.message}` }
+  const startSeatNoticeTimer = () => requestAnimationFrame(() => {
+    if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
+    r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
+  })
+  const loading = $('loading')
+  if (loading.classList.contains('done')) startSeatNoticeTimer()
+  else {
+    const observer = new MutationObserver(() => {
+      if (!loading.classList.contains('done')) return
+      observer.disconnect(); startSeatNoticeTimer()
+    })
+    observer.observe(loading, { attributes: true, attributeFilter: ['class'] })
+  }
 }
 function applyState(s) {
   latestState = s
