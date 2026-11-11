@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "routefit": ["Lead2", "PM", "Architect", "BackendSenior", "Backend1", "DBEngineer", "ReactSenior", "React1", "React2", "Frontend1", "UIUX", "Localizer", "LedgerAuditor", "QAAutomation", "OpsEngineer", "Reviewer1", "Reviewer2", "SecurityReviewer", "FrontendSenior", "Frontend2", "Backend2"],
+  "platform": ["Lead", "KnowledgeKeeper", "OpsLead", "Reviewer3", "SecurityReviewer2"],
+  "paused": ["GoSenior", "GoSenior2", "Go1", "Go2"],
+  "groups": {
+    "driver-client": ["ReactSenior", "React1", "React2", "Frontend1"],
+    "client": ["UIUX", "Localizer", "FrontendSenior", "Frontend2"],
+    "admin-backend": ["Lead2", "PM", "Architect", "Backend2"],
+    "server": ["BackendSenior", "Backend1", "OpsEngineer"],
+    "database": ["DBEngineer", "LedgerAuditor"],
+    "test-review-coordination": ["QAAutomation", "Reviewer1", "Reviewer2", "SecurityReviewer"]
+  },
+  "wing": { "x0": 28, "x1": 46, "z0": -6, "z1": 6, "door": { "x": 27.2, "z": 0, "width": 3.2 }, "emptySeats": 2 }
+}

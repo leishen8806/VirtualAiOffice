@@ -20,6 +20,7 @@ import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
 import { officeSampleRequested } from './office-vis2/host.js'
+import { buildRoutefitZone, routefitSeatAssignments, routefitWingNavigation } from './project-zones.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -979,6 +980,7 @@ const boardViews = {}
 let fallbackIdx = 0
 
 function seatFor(name) {
+  if (ROUTEFIT_SEATS[name]) return ROUTEFIT_SEATS[name]
   if (SEATS[name]) return SEATS[name]
   return [FALLBACK[0], FALLBACK[1] + (fallbackIdx++) * 3, FALLBACK[2] + 3.2]
 }
@@ -1021,9 +1023,9 @@ function fitR1Workstation(ch, home, desk, handY, chairId) {
 function createAgentView(a, index) {
   const seat = seatFor(a.name)
   const [zone, sx, sz] = seat
-  const desk = LAYOUT3_MODE ? officeV3?.get('furniture3')?.deskAt(sx, sz) : makeDesk(sx, sz, ZONES[zone].accent)
+  const desk = LAYOUT3_MODE ? (officeV3?.get('furniture3')?.deskAt(sx, sz) || (ROUTEFIT_SEATS[a.name] ? makeDeskModel(sx, sz, ZONES.drlife.accent) : null)) : makeDesk(sx, sz, ZONES[zone].accent)
   if (!desk) return null
-  const chair = LAYOUT3_MODE ? desk.chair : makeChair(sx, sz + 1)
+  const chair = LAYOUT3_MODE ? (desk.chair || makeChair(sx, sz + 1)) : makeChair(sx, sz + 1)
   const gender = [0, 1, 0, 0, 1, 0, 1, 1, 0, 1][index % 10] ? 'female' : 'male'
   const seatIdx = Object.keys(SEATS).indexOf(a.name)
   const avatar = (OFFICE_LAYOUT.r1Phase === 'R1' && ({ Reviewer2: 'Male_Adult_07', SecurityReviewer: 'Male_Adult_10', ...R1_ADDED_AVATARS })[a.name]) || (OFFICE_LAYOUT.temporary?.some(w => w.business_id === a.name) ? 'Male_Adult_12' : null) || CAST_OVERRIDE[a.name] || CAST[(seatIdx >= 0 ? seatIdx : index) % CAST.length]
@@ -1044,7 +1046,7 @@ function createAgentView(a, index) {
   const home = workHome(seat)
   placeSeated(ch, home)
   let seatedHome = home
-  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
+  if (OFFICE_LAYOUT.r1Phase === 'R1' && ch.avatar && !ROUTEFIT_SEATS[a.name]) { const profile = officeV3.get('furniture3').seatedProfile(a.name); seatedHome = fitR1Workstation(ch, home, desk, profile.handY, desk.group.userData?.r1ChairId) }
   scene.add(ch.group)
   ch.group.traverse((o) => { o.userData.agentId = a.id })
   const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 36), new THREE.MeshBasicMaterial({ color: 0x35d07f, transparent: true, opacity: 0.95, toneMapped: false }))
@@ -1096,6 +1098,9 @@ if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   const boss = officeV3.get('furniture3').spec.boss
   if (OFFICE_SAMPLE_MODE) boardViews['苏晨'] = createBoardView('苏晨', boss.chair, boss.stand, [], 1)
 }
+const routefitZone = buildRoutefitZone({ THREE, scene, quality: qualityPolicy })
+routefitZone.navigation = routefitWingNavigation()
+const ROUTEFIT_SEATS = routefitSeatAssignments([], SEATS)
 
 // ───────────────────────── 区域标牌 ─────────────────────────
 const zoneLabels = []
@@ -2707,7 +2712,7 @@ if (!DR_MODE && OFFICE_LAYOUT.r1Phase === 'R1' && !LITE.lite) {
   }
   ready()
 }
-window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, enqueue: (e) => director.enqueue(e) }
+window.__office = { debugMeeting: (m) => { meetingsList = [m] }, debugVote: (s) => { voteForced = s || null; voteSessions = s ? [s] : [] }, voteState: () => voteMeet && { id: voteMeet.id, seated: [...voteSeated].map((v) => v.name) }, meetState: () => meet && { room: meet.room, idx: meet.idx, here: meet.here.map((v) => v.name), remote: meet.remote.map((v) => v.name) }, fun, gossipState: () => ({ gossip, threads: gossipThreads.length, played: [...gossipPlayed] }), chatLine, env3d, lifeTick, LOUNGE, step: (dt, n = 1) => { for (let i = 0; i < n; i++) step(dt, clock.t) }, A, THREE, scene, camera, renderer, views, boardViews, cam, goal, setGoal, boardState, director, routefitZone, routefitNavigation: routefitZone.navigation, enqueue: (e) => director.enqueue(e) }
 window.__office.furnitureCollision = activeCollision
 window.__office.r1Npcs = () => (r1Npcs ? r1Npcs.summary() : { count: 0, lite: !!LITE.lite })
 window.__office.r1NpcMembers = () => (r1Npcs ? r1Npcs.members : []) // 验收采样要读真实的 char.pose，不能靠场景反查重建
