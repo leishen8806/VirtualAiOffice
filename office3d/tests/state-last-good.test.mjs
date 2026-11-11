@@ -26,12 +26,14 @@ function temp(t) {
 function context(extra = {}) {
   const empty = () => ({}), view = { view: empty, summary: empty }
   const value = { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
+    performance: { now: () => 0 }, process: { env: {} },
     get: async p => p.endsWith('/dashboard') ? { tasks: { todo: 1 }, costs: { total: 2 }, pendingApprovals: 0 }
       : p.endsWith('/agents') ? [{ id: 'demo-agent', name: 'demo-name', status: 'idle' }] : [],
     backlogRows: async () => [], world: () => ({ duty: { on: false, days: [1] } }),
     readNames: empty, pidAlive: () => null, readProcessTable: async () => null,
     readProcessTables: async () => ({ previous: null, current: null }), runBusy: () => ({ busy: false, busyName: null }),
     runAlive: run => ({ alive: null, via: null, descendants: [] }), gossip: { maybeGenerate() {}, recent: () => [] },
+    attachRunDetails: async () => new Map(),
     stats: { ingest() {}, daily: () => ({ done: [] }), awards: () => [] },
     telegram: { view: empty, onState: async () => {} }, committee: view, standup: view, acceptance: { ...view, onState() {} },
     patrol: view, rework: view, handoff: view, mem: view, chat: view, workload: view,
@@ -117,6 +119,20 @@ test('missing corrupt invalid files yield 503, persisted credentials are removed
   assert.equal(out.actToken, '')
 })
 
+test('first background request waits for the initial refresh and returns a fresh snapshot', async t => {
+  const manager = createLastGoodState({ file: temp(t), backgroundMs: 20, timeoutMs: 100, log() {} })
+  const reply = await manager.run(async () => { await new Promise(resolve => setTimeout(resolve, 5)); return fixture() })
+  assert.equal(reply.stale, undefined)
+  assert.equal(reply.agents.length, 1)
+})
+
+test('first background request returns 503 after the bounded initial wait', async t => {
+  const manager = createLastGoodState({ file: temp(t), backgroundMs: 20, timeoutMs: 40, log() {} })
+  const started = Date.now()
+  await assert.rejects(() => manager.run(() => new Promise(() => {})), error => error?.status === 503 && error?.message === 'STATE_UNAVAILABLE_NO_SNAPSHOT')
+  assert.ok(Date.now() - started >= 35)
+})
+
 test('atomic writes exclude credentials, final snapshot survives restart and failed write keeps memory', async t => {
   const file = temp(t)
   const manager = createLastGoodState({ file, now: () => start, log() {} })
@@ -151,10 +167,11 @@ test('each optional source failure stays 200 with ordered gaps and unknown depen
     if (name === 'backlog') assert.deepEqual(reply.body.today.backlog, { value: null, reason: 'UPSTREAM_UNAVAILABLE' })
   }
   for (const required of ['agents', 'dashboard', 'issues']) {
-    await assert.rejects(loadStateComponents({ company: 'demo', backlog: async () => [], get: async p => {
+    const degraded = await loadStateComponents({ company: 'demo', backlog: async () => [], get: async p => {
       if (p.includes(`/${required}`)) throw new Error('fixture required')
       return required === 'dashboard' || !p.endsWith('/dashboard') ? [] : { tasks: {} }
-    } }))
+    } })
+    assert.equal(degraded.gaps.some(gap => gap.source === required), true)
   }
 })
 
@@ -295,6 +312,38 @@ test('/state keeps one upstream build for one, three, and five concurrent pages'
   }
 })
 
+test('background state refresh serves last success, coalesces work, and marks stale after three failures', async t => {
+  let ms = start, builds = 0, fail = false
+  const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 10000, staleAfterMs: 60000, log() {} })
+  t.after(() => manager.close())
+  const build = async () => { builds++; if (fail) throw new Error('fixture timeout'); return { ...fixture(), at: new Date(ms).toISOString() } }
+  await manager.run(build)
+  ms += 10000; const first = await manager.run(build)
+  assert.equal(first.stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 100))
+  fail = true
+  ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 100))
+  ms += 10000; assert.equal((await manager.run(build)).stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 100))
+  ms += 10000; await manager.run(build)
+  await new Promise(resolve => setTimeout(resolve, 100))
+  assert.equal((await manager.run(build)).stale.reason, 'UPSTREAM_UNAVAILABLE')
+  assert.ok(builds >= 4)
+})
+
+test('background refresh failures append a bounded rolling log line', async t => {
+  let ms = start, fail = false
+  const file = temp(t), logFile = file + '.refresh.log'
+  const manager = createLastGoodState({ file, logFile, now: () => ms, backgroundMs: 1, staleAfterMs: 60000, log() {} })
+  t.after(() => manager.close())
+  await manager.run(async () => fixture())
+  fail = true; ms += 2
+  await manager.run(async () => { if (fail) throw new Error('fixture refresh failure'); return fixture() })
+  await new Promise(resolve => setTimeout(resolve, 15))
+  assert.match(fs.readFileSync(logFile, 'utf8'), /\[state-refresh\] component=state .*fixture refresh failure/)
+})
+
 test('/state five-second response cache halves work at a three-second poll cadence', async () => {
   const poll = async (routeSource) => {
     let ms = start, builds = 0
@@ -384,7 +433,7 @@ test('act auth and body are unchanged; fake unavailable upstream never returns s
   const actNow = extract(source, 'async function act(a', '// 任务详情（只读）')
   assert.match(actNow, /^async function act\(a, options = \{\}\)/)
   assert.match(actNow, /need\(!nameConflict\(names, key, name\), '[^']*'\)/, 'rename 分支必须保留显示名查重')
-  assert.match(actNow, /const liveness = run && runAlive\(run, await readProcessTable\(\)\)/)
+  assert.match(actNow, /const run = await fullRunDetail\(a\.runId\)/)
   assert.match(actNow, /if \(shouldBlockCancel\(liveness\)\)/)
   assert.equal(actBody(actNow), actBody(extract(backup, 'async function act(a)', '// 任务详情（只读）')))
   const normalizeActCall = (text) => text.replace(/\r\n/g, '\n').replace(/await act\(body, \{ localFullAccess: !lanUser && !wallScope \}\)/, 'await act(body)') // DS-7：仅此一处调用点改动
@@ -416,6 +465,20 @@ test('strict state backlog reports a failed older cache rather than calling it f
   })
   await assert.rejects(strictRead(true), /BACKLOG_UNAVAILABLE/)
   assert.deepEqual(JSON.parse(JSON.stringify(await strictRead())), [{ id: 'old' }])
+})
+
+test('backlogRows coalesces concurrent cache misses into one list request', async () => {
+  const code = extract(source, 'async function backlogRows(', 'async function schedulerEnrichRows')
+  let calls = 0
+  const strictRead = vm.runInNewContext(code + '\nbacklogRows', {
+    Date: fixedDate,
+    backlogCache: { at: 0, rows: [] },
+    backlogFlight: null,
+    moduleGet: () => async () => { calls++; await new Promise(resolve => setTimeout(resolve, 5)); return { issues: [{ id: '1', identifier: 'CMP-1', projectId: 'p', title: 'x' }] } },
+    COMPANY: 'demo', CONTRACT_VIEW_ENABLED: false, SCHEDULER_VIEW_ENABLED: false,
+  })
+  await Promise.all([strictRead(true), strictRead(true), strictRead(true)])
+  assert.equal(calls, 1)
 })
 
 test('snapshot static paths denied and new helper has no Paperclip write or random/eval paths', () => {

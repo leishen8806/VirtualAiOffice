@@ -400,10 +400,11 @@ async function act(a, options = {}) {
   }
   if (a.type === 'cancel_run') { // 取消一次运行：进程还在就停掉；进程已退出的残留记录就把它标掉
     need(UUID.test(a.runId || ''), '运行 id 不对')
-    const runRows = await get(`/api/companies/${COMPANY}/heartbeat-runs?limit=1000`)
-    const run = (Array.isArray(runRows) ? runRows : runRows.runs || []).find((row) => row.id === a.runId)
-    const liveness = run && runAlive(run, await readProcessTable())
+    const run = await fullRunDetail(a.runId)
+    if (!run) throw Object.assign(new Error('运行状态未知，不能取消。'), { status: 409 })
+    const liveness = runAlive(run, await readProcessTable())
     if (shouldBlockCancel(liveness)) {
+      if (liveness.via === 'adapter') throw Object.assign(new Error('运行由 Paperclip 控制器托管，不能按本地进程号取消。'), { status: 409 })
       const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
       throw Object.assign(new Error(`进程仍在运行：${names}（${liveness.descendants.length} 个后代）；取消只会把记录标掉，进程会继续跑。`), { status: 409 })
     }
@@ -868,7 +869,13 @@ function voteSessions(agents) {
 
 let projectsCache = []
 let backlogCache = { at: 0, rows: [] }
-const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
+let backlogFlight = null
+const lastGoodState = createLastGoodState({
+  file: path.join(HERE, 'state-last-good.json'),
+  backgroundMs: 10000,
+  staleAfterMs: 60000,
+  logFile: path.join(HERE, 'state-refresh.log'),
+})
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
   try {
@@ -901,24 +908,67 @@ async function backlogRows(strict = false) {
     if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
     return backlogCache.rows
   }
-  try {
-    const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
-    const rows = Array.isArray(result) ? result : result.issues || []
-    backlogCache = { at: Date.now(), rows: rows.map((i) => ({
-      id: i.identifier,
-      issueId: i.id,
-      projectId: i.projectId || null,
-      title: i.title,
-      status: 'backlog',
-      ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
-      ...(SCHEDULER_VIEW_ENABLED ? {
-        priority: i.priority || null,
-        createdAt: i.createdAt || null,
-        assigneeAgentId: i.assigneeAgentId || null,
-      } : {}),
-    })) }
-  } catch (error) { if (strict) throw error; backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true } }
-  return backlogCache.rows
+  if (backlogFlight) {
+    const rows = await backlogFlight
+    if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+    return rows
+  }
+  backlogFlight = (async () => {
+    try {
+      const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
+      const rows = Array.isArray(result) ? result : result.issues || []
+      backlogCache = { at: Date.now(), rows: rows.map((i) => ({
+        id: i.identifier,
+        issueId: i.id,
+        projectId: i.projectId || null,
+        title: i.title,
+        status: 'backlog',
+        ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
+        ...(SCHEDULER_VIEW_ENABLED ? {
+          priority: i.priority || null,
+          createdAt: i.createdAt || null,
+          assigneeAgentId: i.assigneeAgentId || null,
+        } : {}),
+      })) }
+    } catch (error) {
+      if (strict) throw error
+      backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true }
+    } finally {
+      backlogFlight = null
+    }
+    return backlogCache.rows
+  })()
+  const rows = await backlogFlight
+  if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+  return rows
+}
+
+const runDetailCache = new Map()
+const runDetailFlights = new Map()
+const RUN_DETAIL_TTL_MS = 60 * 1000
+
+async function fullRunDetail(runId, getRun = get) {
+  const cached = runDetailCache.get(runId)
+  if (cached && Date.now() - cached.at < RUN_DETAIL_TTL_MS) return cached.value
+  if (runDetailFlights.has(runId)) return runDetailFlights.get(runId)
+  const flight = Promise.resolve(getRun(`/api/heartbeat-runs/${encodeURIComponent(runId)}`))
+    .then(value => { runDetailCache.set(runId, { at: Date.now(), value }); return value })
+    .finally(() => runDetailFlights.delete(runId))
+  runDetailFlights.set(runId, flight)
+  return flight
+}
+
+async function attachRunDetails(rows, getRun = get) {
+  const out = new Map()
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < rows.length) {
+      const row = rows[cursor++]
+      try { out.set(row.id, await fullRunDetail(row.id, getRun)) } catch { out.set(row.id, null) }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, rows.length) }, worker))
+  return out
 }
 
 async function schedulerEnrichRows(rows) {
@@ -984,8 +1034,11 @@ async function healthReport() {
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
   return lastGoodState.run(async () => {
+  const stateStarted = performance.now()
+  const timings = []
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true) })
+    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
+  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -997,10 +1050,12 @@ async function state() {
   const lastRun = new Map()
   const liveRun = new Map()
   const processTables = await readProcessTables({ wait: false })
+  const details = await attachRunDetails(runs.filter(r => r.status === 'running'), moduleGet('state'))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
     if (r.status === 'running' && !liveRun.has(r.agentId)) {
-      const liveness = runAlive(r, processTables.current)
+      const detail = details.get(r.id)
+      const liveness = detail ? runAlive({ ...r, ...detail }, processTables.current) : { alive: null, via: 'unknown', descendants: [] }
       const busy = runBusy(r, processTables.previous, processTables.current)
       liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via, busy: busy.busy, busyName: busy.busyName })
     }
