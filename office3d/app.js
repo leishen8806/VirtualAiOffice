@@ -1145,8 +1145,6 @@ function updateR1AutomaticSeats(agents) {
   close.onclick = () => { notice.hidden = true }
   notice.append(close, summary, details)
   notice.hidden = false
-  if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
-  r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
   r1SeatsRefreshing = true
   try {
     const furniture = officeV3.get('furniture3'); furniture.refresh()
@@ -1156,6 +1154,19 @@ function updateR1AutomaticSeats(agents) {
     if (walking) director.refreshSeats().finally(() => { r1SeatsRefreshing = false })
     else r1SeatsRefreshing = false
   } catch (error) { r1SeatsRefreshing = false; notice.textContent += `；座位准备失败：${error.message}` }
+  const startSeatNoticeTimer = () => requestAnimationFrame(() => {
+    if (r1SeatNoticeTimer) clearTimeout(r1SeatNoticeTimer)
+    r1SeatNoticeTimer = setTimeout(() => { notice.hidden = true }, 5000)
+  })
+  const loading = $('loading')
+  if (loading.classList.contains('done')) startSeatNoticeTimer()
+  else {
+    const observer = new MutationObserver(() => {
+      if (!loading.classList.contains('done')) return
+      observer.disconnect(); startSeatNoticeTimer()
+    })
+    observer.observe(loading, { attributes: true, attributeFilter: ['class'] })
+  }
 }
 function applyState(s) {
   latestState = s
