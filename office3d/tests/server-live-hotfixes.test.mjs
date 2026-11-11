@@ -28,10 +28,14 @@ test('HF-1 /state 轮询用到的四个任务级缓存都有上限，不会随�
 
 test('HF-2 收到 SIGINT / SIGTERM / pm2 shutdown 时先关监听端口再退出，避免旧进程占着 3200', () => {
   assert.match(serverSource, /const server = http\s*\n?\s*\.createServer/)
-  assert.match(serverSource, /server\.close\(\(\) => process\.exit\(0\)\)/)
-  assert.match(serverSource, /setTimeout\(\(\) => process\.exit\(1\), 5000\)\.unref\(\)/)
+  assert.match(serverSource, /server\.close\(\(\) => resolve\(\)\)/)
+  assert.match(serverSource, /lastGoodState\.close\(\)/)
+  assert.match(serverSource, /setTimeout\(resolve, 4000\)/)
+  assert.match(serverSource, /server\.closeAllConnections(?:\?\.)?\(\)/)
+  assert.match(serverSource, /clearTimeout\(timer\); clearInterval\(timer\)/)
   for (const signal of ['SIGINT', 'SIGTERM']) assert.match(serverSource, new RegExp(`process\\.once\\('${signal}', shutdown\\)`))
   assert.match(serverSource, /message === 'shutdown'/)
+  assert.match(serverSource, /process\.once\('disconnect', shutdown\)/)
 })
 
 test('HF-3 /state 响应按访问范围分别缓存 5 秒', () => {
