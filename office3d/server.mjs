@@ -61,6 +61,8 @@ let weather = null
 let nowcast = null
 let sun = { sunrise: null, sunset: null }
 let radar = null // { ms, level, nearby }
+const backgroundTimers = new Set()
+const trackTimer = timer => { backgroundTimers.add(timer); return timer }
 const RAIN_CODE = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
 const cloudCode = (cloud) => (cloud >= 75 ? 3 : cloud >= 45 ? 2 : cloud >= 20 ? 1 : 0)
 function pnhIso(ms) { const t = localParts(new Date(ms), PNH.tz); return `${t.y}-${String(t.mo).padStart(2, '0')}-${String(t.d).padStart(2, '0')}T${String(t.h).padStart(2, '0')}:${String(t.mi).padStart(2, '0')}` }
@@ -139,7 +141,7 @@ async function refreshWeather() {
   if (w) weather = { ...w, sunrise: sun.sunrise, sunset: sun.sunset, fetchedAt: new Date(fetchedAt).toISOString() }
 }
 refreshWeather()
-setInterval(refreshWeather, 60 * 1000) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
+trackTimer(setInterval(refreshWeather, 60 * 1000)) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
 
 function world() {
   let cfg = null
@@ -737,7 +739,7 @@ async function refreshSchedule() {
   } catch {}
 }
 refreshSchedule()
-setInterval(refreshSchedule, 2 * 60 * 1000)
+trackTimer(setInterval(refreshSchedule, 2 * 60 * 1000))
 
 // ── 企业知识库（只读）：E:\VirtualAIOffice\knowledge 里的 Markdown；页面只能看 public / internal，confidential 只显示标题 ──
 const KB_DIR = path.resolve(HERE, '..', '..', 'knowledge')
@@ -830,7 +832,7 @@ const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: modu
 mem.start()
 const chatGet = moduleGet('chat')
 const chat = createChat({ dir: HERE, company: COMPANY, get: chatGet, send, dutyOn: () => Boolean(world().duty?.on), agents: () => chatGet(`/api/companies/${COMPANY}/agents`), redactText })
-const chatStart = setTimeout(() => chat.start(), 60000); chatStart.unref?.()
+const chatStart = trackTimer(setTimeout(() => chat.start(), 60000)); chatStart.unref?.()
 // 前厅两项新数据（见 foyer.mjs）：匿名访客登记 + 董事会手写公告。默认关闭；foyer.json 原子写入、不在静态白名单里
 const foyer = createFoyer({ dir: HERE, now: Date.now, redactText, scanMemoryText, log: console.log })
 const workload = createWorkload({ dir: HERE, company: COMPANY, get: moduleGet('workload'), stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
@@ -883,9 +885,9 @@ async function refreshProjects() {
     projectsCache = (Array.isArray(p) ? p : p.projects || []).map((x) => ({ id: x.id, name: x.name, status: x.status }))
   } catch {}
 }
-const projectStart = setTimeout(refreshProjects, 15000); projectStart.unref?.()
-setInterval(refreshProjects, 5 * 60 * 1000)
-const snapshotLog = setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000); snapshotLog.unref?.()
+const projectStart = trackTimer(setTimeout(refreshProjects, 15000)); projectStart.unref?.()
+trackTimer(setInterval(refreshProjects, 5 * 60 * 1000))
+const snapshotLog = trackTimer(setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000)); snapshotLog.unref?.()
 if (process.env.OFFICE3D_LOAD_METRICS === '1') {
   let gcCount = 0
   const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
@@ -1525,8 +1527,16 @@ let shuttingDown = false
 function shutdown() {
   if (shuttingDown) return
   shuttingDown = true
-  server.close(() => process.exit(0))
-  setTimeout(() => process.exit(1), 5000).unref()
+  for (const timer of backgroundTimers) { clearTimeout(timer); clearInterval(timer) }
+  backgroundTimers.clear()
+  for (const service of [acceptance, patrol, handoff, mem, chat, workload, backgroundHealth]) {
+    try { service?.stop?.() } catch (error) { console.error('[shutdown] service stop failed', error) }
+  }
+  const closeState = Promise.resolve(lastGoodState.close()).catch((error) => console.error('[shutdown] state close failed', error))
+  const closed = new Promise(resolve => server.close(() => resolve()))
+  Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 10000))])
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
 }
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
