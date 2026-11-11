@@ -2260,6 +2260,7 @@ function pick(cx, cy, shift = false) {
     return
   }
   if (hit) { selectedId = hit.object.userData.agentId; showDetail(selectedId) } else {
+    closeOfficeR1Inspect()
     selectedId = null; $('detail').style.display = 'none'; selRing.visible = false
     document.getElementById('wh-r1-inspector-panel')?.remove()
     if (PLACE_MODE.whr1) campusRegistry?.disableWhR1Picking?.()
@@ -2275,14 +2276,17 @@ function placeOfficeR1Inspector(panel) {
   panel.style.top = `${Math.round(placed.top)}px`
   panel.style.right = 'auto'
 }
+function closeOfficeR1Inspect() { document.getElementById('office-r1-inspector-panel')?.remove() }
 function showOfficeR1Inspect(item) {
   let panel = document.getElementById('office-r1-inspector-panel')
-  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
-  panel.innerHTML = `<strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  if (!panel) { panel = document.createElement('aside'); panel.id = 'office-r1-inspector-panel'; panel.className = 'glass'; panel.style.cssText = 'position:fixed;left:14px;top:76px;z-index:8;max-width:300px;padding:10px 34px 10px 10px;font-size:12px;line-height:1.55'; document.body.appendChild(panel) }
+  panel.innerHTML = `<button type="button" class="office-r1-inspector-close" aria-label="关闭区域卡片" style="position:absolute;right:5px;top:5px;min-width:24px;min-height:24px;border:0;border-radius:6px;background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer">×</button><strong>${esc(item.id)}</strong><br>${esc(item.category)} · 区 ${esc(item.useScope || 'UNKNOWN')}<br>尺寸 ${item.dimensionsM.length ?? 'UNKNOWN'} × ${item.dimensionsM.width ?? 'UNKNOWN'} × ${item.dimensionsM.height ?? 'UNKNOWN'} m<br>登记坐标 (${item.coordinatesM.x ?? 'UNKNOWN'}, ${item.coordinatesM.y ?? 'UNKNOWN'}, ${item.coordinatesM.z ?? 0}) · yaw ${item.coordinatesM.yawDeg ?? 0}°<br>状态：${esc(item.status)}${item.unknown ? ' · UNKNOWN' : ''}`
+  panel.querySelector('.office-r1-inspector-close').addEventListener('click', closeOfficeR1Inspect)
   panel.hidden = false
   requestAnimationFrame(() => placeOfficeR1Inspector(panel))
   if (!panel.dataset.repositionBound) { addEventListener('resize', () => placeOfficeR1Inspector(panel)); panel.dataset.repositionBound = 'true' }
 }
+addEventListener('keydown', e => { if (e.key === 'Escape') closeOfficeR1Inspect() })
 function showWhR1Inspect(item) {
   if (item?.displayOnly) { ui.toast('演示人物 · 仅供参观'); return }
   let panel = document.getElementById('wh-r1-inspector-panel')
