@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, qualitySample } from '../town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from '../town-3d-core.mjs'
 import { readFileSync } from 'node:fs'
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
@@ -45,4 +45,19 @@ test('town renderer uses ShapeGeometry for water and green areas without span sk
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
   assert.match(js, /new THREE\.ShapeGeometry\(shape\)/)
   assert.doesNotMatch(js, /maxSpan/)
+})
+
+test('roads are classified and the ground covers every building', () => {
+  assert.equal(roadTier('primary'), 'major')
+  assert.equal(roadTier('secondary'), 'secondary')
+  assert.equal(roadTier('residential'), 'local')
+  assert.deepEqual(groundPlan([{ bboxWorld: [-10, -20, 40, 60] }], 5), { x: 15, z: 20, width: 60, depth: 90 })
+  const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
+  assert.match(js, /const a = pointWorld\(p0\), b = pointWorld\(p1\)/)
+})
+
+test('landmark labels choose visible silhouette profiles', () => {
+  assert.equal(landmarkProfile('Independence Monument'), 'spire')
+  assert.equal(landmarkProfile('Olympic Stadium'), 'stadium')
+  assert.equal(landmarkProfile('Central Market'), 'block')
 })

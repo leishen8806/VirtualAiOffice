@@ -34,3 +34,24 @@ export function chunkPlan(buildings, { grid = 200 } = {}) {
   }
   return [...chunks.entries()].map(([id, items]) => ({ id, items }))
 }
+
+export function roadTier(type = '') {
+  if (['motorway', 'trunk', 'primary'].includes(type)) return 'major'
+  if (['secondary', 'tertiary'].includes(type)) return 'secondary'
+  return 'local'
+}
+
+export function groundPlan(buildings, margin = 30) {
+  const boxes = buildings.map((item) => item.bboxWorld?.map(Number)).filter((box) => box?.length === 4 && box.every(Number.isFinite))
+  if (!boxes.length) return { x: 0, z: 0, width: 1100, depth: 900 }
+  const x0 = Math.min(...boxes.map((box) => box[0])), z0 = Math.min(...boxes.map((box) => box[1]))
+  const x1 = Math.max(...boxes.map((box) => box[2])), z1 = Math.max(...boxes.map((box) => box[3]))
+  return { x: (x0 + x1) / 2, z: (z0 + z1) / 2, width: x1 - x0 + margin * 2, depth: z1 - z0 + margin * 2 }
+}
+
+export function landmarkProfile(label = '') {
+  const value = label.toLowerCase()
+  if (/stadium|fc\b/.test(value)) return 'stadium'
+  if (/wat\b|pagoda|stupa|palace|monument/.test(value)) return 'spire'
+  return 'block'
+}

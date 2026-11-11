@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, qualitySample } from './town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from './town-3d-core.mjs'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -40,7 +40,9 @@ const mat = {
   ground: new THREE.MeshStandardMaterial({ color: 0xe5dccb, roughness: 1 }),
   building: new THREE.MeshStandardMaterial({ color: 0xf2eee5, roughness: .9 }),
   water: new THREE.MeshStandardMaterial({ color: 0x4c9eb1, roughness: .26, metalness: .08, transparent: true, opacity: .86, side: THREE.DoubleSide }),
-  road: new THREE.MeshStandardMaterial({ color: 0x8b8378, roughness: 1, transparent: true, opacity: .9, side: THREE.DoubleSide }),
+  roadMajor: new THREE.MeshStandardMaterial({ color: 0x5f5a54, roughness: 1, side: THREE.DoubleSide }),
+  roadSecondary: new THREE.MeshStandardMaterial({ color: 0x8b8378, roughness: 1, side: THREE.DoubleSide }),
+  roadLocal: new THREE.MeshStandardMaterial({ color: 0xb6afa5, roughness: 1, side: THREE.DoubleSide }),
   green: new THREE.MeshStandardMaterial({ color: 0x8eb17d, roughness: 1 }),
   markerOffice: new THREE.MeshStandardMaterial({ color: 0x346ba5, roughness: .55 }),
   markerWarehouse: new THREE.MeshStandardMaterial({ color: 0xb66b36, roughness: .55 }),
@@ -85,18 +87,26 @@ function mergedPolygons(items, y, material) {
   const m = new THREE.Mesh(g, material); worldGroup.add(m); return m
 }
 function mergedRoads(data) {
-  const positions = [], indices = []; let vertex = 0
+  const groups = new Map(['major', 'secondary', 'local'].map((tier) => [tier, { positions: [], indices: [], vertex: 0 }]))
   for (const road of data.roads) for (let i = 1; i < (road.line || []).length; i++) {
     const p0 = road.line[i - 1], p1 = road.line[i]
     const inside = p => Array.isArray(p) && p.length >= 2 && p[0] >= 104.9 && p[0] <= 104.985 && p[1] >= 11.52 && p[1] <= 11.59
     if (!inside(p0) || !inside(p1)) continue
-    const a = pointWorld([p0[1], p0[0]]), b = pointWorld([p1[1], p1[0]])
+    const a = pointWorld(p0), b = pointWorld(p1)
     if (![a.x,a.z,b.x,b.z].every(Number.isFinite)) continue
-    const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz) || 1, w = road.primary ? 1.8 : .75, nx = -dz / len * w / 2, nz = dx / len * w / 2
-    positions.push(a.x - nx, .03, a.z - nz, a.x + nx, .03, a.z + nz, b.x + nx, .03, b.z + nz, b.x - nx, .03, b.z - nz)
-    indices.push(vertex, vertex + 1, vertex + 2, vertex, vertex + 2, vertex + 3); vertex += 4
+    const tier = roadTier(road.type), group = groups.get(tier)
+    const width = tier === 'major' ? 2.8 : tier === 'secondary' ? 1.6 : .8
+    const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz) || 1, nx = -dz / len * width / 2, nz = dx / len * width / 2
+    const y = tier === 'major' ? .07 : tier === 'secondary' ? .06 : .05
+    group.positions.push(a.x - nx, y, a.z - nz, a.x + nx, y, a.z + nz, b.x + nx, y, b.z + nz, b.x - nx, y, b.z - nz)
+    group.indices.push(group.vertex, group.vertex + 1, group.vertex + 2, group.vertex, group.vertex + 2, group.vertex + 3); group.vertex += 4
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setIndex(indices); g.computeVertexNormals(); worldGroup.add(new THREE.Mesh(g, mat.road))
+  for (const [tier, group] of groups) {
+    if (!group.positions.length) continue
+    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(group.positions, 3)); geometry.setIndex(group.indices); geometry.computeVertexNormals()
+    const material = tier === 'major' ? mat.roadMajor : tier === 'secondary' ? mat.roadSecondary : mat.roadLocal
+    const mesh = new THREE.Mesh(geometry, material); mesh.name = `town-roads-${tier}`; worldGroup.add(mesh)
+  }
 }
 function extrudedBuildings(items, simplified = false) {
   const positions = [], indices = []; let vertex = 0
@@ -122,7 +132,7 @@ function extrudedBuildings(items, simplified = false) {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); g.setIndex(indices); g.computeVertexNormals(); return g
 }
 function addRoads(data) { mergedRoads(data) }
-function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon);const m=new THREE.Mesh(new THREE.BoxGeometry(8,height,8),material);m.position.set(p.x,height/2,p.z);m.name=label;worldGroup.add(m); const el=document.createElement('div'); el.className='town3d-label'; el.textContent=label; el.dataset.world=`${p.x},${height},${p.z}`; document.body.append(el); return m }
+function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon),profile=landmarkProfile(label),group=new THREE.Group();group.name=label;group.position.set(p.x,0,p.z);const add=(geometry,y)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.y=y;group.add(mesh)};if(profile==='stadium'){add(new THREE.CylinderGeometry(5,5,1.5,16),.75);const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.65,5,20),material);ring.rotation.x=Math.PI/2;ring.position.y=1.7;group.add(ring)}else if(profile==='spire'){add(new THREE.BoxGeometry(8,1.2,8),.6);add(new THREE.CylinderGeometry(1.8,3.2,height*.5,8),1.2+height*.25);add(new THREE.ConeGeometry(3.1,height*.38,8),1.2+height*.69)}else{add(new THREE.BoxGeometry(8,height*.58,8),height*.29);add(new THREE.BoxGeometry(5,height*.36,5),height*.76)}worldGroup.add(group);const el=document.createElement('div');el.className='town3d-label';el.textContent=label;el.dataset.world=`${p.x},${height},${p.z}`;document.body.append(el);return group}
 async function boot(){
   loaderApi.progress(8, '下载城市数据…')
   const [res, mapRes] = await Promise.all([fetch('/town-3d-data.json'), fetch('/town-map.json')]); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); const mapData=mapRes.ok ? await mapRes.json() : null; loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
@@ -139,7 +149,7 @@ async function boot(){
   const landmarks = (mapData?.layers?.landmarks || []).map(item => [item.name, item.lat, item.lon]).filter(([, lat, lon]) => Number.isFinite(lat) && Number.isFinite(lon))
   landmarks.forEach(([label,lat,lon])=>marker(lat,lon,10,mat.markerWarehouse,label))
   const landmarkList=document.querySelector('#town3dLandmarkList'); if (landmarkList) landmarkList.remove()
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(1100,900),mat.ground); floor.rotation.x=-Math.PI/2; floor.position.y=-.02; worldGroup.add(floor); fitCamera()
+  const ground=groundPlan(buildings),floor=new THREE.Mesh(new THREE.PlaneGeometry(ground.width,ground.depth),mat.ground); floor.name='town-ground'; floor.rotation.x=-Math.PI/2; floor.position.set(ground.x,-.02,ground.z); worldGroup.add(floor); fitCamera()
   status.textContent=`3D ${quality}｜建筑 ${sampled.length}/${buildings.length}｜分块 ${chunks.length}（${Object.keys(data.chunks||{}).length} 数据块）｜calls – / tris –`; loaderApi.progress(95, '画出第一帧…')
   loaderApi.progress(100, '场景就绪'); loaderApi.done()
   animate()
