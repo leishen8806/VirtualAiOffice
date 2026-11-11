@@ -1,0 +1,16 @@
+{
+  "revision": "r185",
+  "license": "MIT",
+  "runtimeUpgrade": false,
+  "authorization": "User explicitly approved official exporter and required missing official imports, conversion only, no npm installation.",
+  "files": [
+    {
+      "file": "exporters/GLTFExporter.js",
+      "url": "https://raw.githubusercontent.com/mrdoob/three.js/r185/examples/jsm/exporters/GLTFExporter.js",
+      "sha256": "318c588c527d03528a60610a4fc420018375a5c1bcf520e48f3666c5bc28d90d"
+    }
+  ],
+  "imports": [
+    "three (existing r185)"
+  ]
+}

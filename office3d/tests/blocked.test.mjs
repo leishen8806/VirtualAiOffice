@@ -13,13 +13,14 @@ function setup(t, options = {}) {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   let time = Date.parse('2026-10-19T08:30:00+07:00'), n = 0
   const agents = ['Lead', 'PM', 'Architect', 'Backend2', 'Frontend2', 'Reviewer2', 'Worker', 'GoSenior', 'DBEngineer', 'Target'].map((name) => ({ id: name, name, status: 'idle' }))
-  const issues = [], runs = [], writes = [], notices = [], approvals = {}, incidents = []
+  const issues = [], runs = [], writes = [], notices = [], approvals = {}, incidents = [], calls = []
   const add = (id, extra = {}) => { const i = { id, identifier: id, title: '普通任务', description: '', assigneeAgentId: 'Worker', status: 'blocked', blockedBy: [], updatedAt: '2026-10-18T08:30:00+07:00', comments: [], ...extra }; issues.push(i); return i }
   const issue = add('CMP-1')
   const get = async (p) => {
+    calls.push(p)
     if (p.endsWith('/agents')) return structuredClone(agents)
     if (p.endsWith('/projects')) return [{ id: 'ops', name: '运营与知识库' }]
-    if (p.endsWith('/issues')) return structuredClone(issues)
+    if (p.startsWith('/api/companies/C/issues')) return structuredClone(issues)
     if (p.includes('/heartbeat-runs?')) return structuredClone(runs)
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues.find((i) => i.id === m[1]); assert.ok(i, p); return structuredClone(m[2] ? i.comments : i) }
@@ -43,7 +44,7 @@ function setup(t, options = {}) {
   const setTime = (s) => { time = Date.parse(s) }
   const vote = (rows) => { for (const i of issues.filter((i) => i.id.startsWith('vote-'))) { i.status = 'done'; i.comments = [{ authorAgentId: i.assigneeAgentId, body: rows[i.assigneeAgentId] || 'VOTE 1: CONTINUE | 继续核对', createdAt: new Date(time).toISOString() }] } }
   const toVoting = async () => { await patrol.run(); advance(3); await patrol.run(); advance(3); await patrol.run(); assert.equal(patrol.view().batch?.state, 'voting') }
-  return { dir, file: path.join(dir, 'blocked.json'), issue, issues, agents, runs, writes, notices, approvals, incidents, add, patrol, factory, advance, setTime, vote, toVoting }
+  return { dir, file: path.join(dir, 'blocked.json'), issue, issues, agents, runs, writes, notices, approvals, incidents, calls, add, patrol, factory, advance, setTime, vote, toVoting }
 }
 const reason = (type, check = '立即复核') => ({ body: `阻塞：${type} | 解除条件：需要核实 | 下次检查：${check}`, createdAt: '2026-10-19T01:00:00Z' })
 
@@ -62,6 +63,7 @@ for (const [label, extra] of [['未满足依赖', { blockedBy: [{ status: 'todo'
   const w = setup(t); Object.assign(w.issue, extra)
   const before = fs.existsSync(w.file)
   assert.ok((await w.patrol.preview()).items[0].skip)
+  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=40&summary=true'))
   assert.equal(fs.existsSync(w.file), before); await w.patrol.run(); assert.equal(w.writes.length, 0)
 })
 test('负责人 paused 跳过', async (t) => { const w = setup(t); w.agents.find((a) => a.name === 'Worker').status = 'paused'; await w.patrol.run(); assert.equal(w.writes.length, 0) })

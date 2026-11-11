@@ -54,7 +54,7 @@ function joinGeometry(THREE, parts) {
 export function buildOfficeBrandMarks({ THREE, root, layout, assets, canvasTex } = {}) {
   if (!THREE || !root || !layout) throw new TypeError('buildOfficeBrandMarks requires THREE, root and layout')
   const center = layout.bar.center, front = layout.frontDesk, barRadius = barSpec(layout).counterRadius ?? barSpec(layout).radius, angle = Math.asin(1.1 / barRadius)
-  const grille = receptionBackdrop(front).grille
+  const grille = receptionBackdrop(front, layout).grille
   const marks = [
     { id: 'bar-fascia', x: center.x + Math.sin(angle) * (barRadius + .06), y: .50, z: center.z + Math.cos(angle) * (barRadius + .06), width: .92, yaw: angle },
     { id: 'reception-desk', x: front.center.x, y: .68, z: front.z1 + .026, width: .82, yaw: 0 },

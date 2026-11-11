@@ -6,6 +6,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const canonicalPath = (p) => { try { p = fs.realpathSync(p) } catch { p = path.resolve(p) } return process.platform === 'win32' ? p.toLowerCase() : p }
 const desktop = JSON.parse(fs.readFileSync(path.join(root, 'desktop', 'package.json'), 'utf8'))
 const resources = desktop.build?.extraResources || []
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'vao-packaged-'))
@@ -224,7 +225,7 @@ try {
   }
   // Desktop spec must point to the LEGACY shim (core/src/mcp/desktop.js), NOT the new-core local desktop-entry. That's the Legacy/neutral split.
   const expectedLegacyShim = path.resolve(core, 'src', 'mcp', 'desktop.js')
-  if (path.resolve(packagedDesktopScript) !== path.resolve(expectedLegacyShim)) {
+  if (canonicalPath(packagedDesktopScript) !== canonicalPath(expectedLegacyShim)) {
     throw new Error(`Legacy ToolCatalog.spec('desktop').args[0] must point to Legacy shim (${expectedLegacyShim}), got: ${packagedDesktopScript}`)
   }
   // Now spawn the EXACT command the catalog returned and run the real JSON-RPC initialize + tools/list handshake:

@@ -1,11 +1,11 @@
 import * as THREE from 'three'
-import { FBXLoader } from './vendor/three/jsm/loaders/FBXLoader.js'
+import { fixMaterials } from './people-materials.js'
+import { loadCompactPerson, loadCompactClips } from './compact-assets.js'
 import * as SkeletonUtils from './vendor/three/jsm/utils/SkeletonUtils.js'
 import { createGarmentMotion } from './garment-motion.js'
 
 // 写实人物：Microsoft Rocketbox（MIT），日常/商务便装、不同脸型与肤色。
-// 贴图已在隔离区从 2048 TGA 转为 1024 JPG/PNG；动画是同一套 Bip01 骨架的坐姿、站姿、说话、走路。
-const BASE = './assets/models/people/'
+// 原件保留；运行时读压缩 GLB、分档 WebP 和紧凑 Bip01 动画，转换与逐帧校验见 scripts/perf-load-2。
 export const AVATARS = {
   male: ['Male_Adult_01', 'Male_Adult_02', 'Male_Adult_03', 'Male_Adult_04', 'Male_Adult_05', 'Male_Adult_06', 'Male_Adult_07', 'Male_Adult_08', 'Male_Adult_09', 'Male_Adult_10', 'Male_Adult_11', 'Male_Adult_12'],
   female: ['Female_Adult_01', 'Female_Adult_02', 'Female_Adult_03', 'Female_Adult_04', 'Female_Adult_05', 'Female_Adult_06', 'Female_Adult_07', 'Female_Adult_08', 'Female_Adult_09', 'Female_Adult_10'],
@@ -19,93 +19,42 @@ const EXTRA = {
   lounge: ['sit_chair_idle_relaxed_01', 'sit_chair_idle_neutral_01'],
   standFlavor: ['idle_look_around_01', 'idle_stretch_arms_01', 'drink_idle', 'cell_phone_textmessage'],
 }
+export const FOODTRUCK_DEMO_MOTIONS = Object.freeze(['drink_idle', 'cell_phone_textmessage'])
 const HEIGHT = { male: 1.78, female: 1.66 }
-const BLANK = (() => { const c = document.createElement('canvas'); c.width = c.height = 1; return c.toDataURL('image/png') })()
 // 22 位 agent 按工位顺序分配（男女穿插），每人一张不同的脸
 export const CAST = ['Male_Adult_01', 'Female_Adult_01', 'Male_Adult_02', 'Male_Adult_03', 'Female_Adult_02', 'Male_Adult_04', 'Female_Adult_03', 'Male_Adult_05', 'Female_Adult_04', 'Male_Adult_06', 'Female_Adult_05', 'Male_Adult_07', 'Male_Adult_08', 'Female_Adult_06', 'Male_Adult_09', 'Female_Adult_07', 'Male_Adult_10', 'Female_Adult_08', 'Male_Adult_11', 'Female_Adult_09', 'Male_Adult_12', 'Female_Adult_10']
 const STRIDE = 1.21 // 走路动画一个循环走 1.21 米（实测根骨位移），用来让脚步与移动速度对上
 // Female_Adult_10 的宽袍下摆没有布料模拟；避免大幅抬臂动作把衣服拉穿。
 const LOOSE_GARMENT = /Female_Adult_10$/
 
-function makeLoader(folder) {
-  const m = new THREE.LoadingManager()
-  // FBX 里写的是原始 .tga 路径；改指向转换后的 JPG / PNG（透明贴图）
-  m.setURLModifier((url) => {
-    const name = decodeURIComponent(url.split(/[\\/]/).pop())
-    if (/_(normal|specular)\.tga$/i.test(name)) return BLANK // 只下载了颜色贴图；法线/高光图不加载
-    if (/\.tga$/i.test(name)) return BASE + folder + '/' + name.replace(/\.tga$/i, /opacity/i.test(name) ? '.png' : '.jpg')
-    return url
-  })
-  return new FBXLoader(m)
-}
-
-// FBX 带来的 Phong 材质换成 PBR，透明贴图（头发、睫毛）用 alphaTest，避免排序闪烁
-function fixMaterials(root) {
-  root.traverse((o) => {
-    if (!o.isMesh) return
-    o.castShadow = true
-    o.receiveShadow = true
-    o.frustumCulled = false
-    if (o.isSkinnedMesh) o.normalizeSkinWeights()
-    const conv = (m) => {
-      const map = m.map || null
-      if (map) { map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4 }
-      const cut = /opacity/i.test(m.name || '') || /opacity/i.test(map?.image?.src || map?.name || '')
-      const n = new THREE.MeshStandardMaterial({ map, color: 0xffffff, roughness: cut ? 0.6 : 0.72, metalness: 0, name: m.name })
-      if (cut) { n.transparent = false; n.alphaTest = 0.45; n.side = THREE.DoubleSide }
-      return n
-    }
-    o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material)
-  })
-}
-
-// 带表情的模型每人约 87 个全身大小的表情形变（位置 + 法线），22 人合计 1 GB 以上，是卡顿和显卡掉线的主因。
-// 页面只用到眨眼、张嘴、几个口型和微笑（见 createPerson 里的 MI），其余全部丢掉；法线形变也丢掉（眨眼张嘴看不出差别）。
-const KEEP_MORPH = /(EyeBlinkLeft|EyeBlinkRight|AK_25_JawOpen|VI_10_aa|VI_13_O|VI_11_E|MouthSmileLeft|MouthSmileRight|MouthFrownLeft|MouthFrownRight|BrowDownLeft|BrowDownRight|BrowInnerUp)$/
-function pruneMorphs(root) {
-  root.traverse((o) => {
-    if (!o.isMesh || !o.morphTargetDictionary) return
-    const g = o.geometry
-    const pos = g.morphAttributes.position || []
-    const keep = Object.entries(o.morphTargetDictionary).filter(([n]) => KEEP_MORPH.test(n)).sort((a, b) => a[1] - b[1])
-    if (!keep.length) {
-      g.morphAttributes = {}
-      o.morphTargetDictionary = undefined
-      o.morphTargetInfluences = undefined
-      return
-    }
-    g.morphAttributes = { position: keep.map(([, i]) => pos[i]) }
-    o.morphTargetDictionary = Object.fromEntries(keep.map(([n], j) => [n, j]))
-    o.morphTargetInfluences = keep.map(() => 0)
-  })
-}
+async function loadAnimation(name) { return { animations: await loadCompactClips(name) } }
 
 const cache = new Map()
-export async function loadPeople(onProgress) {
+export async function loadPeople(onProgress, extraAvatars = [], baseAvatars = null) {
   const out = { avatars: {}, clips: { male: {}, female: {} } }
-  const all = [...AVATARS.male.map((a) => ['male', a]), ...AVATARS.female.map((a) => ['female', a])]
+  const selected = baseAvatars ? [...new Set(baseAvatars)] : [...AVATARS.male, ...AVATARS.female]
+  const all = [...selected.map(a => [/Female_/.test(a) ? 'female' : 'male', a]), ...extraAvatars.filter(a => !selected.includes(a)).map(a => [/Female_/.test(a) ? 'female' : 'male', a])]
   let done = 0
   const total = all.length + Object.keys(CLIPS).length * 2
   const tick = () => onProgress && onProgress(++done / total)
   await Promise.all(all.map(async ([g, name]) => {
     // 优先用带表情的版本（会眨眼、说话时嘴动）；没有就用普通版
     let obj
-    try { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}_facial.fbx`) } catch { obj = await makeLoader(name).loadAsync(`${BASE}${name}/${name}.fbx`) }
+    obj = await loadCompactPerson(name)
     // 每个 FBX 都自带一盏强度 1 的环境光：22 个人叠起来会把整个场景照成一片白，全部去掉
     const lights = []
     obj.traverse((o) => { if (o.isLight) lights.push(o) })
     lights.forEach((l) => l.parent && l.parent.remove(l))
-    fixMaterials(obj)
-    pruneMorphs(obj)
-    const box = new THREE.Box3().setFromObject(obj)
-    const h = box.max.y - box.min.y
+    // The converted asset already has the same PBR materials, retained morphs
+    // and source height; avoid skinning every resting vertex again at startup.
+    const h = obj.userData.compactHeight
     out.avatars[name] = { obj, gender: g, scale: HEIGHT[g] / h }
     tick()
   }))
   for (const g of ['male', 'female']) {
     await Promise.all(Object.entries(CLIPS).map(async ([k, file]) => {
       const f = `${g === 'male' ? 'm' : 'f'}_${file}`
-      const a = await new FBXLoader().loadAsync(`${BASE}anim/${f}.fbx`)
+      const a = await loadAnimation(f)
       const clip = a.animations[0]
       // 导出辅助节点不在人物模型中，剔除其无效轨道，避免 PropertyBinding 警告。
       // 只保留旋转与根骨（Bip01）的位移：不同人骨长不同，其它位移轨道会把人拉变形
@@ -120,6 +69,24 @@ export async function loadPeople(onProgress) {
   return out
 }
 
+// NPC（服务人员、演示人物）用的人物不在 CAST 的 22 张脸里，按名字单独加载到同一个 P 上。
+// 动作片段与同事共用（已按性别加载好），所以这里只补 avatars。
+export async function loadExtraAvatars(P, list) {
+  await Promise.all(list.map(async ({ name, gender }) => {
+    if (P.avatars[name]) return
+    const obj = await loadCompactPerson(name)
+    P.avatars[name] = { obj, gender, scale: HEIGHT[gender] / obj.userData.compactHeight }
+  }))
+  return P
+}
+
+// 仓配展示人员按距离加载：只拉指定的一张脸与共享动作，默认入口不触发。
+const warehouseStaffPeople = new Map()
+export async function loadStaffPerson(name) {
+  if (!warehouseStaffPeople.has(name)) warehouseStaffPeople.set(name, loadPeople(undefined, [], [name]))
+  return warehouseStaffPeople.get(name)
+}
+
 // 首屏之后再慢慢加载日常小动作；加载到一个就能用一个
 export async function loadExtras(P) {
   for (const g of ['male', 'female']) {
@@ -129,7 +96,7 @@ export async function loadExtras(P) {
         if (g === 'male' && file === 'sit_table_idle_stretch_arms') continue
         const f = `${g === 'male' ? 'm' : 'f'}_${file}`
         try {
-          const a = await new FBXLoader().loadAsync(`${BASE}anim/${f}.fbx`)
+          const a = await loadAnimation(f)
           const clip = a.animations[0]
           clip.tracks = clip.tracks.filter((t) => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || (t.name.endsWith('.position') && /^Bip01\.position$/.test(t.name)))
           clip.name = f
@@ -155,6 +122,54 @@ function findBone(root, re) {
   return f
 }
 
+export const R1_HEAD_LIMITS = Object.freeze({ yaw: 80, pitchMin: -35, pitchMax: 45, roll: 30 })
+const HEAD_DEGREES = 180 / Math.PI
+
+export function r1HeadAngles(headWorld, chestWorld, modelWorld, bindHead, bindChest, out, s) {
+  s.bindHeadWorld.copy(modelWorld).multiply(bindHead)
+  s.bindChestWorld.copy(modelWorld).multiply(bindChest)
+  s.headMotion.copy(headWorld).multiply(s.inverse.copy(s.bindHeadWorld).invert())
+  s.chestMotion.copy(chestWorld).multiply(s.inverse.copy(s.bindChestWorld).invert())
+  s.relative.copy(s.inverse.copy(s.chestMotion).invert()).multiply(s.headMotion).normalize()
+  if (s.relative.w < 0) s.relative.set(-s.relative.x, -s.relative.y, -s.relative.z, -s.relative.w)
+  return out.setFromQuaternion(s.relative, 'YXZ')
+}
+
+export function limitR1HeadQuaternion(headWorld, chestWorld, modelWorld, bindHead, bindChest, out, s) {
+  const e = r1HeadAngles(headWorld, chestWorld, modelWorld, bindHead, bindChest, s.euler, s)
+  const pitchLimit = e.x < 0 ? -R1_HEAD_LIMITS.pitchMin : R1_HEAD_LIMITS.pitchMax
+  const scale = Math.max(1, Math.abs(e.y * HEAD_DEGREES) / R1_HEAD_LIMITS.yaw, Math.abs(e.x * HEAD_DEGREES) / pitchLimit, Math.abs(e.z * HEAD_DEGREES) / R1_HEAD_LIMITS.roll)
+  if (scale === 1) return out.copy(headWorld)
+  e.x /= scale; e.y /= scale; e.z /= scale
+  s.limited.setFromEuler(e)
+  out.copy(s.chestMotion).multiply(s.limited).multiply(s.bindHeadWorld).normalize()
+  if (out.dot(headWorld) < 0) out.set(-out.x, -out.y, -out.z, -out.w)
+  return out
+}
+
+function makeR1HeadControl(P, model, head) {
+  if (!P.r1HeadLimit || !head) return null
+  const chest = findBone(model, /Bip01_Spine2$/) || findBone(model, /Bip01_Spine1$/)
+  let skeleton = null
+  model.traverse(o => { if (!skeleton && o.isSkinnedMesh && o.skeleton.bones.includes(head) && o.skeleton.bones.includes(chest)) skeleton = o.skeleton })
+  if (!chest || !skeleton) return null
+  const bind = bone => {
+    const matrix = skeleton.boneInverses[skeleton.bones.indexOf(bone)].clone().invert(), quaternion = new THREE.Quaternion()
+    matrix.decompose(new THREE.Vector3(), quaternion, new THREE.Vector3())
+    return quaternion
+  }
+  const parentPath = []
+  for (let node = head.parent; node && node !== model; node = node.parent) parentPath.unshift(node)
+  if (!parentPath.includes(chest)) return null
+  const modelPath = []
+  for (let node = model; node; node = node.parent) modelPath.unshift(node)
+  const s = {
+    bindHeadWorld: new THREE.Quaternion(), bindChestWorld: new THREE.Quaternion(), headMotion: new THREE.Quaternion(), chestMotion: new THREE.Quaternion(),
+    relative: new THREE.Quaternion(), limited: new THREE.Quaternion(), inverse: new THREE.Quaternion(), euler: new THREE.Euler(0, 0, 0, 'YXZ'),
+  }
+  return { chest, bindHead: bind(head), bindChest: bind(chest), modelPath, modelWorld: new THREE.Quaternion(), parentPath, s, out: new THREE.Quaternion(), report: { limitedFrames: 0, yaw: 0, pitch: 0, roll: 0 } }
+}
+
 const used = new Set()
 // 对外接口与旧角色一致（group / body.head / pose / solve），director 与 app 不用改
 export function createPerson(P, name) {
@@ -175,6 +190,7 @@ export function createPerson(P, name) {
   root.add(holder)
   const garment = LOOSE_GARMENT.test(name) ? createGarmentMotion(model, root, src.scale) : null
   const head = findBone(model, /Bip01_Head$/) || findBone(model, /Head/)
+  const headControl = makeR1HeadControl(P, model, head)
   const hand = findBone(model, /Bip01_R_Hand$/)
   const mixer = new THREE.AnimationMixer(model)
   const clips = P.clips[src.gender]
@@ -234,11 +250,12 @@ export function createPerson(P, name) {
   }
   let flavor = null, flavorEnd = 0, nextFlavor = 8 + Math.random() * 25, folderReadyAt = 0
   let cur = null, lastPhase = 0
-  const q = new THREE.Quaternion(), qp = new THREE.Quaternion(), qd = new THREE.Quaternion()
+  const q = new THREE.Quaternion(), qp = new THREE.Quaternion(), qd = new THREE.Quaternion(), qc = new THREE.Quaternion()
   const UP = new THREE.Vector3(0, 1, 0)
   const X = P.extras[src.gender]
   const looseGarment = LOOSE_GARMENT.test(name)
   const pick = () => {
+    if (pose.r1Motion && X.r1Motions?.[pose.r1Motion]) return `r1:${pose.r1Motion}`
     if (pose.walk > 0.5) return 'walk'
     if (pose.sit > 0.5) {
       if (pose.lounge > 0.5 && X.lounge && X.lounge.length) return 'lounge'
@@ -247,7 +264,7 @@ export function createPerson(P, name) {
     return pose.talk > 0.5 && pose.carry <= 0.5 ? 'standTalk' : 'stand'
   }
   const loungeClip = () => X.lounge[Math.floor(pose.seed * 7) % X.lounge.length]
-  const actionFor = (k) => (k === 'lounge' ? extraAction(loungeClip(), false) : actions[k])
+  const actionFor = (k) => (k?.startsWith('r1:') ? extraAction(X.r1Motions[k.slice(3)], false) : k === 'lounge' ? extraAction(loungeClip(), false) : actions[k])
   function solve(dt) {
     pose.t += dt
     const want = pick()
@@ -293,7 +310,27 @@ export function createPerson(P, name) {
     lastPhase = pose.phase
     mixer.update(dt)
     if (garment) garment.update(dt)
-    if (head && Math.abs(pose.yaw) > 0.001) {
+    if (headControl) {
+      headControl.report.motion = flavor?.getClip().name || cur || 'none'
+      headControl.modelWorld.identity()
+      for (const node of headControl.modelPath) headControl.modelWorld.multiply(node.quaternion)
+      qp.copy(headControl.modelWorld)
+      for (const node of headControl.parentPath) {
+        qp.multiply(node.quaternion)
+        if (node === headControl.chest) qc.copy(qp)
+      }
+      q.copy(qp).multiply(head.quaternion)
+      if (Math.abs(pose.yaw) > 0.001) {
+        qd.setFromAxisAngle(UP, Math.max(-1, Math.min(1, pose.yaw)) * 0.7)
+        q.premultiply(qd)
+      }
+      limitR1HeadQuaternion(q, qc, headControl.modelWorld, headControl.bindHead, headControl.bindChest, headControl.out, headControl.s)
+      if (1 - Math.abs(headControl.out.dot(q)) > 1e-12) headControl.report.limitedFrames++
+      head.quaternion.copy(qp.invert().multiply(headControl.out))
+      headControl.report.pitch = headControl.s.euler.x * HEAD_DEGREES
+      headControl.report.yaw = headControl.s.euler.y * HEAD_DEGREES
+      headControl.report.roll = headControl.s.euler.z * HEAD_DEGREES
+    } else if (head && Math.abs(pose.yaw) > 0.001) {
       model.updateMatrixWorld(true)
       head.parent.getWorldQuaternion(qp)
       head.getWorldQuaternion(q)
@@ -304,6 +341,8 @@ export function createPerson(P, name) {
     folder.visible = pose.carry > 0.5 && pose.t >= folderReadyAt
     // 淡出期间仍跟随手掌，离开该动作后收起；文件夹优先占用手部。
     cup.visible = phone.visible = false
+    if (pose.r1Prop === 'cup') cup.visible = true
+    if (pose.r1Prop === 'phone') phone.visible = true
     if (pose.carry <= 0.5) for (const [clip, a] of extraActs) {
       if (!a.isRunning() || a.getEffectiveWeight() <= 0.05) continue
       if (/drink_idle$/.test(clip.name)) cup.visible = true
@@ -329,5 +368,245 @@ export function createPerson(P, name) {
     }
   }
   solve(0)
-  return { group: root, body: { head }, pose, solve, labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
+  return { group: root, body: { head }, pose, solve, hasR1Motion: (name) => !!X.r1Motions?.[name], labelDY: 0.36, ringY: src.gender === 'male' ? 2.0 : 1.88, isModel: true, avatar: name, r1HeadLimit: headControl?.report || null, cloneForTest: () => createPerson(P, name), parts: { folder, cup, phone, model, holder, garment } }
+}
+
+// Only the R1 caller opts in; existing animation pools and source clips stay intact.
+export const R1_SEATED_EXTRAS = Object.freeze(['sit_table_idle_neutral_02', 'sit_table_idle_relaxed_01', 'sit_table_idle_waiting_01', 'sit_table_idle_nervous_01', 'sit_table_gestic_shrug_01', 'sit_table_idle_touch_hair', 'sit_table_idle_roll_head'])
+export async function loadR1Extras(P) {
+  await Promise.all(['male', 'female'].flatMap(g => R1_SEATED_EXTRAS.filter(name => /idle_(neutral_02|relaxed_01|waiting_01|nervous_01)$/.test(name) && !(g === 'female' && name === 'sit_table_idle_nervous_01')).map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`
+    const source = await loadAnimation(file), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    ;(P.extras[g].sitFlavor ||= []).push(clip)
+  })))
+}
+
+
+export async function loadR1MovementExtras(P) {
+  const names = ['cheer_01', 'cheer_03', 'claphands_01', 'gestic_talk_excited_01', 'gestic_talk_relaxed_01']
+  await Promise.all(['male', 'female'].flatMap(g => names.map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`
+    const source = await loadAnimation(file), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    ;(P.extras[g].r1Motions ||= {})[name] = clip
+  })))
+  await Promise.all(['male', 'female'].flatMap(g => EXTRA.lounge.map(async name => {
+    const file = `${g === 'male' ? 'm' : 'f'}_${name}`, source = await loadAnimation(file), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file; (P.extras[g].lounge ||= []).push(clip)
+  })))
+}
+
+// 餐车演示由点击触发；不占用所有人物的后台待机动作与首次加载预算。
+export async function loadFoodtruckDemoExtras(P, gender) {
+  const motions = P.extras[gender].r1Motions ||= {}
+  await Promise.all(FOODTRUCK_DEMO_MOTIONS.filter(name => !motions[name]).map(async (name) => {
+    const file = `${gender === 'male' ? 'm' : 'f'}_${name}`
+    const source = await loadAnimation(file), clip = source.animations[0]
+    clip.tracks = clip.tracks.filter(t => (t.name.endsWith('.quaternion') && !/^(Bip01_Footsteps|MotionExtractionHelper)\./.test(t.name)) || t.name === 'Bip01.position')
+    clip.name = file
+    motions[name] = clip
+  }))
+}
+
+const R1_POOL_WARNED = new Set()
+export function r1SeatedAssets(P, avatar, profile, personName) {
+  const gender = avatar.startsWith('Female_') ? 'female' : 'male'
+  const clips = new Map([['neutral_01', P.clips[gender].sitIdle], ...(P.extras[gender].sitFlavor || []).map(clip => [clip.name.replace(/^[mf]_sit_table_idle_/, ''), clip])])
+  const names = [...new Set(profile?.motions || [])]
+  const neutral = names.find(name => /^neutral_0[12]$/.test(name))
+  if (names.length < 2 || !neutral || names.some(name => !/^(neutral_01|neutral_02|relaxed_01|waiting_01|nervous_01)$/.test(name) || !clips.has(name))) {
+    if (!R1_POOL_WARNED.has(personName)) { console.warn(`R1 ${personName}：坐姿动作池不足或未就绪，保留卡通占位`); R1_POOL_WARNED.add(personName) }
+    return null
+  }
+  P.extras[gender].r1Motions ||= {}
+  P.extras[gender].lounge ||= []
+  // Separate actions avoid cross-fading an action into itself when speech starts; source tracks stay intact.
+  return { ...P, r1HeadLimit: true, clips: { ...P.clips, [gender]: { ...P.clips[gender], sitIdle: clips.get(neutral), sitTalk: clips.get(neutral).clone() } }, extras: { ...P.extras, [gender]: { ...P.extras[gender], sitFlavor: names.filter(name => name !== neutral).map(name => clips.get(name)) } } }
+}
+
+export const R1_ARM_LIMITS = Object.freeze({ upperArm: 20, forearm: 30, wrist: 15 })
+export function computeR1SeatBase(report, targetGap = .38) {
+  if (Array.isArray(report?.pelvisOverflow) && report.pelvisOverflow.some(value => Number(value) > 1e-6)) return 0
+  if (!report?.hands?.length) return 0
+  const gap = Math.max(...report.hands.map(hand => Number(hand.deskGap) || 0))
+  return Math.min(.2, Math.max(0, gap - targetGap))
+}
+export function fitR1SeatedPerson(ch, { home, desk, chair, handY = .82, seatBase = 0 }) {
+  if (!Number.isFinite(handY) || handY < .75 || handY > .85) throw new Error('R1 hand target outside approved range')
+  if (!Number.isFinite(seatBase) || seatBase < 0 || seatBase > .2) throw new Error('R1 seat base outside approved range')
+  const model = ch.parts.model, pelvis = [], arms = [], skinning = new Map()
+  model.traverse(mesh => {
+    if (!mesh.isSkinnedMesh) return
+    const rows = new Map(), basis = new THREE.Matrix4(), cache = { rows, basis, bind: new THREE.Matrix4(), position: null, version: -1, changed: true }
+    skinning.set(mesh, cache)
+    const { skinIndex, skinWeight, position } = mesh.geometry.attributes
+    for (let i = 0; i < position.count; i++) {
+      let weight = 0
+      for (let j = 0; j < 4; j++) if (mesh.skeleton.bones[skinIndex.getComponent(i, j)]?.name === 'Bip01_Pelvis') weight += skinWeight.getComponent(i, j)
+      if (weight >= .5) {
+        const influences = []
+        for (let j = 0; j < 4; j++) {
+          const w = skinWeight.getComponent(i, j), index = skinIndex.getComponent(i, j)
+          if (!w) continue
+          if (!rows.has(index)) rows.set(index, new THREE.Matrix4())
+          influences.push([w, rows.get(index).elements])
+        }
+        const dynamicMorph = (mesh.geometry.morphAttributes.position || []).some(p => [0, 1, 2].some(k => p.getComponent(i, k) !== (mesh.geometry.morphTargetsRelative ? 0 : position.getComponent(i, k))))
+        pelvis.push({ mesh, i, influences, basis, cache, dynamicMorph, point: new THREE.Vector3() })
+      }
+    }
+  })
+  chair.updateWorldMatrix(true, true)
+  const hit = new THREE.Raycaster(new THREE.Vector3(home.x, 2, home.z), new THREE.Vector3(0, -1, 0)).intersectObject(chair, true).find(h => h.face.normal.y > .8)
+  if (!hit || !pelvis.length) throw new Error('R1 cannot measure the actual seat or pelvis')
+  const radians = Math.PI / 180, sin = Math.sin(home.yaw), cos = Math.cos(home.yaw)
+  const forwardAxis = new THREE.Vector3(-sin, 0, -cos), lateralAxis = new THREE.Vector3(cos, 0, -sin)
+  const cushion = { depthMin: Infinity, depthMax: -Infinity, lateralMin: Infinity, lateralMax: -Infinity }
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), normal = new THREE.Vector3(), centre = new THREE.Vector3()
+  chair.traverse(mesh => {
+    if (!mesh.isMesh || !mesh.geometry?.attributes.position) return
+    const position = mesh.geometry.attributes.position, index = mesh.geometry.index
+    for (let i = 0; i < (index ? index.count : position.count); i += 3) {
+      const read = j => new THREE.Vector3().fromBufferAttribute(position, index ? index.getX(i + j) : i + j).applyMatrix4(mesh.matrixWorld)
+      a.copy(read(0)); b.copy(read(1)); c.copy(read(2)); centre.copy(a).add(b).add(c).multiplyScalar(1 / 3)
+      normal.copy(b).sub(a).cross(c.clone().sub(a)).normalize()
+      if (normal.y < .8 || Math.abs(centre.y - hit.point.y) > .06) continue
+      for (const point of [a, b, c]) {
+        const dx = point.x - home.x, dz = point.z - home.z
+        const depth = dx * forwardAxis.x + dz * forwardAxis.z, lateral = dx * lateralAxis.x + dz * lateralAxis.z
+        cushion.depthMin = Math.min(cushion.depthMin, depth); cushion.depthMax = Math.max(cushion.depthMax, depth)
+        cushion.lateralMin = Math.min(cushion.lateralMin, lateral); cushion.lateralMax = Math.max(cushion.lateralMax, lateral)
+      }
+    }
+  })
+  if (!Number.isFinite(cushion.depthMin) || !Number.isFinite(cushion.lateralMin)) throw new Error('R1 cannot measure the actual cushion outline')
+  for (const side of ['L', 'R']) {
+    const bones = ['UpperArm', 'Forearm', 'Hand'].map(name => model.getObjectByName(`Bip01_${side}_${name}`))
+    if (bones.some(b => !b)) throw new Error(`R1 missing ${side} arm bones`)
+    const chain = []
+    for (let bone = bones[2]; bone && bone !== bones[0].parent; bone = bone.parent) chain.unshift(bone)
+    arms.push({ side, bones, chain, original: bones.map(b => b.quaternion.clone()) })
+  }
+  const spread = ch.avatar === 'Female_Adult_09' ? .08 : 0
+  const solve = ch.solve
+  const limits = [R1_ARM_LIMITS.upperArm, R1_ARM_LIMITS.forearm, R1_ARM_LIMITS.wrist].map(v => v * radians)
+  const pivot = new THREE.Vector3(), current = new THREE.Vector3(), wanted = new THREE.Vector3(), scale = new THREE.Vector3()
+  const delta = new THREE.Quaternion(), parent = new THREE.Quaternion(), world = new THREE.Quaternion()
+  const before = new THREE.Vector3(), target = new THREE.Vector3(), handWorld = new THREE.Quaternion(), rotation = new THREE.Quaternion()
+  const report = ch.r1Seated = { handY, seatY: hit.point.y, tableY: .75, seatRaise: chair.userData.seatAdjustment || 0, seatBase, forward: 0, lateral: 0, cushion, limits: R1_ARM_LIMITS, hands: [] }
+  // 骨盆最低点（世界 Y）：组的 y 先置 0 再量，返回值用来把骨盆贴到座面上。
+  const measurePelvis = () => {
+    ch.group.updateMatrixWorld(true)
+    for (const [mesh, cache] of skinning) {
+      const { rows, basis } = cache, position = mesh.geometry.attributes.position
+      cache.changed = cache.position !== position || cache.version !== position.version || !cache.bind.equals(mesh.bindMatrix)
+      cache.position = position; cache.version = position.version; cache.bind.copy(mesh.bindMatrix)
+      basis.multiplyMatrices(mesh.matrixWorld, mesh.bindMatrixInverse)
+      for (const [index, matrix] of rows) matrix.multiplyMatrices(mesh.skeleton.bones[index].matrixWorld, mesh.skeleton.boneInverses[index]).premultiply(basis)
+    }
+    let bottom = Infinity, depthMin = Infinity, depthMax = -Infinity, lateralMin = Infinity, lateralMax = -Infinity
+    // Same skinning as THREE, computing only world Y and reusing each bone matrix across vertices.
+    for (const { mesh, i, influences, basis, cache, dynamicMorph, point } of pelvis) {
+      // Cache only unchanged bind-space vertices; animated garments and nonzero morphs stay live.
+      if (cache.changed || dynamicMorph) THREE.Mesh.prototype.getVertexPosition.call(mesh, i, point).applyMatrix4(mesh.bindMatrix)
+      let x = 0, y = 0, z = 0, sum = 0
+      for (const [w, m] of influences) { y += w * (m[1] * point.x + m[5] * point.y + m[9] * point.z + m[13]); sum += w }
+      for (const [w, m] of influences) { x += w * (m[0] * point.x + m[4] * point.y + m[8] * point.z + m[12]); z += w * (m[2] * point.x + m[6] * point.y + m[10] * point.z + m[14]) }
+      const worldX = x + basis.elements[12] * (1 - sum), worldZ = z + basis.elements[14] * (1 - sum)
+      bottom = Math.min(bottom, y + basis.elements[13] * (1 - sum))
+      const dx = worldX - home.x, dz = worldZ - home.z
+      depthMin = Math.min(depthMin, dx * forwardAxis.x + dz * forwardAxis.z); depthMax = Math.max(depthMax, dx * forwardAxis.x + dz * forwardAxis.z)
+      lateralMin = Math.min(lateralMin, dx * lateralAxis.x + dz * lateralAxis.z); lateralMax = Math.max(lateralMax, dx * lateralAxis.x + dz * lateralAxis.z)
+    }
+    lastPelvisBounds = { depthMin, depthMax, lateralMin, lateralMax }
+    return bottom
+  }
+  let lastPelvisBounds = null
+  const fitAxis = (min, max, cushionMin, cushionMax) => {
+    const low = cushionMin - min, high = cushionMax - max, centreShift = (cushionMin + cushionMax - min - max) / 2
+    if (low > high) return { shift: centreShift, conflict: true }
+    return { shift: THREE.MathUtils.clamp(centreShift, low, high), conflict: false }
+  }
+  const updateSeatFit = () => {
+    // Keep the original 50 mm front-edge margin while using measured per-seat offsets.
+    const depth = fitAxis(lastPelvisBounds.depthMin, lastPelvisBounds.depthMax, cushion.depthMin, cushion.depthMax - .05)
+    depth.shift = THREE.MathUtils.clamp(depth.shift, cushion.depthMin - lastPelvisBounds.depthMin, cushion.depthMax - .05 - lastPelvisBounds.depthMax)
+    const lateral = fitAxis(lastPelvisBounds.lateralMin, lastPelvisBounds.lateralMax, cushion.lateralMin, cushion.lateralMax)
+    ch.group.position.x = home.x + forwardAxis.x * depth.shift + lateralAxis.x * lateral.shift
+    ch.group.position.z = home.z + forwardAxis.z * depth.shift + lateralAxis.z * lateral.shift
+    report.forward = depth.shift; report.lateral = lateral.shift; report.fitConflict = depth.conflict || lateral.conflict
+    return { depth, lateral }
+  }
+  ch.solve = dt => {
+    // Remove last frame's correction before the original mixer updates its pose.
+    for (const arm of arms) arm.bones.forEach((bone, i) => bone.quaternion.copy(arm.original[i]))
+    solve(dt)
+    if (ch.pose?.r1AtDesk === false) {
+      for (const arm of arms) arm.bones.forEach((bone, i) => arm.original[i].copy(bone.quaternion))
+      report.active = false
+      // MOVEFIX E：坐在公共座位（吧凳 / 椅子 / 沙发 / 长椅）上时，按 director 实测的座面高度贴合骨盆；
+      // 位置由 director 维护，这里只调 y。工位的手臂 IK 不适用，保持不动。
+      const seatY = ch.pose?.r1PublicSeatY
+      report.publicSeatY = Number.isFinite(seatY) ? seatY : null
+      if (!Number.isFinite(seatY)) { report.pelvisY = null; return }
+      ch.group.position.y = 0
+      const bottom = measurePelvis()
+      ch.group.position.y = seatY + .015 - bottom
+      ch.group.updateWorldMatrix(false, false)
+      report.pelvisY = seatY + .015
+      return
+    }
+    report.active = true; report.publicSeatY = null
+    ch.group.position.set(home.x, 0, home.z)
+    const bottom = measurePelvis()
+    updateSeatFit()
+    measurePelvis()
+    ch.group.position.y = hit.point.y + .015 - bottom
+    ch.group.updateWorldMatrix(false, false)
+    report.offset = ch.group.position.toArray(); report.pelvisY = hit.point.y + .015; report.hands = []
+    report.pelvis = lastPelvisBounds
+    report.pelvisOverflow = [
+      Math.max(0, cushion.depthMin - lastPelvisBounds.depthMin), Math.max(0, lastPelvisBounds.depthMax - cushion.depthMax),
+      Math.max(0, cushion.lateralMin - lastPelvisBounds.lateralMin), Math.max(0, lastPelvisBounds.lateralMax - cushion.lateralMax),
+    ]
+    for (const arm of arms) {
+      const { bones, original, chain } = arm, hand = bones[2]
+      bones.forEach((bone, i) => original[i].copy(bone.quaternion))
+      hand.getWorldPosition(before); target.copy(before)
+      hand.matrixWorld.decompose(pivot, handWorld, scale)
+      const dx = before.x - desk.x, dz = before.z - desk.z
+      const x = THREE.MathUtils.clamp(cos * dx - sin * dz + (arm.side === 'L' ? -spread : spread), -.62, .62), z = THREE.MathUtils.clamp(sin * dx + cos * dz, -.34, .34)
+      target.set(desk.x + cos * x + sin * z, handY, desk.z - sin * x + cos * z)
+      // Let raised hands/head-touch/stretch gestures pass through; never pin an arm to the desk.
+      const weight = 1 - THREE.MathUtils.smoothstep(before.y - ch.group.position.y, .90, 1.06)
+      const clampJoint = i => {
+        const angle = original[i].angleTo(bones[i].quaternion)
+        if (angle > limits[i]) bones[i].quaternion.slerpQuaternions(original[i], rotation.copy(bones[i].quaternion), limits[i] / angle)
+      }
+      if (weight > 0) {
+        for (let pass = 0; pass < (ch.avatar === 'Female_Adult_09' ? 8 : 4); pass++) for (let i = 1; i >= 0; i--) {
+          const joint = bones[i]
+          pivot.setFromMatrixPosition(joint.matrixWorld); current.setFromMatrixPosition(hand.matrixWorld).sub(pivot); wanted.copy(target).sub(pivot)
+          delta.setFromUnitVectors(current.normalize(), wanted.normalize())
+          joint.parent.matrixWorld.decompose(pivot, parent, scale); joint.matrixWorld.decompose(pivot, world, scale)
+          joint.quaternion.copy(parent.invert().multiply(delta.multiply(world))); clampJoint(i)
+          for (let j = chain.indexOf(joint); j < chain.length; j++) chain[j].updateWorldMatrix(false, false)
+        }
+        // The arm chain matrices were updated above; do not traverse the same ancestors again.
+        hand.parent.matrixWorld.decompose(pivot, parent, scale)
+        hand.quaternion.copy(parent.invert().multiply(handWorld)); clampJoint(2)
+        bones.forEach((bone, i) => bone.quaternion.slerpQuaternions(original[i], rotation.copy(bone.quaternion), weight))
+        bones[0].updateWorldMatrix(false, true)
+      }
+      const after = current.setFromMatrixPosition(hand.matrixWorld).clone()
+      const angles = bones.map((bone, i) => original[i].angleTo(bone.quaternion) / radians)
+      report.hands.push({ side: arm.side, before: before.toArray(), after: after.toArray(), deskGap: Math.hypot(after.x - desk.x, after.z - desk.z), clampedJoints: angles.reduce((sum, angle, i) => sum + (angle >= [20, 30, 15][i] - 1e-4 ? 1 : 0), 0), angles, weight })
+    }
+  }
+  ch.solve(0)
+  return report
 }

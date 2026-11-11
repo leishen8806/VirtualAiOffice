@@ -24,11 +24,28 @@ export function weatherText(code) {
   if (code >= 95) return ['⛈️', '雷阵雨']
   return ['🌡️', '—']
 }
-const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
+export const RAINY = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
+export const RAIN_AREA = Object.freeze({ width: 120, depth: 100, height: 40 })
+export const rainAnchorFor = (position = {}) => ({
+  x: Number.isFinite(position.x) ? position.x : 0,
+  z: Number.isFinite(position.z) ? position.z : 0,
+})
+export const rainVisibleFor = (quality, rain) => quality !== 'low' && rain > 0.05
+export function forceRainRequested(search = '', hostname = '') {
+  const host = String(hostname || '').toLowerCase()
+  const localHost = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.localhost')
+  const params = new URLSearchParams(String(search).replace(/^\?/, ''))
+  return localHost && params.getAll('rain').length === 1 && params.get('rain') === '1'
+}
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 const hm = (s) => { if (!s) return null; const m = String(s).match(/T(\d\d):(\d\d)/); return m ? +m[1] * 60 + +m[2] : null }
+export const r1EnvironmentRequested = (search = '') => {
+  const params = new URLSearchParams(String(search).replace(/^\?/, ''))
+  return params.getAll('layout').length === 1 && params.get('layout') === '3' && params.getAll('align').length === 1 && params.get('align') === '1' && params.getAll('officeSample').length === 1 && params.get('officeSample') === '1' && params.getAll('r1').length === 1 && params.get('r1') === '1'
+}
 
 export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, officeWarm = false }) {
+  const r1Mode = r1EnvironmentRequested(typeof location === 'undefined' ? '' : location.search)
   // ── 天空 ──
   const sky = new Sky()
   sky.scale.setScalar(3000)
@@ -143,8 +160,11 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   const leafMs = [0x4f8a3c, 0x5d9a44, 0x3f7a39, 0x6aa04f].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85, flatShading: true }))
   // 树冠用实例化网格（每种叶色一次绘制），随风摆动只改实例矩阵；树干是静态的，会被合并
   const crowns = []
-  const tree = (x, z, s = 1) => {
+  const treeGroups = scene.userData.officeBackdropTreeGroups ||= []
+  const tree = (x, z, s = 1, id) => {
     const g = new THREE.Group()
+    g.name = id
+    g.userData.officeBackdropTreeId = id
     g.position.set(x, -0.6, z)
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, 2.6 * s, 7), trunkM)
     t.position.y = 1.3 * s
@@ -153,14 +173,17 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     for (let k = 0; k < 3; k++) {
       const r = (1.3 + rnd() * 0.7) * s, m = (k + Math.floor(rnd() * 4)) % 4
       const px = (rnd() - 0.5) * 1.2 * s, py = (2.9 + k * 0.7 + rnd() * 0.4) * s, pz = (rnd() - 0.5) * 1.2 * s
-      crowns.push({ m, r, x: x + px, y: -0.6 + py, z: z + pz, ph: rnd() * 6 })
+      crowns.push({ m, r, x: x + px, y: -0.6 + py, z: z + pz, ph: rnd() * 6, treeId: id })
     }
     scene.add(g)
+    treeGroups.push(g)
   }
-  for (let x = -50; x <= 50; x += 9) { tree(x + rnd() * 2, -38 + rnd() * 2, 1 + rnd() * 0.3); tree(x + rnd() * 2, 46 + rnd() * 2, 1 + rnd() * 0.3) }
-  for (let z = -30; z <= 40; z += 9) { tree(-55 + rnd() * 2, z, 1.1); tree(55 + rnd() * 2, z, 1.1) }
-  add(new THREE.PlaneGeometry(60, 18), grass, 0, -0.595, -24).rotation.x = -Math.PI / 2
-  for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5)
+  for (let x = -50, i = 1; x <= 50; x += 9, i++) { tree(x + rnd() * 2, -38 + rnd() * 2, 1 + rnd() * 0.3, `north-row-${String(i).padStart(2,'0')}`); tree(x + rnd() * 2, 46 + rnd() * 2, 1 + rnd() * 0.3, `south-row-${String(i).padStart(2,'0')}`) }
+  for (let z = -30, i = 1; z <= 40; z += 9, i++) { tree(-55 + rnd() * 2, z, 1.1, `west-row-${String(i).padStart(2,'0')}`); tree(55 + rnd() * 2, z, 1.1, `east-row-${String(i).padStart(2,'0')}`) }
+  if (!r1Mode) {
+    add(new THREE.PlaneGeometry(60, 18), grass, 0, -0.595, -24).rotation.x = -Math.PI / 2
+    for (let i = 0; i < 14; i++) tree(-26 + i * 4 + rnd() * 2, -20 - rnd() * 10, 0.8 + rnd() * 0.5, `north-garden-${String(i + 1).padStart(2,'0')}`)
+  }
   const crownGeo = new THREE.IcosahedronGeometry(1, 1)
   const crownMeshes = leafMs.map((mat, mi) => {
     const list = crowns.filter((c) => c.m === mi)
@@ -282,23 +305,30 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   clouds.userData.dynamic = true
   scene.add(clouds)
 
-  // ── 雨：一团跟着建筑走的雨丝 ──
+  // ── 雨：覆盖当前镜头的雨丝（只在中/高档绘制） ──
   const RAIN_N = 7000
   const rainPos = new Float32Array(RAIN_N * 6)
   for (let i = 0; i < RAIN_N; i++) {
-    const x = (rnd() - 0.5) * 120, y = rnd() * 40, z = (rnd() - 0.5) * 100
-    rainPos.set([x, y, z, x + 0.05, y - 0.7, z], i * 6)
+    const x = (rnd() - 0.5) * RAIN_AREA.width, y = rnd() * RAIN_AREA.height, z = (rnd() - 0.5) * RAIN_AREA.depth
+    rainPos.set([x, y, z, x + 0.05, y - 1.05, z], i * 6)
   }
   const rainGeo = new THREE.BufferGeometry()
   rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3))
-  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xaab8c8, transparent: true, opacity: 0.45 }))
+  const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xd7ecff, transparent: true, opacity: 0.5, depthWrite: false, fog: false }))
   rain.visible = false
   rain.frustumCulled = false
   scene.add(rain)
+  const forceRain = forceRainRequested(typeof location === 'undefined' ? '' : location.search, typeof location === 'undefined' ? '' : location.hostname)
+  const moveRain = () => {
+    const anchor = rainAnchorFor(camera.position)
+    rain.position.x = anchor.x
+    rain.position.z = anchor.z
+  }
 
   // ── 室内灯：天黑或阴雨时亮 ──
   const indoor = []
-  for (const [x, z] of [[-15, -6], [-5, -6], [5, -6], [15, -6], [-15, 4], [-5, 4], [5, 4], [15, 4], [-26, -6], [-26, 5], [-37, -8], [-37, 7]]) {
+  let indoorLevel = 0
+  if (!r1Mode) for (const [x, z] of [[-15, -6], [-5, -6], [5, -6], [15, -6], [-15, 4], [-5, 4], [5, 4], [15, 4], [-26, -6], [-26, 5], [-37, -8], [-37, 7]]) {
     const l = new THREE.PointLight(0xffd6a0, 0, 16, 1.6)
     l.position.set(x, 3.7, z)
     scene.add(l)
@@ -317,7 +347,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
   scene.add(stars)
 
   // ── 世界状态：金边时间 + 天气 ──
-  const W = { minutes: 12 * 60, sunrise: 6 * 60, sunset: 18 * 60, cloud: 20, rain: 0, code: 1, wind: 8, got: false, gotAt: 0 }
+  const W = { minutes: 12 * 60, sunrise: 6 * 60, sunset: 18 * 60, cloud: 20, rain: forceRain ? 1 : 0, code: forceRain ? 63 : 1, wind: 8, got: forceRain, gotAt: 0 }
   const cur = { day: 1, cloud: 0.2, rain: 0 } // 平滑过渡用
   let lastEnv = { elev: 999, cloud: -1 }
   let flash = 0
@@ -344,6 +374,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
       W.code = w.code
       W.wind = w.windKmh ?? W.wind
     }
+    if (forceRain) { W.rain = 1; W.code = 63 }
     W.got = true
   }
 
@@ -359,6 +390,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     cur.cloud += (W.cloud / 100 - cur.cloud) * k
     cur.rain += (W.rain - cur.rain) * k
     const overcast = Math.min(1, cur.cloud * 0.8 + cur.rain * 0.6)
+    moveRain()
     u.turbidity.value = 3 + overcast * 9
     u.rayleigh.value = 1.2 + overcast * 1.6 + (1 - cur.day) * 0.8
     // 阳光：高度越低越暖，云越厚越弱
@@ -377,6 +409,14 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
       scene.environmentIntensity *= .12
       if (hemi) hemi.color.setHex(0xf4f1ea)
     }
+    if (r1Mode) {
+      sun.color.setHex(0xffb072).lerp(new THREE.Color(0xffdda8), smooth(2, 25, elev))
+      if (hemi) {
+        hemi.color.setHex(0xfff0d8).lerp(new THREE.Color(0xc6b7a3), overcast)
+        hemi.groundColor.setHex(0x8c6e4e)
+        hemi.intensity = .12 + .48 * cur.day * (1 - .3 * overcast) + flash * 3
+      }
+    }
     // 雾：夜里深色，阴雨更浓
     const fogDay = new THREE.Color(0xcdd6de).lerp(new THREE.Color(0x9ea6ae), overcast)
     scene.fog.color.copy(new THREE.Color(0x0e1320).lerp(fogDay, cur.day))
@@ -387,9 +427,9 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     cloudMat.color.setHex(0xffffff).lerp(new THREE.Color(0x6d7480), cur.rain * 0.8).multiplyScalar(0.25 + 0.75 * cur.day)
     cloudTex.offset.x += dt * (W.wind / 3600) * 0.02
     // 雨
-    rain.visible = quality !== 'low' && cur.rain > 0.05
+    rain.visible = rainVisibleFor(quality, cur.rain)
     if (rain.visible) {
-      rain.material.opacity = 0.2 + cur.rain * 0.4
+      rain.material.opacity = 0.34 + cur.rain * 0.46
       const p = rainGeo.attributes.position.array
       const fall = dt * (22 + cur.rain * 10)
       for (let i = 0; i < RAIN_N; i++) {
@@ -408,6 +448,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
     for (const m of cityMats) m.emissiveIntensity = night * 1.1
     lampM.emissiveIntensity = smooth(0.4, 0.9, night) * 4
     const indoorOn = Math.max(smooth(0.3, 0.8, night), overcast * 0.6)
+    indoorLevel = indoorOn
     for (const l of indoor) l.intensity = indoorOn * 18
     // 树叶随风轻轻摆
     const sway = Math.min(0.12, W.wind / 300)
@@ -433,6 +474,7 @@ export function buildEnvironment({ scene, renderer, camera, sun, hemi, rnd, offi
 
   return {
     get quality() { return quality },
+    get indoorLevel() { return indoorLevel },
     get night() { return 1 - cur.day },
     setQuality(q) {
       quality = ['low','medium','high'].includes(q) ? q : 'medium'

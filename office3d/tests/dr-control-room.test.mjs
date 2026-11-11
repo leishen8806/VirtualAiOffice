@@ -13,7 +13,7 @@ test('control room is an explicit opt-in place mode with a return path', () => {
       ...resolvePlaceMode('?campus=1&place=dr&controlRoom=1'),
       legacy: false,
     },
-    resolvePlaceMode('?place=drlife-warehouse&controlRoom=1'),
+    resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus&controlRoom=1'),
   )
   assert.equal(CONTROL_ROOM_SPEC.consoleSeats, 4)
   assert.equal(CONTROL_ROOM_SPEC.camera.az, 0)
@@ -30,7 +30,7 @@ test('control room implementation stays local, simulated and disposable', async 
   ].join('\n')
   assert.doesNotMatch(source, /fetch\s*\(|XMLHttpRequest|WebSocket|\/state|Paperclip|createTask|inventory/i)
   assert.match(source, /CAMBODIA_OUTLINE_D/)
-  assert.match(source, /demoSnapshotAt/)
+  assert.match(source, /sharedDemoSnapshotAt/)
   assert.doesNotMatch(source, /createDemoDisplay/)
   assert.match(source, /root\.removeFromParent\(\)/)
   assert.match(source, /模拟数据 · 示意/)
@@ -62,7 +62,7 @@ test('DR page control-room links use the latest canonical warehouse channel', ()
   )
   assert.equal(
     overviewDocument.nodes.drControlRoomLink.href,
-    '/?place=drlife-warehouse&controlRoom=1',
+    '/?place=drlife-warehouse&whr1=1&controlRoom=1',
   )
   assert.equal(
     overviewDocument.nodes.drControlRoomLink.textContent,
@@ -72,13 +72,13 @@ test('DR page control-room links use the latest canonical warehouse channel', ()
   const controlRoomDocument = mockDrDocument()
   prepareDrPage(
     resolvePlaceMode(
-      '?place=drlife-warehouse&controlRoom=1',
+      '?place=drlife-warehouse&legacy=drcampus&controlRoom=1',
     ),
     controlRoomDocument,
   )
   assert.equal(
     controlRoomDocument.nodes.drControlRoomLink.href,
-    '/?place=drlife-warehouse',
+    '/?place=drlife-warehouse&whr1=1',
   )
   assert.equal(
     controlRoomDocument.nodes.drControlRoomLink.textContent,

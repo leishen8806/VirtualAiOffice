@@ -1,4 +1,5 @@
-import { latestSearch } from './place-mode.js'
+import { latestSearch, whR1Requested } from './place-mode.js'
+import { WH_R1_ZONES } from './dr-wh-r1-zones.js'
 
 export function prepareDrPage(mode, documentRef = document) {
   documentRef.title = mode.title
@@ -28,6 +29,7 @@ export function isolateDrPlace({
   keepRoots = [],
   documentRef = document,
 }) {
+  if (whR1Requested(globalThis.location?.search)) zones = WH_R1_ZONES
   const officeRoots = []
   for (const root of scene.children) {
     if (root === campusRoot || keepRoots.includes(root) || root.isLight || environmentRoots.has(root)) continue

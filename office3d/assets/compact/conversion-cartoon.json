@@ -1,0 +1,90 @@
+[
+  {
+    "source": "office3d/assets/models/characters/Superhero_Female_FullBody.gltf",
+    "sourceSha256": "3aad6297a4ebaeea5e6239057576233df7bf8f8a37c2a54175244fa5507fe059",
+    "sourceBuffer": "office3d/assets/models/characters/Superhero_Female_FullBody.bin",
+    "sourceBufferSha256": "3a8220a485b33d05d879115a50697728b45a151781106033afb8b8c243fca208",
+    "file": "office3d/assets/compact/characters/Superhero_Female_FullBody.glb.gz",
+    "bytes": 328173,
+    "sha256": "a2bc74909a2d2a8673cd3de8e3fa1bafc77fc27233ea942e5653f9d608e2bdeb",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/Superhero_Male_FullBody.gltf",
+    "sourceSha256": "6c700b67ab15ba99ca994f88c6f8968cd96b4f834a02ff2e38aa20ffb7e5857b",
+    "sourceBuffer": "office3d/assets/models/characters/Superhero_Male_FullBody.bin",
+    "sourceBufferSha256": "459003f9745853ae562a85506a2b94dd56515c1f37728f9fa3d2ce1a3e4cd92f",
+    "file": "office3d/assets/compact/characters/Superhero_Male_FullBody.glb.gz",
+    "bytes": 319336,
+    "sha256": "7cf3202214185b5677debd974ed6bbf8534a03531eec721f95fc65bb48f6034c",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_Beard.gltf",
+    "sourceSha256": "9b4370b5d89f50799ddef85a522aff28adc32e9049246b3864a92e058175dcc8",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Beard.bin",
+    "sourceBufferSha256": "781cf9b719d75a9f8d73881d2ca0713fe580d774edc96adaded392aad37a72b7",
+    "file": "office3d/assets/compact/characters/hair/Hair_Beard.glb.gz",
+    "bytes": 16737,
+    "sha256": "cac2552ac6f559b4a36b13a25eaa27a4d4bc15045c1c81d1c415d98dc5fb5df5",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_Buns.gltf",
+    "sourceSha256": "1721c8013708324a193b21a62633c97dec3fdc1bd88c585b7868d210eca99724",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Buns.bin",
+    "sourceBufferSha256": "4f6d4c010201278483da8d6d46ec40e3beb8d9e679ec2139bed216c561bccd38",
+    "file": "office3d/assets/compact/characters/hair/Hair_Buns.glb.gz",
+    "bytes": 80291,
+    "sha256": "030e8d1f166cd9a09b78eb95037c291d4bb290a6342b6aa43afa84617aabdd45",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_Buzzed.gltf",
+    "sourceSha256": "c8b25f8f08c268172ed314b2b9e92813d6e1e47d79964786bb2798c81ec1eaa2",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Buzzed.bin",
+    "sourceBufferSha256": "89992fc7a5319df6f2908e44a3b694329fac4b500629a573224702e5fdd16f77",
+    "file": "office3d/assets/compact/characters/hair/Hair_Buzzed.glb.gz",
+    "bytes": 16111,
+    "sha256": "4bc2aa94a9bfa90de98f5aa7aaae016db1f1cc7118abc4c49b22a468359afc40",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_BuzzedFemale.gltf",
+    "sourceSha256": "3e0187d1d5d86dce7b8cf8ec77e602834d02e0760d4f215fe748bbf005a84fb5",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_BuzzedFemale.bin",
+    "sourceBufferSha256": "6f1ab9bc997b01311dc0635ee165edfe27bd9715222718bc4cf4265e10b933af",
+    "file": "office3d/assets/compact/characters/hair/Hair_BuzzedFemale.glb.gz",
+    "bytes": 13579,
+    "sha256": "8d05713899d6a29170d05ef12853b963d43454010802554537d942f1f54af178",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_Long.gltf",
+    "sourceSha256": "8a1931f9a70a27bae1a8500f95272e1d29dc9cade074c6bf6496837ab6337e48",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_Long.bin",
+    "sourceBufferSha256": "13996da35c7afbf8cb5097da37207ee5b7c2e2904d4ab9e2ace9843030fff8d5",
+    "file": "office3d/assets/compact/characters/hair/Hair_Long.glb.gz",
+    "bytes": 74372,
+    "sha256": "ff9772e739dd634b0176dd236851692db1f8a738671a43cb8dee66ed39a41619",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  },
+  {
+    "source": "office3d/assets/models/characters/hair/Hair_SimpleParted.gltf",
+    "sourceSha256": "4568e0f3daae15fd93680b746e7da7e796d4465808ea97f9c8d4c0d9d067dfc4",
+    "sourceBuffer": "office3d/assets/models/characters/hair/Hair_SimpleParted.bin",
+    "sourceBufferSha256": "57c6359703a37e346ee38a9c7ba55c8dee761c0a02da99847d06f5a91728f3cc",
+    "file": "office3d/assets/compact/characters/hair/Hair_SimpleParted.glb.gz",
+    "bytes": 27793,
+    "sha256": "61bfebbe0c964914a9f991a46781c44b7d9c9f983620f98c93eb91ffd0a30410",
+    "kind": "cartoon-model",
+    "license": "CC0-1.0 (Quaternius)"
+  }
+]

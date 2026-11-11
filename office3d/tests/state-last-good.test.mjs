@@ -4,13 +4,13 @@ import os from 'node:os'
 import path from 'node:path'
 import vm from 'node:vm'
 import test from 'node:test'
-import { createLastGoodState, stripStateCredentials, loadStateComponents, createBackgroundHealth } from '../state-last-good.mjs'
+import { createLastGoodState, stripStateCredentials, loadStateComponents, createBackgroundHealth, createSnapshotGet } from '../state-last-good.mjs'
 import { buildHealth } from '../health.mjs'
 import { redactState } from '../wall.mjs'
 import { coarsenGeo } from '../office-geo.mjs'
 
 const source = fs.readFileSync(new URL('../server.mjs', import.meta.url), 'utf8')
-const backup = fs.readFileSync(new URL('../../office3d-backup-h2/server.mjs', import.meta.url), 'utf8')
+const backup = fs.readFileSync(new URL('./fixtures/historical/office3d-backup-h2/server.mjs', import.meta.url), 'utf8')
 const start = Date.parse('2026-10-22T02:00:00Z')
 const extract = (text, from, to) => text.slice(text.indexOf(from), text.indexOf(to, text.indexOf(from)))
 const fixedDate = class extends Date { constructor(value = start) { super(value) } static now() { return start } }
@@ -25,11 +25,13 @@ function temp(t) {
 }
 function context(extra = {}) {
   const empty = () => ({}), view = { view: empty, summary: empty }
-  return { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
+  const value = { Date: fixedDate, COMPANY: 'demo-company', ACT_TOKEN: 'fixture-only',
     get: async p => p.endsWith('/dashboard') ? { tasks: { todo: 1 }, costs: { total: 2 }, pendingApprovals: 0 }
       : p.endsWith('/agents') ? [{ id: 'demo-agent', name: 'demo-name', status: 'idle' }] : [],
     backlogRows: async () => [], world: () => ({ duty: { on: false, days: [1] } }),
-    readNames: empty, pidAlive: () => null, gossip: { maybeGenerate() {}, recent: () => [] },
+    readNames: empty, pidAlive: () => null, readProcessTable: async () => null,
+    readProcessTables: async () => ({ previous: null, current: null }), runBusy: () => ({ busy: false, busyName: null }),
+    runAlive: run => ({ alive: null, via: null, descendants: [] }), gossip: { maybeGenerate() {}, recent: () => [] },
     stats: { ingest() {}, daily: () => ({ done: [] }), awards: () => [] },
     telegram: { view: empty, onState: async () => {} }, committee: view, standup: view, acceptance: { ...view, onState() {} },
     patrol: view, rework: view, handoff: view, mem: view, chat: view, workload: view,
@@ -40,16 +42,20 @@ function context(extra = {}) {
     computeToday: () => ({ runs: { total: 0 }, backlog: 0, done: 0, total: 1, percent: 0, comments: 0, waiting: 0, decisions: {}, byProject: [] }),
     commandLive: { capture() {} }, console: { log() {} }, loadStateComponents, ...extra,
   }
+  value.moduleGet ||= () => value.get
+  return value
 }
 function stateFunction(text, ctx) {
-  return vm.runInNewContext(extract(text, 'async function state()', '\nhttp') + '\nstate', ctx)
+  // 服务器入口后来改成 `const server = http`（优雅退出要用到句柄），老版本仍是裸 `http`。
+  const end = text.includes('\nconst server = http') ? '\nconst server = http' : '\nhttp'
+  return vm.runInNewContext(extract(text, 'async function state()', end) + '\nstate', ctx)
 }
-function stateRoute(state, lanUser = false, wallScope = false) {
-  const code = extract(source, "      if (url.pathname === '/state')", "      if (url.pathname === '/replay')")
+function stateRoute(state, lanUser = false, wallScope = false, cache = new Map(), now = Date.now, routeSource = source) {
+  const code = extract(routeSource, "      if (url.pathname === '/state')", "      if (url.pathname === '/replay')")
   let response
   const res = { writeHead(status) { response = { status }; return this }, end(body) { response.body = JSON.parse(body); return this } }
   const run = vm.runInNewContext(`(async () => { ${code} })`, {
-    url: { pathname: '/state' }, state, lanUser, wallScope, LAN: { write: false }, foyer: { summary: () => ({}) },
+    url: { pathname: '/state' }, state, lanUser, wallScope, stateResponseCache: cache, Date: { now }, LAN: { write: false }, foyer: { summary: () => ({}) },
     redactState, restrictedWorld: value => ({ ...value, weather: { ...value.weather,
       location: coarsenGeo(value.weather.location.lat, value.weather.location.lon) } }),
     TYPES: { '.json': 'application/json' }, res, json: (status, body) => { response = { status, body } },
@@ -170,18 +176,22 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   let ms = start, fail = false
   const agents = [{ id: 'OpsLead', model: 'gpt-5.6-terra', status: 'running' }]
   const runs = [{ agentId: 'OpsLead', status: 'failed', errorCode: 'provider_quota',
-    message: 'Selected model is at capacity. Please try a different model.', finishedAt: '2026-10-22T01:00:00Z' }]
+    error: 'Selected model is at capacity. Please try a different model.', finishedAt: '2026-10-22T01:00:00Z' }]
   const calls = []
   let healthSettled = false
   const cache = createBackgroundHealth({ now: () => ms, timeoutMs: 500, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
-    get: async (p, { signal }) => { calls.push(p); if (fail) return new Promise(() => {}); assert.ok(signal); return p.includes('heartbeat') ? runs : agents } })
+    get: async p => { calls.push(p); if (fail) return new Promise(() => {}); return p.includes('heartbeat') ? runs.map(run => ({ ...run, resultJson: null })) : agents } })
   assert.equal(cache.read().stale.reason, 'NOT_LOADED')
   await cache.refresh()
+  assert.deepEqual(calls.sort(), [
+    '/api/companies/demo/agents',
+    '/api/companies/demo/heartbeat-runs?limit=1000&summary=true',
+  ].sort())
   const good = cache.read()
   assert.deepEqual(good, buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
   assert.equal(good.agents[0].lastFailure.category, 'upstream')
   assert.equal(good.incidents.length, 0)
-  fail = true; ms += 30000
+  fail = true; ms += 10 * 60 * 1000
   const manager = createLastGoodState({ file: temp(t), now: () => ms, log() {} })
   const state = stateFunction(source, context({ lastGoodState: manager, healthReport: async () => cache.read() }))
   const refresh = cache.refresh().then(() => { healthSettled = true })
@@ -192,11 +202,156 @@ test('health refresh timeout never blocks state, preserves report and H1 classif
   const expired = cache.read(), { stale, ...retained } = expired
   assert.equal(stale.reason, 'UPSTREAM_UNAVAILABLE')
   assert.deepEqual(retained, good)
-  assert.equal(calls.filter(p => p.includes('limit=1000')).length, 2)
-  fail = false; ms += 30000
+  assert.equal(calls.filter(p => p.includes('heartbeat-runs')).length, 2)
+  fail = false; ms += 10 * 60 * 1000
   await cache.refresh()
   assert.equal(cache.read().stale, undefined)
   assert.deepEqual(cache.read(), buildHealth({ now: new Date(ms), agents, runs, schedule: { days: [1] } }))
+})
+
+test('health summary retains the 24h window when another agent has over 40 newer runs', async () => {
+  const ms = Date.parse('2026-11-03T04:00:00Z')
+  const agents = [{ id: 'quiet-agent', name: 'quiet-agent', model: 'claude' }, { id: 'busy-agent', name: 'busy-agent', model: 'gpt' }]
+  const runs = []
+  for (let i = 0; i < 40; i++) runs.push({ agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - i * 60000).toISOString() })
+  runs.push({ agentId: 'quiet-agent', status: 'failed', errorCode: 'claude_auth_required', error: 'login required', finishedAt: new Date(ms - 30 * 60000).toISOString() })
+  const calls = []
+  const cache = createBackgroundHealth({ now: () => ms, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async p => {
+      calls.push(p)
+      if (!p.includes('heartbeat-runs')) return agents
+      const limit = Number(new URL(`http://local${p}`).searchParams.get('limit'))
+      return runs.slice(0, limit).map(run => ({ ...run, resultJson: null }))
+    } })
+  await cache.refresh()
+  assert.deepEqual(calls, [
+    '/api/companies/demo/agents',
+    '/api/companies/demo/heartbeat-runs?limit=1000&summary=true',
+  ])
+  const report = cache.read()
+  assert.equal(report.agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
+  assert.equal(report.incidents.some(i => i.category === 'login' && i.agentIds.includes('quiet-agent')), true)
+  assert.equal(report.agents.find(a => a.agentId === 'busy-agent').runs24h, 40)
+  let later = ms + 10 * 60 * 1000
+  // A retained snapshot proves a 40-row follow-up cannot erase a quiet agent's 24h failure.
+  const file = path.join(os.tmpdir(), `health-runs-${process.pid}-${Date.now()}.json`)
+  fs.writeFileSync(file, JSON.stringify({ runs }))
+  const retained = createBackgroundHealth({ now: () => later, file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async p => p.includes('heartbeat-runs') ? runs.slice(0, 40) : agents })
+  await retained.refresh()
+  assert.equal(retained.read().agents.find(a => a.agentId === 'quiet-agent').lastFailure.category, 'login')
+  fs.unlinkSync(file)
+})
+
+test('health detects a full routine page without overlap and backfills the 24h window', async t => {
+  const ms = Date.parse('2026-11-03T04:00:00Z'), file = temp(t)
+  fs.writeFileSync(file, JSON.stringify({ runs: [{ id: 'old', agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - 200 * 60000).toISOString() }] }))
+  const agents = [{ id: 'busy-agent', name: 'busy-agent', model: 'gpt' }]
+  const recent = Array.from({ length: 150 }, (_, i) => ({ id: `recent-${i}`, agentId: 'busy-agent', status: 'succeeded', finishedAt: new Date(ms - i * 60000).toISOString() }))
+  const calls = [], logs = []
+  const cache = createBackgroundHealth({ now: () => ms, file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), log: message => logs.push(message),
+    get: async p => { calls.push(p); if (p.endsWith('/agents')) return agents; if (p.includes('limit=1000')) return recent; return recent.slice(0, 100) } })
+  await cache.refresh()
+  assert.ok(calls.includes('/api/companies/demo/heartbeat-runs?limit=100&summary=true'))
+  assert.ok(calls.includes('/api/companies/demo/heartbeat-runs?limit=1000&summary=true'))
+  assert.equal(cache.read().agents[0].runs24h, 151)
+  assert.deepEqual(logs, ['[health] 运行窗口可能有缺口，已补取完整快照'])
+})
+
+test('shared collection snapshot coalesces modules and exposes a read-only shared value', async () => {
+  let ms = start, upstream = 0
+  const snapshots = createSnapshotGet({ now: () => ms, get: async () => { upstream++; return [{ id: upstream }] } })
+  const modules = ['state', 'workload', 'blocked', 'stats', 'health'].map(name => snapshots.forModule(name))
+  const rows = await Promise.all(modules.map(get => get('/api/companies/demo/agents')))
+  assert.equal(upstream, 1)
+  assert.equal(Object.isFrozen(rows[0]), true)
+  assert.throws(() => { rows[0][0].id = 'changed' }, TypeError)
+  assert.equal((await modules[0]('/api/companies/demo/agents'))[0].id, 1)
+  assert.deepEqual(snapshots.counts().state, { requests: 2, hits: 1, upstream: 1 })
+  ms += 45000
+  await modules[0]('/api/companies/demo/agents')
+  assert.equal(upstream, 2)
+})
+
+test('/state shares one response for five seconds and refreshes after expiry', async () => {
+  let ms = start, builds = 0
+  const cache = new Map(), read = async () => { builds++; return fixture() }
+  await stateRoute(read, false, false, cache, () => ms)
+  ms += 4999
+  await stateRoute(read, false, false, cache, () => ms)
+  assert.equal(builds, 1)
+  ms += 1
+  await stateRoute(read, false, false, cache, () => ms)
+  assert.equal(builds, 2)
+})
+
+test('/state keeps one upstream build for one, three, and five concurrent pages', async t => {
+  for (const pages of [1, 3, 5]) {
+    let builds = 0
+    const manager = createLastGoodState({ file: temp(t), now: () => start, log() {} })
+    const read = () => manager.run(async () => { builds++; await Promise.resolve(); return fixture() })
+    await Promise.all(Array.from({ length: pages }, () => stateRoute(read, false, false, new Map(), () => start)))
+    assert.equal(builds, 1)
+  }
+})
+
+test('/state five-second response cache halves work at a three-second poll cadence', async () => {
+  const poll = async (routeSource) => {
+    let ms = start, builds = 0
+    const cache = new Map()
+    const read = async () => { builds++; return fixture() }
+    for (let i = 0; i < 20; i++) {
+      await stateRoute(read, false, false, cache, () => ms, routeSource)
+      ms += 3000
+    }
+    return builds
+  }
+  const oneSecondBaseline = source.replace(/cached\.at < 5000/, 'cached.at < 1000')
+  assert.notEqual(oneSecondBaseline, source, 'baseline fixture must contain the former one-second TTL')
+  const baselineBuilds = await poll(oneSecondBaseline)
+  const cachedBuilds = await poll(source)
+  assert.equal(baselineBuilds, 20)
+  assert.equal(cachedBuilds, 10)
+  assert.equal((baselineBuilds - cachedBuilds) / baselineBuilds, 0.5)
+})
+
+test('/state response cache does not cross local, LAN, and wall scopes', async () => {
+  let builds = 0
+  const cache = new Map(), read = async () => { builds++; return fixture() }
+  await stateRoute(read, false, false, cache, () => start)
+  await stateRoute(read, true, false, cache, () => start + 10)
+  await stateRoute(read, false, true, cache, () => start + 20)
+  assert.equal(builds, 3)
+})
+
+test('health readers share concurrent work and refresh no faster than once per 10 minutes', async () => {
+  let ms = start
+  const calls = []
+  const agents = [{ id: 'demo-agent', name: 'Demo', status: 'idle', model: 'gpt-5.6' }]
+  const runs = [{ id: 'r1', agentId: 'demo-agent', status: 'succeeded', finishedAt: new Date(ms).toISOString() }]
+  const health = createBackgroundHealth({
+    now: () => ms, company: 'demo', buildHealth, schedule: () => ({ days: [1] }),
+    get: async (route) => { calls.push(route); return route.includes('heartbeat-runs') ? runs : agents },
+  })
+  await Promise.all(Array.from({ length: 12 }, () => health.refresh()))
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 1)
+  for (let i = 0; i < 100; i++) health.read()
+  await health.refresh()
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 1)
+  ms += 10 * 60 * 1000
+  await health.refresh()
+  assert.equal(calls.filter((route) => route.includes('heartbeat-runs')).length, 2)
+})
+
+test('snapshot cache canonicalizes query ordering across modules', async () => {
+  let upstream = 0
+  const snapshots = createSnapshotGet({ get: async () => { upstream++; return [{ id: upstream }] } })
+  const a = snapshots.forModule('workload')
+  const b = snapshots.forModule('state')
+  const first = await a('/api/companies/demo/issues?status=todo,in_progress&limit=40')
+  const second = await b('/api/companies/demo/issues?limit=40&status=todo,in_progress')
+  assert.deepEqual(first, second)
+  assert.equal(upstream, 1)
 })
 
 test('concurrent state reads share build and return isolated copies, gaps deterministic on all optional failures', async t => {
@@ -221,11 +376,18 @@ test('act auth and body are unchanged; fake unavailable upstream never returns s
   // DS-7 / R1（2026-10-23，规划者批准）：完成策略只改 act 的签名与 review 分支；其余部分（含鉴权与其它所有分支）仍须与 H2 备份逐字一致。
   const sigRe = /async function act\(a(?:, options = \{\})?\)/
   const reviewRe = /  if \(a\.type === 'review'\) \{[\s\S]*?\n  \}\n/
-  const actBody = (text) => text.replace(sigRe, 'async function act(a)').replace(/\r\n/g, '\n').replace(reviewRe, '  /* review */\n')
+  const cancelRunRe = /  if \(a\.type === 'cancel_run'\) \{[\s\S]*?\n  \}\n(?=  if \(a\.type === 'review'\))/
+  // OFFICE-R1-MOVEFIX J（CMP-835，董事会 2026-10-30「名牌重名」）：rename 分支只新增一行显示名查重；
+  // 鉴权与其它所有分支仍须与 H2 备份逐字一致，所以这里只豁免这一行，并在下面正面断言它存在。
+  const renameGuardRe = / {4}need\(!nameConflict\(names, key, name\), '[^']*'\)\n/
+  const actBody = (text) => text.replace(sigRe, 'async function act(a)').replace(/\r\n/g, '\n').replace(cancelRunRe, '  /* cancel_run */\n').replace(reviewRe, '  /* review */\n').replace(renameGuardRe, '')
   const actNow = extract(source, 'async function act(a', '// 任务详情（只读）')
   assert.match(actNow, /^async function act\(a, options = \{\}\)/)
+  assert.match(actNow, /need\(!nameConflict\(names, key, name\), '[^']*'\)/, 'rename 分支必须保留显示名查重')
+  assert.match(actNow, /const liveness = run && runAlive\(run, await readProcessTable\(\)\)/)
+  assert.match(actNow, /if \(shouldBlockCancel\(liveness\)\)/)
   assert.equal(actBody(actNow), actBody(extract(backup, 'async function act(a)', '// 任务详情（只读）')))
-  const normalizeActCall = (text) => text.replace(/await act\(body, \{ localFullAccess: !lanUser && !wallScope \}\)/, 'await act(body)') // DS-7：仅此一处调用点改动
+  const normalizeActCall = (text) => text.replace(/\r\n/g, '\n').replace(/await act\(body, \{ localFullAccess: !lanUser && !wallScope \}\)/, 'await act(body)') // DS-7：仅此一处调用点改动
   const route = normalizeActCall(extract(source, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')"))
   assert.equal(route, normalizeActCall(extract(backup, "      if (req.method === 'POST' && url.pathname === '/act')", "      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/town/map')")))
   const act = actNow
@@ -263,4 +425,23 @@ test('snapshot static paths denied and new helper has no Paperclip write or rand
   const helper = fs.readFileSync(new URL('../state-last-good.mjs', import.meta.url), 'utf8')
   assert.doesNotMatch(helper, /Math\.random|\beval\s*\(|\bfetch\s*\(|\bsend\s*\(/)
   assert.equal(extract(source, 'const API_PATHS', 'let wallCache').includes("'/state-last-good"), false)
+})
+
+test('a stuck refresh falls back to last good after the timeout instead of hanging (live hotfix 11-02)', async t => {
+  const logs = []
+  const manager = createLastGoodState({ file: temp(t), log: message => logs.push(message), timeoutMs: 40 })
+  await manager.run(async () => fixture())
+  const started = Date.now()
+  const reply = await manager.run(() => new Promise(() => {}))
+  assert.ok(Date.now() - started < 1000, 'must not wait for the stuck refresh')
+  assert.equal(reply.stale.active, true)
+  assert.equal(reply.stale.reason === 'UPSTREAM_UNAVAILABLE' || reply.stale.reason === 'STALE_DATA', true)
+  assert.equal(reply.actToken, '')
+})
+
+test('state auxiliary Paperclip reads are time-bounded (live hotfix 11-02)', () => {
+  const text = fs.readFileSync(new URL('../server.mjs', import.meta.url), 'utf8').replace(/\r/g, '')
+  assert.match(text, /const STATE_AUX_TIMEOUT_MS = 1000/)
+  const bounded = text.match(/AbortSignal\.timeout\(STATE_AUX_TIMEOUT_MS\)/g) || []
+  assert.equal(bounded.length, 3, 'issue, interactions and policy-issue reads must all carry the timeout')
 })

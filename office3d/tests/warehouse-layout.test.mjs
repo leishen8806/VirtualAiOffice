@@ -92,7 +92,7 @@ test('shallow and plaza-overlap mutations fail the same plan validator', () => {
 })
 
 test('all pre-S2-1 data exports except the intentional minimap change are byte-equivalent', async () => {
-  const before = await import('../../office3d-backup-s2-1/office-layout.js')
+  const before = await import('./fixtures/historical/office3d-backup-s2-1/office-layout.js')
   const added = new Set(['WAREHOUSE', 'DOCK', 'PARKING', 'WEST_WALK', 'SERVICE_PASSAGE', 'CAMPUS_PAVING', 'LOGISTICS_GATE_ZONE', 'WAREHOUSE_FOCUS', 'WAREHOUSE_ITEMS'])
   for (const [name, value] of Object.entries(before)) {
     if (typeof value === 'function' || name === 'MINI_BOUNDS' || added.has(name)) continue

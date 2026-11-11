@@ -15,7 +15,7 @@ test('only literal boolean true enables config; missing, damaged and other types
     assert.equal(commandViewEnabled(config), false)
   }
   assert.equal(commandViewEnabled({ enabled: true }), true)
-  assert.deepEqual(JSON.parse(fs.readFileSync(new URL('../command-view.json', import.meta.url))), {
+  assert.deepEqual(JSON.parse(fs.readFileSync(new URL('./fixtures/disabled-features/command-view.json', import.meta.url))), {
     enabled: false, live: { enabled: false, projectName: 'KhmerX', rangeDays: 14,
       owners: { acceptor: '董事会', budgetAuthorizer: '董事会', sampleReviewer: '董事会' } },
   })

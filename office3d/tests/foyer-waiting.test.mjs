@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import * as THREE from '../vendor/three/three.module.js'
 import { createDirector } from '../director.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
@@ -221,10 +222,11 @@ test('200 fixed seeds mix waiting and consumer visits without timeouts, overlap 
   assert.deepEqual(failures, [])
 })
 
-test('static boundary keeps the director delta narrow and app excludes visitors from lounge selection', async () => {
+const S1_5B_DIRECTOR = 'E:/VirtualAIOffice/paperclip-ops/office3d-backup-s1-5b/director.js'
+test('static boundary keeps the director delta narrow and app excludes visitors from lounge selection', { skip: existsSync(S1_5B_DIRECTOR) ? false : '本机 office3d-backup-s1-5b 证据不存在（CI 干净机器），跳过静态边界比对' }, async () => {
   const [current, baseline, app] = await Promise.all([
     readFile(new URL('../director.js', import.meta.url), 'utf8'),
-    readFile('E:/VirtualAIOffice/paperclip-ops/office3d-backup-s1-5b/director.js', 'utf8'),
+    readFile(S1_5B_DIRECTOR, 'utf8'),
     readFile(new URL('../app.js', import.meta.url), 'utf8'),
   ])
   const counts = new Map()

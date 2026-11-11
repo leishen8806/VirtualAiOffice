@@ -17,6 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,4 +33,69 @@ jobs:
           fi
         shell: bash
       - run: npm run test:browser
-      - run: npm run test:all
+      # 等价于原 `npm run test:all`（= npm test && npm run test:packages && npm run verify:packaged-layout），
+      # 拆成三步便于定位失败来源；失败时把 not ok 段写进 step summary。
+      - name: Unit tests (node --test)
+        shell: bash
+        run: |
+          npm test > /tmp/unit-test.log 2>&1 || {
+            echo "### Unit test failures" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -A12 "^not ok" /tmp/unit-test.log | head -300
+            exit 1
+          }
+      - name: Package spec tests (tsc + node --test)
+        run: npm run test:packages
+      - name: Packaged layout verification
+        run: npm run verify:packaged-layout
+
+  perf-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Warehouse performance budget (hard gate)
+        run: npm run verify:perf -- --place "drlife-warehouse&whr1=1"
+      - name: Upload warehouse verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-warehouse
+          path: /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn
+      # The repository checkout has no real-person assets; office readiness can never complete in CI.
+      # Keep the local command documented and runnable, but do not spend the CI job's 8-minute budget waiting.
+      - name: Office performance report (local-only; CI skipped)
+        if: ${{ false }}
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          set +e
+          timeout --signal=TERM 420s npm run verify:perf -- --place drlife-office > office-perf.json
+          code=$?
+          if [ "$code" -eq 124 ]; then
+            echo "办公室测量超时" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            cat office-perf.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$code" -eq 2 ]; then exit 2; fi
+      - name: Upload office verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-office
+          path: |
+            office-perf.json
+            /tmp/office3d-verify-perf-*/*
+          if-no-files-found: warn

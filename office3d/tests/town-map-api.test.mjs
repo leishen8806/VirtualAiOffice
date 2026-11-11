@@ -10,9 +10,9 @@ import { loadTownMap } from '../town-map.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const officeJson = path.join(root, 'town-map.json')
-const sourceJson = path.resolve(root, '..', 'town-map-data', 'm0', 'derived', 'town-map-v0.json')
+const sourceJson = path.resolve(root, 'tests', 'fixtures', 'historical', 'town-map-data', 'm0', 'derived', 'town-map-v0.json')
 const serverPath = path.join(root, 'server.mjs')
-const backupServerPath = path.resolve(root, '..', 'office3d-backup-m1b', 'server.mjs')
+const backupServerPath = path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-m1b', 'server.mjs')
 const townMapPath = path.join(root, 'town-map.mjs')
 const FIXED_UNAVAILABLE_BODY = JSON.stringify({ error: '地图数据暂不可用' })
 const UNSAFE_ERROR_RE = /(ENOENT|EACCES|EPERM|EISDIR|ENOTDIR|[A-Za-z]:\\|\\\\)/i
@@ -171,13 +171,12 @@ test('permission simulation keeps town map read-only and town route aligned with
   assert.equal(simulateRequest({ lanUser: true, lanAuthed: false, wallAuthed: true, method: 'GET', pathname: '/town' }), 200)
 })
 
-test('town-map.json stays byte-identical to the reviewed source snapshot when source exists', (t) => {
-  if (!fs.existsSync(sourceJson)) return t.skip('source snapshot not present')
+test('town-map.json stays byte-identical to the tracked reviewed source snapshot', () => {
   assert.equal(fs.existsSync(officeJson), true)
   assert.equal(sha256(officeJson), sha256(sourceJson))
 })
 
-test('server wiring adds town api after access control without changing static whitelist', () => {
+test('server wiring adds town api after access control with the explicit static whitelist', () => {
   const server = fs.readFileSync(serverPath, 'utf8')
   const backup = fs.readFileSync(backupServerPath, 'utf8')
   const apiPaths = parseSet(server, 'API_PATHS')
@@ -192,7 +191,7 @@ test('server wiring adds town api after access control without changing static w
   assert.ok(apiPaths.has('/town/map'))
   assert.ok(gate < route && route < fallback)
   assert.match(server, /if \(req\.method !== 'GET' && !\(req\.method === 'HEAD' && url\.pathname === '\/town\/map'\)\)/)
-  assert.deepEqual([...staticExt], [...backupStaticExt])
+  assert.deepEqual([...staticExt], [...backupStaticExt, '.gz']) // PERF-LOAD-2: only the approved gzip asset extension is added.
   assert.equal(staticExt.has('.json'), false)
   assert.equal(simulateRequest({ method: 'GET', pathname: '/town-map.json' }), 404)
 })

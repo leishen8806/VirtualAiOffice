@@ -1,3 +1,4 @@
+import { createR1Director } from './office-r1-director.js'
 // 动画导演：把「真实事件」变成人物动作。没有事件就没有动作——不制造假活动。
 import { createOfficeNavigation } from './office-layout.js'
 import { createPedestrianTraffic, PERSON_GAP } from './pedestrian-traffic.js'
@@ -22,7 +23,10 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v))
 const angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a))
 const isWalker = act => ['rise', 'walk'].includes(act.phase)
 
-export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride }) {
+export function createDirector({ views, board, layer, project, needDesk, furnitureCollision, layout, navigation: navigationOverride, r1Furniture, r1Doors, r1Walking = true }) {
+  // r1Walking=false（低配极速模式）：不建 R1 导航，退回下面原有的"R1 只坐不走"导演。
+  if (layout?.r1Phase === 'R1' && r1Walking) return createR1Director({ views, board, layer, project, needDesk, furnitureCollision, layout, r1Furniture, r1Doors })
+  const seatedOnly = layout?.r1Phase === 'R1'
   const navigation = navigationOverride || createOfficeNavigation(layout)
   const { officeExit, officeTrip, boardTrip, corridorPath, ENTRANCE, FOYER_Z, AISLE_OFFSET, CORRIDOR_X, BOARD_DOOR: DOOR, LOUNGE_AREA } = navigation
   const consumerAdvance = navigation.consumerAdvance || legacyConsumerAdvance, consumerDeparture = navigation.consumerDeparture || legacyConsumerDeparture
@@ -592,12 +596,16 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
   return {
     // 走到某个座位坐下（去休息区 / 从休息区回工位）
     travel(v, pts, seat, lounge, onDone) {
+      if (seatedOnly) return false
       return travel(v, pts, seat, lounge, onDone)
     },
-    visitConsumer,
+    visitConsumer(v, plan, options) {
+      return seatedOnly ? false : visitConsumer(v, plan, options)
+    },
     cancelVisit,
     aisleZ,
     goHome(v, onDone) {
+      if (seatedOnly) return false
       if (v.act) return false
       let pts
       try { pts = commutePath(v) } catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全下班路线', error.message); return false }
@@ -607,6 +615,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       return true
     },
     arrive(v) {
+      if (seatedOnly) return false
       if (v.act) return false
       let pts
       try { pts = commutePath(v).reverse().slice(1).concat([{ x: v.home.x, z: v.home.z }]) } catch (error) { if (!(error instanceof FurnitureBlockedError)) throw error; console.warn('[director] 无安全上班路线', error.message); return false }
@@ -621,6 +630,7 @@ export function createDirector({ views, board, layer, project, needDesk, furnitu
       return true
     },
     enqueue(ev) {
+      if (seatedOnly) return
       if (queue.length >= MAX_QUEUE) queue.shift()
       const actor = views.get(ev.from), target = views.get(ev.to)
       if (actor?.visiting) cancelVisit(actor, 'event')

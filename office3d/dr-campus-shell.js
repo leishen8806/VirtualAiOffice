@@ -1,4 +1,6 @@
 import { CAMPUS, CAMPUS_BUILDING, CAMPUS_SHUTTLE_STRIP, CAMPUS_ZONES } from './office-layout.js'
+import { whR1Requested } from './place-mode.js'
+import { WH_R1_SITE } from './dr-wh-r1-zones.js'
 
 const inside = (part, bounds) => part.x0 >= bounds.x0 && part.x1 <= bounds.x1 && part.z0 >= bounds.z0 && part.z1 <= bounds.z1
 const rect = (name, bounds, extra = {}) => Object.freeze({ name, ...bounds, dynamic: false, ...extra })
@@ -38,6 +40,15 @@ const plane = (THREE, root, part, y, material) => {
 }
 
 export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS) {
+  if (whR1Requested(globalThis.location?.search)) {
+    const hidden = {}
+    scene.traverse((object) => { if (object.isMesh && !campusRoot.getObjectById(object.id)) object.castShadow = false })
+    for (const item of inspectEnvironmentMeshes(THREE, scene, campusRoot, WH_R1_SITE)) {
+      item.object.visible = false
+      hidden[item.type] = (hidden[item.type] || 0) + 1
+    }
+    return hidden
+  }
   const point = new THREE.Vector3(), hidden = {}
   scene.traverse((object) => {
     if (!object.isMesh || campusRoot.getObjectById(object.id)) return
@@ -49,6 +60,45 @@ export function hideCampusEnvironment(THREE, scene, campusRoot, bounds = CAMPUS)
     }
   })
   return hidden
+}
+
+export function inspectEnvironmentMeshes(THREE, scene, campusRoot, bounds) {
+  // WH-R1 uses the full landmark height; the old 6 m cap left the Ta Ke mountain tower visible.
+  const site = new THREE.Box3(new THREE.Vector3(bounds.x0, -1, bounds.z0), new THREE.Vector3(bounds.x1, 40, bounds.z1))
+  const box = new THREE.Box3(), origin = new THREE.Vector3(), items = [], towerGroups = new Set()
+  scene.updateMatrixWorld?.(true)
+  scene.traverse((object) => {
+    if (!object.isGroup || object.isScene) return
+    object.getWorldPosition(origin)
+    if (Math.abs(origin.x + 150) > .01 || Math.abs(origin.y + .6) > .01 || Math.abs(origin.z - 40) > .01) return
+    let hasTowerBody = false, hasTowerTip = false
+    object.traverse((child) => {
+      if (child.geometry?.type === 'LatheGeometry') hasTowerBody = true
+      if (child.geometry?.type === 'ConeGeometry') hasTowerTip = true
+    })
+    if (hasTowerBody && hasTowerTip) towerGroups.add(object)
+  })
+  const towerGroupFor = (object) => {
+    let parent = object.parent
+    while (parent && parent !== scene) {
+      if (towerGroups.has(parent)) return parent
+      parent = parent.parent
+    }
+    return null
+  }
+  scene.traverse((object) => {
+    if (!object.isMesh || campusRoot.getObjectById(object.id)) return
+    box.setFromObject(object)
+    const sizeX = box.max.x - box.min.x, sizeZ = box.max.z - box.min.z
+    // Sky, world grass and clouds are backdrops, not WH-R1 environment clutter.
+    if (object.isSky === true || sizeX >= 500 || sizeZ >= 500) return
+    const towerGroup = towerGroupFor(object)
+    if (towerGroup || (!box.isEmpty() && box.intersectsBox(site))) {
+      const type = object.name?.startsWith('entrance-step') ? 'entrance-step' : object.name || object.geometry?.type || 'unnamed'
+      items.push({ object, type, group: towerGroup, bounds: { x0: box.min.x, x1: box.max.x, y0: box.min.y, y1: box.max.y, z0: box.min.z, z1: box.max.z } })
+    }
+  })
+  return items
 }
 
 export function buildCampusShell({ THREE, root, canvasTex, layout, quality }) {

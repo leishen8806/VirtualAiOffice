@@ -1,6 +1,6 @@
 # V3-A2P-R1 证据复核入口
 
-完整回执：`dispatch/codex/outbox/V3-A2P-R1-report.md`。
+完整回执：V3-A2P-R1 交付回执（保存在本机，不在仓库）。
 
 外置工件：`review-artifacts/V3-A2P-R1/`，不加入 Git 图片历史。`evidence-manifest.json` 在提交/推送后绑定完整 sourceSHA、远端 SHA、文件哈希和环境；`evidence.html` 并排展示原始截图。
 

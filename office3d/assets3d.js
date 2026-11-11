@@ -1,9 +1,11 @@
 import * as THREE from 'three'
 import { GLTFLoader } from './vendor/three/jsm/loaders/GLTFLoader.js'
+import { CompactTextureLoader, compactTextureSize, loadCompactClips, loadCompactGltf } from './compact-assets.js'
 import * as SkeletonUtils from './vendor/three/jsm/utils/SkeletonUtils.js'
 
 // 素材：Kenney Furniture Kit、Quaternius Universal Base Characters / Universal Animation Library（均为 CC0，见 assets/ASSET_LEDGER.md）
-const FURN = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'laptop', 'pottedPlant', 'plantSmall1', 'plantSmall2', 'bookcaseClosed', 'bookcaseOpen', 'books', 'lampRoundTable', 'lampSquareFloor', 'loungeSofa', 'loungeSofaLong', 'loungeChair', 'tableCoffee', 'rugRectangle', 'sideTable', 'trashcan', 'table', 'chairModernCushion', 'chairRounded', 'coatRack', 'speaker', 'cabinetTelevision']
+// 末三件（咖啡机 / 面包机 / 搅拌机）给 R1 中央吧台台面用，OFFICE-R1-FOOD（CMP-626）经董事会审批后加入。
+const FURN = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'laptop', 'pottedPlant', 'plantSmall1', 'plantSmall2', 'bookcaseClosed', 'bookcaseOpen', 'books', 'lampRoundTable', 'lampSquareFloor', 'loungeSofa', 'loungeSofaLong', 'loungeChair', 'tableCoffee', 'rugRectangle', 'sideTable', 'trashcan', 'table', 'chairModernCushion', 'chairRounded', 'coatRack', 'speaker', 'cabinetTelevision', 'kitchenCoffeeMachine', 'toaster', 'kitchenBlender']
 export const HAIRS = ['Hair_Beard', 'Hair_Buns', 'Hair_Buzzed', 'Hair_BuzzedFemale', 'Hair_Long', 'Hair_SimpleParted']
 export const FURN_SCALE = 2 // Kenney 家具约为真实尺寸的一半
 const STRIDE = 1.5 // 走路动画一个循环大约走多远（米），用来让脚步和移动速度对上
@@ -19,7 +21,7 @@ const PALETTE = {
   metal: [0xc7cbcf, 0.3, 0.9], metalMedium: [0x9aa0a6, 0.35, 0.85], metalDark: [0x2a2d31, 0.4, 0.7],
   plant: [0x3c8a4f, 0.8, 0.0],
 }
-const tl = new THREE.TextureLoader()
+const tl = new CompactTextureLoader()
 const skinTexCache = new Map()
 function skinTexture(gender, tone) {
   const key = `${gender}:${tone}`
@@ -34,7 +36,7 @@ function skinTexture(gender, tone) {
 }
 
 function prepShadow(root) {
-  root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false } })
+  root.traverse((o) => { if (o.isMesh) { const plant = /plant|foliage|leaf|crown/i.test(`${o.name || ''} ${o.material?.name || ''}`); o.castShadow = !plant; o.receiveShadow = true; o.frustumCulled = false } })
 }
 
 // ───────────── 衣服：从身体网格里按骨骼权重挑出三角形，外扩一层做成「壳」，共用同一副骨架 ─────────────
@@ -131,8 +133,19 @@ function boneByName(root, name) {
   return f
 }
 
-export async function loadAssets() {
-  const loader = new GLTFLoader()
+// 极速模式：卡通人物的法线 / 粗糙度贴图（单张 3–5 MB，小人物在低档下几乎看不出）换成 1 像素空图；
+// 同一张贴图被多个角色引用时只下载一次（加载期间临时开启 three 的缓存，加载完清掉）。
+const LITE_BLANK = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+export const liteTextureUrl = url => /_(Normal|Roughness)\.png$/i.test(url) ? LITE_BLANK : url
+export async function loadAssets({ lite = false } = {}) {
+  const manager = new THREE.LoadingManager()
+  const size = lite ? 512 : compactTextureSize()
+  manager.setURLModifier(url => lite || size === 512 ? liteTextureUrl(url) : url)
+  manager.addHandler(/\.(png|jpe?g)$/i, new CompactTextureLoader(manager))
+  if (lite) THREE.Cache.enabled = true
+  try { return await loadAssetSet(new GLTFLoader(manager)) } finally { if (lite) { THREE.Cache.clear(); THREE.Cache.enabled = false } }
+}
+async function loadAssetSet(loader) {
   const furn = {}
   await Promise.all(FURN.map(async (n) => {
     const g = await loader.loadAsync(`./assets/models/furniture/${n}.glb`)
@@ -149,7 +162,7 @@ export async function loadAssets() {
   }))
   const chars = {}
   for (const [gender, file] of [['male', 'Superhero_Male_FullBody'], ['female', 'Superhero_Female_FullBody']]) {
-    const g = await loader.loadAsync(`./assets/models/characters/${file}.gltf`)
+    const g = await loadCompactGltf(`./assets/compact/characters/${file}.glb.gz`, './assets/models/characters/', loader.manager)
     prepShadow(g.scene)
     let body = null
     g.scene.traverse((o) => { if (o.isSkinnedMesh && /Sphere|Retopology|Body/i.test(o.name)) body = o })
@@ -164,11 +177,11 @@ export async function loadAssets() {
   }
   const hairs = {}
   await Promise.all(HAIRS.map(async (n) => {
-    const g = await loader.loadAsync(`./assets/models/characters/hair/${n}.gltf`)
+    const g = await loadCompactGltf(`./assets/compact/characters/hair/${n}.glb.gz`, './assets/models/characters/hair/', loader.manager)
     prepShadow(g.scene)
     hairs[n] = g.scene
   }))
-  const animGltf = await loader.loadAsync('./assets/models/anim/UAL1_Standard.glb')
+  const animGltf = { animations: await loadCompactClips('UAL1_Standard') }
   const clips = {}
   for (const c of animGltf.animations) {
     // 去掉缩放与除骨盆外的位移轨道：两套骨架比例略有差异，只保留旋转就不会变形

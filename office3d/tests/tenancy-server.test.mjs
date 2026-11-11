@@ -9,13 +9,13 @@ import { createTenancy } from '../tenancy/index.mjs'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const serverPath = path.join(root, 'server.mjs')
-const backupServerPath = path.resolve(root, '..', 'office3d-backup-m5-1', 'server.mjs')
+const backupServerPath = path.resolve(root, 'tests/fixtures/historical', 'office3d-backup-m5-1', 'server.mjs')
 const tenancyDir = path.join(root, 'tenancy')
 
 function tempDir(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tenancy-index-'))
   t.after(() => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 }))
-  return dir
+  try { return fs.realpathSync(dir) } catch { return dir } // 规避 macOS /var 符号链接导致的 realpath 不对称
 }
 
 function parseSet(source, name) {
@@ -48,7 +48,7 @@ test('tenancy flag and platform view handle missing, off, corrupt and non-loopba
   assert.equal(loopbackFail.platformView().gateway.paperclipLoopbackOnly, false)
 })
 
-test('server wiring exposes platform tenancy only to local users and keeps static whitelist unchanged', () => {
+test('server wiring exposes platform tenancy only to local users and keeps the explicit static whitelist', () => {
   const server = fs.readFileSync(serverPath, 'utf8')
   const backup = fs.readFileSync(backupServerPath, 'utf8')
   const apiPaths = parseSet(server, 'API_PATHS')
@@ -64,7 +64,7 @@ test('server wiring exposes platform tenancy only to local users and keeps stati
   assert.ok(apiPaths.has('/platform/tenancy'))
   assert.ok(gate < route && route < fallback)
   assert.match(server, /if \(lanUser\) return json\(403, \{ error: '多租户平台状态只允许在运行服务的电脑上查看' \}\)/)
-  assert.deepEqual([...staticExt], [...backupStaticExt])
+  assert.deepEqual([...staticExt], [...backupStaticExt, '.gz']) // PERF-LOAD-2: only the approved gzip asset extension is added.
   assert.equal(staticExt.has('.json'), false)
   assert.equal(server.includes('/multitenant.json'), false)
 })

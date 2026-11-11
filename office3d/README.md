@@ -1236,7 +1236,7 @@ O4b 遗留：25 个桌位句柄归入 furniture mount；句柄保留动态标记
 
 必需来源失败时 `/state` 返回200的最近成功副本，`actToken:''`，附 `stale:{active:true,since:<原at>,ageMs,reason:'UPSTREAM_UNAVAILABLE'}`；快照超过30分钟改为 `STALE_DATA`，仍200。没有可用快照返回503：`{error:'STATE_UNAVAILABLE_NO_SNAPSHOT',reason:'UPSTREAM_UNAVAILABLE'}`。成功恢复不带stale；降级/恢复各只在状态转换时打印一条日志。LAN/大屏仍通过原脱敏出口，快照不因读请求被修改；`/act` 鉴权与上游失败行为完全不变，不使用快照假报写入成功。
 
-`healthReport()` 永远返回缓存并按需启动单个后台刷新，刷新间隔30秒、超时20秒，失败保留原报告并附stale；首次未加载返回warn/“健康数据暂不可用”及NOT_LOADED，不虚构健康。仍拉 `heartbeat-runs?limit=1000`，复用H1 `buildHealth`，不降低limit或改变判定。`get`仅允许此后台刷新传入AbortSignal，其余调用继续8秒超时。
+`healthReport()` 永远返回缓存并按需启动单个后台刷新，刷新间隔30秒、超时20秒，失败保留原报告并附stale；首次未加载返回warn/“健康数据暂不可用”及NOT_LOADED，不虚构健康。仍拉 `heartbeat-runs?limit=1000&summary=true`，复用H1 `buildHealth`，不降低limit或改变判定。`get`仅允许此后台刷新传入AbortSignal，其余调用继续8秒超时。
 
 验证用注入假上游和提取的实际state/路由，不加载真实server、不重启服务、不写Paperclip。H2交付后由董事会手动重启并验正常、慢上游、首次无快照及重启文件恢复；顶部stale提示另卡处理，本卡不改前端。
 
