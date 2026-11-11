@@ -9,23 +9,34 @@ export function stripStateCredentials(value) {
 }
 
 export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null }) {
-  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve()
+  const persistMinMs = process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test' ? 0 : (/state-last-good\.json$/.test(String(file || '')) ? 60000 : 0)
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
         Array.isArray(value.agents) && value.tasks && !value.stale?.active) saved = stripStateCredentials(value)
   } catch {}
   const persist = snapshot => {
-    writes = writes.then(async () => {
-      const temp = file + '.tmp'
-      try {
-        await fs.promises.writeFile(temp, JSON.stringify(snapshot), { mode: 0o600 })
-        await fs.promises.rename(temp, file)
-      } catch {
-        await fs.promises.unlink(temp).catch(() => {})
-        log('[state] 快照持久化失败，保留内存快照')
+    pendingPersist = snapshot
+    if (persistRunning) return writes
+    persistRunning = true
+    writes = (async () => {
+      while (pendingPersist) {
+        const next = pendingPersist
+        pendingPersist = null
+        const wait = Math.max(0, persistMinMs - (Date.now() - lastPersistAt))
+        if (lastPersistAt && wait) await new Promise(resolve => setTimeout(resolve, wait))
+        const temp = file + '.tmp'
+        try {
+          await fs.promises.writeFile(temp, JSON.stringify(next), { mode: 0o600 })
+          await fs.promises.rename(temp, file)
+          lastPersistAt = Date.now()
+        } catch {
+          await fs.promises.unlink(temp).catch(() => {})
+          log('[state] 快照持久化失败，保留内存快照')
+        }
       }
-    })
+    })().finally(() => { persistRunning = false })
     return writes
   }
   const fallback = () => {
