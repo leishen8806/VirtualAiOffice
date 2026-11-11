@@ -41,6 +41,12 @@ test('river data is area-unioned and keeps holes-ready rings', () => {
   assert.ok(data.waterSource.largest10[0].id && data.waterSource.largest10[0].sourceIds.length > 0)
 })
 
+test('town renderer loads the clipped and area-unioned city data', () => {
+  const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
+  assert.match(js, /fetch\('\/town-3d\/town-3d-data\.json'\)/)
+  assert.doesNotMatch(js, /fetch\('\/town-3d-data\.json'\)/)
+})
+
 test('town renderer uses ShapeGeometry for water and green areas without span skipping', () => {
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
   assert.match(js, /new THREE\.ShapeGeometry\(shape\)/)
@@ -51,6 +57,8 @@ test('roads are classified and the ground covers every building', () => {
   assert.equal(roadTier('primary'), 'major')
   assert.equal(roadTier('secondary'), 'secondary')
   assert.equal(roadTier('residential'), 'local')
+  const data = JSON.parse(readFileSync(new URL('../town-3d/town-3d-data.json', import.meta.url), 'utf8'))
+  assert.deepEqual([...new Set(data.roads.map((road) => roadTier(road.type)))].sort(), ['local', 'major', 'secondary'])
   assert.deepEqual(groundPlan([{ bboxWorld: [-10, -20, 40, 60] }], 5), { x: 15, z: 20, width: 60, depth: 90 })
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
   assert.match(js, /const a = pointWorld\(p0\), b = pointWorld\(p1\)/)
