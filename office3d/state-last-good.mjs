@@ -10,7 +10,7 @@ export function stripStateCredentials(value) {
 
 export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null }) {
   const persistMinMs = process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test' ? 0 : (/state-last-good\.json$/.test(String(file || '')) ? 60000 : 0)
-  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0, lastRequestAt = 0
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
@@ -92,8 +92,9 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
   }
   return {
     async run(build) {
+      lastRequestAt = now()
       if (backgroundMs > 0 && !backgroundTimer) {
-        backgroundTimer = setInterval(() => { if (saved && !flight) start(build) }, backgroundMs)
+        backgroundTimer = setInterval(() => { if (saved && !flight && lastRequestAt && now() - lastRequestAt <= 90000) start(build) }, backgroundMs)
         backgroundTimer.unref?.()
       }
       if (backgroundMs > 0 && saved) {
