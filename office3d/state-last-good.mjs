@@ -38,7 +38,7 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
     const ageMs = Math.max(0, now() - Date.parse(saved.at))
     if (!degraded) log(`[state] 降级：上游不可用，使用 ${Math.floor(ageMs / 60000)} 分钟前的快照`)
     degraded = true
-    return { ...structuredClone(saved), actToken: '', stale: {
+    return { ...structuredClone(saved), stale: {
       active: true, since: saved.at, ageMs, reason: ageMs > 30 * 60000 ? 'STALE_DATA' : 'UPSTREAM_UNAVAILABLE',
     } }
   }
@@ -89,7 +89,7 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
         if (!flight && now() - refreshAt >= backgroundMs) start(build)
         const ageMs = Math.max(0, now() - refreshAt)
         if (failures < 3 && ageMs <= staleAfterMs) return clone(saved)
-        return clone({ ...structuredClone(saved), actToken: '', stale: { active: true, since: saved.at, ageMs, reason: failures >= 3 ? 'UPSTREAM_UNAVAILABLE' : 'STALE_DATA' } })
+        return clone({ ...structuredClone(saved), stale: { active: true, since: saved.at, ageMs, reason: failures >= 3 ? 'UPSTREAM_UNAVAILABLE' : 'STALE_DATA' } })
       }
       // 首次无快照时给后台刷新一次完整机会；超时才返回 503，避免把冷启动误报成已降级。
       if (backgroundMs > 0 && !saved) {

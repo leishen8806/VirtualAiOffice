@@ -1370,7 +1370,9 @@ const server = http
           return json(503, { error: 'STATE_UNAVAILABLE_NO_SNAPSHOT', reason: 'UPSTREAM_UNAVAILABLE' })
         }
         st.foyer = foyer.summary() // S1-2：前厅摘要（无哈希、无逐设备信息、无 IP / UA）
-        if (lanUser) { st.lan = true; if (!LAN.write) st.actToken = '' } // 局域网设备：不下发操作令牌
+        // 令牌不持久化：每次按访问者身份重新下发，过期快照也不能把本机令牌清空。
+        st.actToken = (!lanUser && !wallScope) || (lanUser && LAN.write) ? ACT_TOKEN : ''
+        if (lanUser) st.lan = true // 局域网设备：只读时令牌为空
         if (lanUser && !LAN.write && st.memory) st.memory = redactState({ memory: st.memory }).memory
         const restricted = lanUser || wallScope
         const view = restricted ? { ...st, world: restrictedWorld(st.world) } : st
