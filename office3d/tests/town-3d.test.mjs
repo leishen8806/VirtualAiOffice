@@ -1,8 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.js'
 import { readFileSync, statSync } from 'node:fs'
+
+test('hidden town overlays cannot cover the 2d map', () => {
+  const css = readFileSync(new URL('../town.css', import.meta.url), 'utf8')
+  assert.match(css, /\[hidden\]\s*\{\s*display:none !important\s*\}/)
+})
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
   assert.deepEqual(geoToWorld(11.57, 104.905), { x: 0, z: -0 })
@@ -82,7 +87,7 @@ test('water polygons leave inner rings dry after triangulation', () => {
 
 test('town renderer loads the clipped and area-unioned city data', () => {
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
-  assert.match(js, /fetch\('\/town-3d\/town-3d-data\.json'\)/)
+  assert.match(js, /fetch\('\/town\/3d-data\/town-3d-data\.json'\)/)
   assert.doesNotMatch(js, /fetch\('\/town-3d-data\.json'\)/)
 })
 

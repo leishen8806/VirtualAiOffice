@@ -87,7 +87,18 @@
       document.querySelector('#town3dCanvas').hidden = false
       document.querySelector('#town3dStatus').hidden = false
       document.querySelector('.subtitle').textContent = '金边 3D 城市沙盘 · OSM/ODbL'
-      import('./town-3d.js').catch((error) => window.town3dLoader?.fail(error))
+      window.town3dFailure = (error) => {
+        const loader = document.querySelector('#town3dLoader')
+        const message = document.querySelector('#town3dLoaderError')
+        const actions = loader?.querySelector('.town3d-loader-actions')
+        if (!loader || !message || !actions) return
+        loader.setAttribute('aria-busy', 'false')
+        message.hidden = false
+        message.textContent = `加载失败：${error?.message || error || '无法加载 3D 城市模块'}`
+        actions.hidden = false
+        document.querySelector('#town3dLoaderStep').textContent = '无法完成城市数据加载'
+      }
+      import('./town-3d.js').catch((error) => window.town3dFailure(error))
     } else import('./town.js')
   </script>
 </body>
