@@ -86,6 +86,10 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let state = null
   let staleKey = ''
   let busy = false
+  let batchBusy = false
+  let lastPostError = ''
+  const selectedReviewIds = new Set()
+  const batchResults = new Map()
   // T15：验收证据版本核对（只读）：待验收卡片徽标与「版本已变」二次确认用的数据。
   // 页面按需拉一次 /evidence-version（批量），服务端缓存 60 秒；客户端同样 60 秒内不重拉，避免每次轮询都跑 git。
   let verCache = { at: 0, byIssue: new Map() }
@@ -130,6 +134,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     if (state?.lan) { toast('局域网只读，请在运行服务的电脑上操作', false); return false }
     if (busy) { toast('上一个操作还在提交中', false); return false }
     busy = true
+    lastPostError = ''
     try {
       const send = async () => {
         const controller = new AbortController()
@@ -149,7 +154,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       lastResult = j.result || null
       return true
     } catch (e) {
-      toast(e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message, false)
+      lastPostError = e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message
+      toast(lastPostError, false)
       return false
     } finally {
       busy = false
@@ -171,6 +177,52 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     toast(msg)
     close()
     await refresh()
+  }
+
+  function projectKey(projectId) { return String(projectId ?? '') }
+  function selectedReviewItems(items) { return items.filter((item) => selectedReviewIds.has(String(item.issueId))) }
+  function setBatchControlsDisabled(disabled) {
+    document.querySelectorAll('[data-batch-control], [data-review-select]').forEach((el) => { el.disabled = disabled })
+  }
+  function refreshBatchView() {
+    const items = (state?.waiting || []).filter((item) => item.kind === 'review')
+    const current = document.querySelector('.batch-tools')
+    if (current && items.length) current.replaceWith(batchControls(items))
+    document.querySelectorAll('[data-review-select]').forEach((input) => { input.checked = selectedReviewIds.has(String(input.dataset.reviewSelect)) })
+  }
+  function openBatchConfirm(items) {
+    const count = items.length
+    const rows = items.map((item) => `<li><b>${esc(item.id || item.issueId)}</b> ${esc(item.title)}</li>`).join('')
+    open(`<div role="alertdialog" aria-modal="true" aria-labelledby="batchAcceptTitle" aria-describedby="batchAcceptWarning">
+      <h2 id="batchAcceptTitle">确认批量验收 ${count} 张</h2>
+      <p id="batchAcceptWarning" class="bad">验收不可撤回；确认后这些任务会标为「已完成」，负责人不会再继续做。</p>
+      <ul class="batch-confirm-list">${rows}</ul>
+      <div class="actions"><button class="btn" data-batch-cancel>取消</button><button class="btn ok" data-batch-confirm>确认验收 ${count} 张</button></div>
+    </div>`)
+    const cancel = modal.querySelector('[data-batch-cancel]')
+    const confirm = modal.querySelector('[data-batch-confirm]')
+    cancel.focus()
+    cancel.onclick = close
+    confirm.onclick = async () => {
+      batchBusy = true
+      confirm.disabled = true
+      cancel.disabled = true
+      setBatchControlsDisabled(true)
+      let passed = 0
+      for (const item of items) {
+        if (await post({ type: 'review', issueId: item.issueId, decision: 'accept', note: '' })) {
+          passed += 1
+          selectedReviewIds.delete(String(item.issueId))
+          batchResults.delete(String(item.issueId))
+        } else {
+          batchResults.set(String(item.issueId), lastPostError || '验收请求失败')
+        }
+      }
+      batchBusy = false
+      close()
+      toast(`成功 ${passed} 张，失败 ${count - passed} 张`, passed === count)
+      await refresh()
+    }
   }
 
   async function openChat(agentId) {
@@ -661,6 +713,41 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     el.innerHTML = `<div class="ic">${k.icon}</div><div class="t"><div class="k">${projTag(projectId)}${esc(head)}${headTail || ''}</div><div class="ti">${esc(title)}</div><div class="m">${esc(meta)}</div>${badge || ''}</div><div class="go">${k.go}</div>`
     el.onclick = onClick
     return el
+  }
+
+  function addReviewSelector(el, item) {
+    const label = document.createElement('label')
+    label.className = 'wait-select'
+    label.title = '选择待验收任务'
+    label.innerHTML = `<input type="checkbox" data-review-select="${esc(item.issueId)}" aria-label="选择 ${esc(item.id || item.issueId)}" ${selectedReviewIds.has(String(item.issueId)) ? 'checked' : ''} ${batchBusy ? 'disabled' : ''}><span>选择</span>`
+    label.onclick = (event) => event.stopPropagation()
+    const input = label.querySelector('input')
+    input.onchange = () => {
+      if (input.checked) selectedReviewIds.add(String(item.issueId))
+      else selectedReviewIds.delete(String(item.issueId))
+      refreshBatchView()
+    }
+    el.querySelector('.t').prepend(label)
+  }
+
+  function batchControls(items) {
+    const selected = selectedReviewItems(items)
+    const projects = [...new Set(selected.map((item) => projectKey(item.projectId)))]
+    const reviewProjects = [...new Set(items.map((item) => projectKey(item.projectId)))]
+    const crossProject = projects.length > 1
+    const box = document.createElement('div')
+    box.className = 'batch-tools'
+    box.innerHTML = `<div class="batch-tools-main"><b>已选 ${selected.length} 张 · 批量验收</b><button class="btn" data-batch-control data-batch-all ${batchBusy ? 'disabled' : ''}>全选本项目待验收</button><button class="btn" data-batch-control data-batch-clear ${batchBusy ? 'disabled' : ''}>清空</button><button class="btn ok" data-batch-control data-batch-accept ${!selected.length || crossProject || batchBusy ? 'disabled' : ''}>批量验收</button></div>${crossProject ? '<div class="note bad">一次批量只能验收同一个项目的卡片</div>' : ''}`
+    const all = box.querySelector('[data-batch-all]')
+    all.onclick = () => {
+      const project = projects.length === 1 ? projects[0] : reviewProjects.length === 1 ? reviewProjects[0] : null
+      if (project === null) { toast('请先勾选一个项目的待验收卡片', false); return }
+      items.filter((item) => projectKey(item.projectId) === project).forEach((item) => selectedReviewIds.add(String(item.issueId)))
+      refreshBatchView()
+    }
+    box.querySelector('[data-batch-clear]').onclick = () => { selectedReviewIds.clear(); refreshBatchView() }
+    box.querySelector('[data-batch-accept]').onclick = () => { if (!crossProject && selected.length) openBatchConfirm(selected) }
+    return box
   }
 
   const quest = $('quest')
@@ -1223,6 +1310,9 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const wl = $('waitList')
       wl.innerHTML = ''
       const items = []
+      const reviewItems = (s.waiting || []).filter((w) => w.kind === 'review')
+      for (const id of [...selectedReviewIds]) if (!reviewItems.some((item) => String(item.issueId) === id)) selectedReviewIds.delete(id)
+      if (reviewItems.length) wl.appendChild(batchControls(reviewItems))
       // T13：待验收卡片上，有返工记录的任务加徽标（超限红色并写明按流程先由 Lead 与董事会决定；不禁用通过按钮）
       const rwBadge = (issueId) => {
         const t = (s.rework?.tasks || []).find((x) => String(x.issueId) === String(issueId))
@@ -1239,7 +1329,13 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const who = agentName(w.agentId)
         const meta = `${w.id}${who ? ' · ' + who : ''} · 已等 ${ago(now - Date.parse(w.since))}`
         if (w.kind === 'question') items.push(card('question', KIND.question.label, w.title, meta, () => openQuestion(w), w.projectId))
-        else if (w.kind === 'review') items.push(card('review', KIND.review.label, w.title, meta, () => openIssue(w.issueId, 'review'), w.projectId, (rwBadge(w.issueId) || '') + verBadge(w.issueId)))
+        else if (w.kind === 'review') {
+          const result = batchResults.get(String(w.issueId))
+          const resultBadge = result ? `<span class="batch-result">验收失败：${esc(result)}</span>` : ''
+          const el = card('review', KIND.review.label, w.title, meta, () => { if (!batchBusy) openIssue(w.issueId, 'review') }, w.projectId, (rwBadge(w.issueId) || '') + verBadge(w.issueId) + resultBadge)
+          addReviewSelector(el, w)
+          items.push(el)
+        }
         else if (w.kind === 'undelivered') items.push(card('undelivered', KIND.undelivered.label, w.title, meta, () => openIssue(w.issueId, 'undelivered'), w.projectId))
       }
       if (items.length) items.forEach((x) => wl.appendChild(x))
