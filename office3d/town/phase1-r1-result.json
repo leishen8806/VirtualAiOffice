@@ -1,0 +1,1206 @@
+{
+  "schema": "town-econ-phase1-r1-result",
+  "version": 1,
+  "mode": "readonly-synthetic-trial",
+  "month": "2026-11",
+  "currency": "DRC",
+  "roleCount": 30,
+  "includedCount": 23,
+  "excludedCount": 7,
+  "excludedJobs": [
+    {
+      "agent": "Go1",
+      "tier": "T1",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "Go2",
+      "tier": "T1",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "Backend2",
+      "tier": "T1",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "OpsEngineer",
+      "tier": "T2",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "GoSenior",
+      "tier": "T3",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "GoSenior2",
+      "tier": "T3",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    },
+    {
+      "agent": "Reviewer3",
+      "tier": "GA",
+      "state": "paused_or_error",
+      "reason": "暂停或报错岗位，不参与试算"
+    }
+  ],
+  "jobs": [
+    {
+      "agent": "Frontend1",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "Frontend1",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Backend1",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "Backend1",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "React1",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "React1",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Frontend2",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "Frontend2",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "UIUX",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "UIUX",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "QAAutomation",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "QAAutomation",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Localizer",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "Localizer",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "PM",
+      "tier": "T2",
+      "state": "active",
+      "payslip": {
+        "agent": "PM",
+        "month": "2026-11",
+        "tier": "T2",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 70200,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 73400,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "FrontendSenior",
+      "tier": "T3",
+      "state": "active",
+      "payslip": {
+        "agent": "FrontendSenior",
+        "month": "2026-11",
+        "tier": "T3",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 95400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 98600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "BackendSenior",
+      "tier": "T3",
+      "state": "active",
+      "payslip": {
+        "agent": "BackendSenior",
+        "month": "2026-11",
+        "tier": "T3",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 95400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 98600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "ReactSenior",
+      "tier": "T3",
+      "state": "active",
+      "payslip": {
+        "agent": "ReactSenior",
+        "month": "2026-11",
+        "tier": "T3",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 95400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 98600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "DBEngineer",
+      "tier": "T3",
+      "state": "active",
+      "payslip": {
+        "agent": "DBEngineer",
+        "month": "2026-11",
+        "tier": "T3",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 95400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 98600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Architect",
+      "tier": "T3",
+      "state": "active",
+      "payslip": {
+        "agent": "Architect",
+        "month": "2026-11",
+        "tier": "T3",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 95400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 98600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Lead",
+      "tier": "T4",
+      "state": "active",
+      "payslip": {
+        "agent": "Lead",
+        "month": "2026-11",
+        "tier": "T4",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 126000,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 129200,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "OpsLead",
+      "tier": "T4",
+      "state": "active",
+      "payslip": {
+        "agent": "OpsLead",
+        "month": "2026-11",
+        "tier": "T4",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 126000,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 129200,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Reviewer1",
+      "tier": "GA",
+      "state": "active",
+      "payslip": {
+        "agent": "Reviewer1",
+        "month": "2026-11",
+        "tier": "GA",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 79500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 8000,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 90700,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Reviewer2",
+      "tier": "GA",
+      "state": "active",
+      "payslip": {
+        "agent": "Reviewer2",
+        "month": "2026-11",
+        "tier": "GA",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 79500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 8000,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 90700,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "SecurityReviewer",
+      "tier": "GA",
+      "state": "active",
+      "payslip": {
+        "agent": "SecurityReviewer",
+        "month": "2026-11",
+        "tier": "GA",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 79500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 8000,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 90700,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "LedgerAuditor",
+      "tier": "GB",
+      "state": "active",
+      "payslip": {
+        "agent": "LedgerAuditor",
+        "month": "2026-11",
+        "tier": "GB",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 58500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 5900,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 67600,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "KnowledgeKeeper",
+      "tier": "GB",
+      "state": "active",
+      "payslip": {
+        "agent": "KnowledgeKeeper",
+        "month": "2026-11",
+        "tier": "GB",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 58500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 5900,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 67600,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "Lead2",
+      "tier": "T4",
+      "state": "active",
+      "payslip": {
+        "agent": "Lead2",
+        "month": "2026-11",
+        "tier": "T4",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 126000,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 129200,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "React2",
+      "tier": "T1",
+      "state": "active",
+      "payslip": {
+        "agent": "React2",
+        "month": "2026-11",
+        "tier": "T1",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 50400,
+            "basis": "2026-11 出勤 30/30 · 系数 1.5"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          }
+        ],
+        "totalCents": 53600,
+        "coefficient": {
+          "value": 1.5,
+          "reason": "formula"
+        },
+        "warnings": []
+      }
+    },
+    {
+      "agent": "SecurityReviewer2",
+      "tier": "GA",
+      "state": "active",
+      "payslip": {
+        "agent": "SecurityReviewer2",
+        "month": "2026-11",
+        "tier": "GA",
+        "lines": [
+          {
+            "key": "base",
+            "label": "基本工资",
+            "amountCents": 79500,
+            "basis": "2026-11 出勤 30/30 · 系数 1"
+          },
+          {
+            "key": "full_attendance",
+            "label": "全勤奖",
+            "amountCents": 1000,
+            "basis": "30/30 满勤"
+          },
+          {
+            "key": "meal",
+            "label": "餐补",
+            "amountCents": 1500,
+            "basis": "30 天 × 0.5"
+          },
+          {
+            "key": "transport",
+            "label": "交通补助",
+            "amountCents": 700,
+            "basis": "30/30 折算"
+          },
+          {
+            "key": "seniority",
+            "label": "工龄奖",
+            "amountCents": 0,
+            "basis": "工龄 0 个月"
+          },
+          {
+            "key": "integrity_allowance",
+            "label": "廉洁津贴",
+            "amountCents": 8000,
+            "basis": "无确认违规"
+          }
+        ],
+        "totalCents": 90700,
+        "coefficient": {
+          "value": 1,
+          "reason": "gatekeeper"
+        },
+        "warnings": []
+      }
+    }
+  ],
+  "totals": {
+    "payrollCents": 1880800
+  },
+  "ledger": null,
+  "realData": false,
+  "notes": [
+    "所有输入为合成数据",
+    "暂停或报错岗位不参与试算",
+    "未执行任何真实经济动作、未生成正式账本"
+  ]
+}
