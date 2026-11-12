@@ -50,6 +50,7 @@ import { parseContract, validateContract } from './task-contract.mjs'
 import { suggest as suggestScheduler, decisionRecords } from './scheduler-view.mjs'
 import { createHomeStore } from './town/home-store.mjs'
 import { createHomeRoutes } from './town/home-routes.mjs'
+import { readTrialResult, trialAccessStatus } from './town/phase1-r2-readonly.mjs'
 import { commandViewEnabled, createCommandViewRoutes } from './command-view-routes.mjs'
 import { createCommandLiveWiring } from './command-view-wiring.mjs'
 import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
@@ -275,7 +276,7 @@ const commandLive = createCommandLiveWiring({
     return { status: response.status, body: response.ok ? await response.json() : null }
   },
 })
-const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
+const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/town/econ/trial', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
 API_PATHS.add('/town/3d-data')
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
@@ -1343,6 +1344,10 @@ const server = http
         const days = Number.isFinite(rawDays) ? Math.max(1, Math.min(90, Math.floor(rawDays))) : 30
         const currentMembers = (committee.view() || {}).members || []
         return json(200, buildGovernance({ days, currentMembers, standup: readGovernanceFile('standup.json'), committee: readGovernanceFile('committee.json'), acceptance: readGovernanceFile('acceptance.json'), rework: rework.view(), version: evidenceVersion.view(), handoff: handoff.view() }))
+      }
+      if (req.method === 'GET' && url.pathname === '/town/econ/trial') {
+        if (trialAccessStatus({ lanUser, wallScope }) !== 200) return json(403, { error: '经济小镇试算只允许在运行服务的电脑上查看' })
+        try { return json(200, readTrialResult()) } catch (error) { return json(503, { error: `试算结果暂不可用：${String(error.message || error)}` }) }
       }
       if (url.pathname === '/scheduler/suggest') {
         if (!SCHEDULER_VIEW_ENABLED) return json(404, { error: 'not found' })

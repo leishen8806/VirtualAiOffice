@@ -1023,6 +1023,27 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
   $('cmBtn').onclick = () => { if (state) openCommittee() }
 
+  async function openTownTrial() {
+    const renderFailure = (message) => open(`<h2>经济小镇 · 试算</h2><div class="meta">只读页面 · 数据为合成 · 未发放</div><p class="bad">${esc(message)}</p><div class="actions"><button class="btn" id="townTrialRetry">重试</button><button class="btn" id="townTrialBack">返回治理中心</button></div>`)
+    open('<div class="note">读取经济小镇试算…</div>')
+    try {
+      const r = await fetch('/town/econ/trial')
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
+      const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2)} DRC`
+      const groups = new Map()
+      for (const job of data.jobs || []) { const key = job.tier || '未分档'; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(job) }
+      const rows = [...groups.entries()].map(([tier, jobs]) => `<div class="sec">${esc(tier)} · ${jobs.length} 个参与岗位</div>${jobs.map((job) => `<details class="cm"><summary><b>${esc(job.agent)}</b> · 系数 ${esc(job.payslip.coefficient.value)} · ${esc(money(job.payslip.totalCents))}</summary><div class="gov-detail">${job.payslip.lines.map((line) => `<div class="row"><span>${esc(line.label)}</span><span>${esc(money(line.amountCents))}<br><small>${esc(line.basis)}</small></span></div>`).join('')}</div></details>`).join('')}`).join('')
+      const excluded = (data.excludedJobs || []).map((job) => `<div class="cm"><b>${esc(job.agent)}</b> · ${esc(job.state)}<br><span class="note">原因：${esc(job.reason)}</span></div>`).join('') || '<div class="note">没有不参与岗位</div>'
+      open(`<h2>经济小镇 · 试算</h2><div class="meta">只读 · 试算结果，未发放，数据为合成 · ${esc(data.month)} · 金边时间</div><div class="daily"><div class="st"><b>${esc(money(data.totals?.payrollCents))}</b><span>本月合计</span></div><div class="st"><b>${esc(data.includedCount)}</b><span>参与人数</span></div><div class="st"><b>${esc(data.excludedCount)}</b><span>不参与人数</span></div></div><p class="note">考核系数来自输入文件，页面展示不同合成档次；本页没有发薪、铸币、转账、钱包或导出入口。</p><div class="sec">参与岗位 · 按岗位档次</div>${rows}<div class="sec">不参与岗位</div>${excluded}<div class="actions"><button class="btn" id="townTrialBack">返回治理中心</button></div>`)
+      modal.querySelector('#townTrialBack').onclick = openGovernance
+    } catch (e) {
+      renderFailure(`读取失败：${e.message || e}`)
+      modal.querySelector('#townTrialRetry').onclick = openTownTrial
+      modal.querySelector('#townTrialBack').onclick = openGovernance
+    }
+  }
+
   async function openGovernance() {
     open('<div class="note">读取治理历史…</div>')
     try {
@@ -1039,7 +1060,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const cards = [['批次', data.summary?.total || 0], ['作废', data.summary?.void || 0], ['平均统计耗时', `${data.summary?.averageMinutes || 0} 分钟`]].map(([a, b]) => `<div class="st"><b>${esc(b)}</b><span>${esc(a)}</span></div>`).join('')
         const members = (data.members || []).slice().sort((a, b) => Number(Boolean(b.active)) - Number(Boolean(a.active))).map((m) => { const cls = m.missingRate > .4 ? 'bad' : m.missingRate > .2 ? 'warn' : ''; const bar = (n) => `<div class="gov-meter"><i style="width:${Math.round(Math.min(1, n || 0) * 100)}%"></i></div>`; const missingRate = m.votes ? `${Math.round(m.missingRate * 100)}%` : '–'; return `<div class="gov-member ${cls}" title="缺票多半是没额度或没有按格式投票"><b>${esc(m.name)} <span class="note">${esc(m.status || (m.active ? '现任' : '已卸任'))}</span></b><span>通过 ${m.approve}${bar(m.votes ? m.approve / m.votes : 0)}</span><span>修改 ${m.changes}${bar(m.votes ? m.changes / m.votes : 0)}</span><span>升级 ${m.escalate}${bar(m.escalateRate)}</span><span>缺票 ${m.missing}（${missingRate}）${bar(m.missingRate)}</span></div>` }).join('') || '<div class="note">暂无委员统计</div>'
         const rows = shown.map((e) => { const open = expanded === e.id; const details = open ? `<div class="gov-detail">${(e.items || []).map((i) => `<div><b>${esc(i.title)}</b> · ${esc(i.result)}<br>${(i.votes || []).map((v) => `<span class="note">${esc(v.name)}=${esc(v.v)}${v.why ? `（${esc(v.why)}）` : ''}</span>`).join(' · ')}</div>`).join('<hr>') || '<span class="note">没有明细</span>'}</div>` : ''; const kind = kindLabel[e.kind] || e.kind; const title = String(e.title || '').replace(new RegExp(`^${kind}(?:\\s*[·：:]|\\s+)\\s*`), ''); const when = e.at ? new Date(e.at).toLocaleString('zh-CN', { timeZone: 'Asia/Phnom_Penh', hour12: false }) : '时间未知'; return `<div class="row gov-event" data-gov-id="${esc(e.id)}"><span><b>${esc(kind)}</b> · ${esc(title)} <span class="note">· ${esc(e.outcome)} · ${esc(when)}</span></span></div>${details}` }).join('') || '<div class="note">这段时间没有治理批次。</div>'
-        open(`<h2>🏛 治理中心</h2><div class="meta">晨会、内容审批、超时验收的只读历史与委员统计；金边时间</div><div class="daily">${cards}</div><div class="tabs"><button class="tab ${category === 'all' ? 'on' : ''}" data-gov-cat="all">全部</button><button class="tab ${category === 'standup' ? 'on' : ''}" data-gov-cat="standup">晨会</button><button class="tab ${category === 'content' ? 'on' : ''}" data-gov-cat="content">内容审批</button><button class="tab ${category === 'acceptance' ? 'on' : ''}" data-gov-cat="acceptance">超时验收</button><select id="govOutcome" style="max-width:150px"><option value="all">全部结果</option><option value="PASS">通过</option><option value="CHANGES">要修改</option><option value="ESCALATE">升级</option><option value="VOID">作废</option></select></div><div class="sec">委员 × 票型</div><div class="gov-members">${members}</div><div class="sec">时间线（${events.length} 批）</div>${rows}<div class="actions"><button class="btn" id="govPrev" ${page <= 0 ? 'disabled' : ''}>上一页</button><span class="note">第 ${page + 1} / ${pageCount} 页</span><button class="btn" id="govNext" ${page >= pageCount - 1 ? 'disabled' : ''}>下一页</button></div>`)
+        open(`<h2>治理中心</h2><div class="meta">晨会、内容审批、超时验收的只读历史与委员统计；金边时间</div><div class="actions"><button class="btn" id="townTrialOpen">经济小镇 · 试算</button></div><div class="daily">${cards}</div><div class="tabs"><button class="tab ${category === 'all' ? 'on' : ''}" data-gov-cat="all">全部</button><button class="tab ${category === 'standup' ? 'on' : ''}" data-gov-cat="standup">晨会</button><button class="tab ${category === 'content' ? 'on' : ''}" data-gov-cat="content">内容审批</button><button class="tab ${category === 'acceptance' ? 'on' : ''}" data-gov-cat="acceptance">超时验收</button><select id="govOutcome" style="max-width:150px"><option value="all">全部结果</option><option value="PASS">通过</option><option value="CHANGES">要修改</option><option value="ESCALATE">升级</option><option value="VOID">作废</option></select></div><div class="sec">委员 × 票型</div><div class="gov-members">${members}</div><div class="sec">时间线（${events.length} 批）</div>${rows}<div class="actions"><button class="btn" id="govPrev" ${page <= 0 ? 'disabled' : ''}>上一页</button><span class="note">第 ${page + 1} / ${pageCount} 页</span><button class="btn" id="govNext" ${page >= pageCount - 1 ? 'disabled' : ''}>下一页</button></div>`)
+        modal.querySelector('#townTrialOpen').onclick = openTownTrial
         const section = document.createElement('details')
         if (canShowHomeEntry({ fullAccess: Boolean(state?.actToken), lan: Boolean(state?.lan), wall: new URLSearchParams(location.search).has('wall') })) {
           const commandEntry = document.createElement('button')
