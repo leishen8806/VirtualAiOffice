@@ -7,9 +7,10 @@
   <title>金边小镇 · 智序工场</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='25' fill='%23dfc27d'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%23111820'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/town.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
 </head>
 <body>
-  <section id="town3dLoader" class="town3d-loader" aria-live="polite" aria-busy="true">
+  <section id="town3dLoader" class="town3d-loader" aria-live="polite" aria-busy="true" hidden>
     <div class="town3d-loader-card">
       <div class="town3d-loader-brand">DR LIFE+</div>
       <h2 id="town3dLoaderTitle">正在铺开金边街区…</h2>
@@ -81,6 +82,7 @@
   <script type="module">
     if (new URLSearchParams(location.search).get('mode') === '3d') {
       document.body.classList.add('mode-3d')
+      document.querySelector('#town3dLoader').hidden = false
       document.querySelector('#townMap').hidden = true
       document.querySelector('#town3dCanvas').hidden = false
       document.querySelector('#town3dStatus').hidden = false

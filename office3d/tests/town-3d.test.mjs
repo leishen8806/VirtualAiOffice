@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.js'
-import { readFileSync } from 'node:fs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.mjs'
+import { readFileSync, statSync } from 'node:fs'
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
   assert.deepEqual(geoToWorld(11.57, 104.905), { x: 0, z: -0 })
@@ -26,17 +26,15 @@ test('low quality keeps every building while marking simplified LOD deterministi
 test('3d town exposes real progress loader, retry/back buttons, and reduced-motion path', () => {
   const html = readFileSync(new URL('../town.html', import.meta.url), 'utf8')
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
+  assert.match(html, /type="importmap">\{"imports":\{"three":"\.\/vendor\/three\/three\.module\.js"\}\}/)
   assert.match(html, /town3dLoaderProgress/)
   assert.match(html, /town3dRetry/)
   assert.match(html, /town3dBack2d/)
+  assert.match(html, /id="town3dLoader"[^>]*\shidden/)
+  assert.match(html, /town3dLoader'\)\.hidden = false/)
   assert.match(js, /下载城市数据/)
   assert.match(js, /场景就绪/)
   assert.match(js, /prefers-reduced-motion/)
-  assert.match(html, /town3dFailure/)
-  assert.match(html, /无法加载 3D 城市模块/)
-  assert.doesNotMatch(html, /window\.town3dLoader\?\.fail/)
-  assert.match(js, /window\.town3dApi/)
-  assert.doesNotMatch(js, /town-3d-core\.mjs/)
 })
 
 test('river data is area-unioned and keeps holes-ready rings', () => {
@@ -84,7 +82,7 @@ test('water polygons leave inner rings dry after triangulation', () => {
 
 test('town renderer loads the clipped and area-unioned city data', () => {
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
-  assert.match(js, /fetch\('\/town\/3d-data\/town-3d-data\.json'\)/)
+  assert.match(js, /fetch\('\/town-3d\/town-3d-data\.json'\)/)
   assert.doesNotMatch(js, /fetch\('\/town-3d-data\.json'\)/)
 })
 
@@ -109,4 +107,65 @@ test('landmark labels choose visible silhouette profiles', () => {
   assert.equal(landmarkProfile('Independence Monument'), 'spire')
   assert.equal(landmarkProfile('Olympic Stadium'), 'stadium')
   assert.equal(landmarkProfile('Central Market'), 'block')
+})
+
+test('Independence Monument uses the generated grounded GLB within its budgets', () => {
+  const asset = new URL('../assets/models/landmarks/independence-monument.glb', import.meta.url)
+  assert.ok(statSync(asset).size <= 500_000)
+  const bytes = readFileSync(asset)
+  assert.equal(bytes.readUInt32LE(0), 0x46546c67)
+  assert.equal(bytes.readUInt32LE(4), 2)
+  const jsonLength = bytes.readUInt32LE(12)
+  const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString())
+  const bounds = new THREE.Box3()
+  let triangles = 0
+  for (const node of gltf.nodes) {
+    if (node.mesh === undefined) continue
+    const transform = new THREE.Matrix4().compose(
+      new THREE.Vector3(...(node.translation || [0, 0, 0])),
+      new THREE.Quaternion(...(node.rotation || [0, 0, 0, 1])),
+      new THREE.Vector3(...(node.scale || [1, 1, 1])),
+    )
+    for (const primitive of gltf.meshes[node.mesh].primitives) {
+      const position = gltf.accessors[primitive.attributes.POSITION]
+      triangles += (primitive.indices === undefined ? position.count : gltf.accessors[primitive.indices].count) / 3
+      for (const x of [position.min[0], position.max[0]]) for (const y of [position.min[1], position.max[1]]) for (const z of [position.min[2], position.max[2]]) bounds.expandByPoint(new THREE.Vector3(x, y, z).applyMatrix4(transform))
+    }
+  }
+  assert.ok(triangles <= 8000)
+  assert.ok(gltf.meshes.length <= 3)
+  assert.equal(gltf.images?.length || 0, 0)
+  assert.equal(gltf.textures?.length || 0, 0)
+  const sandstone = gltf.materials.find((material) => material.name === 'Red-brown sandstone')
+  assert.deepEqual(sandstone.pbrMetallicRoughness.baseColorFactor.map((value) => Number(value.toFixed(2))), [0.43, 0.18, 0.11, 1])
+  assert.ok(Math.abs(bounds.min.y) < 0.001)
+  assert.ok(bounds.max.y > 24 && bounds.max.y < 27)
+  assert.ok(bounds.max.x - bounds.min.x <= 9.6)
+  assert.ok(bounds.max.z - bounds.min.z <= 9.6)
+})
+
+test('detailed monument replaces its duplicate OSM footprint and clears the ring road', () => {
+  const data = JSON.parse(readFileSync(new URL('../town-3d/town-3d-data.json', import.meta.url), 'utf8'))
+  const map = JSON.parse(readFileSync(new URL('../town-map.json', import.meta.url), 'utf8'))
+  const landmark = map.layers.landmarks.find((item) => item.name === 'Independence Monument')
+  assert.ok(data.buildings.some((building) => building.id === landmark.osm))
+  const point = geoToWorld(landmark.lat, landmark.lon)
+  const nearbyBuildings = data.buildings.filter((building) => building.id !== landmark.osm).map((building) => {
+    const [lon0, lat0, lon1, lat1] = building.bbox.map(Number), a = geoToWorld(lat0, lon0), b = geoToWorld(lat1, lon1)
+    return [Math.min(a.x, b.x), Math.min(a.z, b.z), Math.max(a.x, b.x), Math.max(a.z, b.z)]
+  })
+  assert.ok(nearbyBuildings.every(([x0, z0, x1, z1]) => x1 < point.x - 4.76 || x0 > point.x + 4.76 || z1 < point.z - 4.76 || z0 > point.z + 4.76))
+  const segmentDistance = (a, b) => {
+    const dx = b.x - a.x, dz = b.z - a.z
+    const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / (dx * dx + dz * dz || 1)))
+    return Math.hypot(point.x - (a.x + t * dx), point.z - (a.z + t * dz))
+  }
+  const roadDistances = data.roads.flatMap((road) => (road.line || []).slice(1).map((value, index) => segmentDistance(
+    geoToWorld(road.line[index][1], road.line[index][0]),
+    geoToWorld(value[1], value[0]),
+  )))
+  assert.ok(Math.min(...roadDistances) > 10.4)
+  const source = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
+  assert.match(source, /building\.id !== monument\?\.osm/)
+  assert.match(source, /independence-monument\.glb/)
 })

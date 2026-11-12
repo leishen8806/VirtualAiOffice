@@ -899,6 +899,7 @@ let backlogCache = { at: 0, rows: [] }
 let backlogFlight = null
 const lastGoodState = createLastGoodState({
   file: path.join(HERE, 'state-last-good.json'),
+  persistMinMs: 60000,
   backgroundMs: 10000,
   staleAfterMs: 60000,
   logFile: path.join(HERE, 'state-refresh.log'),
