@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from './town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from './town-3d-core.js'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -13,7 +13,7 @@ const loaderProgress = document.querySelector('#town3dLoaderProgress')
 const loaderError = document.querySelector('#town3dLoaderError')
 const loaderActions = loader?.querySelector('.town3d-loader-actions')
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-const loaderApi = window.town3dLoader = {
+const loaderApi = window.town3dApi = {
   progress(value, step) { setLoading(step, value / 100) },
   done() { if (!loader) return; loader.setAttribute('aria-busy','false'); const ms = prefersReducedMotion || quality === 'low' ? 0 : 1800; finishLoading({ reduceMotion: !ms, pushCamera: duration => { const start = performance.now(); const base = quality === 'low' ? 250 : 320; const tick = now => { const t = Math.min(1, (now - start) / Math.max(1, duration)); const eased = t * (2 - t); camera.position.y = base - eased * 55; if (t < 1) requestAnimationFrame(tick) }; requestAnimationFrame(tick) } }) },
   fail(error) { if (!loader) return; loader.setAttribute('aria-busy','false'); loaderError.hidden = false; loaderError.textContent = `加载失败：${error?.message || error}`; loaderActions.hidden = false; loaderProgress.value = 0; loaderStep.textContent = '无法完成城市数据加载'; }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from '../town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from '../town-3d-core.js'
 import { readFileSync } from 'node:fs'
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
@@ -31,6 +31,11 @@ test('3d town exposes real progress loader, retry/back buttons, and reduced-moti
   assert.match(js, /下载城市数据/)
   assert.match(js, /场景就绪/)
   assert.match(js, /prefers-reduced-motion/)
+  assert.match(html, /town3dFailure/)
+  assert.match(html, /无法加载 3D 城市模块/)
+  assert.doesNotMatch(html, /window\.town3dLoader\?\.fail/)
+  assert.match(js, /window\.town3dApi/)
+  assert.doesNotMatch(js, /town-3d-core\.mjs/)
 })
 
 test('river data is area-unioned and keeps holes-ready rings', () => {
