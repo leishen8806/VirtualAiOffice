@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.mjs'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from './town-3d-core.js'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -13,7 +13,7 @@ const loaderProgress = document.querySelector('#town3dLoaderProgress')
 const loaderError = document.querySelector('#town3dLoaderError')
 const loaderActions = loader?.querySelector('.town3d-loader-actions')
 const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
-const loaderApi = window.town3dLoader = {
+const loaderApi = window.town3dApi = {
   progress(value, step) { setLoading(step, value / 100) },
   done() { if (!loader) return; loader.setAttribute('aria-busy','false'); const ms = prefersReducedMotion || quality === 'low' ? 0 : 1800; finishLoading({ reduceMotion: !ms, pushCamera: duration => { const start = performance.now(); const base = quality === 'low' ? 250 : 320; const tick = now => { const t = Math.min(1, (now - start) / Math.max(1, duration)); const eased = t * (2 - t); camera.position.y = base - eased * 55; if (t < 1) requestAnimationFrame(tick) }; requestAnimationFrame(tick) } }) },
   fail(error) { if (!loader) return; loader.setAttribute('aria-busy','false'); loaderError.hidden = false; loaderError.textContent = `加载失败：${error?.message || error}`; loaderActions.hidden = false; loaderProgress.value = 0; loaderStep.textContent = '无法完成城市数据加载'; }
@@ -66,8 +66,12 @@ function mergedBoxes(items) {
 function mergedPolygons(items, y, material) {
   const positions = [], indices = []; let vertex = 0
   for (const item of items) {
-    const shape = polygonShape(THREE, item, (point) => polygonWorldPoint(THREE, point))
-    if (!shape) continue
+    const rings = Array.isArray(item.rings) ? item.rings : [item.geometry || []]
+    const toPoint = ([lon, lat]) => { const p = geoToWorld(Number(lat), Number(lon), 10); return new THREE.Vector2(p.x, p.z) }
+    const outer = rings[0].map(toPoint).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
+    if (outer.length < 3) continue
+    const shape = new THREE.Shape(outer)
+    shape.holes = rings.slice(1).map(ring => new THREE.Path(ring.map(toPoint)))
     const geometry = new THREE.ShapeGeometry(shape)
     geometry.rotateX(-Math.PI / 2)
     geometry.translate(0, y, 0)
@@ -131,7 +135,7 @@ function addRoads(data) { mergedRoads(data) }
 function marker(lat,lon,height,material,label){const p=geoToWorld(lat,lon),profile=landmarkProfile(label),group=new THREE.Group();group.name=label;group.position.set(p.x,0,p.z);const add=(geometry,y)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.y=y;group.add(mesh)};if(profile==='stadium'){add(new THREE.CylinderGeometry(5,5,1.5,16),.75);const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.65,5,20),material);ring.rotation.x=Math.PI/2;ring.position.y=1.7;group.add(ring)}else if(profile==='spire'){add(new THREE.BoxGeometry(8,1.2,8),.6);add(new THREE.CylinderGeometry(1.8,3.2,height*.5,8),1.2+height*.25);add(new THREE.ConeGeometry(3.1,height*.38,8),1.2+height*.69)}else{add(new THREE.BoxGeometry(8,height*.58,8),height*.29);add(new THREE.BoxGeometry(5,height*.36,5),height*.76)}worldGroup.add(group);const el=document.createElement('div');el.className='town3d-label';el.textContent=label;el.dataset.world=`${p.x},${height},${p.z}`;document.body.append(el);return group}
 async function boot(){
   loaderApi.progress(8, '下载城市数据…')
-  const [res, mapRes] = await Promise.all([fetch('/town/3d-data/town-3d-data.json'), fetch('/town/map')]); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); if(!mapRes.ok) throw new Error(`town-map ${mapRes.status}`); const data=await res.json(); const mapData=await mapRes.json(); loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
+  const [res, mapRes] = await Promise.all([fetch('/town-3d/town-3d-data.json'), fetch('/town-map.json')]); if(!res.ok) throw new Error(`town-3d-data ${res.status}`); const data=await res.json(); const mapData=mapRes.ok ? await mapRes.json() : null; loaderApi.progress(30, '城市数据已载入，准备生成建筑…')
   const buildings=data.buildings.map(b=>{const [lon0,lat0,lon1,lat1]=(b.bbox||[]).map(Number); if(![lon0,lat0,lon1,lat1].every(Number.isFinite)) return null; const a=geoToWorld(lat0,lon0),z=geoToWorld(lat1,lon1); return {...b,bboxWorld:[Math.min(a.x,z.x),Math.min(a.z,z.z),Math.max(a.x,z.x),Math.max(a.z,z.z)],heightWorld:Number(b.height)/10}}).filter(Boolean)
   const sampled=qualitySample(buildings,quality); const chunks=chunkPlan(sampled); scene.userData.buildings = sampled.length; loaderApi.progress(40, `生成建筑（${chunks.length} 个分块）…`)
   worldGroup.clear();
