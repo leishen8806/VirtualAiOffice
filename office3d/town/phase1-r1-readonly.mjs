@@ -6,7 +6,7 @@ import { buildPayslip } from './town-engine.mjs'
 const DEFAULT_INPUT = new URL('./phase1-r1-input.json', import.meta.url)
 const DEFAULT_OUTPUT = new URL('./phase1-r1-result.json', import.meta.url)
 const CONFIRMED_TIERS = { Lead2: 'T4', GoSenior2: 'T3', React2: 'T1', Reviewer3: 'GA', SecurityReviewer2: 'GA' }
-const EXCLUDED = new Set(['Go1', 'Go2', 'GoSenior', 'GoSenior2', 'OpsEngineer', 'Backend2', 'Reviewer3'])
+const DEFAULT_METRICS = { observedDays: 30, evaluatedTasks: 3, firstPassRate: 0.8, avgReworkRounds: 1, blockedShare: 0.1, successRate: 0.85 }
 
 const readJson = (url) => JSON.parse(readFileSync(url, 'utf8'))
 const syntheticInput = (job, month) => ({
@@ -16,7 +16,7 @@ const syntheticInput = (job, month) => ({
   workedDays: 30,
   availableDays: 30,
   monthsOfService: 0,
-  metrics: { observedDays: 30, evaluatedTasks: 3, firstPassRate: 1, avgReworkRounds: 0, blockedShare: 0, successRate: 1 },
+  metrics: { ...DEFAULT_METRICS, ...(job.metrics || {}) },
   recordIncome: [],
   mineAdventureDays: [],
 })
@@ -40,7 +40,7 @@ export function buildReadOnlyResult(input, config) {
   const included = []
   const excluded = []
   for (const job of input.jobs) {
-    if (EXCLUDED.has(job.agent)) {
+    if (job.state !== 'active') {
       excluded.push({ agent: job.agent, tier: job.tier, state: job.state, reason: job.reason || '暂停或报错岗位，不参与试算' })
       continue
     }
