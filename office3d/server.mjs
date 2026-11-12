@@ -276,6 +276,7 @@ const commandLive = createCommandLiveWiring({
   },
 })
 const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
+API_PATHS.add('/town/3d-data')
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
 // 静态文件白名单：页面、脚本、样式、图片、模型。目录里的 json / log / dpapi / md / mjs（访问码、Telegram 配置、审计日志、委员会数据……）一律不对外
@@ -1225,7 +1226,7 @@ const server = http
           else if (!authRoute) return res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(loginPage())
         }
       }
-      if (wallScope && (req.method !== 'GET' || ((API_PATHS.has(url.pathname) || authRoute) && !['/state', '/wall/data'].includes(url.pathname)))) return json(403, { error: '大屏链接只能看大屏，不能做别的' })
+      if (wallScope && (req.method !== 'GET' || (((API_PATHS.has(url.pathname) || url.pathname.startsWith('/town/3d-data/') || authRoute)) && !['/state', '/wall/data'].includes(url.pathname)))) return json(403, { error: '大屏链接只能看大屏，不能做别的' })
       if (lanUser && ['/chat', '/chat/summary'].includes(url.pathname)) return json(403, { error: '对话内容只允许在运行服务的电脑上查看' })
       if (url.pathname === '/town-nav-config.js') {
         if (req.method !== 'GET') return json(405, { error: '不支持' })
@@ -1294,6 +1295,17 @@ const server = http
         const reply = townMap.handle({ method: req.method, ifNoneMatch: req.headers['if-none-match'], redactOffice: lanUser || wallScope })
         res.writeHead(reply.status, reply.headers)
         return res.end(reply.body)
+      }
+      if (url.pathname.startsWith('/town/3d-data/')) {
+        if (req.method !== 'GET') return json(405, { error: '不支持' })
+        const name = url.pathname.slice('/town/3d-data/'.length)
+        const allowed = new Set(['town-3d-data.json', 'pp-core.json', 'pp-peripheral.json', 'pp-riverfront.json', 'pp-warehouse.json'])
+        if (!allowed.has(name) || name.includes('/') || name.includes('\\') || name.includes('..')) return json(404, { error: '没有这份城市数据' })
+        const file = path.join(HERE, 'town-3d', name)
+        try {
+          const body = await fs.promises.readFile(file)
+          return res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }).end(body)
+        } catch { return json(404, { error: '没有这份城市数据' }) }
       }
       if (req.method === 'GET' && url.pathname === '/platform/tenancy') {
         if (lanUser) return json(403, { error: '多租户平台状态只允许在运行服务的电脑上查看' })

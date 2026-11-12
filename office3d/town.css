@@ -21,7 +21,7 @@ button:focus-visible,a:focus-visible,#townMap:focus-visible { outline:3px solid 
 .town3d-loader.is-leaving { opacity:0; pointer-events:none }
 .town3d-loader-card { width:min(460px,calc(100vw - 32px)); padding:30px; border:1px solid rgba(223,194,125,.35); border-radius:18px; background:rgba(18,27,36,.95); box-shadow:0 20px 70px rgba(0,0,0,.35); text-align:center }
 .town3d-loader-brand { color:var(--gold); letter-spacing:.22em; font-weight:800; font-size:12px }
-.town3d-loader-card h2 { margin:14px 0 8px; color:var(--text); font-size:clamp(20px,4vw,30px) }
+.town3d-loader-card h2 { margin:14px 0 8px; color:#f6f3ec; font-size:clamp(20px,4vw,30px) }
 .town3d-loader-card p { margin:0 0 18px; color:var(--muted); font-size:13px }
 .town3d-loader-card progress { width:100%; height:10px; accent-color:var(--gold) }
 .town3d-loader-error { color:#ffb4a8; margin:12px 0; font-size:13px }
