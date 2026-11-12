@@ -1,4 +1,4 @@
-分支 feat/wh-r1-live3-b；提交 d3f8adc
+分支 feat/wh-r1-live3-b；提交 0bf2a790ab519378c18494191bb45c7cdb2c5580
 
 ## 范围
 
@@ -51,6 +51,6 @@ R6 的结论仍成立：原实现只把交通状态写入 `runtimeVehicles.root.
 - 本地代码与测试：PASS（本地相关套件 23/23；`node --check` 通过；随后同步更新 `wh-r1-truck.test.mjs` 的 motion 断言）。
 - 真实服务浏览器取证：PASS（4396，12 张截图已保存并校验 SHA-256）。
 - main 性能对照：PASS（4397 独立工作树、同口径 30 秒采样）。
-- PR #168 CI 三项：FAIL/PENDING（第二轮 run `43205505103`：perf-budget 仍 pending；ubuntu/windows 的全仓单测仍分别命中既有 `state-last-good.test.mjs` 的 undefined status 失败；本轮 `wh-r1-truck.test.mjs` motion 断言已通过）。
+- PR #168 CI 三项：FAIL（run `43207837908`：perf-budget PASS；ubuntu/windows 均只命中既有 `state-last-good.test.mjs` 的 undefined status 失败；本轮 `wh-r1-truck.test.mjs` motion 断言已通过）。
 - 部署/合并：NOT_RUN（明确禁止）。
 - 服务和浏览器：已关闭；临时基线工作树与合成 company-id 文件已删除。
