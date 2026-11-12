@@ -111,7 +111,7 @@ function deliveryTricycleParts() {
 export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, env, renderer, loadSemitrailers = loadWhR1Semitrailers }) {
   const group = new THREE.Group(); group.name = 'wh-r1-vehicles'; group.position.y = WH_R1_FLOOR_Y; group.userData.noMerge = true; root.add(group)
   const useSemitrailers = !!renderer
-  const batches = { boxes: [], wheels: [], lamps: [] }, detailBatches = { boxes: [], wheels: [], steering: [] }, detailMeshes = [], meshes = [], proxies = [], labels = []
+  const batches = { boxes: [], wheels: [], lamps: [] }, detailBatches = { boxes: [], wheels: [], steering: [] }, detailMeshes = [], meshes = [], proxies = [], labels = [], motionRows = new Map(), basePoses = new Map()
   const templates = { truck: truckParts(), forklift: forkliftParts(), train: deliveryTrainParts(), tricycle: deliveryTricycleParts() }
   const bounds = Object.fromEntries(Object.entries(templates).map(([key, rows]) => [key, {
     x0: Math.min(...rows.map(p => p.x - p.sx / 2)), x1: Math.max(...rows.map(p => p.x + p.sx / 2)),
@@ -121,6 +121,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
   for (const row of WH_R1_VEHICLES) {
     const key = row.displayVehicleType === 'delivery-train' ? 'train' : row.displayVehicleType === 'delivery-tricycle' ? 'tricycle' : row.category === '厢式货车' ? 'truck' : 'forklift', b = bounds[key], p = whToWorld(row.xM, row.yM), yaw = row.yawDeg * Math.PI / 180
     const sx = row.lengthM / (b.z1 - b.z0), sy = row.heightM / (b.y1 - b.y0), sz = row.widthM / (b.x1 - b.x0)
+    basePoses.set(row.id, { x: p.x, z: p.z, yaw })
     for (const part of useSemitrailers && key === 'truck' ? [] : templates[key]) {
       // The old model's long Z axis becomes WH-R1's registered long X axis; the cab faces away from the receiving doors.
       const x = -(part.z - (b.z0 + b.z1) / 2) * sx, z = (part.x - (b.x0 + b.x1) / 2) * sz
@@ -142,11 +143,26 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     const material = kind === 'lamps' ? new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .82, toneMapped: false }) : new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .7, metalness: .15 })
     const mesh = new THREE.InstancedMesh(geometryFor(kind), material, rows.length); mesh.name = detail ? `wh-r1-forklift-detail-${kind}` : `wh-r1-vehicles-${kind}`
     mesh.userData = { noMerge: true, instanceToRegisterId: detail ? [] : rows.map(r => r.id), parts: detail ? [] : rows.map(r => r.part), designStatus: 'DESIGN_ASSUMPTION' }
-    rows.forEach((row, index) => setInstance(mesh, row, index)); mesh.count = detail ? 0 : rows.length; mesh.visible = !detail
+    rows.forEach((row, index) => { setInstance(mesh, row, index); const entries = motionRows.get(row.id) || []; entries.push({ mesh, row, index }); motionRows.set(row.id, entries) }); mesh.count = detail ? 0 : rows.length; mesh.visible = !detail
     mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; group.add(mesh); meshes.push(mesh); if (detail) detailMeshes.push({ mesh, rows })
   }
   for (const [kind, rows] of Object.entries(batches)) if (rows.length) addBatch(kind, rows)
   for (const [kind, rows] of Object.entries(detailBatches)) if (rows.length) addBatch(kind, rows, true)
+  const applyPose = (id, pose) => {
+    const base = basePoses.get(id), entries = motionRows.get(id); if (!base || !entries || !pose) return
+    const dy = pose.yaw - base.yaw, c = Math.cos(dy), s = Math.sin(dy)
+    for (const entry of entries) {
+      const dx = entry.row.x - base.x, dz = entry.row.z - base.z
+      setInstance(entry.mesh, { ...entry.row, x: pose.x + dx * c - dz * s, z: pose.z + dx * s + dz * c, yaw: entry.row.yaw + dy }, entry.index)
+      entry.mesh.instanceMatrix.needsUpdate = true
+    }
+    const proxy = proxies.find(item => item.userData.whR1Id === id); if (proxy) { proxy.position.x = pose.x; proxy.position.z = pose.z; proxy.rotation.y = pose.yaw }
+  }
+  const applyMotion = snapshot => {
+    const active = new Map((snapshot?.active || []).map(row => [row.id, row.position]))
+    for (const [id, base] of basePoses) applyPose(id, active.get(id) || base)
+    if (semitrailers) for (const [id, base] of basePoses) if (id.startsWith('WH-01-')) semitrailers.setPose(id, active.get(id) || base)
+  }
   const forkliftFleet = WH_R1_VEHICLES.filter(row => row.category === '搬运设备占位').map(row => ({ id: row.id, ...whToWorld(row.xM, row.yM), y: row.zM + row.heightM / 2, near: false }))
   const forkliftLod = {
     enter: 28, exit: 34,
@@ -199,7 +215,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(index); g.computeVertexNormals()
     const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })); mesh.name = 'wh-r1-vehicle-labels'; mesh.userData = { noMerge: true, labels }; group.add(mesh); meshes.push(mesh)
   }
-  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'NONE — static drawing objects only', shapeStatus: useSemitrailers ? 'APPROVED_MIXED_FLEET' : 'DESIGN_ASSUMPTION', forklifts: { type: 'COUNTERBALANCE_FORKLIFT', ids: forkliftFleet.map(row => row.id), reason: 'WH-R1 source registers one generic handling-equipment category', lod: { enter: forkliftLod.enter, exit: forkliftLod.exit }, lights: 'EMISSIVE_ONLY' } }
+  group.userData = { noMerge: true, registerIds: WH_R1_VEHICLES.map(r => r.id), levels: WH_R1_LEVELS, docks: WH_R1_DOCK_MARKS, sweeps: WH_R1_SWEEPS, motion: 'LIVE3_ROUTE_POSE', shapeStatus: useSemitrailers ? 'APPROVED_MIXED_FLEET' : 'DESIGN_ASSUMPTION', forklifts: { type: 'COUNTERBALANCE_FORKLIFT', ids: forkliftFleet.map(row => row.id), reason: 'WH-R1 source registers one generic handling-equipment category', lod: { enter: forkliftLod.enter, exit: forkliftLod.exit }, lights: 'EMISSIVE_ONLY' } }
   const appearance = useSemitrailers ? { onFrame() {}, dispose() {} } : truckAppearance(THREE, group, meshes, batches, canvasTex, quality, env)
   let disposed = false, semitrailers = null
   const ready = useSemitrailers
@@ -207,6 +223,7 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
     : Promise.resolve(null)
   return { root: group, records: WH_R1_VEHICLES, levels: WH_R1_LEVELS,
     ready,
+    applyMotion,
     onFrame(dt, context) { appearance.onFrame(dt, context); forkliftLod.update(context?.camera); group.userData.forklifts.state = forkliftFleet.map(({ id, near }) => ({ id, near })); if (semitrailers && context?.camera) semitrailers.update(context.camera) },
     dispose() { if (disposed) return; disposed = true; semitrailers?.dispose(); appearance.dispose(); proxies.forEach(p => { collision?.remove(p); p.geometry.dispose(); p.material.dispose() }); meshes.forEach(m => { m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); if (m.isInstancedMesh) m.dispose() }); group.removeFromParent() } }
 }

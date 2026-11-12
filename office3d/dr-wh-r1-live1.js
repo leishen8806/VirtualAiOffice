@@ -197,7 +197,9 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const update = (dt = 0) => {
     const state = currentState = simulation.snapshot()
     traffic.advance(dt * 1000)
-    if (runtimeVehicles?.root?.userData) runtimeVehicles.root.userData.traffic = traffic.snapshot()
+    const trafficState = traffic.snapshot()
+    runtimeVehicles?.applyMotion?.(trafficState)
+    if (runtimeVehicles?.root?.userData) runtimeVehicles.root.userData.traffic = trafficState
     updateShuttles(state); updateCargo(state); updateActors(state)
     if (!state.paused) staffMotion?.update(state, dt, slotById, carried)
     if (!staffMotion) updateBeltCargo(state)

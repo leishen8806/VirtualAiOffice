@@ -55,7 +55,7 @@ test('I5 seven round-ended sweeps preserve blocked and conditional values withou
  assert.deepEqual(WH_R1_SWEEPS.slice(2,4).map(r=>[r.status,r.min_clearance_mm]),[['CONDITIONAL_STATIC_CLEAR',350],['CONDITIONAL_STATIC_CLEAR',115]])
  const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),overlay=value.root.getObjectByName('wh-r1-vehicle-inspection-overlays'),pos=overlay.geometry.attributes.position
  for(const range of overlay.userData.ranges.filter(r=>/^(TR|FL)/.test(r.id))){const row=WH_R1_SWEEPS.find(r=>r.id===range.id),a=whToWorld(...row.points_m[0]),b=whToWorld(...row.points_m[1]),r=row.swept_radius_mm/1000,x=[],z=[];for(let i=range.start;i<range.start+range.count;i++){x.push(pos.getX(i));z.push(pos.getZ(i))}near(Math.max(...x)-Math.min(...x),2*r,row.id+' width');near(Math.max(...z)-Math.min(...z),Math.abs(a.z-b.z)+2*r,row.id+' round ends')}
- const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'LIVE3_ROUTE_POSE')
  const source=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8');assert.doesNotMatch(source,/CAMPUS_VEHICLE_ROUTES|B4_PLAN|pathPoint|requestAnimationFrame|setInterval/)
  value.dispose()
 })
@@ -89,10 +89,16 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  }
  value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
 })
+test('B2 route pose moves a visible delivery model and its collision proxy',()=>{
+ const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),row=WH_R1_OUTBOUND_FLEET[0],base=whToWorld(row.xM,row.yM),mesh=value.root.getObjectByName('wh-r1-vehicles-boxes'),before=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),before)
+ value.applyMotion({active:[{id:row.id,position:{x:base.x+4,z:base.z+2,yaw:Math.PI/2}}]})
+ const after=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements))
+ const proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id);assert.equal(proxy.position.x,base.x+4);assert.equal(proxy.position.z,base.z+2);assert.equal(proxy.rotation.y,Math.PI/2);value.dispose()
+})
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
  assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
- assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'LIVE3_ROUTE_POSE')
  const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
  for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
  const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)
