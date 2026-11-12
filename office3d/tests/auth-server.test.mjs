@@ -19,7 +19,7 @@ test('server keeps auth bypass narrow and behind existing access control order',
   const server = fs.readFileSync(serverPath, 'utf8')
   const authRouteAt = indexOfOrThrow(server, 'const authRoute = tenancy.auth.router.match(req.method, url.pathname)')
   const lanGateAt = indexOfOrThrow(server, 'else if (!authRoute) return res.writeHead(401')
-  const wallGateAt = indexOfOrThrow(server, "if (wallScope && (req.method !== 'GET' || ((API_PATHS.has(url.pathname) || authRoute) && !['/state', '/wall/data'].includes(url.pathname))))")
+  const wallGateAt = indexOfOrThrow(server, "if (wallScope && (req.method !== 'GET' || (((API_PATHS.has(url.pathname) || url.pathname.startsWith('/town/3d-data/') || authRoute)) && !['/state', '/wall/data'].includes(url.pathname))))")
   const authHandleAt = indexOfOrThrow(server, 'if (authRoute) {')
   const method405At = indexOfOrThrow(server, "if (req.method !== 'GET' && !(req.method === 'HEAD' && url.pathname === '/town/map')) return json(405, { error: '不支持' })")
 

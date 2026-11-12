@@ -82,7 +82,7 @@ test('water polygons leave inner rings dry after triangulation', () => {
 
 test('town renderer loads the clipped and area-unioned city data', () => {
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
-  assert.match(js, /fetch\('\/town-3d\/town-3d-data\.json'\)/)
+  assert.match(js, /fetch\('\/town\/3d-data\/town-3d-data\.json'\)/)
   assert.doesNotMatch(js, /fetch\('\/town-3d-data\.json'\)/)
 })
 
