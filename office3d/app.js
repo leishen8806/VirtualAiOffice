@@ -20,7 +20,7 @@ import { hideCampusEnvironment } from './dr-campus-shell.js'
 import { buildDrControlRoom } from './dr-control-room.js'
 import { startOfficeV3, demolishLegacyScene, selectEnvironmentConflicts } from './office-v3-modules.js'
 import { officeSampleRequested } from './office-vis2/host.js'
-import { buildRoutefitZone, routefitSeatAssignments, routefitWingNavigation } from './project-zones.js'
+import { routefitNavigation, routefitSeatAssignments } from './project-zones.js'
 import { OFFICE_ROOMS, workHome, BOSS, BOARD_TABLE, REGION_FOCUS, PLAZA, WAREHOUSE, DOCK, PARKING, FOYER_ZONES, WAITING_CAPACITY, ENVELOPE, MAIN_FLOOR_X0, ENTRANCE, RECEPTION, CORRIDOR_X, VIEW_CENTER, MINI_BOUNDS, CAMPUS, CAMPUS_BUILDING, CAMPUS_ZONES, CAMPUS_SHUTTLE_STRIP, CAMPUS_FOCUS, LAYOUT_V3, regionFocusOf } from './office-layout.js'
 import { foyerSceneSpec } from './foyer-scene-spec.js'
 import { announcementPanel, attendancePanel, milestonePanel, panelAccess, pendingPanel, selectWaitingPeople, standupPanel, visitorPanel } from './foyer-panels.js'
@@ -1099,8 +1099,7 @@ if (LAYOUT3_MODE && officeV3?.get('furniture3')?.wing) {
   const boss = officeV3.get('furniture3').spec.boss
   if (OFFICE_SAMPLE_MODE) boardViews['苏晨'] = createBoardView('苏晨', boss.chair, boss.stand, [], 1)
 }
-const routefitZone = buildRoutefitZone({ THREE, scene, quality: qualityPolicy })
-routefitZone.navigation = routefitWingNavigation()
+const routefitZone = { navigation: routefitNavigation() }
 const ROUTEFIT_SEATS = routefitSeatAssignments([], SEATS)
 
 // ───────────────────────── 区域标牌 ─────────────────────────
