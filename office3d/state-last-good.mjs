@@ -8,24 +8,37 @@ export function stripStateCredentials(value) {
   return Object.fromEntries(Object.keys(value).filter(key => !credential(key)).map(key => [key, stripStateCredentials(value[key])]))
 }
 
-export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null }) {
-  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve()
+export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null, persistMinMs = 0 }) {
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0, lastRequestAt = 0, closing = false, interruptPersistWait = null
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
         Array.isArray(value.agents) && value.tasks && !value.stale?.active) saved = stripStateCredentials(value)
   } catch {}
   const persist = snapshot => {
-    writes = writes.then(async () => {
-      const temp = file + '.tmp'
-      try {
-        await fs.promises.writeFile(temp, JSON.stringify(snapshot), { mode: 0o600 })
-        await fs.promises.rename(temp, file)
-      } catch {
-        await fs.promises.unlink(temp).catch(() => {})
-        log('[state] 快照持久化失败，保留内存快照')
+    pendingPersist = snapshot
+    if (persistRunning) return writes
+    persistRunning = true
+    writes = (async () => {
+      while (pendingPersist) {
+        const next = pendingPersist
+        pendingPersist = null
+        const wait = Math.max(0, persistMinMs - (Date.now() - lastPersistAt))
+        if (!closing && lastPersistAt && wait) await new Promise(resolve => {
+          const timer = setTimeout(() => { interruptPersistWait = null; resolve() }, wait)
+          interruptPersistWait = () => { clearTimeout(timer); interruptPersistWait = null; resolve() }
+        })
+        const temp = file + '.tmp'
+        try {
+          await fs.promises.writeFile(temp, JSON.stringify(next), { mode: 0o600 })
+          await fs.promises.rename(temp, file)
+          lastPersistAt = Date.now()
+        } catch {
+          await fs.promises.unlink(temp).catch(() => {})
+          log('[state] 快照持久化失败，保留内存快照')
+        }
       }
-    })
+    })().finally(() => { persistRunning = false })
     return writes
   }
   const fallback = () => {
@@ -81,11 +94,22 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
   }
   return {
     async run(build) {
+      const idleResume = lastRequestAt > 0 && now() - lastRequestAt > 90000
+      lastRequestAt = now()
       if (backgroundMs > 0 && !backgroundTimer) {
-        backgroundTimer = setInterval(() => { if (saved && !flight) start(build) }, backgroundMs)
+        backgroundTimer = setInterval(() => { if (saved && !flight && lastRequestAt && now() - lastRequestAt <= 90000) start(build) }, backgroundMs)
         backgroundTimer.unref?.()
       }
       if (backgroundMs > 0 && saved) {
+        if (idleResume) {
+          const pending = start(build)
+          let timer
+          const timeout = new Promise((resolve, reject) => {
+            timer = setTimeout(() => { try { resolve(fallback()) } catch (error) { reject(error) } }, timeoutMs)
+          })
+          const value = await Promise.race([pending, timeout]).finally(() => clearTimeout(timer))
+          return clone(value)
+        }
         if (!flight && now() - refreshAt >= backgroundMs) start(build)
         const ageMs = Math.max(0, now() - refreshAt)
         if (failures < 3 && ageMs <= staleAfterMs) return clone(saved)
@@ -113,6 +137,8 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
       return clone(value)
     },
     async close() {
+      closing = true
+      interruptPersistWait?.()
       if (backgroundTimer) {
         clearInterval(backgroundTimer)
         backgroundTimer = null
@@ -130,7 +156,7 @@ export async function loadStateComponents({ get, company, backlog, timings = nul
     ['issues', `${base}/issues?status=todo,in_progress,in_review,blocked`, 'issues'],
     ['runs', `${base}/heartbeat-runs?limit=40&summary=true`, 'runs'],
     ['approvals', `${base}/approvals?status=pending`, 'approvals'],
-    ['activity', `${base}/activity?limit=500`, 'activity'],
+    ['activity', `${base}/activity?limit=200`, 'activity'],
     ['approvalsAll', `${base}/approvals`, 'approvals'], ['backlog', null, null],
   ]
   const gaps = [], values = {}
@@ -167,9 +193,9 @@ export function createSnapshotGet({ get, now = Date.now }) {
       return `${url.pathname}${url.search}`
     } catch { return p }
   }
-  const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs)(?:\?|$)/.test(p)
+  const collection = p => /^\/api\/companies\/[^/]+\/(agents|issues|projects|heartbeat-runs|activity)(?:\?|$)/.test(p)
   const ttl = p => {
-    try { return new URL(p, 'http://snapshot.local').searchParams.get('limit') === '1000' ? 10 * 60 * 1000 : 45000 } catch { return 45000 }
+    try { const url = new URL(p, 'http://snapshot.local'); return url.pathname.endsWith('/activity') ? 60 * 1000 : (url.searchParams.get('limit') === '1000' ? 10 * 60 * 1000 : 45000) } catch { return 45000 }
   }
   const mark = (module, key) => {
     const row = modules.get(module) || { requests: 0, hits: 0, upstream: 0 }
@@ -210,7 +236,14 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
   const mergeRuns = fresh => {
     const key = run => run.id || `${run.agentId || ''}|${run.finishedAt || run.updatedAt || run.startedAt || run.createdAt || ''}|${run.status || ''}`
     const byId = new Map(runs.map(run => [key(run), run]))
-    for (const run of fresh) if (run) byId.set(key(run), run)
+    let changed = false
+    for (const run of fresh) if (run) {
+      const id = key(run)
+      const old = byId.get(id)
+      if (!old || old.status !== run.status || old.finishedAt !== run.finishedAt || old.updatedAt !== run.updatedAt) changed = true
+      byId.set(id, run)
+    }
+    if (!changed) return
     const cutoff = now() - 24 * 3600000
     runs = [...byId.values()].filter(run => runAt(run) >= cutoff).sort((a, b) => runAt(b) - runAt(a))
     persist()

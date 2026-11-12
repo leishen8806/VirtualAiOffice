@@ -86,13 +86,19 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let state = null
   let staleKey = ''
   let busy = false
+  let requestControl = null
+  document.addEventListener('click', (event) => {
+    const control = event.target.closest?.('button, .card')
+    requestControl = control || null
+    setTimeout(() => { if (requestControl === control) requestControl = null }, 0)
+  }, true)
   // T15：验收证据版本核对（只读）：待验收卡片徽标与「版本已变」二次确认用的数据。
   // 页面按需拉一次 /evidence-version（批量），服务端缓存 60 秒；客户端同样 60 秒内不重拉，避免每次轮询都跑 git。
   let verCache = { at: 0, byIssue: new Map() }
   let schedulerCache = { at: 0, data: null }
   async function loadVer() {
     try {
-      const r = await fetch('/evidence-version', { cache: 'no-store' })
+      const r = await request('/evidence-version', { cache: 'no-store' })
       const j = await r.json().catch(() => ({}))
       verCache = { at: Date.now(), byIssue: new Map(Array.isArray(j.items) ? j.items.map((x) => [String(x.issueId), x]) : []) }
     } catch { verCache = { at: Date.now(), byIssue: new Map() } }
@@ -124,36 +130,61 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     clearTimeout(toast.h)
     toast.h = setTimeout(() => { t.className = '' }, 3200)
   }
+  async function withLoading(control, fn) {
+    if (!control || control.dataset.loading === '1') return control ? false : fn()
+    const indicator = control.classList.contains('card') ? control.querySelector('.go') : control
+    if (!indicator) return fn()
+    const original = indicator.innerHTML
+    const wasDisabled = control.disabled
+    control.dataset.loading = '1'
+    control.setAttribute('aria-busy', 'true')
+    if ('disabled' in control) control.disabled = true
+    indicator.innerHTML = '<span class="request-spinner" aria-hidden="true"></span><span>处理中…</span>'
+    try { return await fn() }
+    finally {
+      if (!control.isConnected) return
+      indicator.innerHTML = original
+      if ('disabled' in control) control.disabled = wasDisabled
+      control.removeAttribute('aria-busy')
+      delete control.dataset.loading
+    }
+  }
+  const request = (...args) => withLoading(requestControl, () => fetch(...args))
   let lastResult = null
   const ACT_TIMEOUT_MS = 20_000
+  const DETAIL_SLOW_MS = 10_000
   async function post(body, errors = {}) {
     if (state?.lan) { toast('局域网只读，请在运行服务的电脑上操作', false); return false }
     if (busy) { toast('上一个操作还在提交中', false); return false }
-    busy = true
-    try {
-      const send = async () => {
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
-        try { return await fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body), signal: controller.signal }) }
-        finally { clearTimeout(timer) }
+    const control = requestControl
+    return withLoading(control, async () => {
+      busy = true
+      try {
+        const send = async () => {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
+          try { return await fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body), signal: controller.signal }) }
+          finally { clearTimeout(timer) }
+        }
+        let r = await send()
+        let j = await r.json().catch(() => ({}))
+        if (r.status === 403 && /令牌/.test(j.error || '')) { // 服务重启后页面里缓存的操作令牌过期：重新取一次令牌再发一次（被拒的请求没有产生任何效果，重发不会重复操作）
+          try {
+            const fresh = await (await fetch('/state', { cache: 'no-store' })).json()
+            if (fresh.actToken && fresh.actToken !== token) { token = fresh.actToken; r = await send(); j = await r.json().catch(() => ({})) }
+          } catch {}
+        }
+        if (!r.ok) throw new Error(errors[r.status] || j.error || `HTTP ${r.status}`)
+        lastResult = j.result || null
+        toast('操作已完成')
+        return true
+      } catch (e) {
+        toast(e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message, false)
+        return false
+      } finally {
+        busy = false
       }
-      let r = await send()
-      let j = await r.json().catch(() => ({}))
-      if (r.status === 403 && /令牌/.test(j.error || '')) { // 服务重启后页面里缓存的操作令牌过期：重新取一次令牌再发一次（被拒的请求没有产生任何效果，重发不会重复操作）
-        try {
-          const fresh = await (await fetch('/state', { cache: 'no-store' })).json()
-          if (fresh.actToken && fresh.actToken !== token) { token = fresh.actToken; r = await send(); j = await r.json().catch(() => ({})) }
-        } catch {}
-      }
-      if (!r.ok) throw new Error(errors[r.status] || j.error || `HTTP ${r.status}`)
-      lastResult = j.result || null
-      return true
-    } catch (e) {
-      toast(e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message, false)
-      return false
-    } finally {
-      busy = false
-    }
+    })
   }
   const modal = $('modal'), wrap = $('modalWrap')
   let chatPoll = null
@@ -176,7 +207,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openChat(agentId) {
     if (chatPoll) clearTimeout(chatPoll)
     let data
-    try { const r = await fetch('/chat?agent=' + encodeURIComponent(agentId), { cache: 'no-store' }); data = await r.json(); if (!r.ok) throw new Error(data.error || r.status) }
+    try { const r = await request('/chat?agent=' + encodeURIComponent(agentId), { cache: 'no-store' }); data = await r.json(); if (!r.ok) throw new Error(data.error || r.status) }
     catch (e) { open(`<h2>💬 对话</h2><p class="bad">读取失败：${esc(e.message)}</p>`); return }
     open(chatPanelHtml(data, Boolean(state?.world?.duty?.on)))
     const input = modal.querySelector('#chatInput'), send = modal.querySelector('#chatSend'), count = modal.querySelector('#chatCount')
@@ -234,15 +265,26 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openIssue(issueId, mode = 'view') {
     open('<div class="note">加载中…</div>')
     let d
+    const controller = new AbortController()
+    const slow = setTimeout(() => toast('加载较慢，请稍候', false), DETAIL_SLOW_MS)
+    const timeout = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
     try {
-      const r = await fetch('/issue?id=' + encodeURIComponent(issueId))
+      const r = await request('/issue?id=' + encodeURIComponent(issueId), { signal: controller.signal })
       d = await r.json()
       if (!r.ok) throw new Error(d.error || r.status)
-    } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
+    } catch (e) {
+      const message = e?.name === 'AbortError' ? '任务详情读取超时，请稍后重试' : `任务详情读取失败：${e.message}`
+      toast(message, false)
+      open(`<div class="note">${esc(message)}</div>`)
+      return
+    } finally {
+      clearTimeout(slow)
+      clearTimeout(timeout)
+    }
     // T15：验收视图里按需核对【验收证据】对象版本（只读；服务端缓存 60 秒），用于显示核对结果和「版本已变」时的二次确认
     let vv = null
     if (mode === 'review') {
-      try { const r = await fetch('/evidence-version?issue=' + encodeURIComponent(d.identifier), { cache: 'no-store' }); const j = await r.json().catch(() => ({})); if (r.ok && j && j.result) vv = j } catch {}
+      try { const r = await request('/evidence-version?issue=' + encodeURIComponent(d.identifier), { cache: 'no-store' }); const j = await r.json().catch(() => ({})); if (r.ok && j && j.result) vv = j } catch {}
     }
     const comments = d.comments.map((c) => `<div class="cm"><div class="who">${esc(c.who)} · ${esc(new Date(c.at).toLocaleString())}</div><div class="md">${md(c.body)}</div></div>`).join('') || '<div class="note">还没有评论</div>'
     let actions = ''
@@ -393,13 +435,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       })
       if (answers.some((a) => !a.optionIds.length && !a.otherText)) { toast('每道题都要选一个（或写上回答）', false); return }
       if (ask.questions.some((q, qi) => !q.multi && answers[qi].optionIds.length && answers[qi].otherText)) { toast('这道题是单选：选项和自己写的回答只能二选一', false); return }
-      submit.textContent = '提交中…'
-      submit.disabled = true
-      try {
-        if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
-      } finally {
-        if (submit.isConnected) { submit.textContent = '提交回答'; submit.disabled = false }
-      }
+      if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
     }
   }
 
@@ -533,7 +569,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       pane.innerHTML = '<div class="note">加载待排期任务…</div>'
       let list
       try {
-        const r = await fetch('/backlog?projectId=' + encodeURIComponent(proj.value))
+        const r = await request('/backlog?projectId=' + encodeURIComponent(proj.value))
         list = await r.json()
         if (!r.ok) throw new Error(list.error || r.status)
       } catch (e) { pane.innerHTML = `<div class="note">读取失败：${esc(e.message)}</div>`; return }
@@ -556,7 +592,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       out.innerHTML = '<div class="note">加载任务详情…</div>'
       let d
       try {
-        const r = await fetch('/issue?id=' + encodeURIComponent(issueId))
+        const r = await request('/issue?id=' + encodeURIComponent(issueId))
         d = await r.json()
         if (!r.ok) throw new Error(d.error || r.status)
       } catch (e) { out.innerHTML = `<div class="note">读取失败：${esc(e.message)}</div>`; return }
@@ -692,7 +728,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openHealth() {
     open('<div class="note">健康数据读取中…</div>')
     try {
-      const r = await fetch('/health')
+      const r = await request('/health')
       const h = await r.json()
       if (!r.ok) throw new Error(h.error || r.status)
       const incidents = (h.incidents || []).map((x) => `<div class="q ${x.category === 'worktree_lock' ? 'bad' : 'warn'}"><b>${esc(x.label || HEALTH_LABEL[x.category] || x.category)}</b><div>${esc(x.impact || '—')}</div><div class="note">恢复：${esc(x.recoveryText || '未知')} · ${esc(x.advice || '')}</div></div>`).join('') || '<div class="note">近 2 小时没有未恢复的额度、登录或工作树风险。</div>'
@@ -708,7 +744,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     open('<div class="note">统计中…</div>')
     let d
     try {
-      const r = await fetch('/daily')
+      const r = await request('/daily')
       d = await r.json()
       if (!r.ok) throw new Error(d.error || r.status)
     } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
@@ -810,10 +846,9 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const p = b.dataset.conn, input = modal.querySelector('#tk-' + p)
       const token = input.value.trim()
       if (!token) { toast('请先粘贴令牌', false); return }
-      b.disabled = true; b.textContent = '验证中…'
       const ok = await post({ type: 'tg_connect', purpose: p, token, takeover: modal.querySelector('#tko-' + p).checked })
       input.value = ''
-      if (ok) { const w = (lastResult && lastResult.warns) || []; toast(`已接入 @${(lastResult && lastResult.username) || ''}${w.length ? '（部分设置没成功：' + w.join('；') + '）' : ''}`, !w.length); await again() } else { b.disabled = false; b.textContent = '验证并接入' }
+      if (ok) { const w = (lastResult && lastResult.warns) || []; toast(`已接入 @${(lastResult && lastResult.username) || ''}${w.length ? '（部分设置没成功：' + w.join('；') + '）' : ''}`, !w.length); await again() }
     }))
     on('[data-bind]', (b) => (b.onclick = async () => { const [p, id] = b.dataset.bind.split(':'); if (await post({ type: 'tg_bind', purpose: p, personId: id })) await again() }))
     on('[data-ok]', (b) => (b.onclick = async () => { const [p, id] = b.dataset.ok.split(':'); if (await post({ type: 'tg_confirm', purpose: p, chatId: Number(id), accept: true })) { toast('已确认绑定'); await again() } }))
@@ -903,7 +938,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openGovernance() {
     open('<div class="note">读取治理历史…</div>')
     try {
-      const r = await fetch('/governance?days=30')
+      const r = await request('/governance?days=30')
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || r.status)
       let scheduler = schedulerCache.data
@@ -939,7 +974,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
           if (!section.open || document.hidden || Date.now() - schedulerCache.at < 60 * 1000) return
           section.querySelector('[data-scheduler-body]').textContent = '读取调度建议…'
           try {
-            const sr = await fetch('/scheduler/suggest', { cache: 'no-store' })
+            const sr = await request('/scheduler/suggest', { cache: 'no-store' })
             if (!sr.ok) throw new Error(sr.status)
             scheduler = await sr.json()
             schedulerCache = { at: Date.now(), data: scheduler }
@@ -1038,7 +1073,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   const collabGraph = createCollabGraph({
     esc,
     load: async (query) => {
-      const r = await fetch('/collab?' + query, { cache: 'no-store' })
+      const r = await request('/collab?' + query, { cache: 'no-store' })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`)
       return j
@@ -1056,7 +1091,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     panel.textContent = '读取编制与工作量…'
     try {
       if (!state?.workload) throw new Error('现有服务尚未加载T9，请维护者重启原唯一实例后刷新页面')
-      const response = await fetch('/workload?days=' + days, { cache: 'no-store' })
+      const response = await request('/workload?days=' + days, { cache: 'no-store' })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(response.status === 404 ? '现有服务尚未加载T9，请维护者重启原唯一实例' : data.error || `HTTP ${response.status}`)
       if (!panel.isConnected) return
@@ -1073,9 +1108,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         $('workloadSort').onchange = e => { order = e.target.value; render() }
         $('workloadOrder').onclick = () => { ascending = !ascending; render() }
         $('workloadReport').onclick = async () => {
-          const button = $('workloadReport'); button.disabled = true
           if (await post({ type: 'workload_report' })) { toast(lastResult?.error || lastResult?.skip || '本地周报已生成', !lastResult?.error && !lastResult?.skip); await loadWorkload(days) }
-          else if (button.isConnected) button.disabled = !!state?.lan || !data.enabled
         }
       }
       render()
@@ -1106,7 +1139,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     $('memoryPreview').onclick = async () => {
       const input = $('memoryIssue').value.trim(), target = $('memoryResult')
       if (!/^CMP-\d+$/.test(input)) { target.textContent = '请输入 CMP-数字'; return }
-      try { const r = await fetch('/memory/preview?issue=' + encodeURIComponent(input)); const j = await r.json(); target.textContent = JSON.stringify(j, null, 2); if (!r.ok) throw new Error(j.error || r.status) }
+      try { const r = await request('/memory/preview?issue=' + encodeURIComponent(input)); const j = await r.json(); target.textContent = JSON.stringify(j, null, 2); if (!r.ok) throw new Error(j.error || r.status) }
       catch (e) { target.textContent = '读取失败：' + e.message }
     }
   }
@@ -1119,7 +1152,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openKB(start) {
     open('<div class="note">读取知识库…</div>')
     let kb
-    try { kb = await (await fetch('/kb')).json() } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
+    try { kb = await (await request('/kb')).json() } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
     if (!kb.ok) { open('<div class="note">知识库目录不存在（E:\\VirtualAIOffice\\knowledge）</div>'); return }
     const total = kb.docs.length, verified = kb.docs.filter((d) => d.status === 'verified').length
     open(`<h2>📚 企业知识库</h2>
@@ -1138,7 +1171,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const out = modal.querySelector('#kDoc')
       out.innerHTML = '<div class="note">加载中…</div>'
       try {
-        const r = await fetch('/kb/doc?path=' + encodeURIComponent(p))
+        const r = await request('/kb/doc?path=' + encodeURIComponent(p))
         const d = await r.json()
         if (!r.ok) throw new Error(d.error || r.status)
         out.innerHTML = `<div class="sec">${esc(d.meta.title || p)}</div><div class="note">来源：${esc(d.meta.sources || '—')}</div><div class="fold md">${md(d.body)}</div>`
@@ -1178,7 +1211,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
   function runSearch(item) { remember(item); closeSearch(); if (item.kind === 'region') setGoal?.(item.focus); else item.action?.() }
   function closeSearch() { searchOpen = false; searchPanel.classList.remove('show'); searchInput.value = ''; searchResults.innerHTML = '' }
-  async function openSearch() { searchOpen = true; selected = 0; searchPanel.classList.add('show'); searchInput.focus(); drawSearch(); if (!kbCache || Date.now() - kbCache.at > 60000) { try { const j = await (await fetch('/kb')).json(); if (j.ok) kbCache = { at: Date.now(), docs: j.docs || [] }; drawSearch() } catch {} } }
+  async function openSearch() { searchOpen = true; selected = 0; searchPanel.classList.add('show'); searchInput.focus(); drawSearch(); if (!kbCache || Date.now() - kbCache.at > 60000) { try { const j = await (await request('/kb')).json(); if (j.ok) kbCache = { at: Date.now(), docs: j.docs || [] }; drawSearch() } catch {} } }
   $('searchBtn').onclick = () => searchOpen ? closeSearch() : openSearch()
   searchInput.oninput = () => { selected = 0; drawSearch() }
   addEventListener('keydown', (e) => {
@@ -1261,7 +1294,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       if (!tasks.length) tl.innerHTML = '<div class="empty">当前没有已派发的任务</div>'
       const contractBadge = (identifier) => { const v = (s.contractView?.items || []).find((x) => String(x.identifier) === String(identifier)); if (!v) return ''; const label = v.state === 'complete' ? '契约：完整' : v.state === 'incomplete' ? `契约：缺 ${v.errors.length} 项` : '契约：无'; const tip = v.errors.map((x) => `${x.field} / ${x.code}`).join('\n') || label; return `<span class="contract-badge" title="${esc(tip)}" style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:10.5px;line-height:1.6;color:var(--muted);border:1px solid var(--line)">${esc(label)}</span>` }
       for (const t of tasks) {
-        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
+        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); return openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
       }
     },
   }
