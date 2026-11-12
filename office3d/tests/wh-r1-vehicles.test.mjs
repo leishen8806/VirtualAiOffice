@@ -9,6 +9,7 @@ import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DO
 import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
+import { buildWhR1Live1 } from '../dr-wh-r1-live1.js'
 const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
 const texture=()=>new THREE.Texture()
 function boxes(root){
@@ -80,7 +81,7 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  const receiving=WH_R1_PARKING_BAYS.filter(b=>b.id.startsWith('WH-01-'))
  for(let index=0;index<receiving.length;index++){
   const bay=receiving[index],actual=input.bays[index],world=whToWorld(bay.xM,bay.yM)
-  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,(bay.yawDeg-90)*Math.PI/180,bay.id+' model yaw')
+  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,bay.yawDeg*Math.PI/180,bay.id+' model yaw')
  }
  for(const mesh of ['wh-r1-vehicles-boxes','wh-r1-vehicles-wheels']){
   const ids=value.root.getObjectByName(mesh).userData.instanceToRegisterId
@@ -94,6 +95,17 @@ test('B2 route pose moves a visible delivery model and its collision proxy',()=>
  value.applyMotion({active:[{id:row.id,position:{x:base.x+4,z:base.z+2,yaw:Math.PI/2}}]})
  const after=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements))
  const proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id);assert.equal(proxy.position.x,base.x+4);assert.equal(proxy.position.z,base.z+2);assert.equal(proxy.rotation.y,Math.PI/2);value.dispose()
+})
+test('B2 scene runtime moves registered vehicles, reverses inbound trailers, and keeps parked bays separate',()=>{
+ const root=new THREE.Group(),live=buildWhR1Live1({THREE,root,quality:{tier:'high'}}),vehicles=buildWhR1Vehicles({THREE,root}),delivery=WH_R1_OUTBOUND_FLEET[0].id
+ const parked=WH_R1_VEHICLES.filter(row=>row.id.startsWith('WH-01-')).map(row=>vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id))
+ for(const [index,proxy] of parked.entries())for(const other of parked.slice(index+1))assert.equal(new THREE.Box3().setFromObject(proxy).intersectsBox(new THREE.Box3().setFromObject(other)),false)
+ live.bindRuntime({vehicles})
+ const mesh=vehicles.root.getObjectByName('wh-r1-vehicles-boxes'),index=mesh.userData.instanceToRegisterId.indexOf(delivery),before=new THREE.Matrix4(),after=new THREE.Matrix4();mesh.getMatrixAt(index,before)
+ live.onFrame(.1);mesh.getMatrixAt(index,after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements),'delivery model moves from the scene runtime')
+ for(let frame=0;frame<120;frame++)live.onFrame(.1)
+ const inbound=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
+ const proxy=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id);near(proxy.rotation.y,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
 })
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')

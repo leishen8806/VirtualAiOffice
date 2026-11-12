@@ -16,7 +16,7 @@ export const WH_R1_DOCK_MARKS = Object.freeze(WH_R1_PARKING_BAYS.map(bay => {
 }))
 export const WH_R1_SEMITRAILER_BAYS = Object.freeze(WH_R1_PARKING_BAYS.map((bay, index) => {
   const position = whToWorld(bay.xM, bay.yM)
-  return Object.freeze({ id: bay.id, dockDoor: bay.doorId, fleetNumber: index + 1, x: position.x, y: 0, z: position.z, yaw: (bay.yawDeg - 90) * Math.PI / 180 })
+  return Object.freeze({ id: bay.id, dockDoor: bay.doorId, fleetNumber: index + 1, x: position.x, y: 0, z: position.z, yaw: bay.yawDeg * Math.PI / 180 })
 }).filter(row => row.id.startsWith('WH-01-')))
 export const WH_R1_OUTBOUND_FLEET = Object.freeze(WH_R1_VEHICLES.filter(row => row.displayVehicleType?.startsWith('delivery-')))
 
