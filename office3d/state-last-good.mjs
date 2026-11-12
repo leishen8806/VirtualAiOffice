@@ -9,7 +9,7 @@ export function stripStateCredentials(value) {
 }
 
 export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null, persistMinMs = 0 }) {
-  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0, lastRequestAt = 0, closing = false
+  let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0, lastRequestAt = 0, closing = false, interruptPersistWait = null
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
     if (value && !Array.isArray(value) && typeof value === 'object' && Number.isFinite(Date.parse(value.at)) &&
@@ -24,7 +24,10 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
         const next = pendingPersist
         pendingPersist = null
         const wait = Math.max(0, persistMinMs - (Date.now() - lastPersistAt))
-        if (!closing && lastPersistAt && wait) await new Promise(resolve => setTimeout(resolve, wait))
+        if (!closing && lastPersistAt && wait) await new Promise(resolve => {
+          const timer = setTimeout(() => { interruptPersistWait = null; resolve() }, wait)
+          interruptPersistWait = () => { clearTimeout(timer); interruptPersistWait = null; resolve() }
+        })
         const temp = file + '.tmp'
         try {
           await fs.promises.writeFile(temp, JSON.stringify(next), { mode: 0o600 })
@@ -135,6 +138,7 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
     },
     async close() {
       closing = true
+      interruptPersistWait?.()
       if (backgroundTimer) {
         clearInterval(backgroundTimer)
         backgroundTimer = null

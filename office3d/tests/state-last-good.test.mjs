@@ -309,8 +309,11 @@ test('close flushes the latest pending snapshot without waiting for the write in
   const manager = createLastGoodState({ file, persistMinMs: 60000, log() {} })
   await manager.run(async () => first)
   const pending = manager.run(async () => second)
+  await new Promise(resolve => setImmediate(resolve))
+  const started = Date.now()
   await manager.close()
   await pending
+  assert.ok(Date.now() - started < 1000)
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, second.at)
 })
 
