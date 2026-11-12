@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {gunzipSync} from 'node:zlib'
 import {createHash} from 'node:crypto'
-import {SEMITRAILER_SIZE,capNearTruckLods,validateTruckBays,truckLod} from '../dr-wh-r1-semitrailers.js'
+import {SEMITRAILER_SIZE,capNearTruckLods,semitrailerModelYaw,validateTruckBays,truckLod} from '../dr-wh-r1-semitrailers.js'
 
 const base=new URL('../assets/compact/wh-trucks/',import.meta.url),manifest=JSON.parse(fs.readFileSync(new URL('manifest.json',base)))
 function glb(row){const compressed=fs.readFileSync(new URL(row.file,base));assert.equal(createHash('sha256').update(compressed).digest('hex'),row.sha256);const data=gunzipSync(compressed);assert.equal(data.readUInt32LE(0),0x46546c67);assert.equal(data.readUInt32LE(4),2);const jsonLength=data.readUInt32LE(12);return {json:JSON.parse(data.subarray(20,20+jsonLength).toString()),binary:data.subarray(28+jsonLength)}}
@@ -40,6 +40,9 @@ test('B1 bay adapter rejects missing doors, duplicate identity and invalid geome
  const b={id:'different-site-truck',dockDoor:'dock-77',fleetNumber:7,x:-500,y:2,z:815,yaw:Math.PI};assert.doesNotThrow(()=>validateTruckBays([b]));assert.doesNotThrow(()=>validateTruckBays([]))
  for(const patch of [{x:NaN},{fleetNumber:10},{dockDoor:''},{yaw:undefined}])assert.throws(()=>validateTruckBays([{...b,...patch}]))
  assert.throws(()=>validateTruckBays([b,b]));assert.deepEqual(b,{id:'different-site-truck',dockDoor:'dock-77',fleetNumber:7,x:-500,y:2,z:815,yaw:Math.PI})
+})
+test('R9 rotates the asset long axis onto the registered proxy long axis',()=>{
+ assert.equal(semitrailerModelYaw(3*Math.PI/2),Math.PI)
 })
 test('B1 all LOD thresholds have hysteresis and low quality never chooses high mesh',()=>{
  assert.equal(truckLod(37,0),0);assert.equal(truckLod(37,1),1);assert.equal(truckLod(90,1),1);assert.equal(truckLod(90,2),2)

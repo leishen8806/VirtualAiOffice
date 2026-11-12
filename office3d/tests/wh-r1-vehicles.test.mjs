@@ -97,15 +97,15 @@ test('B2 route pose moves a visible delivery model and its collision proxy',()=>
  const proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id);assert.equal(proxy.position.x,base.x+4);assert.equal(proxy.position.z,base.z+2);assert.equal(proxy.rotation.y,Math.PI/2);value.dispose()
 })
 test('B2 scene runtime moves registered vehicles, reverses inbound trailers, and keeps parked bays separate',()=>{
- const root=new THREE.Group(),live=buildWhR1Live1({THREE,root,quality:{tier:'high'}}),vehicles=buildWhR1Vehicles({THREE,root}),delivery=WH_R1_OUTBOUND_FLEET[0].id
+ const root=new THREE.Group(),live=buildWhR1Live1({THREE,root,quality:{tier:'high'}}),vehicles=buildWhR1Vehicles({THREE,root})
  const parked=WH_R1_VEHICLES.filter(row=>row.id.startsWith('WH-01-')).map(row=>vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id))
  for(const [index,proxy] of parked.entries())for(const other of parked.slice(index+1))assert.equal(new THREE.Box3().setFromObject(proxy).intersectsBox(new THREE.Box3().setFromObject(other)),false)
- live.bindRuntime({vehicles})
- const mesh=vehicles.root.getObjectByName('wh-r1-vehicles-boxes'),index=mesh.userData.instanceToRegisterId.indexOf(delivery),before=new THREE.Matrix4(),after=new THREE.Matrix4();mesh.getMatrixAt(index,before)
+ live.bindRuntime({vehicles});for(let frame=0;frame<30&&!live.traffic.snapshot().active.some(row=>row.kind==='outbound');frame++)live.onFrame(.1)
+ const delivery=live.traffic.snapshot().active.find(row=>row.kind==='outbound').id,mesh=vehicles.root.getObjectByName('wh-r1-vehicles-boxes'),index=mesh.userData.instanceToRegisterId.indexOf(delivery),before=new THREE.Matrix4(),after=new THREE.Matrix4();mesh.getMatrixAt(index,before)
  live.onFrame(.1);mesh.getMatrixAt(index,after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements),'delivery model moves from the scene runtime')
- for(let frame=0;frame<120;frame++)live.onFrame(.1)
- const inbound=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
- const proxy=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id);near(proxy.rotation.y,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
+ let inbound,inboundProxyYaw;for(let frame=0;frame<120;frame++){live.onFrame(.1);inbound??=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');if(inbound&&inboundProxyYaw===undefined)inboundProxyYaw=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id).rotation.y}
+ assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
+ near(inboundProxyYaw,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
 })
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')

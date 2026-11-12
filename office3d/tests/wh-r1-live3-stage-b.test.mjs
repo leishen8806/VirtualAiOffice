@@ -19,3 +19,14 @@ test('stage B keeps the vehicle clearance guard at 0.5 m', () => {
     assert.equal(state.minClearanceOk, true)
   }
 })
+
+test('stage B rotates the whole registered fleet and exposes a reverse-in trailer within 60 seconds', () => {
+  const sim = createLive3StageB(), seen = { inbound: new Set(), outbound: new Set(), reverse: false }
+  for (let i = 0; i < 900; i++) for (const row of sim.advance(100).active) {
+    seen[row.kind].add(row.id)
+    if (row.status === 'reverse_in') seen.reverse = true
+  }
+  assert.deepEqual([...seen.inbound].sort(), ['WH-01-VH-001', 'WH-01-VH-002', 'WH-01-VH-003', 'WH-01-VH-004', 'WH-01-VH-005'])
+  assert.deepEqual([...seen.outbound].sort(), ['WH-06-VH-001', 'WH-06-VH-002', 'WH-06-VH-003', 'WH-06-VH-004'])
+  assert.equal(seen.reverse, true)
+})

@@ -2,6 +2,7 @@ import * as THREE from './vendor/three/three.module.js'
 import { RoomEnvironment } from './vendor/three/jsm/environments/RoomEnvironment.js'
 
 export const SEMITRAILER_SIZE = Object.freeze({length:16.5,width:2.55,height:4,level:'UNKNOWN'})
+export const semitrailerModelYaw = bayYaw => bayYaw - Math.PI / 2
 export function validateTruckBays(bays) {
   const ids=new Set()
   for(const b of bays){
@@ -93,7 +94,7 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
       const selected=bays.map((b,i)=>({b,i})).filter(({i})=>visibleBays[i]&&states[i]===lod)
       for(const mesh of batches[lod]){
         mesh.count=selected.length;mesh.visible=!!selected.length;mesh.userData.instanceToVehicleId=selected.map(({b})=>b.id)
-        selected.forEach(({b},j)=>{matrix.compose(position.set(b.x,b.y,b.z),quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,b.yaw),scale);mesh.setMatrixAt(j,matrix)
+        selected.forEach(({b},j)=>{matrix.compose(position.set(b.x,b.y,b.z),quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,semitrailerModelYaw(b.yaw)),scale);mesh.setMatrixAt(j,matrix)
           if(mesh.geometry.attributes.fleetRow)mesh.geometry.attributes.fleetRow.setX(j,b.fleetNumber-1)
           if(mesh.geometry.attributes.vehicleSeed)mesh.geometry.attributes.vehicleSeed.setX(j,b.fleetNumber)
           // Deterministic per-vehicle finish variation; no shared global random state.
