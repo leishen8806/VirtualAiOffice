@@ -1225,7 +1225,7 @@ const server = http
           else if (!authRoute) return res.writeHead(401, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(loginPage())
         }
       }
-      if (wallScope && (req.method !== 'GET' || ((API_PATHS.has(url.pathname) || authRoute) && !['/state', '/wall/data'].includes(url.pathname)))) return json(403, { error: '大屏链接只能看大屏，不能做别的' })
+      if (wallScope && (req.method !== 'GET' || (((API_PATHS.has(url.pathname) || url.pathname.startsWith('/town/3d-data/') || authRoute)) && !['/state', '/wall/data'].includes(url.pathname)))) return json(403, { error: '大屏链接只能看大屏，不能做别的' })
       if (lanUser && ['/chat', '/chat/summary'].includes(url.pathname)) return json(403, { error: '对话内容只允许在运行服务的电脑上查看' })
       if (url.pathname === '/town-nav-config.js') {
         if (req.method !== 'GET') return json(405, { error: '不支持' })

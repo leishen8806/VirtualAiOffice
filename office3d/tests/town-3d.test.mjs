@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, qualitySample, roadTier } from '../town-3d-core.js'
+import * as THREE from '../vendor/three/three.module.js'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.js'
 import { readFileSync } from 'node:fs'
 
 test('town 3d projection uses the existing map origin and metre scale', () => {
@@ -44,6 +45,41 @@ test('river data is area-unioned and keeps holes-ready rings', () => {
   assert.ok(data.waterSource.largest10.length >= 3)
   assert.ok(data.water.some((item) => Array.isArray(item.rings) && item.rings[0].length >= 3))
   assert.ok(data.waterSource.largest10[0].id && data.waterSource.largest10[0].sourceIds.length > 0)
+})
+
+test('water polygons leave inner rings dry after triangulation', () => {
+  const shape = polygonShape(THREE, {
+    rings: [
+      [[0, 0], [10, 0], [10, 10], [0, 10]],
+      [[3, 3], [3, 7], [7, 7], [7, 3]],
+    ],
+  }, ([x, y]) => new THREE.Vector2(x, y))
+  const geometry = new THREE.ShapeGeometry(shape)
+  const positions = geometry.getAttribute('position')
+  const index = geometry.getIndex()
+  const point = new THREE.Vector2(5, 5)
+  let coveringTriangles = 0
+  for (let i = 0; i < index.count; i += 3) {
+    const triangle = [index.getX(i), index.getX(i + 1), index.getX(i + 2)].map((vertex) => new THREE.Vector2(positions.getX(vertex), positions.getY(vertex)))
+    if (new THREE.Triangle(...triangle.map((vertex) => new THREE.Vector3(vertex.x, vertex.y, 0))).containsPoint(new THREE.Vector3(point.x, point.y, 0))) coveringTriangles += 1
+  }
+  assert.equal(coveringTriangles, 0)
+
+  const data = JSON.parse(readFileSync(new URL('../town-3d/town-3d-data.json', import.meta.url), 'utf8'))
+  const kohPich = data.buildings.find((building) => building.name === 'Koh Pich Conference Center')
+  const river = data.water.find((item) => item.id === 'union/1')
+  const worldShape = polygonShape(THREE, river, (point) => polygonWorldPoint(THREE, point))
+  const worldGeometry = new THREE.ShapeGeometry(worldShape).rotateX(-Math.PI / 2)
+  const worldPositions = worldGeometry.getAttribute('position')
+  const worldIndex = worldGeometry.getIndex()
+  const [lon0, lat0, lon1, lat1] = kohPich.bbox
+  const worldPoint = geoToWorld((lat0 + lat1) / 2, (lon0 + lon1) / 2, 10)
+  let waterAtKohPich = 0
+  for (let i = 0; i < worldIndex.count; i += 3) {
+    const triangle = [worldIndex.getX(i), worldIndex.getX(i + 1), worldIndex.getX(i + 2)].map((vertex) => new THREE.Vector3(worldPositions.getX(vertex), 0, worldPositions.getZ(vertex)))
+    if (new THREE.Triangle(...triangle).containsPoint(new THREE.Vector3(worldPoint.x, 0, worldPoint.z))) waterAtKohPich += 1
+  }
+  assert.equal(waterAtKohPich, 0)
 })
 
 test('town renderer loads the clipped and area-unioned city data', () => {
