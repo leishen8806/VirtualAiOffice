@@ -86,13 +86,23 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let state = null
   let staleKey = ''
   let busy = false
+  let batchBusy = false
+  let lastPostError = ''
+  const selectedReviewIds = new Set()
+  const batchResults = new Map()
+  let requestControl = null
+  document.addEventListener('click', (event) => {
+    const control = event.target.closest?.('button, .card')
+    requestControl = control || null
+    setTimeout(() => { if (requestControl === control) requestControl = null }, 0)
+  }, true)
   // T15：验收证据版本核对（只读）：待验收卡片徽标与「版本已变」二次确认用的数据。
   // 页面按需拉一次 /evidence-version（批量），服务端缓存 60 秒；客户端同样 60 秒内不重拉，避免每次轮询都跑 git。
   let verCache = { at: 0, byIssue: new Map() }
   let schedulerCache = { at: 0, data: null }
   async function loadVer() {
     try {
-      const r = await fetch('/evidence-version', { cache: 'no-store' })
+      const r = await request('/evidence-version', { cache: 'no-store' })
       const j = await r.json().catch(() => ({}))
       verCache = { at: Date.now(), byIssue: new Map(Array.isArray(j.items) ? j.items.map((x) => [String(x.issueId), x]) : []) }
     } catch { verCache = { at: Date.now(), byIssue: new Map() } }
@@ -124,36 +134,64 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     clearTimeout(toast.h)
     toast.h = setTimeout(() => { t.className = '' }, 3200)
   }
+  async function withLoading(control, fn) {
+    if (!control || control.dataset.loading === '1') return fn()
+    const indicator = control.classList.contains('card') ? control.querySelector('.go') : control
+    if (!indicator) return fn()
+    const original = indicator.innerHTML
+    const wasDisabled = control.disabled
+    control.dataset.loading = '1'
+    control.setAttribute('aria-busy', 'true')
+    if ('disabled' in control) control.disabled = true
+    indicator.innerHTML = '<span class="request-spinner" aria-hidden="true"></span><span>处理中…</span>'
+    try { return await fn() }
+    finally {
+      if (control.isConnected) {
+        indicator.innerHTML = original
+        if ('disabled' in control) control.disabled = wasDisabled
+        control.removeAttribute('aria-busy')
+        delete control.dataset.loading
+      }
+    }
+  }
+  const request = (...args) => withLoading(requestControl, () => fetch(...args))
   let lastResult = null
   const ACT_TIMEOUT_MS = 20_000
+  const DETAIL_SLOW_MS = 10_000
   async function post(body, errors = {}) {
     if (state?.lan) { toast('局域网只读，请在运行服务的电脑上操作', false); return false }
     if (busy) { toast('上一个操作还在提交中', false); return false }
-    busy = true
-    try {
-      const send = async () => {
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
-        try { return await fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body), signal: controller.signal }) }
-        finally { clearTimeout(timer) }
+    const control = requestControl
+    return withLoading(control, async () => {
+      busy = true
+      lastPostError = ''
+      try {
+        const send = async () => {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
+          try { return await fetch('/act', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': token || '' }, body: JSON.stringify(body), signal: controller.signal }) }
+          finally { clearTimeout(timer) }
+        }
+        let r = await send()
+        let j = await r.json().catch(() => ({}))
+        if (r.status === 403 && /令牌/.test(j.error || '')) { // 服务重启后页面里缓存的操作令牌过期：重新取一次令牌再发一次（被拒的请求没有产生任何效果，重发不会重复操作）
+          try {
+            const fresh = await (await fetch('/state', { cache: 'no-store' })).json()
+            if (fresh.actToken && fresh.actToken !== token) { token = fresh.actToken; r = await send(); j = await r.json().catch(() => ({})) }
+          } catch {}
+        }
+        if (!r.ok) throw new Error(errors[r.status] || j.error || `HTTP ${r.status}`)
+        lastResult = j.result || null
+        toast('操作已完成')
+        return true
+      } catch (e) {
+        lastPostError = e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message
+        toast(lastPostError, false)
+        return false
+      } finally {
+        busy = false
       }
-      let r = await send()
-      let j = await r.json().catch(() => ({}))
-      if (r.status === 403 && /令牌/.test(j.error || '')) { // 服务重启后页面里缓存的操作令牌过期：重新取一次令牌再发一次（被拒的请求没有产生任何效果，重发不会重复操作）
-        try {
-          const fresh = await (await fetch('/state', { cache: 'no-store' })).json()
-          if (fresh.actToken && fresh.actToken !== token) { token = fresh.actToken; r = await send(); j = await r.json().catch(() => ({})) }
-        } catch {}
-      }
-      if (!r.ok) throw new Error(errors[r.status] || j.error || `HTTP ${r.status}`)
-      lastResult = j.result || null
-      return true
-    } catch (e) {
-      toast(e?.name === 'AbortError' ? '服务器没有回应，请稍后再试，不要重复提交' : '没有成功：' + e.message, false)
-      return false
-    } finally {
-      busy = false
-    }
+    })
   }
   const modal = $('modal'), wrap = $('modalWrap')
   let chatPoll = null
@@ -173,10 +211,56 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     await refresh()
   }
 
+  function projectKey(projectId) { return String(projectId ?? '') }
+  function selectedReviewItems(items) { return items.filter((item) => selectedReviewIds.has(String(item.issueId))) }
+  function setBatchControlsDisabled(disabled) {
+    document.querySelectorAll('[data-batch-control], [data-review-select]').forEach((el) => { el.disabled = disabled })
+  }
+  function refreshBatchView() {
+    const items = (state?.waiting || []).filter((item) => item.kind === 'review')
+    const current = document.querySelector('.batch-tools')
+    if (current && items.length) current.replaceWith(batchControls(items))
+    document.querySelectorAll('[data-review-select]').forEach((input) => { input.checked = selectedReviewIds.has(String(input.dataset.reviewSelect)) })
+  }
+  function openBatchConfirm(items) {
+    const count = items.length
+    const rows = items.map((item) => `<li><b>${esc(item.id || item.issueId)}</b> ${esc(item.title)}</li>`).join('')
+    open(`<div role="alertdialog" aria-modal="true" aria-labelledby="batchAcceptTitle" aria-describedby="batchAcceptWarning">
+      <h2 id="batchAcceptTitle">确认批量验收 ${count} 张</h2>
+      <p id="batchAcceptWarning" class="bad">验收不可撤回；确认后这些任务会标为「已完成」，负责人不会再继续做。</p>
+      <ul class="batch-confirm-list">${rows}</ul>
+      <div class="actions"><button class="btn" data-batch-cancel>取消</button><button class="btn ok" data-batch-confirm>确认验收 ${count} 张</button></div>
+    </div>`)
+    const cancel = modal.querySelector('[data-batch-cancel]')
+    const confirm = modal.querySelector('[data-batch-confirm]')
+    cancel.focus()
+    cancel.onclick = close
+    confirm.onclick = async () => {
+      batchBusy = true
+      confirm.disabled = true
+      cancel.disabled = true
+      setBatchControlsDisabled(true)
+      let passed = 0
+      for (const item of items) {
+        if (await post({ type: 'review', issueId: item.issueId, decision: 'accept', note: '' })) {
+          passed += 1
+          selectedReviewIds.delete(String(item.issueId))
+          batchResults.delete(String(item.issueId))
+        } else {
+          batchResults.set(String(item.issueId), lastPostError || '验收请求失败')
+        }
+      }
+      batchBusy = false
+      close()
+      toast(`成功 ${passed} 张，失败 ${count - passed} 张`, passed === count)
+      await refresh()
+    }
+  }
+
   async function openChat(agentId) {
     if (chatPoll) clearTimeout(chatPoll)
     let data
-    try { const r = await fetch('/chat?agent=' + encodeURIComponent(agentId), { cache: 'no-store' }); data = await r.json(); if (!r.ok) throw new Error(data.error || r.status) }
+    try { const r = await request('/chat?agent=' + encodeURIComponent(agentId), { cache: 'no-store' }); data = await r.json(); if (!r.ok) throw new Error(data.error || r.status) }
     catch (e) { open(`<h2>💬 对话</h2><p class="bad">读取失败：${esc(e.message)}</p>`); return }
     open(chatPanelHtml(data, Boolean(state?.world?.duty?.on)))
     const input = modal.querySelector('#chatInput'), send = modal.querySelector('#chatSend'), count = modal.querySelector('#chatCount')
@@ -234,15 +318,26 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openIssue(issueId, mode = 'view') {
     open('<div class="note">加载中…</div>')
     let d
+    const controller = new AbortController()
+    const slow = setTimeout(() => toast('加载较慢，请稍候', false), DETAIL_SLOW_MS)
+    const timeout = setTimeout(() => controller.abort(), ACT_TIMEOUT_MS)
     try {
-      const r = await fetch('/issue?id=' + encodeURIComponent(issueId))
+      const r = await request('/issue?id=' + encodeURIComponent(issueId), { signal: controller.signal })
       d = await r.json()
       if (!r.ok) throw new Error(d.error || r.status)
-    } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
+    } catch (e) {
+      const message = e?.name === 'AbortError' ? '任务详情读取超时，请稍后重试' : `任务详情读取失败：${e.message}`
+      toast(message, false)
+      open(`<div class="note">${esc(message)}</div>`)
+      return
+    } finally {
+      clearTimeout(slow)
+      clearTimeout(timeout)
+    }
     // T15：验收视图里按需核对【验收证据】对象版本（只读；服务端缓存 60 秒），用于显示核对结果和「版本已变」时的二次确认
     let vv = null
     if (mode === 'review') {
-      try { const r = await fetch('/evidence-version?issue=' + encodeURIComponent(d.identifier), { cache: 'no-store' }); const j = await r.json().catch(() => ({})); if (r.ok && j && j.result) vv = j } catch {}
+      try { const r = await request('/evidence-version?issue=' + encodeURIComponent(d.identifier), { cache: 'no-store' }); const j = await r.json().catch(() => ({})); if (r.ok && j && j.result) vv = j } catch {}
     }
     const comments = d.comments.map((c) => `<div class="cm"><div class="who">${esc(c.who)} · ${esc(new Date(c.at).toLocaleString())}</div><div class="md">${md(c.body)}</div></div>`).join('') || '<div class="note">还没有评论</div>'
     let actions = ''
@@ -393,13 +488,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       })
       if (answers.some((a) => !a.optionIds.length && !a.otherText)) { toast('每道题都要选一个（或写上回答）', false); return }
       if (ask.questions.some((q, qi) => !q.multi && answers[qi].optionIds.length && answers[qi].otherText)) { toast('这道题是单选：选项和自己写的回答只能二选一', false); return }
-      submit.textContent = '提交中…'
-      submit.disabled = true
-      try {
-        if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
-      } finally {
-        if (submit.isConnected) { submit.textContent = '提交回答'; submit.disabled = false }
-      }
+      if (await post({ type: 'answer', issueId: w.issueId, interactionId: w.interactionId, answers, note: modal.querySelector('#mNote').value })) done('回答已提交，agent 会被唤醒继续')
     }
   }
 
@@ -533,7 +622,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       pane.innerHTML = '<div class="note">加载待排期任务…</div>'
       let list
       try {
-        const r = await fetch('/backlog?projectId=' + encodeURIComponent(proj.value))
+        const r = await request('/backlog?projectId=' + encodeURIComponent(proj.value))
         list = await r.json()
         if (!r.ok) throw new Error(list.error || r.status)
       } catch (e) { pane.innerHTML = `<div class="note">读取失败：${esc(e.message)}</div>`; return }
@@ -556,7 +645,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       out.innerHTML = '<div class="note">加载任务详情…</div>'
       let d
       try {
-        const r = await fetch('/issue?id=' + encodeURIComponent(issueId))
+        const r = await request('/issue?id=' + encodeURIComponent(issueId))
         d = await r.json()
         if (!r.ok) throw new Error(d.error || r.status)
       } catch (e) { out.innerHTML = `<div class="note">读取失败：${esc(e.message)}</div>`; return }
@@ -663,6 +752,41 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     return el
   }
 
+  function addReviewSelector(el, item) {
+    const label = document.createElement('label')
+    label.className = 'wait-select'
+    label.title = '选择待验收任务'
+    label.innerHTML = `<input type="checkbox" data-review-select="${esc(item.issueId)}" aria-label="选择 ${esc(item.id || item.issueId)}" ${selectedReviewIds.has(String(item.issueId)) ? 'checked' : ''} ${batchBusy ? 'disabled' : ''}><span>选择</span>`
+    label.onclick = (event) => event.stopPropagation()
+    const input = label.querySelector('input')
+    input.onchange = () => {
+      if (input.checked) selectedReviewIds.add(String(item.issueId))
+      else selectedReviewIds.delete(String(item.issueId))
+      refreshBatchView()
+    }
+    el.querySelector('.t').prepend(label)
+  }
+
+  function batchControls(items) {
+    const selected = selectedReviewItems(items)
+    const projects = [...new Set(selected.map((item) => projectKey(item.projectId)))]
+    const reviewProjects = [...new Set(items.map((item) => projectKey(item.projectId)))]
+    const crossProject = projects.length > 1
+    const box = document.createElement('div')
+    box.className = 'batch-tools'
+    box.innerHTML = `<div class="batch-tools-main"><b>已选 ${selected.length} 张 · 批量验收</b><button class="btn" data-batch-control data-batch-all ${batchBusy ? 'disabled' : ''}>全选本项目待验收</button><button class="btn" data-batch-control data-batch-clear ${batchBusy ? 'disabled' : ''}>清空</button><button class="btn ok" data-batch-control data-batch-accept ${!selected.length || crossProject || batchBusy ? 'disabled' : ''}>批量验收</button></div>${crossProject ? '<div class="note bad">一次批量只能验收同一个项目的卡片</div>' : ''}`
+    const all = box.querySelector('[data-batch-all]')
+    all.onclick = () => {
+      const project = projects.length === 1 ? projects[0] : reviewProjects.length === 1 ? reviewProjects[0] : null
+      if (project === null) { toast('请先勾选一个项目的待验收卡片', false); return }
+      items.filter((item) => projectKey(item.projectId) === project).forEach((item) => selectedReviewIds.add(String(item.issueId)))
+      refreshBatchView()
+    }
+    box.querySelector('[data-batch-clear]').onclick = () => { selectedReviewIds.clear(); refreshBatchView() }
+    box.querySelector('[data-batch-accept]').onclick = () => { if (!crossProject && selected.length) openBatchConfirm(selected) }
+    return box
+  }
+
   const quest = $('quest')
   let questCollapsed = innerWidth <= 900
   quest.classList.toggle('collapsed', questCollapsed)
@@ -692,7 +816,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openHealth() {
     open('<div class="note">健康数据读取中…</div>')
     try {
-      const r = await fetch('/health')
+      const r = await request('/health')
       const h = await r.json()
       if (!r.ok) throw new Error(h.error || r.status)
       const incidents = (h.incidents || []).map((x) => `<div class="q ${x.category === 'worktree_lock' ? 'bad' : 'warn'}"><b>${esc(x.label || HEALTH_LABEL[x.category] || x.category)}</b><div>${esc(x.impact || '—')}</div><div class="note">恢复：${esc(x.recoveryText || '未知')} · ${esc(x.advice || '')}</div></div>`).join('') || '<div class="note">近 2 小时没有未恢复的额度、登录或工作树风险。</div>'
@@ -708,7 +832,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     open('<div class="note">统计中…</div>')
     let d
     try {
-      const r = await fetch('/daily')
+      const r = await request('/daily')
       d = await r.json()
       if (!r.ok) throw new Error(d.error || r.status)
     } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
@@ -810,10 +934,9 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const p = b.dataset.conn, input = modal.querySelector('#tk-' + p)
       const token = input.value.trim()
       if (!token) { toast('请先粘贴令牌', false); return }
-      b.disabled = true; b.textContent = '验证中…'
       const ok = await post({ type: 'tg_connect', purpose: p, token, takeover: modal.querySelector('#tko-' + p).checked })
       input.value = ''
-      if (ok) { const w = (lastResult && lastResult.warns) || []; toast(`已接入 @${(lastResult && lastResult.username) || ''}${w.length ? '（部分设置没成功：' + w.join('；') + '）' : ''}`, !w.length); await again() } else { b.disabled = false; b.textContent = '验证并接入' }
+      if (ok) { const w = (lastResult && lastResult.warns) || []; toast(`已接入 @${(lastResult && lastResult.username) || ''}${w.length ? '（部分设置没成功：' + w.join('；') + '）' : ''}`, !w.length); await again() }
     }))
     on('[data-bind]', (b) => (b.onclick = async () => { const [p, id] = b.dataset.bind.split(':'); if (await post({ type: 'tg_bind', purpose: p, personId: id })) await again() }))
     on('[data-ok]', (b) => (b.onclick = async () => { const [p, id] = b.dataset.ok.split(':'); if (await post({ type: 'tg_confirm', purpose: p, chatId: Number(id), accept: true })) { toast('已确认绑定'); await again() } }))
@@ -900,10 +1023,31 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
   $('cmBtn').onclick = () => { if (state) openCommittee() }
 
+  async function openTownTrial() {
+    const renderFailure = (message) => open(`<h2>经济小镇 · 试算</h2><div class="meta">只读页面 · 数据为合成 · 未发放</div><p class="bad">${esc(message)}</p><div class="actions"><button class="btn" id="townTrialRetry">重试</button><button class="btn" id="townTrialBack">返回治理中心</button></div>`)
+    open('<div class="note">读取经济小镇试算…</div>')
+    try {
+      const r = await fetch('/town/econ/trial')
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`)
+      const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2)} DRC`
+      const groups = new Map()
+      for (const job of data.jobs || []) { const key = job.tier || '未分档'; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(job) }
+      const rows = [...groups.entries()].map(([tier, jobs]) => `<div class="sec">${esc(tier)} · ${jobs.length} 个参与岗位</div>${jobs.map((job) => `<details class="cm"><summary><b>${esc(job.agent)}</b> · 系数 ${esc(job.payslip.coefficient.value)} · ${esc(money(job.payslip.totalCents))}</summary><div class="gov-detail">${job.payslip.lines.map((line) => `<div class="row"><span>${esc(line.label)}</span><span>${esc(money(line.amountCents))}<br><small>${esc(line.basis)}</small></span></div>`).join('')}</div></details>`).join('')}`).join('')
+      const excluded = (data.excludedJobs || []).map((job) => `<div class="cm"><b>${esc(job.agent)}</b> · ${esc(job.state)}<br><span class="note">原因：${esc(job.reason)}</span></div>`).join('') || '<div class="note">没有不参与岗位</div>'
+      open(`<h2>经济小镇 · 试算</h2><div class="meta">只读 · 试算结果，未发放，数据为合成 · ${esc(data.month)} · 金边时间</div><div class="daily"><div class="st"><b>${esc(money(data.totals?.payrollCents))}</b><span>本月合计</span></div><div class="st"><b>${esc(data.includedCount)}</b><span>参与人数</span></div><div class="st"><b>${esc(data.excludedCount)}</b><span>不参与人数</span></div></div><p class="note">考核系数来自输入文件，页面展示不同合成档次；本页没有发薪、铸币、转账、钱包或导出入口。</p><div class="sec">参与岗位 · 按岗位档次</div>${rows}<div class="sec">不参与岗位</div>${excluded}<div class="actions"><button class="btn" id="townTrialBack">返回治理中心</button></div>`)
+      modal.querySelector('#townTrialBack').onclick = openGovernance
+    } catch (e) {
+      renderFailure(`读取失败：${e.message || e}`)
+      modal.querySelector('#townTrialRetry').onclick = openTownTrial
+      modal.querySelector('#townTrialBack').onclick = openGovernance
+    }
+  }
+
   async function openGovernance() {
     open('<div class="note">读取治理历史…</div>')
     try {
-      const r = await fetch('/governance?days=30')
+      const r = await request('/governance?days=30')
       const data = await r.json()
       if (!r.ok) throw new Error(data.error || r.status)
       let scheduler = schedulerCache.data
@@ -916,7 +1060,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const cards = [['批次', data.summary?.total || 0], ['作废', data.summary?.void || 0], ['平均统计耗时', `${data.summary?.averageMinutes || 0} 分钟`]].map(([a, b]) => `<div class="st"><b>${esc(b)}</b><span>${esc(a)}</span></div>`).join('')
         const members = (data.members || []).slice().sort((a, b) => Number(Boolean(b.active)) - Number(Boolean(a.active))).map((m) => { const cls = m.missingRate > .4 ? 'bad' : m.missingRate > .2 ? 'warn' : ''; const bar = (n) => `<div class="gov-meter"><i style="width:${Math.round(Math.min(1, n || 0) * 100)}%"></i></div>`; const missingRate = m.votes ? `${Math.round(m.missingRate * 100)}%` : '–'; return `<div class="gov-member ${cls}" title="缺票多半是没额度或没有按格式投票"><b>${esc(m.name)} <span class="note">${esc(m.status || (m.active ? '现任' : '已卸任'))}</span></b><span>通过 ${m.approve}${bar(m.votes ? m.approve / m.votes : 0)}</span><span>修改 ${m.changes}${bar(m.votes ? m.changes / m.votes : 0)}</span><span>升级 ${m.escalate}${bar(m.escalateRate)}</span><span>缺票 ${m.missing}（${missingRate}）${bar(m.missingRate)}</span></div>` }).join('') || '<div class="note">暂无委员统计</div>'
         const rows = shown.map((e) => { const open = expanded === e.id; const details = open ? `<div class="gov-detail">${(e.items || []).map((i) => `<div><b>${esc(i.title)}</b> · ${esc(i.result)}<br>${(i.votes || []).map((v) => `<span class="note">${esc(v.name)}=${esc(v.v)}${v.why ? `（${esc(v.why)}）` : ''}</span>`).join(' · ')}</div>`).join('<hr>') || '<span class="note">没有明细</span>'}</div>` : ''; const kind = kindLabel[e.kind] || e.kind; const title = String(e.title || '').replace(new RegExp(`^${kind}(?:\\s*[·：:]|\\s+)\\s*`), ''); const when = e.at ? new Date(e.at).toLocaleString('zh-CN', { timeZone: 'Asia/Phnom_Penh', hour12: false }) : '时间未知'; return `<div class="row gov-event" data-gov-id="${esc(e.id)}"><span><b>${esc(kind)}</b> · ${esc(title)} <span class="note">· ${esc(e.outcome)} · ${esc(when)}</span></span></div>${details}` }).join('') || '<div class="note">这段时间没有治理批次。</div>'
-        open(`<h2>🏛 治理中心</h2><div class="meta">晨会、内容审批、超时验收的只读历史与委员统计；金边时间</div><div class="daily">${cards}</div><div class="tabs"><button class="tab ${category === 'all' ? 'on' : ''}" data-gov-cat="all">全部</button><button class="tab ${category === 'standup' ? 'on' : ''}" data-gov-cat="standup">晨会</button><button class="tab ${category === 'content' ? 'on' : ''}" data-gov-cat="content">内容审批</button><button class="tab ${category === 'acceptance' ? 'on' : ''}" data-gov-cat="acceptance">超时验收</button><select id="govOutcome" style="max-width:150px"><option value="all">全部结果</option><option value="PASS">通过</option><option value="CHANGES">要修改</option><option value="ESCALATE">升级</option><option value="VOID">作废</option></select></div><div class="sec">委员 × 票型</div><div class="gov-members">${members}</div><div class="sec">时间线（${events.length} 批）</div>${rows}<div class="actions"><button class="btn" id="govPrev" ${page <= 0 ? 'disabled' : ''}>上一页</button><span class="note">第 ${page + 1} / ${pageCount} 页</span><button class="btn" id="govNext" ${page >= pageCount - 1 ? 'disabled' : ''}>下一页</button></div>`)
+        open(`<h2>治理中心</h2><div class="meta">晨会、内容审批、超时验收的只读历史与委员统计；金边时间</div><div class="actions"><button class="btn" id="townTrialOpen">经济小镇 · 试算</button></div><div class="daily">${cards}</div><div class="tabs"><button class="tab ${category === 'all' ? 'on' : ''}" data-gov-cat="all">全部</button><button class="tab ${category === 'standup' ? 'on' : ''}" data-gov-cat="standup">晨会</button><button class="tab ${category === 'content' ? 'on' : ''}" data-gov-cat="content">内容审批</button><button class="tab ${category === 'acceptance' ? 'on' : ''}" data-gov-cat="acceptance">超时验收</button><select id="govOutcome" style="max-width:150px"><option value="all">全部结果</option><option value="PASS">通过</option><option value="CHANGES">要修改</option><option value="ESCALATE">升级</option><option value="VOID">作废</option></select></div><div class="sec">委员 × 票型</div><div class="gov-members">${members}</div><div class="sec">时间线（${events.length} 批）</div>${rows}<div class="actions"><button class="btn" id="govPrev" ${page <= 0 ? 'disabled' : ''}>上一页</button><span class="note">第 ${page + 1} / ${pageCount} 页</span><button class="btn" id="govNext" ${page >= pageCount - 1 ? 'disabled' : ''}>下一页</button></div>`)
+        modal.querySelector('#townTrialOpen').onclick = openTownTrial
         const section = document.createElement('details')
         if (canShowHomeEntry({ fullAccess: Boolean(state?.actToken), lan: Boolean(state?.lan), wall: new URLSearchParams(location.search).has('wall') })) {
           const commandEntry = document.createElement('button')
@@ -939,7 +1084,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
           if (!section.open || document.hidden || Date.now() - schedulerCache.at < 60 * 1000) return
           section.querySelector('[data-scheduler-body]').textContent = '读取调度建议…'
           try {
-            const sr = await fetch('/scheduler/suggest', { cache: 'no-store' })
+            const sr = await request('/scheduler/suggest', { cache: 'no-store' })
             if (!sr.ok) throw new Error(sr.status)
             scheduler = await sr.json()
             schedulerCache = { at: Date.now(), data: scheduler }
@@ -1038,7 +1183,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   const collabGraph = createCollabGraph({
     esc,
     load: async (query) => {
-      const r = await fetch('/collab?' + query, { cache: 'no-store' })
+      const r = await request('/collab?' + query, { cache: 'no-store' })
       const j = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`)
       return j
@@ -1056,7 +1201,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     panel.textContent = '读取编制与工作量…'
     try {
       if (!state?.workload) throw new Error('现有服务尚未加载T9，请维护者重启原唯一实例后刷新页面')
-      const response = await fetch('/workload?days=' + days, { cache: 'no-store' })
+      const response = await request('/workload?days=' + days, { cache: 'no-store' })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(response.status === 404 ? '现有服务尚未加载T9，请维护者重启原唯一实例' : data.error || `HTTP ${response.status}`)
       if (!panel.isConnected) return
@@ -1073,9 +1218,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         $('workloadSort').onchange = e => { order = e.target.value; render() }
         $('workloadOrder').onclick = () => { ascending = !ascending; render() }
         $('workloadReport').onclick = async () => {
-          const button = $('workloadReport'); button.disabled = true
           if (await post({ type: 'workload_report' })) { toast(lastResult?.error || lastResult?.skip || '本地周报已生成', !lastResult?.error && !lastResult?.skip); await loadWorkload(days) }
-          else if (button.isConnected) button.disabled = !!state?.lan || !data.enabled
         }
       }
       render()
@@ -1106,7 +1249,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     $('memoryPreview').onclick = async () => {
       const input = $('memoryIssue').value.trim(), target = $('memoryResult')
       if (!/^CMP-\d+$/.test(input)) { target.textContent = '请输入 CMP-数字'; return }
-      try { const r = await fetch('/memory/preview?issue=' + encodeURIComponent(input)); const j = await r.json(); target.textContent = JSON.stringify(j, null, 2); if (!r.ok) throw new Error(j.error || r.status) }
+      try { const r = await request('/memory/preview?issue=' + encodeURIComponent(input)); const j = await r.json(); target.textContent = JSON.stringify(j, null, 2); if (!r.ok) throw new Error(j.error || r.status) }
       catch (e) { target.textContent = '读取失败：' + e.message }
     }
   }
@@ -1119,7 +1262,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   async function openKB(start) {
     open('<div class="note">读取知识库…</div>')
     let kb
-    try { kb = await (await fetch('/kb')).json() } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
+    try { kb = await (await request('/kb')).json() } catch (e) { open(`<div class="note">读取失败：${esc(e.message)}</div>`); return }
     if (!kb.ok) { open('<div class="note">知识库目录不存在（E:\\VirtualAIOffice\\knowledge）</div>'); return }
     const total = kb.docs.length, verified = kb.docs.filter((d) => d.status === 'verified').length
     open(`<h2>📚 企业知识库</h2>
@@ -1138,7 +1281,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const out = modal.querySelector('#kDoc')
       out.innerHTML = '<div class="note">加载中…</div>'
       try {
-        const r = await fetch('/kb/doc?path=' + encodeURIComponent(p))
+        const r = await request('/kb/doc?path=' + encodeURIComponent(p))
         const d = await r.json()
         if (!r.ok) throw new Error(d.error || r.status)
         out.innerHTML = `<div class="sec">${esc(d.meta.title || p)}</div><div class="note">来源：${esc(d.meta.sources || '—')}</div><div class="fold md">${md(d.body)}</div>`
@@ -1178,7 +1321,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   }
   function runSearch(item) { remember(item); closeSearch(); if (item.kind === 'region') setGoal?.(item.focus); else item.action?.() }
   function closeSearch() { searchOpen = false; searchPanel.classList.remove('show'); searchInput.value = ''; searchResults.innerHTML = '' }
-  async function openSearch() { searchOpen = true; selected = 0; searchPanel.classList.add('show'); searchInput.focus(); drawSearch(); if (!kbCache || Date.now() - kbCache.at > 60000) { try { const j = await (await fetch('/kb')).json(); if (j.ok) kbCache = { at: Date.now(), docs: j.docs || [] }; drawSearch() } catch {} } }
+  async function openSearch() { searchOpen = true; selected = 0; searchPanel.classList.add('show'); searchInput.focus(); drawSearch(); if (!kbCache || Date.now() - kbCache.at > 60000) { try { const j = await (await request('/kb')).json(); if (j.ok) kbCache = { at: Date.now(), docs: j.docs || [] }; drawSearch() } catch {} } }
   $('searchBtn').onclick = () => searchOpen ? closeSearch() : openSearch()
   searchInput.oninput = () => { selected = 0; drawSearch() }
   addEventListener('keydown', (e) => {
@@ -1223,6 +1366,9 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const wl = $('waitList')
       wl.innerHTML = ''
       const items = []
+      const reviewItems = (s.waiting || []).filter((w) => w.kind === 'review')
+      for (const id of [...selectedReviewIds]) if (!reviewItems.some((item) => String(item.issueId) === id)) selectedReviewIds.delete(id)
+      if (reviewItems.length) wl.appendChild(batchControls(reviewItems))
       // T13：待验收卡片上，有返工记录的任务加徽标（超限红色并写明按流程先由 Lead 与董事会决定；不禁用通过按钮）
       const rwBadge = (issueId) => {
         const t = (s.rework?.tasks || []).find((x) => String(x.issueId) === String(issueId))
@@ -1239,7 +1385,13 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const who = agentName(w.agentId)
         const meta = `${w.id}${who ? ' · ' + who : ''} · 已等 ${ago(now - Date.parse(w.since))}`
         if (w.kind === 'question') items.push(card('question', KIND.question.label, w.title, meta, () => openQuestion(w), w.projectId))
-        else if (w.kind === 'review') items.push(card('review', KIND.review.label, w.title, meta, () => openIssue(w.issueId, 'review'), w.projectId, (rwBadge(w.issueId) || '') + verBadge(w.issueId)))
+        else if (w.kind === 'review') {
+          const result = batchResults.get(String(w.issueId))
+          const resultBadge = result ? `<span class="batch-result">验收失败：${esc(result)}</span>` : ''
+          const el = card('review', KIND.review.label, w.title, meta, () => { if (!batchBusy) openIssue(w.issueId, 'review') }, w.projectId, (rwBadge(w.issueId) || '') + verBadge(w.issueId) + resultBadge)
+          addReviewSelector(el, w)
+          items.push(el)
+        }
         else if (w.kind === 'undelivered') items.push(card('undelivered', KIND.undelivered.label, w.title, meta, () => openIssue(w.issueId, 'undelivered'), w.projectId))
       }
       if (items.length) items.forEach((x) => wl.appendChild(x))
@@ -1261,7 +1413,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       if (!tasks.length) tl.innerHTML = '<div class="empty">当前没有已派发的任务</div>'
       const contractBadge = (identifier) => { const v = (s.contractView?.items || []).find((x) => String(x.identifier) === String(identifier)); if (!v) return ''; const label = v.state === 'complete' ? '契约：完整' : v.state === 'incomplete' ? `契约：缺 ${v.errors.length} 项` : '契约：无'; const tip = v.errors.map((x) => `${x.field} / ${x.code}`).join('\n') || label; return `<span class="contract-badge" title="${esc(tip)}" style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:10.5px;line-height:1.6;color:var(--muted);border:1px solid var(--line)">${esc(label)}</span>` }
       for (const t of tasks) {
-        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
+        tl.appendChild(card('task', t.id, t.title, agentName(t.agentId), () => { focusAgent(t.agentId); return openIssue(t.issueId, t.status === 'in_review' ? 'review' : 'view') }, t.projectId, contractBadge(t.id), ` · ${statusBadge(t.status)}`))
       }
     },
   }

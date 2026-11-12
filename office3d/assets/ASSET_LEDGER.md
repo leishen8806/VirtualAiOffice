@@ -429,3 +429,13 @@ Runtime `.gz` files use application/octet-stream, with no Content-Encoding gzip.
 | assets/models/people/Male_Adult_21/m251_head_color.jpg | 78461 | ab5fa59aaf36f6a4f3b2de883f75e9846bc82582211f8825ac17f7faebfb7a1b |
 | assets/models/people/Male_Adult_21/m251_keffiyeh_color.jpg | 341751 | ecae709a298440cf2bb3e55ceb5c276fd6985a40b931fa5ced86832d207e21e5 |
 | assets/models/people/Male_Adult_21/preview.png | 352293 | 60a5d5812b05342d696d7bf2ea45bcedf3e815c7bde7112865697be89361c003 |
+
+### 小镇地标阶段 2（2026-11-11，独立纪念碑）
+
+来源：仓库内 Blender Python 脚本生成；不含外部模型或纹理，材质内联。
+
+| 文件 | 字节 | 三角面 | SHA-256 |
+| --- | ---: | ---: | --- |
+| assets/models/landmarks/independence-monument.glb | 112212 | 1622 | 57caf168b7bda99cb052ab0130387b3da50cdc5c06c11052abcaa6f81a86c8ba |
+
+复现：`blender --background --python office3d/tools/build-independence-monument.py`（Blender 5.2.4 LTS）。

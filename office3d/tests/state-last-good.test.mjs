@@ -20,7 +20,7 @@ const fixture = () => ({ at: new Date(start).toISOString(), agents: [{ id: 'demo
 })
 function temp(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'h2-state-'))
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 }))
   return path.join(dir, 'state-last-good.json')
 }
 function context(extra = {}) {
@@ -289,6 +289,54 @@ test('shared collection snapshot coalesces modules and exposes a read-only share
   ms += 45000
   await modules[0]('/api/companies/demo/agents')
   assert.equal(upstream, 2)
+})
+
+test('activity snapshot is cached for one minute and uses the reduced page size', async () => {
+  let ms = start, upstream = 0
+  const snapshots = createSnapshotGet({ now: () => ms, get: async p => { upstream++; return [{ p }] } })
+  const get = snapshots.forModule('state')
+  const first = await get('/api/companies/demo/activity?limit=200')
+  const second = await get('/api/companies/demo/activity?limit=200')
+  assert.deepEqual(first, second)
+  assert.equal(upstream, 1)
+  ms += 60001
+  await get('/api/companies/demo/activity?limit=200')
+  assert.equal(upstream, 2)
+})
+
+test('close flushes the latest pending snapshot without waiting for the write interval', async t => {
+  const file = temp(t), first = fixture(), second = { ...fixture(), at: '2026-11-11T10:00:00.000Z' }
+  const manager = createLastGoodState({ file, persistMinMs: 60000, log() {} })
+  await manager.run(async () => first)
+  const pending = manager.run(async () => second)
+  await new Promise(resolve => setImmediate(resolve))
+  const started = Date.now()
+  await manager.close()
+  await pending
+  assert.ok(Date.now() - started < 1000)
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, second.at)
+})
+
+test('first request after an idle pause waits for a fresh background snapshot', async t => {
+  let ms = start, builds = 0
+  const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 1000, timeoutMs: 100, log() {} })
+  await manager.run(async () => { builds++; return fixture() })
+  ms += 120000
+  const value = await manager.run(async () => { builds++; return { ...fixture(), at: new Date(ms).toISOString() } })
+  assert.equal(builds, 2)
+  assert.equal(value.stale, undefined)
+})
+
+test('health persistence records status changes for an existing run id', async t => {
+  const file = temp(t), calls = []
+  const first = { id: 'r1', agentId: 'a', status: 'running', updatedAt: '2026-11-11T09:00:00Z' }
+  const second = { ...first, status: 'succeeded', finishedAt: '2026-11-11T09:01:00Z', updatedAt: '2026-11-11T09:01:00Z' }
+  const cache = createBackgroundHealth({ file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), get: async p => { calls.push(p); return p.endsWith('/agents') ? [{ id: 'a' }] : [first] } })
+  await cache.refresh()
+  cache.read()
+  const changed = createBackgroundHealth({ file, company: 'demo', buildHealth, schedule: () => ({ days: [1] }), get: async p => p.endsWith('/agents') ? [{ id: 'a' }] : [second] })
+  await changed.refresh()
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).runs[0].status, 'succeeded')
 })
 
 test('/state shares one response for five seconds and refreshes after expiry', async () => {
