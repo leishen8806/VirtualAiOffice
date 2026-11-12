@@ -4,6 +4,11 @@ import * as THREE from '../vendor/three/three.module.js'
 import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.mjs'
 import { readFileSync, statSync } from 'node:fs'
 
+test('hidden town overlays cannot cover the 2d map', () => {
+  const css = readFileSync(new URL('../town.css', import.meta.url), 'utf8')
+  assert.match(css, /\[hidden\]\s*\{\s*display:none !important\s*\}/)
+})
+
 test('town 3d projection uses the existing map origin and metre scale', () => {
   assert.deepEqual(geoToWorld(11.57, 104.905), { x: 0, z: -0 })
   assert.ok(geoToWorld(11.58, 104.905).z < 0)
