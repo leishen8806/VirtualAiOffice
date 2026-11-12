@@ -1,0 +1,193 @@
+// 空间坐标与门洞是渲染、碰撞和验证的共同来源；房间不开敞口。
+export const ENVELOPE = { x0: -44, x1: 22, z0: -13, z1: 13 }
+export const MAIN_FLOOR_X0 = -22 // 建筑接缝不随内部房间平移。
+export const CORRIDORS = { horizontal: { z0: -4, z1: 0 }, vertical: { x0: 0, x1: 4 } }
+export const CORRIDOR_X = (CORRIDORS.vertical.x0 + CORRIDORS.vertical.x1) / 2
+// 形象墙两侧各退让2米，保留8米宽展示区；主走道保持4米。
+export const LOGO_AREA = { x0: CORRIDORS.vertical.x0 - 2, x1: CORRIDORS.vertical.x1 + 2, z0: -12, z1: -4 }
+export const CROSS_Z = (CORRIDORS.horizontal.z0 + CORRIDORS.horizontal.z1) / 2
+export const FOYER_Z = 8
+export const AISLE_OFFSET = 1.5
+export const ENTRANCE = { x0: CORRIDOR_X - 4, x1: CORRIDOR_X + 4, inner: { x: CORRIDOR_X, z: 12 }, gate: [{ x: CORRIDOR_X, z: 13.5 }, { x: CORRIDOR_X, z: 16.5 }] }
+export const FOYER_RECEPTION = { x0: 8.5, x1: 14.5, z0: 8.5, z1: 9.5 }
+export const RECEPTION = { x: CORRIDOR_X, z: 5.5, width: 5.5, z0: 3.8, z1: 6.5, bypassX: -2 }
+const room = (id, name, x0, x1, north, doorX = (x0 + x1) / 2) => ({ id, name, x0, x1, z0: north ? -12 : 0, z1: north ? -4 : 8, doors: [{ side: north ? 'south' : 'north', at: doorX, width: 2 }] })
+export const OFFICE_ROOMS = [
+  room('product', '产品与设计', -27.5, -16.5, true),
+  room('eng', '工程办公室', -16.5, -7.5, true),
+  room('quality', '质量与安全', -22, -11, false),
+  room('drlife', 'Dr.life+ 工作室', LOGO_AREA.x1, 22, false),
+  room('board', '董事会', LOGO_AREA.x1, 22, true, 16),
+  room('kb', '知识中心', -33, -27.5, true, -30.5),
+  room('ops', '运维办公室', -33, -22, false),
+  room('review', '评审室', -44, -33, true),
+  room('plan', '计划室', -44, -33, false),
+]
+export const SEATS = {
+  Lead: ['product', -25.5, -9], PM: ['product', -23, -9], Architect: ['product', -20.5, -9], UIUX: ['product', -18, -9],
+  FrontendSenior: ['eng', -14.5, -10.5], Frontend1: ['eng', -12, -10.5], Frontend2: ['eng', -10, -10.5],
+  BackendSenior: ['eng', -14.5, -7], Backend1: ['eng', -12, -7], Backend2: ['eng', -10, -7],
+  QAAutomation: ['quality', -20, 3.5], Reviewer1: ['quality', -17.5, 3.5], Reviewer2: ['quality', -15, 3.5], SecurityReviewer: ['quality', -12.5, 3.5],
+  GoSenior: ['drlife', 8.5, 1.5], Go1: ['drlife', 12, 1.5], Go2: ['drlife', 15.5, 1.5], DBEngineer: ['drlife', 19, 1.5],
+  LedgerAuditor: ['drlife', 8.5, 5], ReactSenior: ['drlife', 12, 5], React1: ['drlife', 15.5, 5], Localizer: ['drlife', 19, 5],
+  OpsLead: ['ops', -30.5, 4], OpsEngineer: ['ops', -25.5, 4], KnowledgeKeeper: ['kb', -30.5, -8],
+}
+export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })
+export const BOSS = { desk: { x: 20, z: -8 }, chair: { x: 21, z: -8 }, stand: { x: 18.5, z: -8 }, via: [{ x: 16, z: -5.5 }, { x: 18.5, z: -5.5 }] }
+export const BOARD_TABLE = { x: 11, z: -8 }
+export const BOARD_DOOR = { x: OFFICE_ROOMS.find(r => r.id === 'board').doors[0].at, zOut: CROSS_Z, zIn: -5.5 }
+export const MEETING_ROOMS = ['review', 'plan'].map((id, i) => ({ ...OFFICE_ROOMS.find(r => r.id === id), id: i ? 'B' : 'A', officeId: id, n: i ? 6 : 8 }))
+export const MEETING_SEATS = MEETING_ROOMS.flatMap(r => {
+  const x = (r.x0 + r.x1) / 2, z = (r.z0 + r.z1) / 2, per = r.n === 8 ? [-1.5, 0, 1.5] : [-1.5, 1.5]
+  return [...per.flatMap(dx => [{ x: x + dx, z: z - 2, yaw: Math.PI }, { x: x + dx, z: z + 2, yaw: 0 }]),
+    { x: x - (r.n === 8 ? 3.5 : 3), z, yaw: -Math.PI / 2 }, { x: x + (r.n === 8 ? 3.5 : 3), z, yaw: Math.PI / 2 }]
+    .map(s => ({ ...s, room: r.id, meeting: true, viaZ: s.z <= z ? z - 3 : z + 3 }))
+})
+export const REGION_FOCUS = Object.fromEntries(OFFICE_ROOMS.map(r => [r.id, { label: ({ eng: '工程', ops: '运维', kb: '知识库' })[r.id] || r.name, t: [(r.x0 + r.x1) / 2, 0, (r.z0 + r.z1) / 2], r: r.x1 - r.x0 > 11 ? 20 : 14 }]))
+REGION_FOCUS.meet = { label: '会议室', t: [REGION_FOCUS.review.t[0], 0, -2], r: 24 }
+// DR广场：正门外的铺装空地（2026-10-19 董事会命名）。以主竖走道中线为轴，南北深 14 米，不含台阶和建筑底座。
+export const PLAZA = { id: 'plaza', name: 'DR广场', x0: CORRIDOR_X - 12, x1: CORRIDOR_X + 12, z0: 16, z1: 30 }
+const zone = (id, name, x0, x1, z0, z1, note, center = { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }) => ({ id, name, x0, x1, z0, z1, center, note })
+export const FOYER_ZONES = [
+  zone('A1', '咖啡吧', -44, -31, 8, 13, '沿北边布吧台，排队沿南边横向展开'),
+  zone('A2', '自助零食', -31, -15, 8, 13, '售货机与零食柜贴北边，小桌靠东'),
+  zone('lounge', '休息交流区', -14, -5, 8.5, 12.5, '现有休息区原位保留'),
+  zone('foyer_buffer', '入口门厅缓冲区', -5, 8, 8, 13, '不放家具，主通道保持畅通'),
+  zone('desk', '前厅服务与等候区', 8, 22, 8, 13, '前厅服务台面向入口'),
+  zone('plaza_service', '广场北侧服务带', -10, -4, 16, 18.5, '自行车架与路灯，不侵入门洞', { x: -7, z: 17 }),
+  zone('B0', '西侧咖啡区', -10, -4, 18.5, 29, '咖啡车和两张露天桌', { x: -7, z: 23.5 }),
+  zone('circle', '中央开阔圆', -2, 6, 19, 27, '直径八米，区域内无实体摆件'),
+  zone('B1', '东北摊位区', 8, 14, 16.5, 21.5, '摊位朝西，队列留在西侧'),
+  zone('B2', '东中摊位区', 8, 14, 21.5, 24.5, '队列拆成两排，避开中央圆'),
+  zone('B3', '东南摊位区', 8, 14, 24.5, 29.5, '与南侧绿化只接边'),
+  zone('south_green', '南侧绿化带', -10, 14, 29, 30, '主通道保持为空，花坛分列两侧'),
+]
+const item = (id, zone, name, x0, x1, z0, z1, facing, blocksFloor = true) => ({ id, zone, name, x0, x1, z0, z1, center: { x: (x0 + x1) / 2, z: (z0 + z1) / 2 }, size: { x: x1 - x0, z: z1 - z0 }, facing, blocksFloor })
+export const FOYER_ITEMS = [
+  item('a1_counter', 'A1', 'A1 咖啡吧台', -43, -34, 8.5, 9.5, 'S'), item('a1_stools', 'A1', 'A1 高脚凳组', -42.5, -35.5, 10, 11, 'N'),
+  item('a2_vending_wall', 'A2', 'A2 售货机墙', -30, -26, 8.5, 9.5, 'S'), item('a2_snack_cabinet', 'A2', 'A2 零食柜', -24.5, -22.5, 8.5, 9.5, 'S'), item('a2_table', 'A2', 'A2 小桌', -20.5, -18.5, 9.5, 10.5, 'ALL'),
+  item('lounge_west_sofa', 'lounge', '休息区西沙发', -13.5, -11.5, 9, 12, 'E'), item('lounge_coffee_table', 'lounge', '休息区茶几', -10.5, -8.5, 9.5, 11.5, 'NONE'), item('lounge_east_sofa', 'lounge', '休息区东沙发', -7.5, -5.5, 9, 12, 'W'),
+  item('reception_desk', 'desk', '前厅服务台', 8.5, 14.5, 8.5, 9.5, 'S'), item('handoff_box', 'desk', '交办箱', 14.5, 15.5, 9, 10, 'S'), item('notice_attendance_wall', 'desk', '公告/出勤墙', 16, 21, 8, 9, 'S', false), item('waiting_sofa', 'desk', '等候沙发', 16, 21, 10, 11, 'N'),
+  item('plaza_bike_rack', 'plaza_service', '广场自行车架', -9, -5, 16.5, 17.5, 'E'), item('plaza_west_lamp', 'plaza_service', '广场西路灯', -10, -9, 17.5, 18.5, 'NONE'), item('plaza_east_lamp', 'plaza_service', '广场东路灯', 13, 14, 17.5, 18.5, 'NONE'),
+  item('b0_coffee_cart', 'B0', 'B0 咖啡车', -9, -5, 19, 22, 'E'), item('b0_table_1', 'B0', 'B0 露天桌一', -9, -7, 23, 25, 'ALL'), item('b0_table_2', 'B0', 'B0 露天桌二', -6, -4, 25.5, 26.5, 'ALL'),
+  item('b1_stall', 'B1', 'B1 市集摊位', 9, 13, 17.5, 20.5, 'W'), item('b2_stall', 'B2', 'B2 市集摊位', 9, 13, 21.5, 24.5, 'W'), item('b3_stall', 'B3', 'B3 市集摊位', 9, 13, 25.5, 28.5, 'W'),
+  item('south_west_bench_1', 'south_green', '南侧西长椅一', -9.5, -6.5, 28, 29, 'N'), item('south_west_bench_2', 'south_green', '南侧西长椅二', -6.5, -3.5, 28, 29, 'N'),
+  item('south_east_bench_1', 'B2', '南侧东长椅一', 13, 14, 21.5, 24.5, 'W'), item('south_east_bench_2', 'B3', '南侧东长椅二', 13, 14, 25.5, 28.5, 'W'),
+  item('south_west_planter', 'south_green', '南侧西花坛', -10, -4, 29, 30, 'NONE'), item('south_east_planter', 'south_green', '南侧东花坛', 7, 14, 29, 30, 'NONE'),
+]
+export const FOYER_TARGETS = Object.fromEntries([
+  ['a1_counter', -33.5, 10.5], ['a1_stools', -39, 11.5], ['a2_vending_wall', -25.5, 10], ['a2_snack_cabinet', -22, 10], ['a2_table', -19.5, 11.5],
+  ['lounge_west_sofa', -11, 12.5], ['lounge_coffee_table', -9.5, 12], ['lounge_east_sofa', -8, 12.5], ['reception_desk', 11.5, 10.5], ['handoff_box', 15, 10.5], ['notice_attendance_wall', 15.5, 8.5], ['waiting_sofa', 18.5, 11.5],
+  ['plaza_bike_rack', -4.5, 17], ['plaza_west_lamp', -9.5, 19], ['plaza_east_lamp', 13.5, 19], ['b0_coffee_cart', -4.5, 20.5], ['b0_table_1', -6.5, 24], ['b0_table_2', -3.5, 26],
+  ['b1_stall', 8.5, 19], ['b2_stall', 8.5, 23], ['b3_stall', 8.5, 27], ['south_west_bench_1', -8, 27.5], ['south_west_bench_2', -5, 27.5], ['south_east_bench_1', 13.5, 21], ['south_east_bench_2', 13.5, 25], ['south_west_planter', -3.5, 29.5], ['south_east_planter', 6.5, 30],
+].map(([id, x, z]) => [id, { x, z }]))
+export const FOYER_QUEUES = {
+  A1: [-33, -32, -31, -30, -29, -28].map(x => ({ x, z: 12 })), A2: [-18, -19, -20, -21, -22, -23].map(x => ({ x, z: 12 })), desk: [9, 10, 11, 12, 13, 14].map(x => ({ x, z: 12 })),
+  B0: [18.5, 19.5, 20.5, 21.5, 22.5, 23.5].map(z => ({ x: -4.5, z })),
+  B1: [[8, 18.5], [7, 18.5], [6, 18.5], [8, 19.5], [7, 19.5], [6, 19.5]].map(([x, z]) => ({ x, z })),
+  B2: [[8, 22], [7, 22], [6, 22], [8, 24], [7, 24], [6, 24]].map(([x, z]) => ({ x, z })),
+  B3: [[8, 26.5], [7, 26.5], [6, 26.5], [8, 27.5], [7, 27.5], [6, 27.5]].map(([x, z]) => ({ x, z })),
+}
+const WAITING_SOFA = FOYER_ITEMS.find(item => item.id === 'waiting_sofa')
+// 四人站在沙发北侧面向 -Z；固定座位不前移，避免等待中互相换位。
+export const WAITING_SEATS = Object.freeze([-1.5, -0.5, 0.5, 1.5].map(dx => Object.freeze({ x: WAITING_SOFA.center.x + dx, z: WAITING_SOFA.z1 + 0.5, yaw: 0 })))
+export const WAITING_CAPACITY = WAITING_SEATS.length
+export const CENTRAL_CIRCLE = { cx: 2, cz: 23, r: 4 }
+export const MAIN_AISLE = { x0: 0, x1: 4 }
+REGION_FOCUS.plaza = { label: PLAZA.name, t: [CORRIDOR_X, 0, (PLAZA.z0 + PLAZA.z1) / 2], r: 20 }
+REGION_FOCUS.lounge = { label: '休息区', t: [-9.5, 0, 10.5], r: 13 }
+REGION_FOCUS.foyer_A1 = { label: '咖啡吧', t: [FOYER_ZONES[0].center.x, 0, FOYER_ZONES[0].center.z], r: 14 }
+REGION_FOCUS.foyer_A2 = { label: '自助零食', t: [FOYER_ZONES[1].center.x, 0, FOYER_ZONES[1].center.z], r: 14 }
+REGION_FOCUS.foyer_desk = { label: '前厅服务台（接待与等候）', t: [FOYER_ZONES[4].center.x, 0, FOYER_ZONES[4].center.z], r: 14 }
+export const VIEW_CENTER = [(ENVELOPE.x0 + ENVELOPE.x1) / 2, 0, 0]
+export const MINI_BOUNDS = { x0: ENVELOPE.x0 - 2, x1: ENVELOPE.x1 + 2, z0: ENVELOPE.z0 - 2, z1: PLAZA.z1 + 2 }
+
+export const roomAt = (p) => OFFICE_ROOMS.find(r => p.x > r.x0 && p.x < r.x1 && p.z > r.z0 && p.z < r.z1)
+
+// 左侧前廊安排休息区，大门至主通道保持独立，不摆座椅。
+export const LOUNGE_AREA = { x: REGION_FOCUS.lounge.t[0], z: REGION_FOCUS.lounge.t[2], width: 9, depth: 4, entryZ: FOYER_Z + 0.5 }
+export const LOUNGE_SEATS = [-1, 0, 1].flatMap((dz) => [
+  { x: LOUNGE_AREA.x - 2, z: LOUNGE_AREA.z + dz, yaw: -Math.PI / 2, appX: LOUNGE_AREA.x - 1 },
+  { x: LOUNGE_AREA.x + 2, z: LOUNGE_AREA.z + dz, yaw: Math.PI / 2, appX: LOUNGE_AREA.x + 1 },
+])
+export function loungeTrip(home, seat) {
+  const exit = officeExit(home)
+  return [...exit, ...corridorPath(exit.at(-1), { x: CORRIDOR_X, z: LOUNGE_AREA.entryZ }),
+    { x: seat.appX, z: LOUNGE_AREA.entryZ }, { x: seat.appX, z: seat.z }, { x: seat.x, z: seat.z }]
+}
+
+export function officeExit(home) {
+  const room = roomAt(home)
+  if (!room) return [{ x: home.x, z: home.z }, ...corridorPath(home, { x: CORRIDOR_X, z: CROSS_Z })]
+  const door = room.doors[0], north = door.side === 'south'
+  const insideZ = north ? room.z1 - 0.5 : room.z0 + 0.5, outsideZ = north ? room.z1 + 1 : room.z0 - 1
+  return [{ x: home.x + 1, z: home.z }, { x: home.x + 1, z: home.z + AISLE_OFFSET },
+    { x: door.at, z: home.z + AISLE_OFFSET }, { x: door.at, z: insideZ },
+    { x: door.at, z: outsideZ }, { x: door.at + (north ? 0.5 : -0.5), z: outsideZ }]
+}
+
+export function corridorPath(from, to) {
+  // 左右行各占一条线，南北门的汇入点错开，避免三人在同一转角争抢一个点。
+  const laneZ = CROSS_Z + (to.x < from.x ? 0.5 : -0.5)
+  const result = Math.abs(from.x - to.x) < 0.01 ? [] : [{ x: from.x, z: laneZ }, { x: to.x, z: laneZ }]
+  const start = result.at(-1) || from
+  // 董事会决定：保留中轴前台（2026-10-20）
+  if (Math.abs(start.x - to.x) < 0.01 && Math.abs(start.x - RECEPTION.x) < RECEPTION.width / 2 + 0.4 && Math.min(start.z, to.z) < RECEPTION.z0 && Math.max(start.z, to.z) > RECEPTION.z1) {
+    result.push({ x: RECEPTION.bypassX, z: start.z }, { x: RECEPTION.bypassX, z: to.z })
+  }
+  result.push({ ...to })
+  return result
+}
+
+const CONSUMER_TARGETS = { A1: FOYER_QUEUES.A1[0], A2: FOYER_QUEUES.A2[0], desk: FOYER_QUEUES.desk[0], B0: FOYER_QUEUES.B0[0], B1: FOYER_QUEUES.B1[0], B2: FOYER_QUEUES.B2[0], B3: FOYER_QUEUES.B3[0] }
+const consumerTarget = (targetId) => {
+  const target = CONSUMER_TARGETS[targetId] || FOYER_TARGETS[targetId]
+  if (!target) throw new Error(`Unknown foyer target: ${targetId}`)
+  return target
+}
+
+function consumerTrip(home, targetId) {
+  const target = consumerTarget(targetId), exit = officeExit(home)
+  const path = [...exit, ...corridorPath(exit.at(-1), { x: CORRIDOR_X, z: 12 })]
+  if (target.z <= ENTRANCE.inner.z) return [...path, { ...target }]
+  const laneX = target.x < 0 ? -3.5 : 7
+  return [...path, ...ENTRANCE.gate, { x: laneX, z: ENTRANCE.gate.at(-1).z }, { x: laneX, z: target.z }, { ...target }]
+}
+
+export const foyerTrip = (home, targetId) => consumerTrip(home, targetId)
+export const plazaTrip = (home, targetId) => consumerTrip(home, targetId)
+export const foyerReturnTrip = (home, targetId) => consumerTrip(home, targetId).toReversed().map(p => ({ ...p }))
+export function consumerQueue(targetId, occupied = []) {
+  const queue = FOYER_QUEUES[targetId]
+  if (!queue) throw new Error(`Unknown foyer queue: ${targetId}`)
+  return queue.find(p => !occupied.some(o => o.x === p.x && o.z === p.z)) || null
+}
+
+export function officeTrip(home, targetHome, stand) {
+  const exit = officeExit(home), entry = officeExit(targetHome).reverse().slice(0, -2)
+  return [...exit, ...corridorPath(exit.at(-1), entry[0]), ...entry.slice(1), { x: stand.x, z: targetHome.z + AISLE_OFFSET }, stand]
+}
+
+export function meetingTrip(home, seat) {
+  const room = MEETING_ROOMS.find(r => r.id === seat.room), exit = officeExit(home)
+  const insideZ = room.doors[0].side === 'south' ? room.z1 - 0.5 : room.z0 + 0.5
+  return [...exit, ...corridorPath(exit.at(-1), { x: room.doors[0].at, z: CROSS_Z }),
+    { x: room.doors[0].at, z: insideZ }, { x: room.doors[0].at, z: seat.viaZ },
+    { x: seat.x, z: seat.viaZ }, { x: seat.x, z: seat.z }]
+}
+
+export function roomSegments(room) {
+  const segments = []
+  for (const side of ['north', 'south', 'west', 'east']) {
+    const vertical = side === 'west' || side === 'east'
+    const lo = vertical ? room.z0 : room.x0, hi = vertical ? room.z1 : room.x1
+    const holes = room.doors.filter(d => d.side === side).map(d => ({ lo: Math.max(lo, d.at - (d.width || 2.2) / 2), hi: Math.min(hi, d.at + (d.width || 2.2) / 2) })).sort((a, b) => a.lo - b.lo)
+    let start = lo
+    for (const hole of holes) {
+      if (hole.lo > start) segments.push({ side, lo: start, hi: hole.lo })
+      start = Math.max(start, hole.hi)
+    }
+    if (start < hi) segments.push({ side, lo: start, hi })
+  }
+  return segments
+}

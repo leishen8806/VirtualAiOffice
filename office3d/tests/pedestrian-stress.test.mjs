@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { copyFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -179,6 +180,11 @@ test('200 fixed seeds complete without deadlock, watchdog, overlap or wall cross
   assert.equal(current.find(r => r.wall)?.wall, undefined)
   assert.ok(Math.min(...current.map(r => r.minGap)) >= PERSON_GAP * 0.9)
 
+  const summary = { seeds: SEEDS, events: SEEDS * 12, averageSteps: current.reduce((n, r) => n + r.steps, 0) / SEEDS, longestSteps: Math.max(...current.map(r => r.steps)), yields: current.reduce((n, r) => n + r.yields, 0), abandons: current.reduce((n, r) => n + r.abandons, 0), timeouts: current.reduce((n, r) => n + r.timeouts, 0), wallCrossings: current.filter(r => r.wall).length, minGap: Math.min(...current.map(r => r.minGap)), ms: performance.now() - started }
+  console.log('T16b_STRESS ' + JSON.stringify(summary))
+})
+
+test('legacy deadlock-fix backup still regresses on the same seeds', { skip: existsSync(join(LEGACY, 'director.js')) ? false : '本机 office3d-backup-deadlock-fix 证据不存在（CI 干净机器），跳过 legacy 回归对比' }, async (t) => {
   const legacy = await legacyDirector(); t.after(legacy.cleanup)
   const warn = console.warn; console.warn = () => {}
   let old, oldRegression
@@ -189,6 +195,5 @@ test('200 fixed seeds complete without deadlock, watchdog, overlap or wall cross
   const oldFailedSeeds = old.filter(r => r.stuck || !r.complete).map(r => r.seed), oldDeadlocks = oldFailedSeeds.length
   assert.ok(oldDeadlocks >= 1, `legacy scenario is too weak: ${oldDeadlocks} deadlocks`)
   const oldRegressionDetails = oldRegression.map(r => ({ seed: r.seed, stuck: r.stuckDetails, timeouts: r.timeoutDetails, wall: r.wallDetail, complete: r.complete }))
-  const summary = { seeds: SEEDS, events: SEEDS * 12, averageSteps: current.reduce((n, r) => n + r.steps, 0) / SEEDS, longestSteps: Math.max(...current.map(r => r.steps)), yields: current.reduce((n, r) => n + r.yields, 0), abandons: current.reduce((n, r) => n + r.abandons, 0), timeouts: current.reduce((n, r) => n + r.timeouts, 0), wallCrossings: current.filter(r => r.wall).length, minGap: Math.min(...current.map(r => r.minGap)), oldDeadlocks, oldFailedSeeds, oldRegressionDetails, ms: performance.now() - started }
-  console.log('T16b_STRESS ' + JSON.stringify(summary))
+  console.log('T16b_LEGACY ' + JSON.stringify({ oldDeadlocks, oldFailedSeeds, oldRegressionDetails }))
 })

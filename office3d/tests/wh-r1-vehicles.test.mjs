@@ -1,0 +1,114 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import * as THREE from '../vendor/three/three.module.js'
+import { WH_R1_DATA, WH_R1_ASSIGNMENT } from '../wh-r1/data.js'
+import { WH_R1_FLOOR_Y, whToWorld } from '../wh-r1-layout.js'
+import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DOCK_MARKS, WH_R1_SEMITRAILER_BAYS, WH_R1_OUTBOUND_FLEET } from '../dr-wh-r1-vehicles.js'
+import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
+import { createCampusRegistry } from '../dr-campus-registry.js'
+import { createFurnitureCollision } from '../furniture-collision.js'
+const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
+const texture=()=>new THREE.Texture()
+function boxes(root){
+ root.updateMatrixWorld(true);const result=new Map(),matrix=new THREE.Matrix4()
+ root.traverse(m=>{if(!m.isInstancedMesh||!m.userData.instanceToRegisterId||m.name==='wh-r1-truck-detail')return;m.geometry.computeBoundingBox();m.userData.instanceToRegisterId.forEach((id,i)=>{m.getMatrixAt(i,matrix);const box=m.geometry.boundingBox.clone().applyMatrix4(matrix.clone().premultiply(m.matrixWorld));if(!result.has(id))result.set(id,new THREE.Box3());result.get(id).union(box)})});return result
+}
+test('I5 keeps all nine trucks and fourteen equipment records without changing source values',()=>{
+ const ids=new Set(WH_R1_ASSIGNMENT.filter(r=>r.card==='I5').map(r=>r.id))
+ assert.deepEqual(WH_R1_VEHICLES.filter(r=>r.category!=='厢式货车'),WH_R1_DATA.elements.filter(r=>ids.has(r.id)&&r.category!=='厢式货车'))
+ assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='厢式货车').length,9);assert.equal(WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位').length,14)
+ for(const bay of WH_R1_PARKING_BAYS){const source=WH_R1_DATA.elements.find(r=>r.id===bay.id),display=WH_R1_VEHICLES.find(r=>r.id===bay.id);assert.equal(source.lengthM,8);assert.equal(display.yM,bay.yM);assert.equal(display.yawDeg,bay.yawDeg)}
+ for(const display of WH_R1_VEHICLES.filter(r=>r.displayVehicleType==='semitrailer'))assert.deepEqual([display.lengthM,display.widthM,display.heightM],[16.5,2.55,4])
+ assert.deepEqual(WH_R1_OUTBOUND_FLEET.map(r=>[r.id,r.displayVehicleType,r.lengthM,r.widthM,r.heightM]),[
+  ['WH-06-VH-001','delivery-train',6.8,1.65,1.9],['WH-06-VH-002','delivery-train',6.8,1.65,1.9],
+  ['WH-06-VH-003','delivery-tricycle',3.2,1.25,1.75],['WH-06-VH-004','delivery-tricycle',3.2,1.25,1.75],
+ ])
+ for(const row of WH_R1_OUTBOUND_FLEET)near(row.xM,row.displayVehicleType==='delivery-train'?115.95:114.15,row.id+' x')
+ assert.equal(WH_R1_VEHICLES.find(r=>r.id==='WH-01-VH-005').yawDeg,270)
+ assert.equal(WH_R1_VEHICLES.filter(r=>r.regionId==='06'&&r.category==='厢式货车').length,4)
+})
+test('I5 high and low actual full merge retain every ID, registered envelope, orientation and ground height',async()=>{
+ const code=readFileSync(new URL('../merge.js',import.meta.url),'utf8').replace("from 'three'",`from '${new URL('../vendor/three/three.module.js',import.meta.url).href}'`)
+ const {mergeStatic}=await import(`data:text/javascript,${encodeURIComponent(code)}`),prior=globalThis.location
+ try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'}
+  for(const tier of ['high','low']){
+   const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier},layout:{}});registry.buildAll({quality:{tier},canvasTex:texture});mergeStatic(scene);if(tier==='low')mergeStatic(scene)
+    assert.deepEqual(registry.summary().skipped,[]);assert.deepEqual(registry.summary().modules,['wh-r1-shell','wh-r1-zones','wh-r1-site','wh-r1-racks','wh-r1-workflow','wh-r1-live1','wh-r1-vehicles','wh-r1-front','wh-r1-validation','wh-r1-inspector','wh-r1-staff'])
+   const root=scene.getObjectByName('wh-r1-vehicles'),rendered=boxes(root);assert.equal(rendered.size,23)
+   for(const r of WH_R1_VEHICLES){
+    const p=whToWorld(r.xM,r.yM),b=rendered.get(r.id),expected=new THREE.Box3(new THREE.Vector3(-r.lengthM/2,0,-r.widthM/2),new THREE.Vector3(r.lengthM/2,r.heightM,r.widthM/2)).applyMatrix4(new THREE.Matrix4().makeRotationY(r.yawDeg*Math.PI/180)).translate(new THREE.Vector3(p.x,WH_R1_FLOOR_Y+r.zM,p.z))
+    for(const axis of ['x','y','z']){near(b.min[axis],expected.min[axis],r.id+' min '+axis);near(b.max[axis],expected.max[axis],r.id+' max '+axis)}
+    const proxy=root.getObjectByName('wh-r1-vehicle-proxy-'+r.id);near(proxy.rotation.y,r.yawDeg*Math.PI/180,r.id+' yaw');assert.ok(!proxy.isInstancedMesh)
+   }
+   const m=root.getObjectByName('wh-r1-vehicles-boxes');assert.ok(m.instanceColor);assert.ok(m.userData.parts.includes('fork'));assert.ok(m.userData.parts.includes('windscreen'))
+   assert.equal(root.getObjectByName('wh-r1-vehicle-labels').userData.labels.filter(r=>r.text.includes('UNKNOWN')).length,10)
+   registry.dispose();assert.equal(scene.getObjectByName('wh-r1-vehicles'),undefined)
+  }
+ }finally{globalThis.location=prior}
+})
+test('I5 seven round-ended sweeps preserve blocked and conditional values without inventing a drive route',()=>{
+ assert.deepEqual(WH_R1_SWEEPS,WH_R1_DATA.integrityAudit.routes.filter(r=>/^(TR|FL)/.test(r.id)))
+ assert.deepEqual(WH_R1_SWEEPS.map(r=>r.id),['TR01','TR02','TR03','TR04','FL01','FL02','FL03'])
+ for(const r of WH_R1_SWEEPS.slice(0,2)){assert.equal(r.status,'BLOCKED');assert.equal(r.min_clearance_mm,-1250);assert.equal(r.swept_radius_mm,1250);assert.deepEqual(r.nearest_ids,['WH-01-VH-005'])}
+ assert.deepEqual(WH_R1_SWEEPS.slice(2,4).map(r=>[r.status,r.min_clearance_mm]),[['CONDITIONAL_STATIC_CLEAR',350],['CONDITIONAL_STATIC_CLEAR',115]])
+ const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),overlay=value.root.getObjectByName('wh-r1-vehicle-inspection-overlays'),pos=overlay.geometry.attributes.position
+ for(const range of overlay.userData.ranges.filter(r=>/^(TR|FL)/.test(r.id))){const row=WH_R1_SWEEPS.find(r=>r.id===range.id),a=whToWorld(...row.points_m[0]),b=whToWorld(...row.points_m[1]),r=row.swept_radius_mm/1000,x=[],z=[];for(let i=range.start;i<range.start+range.count;i++){x.push(pos.getX(i));z.push(pos.getZ(i))}near(Math.max(...x)-Math.min(...x),2*r,row.id+' width');near(Math.max(...z)-Math.min(...z),Math.abs(a.z-b.z)+2*r,row.id+' round ends')}
+ const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ const source=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8');assert.doesNotMatch(source,/CAMPUS_VEHICLE_ROUTES|B4_PLAN|pathPoint|requestAnimationFrame|setInterval/)
+ value.dispose()
+})
+test('I5 unknown dock, cargo floor and entrance step elevations stay unknown; only nine flat door annotations exist',()=>{
+ assert.deepEqual(WH_R1_LEVELS,{dock:'UNKNOWN',cargoFloor:'UNKNOWN',entranceStep:'UNKNOWN',sources:['WH-SITE-DOCK-U01','WH-SITE-ACCESS-U01']})
+ assert.equal(WH_R1_DOCK_MARKS.length,9)
+ for(const mark of WH_R1_DOCK_MARKS){const door=[...WH_R1_DATA.doors,...WH_R1_ANNEX.doors].find(r=>r.id===mark.doorId);assert.deepEqual({x:mark.x,z:mark.z},whToWorld(door.xM,door.yM));assert.equal(mark.widthM,door.lengthM);assert.equal(mark.level,'UNKNOWN');assert.equal(mark.displayOnly,'DESIGN_ASSUMPTION');assert.equal(mark.height,undefined)}
+ assert.deepEqual(WH_R1_DOCK_MARKS.slice(5).map(r=>r.sourceTag),['R5-SHIP-D-1','R5-SHIP-D-2','R5-SHIP-D-3','R5-SHIP-D-4'])
+})
+test('I5 real collision blocks each individual vehicle and releases only its own proxies',()=>{
+ const root=new THREE.Group();root.position.y=-WH_R1_FLOOR_Y;const collision=createFurnitureCollision(),v=buildWhR1Vehicles({THREE,root,collision})
+ assert.equal(collision.stats().bodies,23)
+ for(const r of WH_R1_VEHICLES){const p=whToWorld(r.xM,r.yM),yaw=r.yawDeg*Math.PI/180;const hit=collision.hit(p.x+Math.cos(yaw)*(r.lengthM/2-.01),p.z-Math.sin(yaw)*(r.lengthM/2-.01));assert.equal(hit?.group.userData.whR1Id,r.id,r.id)}
+ v.dispose();v.dispose();assert.equal(collision.stats().bodies,0);assert.equal(root.children.length,0)
+})
+test('B2 supplies five receiving bays to the semitrailer loader and batches the four outbound delivery vehicles',async()=>{
+ let input,updates=0,disposed=false
+ const loadSemitrailers=async value=>{input=value;return{update(){updates++},dispose(){disposed=true}}}
+ const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root,renderer:{},quality:{tier:'high'},env:{night:0},loadSemitrailers})
+ await value.ready
+ assert.deepEqual(input.bays,WH_R1_SEMITRAILER_BAYS);assert.equal(input.root,value.root);assert.deepEqual(input.bays.map(r=>r.fleetNumber),[1,2,3,4,5])
+ const receiving=WH_R1_PARKING_BAYS.filter(b=>b.id.startsWith('WH-01-'))
+ for(let index=0;index<receiving.length;index++){
+  const bay=receiving[index],actual=input.bays[index],world=whToWorld(bay.xM,bay.yM)
+  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,(bay.yawDeg-90)*Math.PI/180,bay.id+' model yaw')
+ }
+ for(const mesh of ['wh-r1-vehicles-boxes','wh-r1-vehicles-wheels']){
+  const ids=value.root.getObjectByName(mesh).userData.instanceToRegisterId
+  assert.ok(ids.every(id=>!receiving.some(b=>b.id===id)),mesh)
+  for(const row of WH_R1_OUTBOUND_FLEET)assert.ok(ids.includes(row.id),`${mesh} ${row.id}`)
+ }
+ value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
+})
+test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
+ const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
+ assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
+ assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
+ for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
+ const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)
+ const bodyLabels=value.root.getObjectByName('wh-r1-vehicle-labels').userData.labels.filter(r=>r.body)
+ assert.equal(bodyLabels.length,28);for(const row of fleet)assert.equal(bodyLabels.filter(r=>r.id===row.id&&r.text===row.id).length,2,row.id)
+ value.root.updateMatrixWorld(true);const boxesMesh=core[0],matrix=new THREE.Matrix4();boxesMesh.geometry.computeBoundingBox()
+ boxesMesh.userData.parts.forEach((part,index)=>{if(part!=='fork')return;boxesMesh.getMatrixAt(index,matrix);const box=boxesMesh.geometry.boundingBox.clone().applyMatrix4(matrix.clone().premultiply(boxesMesh.matrixWorld));near(box.min.y,WH_R1_FLOOR_Y,'fork ground')})
+ const first=fleet[0],p=whToWorld(first.xM,first.yM),camera=new THREE.PerspectiveCamera(),state=()=>value.root.userData.forklifts.state.find(r=>r.id===first.id).near,detail=()=>value.root.children.filter(r=>r.name.startsWith('wh-r1-forklift-detail-')).reduce((sum,r)=>sum+r.count,0)
+ const place=distance=>{camera.position.set(p.x+distance,WH_R1_FLOOR_Y+first.heightM/2,p.z);camera.updateMatrixWorld(true);value.onFrame(.016,{camera})}
+ place(27);assert.equal(state(),true);assert.ok(detail()>0);place(31);assert.equal(state(),true);place(35);assert.equal(state(),false);place(31);assert.equal(state(),false)
+ quality.tier='low';place(27);assert.equal(state(),false);assert.equal(detail(),0)
+ value.dispose()
+})
+test('I5 non-WH registry preserves registration order and does not build vehicle data',()=>{
+ const prior=globalThis.location
+ try{for(const search of ['','?place=drlife-warehouse&legacy=drcampus','?campus=1','?whr1=0','?whr1=1&whr1=1']){globalThis.location={search};const scene=new THREE.Scene(),r=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}});for(const name of ['shell','yard','racks','motion'])r.register(name,()=>({}));r.buildAll();assert.deepEqual(r.summary().modules,['shell','yard','racks','motion']);assert.equal(scene.getObjectByName('wh-r1-vehicles'),undefined);r.dispose()}}finally{globalThis.location=prior}
+ const manifest=JSON.parse(readFileSync(new URL('../wh-r1/MANIFEST.json',import.meta.url)));const code=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8').replace(/\r\n/g,'\n')
+ assert.equal(manifest.runtimeModules['dr-wh-r1-vehicles.js'].sha256,createHash('sha256').update(code).digest('hex'))
+})

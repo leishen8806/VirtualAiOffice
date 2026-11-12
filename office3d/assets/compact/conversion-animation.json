@@ -1,0 +1,858 @@
+[
+  {
+    "kind": "animation",
+    "cartoon": true,
+    "file": "office3d/assets/models/anim/UAL1_Standard.glb",
+    "target": "anim/UAL1_Standard.anim.gz",
+    "sourceBytes": 7618436,
+    "sourceSha256": "69591853d817488edaa8fd9bf8fc1d821eaeaf789f8627b3cd23b41c4ed67997",
+    "bytes": 56090,
+    "sha256": "07a500f9e022e71b8e8fa97798bb70bf50818ca573ceea41d942d97c1afbe919",
+    "proof": {
+      "clips": 5,
+      "tracks": 330,
+      "samples": 113124,
+      "maxError": 0.000012766802683472633
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_cell_phone_textmessage.fbx",
+    "target": "anim/f_cell_phone_textmessage.anim.gz",
+    "sourceBytes": 3647440,
+    "sourceSha256": "fec5b09446c1f097d87490005157979a49053cd2462547794b9bdeababdae97b",
+    "bytes": 110840,
+    "sha256": "9af7977e8c6e6b94fb89bc36fa82e9274ffe4499683a9fd1042dbef323795135",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 252642,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_cheer_01.fbx",
+    "target": "anim/f_cheer_01.anim.gz",
+    "sourceBytes": 3015536,
+    "sourceSha256": "c6348d384bf83f66d6b77a45229847eea94cdcf5cdc06659d5f6d964f028b54d",
+    "bytes": 165997,
+    "sha256": "c8128fb89209be0df3c45b9a94b7a2ffafc98f9849a61e0be7bbfd974bc9b942",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 188354,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_cheer_03.fbx",
+    "target": "anim/f_cheer_03.anim.gz",
+    "sourceBytes": 1513040,
+    "sourceSha256": "03d6f83b11f1c1efe05b22d415134a778a3854bc6eb373a497bc83c27b16f08d",
+    "bytes": 36212,
+    "sha256": "4eaedf5bc07163862b9e1712ea81c5cef4ad6722fd817f45814e45819a6344a2",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 39114,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_claphands_01.fbx",
+    "target": "anim/f_claphands_01.anim.gz",
+    "sourceBytes": 3088480,
+    "sourceSha256": "125b108aa10a1207d4beb9a0041a0b20fcb29d96f7c2fb9fc5e343e51aae863a",
+    "bytes": 152136,
+    "sha256": "b2eff5f2cc697b1fe3cf4128d28dff8fe6efb1d4cd4517d4401cd33977d65af0",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 196144,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_drink_idle.fbx",
+    "target": "anim/f_drink_idle.anim.gz",
+    "sourceBytes": 5017600,
+    "sourceSha256": "3e486b8aa0e5d4aac1907536ff04f1c8b55a350095496ad10e513d797f1e1f67",
+    "bytes": 185519,
+    "sha256": "945bcc192b3329056fc78d7d7c12b52342fb0323c2fb205c0734f0710553acf4",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 365884,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_gestic_talk_excited_01.fbx",
+    "target": "anim/f_gestic_talk_excited_01.anim.gz",
+    "sourceBytes": 5043104,
+    "sourceSha256": "c80b5e40a00f121bd5dc4b18cf0e16dc558bcd985621b89ce89cd7464f815384",
+    "bytes": 330944,
+    "sha256": "e9ecfdb7e4238adc49d912f0f636e0dc127d91fa91908d7511848ba524d3e975",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 357192,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_gestic_talk_neutral_01.fbx",
+    "target": "anim/f_gestic_talk_neutral_01.anim.gz",
+    "sourceBytes": 4761664,
+    "sourceSha256": "fee2c764dcfac6f2edd85e73e11b1a13aac305372cbd657207d4c947b21a2476",
+    "bytes": 273392,
+    "sha256": "98e32b10d5d92367e1db1f55429667d9720391831bc0b0ed4c919f9782799291",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 336364,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_gestic_talk_relaxed_01.fbx",
+    "target": "anim/f_gestic_talk_relaxed_01.anim.gz",
+    "sourceBytes": 4802192,
+    "sourceSha256": "a22d59d1d0cc34a16df70a994ef829d3206034f6416bc9bd3de387fb3f204c61",
+    "bytes": 298180,
+    "sha256": "58be5db405b5da1a549fd91325671b82b178bbf88798c1fddd6e3f30e67fdfc6",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 338414,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_idle_look_around_01.fbx",
+    "target": "anim/f_idle_look_around_01.anim.gz",
+    "sourceBytes": 1617760,
+    "sourceSha256": "61a70b35f08d5308c01fd1bce75ecbdb2cd320193ee900bbef26ad0e9d52261e",
+    "bytes": 39588,
+    "sha256": "01b07891c3ebe10c0113213a38c586bc0f2c02beb51feb68da162ae3324eb438",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 55104,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_idle_neutral_01.fbx",
+    "target": "anim/f_idle_neutral_01.anim.gz",
+    "sourceBytes": 2959360,
+    "sourceSha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb",
+    "bytes": 73926,
+    "sha256": "768b23d241fdf41c45a1401507db1dbaf8c9cc19d539d20be31639a31a885f39",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 191224,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_idle_stretch_arms_01.fbx",
+    "target": "anim/f_idle_stretch_arms_01.anim.gz",
+    "sourceBytes": 2192688,
+    "sourceSha256": "731a81fb08987d4ff4adabdb2f205a90943fde19688d4bafafdd11178c43dcad",
+    "bytes": 76614,
+    "sha256": "86e1698c6478f7892e1d5c4e4f2297a963efb6cdfee7dd64ce52c07d6e2f5025",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 89954,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_chair_idle_neutral_01.fbx",
+    "target": "anim/f_sit_chair_idle_neutral_01.anim.gz",
+    "sourceBytes": 5562720,
+    "sourceSha256": "45a11c11fa22364eb0ea0a0f20c05771aeefa92a7fbe89361eed90e218e58abb",
+    "bytes": 187830,
+    "sha256": "26d93a9cff3013a9fcdf039e0a102d685114aefc2a96a883e65c4a185f959845",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 408934,
+      "maxError": 0.000005342066287994385
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_chair_idle_relaxed_01.fbx",
+    "target": "anim/f_sit_chair_idle_relaxed_01.anim.gz",
+    "sourceBytes": 6127488,
+    "sourceSha256": "4d7fa1f1fe8f2bd3bee686888cf0d123620b8c35bec2c9aff25d6cd5a8c63388",
+    "bytes": 256676,
+    "sha256": "f7c956bd102f0219bcac6667f4d2cb34cc7f26292ae82393d7e3fcf446c4abbb",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 460594,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_breathe_01.fbx",
+    "target": "anim/f_sit_table_breathe_01.anim.gz",
+    "sourceBytes": 3408608,
+    "sourceSha256": "ebd70602249742fa259e50ef8bcf33d499364d48d6896d929e4a1379c2b65597",
+    "bytes": 59418,
+    "sha256": "cd8184c57d3501468b35f7ab116244a94faf1184e7bee259b609432578c51653",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 236324,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_gestic_shrug_01.fbx",
+    "target": "anim/f_sit_table_gestic_shrug_01.anim.gz",
+    "sourceBytes": 1024144,
+    "sourceSha256": "05f9883101b3b05ad1b7195bbea8d280cc5748fc400c71cb8331439f3f3774a8",
+    "bytes": 11227,
+    "sha256": "4d480077abc2831766d0b1b79d52b3240d8bc55c0d9a4448a00391c16952b6ca",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 16564,
+      "maxError": 0.000004970468580722809
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_gestic_thoughtful.fbx",
+    "target": "anim/f_sit_table_gestic_thoughtful.anim.gz",
+    "sourceBytes": 2947024,
+    "sourceSha256": "c86ad99ffa89d8b89e04e3b8b51363ea01f96752cff298a119c7255534ed5d22",
+    "bytes": 111798,
+    "sha256": "cecbf006535d1049e46e873f74b2ff2362232aa7d695b663c9709abf6c891e2b",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 186222,
+      "maxError": 0.000005342066287994385
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_look_around.fbx",
+    "target": "anim/f_sit_table_idle_look_around.anim.gz",
+    "sourceBytes": 1735408,
+    "sourceSha256": "ff19db71ef6044218915d2561b81488f4399029e54bffafc8fd63444fe9f1aa4",
+    "bytes": 24157,
+    "sha256": "65c9b1d1737056199b08679e82d01b0cc8abdefc485667e5d0fd931888a153da",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 49364,
+      "maxError": 0.000005111098289489746
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_neutral_01.fbx",
+    "target": "anim/f_sit_table_idle_neutral_01.anim.gz",
+    "sourceBytes": 4516208,
+    "sourceSha256": "518e3790c39fbda5de67cbbec5f72d0b1f1912e988d3a56ed1944bef6062afaa",
+    "bytes": 134869,
+    "sha256": "5094e293185b293adbea3c879c3f01afaf19c42852b20f12095b7e8772e25d36",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 322834,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_neutral_02.fbx",
+    "target": "anim/f_sit_table_idle_neutral_02.anim.gz",
+    "sourceBytes": 3890336,
+    "sourceSha256": "ee99f393f04211b71251b489db5d17265e2050cd1783e24528ac098d898336f9",
+    "bytes": 98425,
+    "sha256": "06d057ec473701f792a291c3757b34d1e929e842f12b6c00d24a77441cfae619",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 273962,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_relaxed_01.fbx",
+    "target": "anim/f_sit_table_idle_relaxed_01.anim.gz",
+    "sourceBytes": 4759104,
+    "sourceSha256": "a7dbcae874c4964c64f19e21438b45214a8f059f2d89fbdf14b963b19898e70f",
+    "bytes": 174607,
+    "sha256": "d2cb7740808d48cddefc79026cf15008498042270f14da9409cf8c09a97db8d7",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 340382,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_roll_head.fbx",
+    "target": "anim/f_sit_table_idle_roll_head.anim.gz",
+    "sourceBytes": 2153328,
+    "sourceSha256": "6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014",
+    "bytes": 37604,
+    "sha256": "8317ae7dc3265d473232002395b5a3e727d2420fa33fd64035efb16ae3699eb0",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 87412,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_scratch_head.fbx",
+    "target": "anim/f_sit_table_idle_scratch_head.anim.gz",
+    "sourceBytes": 1539888,
+    "sourceSha256": "993a07de6338fdfabbb28cd65e2634a47461373da5b7952d653496e272e6fa5c",
+    "bytes": 35280,
+    "sha256": "abd37668cdd31742ca5a7ef424ef7712f9487d74245998a962cf362135c2720c",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 40262,
+      "maxError": 0.00000521540641784668
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_stretch_arms.fbx",
+    "target": "anim/f_sit_table_idle_stretch_arms.anim.gz",
+    "sourceBytes": 2280160,
+    "sourceSha256": "3815502ddf2b04054745515dd5091a3dbe7c180203e1fd2e1742eb934e7ceae3",
+    "bytes": 64838,
+    "sha256": "cba465a35df9981a6fd6b0c18ade4b332ac3c253eed85850e0a5485b68611d12",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 95202,
+      "maxError": 0.000005364418029785156
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_touch_face.fbx",
+    "target": "anim/f_sit_table_idle_touch_face.anim.gz",
+    "sourceBytes": 1592496,
+    "sourceSha256": "b5409ecdf1d28605c35c450297743024b7cca95c4549487ece17ad29607b84db",
+    "bytes": 44334,
+    "sha256": "28b955102af7c2cf0ba46b98eac3979f2b409e887379ea1ada8c2c412cf6bb00",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 53464,
+      "maxError": 0.000005230307579040527
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_touch_hair.fbx",
+    "target": "anim/f_sit_table_idle_touch_hair.anim.gz",
+    "sourceBytes": 1958544,
+    "sourceSha256": "2e89fa2557075fa24f6b92dad4d3991f9cca49b7645959e3d28674aa58abd36f",
+    "bytes": 62570,
+    "sha256": "aaf66dec424b55b740d82fcd62897d239a270366a292bab056662d3425c8ceb4",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 75522,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_waiting_01.fbx",
+    "target": "anim/f_sit_table_idle_waiting_01.anim.gz",
+    "sourceBytes": 4450896,
+    "sourceSha256": "047ee274ea779ee413dbe29515c1b422010906d0be30446bcf46eb4ae9ca76c3",
+    "bytes": 197262,
+    "sha256": "ca5d645cb8e8f53cbeddf750806bf2a0c80dc20109bfa7431cde2e9d8eebd301",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 314142,
+      "maxError": 0.000005364418029785156
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_sit_table_idle_yawn.fbx",
+    "target": "anim/f_sit_table_idle_yawn.anim.gz",
+    "sourceBytes": 2159248,
+    "sourceSha256": "542f467818fda7c5b6afe1e5256fa78decabd106e7d7241644499376a8b379a1",
+    "bytes": 53055,
+    "sha256": "eea9c48c8112c0c8174256a11f9923759e6e8582452c3bceb28bad7860f977f6",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 87822,
+      "maxError": 0.0000054193660616874695
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/f_walk_neutral_01.fbx",
+    "target": "anim/f_walk_neutral_01.anim.gz",
+    "sourceBytes": 993792,
+    "sourceSha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b",
+    "bytes": 9596,
+    "sha256": "ef059b183141982084f52d4377e7d54b12e9a2a082e0361b17bfc6e773eb66f7",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 14924,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_cell_phone_textmessage.fbx",
+    "target": "anim/m_cell_phone_textmessage.anim.gz",
+    "sourceBytes": 5693776,
+    "sourceSha256": "fe358efe720533691589b3f16d43bfb7719f51be7ae23abaa66459477fb4250b",
+    "bytes": 231790,
+    "sha256": "e1f493123b0a528d34551f50a8d74d06e64f772572b88242e5e4a6f3341c5bbb",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 424104,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_cheer_01.fbx",
+    "target": "anim/m_cheer_01.anim.gz",
+    "sourceBytes": 4390576,
+    "sourceSha256": "f71a32d4c4629817488855bbca36ce3c4112e8605cd90dcf84ba1726687f8d10",
+    "bytes": 263272,
+    "sha256": "af09684ce64f9717e4f0682811050befb29565e3478195dd303cf49f816cf56c",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 303072,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_cheer_03.fbx",
+    "target": "anim/m_cheer_03.anim.gz",
+    "sourceBytes": 1788592,
+    "sourceSha256": "93bee57cc1edfb9ccf45c530b144464a1fd55686724bb3b747fd12e3f513c4e7",
+    "bytes": 40624,
+    "sha256": "c8250ddd53dabc343ce4c1b7d53bf534662ef73ea6b48a049852b8f087e63ebc",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 51742,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_claphands_01.fbx",
+    "target": "anim/m_claphands_01.anim.gz",
+    "sourceBytes": 2133184,
+    "sourceSha256": "b1db818b9381e959e367d5ce23babf26c27b3f2cdc5540f0cd0b6bda1d8694bc",
+    "bytes": 76295,
+    "sha256": "e4840f58bc9e3f785f7c30f85d1b46b505db9794fcf24336d0175ff4714dddf5",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 86182,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_drink_idle.fbx",
+    "target": "anim/m_drink_idle.anim.gz",
+    "sourceBytes": 5229184,
+    "sourceSha256": "44a8183dd457dbbac3e56b8dc93dcec99eb26e9eb10c36d73987ab70beb1f2b2",
+    "bytes": 178039,
+    "sha256": "911ce025f8b820ea295a6c9ee7dc3aed31a0033a9e389d018aedff8c8114e125",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 386302,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_gestic_talk_excited_01.fbx",
+    "target": "anim/m_gestic_talk_excited_01.anim.gz",
+    "sourceBytes": 4669728,
+    "sourceSha256": "ce7638f6a36e6f49d81f7eeedae3b820eafa35025f6429cc92803155c76926d8",
+    "bytes": 301281,
+    "sha256": "c2f10b63d5c46a6f97da7e487aa2cdb504c3a2bd9cd5501fc15b560a2bdc975f",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 326442,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_gestic_talk_neutral_01.fbx",
+    "target": "anim/m_gestic_talk_neutral_01.anim.gz",
+    "sourceBytes": 5977648,
+    "sourceSha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8",
+    "bytes": 356557,
+    "sha256": "853d1d81e95d9f27849118390194d010f36b2fef0aba92acce2143d68c32df94",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 437552,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_gestic_talk_relaxed_01.fbx",
+    "target": "anim/m_gestic_talk_relaxed_01.anim.gz",
+    "sourceBytes": 5511856,
+    "sourceSha256": "560c369eeec15c56534cdd8a87bdebd76f365a783c43b473e879a1707721be07",
+    "bytes": 337221,
+    "sha256": "8ddd551d6a74a1b659b62d4e849f70d68559540ff167a43fbdb351a56c27ab12",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 397782,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_idle_look_around_01.fbx",
+    "target": "anim/m_idle_look_around_01.anim.gz",
+    "sourceBytes": 1651456,
+    "sourceSha256": "018b19ad26695c5ebbd4131e0506da69dc76f4001a8100a9e38fcdb9a202b7a4",
+    "bytes": 38843,
+    "sha256": "f2f5d38498c4cc497c05db093e89e4706fc27ab7b0fb9968534b4eb6a37f445b",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 57072,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_idle_neutral_01.fbx",
+    "target": "anim/m_idle_neutral_01.anim.gz",
+    "sourceBytes": 2418544,
+    "sourceSha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2",
+    "bytes": 74355,
+    "sha256": "7ae99b3ce5c9ab3bb1d9695bda7b2eed54dc97a29b06edc5be189a60eb3a6e7e",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 143664,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_idle_stretch_arms_01.fbx",
+    "target": "anim/m_idle_stretch_arms_01.anim.gz",
+    "sourceBytes": 2060592,
+    "sourceSha256": "7430dc57cd72500dd98403efe6c0da5395321e1ac4787007140687248708ee60",
+    "bytes": 71771,
+    "sha256": "fb323ff35db506267d219648dc4b5f3b66674892cc1290c3ca35d4c88db444dd",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 81672,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_chair_idle_neutral_01.fbx",
+    "target": "anim/m_sit_chair_idle_neutral_01.anim.gz",
+    "sourceBytes": 5868640,
+    "sourceSha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2",
+    "bytes": 189203,
+    "sha256": "ae0580335ec1cb12764495e86134b7d4624083d3c14de6e28da49592d7129543",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 444112,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_chair_idle_relaxed_01.fbx",
+    "target": "anim/m_sit_chair_idle_relaxed_01.anim.gz",
+    "sourceBytes": 5949808,
+    "sourceSha256": "f5d2ebb6c21e0067a9c9b065ff9d14f2ac3dba688b6eec9090b6e8f3af55e7d7",
+    "bytes": 206384,
+    "sha256": "6011b5df80255d2a3288345fe506efbc05a10e81b27bf2442af7203b6e4af1ed",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 447884,
+      "maxError": 0.0000152587890625
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_breathe_01.fbx",
+    "target": "anim/m_sit_table_breathe_01.anim.gz",
+    "sourceBytes": 2531376,
+    "sourceSha256": "29ad66f2da4242570c45ee90e2a20c28af88233720a4531a03981a7ee9cbf96a",
+    "bytes": 51890,
+    "sha256": "ca4799db5ed95075bd24035f9da6605ea4283d8a088fd472a517b544bab58277",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 156292,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_gestic_shrug_01.fbx",
+    "target": "anim/m_sit_table_gestic_shrug_01.anim.gz",
+    "sourceBytes": 1601936,
+    "sourceSha256": "d69cf86c90b0851c6ef1bd8372c35198020d2ccb57c08f9c9dc5985c9dc791c2",
+    "bytes": 18127,
+    "sha256": "b78d6838f38112fca77fbf6302f0a4669d7808e1c0075ef941aa90931fa8a266",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 43214,
+      "maxError": 0.000005245208740234375
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_gestic_thoughtful.fbx",
+    "target": "anim/m_sit_table_gestic_thoughtful.anim.gz",
+    "sourceBytes": 3168208,
+    "sourceSha256": "22e4baa64e1a09dfb3a3b4dda433300d21dad72a0e37ebe746c31fe6fe3c1242",
+    "bytes": 125362,
+    "sha256": "aaa9a96a8cded4c7de2ac3277068a6b8839e217cd041e4a714545a5dcf588d1c",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 205082,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_look_around.fbx",
+    "target": "anim/m_sit_table_idle_look_around.anim.gz",
+    "sourceBytes": 1983056,
+    "sourceSha256": "57e42e4619f531b979852ae9f08470fd73c02b9fa994c0b6410ce1cb77e8cb06",
+    "bytes": 45605,
+    "sha256": "fd7a4093ce33d2f1235a10771b3a5aa9c296d1001a8174bcd819ff8f3246c480",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 106764,
+      "maxError": 0.000005140900611877441
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_nervous_01.fbx",
+    "target": "anim/m_sit_table_idle_nervous_01.anim.gz",
+    "sourceBytes": 5712096,
+    "sourceSha256": "afe96e6cba1e0b141b4f14b397d0f5584ecc5d8dee44d25ea569de2d8ad643e9",
+    "bytes": 295774,
+    "sha256": "9de3a653c133d2e86e79e6b0ff6dbe27a225713a2affb804225c6bce32a5b9b1",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 417954,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_neutral_01.fbx",
+    "target": "anim/m_sit_table_idle_neutral_01.anim.gz",
+    "sourceBytes": 7189408,
+    "sourceSha256": "b0d32e673184f5907332ff5094518834cd838bd68591a410ce06298126a1815c",
+    "bytes": 241393,
+    "sha256": "24470484d16f7374b6f91211451fe47f2da86a8b91e9a9d6a5b6ef9657ea7b10",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 562274,
+      "maxError": 0.000005334615707397461
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_neutral_02.fbx",
+    "target": "anim/m_sit_table_idle_neutral_02.anim.gz",
+    "sourceBytes": 5960992,
+    "sourceSha256": "76eddd55dcfcee98e7849ec769d412f1d91d369b78502baf40eeae09bee8e71c",
+    "bytes": 198066,
+    "sha256": "fbba3284d2f6494a8966898ed2ef5e9edcdad10a468eaa0e0e8fcf48452aca7f",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 448294,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_relaxed_01.fbx",
+    "target": "anim/m_sit_table_idle_relaxed_01.anim.gz",
+    "sourceBytes": 7158896,
+    "sourceSha256": "f3c5f5d4b4f9a3fe9f6f103cf09f9fd898db4f06784129be9539f53ec1e6bcbd",
+    "bytes": 286198,
+    "sha256": "bc26774304c35ab79d405e9dde5b24504b3fe6ae5214aac6f50a44f1b17ee508",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 545382,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_roll_head.fbx",
+    "target": "anim/m_sit_table_idle_roll_head.anim.gz",
+    "sourceBytes": 2374048,
+    "sourceSha256": "8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d",
+    "bytes": 41827,
+    "sha256": "02d90df862f72943224738002298649cdd5bfbca5a14416806ed099991177365",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 100942,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_scratch_head.fbx",
+    "target": "anim/m_sit_table_idle_scratch_head.anim.gz",
+    "sourceBytes": 2133168,
+    "sourceSha256": "7525204a25d79960f45281dad1936f1592e41cc6623ee6180ed381fe69fda86f",
+    "bytes": 82350,
+    "sha256": "790cf9a86eb16838168433e5849baf5c5c8365be409f0e14bacdaf439a7596bf",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 116522,
+      "maxError": 0.00000537186861038208
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_touch_face.fbx",
+    "target": "anim/m_sit_table_idle_touch_face.anim.gz",
+    "sourceBytes": 2232720,
+    "sourceSha256": "b595f08d63da949b7f0d82cd2a945055744089b3023dc8533916e7566af8b5dd",
+    "bytes": 72459,
+    "sha256": "aec7c1b8f376b1ed39587252f746fd62e5bc2244082245bdbc72060d5b848ff7",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 92332,
+      "maxError": 0.0000053942203521728516
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_touch_hair.fbx",
+    "target": "anim/m_sit_table_idle_touch_hair.anim.gz",
+    "sourceBytes": 2414176,
+    "sourceSha256": "60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314",
+    "bytes": 78186,
+    "sha256": "33264b4ed57b4c4ba65bddd26c98dd01a69a92dd3b0a7337283cc9e19b68d3f3",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 103402,
+      "maxError": 0.00000527501106262207
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_waiting_01.fbx",
+    "target": "anim/m_sit_table_idle_waiting_01.anim.gz",
+    "sourceBytes": 5398576,
+    "sourceSha256": "b7453f9de0bbb6168f6df71b11fcf3813e5ab568fbf770ed846801592b72ba5e",
+    "bytes": 207377,
+    "sha256": "76b781da36e63dbd46fc08ec72074b31b04cc2f618d9a5bec4ddb4510ed60682",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 401062,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_sit_table_idle_yawn.fbx",
+    "target": "anim/m_sit_table_idle_yawn.anim.gz",
+    "sourceBytes": 2014752,
+    "sourceSha256": "7c4ce491a310a5e9bf6a1bf3affb747924206be1f03c229de4b90b45685e76e5",
+    "bytes": 53672,
+    "sha256": "c86c76822d0f07fb468287a231d1ee761729536079c06bc517e7e535a26c4487",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 78884,
+      "maxError": 0.00000762939453125
+    }
+  },
+  {
+    "kind": "animation",
+    "file": "office3d/assets/models/people/anim/m_walk_neutral_01.fbx",
+    "target": "anim/m_walk_neutral_01.anim.gz",
+    "sourceBytes": 994336,
+    "sourceSha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0",
+    "bytes": 8778,
+    "sha256": "7873f32d86666353b0276e002a021328d4846caec7f4f078e19a4b55ceb2b891",
+    "proof": {
+      "clips": 1,
+      "tracks": 82,
+      "samples": 14924,
+      "maxError": 0.0000152587890625
+    }
+  }
+]

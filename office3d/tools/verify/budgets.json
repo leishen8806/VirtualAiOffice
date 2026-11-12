@@ -1,0 +1,10 @@
+{
+  "warehouse": {
+    "high": { "calls": 250, "triangles": 250000 },
+    "low": { "calls": 100, "triangles": 100000 }
+  },
+  "office": {
+    "high": { "calls": 330, "triangles": 1400000 },
+    "low": { "calls": 100, "triangles": 320000 }
+  }
+}

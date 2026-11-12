@@ -1,0 +1,710 @@
+{
+  "baseline": "ebd884feed096bafc3f7ee70d05d75a341bb4286",
+  "seats": {
+    "Lead": [
+      "product",
+      14.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "PM": [
+      "product",
+      18,
+      -8.5,
+      3.141592653589793
+    ],
+    "Architect": [
+      "product",
+      14.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "UIUX": [
+      "product",
+      18,
+      -5.5,
+      3.141592653589793
+    ],
+    "FrontendSenior": [
+      "eng",
+      23.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "Frontend1": [
+      "eng",
+      26.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "Frontend2": [
+      "eng",
+      29.5,
+      -8.5,
+      3.141592653589793
+    ],
+    "BackendSenior": [
+      "eng",
+      23.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "Backend1": [
+      "eng",
+      26.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "Backend2": [
+      "eng",
+      29.5,
+      -5.5,
+      3.141592653589793
+    ],
+    "KnowledgeKeeper": [
+      "kb",
+      14.5,
+      -15,
+      1.5707963267948966
+    ],
+    "QAAutomation": [
+      "west-open",
+      -15,
+      -1,
+      0
+    ],
+    "Reviewer1": [
+      "west-open",
+      -12,
+      -1,
+      0
+    ],
+    "Reviewer2": [
+      "west-open",
+      -15,
+      2,
+      0
+    ],
+    "SecurityReviewer": [
+      "west-open",
+      -12,
+      2,
+      0
+    ],
+    "OpsLead": [
+      "west-open",
+      -25,
+      -1,
+      0
+    ],
+    "OpsEngineer": [
+      "west-open",
+      -21.5,
+      -1,
+      0
+    ],
+    "GoSenior": [
+      "drlife",
+      14.5,
+      6.5,
+      0
+    ],
+    "Go1": [
+      "drlife",
+      17,
+      6.5,
+      0
+    ],
+    "Go2": [
+      "drlife",
+      19.5,
+      6.5,
+      0
+    ],
+    "DBEngineer": [
+      "drlife",
+      22,
+      6.5,
+      0
+    ],
+    "LedgerAuditor": [
+      "drlife",
+      14.5,
+      9.5,
+      0
+    ],
+    "ReactSenior": [
+      "drlife",
+      17,
+      9.5,
+      0
+    ],
+    "React1": [
+      "drlife",
+      19.5,
+      9.5,
+      0
+    ],
+    "Localizer": [
+      "drlife",
+      22,
+      9.5,
+      0
+    ]
+  },
+  "homes": {
+    "Lead": {
+      "x": 14.5,
+      "z": -7.5,
+      "yaw": 0
+    },
+    "PM": {
+      "x": 18,
+      "z": -7.5,
+      "yaw": 0
+    },
+    "Architect": {
+      "x": 14.5,
+      "z": -4.5,
+      "yaw": 0
+    },
+    "UIUX": {
+      "x": 18,
+      "z": -4.5,
+      "yaw": 0
+    },
+    "FrontendSenior": {
+      "x": 23.5,
+      "z": -7.5,
+      "yaw": 0
+    },
+    "Frontend1": {
+      "x": 26.5,
+      "z": -7.5,
+      "yaw": 0
+    },
+    "Frontend2": {
+      "x": 29.5,
+      "z": -7.5,
+      "yaw": 0
+    },
+    "BackendSenior": {
+      "x": 23.5,
+      "z": -4.5,
+      "yaw": 0
+    },
+    "Backend1": {
+      "x": 26.5,
+      "z": -4.5,
+      "yaw": 0
+    },
+    "Backend2": {
+      "x": 29.5,
+      "z": -4.5,
+      "yaw": 0
+    },
+    "KnowledgeKeeper": {
+      "x": 14.5,
+      "z": -14,
+      "yaw": 0
+    },
+    "QAAutomation": {
+      "x": -15,
+      "z": 0,
+      "yaw": 0
+    },
+    "Reviewer1": {
+      "x": -12,
+      "z": 0,
+      "yaw": 0
+    },
+    "Reviewer2": {
+      "x": -15,
+      "z": 3,
+      "yaw": 0
+    },
+    "SecurityReviewer": {
+      "x": -12,
+      "z": 3,
+      "yaw": 0
+    },
+    "OpsLead": {
+      "x": -25,
+      "z": 0,
+      "yaw": 0
+    },
+    "OpsEngineer": {
+      "x": -21.5,
+      "z": 0,
+      "yaw": 0
+    },
+    "GoSenior": {
+      "x": 14.5,
+      "z": 7.5,
+      "yaw": 0
+    },
+    "Go1": {
+      "x": 17,
+      "z": 7.5,
+      "yaw": 0
+    },
+    "Go2": {
+      "x": 19.5,
+      "z": 7.5,
+      "yaw": 0
+    },
+    "DBEngineer": {
+      "x": 22,
+      "z": 7.5,
+      "yaw": 0
+    },
+    "LedgerAuditor": {
+      "x": 14.5,
+      "z": 10.5,
+      "yaw": 0
+    },
+    "ReactSenior": {
+      "x": 17,
+      "z": 10.5,
+      "yaw": 0
+    },
+    "React1": {
+      "x": 19.5,
+      "z": 10.5,
+      "yaw": 0
+    },
+    "Localizer": {
+      "x": 22,
+      "z": 10.5,
+      "yaw": 0
+    }
+  },
+  "displaySeats": [
+    {
+      "id": "market-1",
+      "region": "market",
+      "x": -26.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "market-2",
+      "region": "market",
+      "x": -24,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "market-3",
+      "region": "market",
+      "x": -21.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-1",
+      "region": "service",
+      "x": 25.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-2",
+      "region": "service",
+      "x": 28,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "service-3",
+      "region": "service",
+      "x": 30.5,
+      "z": -15,
+      "display": true
+    },
+    {
+      "id": "aftersales-1",
+      "region": "aftersales",
+      "x": -26.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "aftersales-2",
+      "region": "aftersales",
+      "x": -24,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "aftersales-3",
+      "region": "aftersales",
+      "x": -21.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-1",
+      "region": "marketing",
+      "x": 25.5,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-2",
+      "region": "marketing",
+      "x": 28,
+      "z": 8,
+      "display": true
+    },
+    {
+      "id": "marketing-3",
+      "region": "marketing",
+      "x": 30.5,
+      "z": 8,
+      "display": true
+    }
+  ],
+  "door": {
+    "x0": -1,
+    "x1": 5,
+    "z": 12,
+    "width": 6,
+    "height": 3.5
+  },
+  "bar": {
+    "center": {
+      "x": 2,
+      "z": -2
+    },
+    "radius": 6,
+    "seats": [
+      {
+        "id": "bar-seat-1",
+        "x": 6,
+        "z": -0.7
+      },
+      {
+        "id": "bar-seat-2",
+        "x": 4.5,
+        "z": 1.4
+      },
+      {
+        "id": "bar-seat-3",
+        "x": 2,
+        "z": 2.2
+      },
+      {
+        "id": "bar-seat-4",
+        "x": -0.5,
+        "z": 1.4
+      },
+      {
+        "id": "bar-seat-5",
+        "x": -2,
+        "z": -0.7
+      },
+      {
+        "id": "bar-seat-6",
+        "x": -2,
+        "z": -3.3
+      },
+      {
+        "id": "bar-seat-7",
+        "x": -0.5,
+        "z": -5.4
+      },
+      {
+        "id": "bar-seat-8",
+        "x": 2,
+        "z": -6.2
+      },
+      {
+        "id": "bar-seat-9",
+        "x": 4.5,
+        "z": -5.4
+      },
+      {
+        "id": "bar-seat-10",
+        "x": 6,
+        "z": -3.3
+      }
+    ],
+    "gaps": [
+      {
+        "side": "east",
+        "width": 1.5
+      },
+      {
+        "side": "west",
+        "width": 1.5
+      }
+    ]
+  },
+  "island": {
+    "center": {
+      "x": 2,
+      "z": -2
+    },
+    "radius": 6,
+    "diameter": 12,
+    "treeRadius": 1.2,
+    "barOuter": 3.5,
+    "stoolRadius": 4.2,
+    "sofaOuter": 5.45
+  },
+  "plaza": {
+    "center": {
+      "x": 2,
+      "z": 21
+    },
+    "radius": 9,
+    "diameter": 18,
+    "rings": 3,
+    "radialSeams": 8,
+    "steps": {
+      "x0": -2,
+      "x1": 6,
+      "z0": 11,
+      "z1": 12
+    },
+    "carts": [
+      {
+        "id": "food-cart-1",
+        "x": -9,
+        "z": 21
+      }
+    ],
+    "kiosks": [
+      {
+        "id": "kiosk-1",
+        "x": 13,
+        "z": 18
+      },
+      {
+        "id": "kiosk-2",
+        "x": 13,
+        "z": 21
+      },
+      {
+        "id": "kiosk-3",
+        "x": 13,
+        "z": 24
+      }
+    ],
+    "umbrellaTables": [
+      {
+        "x": -8,
+        "z": 15
+      },
+      {
+        "x": -8,
+        "z": 27
+      },
+      {
+        "x": 12,
+        "z": 15
+      },
+      {
+        "x": 12,
+        "z": 27
+      }
+    ],
+    "lamps": [
+      {
+        "x": -8.5,
+        "z": 16
+      },
+      {
+        "x": -9,
+        "z": 20
+      },
+      {
+        "x": -8.5,
+        "z": 25
+      },
+      {
+        "x": -5,
+        "z": 30
+      },
+      {
+        "x": 9,
+        "z": 30
+      },
+      {
+        "x": 12.5,
+        "z": 25
+      },
+      {
+        "x": 13,
+        "z": 20
+      },
+      {
+        "x": 12.5,
+        "z": 16
+      }
+    ],
+    "benches": [
+      {
+        "x": -7,
+        "z": 13.5
+      },
+      {
+        "x": -10,
+        "z": 23
+      },
+      {
+        "x": -6,
+        "z": 29.5
+      },
+      {
+        "x": 10,
+        "z": 29.5
+      },
+      {
+        "x": 14,
+        "z": 23
+      },
+      {
+        "x": 11,
+        "z": 13.5
+      }
+    ],
+    "flowerBands": [
+      {
+        "x": -8.5,
+        "z": 21
+      },
+      {
+        "x": 12.5,
+        "z": 21
+      },
+      {
+        "x": -4,
+        "z": 29
+      },
+      {
+        "x": 8,
+        "z": 29
+      }
+    ]
+  },
+  "deskSampleBefore": {
+    "group": {
+      "id": "real-desks-1",
+      "template": "real-workstation-island",
+      "workstationIds": [
+        "OpsLead",
+        "OpsEngineer"
+      ],
+      "memberIds": [
+        "real-desks-1-desk-divider-0",
+        "real-desks-1-planter-cabinet-1",
+        "real-desks-1-planter-cabinet-2",
+        "real-desks-1-planter-cabinet-3"
+      ],
+      "groupBounds": {
+        "x0": -26.17,
+        "x1": -20.33,
+        "z0": -1.47,
+        "z1": 0.30000000000000004
+      },
+      "useSpace": {
+        "x0": -25.7,
+        "x1": -20.8,
+        "z0": -0.65,
+        "z1": 0.30000000000000004
+      }
+    },
+    "placements": [
+      {
+        "id": "real-desks-1-desk-divider-0",
+        "groupId": "real-desks-1",
+        "kind": "desk-divider",
+        "x": -23.25,
+        "z": -1.43,
+        "w": 4.899999999999999,
+        "d": 0.08,
+        "height": 1.135,
+        "bounds": {
+          "x0": -25.7,
+          "x1": -20.8,
+          "z0": -1.47,
+          "z1": -1.39,
+          "y0": 0,
+          "y1": 1.135
+        },
+        "workstationIds": [
+          "OpsLead",
+          "OpsEngineer"
+        ]
+      },
+      {
+        "id": "real-desks-1-planter-cabinet-1",
+        "groupId": "real-desks-1",
+        "kind": "planter-cabinet",
+        "x": -25.945,
+        "z": -1,
+        "w": 0.45,
+        "d": 0.7,
+        "height": 1.25,
+        "bounds": {
+          "x0": -26.17,
+          "x1": -25.72,
+          "z0": -1.35,
+          "z1": -0.65,
+          "y0": 0,
+          "y1": 1.25
+        },
+        "workstationIds": [
+          "OpsLead",
+          "OpsEngineer"
+        ]
+      },
+      {
+        "id": "real-desks-1-planter-cabinet-2",
+        "groupId": "real-desks-1",
+        "kind": "planter-cabinet",
+        "x": -20.555,
+        "z": -1,
+        "w": 0.45,
+        "d": 0.7,
+        "height": 1.25,
+        "bounds": {
+          "x0": -20.78,
+          "x1": -20.33,
+          "z0": -1.35,
+          "z1": -0.65,
+          "y0": 0,
+          "y1": 1.25
+        },
+        "workstationIds": [
+          "OpsLead",
+          "OpsEngineer"
+        ]
+      },
+      {
+        "id": "real-desks-1-planter-cabinet-3",
+        "groupId": "real-desks-1",
+        "kind": "planter-cabinet",
+        "x": -23.25,
+        "z": -1,
+        "w": 1.1,
+        "d": 0.7,
+        "height": 1.25,
+        "bounds": {
+          "x0": -23.8,
+          "x1": -22.7,
+          "z0": -1.35,
+          "z1": -0.65,
+          "y0": 0,
+          "y1": 1.25
+        },
+        "workstationIds": [
+          "OpsLead",
+          "OpsEngineer"
+        ]
+      }
+    ]
+  }
+}

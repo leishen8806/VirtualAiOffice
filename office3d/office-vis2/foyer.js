@@ -1,7 +1,12 @@
+import { addPlan1Equipment } from './plan1-furniture.js'
 import { LAYOUT_V3 } from '../office-layout.js'
 import { createSampleBatch } from './batch.js'
+import { officePlan1Reception } from '../office-plan1-layout.js'
+import { officePlan1Phase } from '../office-plan1-layout.js'
 
-export function receptionBackdrop(front) {
+export function receptionBackdrop(front, layout) {
+  const wall = layout && officePlan1Reception(layout)?.wall
+  if (wall) return { ...wall, top:wall.height, grille:{height:wall.height,depth:0,faceZ:wall.z1} }
   return { x0: front.x0 + .35, x1: front.x1 - .35, z0: front.z0 - .45, z1: front.z0 - .29, top: 2.35,
     grille: { height: 2.3, depth: .045, faceZ: front.z0 - .29 + .04 + .045 / 2 } }
 }
@@ -31,9 +36,11 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
   box(.055, .018, .08, '#9A968E', front.center.x + 1.53, 1.182, front.center.z - .4, .6)
   box(.36, .018, .25, '#B7C2B4', front.center.x - 1.5, 1.179, front.center.z, .95)
   box(.31, .025, .22, '#F4F1EA', front.center.x - 1.5, 1.2, front.center.z, .9)
-  const backdrop = receptionBackdrop(front), grille = backdrop.grille
+  const backdrop = receptionBackdrop(front, layout), grille = backdrop.grille
+  if (!layout.walls?.reception) {
   box(backdrop.x1 - backdrop.x0, backdrop.top, .16, '#D9D3C6', front.center.x, backdrop.top / 2, (backdrop.z0 + backdrop.z1) / 2, .75)
   for (let i = 0; i < 14; i++) box(.055, grille.height, grille.depth, '#C9A57A', front.x0 + .5 + i * (front.x1 - front.x0 - 1) / 13, grille.height / 2, grille.faceZ - grille.depth / 2, .65, 0, 'wood')
+  }
   const bw = bar.x1 - bar.x0, bd = bar.z1 - bar.z0
   box(bw, .85, bd * .55, '#C9A57A', bar.center.x, .5, bar.center.z, .65, 0, 'wood')
   box(bw + .02, .07, bd * .58, '#F4F1EA', bar.center.x, .96, bar.center.z, .35, 0, 'stone')
@@ -43,9 +50,12 @@ export function buildOfficeFoyerFurniture({ THREE, root, layout = LAYOUT_V3, ass
     batch.add(new THREE.CylinderGeometry(.065, .065, .16, 10), '#F4F1EA', [bar.center.x + offset, y + .11, bar.z0 + .18], 0, .4)
   }
   for (const x of [bar.x0 + .12, bar.x1 - .12]) box(.04, 1.15, .04, '#B89B64', x, 1.47, bar.z0 + .18, .35, .6)
+  if(officePlan1Phase(layout) === 'L2') addPlan1Equipment(THREE,batch,'southCafe')
+  else {
   box(.55, .4, .38, '#26333A', bar.center.x, 1.2, bar.center.z, .35, .6)
   box(.58, .035, .43, '#9A968E', bar.center.x, 1.015, bar.center.z, .3, .7)
   for (const offset of [-.9, -.62, .65, .92]) batch.add(new THREE.CylinderGeometry(.07, .06, .13, 10), '#F4F1EA', [bar.center.x + offset, 1.06, bar.center.z + .22], 0, .35)
+  }
   for (const x of [bar.x0 + .5, bar.x1 - .5]) {
     batch.add(new THREE.CylinderGeometry(.42, .42, .06, 24), '#F4F1EA', [x, .73, layout.foyer.z1 - 1.4], 0, .4)
     batch.add(new THREE.CylinderGeometry(.04, .06, .67, 8), '#B89B64', [x, .37, layout.foyer.z1 - 1.4], 0, .35, .7)

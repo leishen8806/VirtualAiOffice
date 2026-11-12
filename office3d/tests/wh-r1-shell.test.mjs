@@ -1,0 +1,210 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { readFileSync } from 'node:fs'
+import { resolvePlaceMode } from '../place-mode.js'
+import { WH_R1_DATA } from '../wh-r1/data.js'
+import { WH_R1_DOORS, WH_R1_SHELL_SPEC, WH_R1_WALLS } from '../dr-wh-r1-shell.js'
+import { WH_R1_BUILDING, WH_R1_SITE, WH_R1_ZONES, WH_R1_ZONE_SOURCE_OVERRIDES } from '../dr-wh-r1-zones.js'
+import { whZoneToWorld } from '../wh-r1-layout.js'
+import { buildWhR1Shell } from '../dr-wh-r1-shell.js'
+import { hideCampusEnvironment, inspectEnvironmentMeshes } from '../dr-campus-shell.js'
+import { createSceneQuality } from '../quality.js'
+import * as THREE from '../vendor/three/three.module.js'
+
+const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) <= .005, `${message}: ${actual} !== ${expected}`)
+const intervalsOverlap = (a0, a1, b0, b1) => Math.min(a1, b1) > Math.max(a0, b0) + .001
+
+test('WH-R1 I2 keeps the registered 34 walls, 68 faces and 19 door openings', () => {
+  assert.equal(WH_R1_WALLS.length, 34)
+  assert.equal(WH_R1_SHELL_SPEC.wallFaces.length, 68)
+  assert.equal(WH_R1_DOORS.length, 19)
+  assert.equal(new Set(WH_R1_WALLS.map((wall) => wall.id)).size, 34)
+  assert.equal(new Set(WH_R1_DOORS.map((door) => door.id)).size, 19)
+  for (const face of WH_R1_SHELL_SPEC.wallFaces) assert.ok(WH_R1_WALLS.some((wall) => wall.id === face.wallId), face.id)
+})
+
+test('WH-R1 I2 converts registered wall endpoints and preserves every door gap', () => {
+  near(WH_R1_WALLS[0].endpoints[0].x, -231.86, 'first wall x')
+  near(WH_R1_WALLS[0].endpoints[0].z, -17.86, 'first wall z')
+  for (const door of WH_R1_DOORS) {
+    const horizontal = Math.abs(Math.sin(door.yaw)) < .01
+    for (const wall of WH_R1_WALLS) {
+      const [a, b] = wall.endpoints
+      const wallHorizontal = Math.abs(a.z - b.z) < .005
+      if (horizontal !== wallHorizontal) continue
+      if (horizontal && Math.abs(a.z - door.z) < .005) {
+        assert.equal(intervalsOverlap(Math.min(a.x, b.x), Math.max(a.x, b.x), door.x - door.width / 2, door.x + door.width / 2), false, `${door.id} overlaps ${wall.id}`)
+      }
+      if (!horizontal && Math.abs(a.x - door.x) < .005) {
+        assert.equal(intervalsOverlap(Math.min(a.z, b.z), Math.max(a.z, b.z), door.z - door.width / 2, door.z + door.width / 2), false, `${door.id} overlaps ${wall.id}`)
+      }
+    }
+  }
+})
+
+test('WH-R1 I2 uses independent site and exact zone bounds', () => {
+  assert.deepEqual(WH_R1_SITE, { x0: -238, x1: -72, z0: -74, z1: 42, width: 166, depth: 116 })
+  assert.deepEqual(WH_R1_BUILDING, { x0: -232, x1: -144, z0: -18, z1: 30, width: 88, depth: 48 })
+  assert.equal(WH_R1_ZONES.length, 14)
+  for (const zone of WH_R1_ZONES) {
+    const source = WH_R1_DATA.zones.find((item) => item.id === zone.id)
+    assert.deepEqual([zone.x0, zone.x1, zone.z0, zone.z1], whZoneToWorld(WH_R1_ZONE_SOURCE_OVERRIDES[zone.id] || source.sourceBboxM), zone.id)
+  }
+})
+
+test('WH-R1 I2 activates only the unique whr1=1 warehouse and campus entries', () => {
+  const warehouse = resolvePlaceMode('?place=drlife-warehouse&whr1=1')
+  assert.equal(warehouse.whr1, true)
+  assert.equal(warehouse.place, 'dr')
+  assert.deepEqual(warehouse.miniBounds, WH_R1_SITE)
+  assert.equal(resolvePlaceMode('?campus=1&whr1=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1&whr1=1').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=0').whr1, undefined)
+})
+
+test('WH-R1 walls retain their IDs and face maps through the full scene static merge', async () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  scene.add(root)
+  buildWhR1Shell({ THREE, root, quality: { tier: 'low' } })
+  const source = readFileSync(new URL('../merge.js', import.meta.url), 'utf8').replace("from 'three'", `from '${new URL('../vendor/three/three.module.js', import.meta.url).href}'`)
+  const { mergeStatic } = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+  mergeStatic(scene, undefined)
+  const walls = []
+  scene.traverse((object) => { if (object.userData?.whR1Id && object.name.startsWith('wh-r1-wall-')) walls.push(object) })
+  assert.equal(walls.length, 34)
+  assert.deepEqual(new Set(walls.map((wall) => wall.userData.whR1Id)), new Set(WH_R1_WALLS.map((wall) => wall.id)))
+  assert.deepEqual(new Set(walls.flatMap((wall) => wall.userData.faceIds)), new Set(WH_R1_SHELL_SPEC.wallFaces.map((face) => face.id)))
+  const surfaces = scene.getObjectByName('wh-r1-walls-visible')
+  assert.equal(surfaces.count, 34); assert.deepEqual(surfaces.userData.instanceToRegisterId, WH_R1_WALLS.map((wall) => wall.id))
+  assert.equal(new Set(surfaces.userData.faceIds).size, 68); assert.equal(walls.every((wall) => wall.material.visible === false), true)
+})
+
+test('WH-R1 step 0 retains all 19 door panel IDs through the full scene static merge', async () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  scene.add(root)
+  buildWhR1Shell({ THREE, root, quality: { tier: 'low' } })
+  const source = readFileSync(new URL('../merge.js', import.meta.url), 'utf8').replace("from 'three'", `from '${new URL('../vendor/three/three.module.js', import.meta.url).href}'`)
+  const { mergeStatic } = await import(`data:text/javascript,${encodeURIComponent(source)}`)
+  mergeStatic(scene, undefined)
+  const doors = []
+  scene.traverse((object) => { if (object.name === 'wh-r1-door-panels' && object.userData?.whR1DoorIds) doors.push(object) })
+  assert.equal(doors.length, 1)
+  assert.equal(doors[0].count, 19)
+  assert.deepEqual(new Set(doors[0].userData.whR1DoorIds), new Set(WH_R1_DOORS.map((door) => door.id)))
+  assert.deepEqual(doors[0].userData.instanceToRegisterId, WH_R1_DOORS.map((door) => door.id))
+  assert.equal(doors[0].userData.noMerge, true); assert.equal(doors[0].userData.collisionProxy, false)
+})
+
+test('WH-R1 environment inventory includes and hides sphere crowns within the site only', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group(), crown = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
+  const outside = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
+  crown.name = 'north-garden-crown'; crown.position.set(-123, 1, 8)
+  outside.name = 'outside-crown'; outside.position.set(-60, 1, 8)
+  crown.castShadow = true; outside.castShadow = true
+  scene.add(root, crown, outside)
+  assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === crown), true)
+  const prior = globalThis.location
+  globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
+  try { assert.equal(hideCampusEnvironment(THREE, scene, root)['north-garden-crown'], 1) }
+  finally { globalThis.location = prior }
+  assert.equal(crown.visible, false); assert.equal(outside.visible, true); assert.equal(crown.castShadow, false); assert.equal(outside.castShadow, false)
+})
+
+test('WH-R1 hides the complete tower group but preserves sky and very large world planes', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const tower = new THREE.Group(); tower.position.set(-150, -.6, 40)
+  const hill = new THREE.Mesh(new THREE.SphereGeometry(30, 8, 4), new THREE.MeshBasicMaterial()); hill.name = 'tower-hill'
+  const body = new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(1, 2)], 8), new THREE.MeshBasicMaterial()); body.name = 'tower-body'; body.position.y = 13.4
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(.6, 4, 8), new THREE.MeshBasicMaterial()); tip.name = 'tower-tip'; tip.position.y = 36.9
+  tower.add(hill, body, tip)
+  const sky = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial()); sky.isSky = true; sky.scale.setScalar(3000)
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshBasicMaterial()); ground.rotation.x = -Math.PI / 2; ground.position.y = -.62
+  const small = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); small.name = 'whr1-small-object'; small.position.set(-180, 1, 0)
+  scene.add(root, tower, sky, ground, small)
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&whr1=1' }
+  try {
+    const hidden = hideCampusEnvironment(THREE, scene, root)
+    assert.equal(hidden['tower-body'], 1)
+    assert.equal(hidden['tower-tip'], 1)
+    assert.equal(hill.visible, false); assert.equal(body.visible, false); assert.equal(tip.visible, false)
+    assert.equal(sky.visible, true); assert.equal(ground.visible, true)
+    assert.equal(small.visible, false)
+    assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === sky), false)
+    assert.equal(inspectEnvironmentMeshes(THREE, scene, root, WH_R1_SITE).some((item) => item.object === ground), false)
+  } finally { globalThis.location = prior }
+})
+
+test('non WH-R1 hidden environment type counts remain exact', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const geometries = [
+    ...Array.from({ length: 10 }, () => new THREE.BoxGeometry()),
+    new THREE.SphereGeometry(), new THREE.LatheGeometry([new THREE.Vector2(0, 0), new THREE.Vector2(1, 1)], 8),
+    new THREE.ConeGeometry(1, 1), ...Array.from({ length: 11 }, () => new THREE.IcosahedronGeometry()),
+    new THREE.CylinderGeometry(), ...Array.from({ length: 14 }, () => new THREE.CircleGeometry()),
+  ]
+  for (const geometry of geometries) scene.add(new THREE.Mesh(geometry, new THREE.MeshBasicMaterial()))
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
+  try {
+    assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), {
+      BoxGeometry: 10, SphereGeometry: 1, LatheGeometry: 1, ConeGeometry: 1,
+      IcosahedronGeometry: 11, CylinderGeometry: 1, CircleGeometry: 14,
+    })
+  } finally { globalThis.location = prior }
+})
+
+test('non WH-R1 environment shadow state remains unchanged', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group(), tree = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial())
+  tree.position.set(0, 1, 0); tree.castShadow = true; scene.add(root, tree)
+  const prior = globalThis.location; globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
+  try { hideCampusEnvironment(THREE, scene, root) } finally { globalThis.location = prior }
+  assert.equal(tree.castShadow, true)
+})
+
+test('CMP-868 low quality replaces the world grass source, explaining hidden 20 versus high 19', () => {
+  const scene = new THREE.Scene(), sources = []
+  for (let index = 1; index <= 19; index++) {
+    const clutter = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial())
+    clutter.name = `whr1-hidden-${index}`; clutter.visible = false; scene.add(clutter); sources.push(clutter)
+  }
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshStandardMaterial())
+  ground.name = 'world-grass-2400x2400'; ground.rotation.x = -Math.PI / 2; ground.position.y = -.62; scene.add(ground); sources.push(ground)
+  const sky = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.ShaderMaterial())
+  sky.name = 'world-sky'; sky.scale.setScalar(3000); scene.add(sky); sources.push(sky)
+  const quality = createSceneQuality(THREE, {
+    scene,
+    renderer: { shadowMap: {}, compile() {} },
+    camera: new THREE.PerspectiveCamera(),
+    env: { setQuality() {} },
+    characters: () => [],
+    mergeStatic: () => ({ removed: 0, added: 0 }),
+  })
+  const hidden = () => sources.filter((item) => !item.visible).map((item) => item.name)
+  quality.prepare('high')
+  const high = hidden()
+  quality.activate('low')
+  const low = hidden()
+  assert.equal(high.length, 19)
+  assert.equal(low.length, 20)
+  assert.deepEqual(low.filter((name) => !high.includes(name)), ['world-grass-2400x2400'])
+  assert.equal(sky.visible, true, 'shader sky is not a low-quality proxy source')
+  assert.ok(scene.getObjectByName('quality-low').children.some((mesh) => mesh.userData.source === ground), 'visible low proxy replaces the hidden grass source')
+  quality.activate('high')
+  assert.equal(ground.visible, true)
+})
+
+test('CMP-868 keeps the non-WH-R1 point-based environment hide rule exact', () => {
+  const scene = new THREE.Scene(), root = new THREE.Group()
+  const inside = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+  const outside = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+  const enclosing = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial())
+  inside.name = 'inside'; outside.name = 'outside'; enclosing.name = 'enclosing'
+  inside.position.set(0, 0, 0); outside.position.set(3, 0, 0); enclosing.position.set(0, 0, 0)
+  scene.add(root, inside, outside, enclosing)
+  const prior = globalThis.location
+  globalThis.location = { search: '?place=drlife-warehouse&legacy=drcampus' }
+  try {
+    assert.deepEqual(hideCampusEnvironment(THREE, scene, root, { x0: -1, x1: 1, z0: -1, z1: 1 }), { inside: 1, enclosing: 1 })
+  } finally { globalThis.location = prior }
+  assert.equal(inside.visible, false); assert.equal(enclosing.visible, false); assert.equal(outside.visible, true)
+})
+

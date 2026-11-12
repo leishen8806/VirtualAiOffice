@@ -1,6 +1,19 @@
+import { buildWhR1Shell } from './dr-wh-r1-shell.js'
+import { buildWhR1Zones } from './dr-wh-r1-zones.js'
+import { buildWhR1Site } from './dr-wh-r1-site.js'
+import { buildWhR1Racks } from './dr-wh-r1-racks.js'
+import { buildWhR1Workflow } from './dr-wh-r1-workflow.js'
+import { buildWhR1Vehicles } from './dr-wh-r1-vehicles.js'
+import { buildWhR1Front } from './dr-wh-r1-front.js'
+import { buildWhR1Validation } from './dr-wh-r1-validation.js'
+import { buildWhR1Inspector } from './dr-wh-r1-inspector.js'
+import { buildWhR1Staff } from './dr-wh-r1-staff.js'
+import { buildWhR1Live1 } from './dr-wh-r1-live1.js'
+import { whR1Requested } from './place-mode.js'
+
 const shape = geometry => Object.keys(geometry.attributes).filter(name => name !== 'color').sort().map(name => `${name}${geometry.attributes[name].itemSize}`).join(',')
 const isDynamic = object => { for (let node = object; node; node = node.parent) if (node.userData.dynamic) return true; return false }
-const isMergeable = mesh => mesh.isMesh && !mesh.isSkinnedMesh && !mesh.morphTargetInfluences && mesh.geometry?.attributes?.position && !Array.isArray(mesh.material) && !mesh.material?.map && !isDynamic(mesh)
+const isMergeable = mesh => mesh.isMesh && !mesh.isSkinnedMesh && !mesh.morphTargetInfluences && mesh.geometry?.attributes?.position && !Array.isArray(mesh.material) && !mesh.material?.map && !mesh.userData.noMerge && !isDynamic(mesh)
 
 function bake(THREE, root, items) {
   const signature = shape(items[0].mesh.geometry)
@@ -36,7 +49,6 @@ function bake(THREE, root, items) {
   merged.setIndex(new THREE.BufferAttribute(index, 1)); merged.computeBoundingBox(); merged.computeBoundingSphere()
   return merged
 }
-
 const addItems = (THREE, mesh, items) => {
   if (mesh.isInstancedMesh) {
     const matrix = new THREE.Matrix4(), color = new THREE.Color(1, 1, 1)
@@ -74,7 +86,8 @@ export function mergeCampusStatic(THREE, root) {
 
 export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const root = new THREE.Group()
-  root.name = 'campus-root'
+  const whr1 = whR1Requested(globalThis.location?.search)
+  root.name = whr1 ? 'wh-r1-root' : 'campus-root'
   const modules = new Map(), built = new Map(), skipped = []
   let merged = { removed: 0, added: 0 }, disposeMerged = () => {}
   let lastFrame = null, frameHook = null, previousFrame = null
@@ -87,13 +100,17 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
       try { value.onFrame(dt, context) } catch { stopped.add(name) }
     }
   }
-  const register = (name, factory) => { modules.set(name, factory); return root }
+  const register = (name, factory) => { if (!whr1) modules.set(name, factory); return root }
   const buildAll = (shared = {}) => {
     scene.add(root)
-    for (const [name, factory] of modules) {
-      try { built.set(name, factory({ THREE, root, layout, now, ...shared }) || {}) }
+    const sources = whr1
+      ? [['wh-r1-shell', buildWhR1Shell], ['wh-r1-zones', buildWhR1Zones], ['wh-r1-site', buildWhR1Site], ['wh-r1-racks', buildWhR1Racks], ['wh-r1-workflow', buildWhR1Workflow], ['wh-r1-live1', buildWhR1Live1], ['wh-r1-vehicles', buildWhR1Vehicles], ['wh-r1-front', buildWhR1Front], ['wh-r1-validation', buildWhR1Validation], ['wh-r1-inspector', buildWhR1Inspector], ['wh-r1-staff', buildWhR1Staff]]
+      : modules
+    for (const [name, factory] of sources) {
+      try { built.set(name, factory({ THREE, root, layout, now, navigation: built.get('wh-r1-validation')?.navigation, ...shared }) || {}) }
       catch (error) { skipped.push({ name, error: String(error?.message || error) }); console.warn(`[campus:${name}] 已跳过：${error.message}`) }
     }
+    built.get('wh-r1-live1')?.bindRuntime?.({ staff: built.get('wh-r1-staff'), vehicles: built.get('wh-r1-vehicles') })
     merged = mergeCampusStatic(THREE, root); disposeMerged = merged.dispose
     if (!frameHook && [...built.values()].some(value => value.onFrame)) {
       previousFrame = scene.onBeforeRender
@@ -116,5 +133,12 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
     disposeMerged(); for (const value of built.values()) value.dispose?.(); built.clear(); root.removeFromParent()
   }
   const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged, motion: built.get('motion')?.summary?.() || null })
-  return { root, register, buildAll, dispose, summary, onFrame }
+  const module = name => built.get(name) || null
+  const inspectWhR1 = id => module('wh-r1-inspector')?.inspect?.(id) || null
+  const enableWhR1Picking = ids => module('wh-r1-inspector')?.enablePicking?.(ids) || null
+  const disableWhR1Picking = () => module('wh-r1-inspector')?.disablePicking?.()
+  const pickWhR1 = ray => module('wh-r1-staff')?.pickRay?.(ray) || module('wh-r1-inspector')?.pickRay?.(ray) || null
+  const toggleWhR1Zones = value => module('wh-r1-zones')?.setOverlay?.(value)
+  const whR1ZonesVisible = () => module('wh-r1-zones')?.overlayVisible?.() || false
+  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking, pickWhR1, toggleWhR1Zones, whR1ZonesVisible }
 }

@@ -27,10 +27,10 @@ test('place navigation maps both locations and their professional workbenches', 
   assert.equal(placeIdForLandmark('dr-logistics-campus'), 'drlife-warehouse')
   assert.equal(
     PLACE_NAVIGATION.office.placeHref,
-    '/?place=drlife-office&layout=3',
+    '/?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
   assert.equal(PLACE_NAVIGATION.office.workbenchHref, '/command-view.html')
-  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?place=drlife-warehouse')
+  assert.equal(PLACE_NAVIGATION.dr.placeHref, '/?place=drlife-warehouse&whr1=1')
   assert.equal(PLACE_NAVIGATION.dr.workbenchHref, '/dr-console.html')
   assert.equal(currentPlace({ pathname: '/command-view.html', search: '' }).id, 'office')
   assert.equal(currentPlace({ pathname: '/', search: '?campus=1&place=dr' }).id, 'dr')
@@ -86,7 +86,7 @@ test('place bar renders canonical place hrefs', () => {
     officeLinks.map((link) => [link.textContent, link.href]),
     [
       ['返回小镇', '/town.html'],
-      ['前往DR 仓配服务中心', '/?place=drlife-warehouse'],
+      ['前往DR 仓配服务中心', '/?place=drlife-warehouse&whr1=1'],
       ['AI 团队指挥中心', '/command-view.html'],
     ],
   )
@@ -102,7 +102,7 @@ test('place bar renders canonical place hrefs', () => {
     warehouseLinks.map((link) => [link.textContent, link.href]),
     [
       ['返回小镇', '/town.html'],
-      ['前往智序工场·办公室', '/?place=drlife-office&layout=3'],
+      ['前往智序工场·办公室', '/?place=drlife-office&layout=3&align=1&officeSample=1&r1=1'],
       ['仓配调度中心', '/dr-console.html'],
     ],
   )
@@ -117,7 +117,7 @@ test('town navigation switch fails closed and emits only a boolean client config
   assert.equal(townNavEnabled({ enabled: true }), true)
   assert.equal(townNavClientScript(false), 'globalThis.__TOWN_NAV__=Object.freeze({enabled:false})\n')
   assert.equal(townNavClientScript(true), 'globalThis.__TOWN_NAV__=Object.freeze({enabled:true})\n')
-  assert.deepEqual(JSON.parse(read('town-nav.json')), { enabled: false })
+  assert.deepEqual(JSON.parse(read('tests/fixtures/disabled-features/town-nav.json')), { enabled: false })
 })
 
 test('disabled place bar performs zero DOM work', () => {
@@ -159,7 +159,7 @@ test('town markers stay visible and navigable independently of town-nav switch',
   const source = read('town.js')
   const html = read('town.html')
   const map = read('town-map.mjs')
-  assert.deepEqual(JSON.parse(read('town-nav.json')), { enabled: false })
+  assert.deepEqual(JSON.parse(read('tests/fixtures/disabled-features/town-nav.json')), { enabled: false })
   assert.doesNotMatch(html, /town-nav-config|__TOWN_NAV__/)
   assert.doesNotMatch(source, /town-nav-config|__TOWN_NAV__|townNavEnabled/)
   assert.match(map, /id: 'office-zixu-workshop'/)

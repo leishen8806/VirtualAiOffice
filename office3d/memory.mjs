@@ -283,25 +283,49 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
     } catch { error = '月度清单生成或提醒失败，请人工核对'; return { error } }
     finally { busy = false }
   }
-  async function context() {
-    const [a, i, p] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/projects`)])
+  async function context({ feedback = false } = {}) {
+    const current = now()
+    const since = db.feedbackSince || new Date(current - 7 * DAY).toISOString()
+    const issuesPath = feedback
+      ? `/api/companies/${company}/issues?updatedSince=${encodeURIComponent(since)}`
+      : `/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`
+    const [a, i, p] = await Promise.all([get(`/api/companies/${company}/agents`), get(issuesPath), get(`/api/companies/${company}/projects`)])
     return { agents: rows(a, 'agents'), issues: rows(i, 'issues'), projects: rows(p, 'projects') }
   }
   async function collectFeedback(ctx) {
     const allowed = new Set(approved.map(e => e.path))
-    for (const issue of ctx.issues) {
-      const comments = rows(await get(`/api/issues/${issue.id}/comments`), 'comments')
-      for (const c of comments) {
-        const body = String(c.body || ''), id = c.id || digest(`${c.createdAt || ''}|${c.authorAgentId || ''}|${body}`)
-        for (const m of body.matchAll(/[【［\[(（]记忆库反馈[】］\])）]\s*[:：]?\s*(有用|没用)\s*[:：]?\s*(记忆[\\/][^\r\n]*?\.md)/g)) {
-          const p = m[2].trim().replaceAll('\\', '/'), key = digest(`${issue.id}|${id}|${p}|${m[1]}`)
-          if (p !== path.posix.normalize(p) || !allowed.has(p) || db.feedbackSeen[key]) continue
-          assertEnabled()
-          const stat = db.entryStats[p] ||= {}, field = m[1] === '有用' ? 'useful' : 'useless'
-          stat[field] = (stat[field] || 0) + 1; db.feedbackSeen[key] = true
+    db.feedbackCursor ||= {}
+    db.feedbackRetryAt ||= {}
+    const current = now()
+    // Older Paperclip rows without updatedAt cannot be incrementally marked, so poll them at the existing five-minute cadence.
+    const marker = issue => issue.updatedAt || `__poll_${Math.floor(current / 300000)}`
+    const pending = ctx.issues.filter(issue => db.feedbackCursor[issue.id] !== marker(issue) && (db.feedbackRetryAt[issue.id] || 0) <= current).slice(0, 20)
+    let cursor = 0
+    const scan = async () => {
+      while (cursor < pending.length) {
+        const issue = pending[cursor++]
+        try {
+          const comments = rows(await get(`/api/issues/${issue.id}/comments`), 'comments')
+          for (const c of comments) {
+            const body = String(c.body || ''), id = c.id || digest(`${c.createdAt || ''}|${c.authorAgentId || ''}|${body}`)
+            for (const m of body.matchAll(/[【［\[(（]记忆库反馈[】］\])）]\s*[:：]?\s*(有用|没用)\s*[:：]?\s*(记忆[\\/][^\r\n]*?\.md)/g)) {
+              const p = m[2].trim().replaceAll('\\', '/'), key = digest(`${issue.id}|${id}|${p}|${m[1]}`)
+              if (p !== path.posix.normalize(p) || !allowed.has(p) || db.feedbackSeen[key]) continue
+              assertEnabled()
+              const stat = db.entryStats[p] ||= {}, field = m[1] === '有用' ? 'useful' : 'useless'
+              stat[field] = (stat[field] || 0) + 1; db.feedbackSeen[key] = true
+            }
+          }
+          db.feedbackCursor[issue.id] = marker(issue)
+          delete db.feedbackRetryAt[issue.id]
+        } catch {
+          db.feedbackRetryAt[issue.id] = current + 30 * 60000
         }
       }
     }
+    await Promise.all([scan(), scan()])
+    const updated = pending.map(issue => Date.parse(issue.updatedAt || '')).filter(Number.isFinite)
+    if (updated.length) db.feedbackSince = new Date(Math.max(...updated) - 1).toISOString()
     db.lastFeedbackAt = now(); assertEnabled(); save(); refreshEntries()
   }
   async function candidate(raw, ctx) {
@@ -335,7 +359,7 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
       const ctx = await context()
       if (!dutyOn()) return view()
       let count = 0
-      if (approved.length && now() - (db.lastFeedbackAt || 0) >= 300000) await collectFeedback(ctx)
+      if (approved.length && now() - (db.lastFeedbackAt || 0) >= 300000) await collectFeedback(await context({ feedback: true }))
       const month = today(now()).slice(0, 7)
       if (today(now()).endsWith('-01') && !db.monthlyLists.some(r => r.month === month)) writeMonthly()
       const monthlyRecord = db.monthlyLists.find(r => r.month === month && !r.notified)
@@ -399,7 +423,7 @@ export function createMemory({ dir, kbDir, company, get, send, dutyOn, now = Dat
         const keep = path.join(folder, '.gitkeep'); if (!fs.existsSync(keep)) fs.writeFileSync(keep, '')
       }
     }
-    inspect()
+    try { inspect() } catch { error = '记忆库启动巡检失败，服务继续运行' }
     if (!timer) { timer = setInterval(() => { void tick() }, 60000); timer.unref() }
   }
   return { start, stop: () => { clearInterval(timer); timer = null }, tick, rescan: () => tick({ rescan: true }), preview, monthly, view }

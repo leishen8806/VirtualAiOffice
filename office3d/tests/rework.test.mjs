@@ -21,7 +21,7 @@ function setup(t, options = {}) {
   const ISSUE = add('CMP-1')
   const review = (issue, body, at) => { issue.comments.push({ id: 'c' + ++n, authorAgentId: 'reviewer', body, createdAt: new Date(Date.parse(at)).toISOString() }); issue.updatedAt = new Date(Date.parse(at)).toISOString() }
   const get = async (p) => {
-    if (p.endsWith('/companies/C/issues')) return structuredClone(Object.values(issues))
+    if (p.includes('/companies/C/issues?status=todo,in_progress,in_review,blocked')) return structuredClone(Object.values(issues))
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues[m[1]]; assert.ok(i, p); return structuredClone(m[2] ? i.comments : i) }
     throw new Error('未模拟 GET ' + p)
@@ -37,6 +37,13 @@ function setup(t, options = {}) {
   const advance = (h) => { time += h * 3600000 }
   return { dir, file: path.join(dir, 'rework.json'), add, ISSUE, review, get, send, writes, notices, factory, enable, advance }
 }
+
+test('isCapped uses the current view without an undefined view reference', (t) => {
+  const { factory } = setup(t)
+  const rework = factory()
+  assert.doesNotThrow(() => rework.isCapped('CMP-1'))
+  assert.equal(rework.isCapped('CMP-1'), false)
+})
 
 // ───── 纯函数：三类评论解析 ─────
 test('三类评论解析：全角括号、第二轮、修复、复验，分别抽出轮次与 R 项状态', () => {

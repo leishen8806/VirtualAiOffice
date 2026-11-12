@@ -1,0 +1,51 @@
+import { R1_CLUSTER_PLANTS } from './r1-cluster-plan.js'
+
+// R3 placements and strip dimensions are frozen; the register itself stays unchanged.
+export const R1_LANDSCAPE = Object.freeze({
+  plants: Object.freeze(R1_CLUSTER_PLANTS.filter(p => !p.registered && !p.look)),
+  troughs: Object.freeze([
+    Object.freeze({"id":"TROUGH-1","wall":"00-W-011","x":-20.32,"z":-14.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-2","wall":"00-W-011","x":-20.32,"z":-17.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-3","wall":"00-W-011","x":-20.32,"z":-19.9,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-4","wall":"00-W-011","x":-19.68,"z":-14.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-5","wall":"00-W-011","x":-19.68,"z":-19.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-6","wall":"00-W-012","x":-7.32,"z":-14.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-7","wall":"00-W-012","x":-7.32,"z":-17.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-8","wall":"00-W-012","x":-7.32,"z":-19.9,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-9","wall":"00-W-012","x":-7.32,"z":-22.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-10","wall":"00-W-012","x":-6.68,"z":-14.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-11","wall":"00-W-012","x":-6.68,"z":-17.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-12","wall":"00-W-016","x":3.88,"z":-15.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-13","wall":"00-W-016","x":3.88,"z":-18.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-14","wall":"00-W-016","x":3.88,"z":-20.9,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-15","wall":"00-W-016","x":4.52,"z":-16.9,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-16","wall":"00-W-016","x":4.52,"z":-19.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-17","wall":"00-W-017","x":23.68,"z":-17.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-18","wall":"00-W-017","x":24.32,"z":-14.5,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-19","wall":"00-W-017","x":24.32,"z":-17.1,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-20","wall":"00-W-017","x":24.32,"z":-19.9,"w":0.3,"d":2.4,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-21","wall":"00-W-018","x":-5.5,"z":-18.68,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-22","wall":"00-W-018","x":-2.7,"z":-18.68,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-23","wall":"00-W-020","x":-18.1,"z":-13.32,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-24","wall":"00-W-020","x":-15.5,"z":-13.32,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-25","wall":"00-W-021","x":-5.1,"z":-13.32,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-26","wall":"00-W-021","x":-2.5,"z":-13.32,"w":2.4,"d":0.3,"height":0.45,"length":2.4}),
+    Object.freeze({"id":"TROUGH-27","wall":"00-W-021","x":-2.3,"z":-12.68,"w":2.4,"d":0.3,"height":0.45,"length":2.4})
+  ]),
+  gardens: Object.freeze([
+    Object.freeze({"radius":8.75,"startDeg":64,"endDeg":116.51567447941945,"width":1.2,"length":8.02,"area":9.623999999999999,"id":"GARDEN-1","shape":"arc","x":2,"z":28,"height":0.7,"count":3}),
+    Object.freeze({"radius":8.75,"startDeg":128.5,"endDeg":181.01567447941943,"width":1.2,"length":8.02,"area":9.623999999999999,"id":"GARDEN-2","shape":"arc","x":2,"z":28,"height":0.7,"count":3}),
+    Object.freeze({"radius":8.75,"startDeg":302.5,"endDeg":355.01567447941943,"width":1.2,"length":8.02,"area":9.623999999999999,"id":"GARDEN-3","shape":"arc","x":2,"z":28,"height":0.7,"count":3}),
+    Object.freeze({"radius":9.35,"startDeg":190,"endDeg":239.14568467325353,"width":1.2,"length":8.02,"area":9.623999999999999,"id":"GARDEN-4","shape":"arc","x":2,"z":28,"height":0.7,"count":3}),
+    Object.freeze({"x":-29,"z":25.5,"length":8,"width":1.4,"angle":90,"id":"GARDEN-5","shape":"strip","height":0.7,"count":3,"area":11.2}),
+    Object.freeze({"x":33,"z":25.5,"length":8,"width":1.4,"angle":90,"id":"GARDEN-6","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":-27,"z":36.5,"length":8,"width":1.4,"angle":0,"id":"GARDEN-7","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":-17,"z":36.5,"length":8,"width":1.4,"angle":0,"id":"GARDEN-8","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":16.5,"z":36.5,"length":8,"width":1.4,"angle":0,"id":"GARDEN-9","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":26.5,"z":36.5,"length":8,"width":1.4,"angle":0,"id":"GARDEN-10","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":32,"z":31,"length":8,"width":1.4,"angle":40,"id":"GARDEN-11","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":32,"z":33.5,"length":8,"width":1.4,"angle":40,"id":"GARDEN-12","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":-28,"z":31,"length":8,"width":1.4,"angle":140,"id":"GARDEN-13","shape":"strip","height":0.7,"count":2,"area":11.2}),
+    Object.freeze({"x":-26.5,"z":32,"length":8,"width":1.4,"angle":140,"id":"GARDEN-14","shape":"strip","height":0.7,"count":2,"area":11.2})
+  ]),
+})

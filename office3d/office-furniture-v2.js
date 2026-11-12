@@ -1,6 +1,8 @@
 import { OFFICE_THEME_V2 as THEME } from './office-theme-v2.js'
 import { buildOfficeShellV2Spec } from './office-layout-v2-scene.js'
 import { LAYOUT_V1 } from './office-layout.js'
+import { OFFICE_PLAN1_L2, officePlan1Phase } from './office-plan1-layout.js'
+import { facingSample, facingHome } from './office-vis2/furniture-sample.js'
 
 const bounds = (x, z, w, d) => ({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 })
 
@@ -15,6 +17,37 @@ export function monitorScreenFit({ x, y, z, width = .66, height = .46, depth = .
   const normal = [sin * nz, ny, cos * nz], glassCenter = { x: x + cos * lx + sin * lz, y: y + MONITOR_GLASS_SOURCE.center[1] * sy, z: z - sin * lx + cos * lz }
   const glassWidth = MONITOR_GLASS_SOURCE.width * sx, glassHeight = MONITOR_GLASS_SOURCE.height * Math.hypot(MONITOR_GLASS_SOURCE.normal[2] * sy, MONITOR_GLASS_SOURCE.normal[1] * sz)
   return { center: { x: glassCenter.x + normal[0] * .0015, y: glassCenter.y + normal[1] * .0015, z: glassCenter.z + normal[2] * .0015 }, glassCenter, normal, glassWidth, glassHeight, width: glassWidth - .012, height: glassHeight - .012, yaw, pitch: -Math.asin(ny), offset: .0015 }
+}
+
+// computerScreen.glb 的 metalDark 外壳朝前那一圈实测值：显示器正面整块黑色面板，
+// 和上面的玻璃同法线、同后仰角，但大一圈（.3927×.2472 对 .3791×.2337）。
+export const MONITOR_PANEL_SOURCE = Object.freeze({ center: Object.freeze([.196344003081321, .17188213765621185, -.04777985159307718]), normal: Object.freeze([0, .13917310535907745, .9902680516242981]), width: .3926880061626449, height: .2472119907708746 })
+export const MONITOR_PANEL_BORDER_MAX = .015 // 四周留的边框上限（OFFICE-R1-DESKSTATUS R2）
+const MONITOR_PANEL_OFFSET = .002 // 贴片浮在面板前表面前方 2 mm（要求 0.5–3 mm）
+
+// R1 工位屏幕用：把贴片铺满整块黑色面板，并且**跟着面板后仰**。
+// monitorScreenFit 返回的是一块竖直矩形，贴在后仰 8° 的面板上只有中线以上露在外面，
+// 以下半块埋进外壳里被挡住；这里连 up 向量一起给出去，由调用方按 right/up 建面。
+export function monitorPanelFit({ x, y, z, width = .66, height = .46, depth = .16, yaw = 0, aspect = 16 / 9 }) {
+  const sx = width / MONITOR_MODEL.width, sy = height / MONITOR_MODEL.height, sz = depth / MONITOR_MODEL.depth
+  const ny0 = MONITOR_PANEL_SOURCE.normal[1] / sy, nz0 = MONITOR_PANEL_SOURCE.normal[2] / sz, nl = Math.hypot(ny0, nz0)
+  const ny = ny0 / nl, nz = nz0 / nl, sin = Math.sin(yaw), cos = Math.cos(yaw)
+  const lx = (MONITOR_PANEL_SOURCE.center[0] - MONITOR_MODEL.centerX) * sx, lz = (MONITOR_PANEL_SOURCE.center[2] - MONITOR_MODEL.centerZ) * sz
+  const normal = [sin * nz, ny, cos * nz]
+  const panelCenter = { x: x + cos * lx + sin * lz, y: y + MONITOR_PANEL_SOURCE.center[1] * sy, z: z - sin * lx + cos * lz }
+  const panelWidth = MONITOR_PANEL_SOURCE.width * sx
+  const panelHeight = MONITOR_PANEL_SOURCE.height * Math.hypot(MONITOR_PANEL_SOURCE.normal[2] * sy, MONITOR_PANEL_SOURCE.normal[1] * sz)
+  // 先按上下各留满 1.5 cm 定高，再按画布宽高比定宽：画面不拉伸，左右边框自然比 1.5 cm 还小。
+  const fitHeight = panelHeight - 2 * MONITOR_PANEL_BORDER_MAX, fitWidth = fitHeight * aspect
+  const center = { x: panelCenter.x + normal[0] * MONITOR_PANEL_OFFSET, y: panelCenter.y + normal[1] * MONITOR_PANEL_OFFSET, z: panelCenter.z + normal[2] * MONITOR_PANEL_OFFSET }
+  const right = { x: cos, y: 0, z: -sin }, up = { x: -ny * sin, y: nz, z: -ny * cos }
+  const halfW = fitWidth / 2, halfH = fitHeight / 2
+  const corner = (sw, sh) => ({ x: center.x + right.x * halfW * sw + up.x * halfH * sh, y: center.y + up.y * halfH * sh, z: center.z + right.z * halfW * sw + up.z * halfH * sh })
+  return {
+    center, panelCenter, normal, right, up, panelWidth, panelHeight,
+    width: fitWidth, height: fitHeight, yaw, pitch: -Math.asin(ny), offset: MONITOR_PANEL_OFFSET,
+    corners: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)],
+  }
 }
 
 export function workstationDesktop(seat) {
@@ -40,11 +73,17 @@ const roomScreen = (region) => {
 }
 
 export function officeFurnitureV2Spec(layout) {
-  const workstations = Object.entries(layout.seats).map(([name, [region, x, z]]) => ({
+  const workstations = Object.entries(layout.seats).map(([name, seat]) => {
+    const [region, x, z] = seat, home = facingSample(layout) && facingHome(seat)
+    return ({
     name, region, x, z, desk: bounds(x, z, 1.4, .7),
-    chair: { x, z: z + 1, yaw: 0, ...bounds(x, z + 1, .62, .6) },
-    front: bounds(x, z - .8, 1.4, .9),
-  }))
+    ...(home ? { yaw: home.yaw } : {}),
+    chair: home ? { ...home, ...bounds(home.x, home.z, .62, .6) } : { x, z: z + 1, yaw: 0, ...bounds(x, z + 1, .62, .6) },
+    front: bounds(x, z + (home?.yaw ? .8 : -.8), 1.4, .9),
+  })})
+  const phase = officePlan1Phase(layout)
+  const l2b = layout.plan1Phase === 'L2B'
+  const northMeetings = layout.variant === 'align' && meetingRegion(layout, 'review').z0 === layout.envelope.z0
   const meetings = [
     { id: 'A', region: 'review', w: 4, d: 1.4, round: false },
     { id: 'B', region: 'plan', w: 1.8, d: 1.8, round: true },
@@ -54,25 +93,42 @@ export function officeFurnitureV2Spec(layout) {
     const center = layout.version === 2
       ? (meeting.id === 'A' ? { x: -12.5, z: -14 } : { x: -5.5, z: -14 })
       : { x: (region.x0 + region.x1) / 2, z: (region.z0 + region.z1) / 2 }
-    const room = { ...meeting, ...center, yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
-    return { ...room, seats: room.round
+    const roundDiameter = l2b ? 1.4 : phase === 'L2' ? (meeting.id === 'A' ? 1.2 : 1) : 1.5
+    const seatRadius = l2b ? 1.2 : phase === 'L2' ? (meeting.id === 'A' ? .96 : .86) : 1.2
+    const room = { ...meeting, ...center, ...(northMeetings ? { round: true, w: roundDiameter, d: roundDiameter } : {}), yaw: 0, screen: { ...roomScreen(region), y: 2.4, w: 2, h: 1.125 } }
+    return { ...room, seats: northMeetings ? phase === 'L2'
+      ? Array.from({ length: 4 }, (_, i) => { const angle = i * Math.PI / 2; return { room: room.id, x: room.x + Math.sin(angle) * seatRadius, z: room.z + Math.cos(angle) * seatRadius, yaw: angle, meeting: true } })
+      : layout.meetingSeatPoints[room.id].map(seat => ({ ...seat })) : room.round
     ? Array.from({ length: 6 }, (_, i) => { const angle = i * Math.PI / 3; return { room: room.id, x: room.x + Math.sin(angle) * 1.45, z: room.z + Math.cos(angle) * 1.45, yaw: angle, meeting: true } })
     : [...[-1.4, 0, 1.4].flatMap(dx => [{ room: room.id, x: room.x + dx, z: room.z - 1.15, yaw: Math.PI, meeting: true }, { room: room.id, x: room.x + dx, z: room.z + 1.15, yaw: 0, meeting: true }]), { room: room.id, x: room.x - 2.5, z: room.z, yaw: -Math.PI / 2, meeting: true }, { room: room.id, x: room.x + 2.5, z: room.z, yaw: Math.PI / 2, meeting: true }],
     }
   })
   const boss = { desk: layout.boss.desk, chair: { x: layout.boss.desk.x, z: layout.boss.desk.z - 1, yaw: Math.PI }, stand: layout.boss.stand }
-  // 会议桌沿南北方向，避开同房间内固定的老板桌。
+  // 新北侧会议区用横向长桌，四席一侧，给原老板桌与原接待目标保留通道。
   const boardRegion = meetingRegion(layout, 'board')
   const boardScreen = layout.version === 2
     ? { x: -20, z: -17.72, yaw: 0, side: 'north', y: 2.4, w: 2, h: 1.125 }
     : { ...roomScreen(boardRegion), y: 2.4, w: 2, h: 1.125 }
-  const board = { ...layout.boardTable, w: 1.4, d: 3.6, screen: boardScreen }
-  const boardSeats = [...[-1.2, 0, 1.2].flatMap(dz => [{ x: board.x - 1.15, z: board.z + dz, yaw: -Math.PI / 2 }, { x: board.x + 1.15, z: board.z + dz, yaw: Math.PI / 2 }]), { x: board.x, z: board.z - 2.35, yaw: Math.PI }, { x: board.x, z: board.z + 2.35, yaw: 0 }]
-  const shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
-  return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen: { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 } }
+  const board = { ...layout.boardTable, w: phase === 'L2' ? OFFICE_PLAN1_L2.meetings.board.table.size[0] : northMeetings ? 3.6 : 1.4, d: northMeetings ? 1.4 : 3.6, screen: boardScreen }
+  const boardSeats = northMeetings
+    ? (phase === 'L2' ? [-2,-1,0,1,2] : [-1.3, -.4, .4, 1.3]).flatMap(dx => [{ x: board.x + dx, z: board.z - 1.2, yaw: Math.PI }, { x: board.x + dx, z: board.z + 1.2, yaw: 0 }])
+    : [...[-1.2, 0, 1.2].flatMap(dz => [{ x: board.x - 1.15, z: board.z + dz, yaw: -Math.PI / 2 }, { x: board.x + 1.15, z: board.z + dz, yaw: Math.PI / 2 }]), { x: board.x, z: board.z - 2.35, yaw: Math.PI }, { x: board.x, z: board.z + 2.35, yaw: 0 }]
+  let shelves = [{ x: 30.5, z: -17.45, w: 2.8, d: .6, yaw: 0 }, { x: 32.45, z: -15.7, w: 2, d: .6, yaw: Math.PI / 2 }]
+  let opsScreen = { x: -22.5, z: 7.2, y: 2.45, w: 3.6, h: 1.2 }
+  if (layout.variant === 'align') {
+    if (['L1', 'L2'].includes(phase)) { shelves = []; opsScreen = null }
+    else {
+      const kb = meetingRegion(layout, 'kb'), west = meetingRegion(layout, 'west-open')
+      const ops = layout.deskGroups.ops.map(name => layout.seats[name]), middle = (kb.x0 + kb.x1) / 2, width = (kb.x1 - kb.x0 - 1) / 2
+      shelves = [-1, 1].map(side => ({ x: middle + side * (width / 2 + .05), z: kb.z0 + .55, w: width, h: 2.65, y: .126, d: .6, yaw: 0 }))
+      opsScreen = { ...opsScreen, x: ops.reduce((sum, seat) => sum + seat[1], 0) / ops.length, z: Math.max(west.z0, layout.corridors.westNorthCross.z1) + .3 }
+    }
+  }
+  return { workstations, meetings, boss, board, boardSeats, shelves, opsScreen }
 }
 
 export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A, placeFurniture, collision, canvasTex, makeScreenTexture, warmPalette = false }) {
+  const phase = officePlan1Phase(layout)
   const spec = officeFurnitureV2Spec(layout)
   const required = ['desk', 'chairDesk', 'computerScreen', 'computerKeyboard', 'computerMouse', 'table', 'chairModernCushion', 'bookcaseOpen', 'books', 'pottedPlant']
   for (const name of required) if (!A?.furn?.[name]) throw new Error(`缺少办公家具 ${name}`)
@@ -87,6 +143,8 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   const root = new THREE.Group(); root.name = 'office2-furniture'
   const geometryParts = [], handles = new Map(), screenSlots = []
+  const detailBounds = new Map(), detailCollisions = []
+  let detailId = null
   const atlas = canvasTex(2048, 1024, (ctx, w, h) => { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h) })
   const atlasContext = atlas.image.getContext('2d')
   const wood = warmPalette ? new THREE.Color('#C49A6C') : new THREE.Color(THEME.trim).lerp(new THREE.Color(THEME.nameplate), .55)
@@ -103,6 +161,10 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
       if (!mesh.isMesh) return
       const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone()
       geometry.applyMatrix4(mesh.matrixWorld)
+      if (layout.variant === 'align' && detailId) {
+        const b = detailBounds.get(detailId) || new THREE.Box3()
+        b.union(new THREE.Box3().setFromBufferAttribute(geometry.attributes.position)); detailBounds.set(detailId, b)
+      }
       const count = geometry.attributes.position.count, colors = new Float32Array(count * 3), uv = new Float32Array(count * 2)
       const sourceUv = geometry.attributes.uv
       const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
@@ -118,14 +180,14 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
     const f = placeFurniture(A, name, x, z, { scale: 1, y, rotY: yaw })
     f.group.scale.set(w / f.size.x, h / f.size.y, d / f.size.z)
     f.group.name = `office2-${name}`
-    if (solid) collision.add(f.group, name)
+    if (solid) { collision.add(f.group, name); if (layout.variant === 'align' && detailId) detailCollisions.push(f.group) }
     bake(f.group)
     return f.group
   }
   function box(x, y, z, w, h, d, color, solid = false, kind = 'desk') {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color }))
     mesh.position.set(x, y, z)
-    if (solid) collision.add(mesh, kind)
+    if (solid) { collision.add(mesh, kind); if (layout.variant === 'align' && detailId) detailCollisions.push(mesh) }
     bake(mesh); mesh.geometry.dispose(); mesh.material.dispose()
   }
   function chair(seat, name = 'chairDesk') { return asset(name, seat.x, seat.z, .62, 1.04, .6, 0, seat.yaw + Math.PI, true) }
@@ -141,7 +203,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   for (const seat of spec.workstations) {
     const { yaw, monitor, keyboard, mouse, fit } = workstationDesktop(seat)
-    asset('desk', seat.x, seat.z, 1.4, .76, .7)
+    asset('desk', seat.x, seat.z, 1.4, .76, .7, 0, yaw)
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(1.4, .76, .7)); proxy.position.set(seat.x, .38, seat.z); proxy.visible = false; root.add(proxy); collision.add(proxy, 'desk')
     const c = chair(seat.chair)
     asset('computerScreen', monitor.x, monitor.z, .66, .46, .16, .76, yaw)
@@ -154,20 +216,29 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   }
   for (const room of spec.meetings) {
     asset('table', room.x, room.z, room.round ? 1 : room.w, .76, room.round ? 1 : room.d, 0, 0, true)
-    if (room.round) { const disk = new THREE.Mesh(new THREE.CylinderGeometry(.9, .9, .055, 32), new THREE.MeshStandardMaterial({ color: wood })); disk.position.set(room.x, .79, room.z); collision.add(disk, 'meetingTable'); bake(disk); disk.geometry.dispose(); disk.material.dispose() }
+    if (room.round) { const radius = room.w / 2; const disk = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, .055, 32), new THREE.MeshStandardMaterial({ color: wood })); disk.position.set(room.x, .79, room.z); collision.add(disk, 'meetingTable'); bake(disk); disk.geometry.dispose(); disk.material.dispose() }
     room.seats.forEach(seat => chair(seat, 'chairModernCushion'))
   }
   asset('desk', spec.boss.desk.x, spec.boss.desk.z, 1.4, .76, .7, 0, Math.PI, true)
   chair(spec.boss.chair)
   asset('table', spec.board.x, spec.board.z, spec.board.w, .76, spec.board.d, 0, 0, true)
   spec.boardSeats.forEach(seat => chair(seat, 'chairModernCushion'))
-  for (const shelf of spec.shelves) { asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, 1.85, shelf.d, 0, shelf.yaw, true); asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw) }
-  for (const [x, z] of [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
+  for (const [index, shelf] of spec.shelves.entries()) {
+    detailId = `align-kb-shelf-${index}`
+    asset('bookcaseOpen', shelf.x, shelf.z, shelf.w, shelf.h ?? 1.85, shelf.d, shelf.y ?? 0, shelf.yaw, true)
+    if (layout.variant !== 'align') asset('books', shelf.x, shelf.z, shelf.w * .65, .2, shelf.d * .8, .85, shelf.yaw)
+  }
+  detailId = null
+  for (const [x, z] of ['L1', 'L2'].includes(phase) ? [] : [[15, -16.8], [27, -16.8], [-26.5, 11.8], [-16.5, 11.8], [25.8, 11.8]]) asset('pottedPlant', x, z, .6, 1.3, .6, 0, 0, true)
   const ops = spec.opsScreen
-  box(ops.x, ops.y + ops.h / 2, ops.z, ops.w + .08, ops.h + .08, .08, THEME.trim)
-  screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
-  // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
-  for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
+  if (ops) {
+    detailId = 'align-ops-screen'
+    box(ops.x, ops.y + ops.h / 2, ops.z, ops.w + .08, ops.h + .08, .08, THEME.trim)
+    screen(ops.x, ops.y + ops.h / 2, ops.z + .17, ops.w, ops.h, '运维 · 状态见任务面板')
+    // 屏幕在门洞上方，支柱落在门洞两侧，不侵入通行高度。
+    for (const dx of [-2, 2]) box(ops.x + dx, 1.83, ops.z, .035, 3.66, .035, THEME.trim, true, 'screenPost')
+  }
+  detailId = null
   const meetingScreens = Object.fromEntries(spec.meetings.map(room => [room.id, screen(room.screen.x, room.screen.y, room.screen.z, room.screen.w, room.screen.h, `会议室 ${room.id}`, room.screen.yaw)]))
   const boardScr = screen(spec.board.screen.x, spec.board.screen.y, spec.board.screen.z, spec.board.screen.w, spec.board.screen.h, '董事会', spec.board.screen.yaw)
   // v2 独立浅金细线，旧布局材质保持原样。
@@ -188,5 +259,7 @@ export function placeOfficeFurnitureV2({ THREE, scene, parent = scene, layout, A
   const wing = { seats: spec.meetings.flatMap(room => room.seats.map(seat => ({ ...seat, taken: null }))), drawSchedule(list) { write(meetingScreens.A, '日程', list.map(item => item.title)) }, drawRoom(id, data) { if (meetingScreens[id]) write(meetingScreens[id], `会议室 ${id}`, data ? [data.topic, ...(data.here || [])] : ['暂无会议']) } }
   const board = { scr: boardScr, amber: { intensity: 0 }, beacon: { userData: {}, material: { color: new THREE.Color() } } }
   parent.add(root)
-  return { root, spec, wing, board, legacyHidden, partitions: { visible: false }, deskAt: (x, z) => handles.get(`${x},${z}`), dispose() { root.removeFromParent(); handles.forEach(handle => handle.group.removeFromParent()); legacyHidden.forEach(mesh => { mesh.visible = true }); geometryParts.forEach(part => part.geometry.dispose()); material.dispose(); atlas.dispose() } }
+  // 与 zones.obstacles 同格式；边界来自烘焙后的真实顶点，供导航接线消费。
+  const obstacles = () => [...detailBounds].map(([id, b]) => ({ id, x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z }))
+  return { root, spec, wing, board, legacyHidden, partitions: { visible: false }, obstacles, deskAt: (x, z) => handles.get(`${x},${z}`), dispose() { detailCollisions.forEach(p => collision.remove?.(p)); root.removeFromParent(); handles.forEach(handle => handle.group.removeFromParent()); legacyHidden.forEach(mesh => { mesh.visible = true }); geometryParts.forEach(part => part.geometry.dispose()); material.dispose(); atlas.dispose() } }
 }

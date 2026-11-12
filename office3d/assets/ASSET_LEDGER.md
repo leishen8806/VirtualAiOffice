@@ -40,6 +40,8 @@
 | assets/models/furniture/computerMouse.glb | 5868 | d3ad1a923f0f7707ef367bb969eb94c9076e211c98c830ba52e133fadc5cdfc0 |
 | assets/models/furniture/computerScreen.glb | 6404 | 5942cbad29a2d2b956619569926e81d50a4174403d592fece6556e57632dc643 |
 | assets/models/furniture/desk.glb | 15048 | 0164fe828f028b321730fb8c74502e353583f751be74da1682d42fff7d3c5a42 |
+| assets/models/furniture/kitchenBlender.glb | 18728 | f471defb5b2b1cf3b949a1a8aaef0a8b727afe662b0815068cf4e963325a3c1f |
+| assets/models/furniture/kitchenCoffeeMachine.glb | 13332 | 063f582c6fa0f00a9f24e3393dac2295491c4becdaf5513c893ab1a2826b6ec3 |
 | assets/models/furniture/lampRoundTable.glb | 6604 | 75bb644caaa3da003b4fcad7a931722dd61cd2858aab70cf660021d5061fa1b2 |
 | assets/models/furniture/lampSquareFloor.glb | 5624 | 6466993748d8e184de9ec5b6b0af613867c50c0ce320d1898b1db9e4c27c2561 |
 | assets/models/furniture/laptop.glb | 5540 | 5fa8a1f4a71ab8d82ef64da77a6973ffd350c6d4557516069a4ffd4bb8d808af |
@@ -54,7 +56,13 @@
 | assets/models/furniture/speaker.glb | 15744 | 78230b9fb382a937cb19e4bf7556ee9402d33ac80b1baaee2d2eb89493cfa1fc |
 | assets/models/furniture/table.glb | 8196 | ff1a94498d023957f4bc3ff6f55a7a82977d336dbf01a573b3364f03afe5ff61 |
 | assets/models/furniture/tableCoffee.glb | 8256 | e38bea760fbd514efbb75528d09b4752c91af44677bbb97e6d4386c263525179 |
+| assets/models/furniture/toaster.glb | 14924 | 38c1fb7b122be9997758c8ee855d87f28014cf282f24d66d39f4e8d8b236d2af |
 | assets/models/furniture/trashcan.glb | 6452 | e0ccc1fe50cbd05386477fdff527171d1cf7c0de2ba7ff3233f8d9561feb2561 |
+
+`kitchenBlender.glb`、`kitchenCoffeeMachine.glb`、`toaster.glb` 由 OFFICE-R1-FOOD（CMP-626，2026-10-29）从隔离区
+`paperclip-ops/_quarantine/x-kenney/Models/GLTF format/` 拷入，用于中央吧台台面的搅拌机、咖啡机与面包机。
+三件与隔离区原件逐字节相同（上表 SHA-256 即原件哈希），同属上面那个 `kenney_furniture-kit.zip`，
+授权沿用本目录未改动的 `License.txt`（Kenney Furniture Kit 2.0，CC0 1.0），没有下载任何新素材。
 
 ### Quaternius Universal Base Characters Standard（CC0）
 
@@ -308,3 +316,126 @@
 | Assets/Animations/all_animations_max_motextr_static/f_drink_idle.max.fbx | 5017600 | 3e486b8aa0e5d4aac1907536ff04f1c8b55a350095496ad10e513d797f1e1f67 |
 | Assets/Animations/all_animations_max_motextr_static/f_cell_phone_textmessage.max.fbx | 3647440 | fec5b09446c1f097d87490005157979a49053cd2462547794b9bdeababdae97b |
 | Assets/Animations/all_animations_max_motextr_static/f_idle_stretch_arms_01.max.fbx | 2192688 | 731a81fb08987d4ff4adabdb2f205a90943fde19688d4bafafdd11178c43dcad |
+
+## R1 桌前坐姿补充（2026-10-28，OFFICE-R1-I3B）
+
+Microsoft Rocketbox，MIT。仅导入下列 13 项；原件来自已核对的隔离区 manifest3.json，目标文件名去除 .max，内容逐字节不变。
+
+| 本目录下目标路径 | 字节数 | SHA-256 |
+|---|---:|---|
+| models/people/anim/f_sit_table_idle_neutral_02.fbx | 3890336 | ee99f393f04211b71251b489db5d17265e2050cd1783e24528ac098d898336f9 |
+| models/people/anim/m_sit_table_idle_neutral_02.fbx | 5960992 | 76eddd55dcfcee98e7849ec769d412f1d91d369b78502baf40eeae09bee8e71c |
+| models/people/anim/f_sit_table_idle_relaxed_01.fbx | 4759104 | a7dbcae874c4964c64f19e21438b45214a8f059f2d89fbdf14b963b19898e70f |
+| models/people/anim/m_sit_table_idle_relaxed_01.fbx | 7158896 | f3c5f5d4b4f9a3fe9f6f103cf09f9fd898db4f06784129be9539f53ec1e6bcbd |
+| models/people/anim/f_sit_table_idle_waiting_01.fbx | 4450896 | 047ee274ea779ee413dbe29515c1b422010906d0be30446bcf46eb4ae9ca76c3 |
+| models/people/anim/m_sit_table_idle_waiting_01.fbx | 5398576 | b7453f9de0bbb6168f6df71b11fcf3813e5ab568fbf770ed846801592b72ba5e |
+| models/people/anim/m_sit_table_idle_nervous_01.fbx | 5712096 | afe96e6cba1e0b141b4f14b397d0f5584ecc5d8dee44d25ea569de2d8ad643e9 |
+| models/people/anim/f_sit_table_gestic_shrug_01.fbx | 1024144 | 05f9883101b3b05ad1b7195bbea8d280cc5748fc400c71cb8331439f3f3774a8 |
+| models/people/anim/m_sit_table_gestic_shrug_01.fbx | 1601936 | d69cf86c90b0851c6ef1bd8372c35198020d2ccb57c08f9c9dc5985c9dc791c2 |
+| models/people/anim/f_sit_table_idle_touch_hair.fbx | 1958544 | 2e89fa2557075fa24f6b92dad4d3991f9cca49b7645959e3d28674aa58abd36f |
+| models/people/anim/m_sit_table_idle_touch_hair.fbx | 2414176 | 60bbf0f603aa88065c41da741ee1a24cc682bf134b84e1542d0a386061076314 |
+| models/people/anim/f_sit_table_idle_roll_head.fbx | 2153328 | 6951682fa613f0609e00cc3d970a71558546a07a0135db0890fdb139c3fa0014 |
+| models/people/anim/m_sit_table_idle_roll_head.fbx | 2374048 | 8fe193eab66b524f203779d46df6553ff6fd7a1b1200946e161415a0a6e57c5d |
+
+## R1 工位屏幕空闲画面（2026-10-29，OFFICE-R1-DESKSTATUS）
+
+**第三方商标素材，与上面各批 CC0 / MIT 素材性质不同，单独成节。**
+
+| 项 | 内容 |
+|---|---|
+| 本目录下目标路径 | `win98-idle.png` |
+| 字节数 | 81629 |
+| SHA-256 | 1685f3448b076fbbb68a699aa31acce42b1826adbc94cf74e85dcd2d1ef589ff |
+| 尺寸 | 640 × 400 |
+| 来源 | **董事会提供**（2026-10-29 指定"请使用 windows98 图片"）；原件在需求目录 `E:/VirtualAIOffice/dispatch/OFFICE-R1-DESKSTATUS-20261029/素材-windows98.png`，逐字节复制，哈希与该目录 `SHA256SUMS.txt` 登记值一致 |
+| 许可 | **第三方商标图片，董事会决定仅用于内部展示** |
+| 用途 | R1 工位屏幕在"无任务且非暂停"时显示的空闲画面（等比放大铺满、居中裁切） |
+| 代码引用处 | `app.js` 的常量 `WIN98_IDLE_IMAGE`（**全仓库仅此一处**，便于日后整体替换） |
+| 是否改动 | 否，逐字节与董事会给的原件一致 |
+
+注意：该图含 Microsoft 商标，**不得**用于对外演示、宣传物料或任何公开发布的截图；
+如需对外展示，先向董事会申请替换为自有素材（换掉 `WIN98_IDLE_IMAGE` 指向的文件即可）。
+
+## OFFICE-R1-MOVE / 2026-10-29
+
+Microsoft Rocketbox, MIT; unchanged source FBX from the approved quarantine. Relaxed talk is recorded in manifest3.json; cheer, clap and excited talk are actually recorded in manifest5.json (the MOVE card refers to manifest3 for these too). No animation tracks or source files were edited.
+
+| File | Bytes | SHA-256 | Quarantine record |
+|---|---:|---|---|
+| assets/models/people/anim/f_cheer_01.fbx | 3015536 | c6348d384bf83f66d6b77a45229847eea94cdcf5cdc06659d5f6d964f028b54d | manifest5.json |
+| assets/models/people/anim/f_cheer_03.fbx | 1513040 | 03d6f83b11f1c1efe05b22d415134a778a3854bc6eb373a497bc83c27b16f08d | manifest5.json |
+| assets/models/people/anim/f_claphands_01.fbx | 3088480 | 125b108aa10a1207d4beb9a0041a0b20fcb29d96f7c2fb9fc5e343e51aae863a | manifest5.json |
+| assets/models/people/anim/f_gestic_talk_excited_01.fbx | 5043104 | c80b5e40a00f121bd5dc4b18cf0e16dc558bcd985621b89ce89cd7464f815384 | manifest5.json |
+| assets/models/people/anim/f_gestic_talk_relaxed_01.fbx | 4802192 | a22d59d1d0cc34a16df70a994ef829d3206034f6416bc9bd3de387fb3f204c61 | manifest3.json |
+| assets/models/people/anim/m_cheer_01.fbx | 4390576 | f71a32d4c4629817488855bbca36ce3c4112e8605cd90dcf84ba1726687f8d10 | manifest5.json |
+| assets/models/people/anim/m_cheer_03.fbx | 1788592 | 93bee57cc1edfb9ccf45c530b144464a1fd55686724bb3b747fd12e3f513c4e7 | manifest5.json |
+| assets/models/people/anim/m_claphands_01.fbx | 2133184 | b1db818b9381e959e367d5ce23babf26c27b3f2cdc5540f0cd0b6bda1d8694bc | manifest5.json |
+| assets/models/people/anim/m_gestic_talk_excited_01.fbx | 4669728 | ce7638f6a36e6f49d81f7eeedae3b820eafa35025f6429cc92803155c76926d8 | manifest5.json |
+| assets/models/people/anim/m_gestic_talk_relaxed_01.fbx | 5511856 | 560c369eeec15c56534cdd8a87bdebd76f365a783c43b473e879a1707721be07 | manifest3.json |
+
+## SEAT26 R1b / 2026-10-30
+
+Microsoft Rocketbox, MIT, upstream commit 0943055db6ec570bcef9f2c8b41c9e5467c808f9; approved local quarantine batch DOWNLOAD_LIST-20261030.md. Five assigned avatars only; FBX unchanged, colour textures Lanczos 1024 JPG (quality 90) / opacity PNG. No download or new dependency.
+
+| Asset | Bytes | SHA-256 | Source SHA-256 |
+|---|---:|---|---|
+| models\people\Female_Adult_13\Female_Adult_13.fbx | 605168 | cbfa41f09859179bba873d70bd075ce910d298fce8b2a74e4920049b33f0402b | cbfa41f09859179bba873d70bd075ce910d298fce8b2a74e4920049b33f0402b |
+| models\people\Female_Adult_13\Female_Adult_13_facial.fbx | 2209984 | fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983 | fd3aabfd6e34ada38d3d7137075e4955701234cfc0f40613eae07f3750a36983 |
+| models\people\Female_Adult_13\f019_body_color.jpg | 181502 | efb90784c43c41c40ced4fa9ac8c9a019b2a8355ca6b59f9d8fc7136230eb485 | ad4ae502d585441ab9344e9c9819b6af077d56f11dac1b45ed7edbafd27b2007 |
+| models\people\Female_Adult_13\f019_head_color.jpg | 185663 | 0d23627e869423170f317b1885a8338bab315f7cd36f49cb5e852bd8095d357d | b2443eb8a3c247021dec33c12ff87960904c35196c31e0dfd94adab1caacc8c4 |
+| models\people\Female_Adult_13\f019_opacity_color.png | 1030333 | 91c837ba718ed66f6cdddf789700b443f6607212e32c2cf97cafc0dc0b256dce | c01fb95dab617aed3b8ff67b9ecf4b16bc5fe6bb6518245b0a5aacffec39087a |
+| models\people\Female_Adult_17\Female_Adult_17.fbx | 593440 | 777125303c2b4c493dce961b66cfc8c86ac69ee697c212ea9fe3107bfc45831f | 777125303c2b4c493dce961b66cfc8c86ac69ee697c212ea9fe3107bfc45831f |
+| models\people\Female_Adult_17\Female_Adult_17_facial.fbx | 2114512 | 9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de | 9d17d5b7d9dc32f5e975ab8d8cd269cc5469cfd95c2f34305c5df3259ed0a8de |
+| models\people\Female_Adult_17\f006_body_color.jpg | 186223 | 977f1a589bc29a8a76a6dbe9257da9c6c552fc5f7f8b477da59cea3bca66744e | d657c9113b23c72a58bca56bcfe7c0956caea976a6144c3f53c0181b9f2b746d |
+| models\people\Female_Adult_17\f006_head_color.jpg | 190925 | 73fc7567711febd6f13fe38699200c5425bd46dfb29555e8f0292beec235e915 | f23bfa861e036dc9a39ae8c6595bf0128f021eb762464e58f72907a9b49ecbfa |
+| models\people\Female_Adult_17\f006_opacity_color.png | 1382655 | bd56c460fcac4fc8ff7545e1185480f564590e403167ba8468e8122734818fa6 | 2ce67c662cf20256c8bf0713e4aeff5f7be0ae3cee981df119dbc7d32111e3d0 |
+| models\people\Business_Male_06\Business_Male_06.fbx | 507712 | f0892405f3193c09c85a8391efd5219d8a6bc45ff293e6356175efd457e67b0b | f0892405f3193c09c85a8391efd5219d8a6bc45ff293e6356175efd457e67b0b |
+| models\people\Business_Male_06\Business_Male_06_facial.fbx | 1817264 | 5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e | 5160c0c5f3cd153081e8caff98ecdf621913f3fa341d4ca892b531338ff5206e |
+| models\people\Business_Male_06\m025_body_color.jpg | 124032 | 457dd95fdc4504af6d67188e7346df5a778c26dc8cf9e989cf59d1e6ce6c2abd | 36abf3edc359181188961d24fa59e7140f32e2f328d1ba7b3d644aa8477b3a22 |
+| models\people\Business_Male_06\m025_head_color.jpg | 156359 | 4e96437846c83febb81556bfdde6ebcf42bea96f9e83f7acb1d1323e7fd82999 | 5f0ab4b879f0bd8834390a2ad6f3c99b6a7821c6293ec1bcb17fa1ba87f0cf39 |
+| models\people\Business_Male_07\Business_Male_07.fbx | 487360 | efe9d0cda6fa6f9c8365e026d9cda1dbbd8903b624b56fee77027efcd3c9ad5b | efe9d0cda6fa6f9c8365e026d9cda1dbbd8903b624b56fee77027efcd3c9ad5b |
+| models\people\Business_Male_07\Business_Male_07_facial.fbx | 1754800 | 6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9 | 6f6aecd35a509ee3e42a9db31f3f6612ef400d79457297fed0d6a0457c4854e9 |
+| models\people\Business_Male_07\m018_body_color.jpg | 186734 | 9dd0903b2d8917669a452e7441efe04f61874f6d01bee780fd4b4f1d0091dfee | e95d6b706c641e72f45ab02191e8edc1af6b25839ae6362762b39d0958e4cea0 |
+| models\people\Business_Male_07\m018_head_color.jpg | 190862 | c5c345aa0a4e6c5529fc6ac89098f2215aa474b738ebf17f01e77380e5c73763 | 2e25f8fd67c914a5c01ace3768b78584a778344793ac63982b33ac6e86f1eff2 |
+| models\people\Male_Adult_20\Male_Adult_20.fbx | 519408 | 78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6 | 78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6 |
+| models\people\Male_Adult_20\Male_Adult_20_facial.fbx | 1840944 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 | 127a8cf9ed93a530ecb24ebc06a3ed226ec460051d5090f174db2ed4096b9f82 |
+| models\people\Male_Adult_20\m027_body_color.jpg | 166677 | 88bcbb85c6b2e9bb2d3a3ac93da98c040b3e73e59bf5d925c00641caddedd018 | 54cf6fe03676bea4cd9190ee2057c826e43f49d2f82170a92d1c0413eb153500 |
+| models\people\Male_Adult_20\m027_head_color.jpg | 163812 | d304853f8f270bb296b74e95905968756a4952b97a538385c9c192c216455d4d | 61c117bea375ea983f697c5b1acdf0ebff86ff69e21c956d27d10bc4ecc9be63 |
+
+
+## Compact runtime variants — PERF-LOAD-2 (2026-10-30)
+
+- Sources: the existing Microsoft Rocketbox avatars / motions (MIT) and Quaternius Universal Base Characters / Universal Animation Library (CC0), as registered above. All source files remain unchanged in `assets/models/`.
+- Outputs: 22 gzip-compressed GLB avatars, 56 compact Rocketbox motion files, one five-clip compact cartoon animation, eight byte-preserving cartoon/hair GLB containers, and 156 desktop/phone WebP texture variants. The complete per-file source SHA-256, output SHA-256, size, dimensions and inherited license are in `assets/compact/MANIFEST.json`.
+- Reproduction: `scripts/perf-load-2/README.md`; source and output verification: `scripts/perf-load-2/manifest.mjs`. Motion equivalence is bounded numerical equivalence, checked at every source keyframe and 120 samples/second; runtime pose and movement acceptance remain separate.
+- Conversion tool: Three.js r185 official GLTFExporter, MIT, obtained from the fixed upstream r185 URL under explicit tool-download authorization. Exact URL/hash and license are in `scripts/perf-load-2/vendor/SOURCES.json` and `vendor/LICENSE`. This exporter is used only by the conversion script, not loaded by the application; no npm dependency or runtime Three upgrade.
+
+
+### PERF-LOAD-2 R2 — compact coverage and original fallback
+
+All avatars referenced by AVATARS, CAST, CAST_OVERRIDE, R1_ADDED_AVATARS and app mappings have compact outputs, including Female_Adult_13/17, Business_Male_06/07 and Male_Adult_20. New avatar imports must run `scripts/perf-load-2` (see its README) and regenerate the compact MANIFEST. After I7B-A, Q-V1 will arrange the shared conversion run. Until converted, a failed compact model, animation or texture retries only its own retained original; FBXLoader loads dynamically on demand.
+
+Runtime `.gz` files use application/octet-stream, with no Content-Encoding gzip. The service allowlist includes `.gz`; server rollout/restart requires the separate Q-V1/board deployment approval.
+
+### R1 人物导入补充（2026-10-31，OFFICE-R1-I7B-A）
+
+来源：董事会批准的 Rocketbox（MIT）隔离区清单 `DOWNLOAD_LIST-20261030.md`；需求修订新增 1 人。
+
+| 文件 | 字节 | SHA-256 |
+| --- | ---: | --- |
+| assets/models/people/Male_Adult_21/Male_Adult_21.fbx | 518928 | 3e73b7a6d9123c15e746b5d8285035c2372e01dd5573b0a8d5fc9ac04a16c776 |
+| assets/models/people/Male_Adult_21/Male_Adult_21_facial.fbx | 1779744 | 0a40c3183ad21e1434839fb1b046d1bd9219da661b10401d332724e106b57aca |
+| assets/models/people/Male_Adult_21/m251_body_color.jpg | 108254 | 851a63788d6c00c7dc28038a985bc91846c4ff34b080140351996a33e82e43b8 |
+| assets/models/people/Male_Adult_21/m251_head_color.jpg | 78461 | ab5fa59aaf36f6a4f3b2de883f75e9846bc82582211f8825ac17f7faebfb7a1b |
+| assets/models/people/Male_Adult_21/m251_keffiyeh_color.jpg | 341751 | ecae709a298440cf2bb3e55ceb5c276fd6985a40b931fa5ced86832d207e21e5 |
+| assets/models/people/Male_Adult_21/preview.png | 352293 | 60a5d5812b05342d696d7bf2ea45bcedf3e815c7bde7112865697be89361c003 |
+
+### 小镇地标阶段 2（2026-11-11，独立纪念碑）
+
+来源：仓库内 Blender Python 脚本生成；不含外部模型或纹理，材质内联。
+
+| 文件 | 字节 | 三角面 | SHA-256 |
+| --- | ---: | ---: | --- |
+| assets/models/landmarks/independence-monument.glb | 112212 | 1622 | 57caf168b7bda99cb052ab0130387b3da50cdc5c06c11052abcaa6f81a86c8ba |
+
+复现：`blender --background --python office3d/tools/build-independence-monument.py`（Blender 5.2.4 LTS）。

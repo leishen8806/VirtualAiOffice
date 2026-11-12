@@ -12,6 +12,7 @@ import {buildOfficeSampleHost} from '../office-vis2/host.js'
 import {barSpec,barGaps,barArcs,barColliders,validateIslandRings} from '../office-bar-geometry.js'
 import {startOfficeV3} from '../office-v3-modules.js'
 import {createFurnitureCollision} from '../furniture-collision.js'
+import {officeFurnitureV2Spec,placeOfficeFurnitureV2} from '../office-furniture-v2.js'
 
 const close=(a,b)=>assert.ok(Math.abs(a-b)<3e-6,`${a} != ${b}`)
 const overlaps=(a,b)=>a.x1>b.x0+1e-6&&a.x0<b.x1-1e-6&&a.z1>b.z0+1e-6&&a.z0<b.z1-1e-6
@@ -34,7 +35,8 @@ test('ALIGN walls have exactly one data-owned 1.5m opening in each of seven encl
     }
   }
   assert.equal(finish.solid.filter(p=>p.kind==='door-header').length,7)
-  assert.deepEqual(spec.outer,buildOfficeShellV3Spec(LAYOUT_V3).outer)
+  const originalOuter=buildOfficeShellV3Spec(LAYOUT_V3).outer.map(p=>p.side!=='south'?p:{...p,...(p.lo===LAYOUT_V3.envelope.x0?{hi:-1}:{lo:5})})
+  assert.deepEqual(spec.outer,originalOuter) // 仅南门按本次授权从4m加宽到6m，其余外墙保持不变。
 })
 
 test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of every rectangular path',()=>{
@@ -52,7 +54,7 @@ test('ALIGN floors use kind palette, a 6..10m band and non-overlapping union of 
 for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision registration and cleanup ${low?'low':'high'}`,()=>{
   const root=new THREE.Group(),collision=createFurnitureCollision(),v=buildOfficeAlignedZones({THREE,root,layout:ALIGN,low,collision})
   try{
-    assert.equal(v.furnishings.length,8);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
+    assert.equal(v.furnishings.length,9);assert.equal(collision.stats().bodies,v.obstacles().length);assert.ok(v.obstacles().length>20)
     const forbidden=[...alignPassages(ALIGN),...alignDoorAprons(ALIGN)],pos=new THREE.Vector3()
     for(const f of v.furnishings)for(const p of f.placements){
       const box=new THREE.Box3(),a=f.root.geometry.attributes.position
@@ -60,7 +62,12 @@ for(const low of [false,true])test(`ALIGN actual furnishing vertices, collision 
       const b={x0:box.min.x,x1:box.max.x,z0:box.min.z,z1:box.max.z}
       for(const k of Object.keys(b))close(b[k],p.bounds[k])
       for(const c of forbidden)assert.equal(overlaps(b,c),false,`${p.id} intersects passage/door`)
-      for(const [,x,z]of Object.values(ALIGN.seats))assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' workstation')
+      for(const [id,[,x,z]]of Object.entries(ALIGN.seats)){
+        if(p.workstationIds?.includes(id)){
+          assert.equal(overlaps(b,{x0:x-.7,x1:x+.7,z0:z-.35,z1:z+.35}),false,p.id+' existing desktop')
+          assert.equal(overlaps(b,{x0:x-.4,x1:x+.4,z0:z+.35,z1:z+1.3}),false,p.id+' seat access')
+        }else assert.ok(distance(b,x,z)>=1.6-1e-6,p.id+' unrelated workstation')
+      }
       assert.ok(distance(b,ALIGN.ring.center.x,ALIGN.ring.center.z)>=10-1e-6,p.id+' ring')
       assert.ok(v.obstacles().some(o=>o.id===p.id))
     }
@@ -76,7 +83,7 @@ test('ALIGN host on/off uses the same 6m collision boundary, unchanged 3.5m coun
     try{await host.ready;assert.deepEqual(host.colliders,barColliders(ALIGN));if(search)assert.equal(host.status,'open')}
     finally{host.dispose()}
   }
-  assert.deepEqual(validateIslandRings(ALIGN).errors,['SOFA_BEYOND_COLLISION'])
+  assert.equal(validateIslandRings(ALIGN).ok,true)
 })
 
 test('ALIGN collision corners stay within 6.3m without gaps in the annular sectors or closing the doors',()=>{
@@ -94,16 +101,65 @@ test('ALIGN collision corners stay within 6.3m without gaps in the annular secto
   assert.ok(Math.max(...old.flatMap(b=>[b.x0,b.x1].flatMap(x=>[b.z0,b.z1].map(z=>Math.hypot(x-center.x,z-center.z)))))>6.3,'old approximation is a failing control')
 })
 
-test('ALIGN real registry consumes resolved layout, exposes obstacles and marks display modules pending',async()=>{
+test('ALIGN real registry consumes resolved layout, exposes obstacles and builds display modules',async()=>{
   const scene=new THREE.Scene(),layout=resolveOfficeLayout('?layout=3&align=1'),registered=[]
   const r=startOfficeV3({THREE,scene,layout,quality:{tier:'high'},collision:{add:(p,kind)=>registered.push({p,kind}),remove:()=>{}},canvasTex})
   try{
     assert.equal(r.get('shell3').spec.inner[0].room,layout.regions.find(r=>r.id==='market'))
     assert.equal(r.get('zones').floor.regions.length,15);assert.ok(r.get('zones').obstacles().length>0)
-    assert.equal(r.get('displayDepartments').pending,true);assert.equal(r.get('displayStaff').pending,true)
+    assert.equal(r.get('displayDepartments').pending,undefined)
+    assert.equal(r.get('displayDepartments').regions.length,4)
+    assert.equal(r.get('displayDepartments').summary().departments,4)
+    assert.equal(r.get('displayStaff').pending,undefined)
+    assert.equal(r.get('displayStaff').summary().synthetic,true)
     assert.deepEqual(r.summary().skipped,[])
     assert.equal(registered.filter(p=>p.kind==='office3-align-furnishing').length,r.get('zones').obstacles().length)
   }finally{r.dispose()}
+})
+
+function furnitureFixture(layout, build = placeOfficeFurnitureV2) {
+  const scene=new THREE.Scene(),bodies=[],removed=[]
+  const A={furn:Object.fromEntries(['desk','chairDesk','computerScreen','computerKeyboard','computerMouse','table','chairModernCushion','bookcaseOpen','books','pottedPlant'].map(n=>[n,true]))}
+  const ctx=()=>({canvas:{},fillRect(){},fillText(){},drawImage(){}})
+  const placeFurniture=(assets,name,x,z,{y=0,rotY=0})=>{const group=new THREE.Group(),g=new THREE.BoxGeometry(1,1,1);g.translate(0,.5,0);group.add(new THREE.Mesh(g,new THREE.MeshStandardMaterial({name:'wood'})));group.position.set(x,y,z);group.rotation.y=rotY;return{group,size:new THREE.Vector3(1,1,1)}}
+  const value=build({THREE,scene,layout,A,placeFurniture,canvasTex:()=>({image:{getContext:ctx},dispose(){}}),makeScreenTexture:()=>({ctx:ctx(),tex:{dispose(){}}}),collision:{add:(g,kind)=>bodies.push({g,kind,box:new THREE.Box3().setFromObject(g)}),remove:g=>removed.push(g)}})
+  return{value,scene,bodies,removed}
+}
+
+test('ALIGN ops screen and both bookshelves use actual bounds, avoid rooms/paths/desks and expose obstacles',()=>{
+  const {value,bodies,removed}=furnitureFixture(ALIGN),spec=value.spec,e=ALIGN.envelope
+  try{
+    const obstacles=value.obstacles();assert.equal(obstacles.length,3)
+    const zones=buildOfficeAlignedZones({THREE,root:new THREE.Group(),layout:ALIGN})
+    try{for(const b of obstacles){
+      assert.ok(b.x0>=e.x0&&b.x1<=e.x1&&b.z0>=e.z0&&b.z1<=e.z1,b.id+' inside envelope')
+      for(const r of ALIGN.regions.filter(r=>r.walled))assert.equal(overlaps(b,r),false,b.id+' room')
+      for(const p of alignPassages(ALIGN))assert.equal(overlaps(b,p),false,b.id+' path')
+      for(const [,x,z]of Object.values(ALIGN.seats))assert.ok(distance(b,x,z)>=1.2,b.id+' workstation')
+      for(const p of zones.obstacles())assert.equal(overlaps(b,p),false,b.id+' furnishing')
+      const area=ALIGN.regions.find(r=>r.id===(b.id==='align-ops-screen'?'west-open':'kb'))
+      assert.ok(b.x0>=area.x0&&b.x1<=area.x1&&b.z0>=area.z0&&b.z1<=area.z1)
+    }}finally{zones.dispose()}
+    assert.ok(ALIGN.deskGroups.ops.some(name=>{const [,x,z]=ALIGN.seats[name];return Math.hypot(spec.opsScreen.x-x,spec.opsScreen.z-z)<=6}))
+    const solids=bodies.filter(b=>['bookcaseOpen','screenPost'].includes(b.kind));assert.equal(solids.length,4)
+    for(const {box}of solids)assert.ok(obstacles.some(b=>box.min.x>=b.x0-1e-6&&box.max.x<=b.x1+1e-6&&box.min.z>=b.z0-1e-6&&box.max.z<=b.z1+1e-6))
+    const plane=value.root.children.find(m=>{if(!m.isMesh)return false;const b=new THREE.Box3().setFromObject(m);return Math.abs(b.max.x-b.min.x-spec.opsScreen.w)<1e-5&&Math.abs(b.max.y-b.min.y-spec.opsScreen.h)<1e-5})
+    assert.ok(plane);const p=plane.geometry.attributes.position,a=new THREE.Vector3().fromBufferAttribute(p,0),b=new THREE.Vector3().fromBufferAttribute(p,1),c=new THREE.Vector3().fromBufferAttribute(p,2),n=b.sub(a).cross(c.sub(a)).normalize()
+    assert.ok(n.z>.99);for(const name of ALIGN.deskGroups.ops)assert.ok(ALIGN.seats[name][2]>spec.opsScreen.z+.17)
+    assert.equal(value.spec.workstations.length,25);for(const s of value.spec.workstations)assert.deepEqual([s.region,s.x,s.z],ALIGN.seats[s.name].slice(0,3))
+  }finally{value.dispose()}
+  assert.equal(removed.length,4)
+})
+
+test('stable V3 keeps exact ops/shelf coordinates and ALIGN derives them from layout',()=>{
+  const stable=officeFurnitureV2Spec(LAYOUT_V3)
+  assert.deepEqual(stable.opsScreen,{x:-22.5,z:7.2,y:2.45,w:3.6,h:1.2})
+  assert.deepEqual(stable.shelves,[{x:30.5,z:-17.45,w:2.8,d:.6,yaw:0},{x:32.45,z:-15.7,w:2,d:.6,yaw:Math.PI/2}])
+  const moved=structuredClone(ALIGN);moved.regions.find(r=>r.id==='kb').z0+=.5;moved.corridors.westNorthCross.z1+=.5
+  for(const name of moved.deskGroups.ops)moved.seats[name][1]+=.5
+  const before=officeFurnitureV2Spec(ALIGN),after=officeFurnitureV2Spec(moved)
+  close(after.opsScreen.x,before.opsScreen.x+.5);close(after.opsScreen.z,before.opsScreen.z+.5)
+  before.shelves.forEach((s,i)=>close(after.shelves[i].z,s.z+.5))
 })
 
 // Captured from Git f0f4632 objects, not from the candidate. Full registry without furniture asset fixture;
@@ -119,7 +175,8 @@ for(const tier of ['high','low'])for(const sample of [false,true])test(`stable V
 })
 
 test('app wiring remains a single line with the two resolved-layout arguments',()=>{
-  const lines=readFileSync(new URL('../app.js',import.meta.url),'utf8').split('\n'),line=lines[962]
+  const lines=readFileSync(new URL('../app.js',import.meta.url),'utf8').split('\n'),line=lines.find(value=>value.includes('selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT)'))
+  assert.ok(line)
   assert.ok(line.includes('selectEnvironmentConflicts(environmentRoots, OFFICE_LAYOUT)'))
   assert.ok(line.includes('layout: OFFICE_LAYOUT'));assert.equal(line.includes('LAYOUT_V3'),false)
 })

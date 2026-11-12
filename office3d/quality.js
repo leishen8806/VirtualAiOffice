@@ -16,6 +16,8 @@ export function chooseQuality({ averageMs = 0, cores, memory, gpu = '' } = {}) {
 export function createQualityPolicy({ selection, signals = {}, wall = false } = {}) {
   let tier = selection.tier, source = selection.source, reason = selection.forced ? 'URL强制' : source === 'storage' ? '已保存选择' : wall ? '大屏默认高档' : '等待6秒预热'
   let started = null, windowAt = null, samples = [], warm = [], slowSince = null, initialized = false, downgraded = false
+  // 用户明确选了"高"（本次手动选、上次保存、或网址指定）：锁定完整效果，不自动降档、不节能（董事会 2026-10-30）。
+  let locked = tier === 'high' && ['url', 'storage'].includes(source)
   function observe(ms, time, eligible = true) {
     if (!eligible || !Number.isFinite(ms) || ms <= 0) { slowSince = null; samples = []; windowAt = null; return false }
     if (started === null) { started = time; return false }
@@ -28,7 +30,7 @@ export function createQualityPolicy({ selection, signals = {}, wall = false } = 
         const changed = next !== tier; tier = next; source = 'auto'; reason = '6秒预热与设备信号'; return changed
       }
     }
-    if (selection.forced) return false
+    if (selection.forced || locked) return false
     if (windowAt === null) windowAt = time
     samples.push(ms)
     if (time - windowAt < 1000) return false
@@ -42,14 +44,15 @@ export function createQualityPolicy({ selection, signals = {}, wall = false } = 
   }
   function select(q, storage) {
     if (!valid(q) || selection.forced) return false
-    tier = q; source = 'manual'; reason = '手动选择'; initialized = true; slowSince = null; samples = []
+    tier = q; source = 'manual'; reason = q === 'high' ? '手动选择：完整效果，不节能' : '手动选择'; locked = q === 'high'; initialized = true; slowSince = null; samples = []
     try { storage?.setItem(QUALITY_KEY, q) } catch {}
     return true
   }
-  return { observe, select, resetWindow() { slowSince = null; samples = []; windowAt = null }, get tier() { return tier }, get source() { return source }, get reason() { return reason }, get downgraded() { return downgraded }, forced: selection.forced }
+  return { observe, select, resetWindow() { slowSince = null; samples = []; windowAt = null }, get tier() { return tier }, get locked() { return locked }, get source() { return source }, get reason() { return reason }, get downgraded() { return downgraded }, forced: selection.forced }
 }
-export function renderLimit({ tier, wall = false, idleMs = 0, active = false, hidden = false }) {
+export function renderLimit({ tier, wall = false, idleMs = 0, active = false, hidden = false, locked = false }) {
   if (hidden) return 0
+  if (locked) return TIERS[tier].fps // 锁定"高"：闲置也不降到 10 帧
   if (!wall && !active && idleMs >= 30000) return 10
   return TIERS[tier].fps
 }
@@ -88,6 +91,7 @@ export function takeQualityWork(queue, run, { budgetMs = 8, now = () => performa
 // 原场景和碰撞引用保留，中低档只切换渲染副本；恢复高档不重新装载模型。
 export function createSceneQuality(THREE, { scene, renderer, camera, env, characters, mergeStatic }) {
   let tier = 'high', prepared = false, cooldownUntil = 0
+  const HIGH_CHARACTER_SHADOW_AGENTS = 2
   const compiled = new Set()
   const originals = [], variants = {}, sourceMaterials = new Map(), sourceShadows = new Map(), lightVisibility = new Map(), shadowSizes = new Map(), lowMaterials = new Map(), lowTextures = new Map(), fakeShadows = new Map()
   const originalsGeometry = new Map(), compactGeometry = new Map(), box = new THREE.Box3(), center = new THREE.Vector3(), size = new THREE.Vector3()
@@ -155,7 +159,7 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
     scene.traverse(o=>{
       if(o.isLight&&!lightVisibility.has(o)){lightVisibility.set(o,o.visible);if(o.shadow)shadowSizes.set(o,o.shadow.mapSize.clone())}
       if(!o.isMesh||o.userData.qualityProxy)return
-      if(!sourceMaterials.has(o)){box.setFromObject(o).getSize(size);sourceMaterials.set(o,o.material);sourceShadows.set(o,{cast:o.castShadow,receive:o.receiveShadow,mediumCast:o.castShadow&&(!!o.userData.agentId||Math.max(size.x,size.z)>1&&size.y>.4)})}
+      if(!sourceMaterials.has(o)){box.setFromObject(o).getSize(size);sourceMaterials.set(o,o.material);sourceShadows.set(o,{cast:o.castShadow,receive:o.receiveShadow,largeStatic:!o.userData.agentId&&Math.max(size.x,size.z)>4&&size.y>.8,mediumCast:o.castShadow&&(!!o.userData.agentId||Math.max(size.x,size.z)>1&&size.y>.4)})}
       if(Array.isArray(o.material)&&o.geometry?.groups.length>o.material.length){
         const source=o.geometry, compact=compactDrawGroups(source.groups,source.index?.array,source.attributes.position.count)
         if(compact){const geometry=new THREE.BufferGeometry();geometry.attributes=source.attributes;geometry.morphAttributes=source.morphAttributes;geometry.morphTargetsRelative=source.morphTargetsRelative;geometry.setIndex(new THREE.BufferAttribute(compact.index,1));geometry.groups=compact.groups;geometry.boundingBox=source.boundingBox?.clone()||null;geometry.boundingSphere=source.boundingSphere?.clone()||null;geometry.drawRange={...source.drawRange};originalsGeometry.set(o,source);compactGeometry.set(o,geometry)}
@@ -173,22 +177,53 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
     const selected=new Set(q==='high'?lights:q==='low'?essential.slice(0,4):[...essential,...points.filter((_,i)=>[0,3,8,10].includes(i))].slice(0,8))
     for(const l of lights){l.visible=lightVisibility.get(l)&&selected.has(l);if(l.shadow){const scale=q==='medium'?.5:1, original=shadowSizes.get(l);const x=Math.max(1,Math.round(original.x*scale)),y=Math.max(1,Math.round(original.y*scale));if(l.shadow.mapSize.x!==x||l.shadow.mapSize.y!==y){l.shadow.mapSize.set(x,y);l.shadow.map?.dispose();l.shadow.map=null} }}
     renderer.shadowMap.enabled=q!=='low'
-    for(const [mesh,mat]of sourceMaterials){mesh.material=q==='low'?(Array.isArray(mat)?mat.map(lightMaterial):lightMaterial(mat)):mat;if(originalsGeometry.has(mesh))mesh.geometry=q==='high'?originalsGeometry.get(mesh):compactGeometry.get(mesh);const shadow=sourceShadows.get(mesh);mesh.castShadow=q==='high'?shadow.cast:q==='medium'&&shadow.mediumCast;mesh.receiveShadow=q!=='low'&&shadow.receive}
+    for(const [mesh,mat]of sourceMaterials){mesh.material=q==='low'?(Array.isArray(mat)?mat.map(lightMaterial):lightMaterial(mat)):mat;if(originalsGeometry.has(mesh))mesh.geometry=q==='high'?originalsGeometry.get(mesh):compactGeometry.get(mesh);const shadow=sourceShadows.get(mesh);mesh.castShadow=q==='high'&&(shadow.cast&&!!mesh.userData.agentId);if(q==='medium')mesh.castShadow=shadow.mediumCast;mesh.receiveShadow=q!=='low'&&shadow.receive}
+    if (q === 'high') {
+      // 写实人物的投影按人物限额保留，避免 25 个蒙皮人物各自触发阴影通道。
+      // 以相机距离选最近的两个 agent；大型静态物件仍沿用上面的原始阴影预算。
+      const byAgent = new Map()
+      for (const [mesh] of sourceMaterials) {
+        const agentId = mesh.userData.agentId
+        if (!agentId || !mesh.castShadow) continue
+        const list = byAgent.get(agentId) || []
+        list.push(mesh); byAgent.set(agentId, list)
+      }
+      const ranked = [...byAgent.entries()].map(([agentId, meshes]) => {
+        const point = new THREE.Vector3(); meshes[0].getWorldPosition(point)
+        return { agentId, meshes, distance: point.distanceTo(camera.position) }
+      }).sort((a, b) => a.distance - b.distance)
+      const keep = new Set(ranked.slice(0, HIGH_CHARACTER_SHADOW_AGENTS).map(row => row.agentId))
+      for (const [agentId, meshes] of byAgent) for (const mesh of meshes) mesh.castShadow = keep.has(agentId)
+    }
     for(const o of originals)o.visible=q==='high'||!variants[q]
     for(const [name,v]of Object.entries(variants)){
       v.root.visible=name===q
       if(name===q&&!v.root.parent)scene.add(v.root)
       else if(name!==q&&v.root.parent)v.root.removeFromParent()
     }
-    for(const [ch,shadow]of fakeShadows)shadow.visible=q==='low'&&ch.group.visible
+    for(const [ch,shadow]of fakeShadows)syncFakeShadow(ch,shadow)
     renderer.shadowMap.needsUpdate=q!=='low'
+  }
+  function syncFakeShadow(ch,shadow) {
+    shadow.visible=tier==='low'&&ch.group.visible
+    shadow.position.set(ch.group.position.x,.035,ch.group.position.z)
+  }
+  function createFakeShadow(ch) {
+    const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshBasicMaterial({color:0x18202a,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}))
+    shadow.rotation.x=-Math.PI/2;shadow.userData.dynamic=true;shadow.userData.fakeShadow=true;shadow.userData.character=ch;syncFakeShadow(ch,shadow);scene.add(shadow);return shadow
+  }
+  function replaceCharacter(previous,next) {
+    if(!prepared||!previous||!next)return
+    const old=fakeShadows.get(previous)
+    if(!old)return
+    fakeShadows.delete(previous);old.removeFromParent();old.geometry.dispose();old.material.dispose()
+    fakeShadows.set(next,createFakeShadow(next))
   }
   function prepare(q = tier) {
     if(prepared)return
     capture();prepared=true;tier=q
     for(const ch of characters()){
-      const shadow=new THREE.Mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshBasicMaterial({color:0x18202a,transparent:true,opacity:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1}))
-      shadow.rotation.x=-Math.PI/2;shadow.userData.dynamic=true;scene.add(shadow);fakeShadows.set(ch,shadow)
+      fakeShadows.set(ch,createFakeShadow(ch))
     }
     const started=performance.now();apply(q);if(q!=='high')renderer.compile(scene,camera);compiled.add(q);cooldownUntil=performance.now()+Math.max(1000,performance.now()-started)
   }
@@ -203,7 +238,7 @@ export function createSceneQuality(THREE, { scene, renderer, camera, env, charac
   }
   function update() {
     if(tier==='low')for(const {source,material}of lowMaterials.values()){material.emissive?.copy(source.emissive);material.emissiveIntensity=source.emissiveIntensity}
-    if(tier==='low')for(const [ch,shadow]of fakeShadows){shadow.visible=ch.group.visible;shadow.position.set(ch.group.position.x,.035,ch.group.position.z)}
+    if(tier==='low')for(const [ch,shadow]of fakeShadows)syncFakeShadow(ch,shadow)
   }
-  return {prepare,prepareTier,activate,update,eligible(time=performance.now()){return time>=cooldownUntil},get tier(){return tier},get prepared(){return prepared},summary:()=>({sourceMeshes:originals.length,medium:variants.medium?.merged,low:variants.low?.merged,instanced:[variants.medium?.instances,variants.low?.instances],lowTextures:lowTextures.size})}
+  return {prepare,prepareTier,activate,update,replaceCharacter,fakeShadowState:()=>[...fakeShadows].map(([character,shadow])=>({character,shadow})),eligible(time=performance.now()){return time>=cooldownUntil},get tier(){return tier},get prepared(){return prepared},summary:()=>({sourceMeshes:originals.length,medium:variants.medium?.merged,low:variants.low?.merged,instanced:[variants.medium?.instances,variants.low?.instances],lowTextures:lowTextures.size})}
 }

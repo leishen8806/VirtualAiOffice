@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import test from 'node:test'
+import {
+  LAYOUT_V1,
+  LAYOUT_V2,
+  LAYOUT_V3,
+  LAYOUT_V3_ALIGN,
+  LAYOUT_V3_ALIGN_L2B,
+  LAYOUT_V3_ALIGN_SAMPLE,
+  resolveOfficeLayout,
+} from '../office-layout.js'
 
 import {
   DEFAULT_OFFICE_LAYOUT,
@@ -40,6 +50,16 @@ const oldFields = ({
   ...(zones ? { zones } : {}),
   ...(controlRoom ? { controlRoom } : {}),
 })
+const layoutName = (search) => {
+  const layout = resolveOfficeLayout(search)
+  if (layout === LAYOUT_V1) return 'LAYOUT_V1'
+  if (layout === LAYOUT_V2) return 'LAYOUT_V2'
+  if (layout === LAYOUT_V3) return 'LAYOUT_V3'
+  if (layout === LAYOUT_V3_ALIGN) return 'LAYOUT_V3_ALIGN'
+  if (layout === LAYOUT_V3_ALIGN_SAMPLE) return 'LAYOUT_V3_ALIGN_SAMPLE'
+  if (layout === LAYOUT_V3_ALIGN_L2B) return 'LAYOUT_V3_ALIGN_L2B'
+  return 'unknown'
+}
 
 test('place mode resolves strict URL parameter matrix', () => {
   assert.deepEqual(
@@ -62,6 +82,45 @@ test('place mode resolves strict URL parameter matrix', () => {
   assert.equal(resolvePlaceMode('?place=dr').place, 'dr')
   assert.equal(resolvePlaceMode('?place=dr').campus, true)
   assert.equal(resolvePlaceMode('?campus=1&place=dr').place, 'dr')
+})
+
+test('WH-R1 canonical warehouse defaults to the new scene while legacy is explicit', () => {
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1').whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+})
+
+test('ENTRANCE-1 preserves the baseline parse matrix except the new latest office query', () => {
+  const baseline = [
+    ['empty', '', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['canonical office', '?place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['stable V3', '?place=drlife-office&layout=3', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3'],
+    // OFFICE-L2B-B3 起，精确样板入口默认解析到 L2B（ENTRANCE-1 写这条测试时还是 L2 样板）。
+    ['new latest sample', '?place=drlife-office&layout=3&align=1&officeSample=1', 'e33e8499531a68272908619cbdc2b3ac1720148c0d8026e7480a52ee2355db74', 'LAYOUT_V3_ALIGN_L2B'],
+    ['warehouse latest', '?place=drlife-warehouse', '710a41efc0df550ec93f3562e5a122cd5142f7846f98b49daec16fef1da32457', 'LAYOUT_V1'],
+    ['layout 2', '?layout=2', '4a4415a9df99c3d5263f66afddf4ee20432379ee9901d8fa97ac5efe9af430b0', 'LAYOUT_V2'],
+    ['ALIGN without sample', '?layout=3&align=1', '3f4e4925cee7cb49874f475a0782610dd3fcdc2a356f19e31ff50d9839b02598', 'LAYOUT_V3_ALIGN'],
+    ['campus preview', '?campus=1', '97a90876ce07b7b6639a5326f49f79a116d8e54c565b977de7c12c2ee5b0bb04', 'LAYOUT_V1'],
+    ['legacy office', '?place=office', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['legacy warehouse', '?place=dr', '7c27943e311b9ba04ac46db4e257da0f26c04aecd0a2b41f11746af0971976f8', 'LAYOUT_V1'],
+    ['uppercase value', '?place=DRLIFE-OFFICE', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['uppercase key', '?Place=drlife-office', 'f0d76817f147618325bce8a9acbfa46fe3f63ef8ccb6d9df38b70c1f921ce23e', 'LAYOUT_V1'],
+    ['duplicate place', '?place=drlife-office&place=drlife-office', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V1'],
+    ['duplicate latest shape', '?place=drlife-office&place=drlife-office&layout=3&align=1&officeSample=1', '8c1832972fbea6998cc4959bbf87dc1e206d5903597b8cf959cca40fb3240fab', 'LAYOUT_V3_ALIGN_L2B'],
+  ]
+  for (const [label, search, baselineHash, baselineLayout] of baseline) {
+    const mode = resolvePlaceMode(search)
+    const hash = createHash('sha256').update(JSON.stringify(mode)).digest('hex')
+    assert.equal(layoutName(search), baselineLayout, `${label}: office layout`)
+    if (label === 'new latest sample') {
+      const stableV3 = resolvePlaceMode('?place=drlife-office&layout=3')
+      assert.deepEqual({ ...mode, subtitle: stableV3.subtitle }, stableV3, 'only the new latest route subtitle changes')
+      assert.equal(mode.subtitle, '最新版 · 办公室样板')
+      assert.notEqual(hash, baselineHash)
+    } else {
+      assert.equal(hash, baselineHash, `${label}: full resolvePlaceMode result`)
+    }
+  }
 })
 
 test('legacy URLs preserve every pre-NAV-2 field', () => {
@@ -104,8 +163,8 @@ test('legacy URLs preserve every pre-NAV-2 field', () => {
 test('canonical and legacy place spellings are equivalent', () => {
   const equivalents = [
     ['?place=office', '?place=drlife-office'],
-    ['?place=dr', '?place=drlife-warehouse'],
-    ['?campus=1&place=dr', '?campus=1&place=drlife-warehouse'],
+    ['?place=dr', '?place=drlife-warehouse&legacy=drcampus'],
+    ['?campus=1&place=dr', '?campus=1&place=drlife-warehouse&legacy=drcampus'],
   ]
   for (const [legacySearch, canonicalSearch] of equivalents) {
     const legacy = resolvePlaceMode(legacySearch)
@@ -124,24 +183,27 @@ test('latest channel is frozen and generates complete place searches', () => {
   assert.deepEqual(PLACE_LATEST, {
     office: {
       layout: 3,
-      subtitle: '最新版 · rev3 开发中',
+      align: 1,
+      officeSample: 1,
+      r1: 1,
+      subtitle: '最新版 · 办公室样板',
     },
-    warehouse: {},
+    warehouse: { whr1: 1 },
   })
   assert.ok(Object.isFrozen(PLACE_LATEST))
   assert.ok(Object.isFrozen(PLACE_LATEST.office))
   assert.ok(Object.isFrozen(PLACE_LATEST.warehouse))
   assert.equal(
     latestSearch('drlife-office'),
-    '?place=drlife-office&layout=3',
+    '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
   assert.equal(
     latestSearch('drlife-warehouse'),
-    '?place=drlife-warehouse',
+    '?place=drlife-warehouse&whr1=1',
   )
   assert.equal(
     latestSearch('unknown-place'),
-    '?place=drlife-office&layout=3',
+    '?place=drlife-office&layout=3&align=1&officeSample=1&r1=1',
   )
 })
 
@@ -154,11 +216,15 @@ test('office layout metadata follows valid URL values and fails closed', () => {
       assert.equal(
         mode.subtitle,
         layout === 3
-          ? PLACE_LATEST.office.subtitle
+          ? '最新版 · rev3 开发中'
           : '连接中…',
       )
     }
   }
+  assert.equal(
+    resolvePlaceMode(latestSearch('drlife-office')).subtitle,
+    PLACE_LATEST.office.subtitle,
+  )
   for (const search of [
     '?place=drlife-office&layout=0',
     '?place=drlife-office&layout=4',
@@ -179,7 +245,7 @@ test('office layout metadata follows valid URL values and fails closed', () => {
   )
 })
 
-test('latest office subtitle survives connection text updates only on layout 3', () => {
+test('latest office subtitle survives connection updates only on the generated latest route', () => {
   const target = { textContent: '连接中…' }
   let sync = null
   const observer = {
@@ -220,6 +286,11 @@ test('latest office subtitle survives connection text updates only on layout 3',
     documentRef,
     Observer,
   }), null)
+  assert.equal(maintainLatestSubtitle({
+    search: '?place=drlife-office&layout=3',
+    documentRef,
+    Observer,
+  }), null)
 })
 
 test('canonical place metadata and invalid values fail closed', () => {
@@ -240,6 +311,9 @@ test('canonical place metadata and invalid values fail closed', () => {
   assert.equal(warehouse.kind, 'warehouse')
   assert.equal(warehouse.layout, null)
   assert.equal(warehouse.campus, true)
+  assert.equal(warehouse.whr1, true)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').cameraViews, DR_CAMERA_VIEWS)
 
   const invalid = [
     '?place=acme-office',
@@ -258,6 +332,22 @@ test('canonical place metadata and invalid values fail closed', () => {
     assert.equal(mode.placeId, 'drlife-office', search)
     assert.equal(mode.campus, false, search)
   }
+})
+
+test('WH-R1 entry aliases and preview combinations resolve consistently', () => {
+  for (const search of [
+    '?place=drlife-warehouse',
+    '?place=drlife-warehouse&whr1=1',
+    '?place=drlife-warehouse&controlRoom=1',
+    '?campus=1&place=drlife-warehouse&whr1=1',
+    '?campus=1&place=dr&whr1=1',
+  ]) {
+    const mode = resolvePlaceMode(search)
+    assert.equal(mode.whr1, true, search)
+    assert.ok(mode.cameraViews?.length >= 1, search)
+  }
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&legacy=drcampus').whr1, undefined)
+  assert.equal(resolvePlaceMode('?place=drlife-warehouse&whr1=1&whr1=1').whr1, undefined)
 })
 
 test('camera storage keys are place-scoped with one legacy DR fallback', () => {
@@ -312,7 +402,7 @@ test('main page wires DR isolation without changing office defaults', () => {
   assert.match(app, /const CAMPUS_MODE = PLACE_MODE\.campus/)
   assert.match(app, /if \(DR_MODE\) \{[\s\S]*\} else \{[\s\S]*setInterval\(poll, POLL_MS\)/)
   assert.match(app, /if \(!DR_MODE\) \{[\s\S]*director\.update\(dt\)/)
-  assert.match(app, /const MINI = DR_MODE \? PLACE_MODE\.miniBounds : MINI_BOUNDS/)
+  assert.match(app, /const MINI = DR_MODE \? PLACE_MODE\.miniBounds : OFFICE_LAYOUT\.r1Phase === 'R1' \? OFFICE_LAYOUT\.miniBounds : MINI_BOUNDS/)
   assert.match(app, /isolateDrPlace\(\{ scene, campusRoot: campusRegistry\?\.root/)
   assert.match(view, /root === campusRoot \|\| keepRoots\.includes\(root\) \|\| root\.isLight \|\| environmentRoots\.has\(root\)/)
   assert.doesNotMatch(view, /\bfetch\b|XMLHttpRequest|WebSocket|setInterval/)

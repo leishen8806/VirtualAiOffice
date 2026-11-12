@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { ClaudeCliAdapter, CodexCliAdapter, OpenAICompatAdapter, mapLegacyActivities, mapLegacyResult } from '../dist/index.js'
 import type { ExecutionSpec, ExecutorAdapter, ExecutorCapabilities, ToolGrant } from '../dist/index.js'
 
+const canonicalPath = (p: string) => { try { p = fs.realpathSync(p) } catch { p = path.resolve(p) } return process.platform === 'win32' ? p.toLowerCase() : p }
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'vao-adapter-'))
 const workdir = path.join(tempRoot, 'workdir')
 const otherWorkdir = path.join(tempRoot, 'other')
@@ -361,7 +362,7 @@ test('FIX 1: real adapter compliance suite (14 checks per adapter)', async (t) =
           await assertResolved(handle)
           await waitForFile(capture)
           const info = JSON.parse(fs.readFileSync(capture, 'utf8'))
-          assert.equal(info.cwd, otherWorkdir, `expected cwd=${otherWorkdir}, got ${info.cwd}`)
+          assert.equal(canonicalPath(info.cwd), canonicalPath(otherWorkdir), `expected cwd=${otherWorkdir}, got ${info.cwd}`)
         }
       })
 

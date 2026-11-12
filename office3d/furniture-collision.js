@@ -3,10 +3,12 @@ import * as THREE from './vendor/three/three.module.js'
 // 人物是直立胶囊；家具保持静态，用模型三角面做窄相检测。
 export function createFurnitureCollision() {
   const bodies = []
+  const navigationOrigins = new WeakMap()
+  const navigationData = Symbol('R1 capsule coefficients')
   const point = new THREE.Vector3(), closest = new THREE.Vector3()
   const a = new THREE.Vector3(), b = new THREE.Vector3(), axis = new THREE.Vector3()
   const edge = new THREE.Vector3(), delta = new THREE.Vector3(), ray = new THREE.Ray()
-  const radius = 0.22, low = 0.24, high = 1.48
+  const low = 0.24, high = 1.48
   const stats = { checks: 0, contacts: 0, triangles: 0 }
 
   function add(group, kind) {
@@ -38,7 +40,7 @@ export function createFurnitureCollision() {
   }
 
   // 竖直胶囊轴与三角面相交，或轴与任意边/顶点的最近距离小于半径。
-  function touches(tri) {
+  function touches(tri, radius = 0.22) {
     ray.set(a, axis.set(0, 1, 0))
     if (ray.intersectTriangle(tri.a, tri.b, tri.c, false, point) && point.y <= b.y && point.y >= a.y) return true
     for (const end of [a, b]) {
@@ -64,16 +66,58 @@ export function createFurnitureCollision() {
     return false
   }
 
-  function hit(x, z, ignore) {
+  function hit(x, z, ignore, radius = 0.22, candidates = bodies) {
     stats.checks++
     a.set(x, low, z); b.set(x, high, z)
-    for (const body of bodies) {
+    for (const body of candidates) {
       if (body.group === ignore || ignore?.has?.(body.group)) continue
       const box = body.box
       if (x < box.min.x - radius || x > box.max.x + radius || z < box.min.z - radius || z > box.max.z + radius || box.max.y < low - radius || box.min.y > high + radius) continue
-      for (const tri of body.triangles) if (touches(tri)) { stats.contacts++; return body }
+      for (const tri of body.triangles) if (touches(tri, radius)) { stats.contacts++; return body }
     }
     return null
+  }
+
+  function navigationTriangle(tri) {
+    if (tri[navigationData]) return tri[navigationData]
+    const { a, b, c } = tri, ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z, vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, uu = ux * ux + uy * uy + uz * uz, uv = ux * vx + uy * vy + uz * vz, vv = vx * vx + vy * vy + vz * vz
+    const row = { a, ux, uy, uz, vx, vy, vz, nx, ny, nz, n2: nx * nx + ny * ny + nz * nz, uu, uv, vv, determinant: uu * vv - uv * uv,
+      x0: Math.min(a.x, b.x, c.x), x1: Math.max(a.x, b.x, c.x), y0: Math.min(a.y, b.y, c.y), y1: Math.max(a.y, b.y, c.y), z0: Math.min(a.z, b.z, c.z), z1: Math.max(a.z, b.z, c.z),
+      edges: [[a, b], [b, c], [c, a]].map(([p, q]) => { const dx = q.x - p.x, dy = q.y - p.y, dz = q.z - p.z; return { x: p.x, y: p.y, z: p.z, dx, dy, dz, horizontal: dx * dx + dz * dz, length2: dx * dx + dy * dy + dz * dz } }) }
+    tri[navigationData] = row; return row
+  }
+  function insideTriangle(t, x, y, z) {
+    const dx = x - t.a.x, dy = y - t.a.y, dz = z - t.a.z, u = dx * t.ux + dy * t.uy + dz * t.uz, v = dx * t.vx + dy * t.vy + dz * t.vz
+    const s = (t.vv * u - t.uv * v) / t.determinant, r = (t.uu * v - t.uv * u) / t.determinant
+    return s >= 0 && r >= 0 && s + r <= 1
+  }
+  function edgeDistance(e, t, x, z) {
+    t = Math.max(0, Math.min(1, t))
+    const dx = e.x + e.dx * t - x, dz = e.z + e.dz * t - z, y = e.y + e.dy * t, dy = y - Math.max(low, Math.min(high, y))
+    return dx * dx + dy * dy + dz * dz
+  }
+  function navigationTouches(triangle, x, z, radius2) {
+    const t = navigationTriangle(triangle), dx = Math.max(t.x0 - x, 0, x - t.x1), dz = Math.max(t.z0 - z, 0, z - t.z1), dy = Math.max(t.y0 - high, 0, low - t.y1)
+    if (dx * dx + dy * dy + dz * dz >= radius2) return false
+    if (t.n2 > 0) {
+      if (Math.abs(t.ny) > 1e-12) {
+        const y = t.a.y - (t.nx * (x - t.a.x) + t.nz * (z - t.a.z)) / t.ny
+        if (y >= low && y <= high && insideTriangle(t, x, y, z)) return true
+      }
+      for (const y of [low, high]) {
+        const d = ((x - t.a.x) * t.nx + (y - t.a.y) * t.ny + (z - t.a.z) * t.nz) / t.n2
+        if (d * d * t.n2 < radius2 && insideTriangle(t, x - d * t.nx, y - d * t.ny, z - d * t.nz)) return true
+      }
+    }
+    for (const e of t.edges) {
+      if (edgeDistance(e, 0, x, z) < radius2 || edgeDistance(e, 1, x, z) < radius2) return true
+      const dot = (x - e.x) * e.dx + (z - e.z) * e.dz
+      if (e.horizontal > 1e-12 && edgeDistance(e, dot / e.horizontal, x, z) < radius2) return true
+      if (Math.abs(e.dy) > 1e-12 && (edgeDistance(e, (low - e.y) / e.dy, x, z) < radius2 || edgeDistance(e, (high - e.y) / e.dy, x, z) < radius2)) return true
+      if (edgeDistance(e, (dot + (low - e.y) * e.dy) / Math.max(1e-12, e.length2), x, z) < radius2 || edgeDistance(e, (dot + (high - e.y) * e.dy) / Math.max(1e-12, e.length2), x, z) < radius2) return true
+    }
+    return false
   }
 
   function move(position, dx, dz, ignore) {
@@ -139,7 +183,37 @@ export function createFurnitureCollision() {
     const body = bodies.find(b => b.group === group)
     if (!body) return false
     a.set(x, low, z); b.set(x, high, z)
-    return body.triangles.some(touches)
+    return body.triangles.some(tri => touches(tri))
   }
-  return { add, remove, hit, move, route, seatBody, overlaps, stats: () => ({ ...stats, bodies: bodies.length }) }
+  return { add, remove, hit, move, route, seatBody, overlaps,
+    // R1 navigation indexes the same registered triangles; legacy callers retain radius 0.22.
+    navigationBodies: () => bodies.slice(),
+    translateNavigationBody(group, dx, dz) {
+      const body = bodies.find(b => b.group === group)
+      if (!body || !Number.isFinite(dx) || !Number.isFinite(dz)) throw new Error('Invalid moving collision body')
+      for (const triangle of body.triangles) { triangle[navigationData] = undefined; for (const p of [triangle.a, triangle.b, triangle.c]) { p.x += dx; p.z += dz } }
+      body.box.min.x += dx; body.box.max.x += dx; body.box.min.z += dz; body.box.max.z += dz
+    },
+    poseNavigationBody(group, origin, dx, dz, yaw) {
+      const body = bodies.find(b => b.group === group)
+      if (!body || ![origin.x, origin.z, dx, dz, yaw].every(Number.isFinite)) throw new Error('Invalid collision pose')
+      if (!navigationOrigins.has(group)) navigationOrigins.set(group, body.triangles.map(t => t.clone()))
+      const source = navigationOrigins.get(group), co = Math.cos(yaw), si = Math.sin(yaw)
+      body.box.makeEmpty()
+      body.triangles.forEach((triangle, i) => { triangle[navigationData] = undefined; for (const key of ['a', 'b', 'c']) {
+        const p = source[i][key], x = p.x - origin.x, z = p.z - origin.z
+        triangle[key].set(origin.x + co * x + si * z + dx, p.y, origin.z - si * x + co * z + dz); body.box.expandByPoint(triangle[key])
+      } })
+    },
+    navigationHit(x, z, radius, ignore, candidates) {
+      if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(radius) || radius <= 0) throw new Error('Invalid navigation capsule')
+      stats.checks++
+      for (const body of candidates || bodies) {
+        if (body.group === ignore || ignore?.has?.(body.group)) continue
+        const box = body.box
+        if (x < box.min.x - radius || x > box.max.x + radius || z < box.min.z - radius || z > box.max.z + radius || box.max.y < low - radius || box.min.y > high + radius) continue
+        for (const tri of body.triangles) if (navigationTouches(tri, x, z, radius * radius)) { stats.contacts++; return body }
+      }
+      return null
+    }, stats: () => ({ ...stats, bodies: bodies.length }) }
 }

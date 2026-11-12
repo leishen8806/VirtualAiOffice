@@ -7,10 +7,10 @@ import crypto from 'node:crypto'
 import os from 'node:os'
 import fs from 'node:fs'
 import path from 'node:path'
+import { PerformanceObserver } from 'node:perf_hooks'
 import { fileURLToPath } from 'node:url'
 
 import { onDuty, nextChange, localParts } from '../workhours/schedule.mjs'
-import { latestHeartbeatByAgent } from './run-liveness.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
@@ -55,12 +55,15 @@ import { commandViewEnabled, createCommandViewRoutes } from './command-view-rout
 import { createCommandLiveWiring } from './command-view-wiring.mjs'
 import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
-import { createLastGoodState, loadStateComponents, createBackgroundHealth } from './state-last-good.mjs'
+import { createLastGoodState, loadStateComponents, createBackgroundHealth, createSnapshotGet } from './state-last-good.mjs'
+import { readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel } from './run-liveness.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
 let sun = { sunrise: null, sunset: null }
 let radar = null // { ms, level, nearby }
+const backgroundTimers = new Set()
+const trackTimer = timer => { backgroundTimers.add(timer); return timer }
 const RAIN_CODE = (c) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
 const cloudCode = (cloud) => (cloud >= 75 ? 3 : cloud >= 45 ? 2 : cloud >= 20 ? 1 : 0)
 function pnhIso(ms) { const t = localParts(new Date(ms), PNH.tz); return `${t.y}-${String(t.mo).padStart(2, '0')}-${String(t.d).padStart(2, '0')}T${String(t.h).padStart(2, '0')}:${String(t.mi).padStart(2, '0')}` }
@@ -139,7 +142,7 @@ async function refreshWeather() {
   if (w) weather = { ...w, sunrise: sun.sunrise, sunset: sun.sunset, fetchedAt: new Date(fetchedAt).toISOString() }
 }
 refreshWeather()
-setInterval(refreshWeather, 60 * 1000) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
+trackTimer(setInterval(refreshWeather, 60 * 1000)) // 每分钟刷新：数据时间与此刻相差不超过 15 分钟
 
 function world() {
   let cfg = null
@@ -153,7 +156,8 @@ function world() {
 }
 const PAPERCLIP = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
 const PORT = Number(process.env.OFFICE3D_PORT || 3200)
-const COMPANY = fs.readFileSync(path.join(HERE, '..', 'company-id.txt'), 'utf8').trim()
+const COMPANY_ID_FILE = process.env.OFFICE3D_COMPANY_ID_FILE || path.join(HERE, '..', 'company-id.txt')
+const COMPANY = fs.readFileSync(COMPANY_ID_FILE, 'utf8').trim()
 const townMap = loadTownMap({ file: path.join(HERE, 'town-map.json'), log: console.log })
 const tenancy = createTenancy({ dir: HERE, now: Date.now, log: console.log, paperclipBaseUrl: PAPERCLIP })
 tenancy.warnIfPaperclipNotLoopback()
@@ -168,6 +172,7 @@ const TYPES = {
   '.glb': 'model/gltf-binary',
   '.gltf': 'model/gltf+json',
   '.bin': 'application/octet-stream',
+  '.gz': 'application/octet-stream',
   '.txt': 'text/plain; charset=utf-8',
 }
 
@@ -176,6 +181,8 @@ async function get(p, { signal } = {}) {
   if (!r.ok) throw new Error(`${p} -> ${r.status}`)
   return r.json()
 }
+const snapshots = createSnapshotGet({ get })
+const moduleGet = name => snapshots.forModule(name)
 function readGovernanceFile(name) { try { return JSON.parse(fs.readFileSync(path.join(HERE, name), 'utf8')) } catch { return {} } }
 async function send(method, p, body) {
   const r = await fetch(PAPERCLIP + p, {
@@ -269,13 +276,21 @@ const commandLive = createCommandLiveWiring({
     return { status: response.status, body: response.ok ? await response.json() : null }
   },
 })
-const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/town/econ/trial', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy'])
+const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/town/econ/trial', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
 // 静态文件白名单：页面、脚本、样式、图片、模型。目录里的 json / log / dpapi / md / mjs（访问码、Telegram 配置、审计日志、委员会数据……）一律不对外
-const STATIC_EXT = new Set(['.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.glb', '.gltf', '.bin', '.fbx'])
+const STATIC_EXT = new Set(['.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.glb', '.gltf', '.bin', '.fbx', '.gz'])
 const staticOk = (rel) => STATIC_EXT.has(path.extname(rel).toLowerCase()) && !rel.split('/').some((seg) => seg.startsWith('.')) && !/^\/(tests|codex-prompts|_ref)\//.test(rel)
-let wallCache = { at: 0, data: null }, issuesCache = { at: 0, list: [] }
+let wallCache = { at: 0, data: null }, issuesCache = { at: 0, list: [] }, stateResponseCache = new Map()
+// /state 的轮询会持续遇到新任务、交互和版本号。缓存只用于短时间的展示加速，
+// 不能随着看板历史无限保留，否则 Node 常驻进程会把旧对象一直挂在堆上。
+function boundedCacheSet(cache, key, value, limit) {
+  if (cache.has(key)) cache.delete(key)
+  cache.set(key, value)
+  while (cache.size > limit) cache.delete(cache.keys().next().value)
+  return value
+}
 // 「待董事会提供 / 决定」：① 阻塞类型为「待授权或业务决定」的任务（读最近一条「阻塞：」评论，按更新时间缓存）；
 // ② roadmap.json 的 boardItems 里登记、且对应任务还没结束的事项（任务一结束就自动消失，不会留下过期的红灯）。只读。
 const blockedTypeCache = new Map() // issueId -> { updatedAt, type, condition }
@@ -291,7 +306,7 @@ async function wallBoardItems(roadmap) {
     let c = blockedTypeCache.get(i.id)
     if (!c || c.updatedAt !== i.updatedAt) {
       try { const cs = await get(`/api/issues/${i.id}/comments`); c = { updatedAt: i.updatedAt, ...blockedReason(Array.isArray(cs) ? cs : cs.comments || []) } } catch { c = { updatedAt: i.updatedAt, type: '未说明', condition: '' } }
-      blockedTypeCache.set(i.id, c)
+      boundedCacheSet(blockedTypeCache, i.id, c, 200)
     }
     if (c.type === '待授权或业务决定') out.push({ kind: 'board_blocked', ident: i.ident, title: `${i.title}${c.condition ? '：' + c.condition : ''}`.slice(0, 200), since: i.updatedAt })
   }
@@ -310,7 +325,7 @@ function restrictedWorld(value) {
 async function wallData(restrictGeo = false) {
   if (!restrictGeo && wallCache.data && Date.now() - wallCache.at < 5000) return wallCache.data
   if (Date.now() - issuesCache.at > 30000) {
-    const r = await get(`/api/companies/${COMPANY}/issues`)
+    const r = await moduleGet('wall')(`/api/companies/${COMPANY}/issues?status=todo,in_progress,in_review,blocked`)
     issuesCache = { at: Date.now(), list: (Array.isArray(r) ? r : r.issues || []).map((i) => ({ id: i.id, ident: i.identifier, title: i.title, status: i.status, projectId: i.projectId || null, updatedAt: i.updatedAt })) }
   }
   let roadmap = null
@@ -331,6 +346,17 @@ const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 // 显示名称（只在办公室 3D 里用，不改 Paperclip 里的 agent 名）：存在本目录 names.json
 const NAMES_FILE = path.join(HERE, 'names.json')
 const readNames = () => { try { return JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8')) } catch { return {} } }
+// MOVEFIX J：改名查重。返回已经叫这个名字的那个 key（不分大小写、忽略首尾空格），没有就返回 null；
+// 改成自己原来的名字不算重复。现状 Reviewer1 与 React1 都显示「R1」，现值由董事会决定怎么改。
+function nameConflict(names, key, name) {
+  const wanted = String(name ?? '').trim().toLowerCase()
+  if (!wanted) return null
+  for (const [id, value] of Object.entries(names)) {
+    if (id === key) continue
+    if (String(value ?? '').trim().toLowerCase() === wanted) return id
+  }
+  return null
+}
 
 // 真实事件账本（「今日回放」的数据源）：订阅 state() 已生成的 events，脱敏存档。本模块出错只记日志，不影响 /state。
 const ledger = createEventsLedger({ redactText, dir: HERE, now: Date.now, tz: PNH.tz, names: readNames })
@@ -348,6 +374,7 @@ async function act(a, options = {}) {
     need(UUID.test(key) || /^board:.{1,12}$/.test(key), '对象不对')
     const name = str(a.name, 24).replace(/[<>"]/g, '')
     const names = readNames()
+    need(!nameConflict(names, key, name), '这个显示名已经有人用了，换一个')
     if (name) names[key] = name
     else delete names[key] // 清空 = 恢复原名
     fs.writeFileSync(NAMES_FILE, JSON.stringify(names, null, 2))
@@ -377,6 +404,14 @@ async function act(a, options = {}) {
   }
   if (a.type === 'cancel_run') { // 取消一次运行：进程还在就停掉；进程已退出的残留记录就把它标掉
     need(UUID.test(a.runId || ''), '运行 id 不对')
+    const run = await fullRunDetail(a.runId)
+    if (!run) throw Object.assign(new Error('运行状态未知，不能取消。'), { status: 409 })
+    const liveness = runAlive(run, await readProcessTable())
+    if (shouldBlockCancel(liveness)) {
+      if (liveness.via === 'adapter') throw Object.assign(new Error('运行由 Paperclip 控制器托管，不能按本地进程号取消。'), { status: 409 })
+      const names = [...new Set(liveness.descendants.map((item) => item.name))].join('、')
+      throw Object.assign(new Error(`进程仍在运行：${names}（${liveness.descendants.length} 个后代）；取消只会把记录标掉，进程会继续跑。`), { status: 409 })
+    }
     return send('POST', `/api/heartbeat-runs/${a.runId}/cancel`, {})
   }
   if (a.type === 'review') {
@@ -502,15 +537,15 @@ async function issueDetail(id) {
 }
 
 const issueCache = new Map()
+const STATE_AUX_TIMEOUT_MS = 1000
 async function issueInfo(id) {
   if (issueCache.has(id)) return issueCache.get(id)
   try {
-    const i = await get(`/api/issues/${id}`)
+    const i = await get(`/api/issues/${id}`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
     const v = { identifier: i.identifier, title: i.title, createdByAgentId: i.createdByAgentId || null, createdByUserId: i.createdByUserId || null, assigneeAgentId: i.assigneeAgentId || null, projectId: i.projectId || null }
-    issueCache.set(id, v)
-    return v
+    return boundedCacheSet(issueCache, id, v, 400)
   } catch {
-    return null
+    return boundedCacheSet(issueCache, id, null, 400)
   }
 }
 const firstLine = (t) =>
@@ -587,24 +622,13 @@ async function buildEvents(activity, approvalsAll) {
   return out.slice(-40)
 }
 
-// 进程探测：只发「0 号信号」判断进程是否还在，不会影响它。
-function pidAlive(pid) {
-  if (!pid) return null
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (e) {
-    return e.code === 'EPERM'
-  }
-}
-
 // 问题卡的内容（题目、选项）：给页面直接作答用。待回答期间内容不变，按 id 缓存。
 const interactionCache = new Map()
 async function interactionInfo(issueId, interactionId) {
   const hit = interactionCache.get(interactionId)
   if (hit && hit.status !== 'pending') return hit
   try {
-    const list = await get(`/api/issues/${issueId}/interactions`)
+    const list = await get(`/api/issues/${issueId}/interactions`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
     const x = (Array.isArray(list) ? list : []).find((y) => y.id === interactionId)
     if (!x) return null
     const qs = (x.payload && (x.payload.questionSet?.questions || x.payload.questions)) || []
@@ -636,8 +660,7 @@ async function interactionInfo(issueId, interactionId) {
         })),
       },
     }
-    interactionCache.set(interactionId, v)
-    return v
+    return boundedCacheSet(interactionCache, interactionId, v, 200)
   } catch {
     return null
   }
@@ -648,11 +671,10 @@ async function issuePolicy(id, updatedAt) {
   const key = id + '@' + updatedAt
   if (policyCache.has(key)) return policyCache.get(key)
   try {
-    const i = await get(`/api/issues/${id}`)
-    policyCache.set(key, i.executionPolicy || null)
-    return i.executionPolicy || null
+    const i = await get(`/api/issues/${id}`, { signal: AbortSignal.timeout(STATE_AUX_TIMEOUT_MS) })
+    return boundedCacheSet(policyCache, key, i.executionPolicy || null, 400)
   } catch {
-    return null
+    return boundedCacheSet(policyCache, key, null, 400)
   }
 }
 
@@ -719,7 +741,7 @@ async function refreshSchedule() {
   } catch {}
 }
 refreshSchedule()
-setInterval(refreshSchedule, 2 * 60 * 1000)
+trackTimer(setInterval(refreshSchedule, 2 * 60 * 1000))
 
 // ── 企业知识库（只读）：E:\VirtualAIOffice\knowledge 里的 Markdown；页面只能看 public / internal，confidential 只显示标题 ──
 const KB_DIR = path.resolve(HERE, '..', '..', 'knowledge')
@@ -752,7 +774,7 @@ function kbDoc(rel) {
   if (meta.audience === 'confidential') return { meta, body: '（confidential：内容不在页面显示，请到原始文件查看）' }
   return { meta, body: body.slice(0, 60000) }
 }
-const stats = createStats({ dir: HERE, get, company: COMPANY }) // 每日战报、本周之星，见 stats.mjs
+const stats = createStats({ dir: HERE, get: moduleGet('stats'), company: COMPANY, staggerMs: 30000 }) // 每日战报、本周之星，见 stats.mjs
 // Telegram bot 接入向导，见 telegram.mjs（令牌只在内存里；office / paperclip 用 Windows 账户加密存本机，support 只存 Paperclip 密钥库）
 // Telegram 快捷按钮能做的三件事（页面之外的另一个入口，所以这里再核对一遍：资金类、还在 agent 审查链里的、已经不在待验收的，一律不动）
 const tgActions = {
@@ -786,34 +808,36 @@ const telegram = createTelegram({
 })
 telegram.start()
 // 内容审批委员会（见 committee.mjs）：每个工作日 11:00 开一批、16:00 统计；红线内容委员会先投票、董事会最后确认
-const committee = createCommittee({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}) })
+const committee = createCommittee({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: moduleGet('committee'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}) })
 committee.start()
 // 返工巡检（见 rework.mjs）：识别提交验收后被退回 ≥3 轮的超限任务并通知董事会；超限任务挡住晨会 / 自动验收流程（isCapped 读不到状态按未超限）
-const rework = createRework({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on })
+const rework = createRework({ dir: HERE, company: COMPANY, get: moduleGet('rework'), send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on })
 rework.start()
 // 晨会（见 standup.mjs）：工作日 8:35 Lead 提议今天的主要工作，5 位委员投票，通过的由程序派发
-const standup = createStandup({ dir: HERE, workhoursFile: path.join(HERE, '..', 'workhours', 'workhours.json'), company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id) })
+const standup = createStandup({ dir: HERE, workhoursFile: path.join(HERE, '..', 'workhours', 'workhours.json'), company: COMPANY, get: moduleGet('standup'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id) })
 standup.start()
 // 超时验收（见 acceptance.mjs）：「待验收」超过 1 小时没人处理 → 委员会投票决定是否验收通过（资金类只能董事会验收）
 // 版本核对（见 evidence-version.mjs）：批验收前先把【验收证据】里的对象版本（git 提交 / sha256）与当前实际版本只读核对；
 //   版本已变 → 不进入委员会批次（等同交董事会）；证据缺版本 / 核对失败 → 进批次但标记 version:false，投票规则里加版本核对警告
-const evidenceVersion = createEvidenceVersion({ dir: HERE, company: COMPANY, get, redactText })
+const evidenceVersion = createEvidenceVersion({ dir: HERE, company: COMPANY, get: moduleGet('evidence-version'), redactText })
 const versionCheck = async (id) => { const r = await evidenceVersion.checkByIdent(id); return r && !r.disabled ? r : null }
-completionGateFn = createCompletionGate({ policy: completionPolicy, get, versionCheck })
-const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck, completionGate: (id) => completionGateFn(id, { localFullAccess: false }) })
+completionGateFn = createCompletionGate({ policy: completionPolicy, get: moduleGet('completion'), versionCheck })
+const acceptance = createAcceptance({ dir: HERE, company: COMPANY, get: moduleGet('acceptance'), send, notify: (t) => telegram.notifyCommittee(t).catch(() => {}), rework: (id) => rework.isCapped(id), versionCheck, completionGate: (id) => completionGateFn(id, { localFullAccess: false }) })
 acceptance.start()
-const patrol = createBlockedPatrol({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, healthReport })
+const patrol = createBlockedPatrol({ dir: HERE, company: COMPANY, get: moduleGet('blocked'), send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, healthReport })
 // 断点交接包（见 handoff.mjs）：被打断 / 转阻塞 / 换人 / 长停留时识别【交接包】模板提醒补写、新负责人上岗时转交前任交接包；只发标记评论不碰状态
-const handoff = createHandoff({ dir: HERE, company: COMPANY, get, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, agents: () => get(`/api/companies/${COMPANY}/agents`), redactText })
+const handoffGet = moduleGet('handoff')
+const handoff = createHandoff({ dir: HERE, company: COMPANY, get: handoffGet, send, notify: (t) => telegram.notifyCommittee(t), dutyOn: () => world().duty.on, agents: () => handoffGet(`/api/companies/${COMPANY}/agents`), redactText })
 handoff.start()
 patrol.start()
-const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get, send, dutyOn: () => world().duty.on })
+const mem = createMemory({ dir: HERE, kbDir: KB_DIR, company: COMPANY, get: moduleGet('memory'), send, dutyOn: () => world().duty.on })
 mem.start()
-const chat = createChat({ dir: HERE, company: COMPANY, get, send, dutyOn: () => Boolean(world().duty?.on), agents: () => get(`/api/companies/${COMPANY}/agents`), redactText })
-const chatStart = setTimeout(() => chat.start(), 60000); chatStart.unref?.()
+const chatGet = moduleGet('chat')
+const chat = createChat({ dir: HERE, company: COMPANY, get: chatGet, send, dutyOn: () => Boolean(world().duty?.on), agents: () => chatGet(`/api/companies/${COMPANY}/agents`), redactText })
+const chatStart = trackTimer(setTimeout(() => chat.start(), 60000)); chatStart.unref?.()
 // 前厅两项新数据（见 foyer.mjs）：匿名访客登记 + 董事会手写公告。默认关闭；foyer.json 原子写入、不在静态白名单里
 const foyer = createFoyer({ dir: HERE, now: Date.now, redactText, scanMemoryText, log: console.log })
-const workload = createWorkload({ dir: HERE, company: COMPANY, get, stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
+const workload = createWorkload({ dir: HERE, company: COMPANY, get: moduleGet('workload'), stats: () => stats.snapshot(), dutyOn: () => world().duty.on, notify: (t) => telegram.notifyCommittee(t), now: Date.now })
 workload.start()
 // 投票会：委员会内容审批 / 晨会投票期间，委员在办公室的评审室入座（前端据此走位；投票结果来自真实的投票任务）
 function voteSessions(agents) {
@@ -848,41 +872,131 @@ function voteSessions(agents) {
 }
 
 let projectsCache = []
+const ROUTEFIT_PROJECT_ID = '520f5417-116e-41fa-a830-ddeac34e5268'
+let routefitCache = { at: 0, value: null }
+let routefitFlight = null
+async function refreshRoutefitSummary() {
+  if (routefitFlight) return routefitFlight
+  routefitFlight = (async () => {
+    try {
+      const [issuesRaw, agentsRaw] = await Promise.all([
+        moduleGet('routefit')(`/api/companies/${COMPANY}/issues?projectId=${ROUTEFIT_PROJECT_ID}&limit=1000`),
+        moduleGet('routefit')(`/api/companies/${COMPANY}/agents`),
+      ])
+      const issues = Array.isArray(issuesRaw) ? issuesRaw : issuesRaw?.issues || []
+      const agents = Array.isArray(agentsRaw) ? agentsRaw : agentsRaw?.agents || []
+      const counts = Object.fromEntries(['backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled'].map(status => [status, issues.filter(issue => issue.status === status).length]))
+      const running = agents.filter(agent => agent.status === 'running' && issues.some(issue => issue.projectId === ROUTEFIT_PROJECT_ID && issue.assigneeAgentId === agent.id)).map(agent => ({ id: agent.id, name: agent.name, title: agent.title || null }))
+      routefitCache = { at: Date.now(), value: { at: new Date().toISOString(), projectId: ROUTEFIT_PROJECT_ID, taskCounts: counts, runningAgents: running } }
+    } catch (error) {
+      routefitCache = { at: Date.now(), value: { at: new Date().toISOString(), projectId: ROUTEFIT_PROJECT_ID, unavailable: true, reason: 'UPSTREAM_UNAVAILABLE' } }
+      console.log('[routefit] refresh failed: ' + String(error?.message || error).slice(0, 240))
+    }
+  })().finally(() => { routefitFlight = null })
+  return routefitFlight
+}
 let backlogCache = { at: 0, rows: [] }
-const lastGoodState = createLastGoodState({ file: path.join(HERE, 'state-last-good.json') })
-const backgroundHealth = createBackgroundHealth({ get, company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }) })
+let backlogFlight = null
+const lastGoodState = createLastGoodState({
+  file: path.join(HERE, 'state-last-good.json'),
+  persistMinMs: 60000,
+  backgroundMs: 10000,
+  staleAfterMs: 60000,
+  logFile: path.join(HERE, 'state-refresh.log'),
+})
+const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
   try {
-    const p = await get(`/api/companies/${COMPANY}/projects`)
+    const p = await moduleGet('projects')(`/api/companies/${COMPANY}/projects`)
     projectsCache = (Array.isArray(p) ? p : p.projects || []).map((x) => ({ id: x.id, name: x.name, status: x.status }))
   } catch {}
 }
-refreshProjects()
-setInterval(refreshProjects, 5 * 60 * 1000)
+const projectStart = trackTimer(setTimeout(refreshProjects, 15000)); projectStart.unref?.()
+trackTimer(setInterval(refreshProjects, 5 * 60 * 1000))
+const snapshotLog = trackTimer(setInterval(() => console.log('[snapshot]', JSON.stringify({ at: new Date().toISOString(), counts: snapshots.counts() })), 10 * 60 * 1000)); snapshotLog.unref?.()
+if (process.env.OFFICE3D_LOAD_METRICS === '1') {
+  let gcCount = 0
+  const observer = new PerformanceObserver(list => { gcCount += list.getEntries().length })
+  observer.observe({ entryTypes: ['gc'] })
+  const loadMetrics = setInterval(() => {
+    const forcedGc = process.env.OFFICE3D_FORCE_GC === '1' && typeof global.gc === 'function'
+    if (forcedGc) global.gc()
+    const afterGc = process.memoryUsage()
+    console.log('[load-metrics]', JSON.stringify({
+      at: new Date().toISOString(), rssBytes: afterGc.rss, heapUsedBytes: afterGc.heapUsed,
+      heapTotalBytes: afterGc.heapTotal, externalBytes: afterGc.external, arrayBuffersBytes: afterGc.arrayBuffers,
+      cpu: process.cpuUsage(), gcCount, forcedGc,
+    }))
+  }, 5000)
+  loadMetrics.unref?.()
+}
 
 async function backlogRows(strict = false) {
   if (Date.now() - backlogCache.at < 60 * 1000) {
     if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
     return backlogCache.rows
   }
-  try {
-    const result = await get(`/api/companies/${COMPANY}/issues?status=backlog`)
-    const rows = Array.isArray(result) ? result : result.issues || []
-    backlogCache = { at: Date.now(), rows: rows.map((i) => ({
-      id: i.identifier,
-      issueId: i.id,
-      projectId: i.projectId || null,
-      title: i.title,
-      status: 'backlog',
-      ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
-      ...(SCHEDULER_VIEW_ENABLED ? {
-        priority: i.priority || null,
-        createdAt: i.createdAt || null,
-        assigneeAgentId: i.assigneeAgentId || null,
-      } : {}),
-    })) }
-  } catch (error) { if (strict) throw error; backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true } }
-  return backlogCache.rows
+  if (backlogFlight) {
+    const rows = await backlogFlight
+    if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+    return rows
+  }
+  backlogFlight = (async () => {
+    try {
+      const result = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog`)
+      const rows = Array.isArray(result) ? result : result.issues || []
+      backlogCache = { at: Date.now(), rows: rows.map((i) => ({
+        id: i.identifier,
+        issueId: i.id,
+        projectId: i.projectId || null,
+        title: i.title,
+        status: 'backlog',
+        ...((CONTRACT_VIEW_ENABLED || SCHEDULER_VIEW_ENABLED) ? { description: i.description || '' } : {}),
+        ...(SCHEDULER_VIEW_ENABLED ? {
+          priority: i.priority || null,
+          createdAt: i.createdAt || null,
+          assigneeAgentId: i.assigneeAgentId || null,
+        } : {}),
+      })) }
+    } catch (error) {
+      if (strict) throw error
+      backlogCache = { at: Date.now(), rows: backlogCache.rows, failed: true }
+    } finally {
+      backlogFlight = null
+    }
+    return backlogCache.rows
+  })()
+  const rows = await backlogFlight
+  if (strict && backlogCache.failed) throw new Error('BACKLOG_UNAVAILABLE')
+  return rows
+}
+
+const runDetailCache = new Map()
+const runDetailFlights = new Map()
+const RUN_DETAIL_TTL_MS = 60 * 1000
+
+async function fullRunDetail(runId, getRun = get) {
+  const cached = runDetailCache.get(runId)
+  if (cached && Date.now() - cached.at < RUN_DETAIL_TTL_MS) return cached.value
+  if (runDetailFlights.has(runId)) return runDetailFlights.get(runId)
+  const flight = Promise.resolve(getRun(`/api/heartbeat-runs/${encodeURIComponent(runId)}`))
+    .then(value => { runDetailCache.set(runId, { at: Date.now(), value }); return value })
+    .finally(() => runDetailFlights.delete(runId))
+  runDetailFlights.set(runId, flight)
+  return flight
+}
+
+async function attachRunDetails(rows, getRun = get) {
+  const out = new Map()
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < rows.length) {
+      const row = rows[cursor++]
+      try { out.set(row.id, await fullRunDetail(row.id, getRun)) } catch { out.set(row.id, null) }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, rows.length) }, worker))
+  return out
 }
 
 async function schedulerEnrichRows(rows) {
@@ -927,9 +1041,7 @@ async function schedulerEnrichRow(row) {
 
 async function schedulerCompletedRows() {
   try {
-    const r = await fetch(PAPERCLIP + `/api/companies/${COMPANY}/issues?status=done`, { signal: AbortSignal.timeout(5000) })
-    if (!r.ok) throw new Error(`done -> ${r.status}`)
-    const result = await r.json()
+    const result = await moduleGet('scheduler')(`/api/companies/${COMPANY}/issues?status=done`)
     const rows = Array.isArray(result) ? result : result.issues || []
     return rows
       .filter((item) => item.assigneeAgentId && item.projectId)
@@ -950,8 +1062,11 @@ async function healthReport() {
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
   return lastGoodState.run(async () => {
+  const stateStarted = performance.now()
+  const timings = []
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get, company: COMPANY, backlog: () => backlogRows(true) })
+    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
+  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -961,15 +1076,23 @@ async function state() {
     if (!cur || rank < cur.rank) byAgent.set(i.assigneeAgentId, { rank, id: i.identifier, issueId: i.id, projectId: i.projectId || null, title: i.title, status: i.status, since: i.updatedAt })
   }
   const lastRun = new Map()
-  const heartbeatRun = latestHeartbeatByAgent(runs.map((r) => ({ id: r.id, agentId: r.agentId, status: r.status, updatedAt: r.updatedAt, lastOutputAt: r.lastOutputAt, finishedAt: r.finishedAt, startedAt: r.startedAt, createdAt: r.createdAt })))
+  const liveRun = new Map()
+  const processTables = await readProcessTables({ wait: false })
+  const details = await attachRunDetails(runs.filter(r => r.status === 'running'), moduleGet('state'))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
+    if (r.status === 'running' && !liveRun.has(r.agentId)) {
+      const detail = details.get(r.id)
+      const liveness = detail ? runAlive({ ...r, ...detail }, processTables.current) : { alive: null, via: 'unknown', descendants: [] }
+      const busy = runBusy(r, processTables.previous, processTables.current)
+      liveRun.set(r.agentId, { id: r.id, startedAt: r.startedAt, lastOutputAt: r.lastOutputAt || r.startedAt, alive: liveness.alive, via: liveness.via, busy: busy.busy, busyName: busy.busyName })
+    }
   }
   // 休息区八卦：上班时间、空闲（不在跑、没在等董事会、没暂停）的同事够两位就后台生成一段（不等它）
   const w = world()
   const waitingAgents = new Set(issueList.filter((i) => ['in_review', 'blocked'].includes(i.status)).map((i) => i.assigneeAgentId))
   const names = readNames()
-  const idle = agents.filter((a) => a.status === 'idle' && heartbeatRun.get(a.id)?.status !== 'running' && !waitingAgents.has(a.id)).map((a) => ({ id: a.id, name: names[a.id] || a.name, title: a.title }))
+  const idle = agents.filter((a) => a.status === 'idle' && !liveRun.has(a.id) && !waitingAgents.has(a.id)).map((a) => ({ id: a.id, name: names[a.id] || a.name, title: a.title }))
   if (!gaps.some(gap => gap.source === 'runs')) gossip.maybeGenerate({ onDuty: !!(w.duty && w.duty.on), people: idle })
   stats.ingest({ runs, activity })
   const daily = stats.daily()
@@ -1001,7 +1124,7 @@ async function state() {
         model: (a.adapterConfig && a.adapterConfig.model) || null,
         task: byAgent.get(a.id) || null,
         lastRun: lastRun.get(a.id) || null,
-        liveRun: (a.status === 'running' || heartbeatRun.get(a.id)?.status === 'running') ? heartbeatRun.get(a.id) || null : null,
+        liveRun: liveRun.get(a.id) || null,
       })),
     waiting: await buildWaiting(activity, issueList),
     assigned: issueList.filter((i) => i.assigneeAgentId).map((i) => ({ id: i.identifier, issueId: i.id, projectId: i.projectId || null, title: i.title, status: i.status, agentId: i.assigneeAgentId, at: i.updatedAt })),
@@ -1069,7 +1192,7 @@ async function state() {
   })
 }
 
-http
+const server = http
   .createServer(async (req, res) => {
     try {
       const url = new URL(req.url, 'http://x')
@@ -1194,6 +1317,11 @@ http
         return json(200, stats.daily(d))
       }
       if (url.pathname === '/health') return json(200, await healthReport())
+      if (url.pathname === '/zone/routefit') {
+        if (Date.now() - routefitCache.at >= 60000 || !routefitCache.value) await refreshRoutefitSummary()
+        if (!routefitCache.value) return json(200, { at: null, projectId: ROUTEFIT_PROJECT_ID, unavailable: true, reason: 'NOT_LOADED' })
+        return json(200, routefitCache.value)
+      }
       if (url.pathname === '/workload') return json(200, workload.reportView(url.searchParams.get('days') === '7' ? 7 : 14))
       if (url.pathname === '/chat/summary') return json(200, chat.summary())
       if (url.pathname === '/chat') return json(200, await chat.view(url.searchParams.get('agent') || ''))
@@ -1249,7 +1377,7 @@ http
         // 某个项目的待排期任务（派发面板用）；资金类任务打标，页面据此限制可选的负责人
         const pid = url.searchParams.get('projectId') || ''
         if (!UUID.test(pid)) return json(400, { error: 'projectId 不对' })
-        const list = await get(`/api/companies/${COMPANY}/issues?status=backlog&projectId=${pid}`)
+        const list = await moduleGet('backlog')(`/api/companies/${COMPANY}/issues?status=backlog&projectId=${pid}`)
         const items = (Array.isArray(list) ? list : list.issues || []).filter((i) => i.projectId === pid)
         return json(200, items.map((i) => ({
           id: i.id,
@@ -1266,16 +1394,25 @@ http
         return json(200, await issueDetail(id))
       }
       if (url.pathname === '/state') {
+        const cacheKey = wallScope ? 'wall' : lanUser ? 'lan' : 'local'
+        const cached = typeof stateResponseCache === 'undefined' ? null : stateResponseCache.get(cacheKey)
+        if (cached && Date.now() - cached.at < 5000) {
+          res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(cached.body)
+          return
+        }
         let st
         try { st = await state() } catch (error) {
           return json(503, { error: 'STATE_UNAVAILABLE_NO_SNAPSHOT', reason: 'UPSTREAM_UNAVAILABLE' })
         }
         st.foyer = foyer.summary() // S1-2：前厅摘要（无哈希、无逐设备信息、无 IP / UA）
-        if (lanUser) { st.lan = true; if (!LAN.write) st.actToken = '' } // 局域网设备：不下发操作令牌
+        // 令牌不持久化：每次按访问者身份重新下发，过期快照也不能把本机令牌清空。
+        st.actToken = (!lanUser && !wallScope) || (lanUser && LAN.write) ? ACT_TOKEN : ''
+        if (lanUser) st.lan = true // 局域网设备：只读时令牌为空
         if (lanUser && !LAN.write && st.memory) st.memory = redactState({ memory: st.memory }).memory
         const restricted = lanUser || wallScope
         const view = restricted ? { ...st, world: restrictedWorld(st.world) } : st
         const body = JSON.stringify(wallScope ? redactState(view) : view)
+        if (typeof stateResponseCache !== 'undefined') stateResponseCache.set(cacheKey, { at: Date.now(), body })
         res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(body)
         return
       }
@@ -1305,7 +1442,7 @@ http
         const kinds = rawKinds.length ? [...new Set(rawKinds)] : ['dispatch', 'report', 'speak']
         if (kinds.length === 0 || kinds.some((k) => !['dispatch', 'report', 'speak'].includes(k))) return json(400, { error: 'kinds 只能包含 dispatch / report / speak' })
         try {
-          const rawAgents = await get(`/api/companies/${COMPANY}/agents`)
+          const rawAgents = await moduleGet('collab')(`/api/companies/${COMPANY}/agents`)
           const agents = Array.isArray(rawAgents) ? rawAgents : rawAgents.agents || []
           const names = readNames()
           // 节点 = 25 个有座岗位（agent.name 即 SEAT 键，分组沿 office-layout.js 的房间）+ 董事会
@@ -1422,3 +1559,32 @@ http
       console.log(`局域网：${ips.map((ip) => `http://${ip}:${PORT}/`).join('  ') || '（没有找到私网地址）'}  访问码在 ${LAN_FILE} 里；局域网设备${LAN.write ? '可以操作（write: true）' : '只读'}`)
     }
   })
+
+let shuttingDown = false
+function shutdown() {
+  if (shuttingDown) return
+  shuttingDown = true
+  for (const timer of backgroundTimers) { clearTimeout(timer); clearInterval(timer) }
+  backgroundTimers.clear()
+  for (const service of [acceptance, patrol, handoff, mem, chat, workload, backgroundHealth]) {
+    try { service?.stop?.() } catch (error) { console.error('[shutdown] service stop failed', error) }
+  }
+  const closeState = Promise.resolve(lastGoodState.close()).catch((error) => console.error('[shutdown] state close failed', error))
+  try { server.closeAllConnections?.() } catch (error) { console.error('[shutdown] close connections failed', error) }
+  const closed = new Promise(resolve => server.close(() => resolve()))
+  Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 4000))])
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1))
+}
+server.on('error', (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(`[office3d] EADDRINUSE: port ${PORT} is already in use; inspect the owning PID before retrying`)
+    process.exitCode = 1
+    process.exit(1)
+  }
+  else console.error('[office3d] server error', error)
+})
+process.once('SIGINT', shutdown)
+process.once('SIGTERM', shutdown)
+process.on('message', (message) => { if (message === 'shutdown') shutdown() })
+process.once('disconnect', shutdown)

@@ -30,6 +30,7 @@ function runTime(run) { return Date.parse(run.finishedAt || run.updatedAt || run
 function errorText(run) { return [run.errorCode, run.error, run.errorMessage, run.message, run.failureReason, run.details?.error, run.details?.message].filter(Boolean).join(' ') }
 const CAPACITY_SIGNAL = /at capacity|overloaded|capacity|try a different model|server is busy|rate limited temporarily/i
 const QUOTA_SIGNAL = /session limit|usage limit|hit your .*limit|quota exceeded|insufficient quota|billing/i
+const NETWORK_DISCONNECT_SIGNAL = /socket connection was closed|socket hang up|econnreset|econnrefused|epipe|etimedout|fetch failed|network error|connection.*(?:closed|reset)/i
 function providerQuotaKind(run) {
   // errorCode 自带 quota 字样，不能把代码本身当作额度耗尽的文本证据。
   const text = errorText({ ...run, errorCode: null })
@@ -40,6 +41,7 @@ function providerQuotaKind(run) {
 export function classifyFailure(run) {
   const code = String(run.errorCode || '').toLowerCase()
   const text = errorText(run).toLowerCase()
+  if (NETWORK_DISCONNECT_SIGNAL.test(text)) return 'upstream'
   if (code === 'provider_quota') return providerQuotaKind(run) || 'quota'
   if (/session limit|usage limit|hit your .*limit|quota/.test(text)) return 'quota'
   if (code === 'claude_auth_required' || /login required|authentication required|auth required/.test(text)) return 'login'

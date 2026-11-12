@@ -67,9 +67,10 @@ test('align regions, seats, display seats, doors, and meeting seats satisfy the 
   assert.equal(Object.values(layout.meetingSeatPoints).flat().length, 14)
   assert.equal(Object.values(layout.meetingSeats).reduce((sum, value) => sum + value, 0), 14)
   const approved = new Map(approvedPlan.regions.map(region => [region.id, region]))
+  const northRooms = { board: ['room', -20, -11, -18, -12], review: ['room', -11, -6, -18, -13], plan: ['room', -11, -6, -13, -8] }
   for (const region of layout.regions) {
     const reference = approved.get(region.id)
-    assert.deepEqual([region.kind, region.x0, region.x1, region.z0, region.z1], [reference.kind, reference.x0, reference.x1, reference.z0, reference.z1], region.id)
+    assert.deepEqual([region.kind, region.x0, region.x1, region.z0, region.z1], northRooms[region.id] ?? [reference.kind, reference.x0, reference.x1, reference.z0, reference.z1], region.id)
   }
   const walled = layout.regions.filter(region => region.walled)
   assert.deepEqual(walled.map(region => region.id).sort(), ['aftersales', 'board', 'market', 'marketing', 'plan', 'review', 'service'])
@@ -82,7 +83,9 @@ test('align collision fields and circulation declarations match the restored ope
   assert.equal(layout.bar.radius, 6)
   assert.equal(layout.island.barOuter, 3.5)
   assert.equal(layout.island.stoolRadius, 4.2)
-  assert.equal(layout.island.sofaOuter, 5.8)
+  assert.equal(layout.island.sofaOuter, 5.45)
+  assert.equal(LAYOUT_V3.island.sofaOuter, 5.8)
+  assert.ok(layout.island.sofaOuter + .35 <= layout.bar.radius)
   assert.deepEqual({ inner: layout.ring.inner, outer: layout.ring.outer }, { inner: 6, outer: 10 })
   const declared = [...Object.entries(layout.corridors), ...Object.entries(layout.passages)]
     .filter(([, value]) => Number.isFinite(value.x0) && Number.isFinite(value.x1) && Number.isFinite(value.z0) && Number.isFinite(value.z1))

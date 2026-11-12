@@ -18,7 +18,7 @@ function setup(t, options = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hof-'))
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
   let time = Date.parse(options.now || '2026-10-19T08:30:00+07:00'), n = 0
-  const issues = {}, runs = [], writes = [], notices = []
+  const issues = {}, runs = [], writes = [], notices = [], calls = []
   const agents = [
     { id: 'a1', name: '前任', status: 'idle' },
     { id: 'a2', name: '现任', status: 'idle' },
@@ -31,7 +31,8 @@ function setup(t, options = {}) {
   const comment = (issue, { authorAgentId = 'a1', authorUserId = null, body, at }) => issue.comments.push({ id: 'c' + ++n, authorAgentId, authorUserId, body, createdAt: iso(at) })
   const failRun = (issueId, status = 'failed', finishedAt = '2026-10-19T01:00:00+07:00') => runs.push({ id: 'r' + ++n, issueId, status, errorCode: status === 'cancelled' ? 'cancelled' : 'tool_use_error', finishedAt: iso(finishedAt) })
   const get = async (p) => {
-    if (p === `/api/companies/C/issues`) return structuredClone(Object.values(issues))
+    calls.push(p)
+    if (p.startsWith(`/api/companies/C/issues?status=`)) return structuredClone(Object.values(issues))
     if (p.startsWith('/api/companies/C/heartbeat-runs')) return structuredClone(runs)
     const m = p.match(/^\/api\/issues\/([^/]+)(\/comments)?$/)
     if (m) { const i = issues[m[1]]; assert.ok(i, '未模拟任务 ' + p); return structuredClone(m[2] ? i.comments : i) }
@@ -50,7 +51,7 @@ function setup(t, options = {}) {
   })
   const enable = () => fs.writeFileSync(path.join(dir, 'handoff.json'), JSON.stringify({ enabled: true }))
   const advance = (h) => { time += h * 3600000 }
-  return { dir, file: path.join(dir, 'handoff.json'), issues, add, comment, failRun, run: runs, get, send, writes, notices, agents, factory, enable, advance }
+  return { dir, file: path.join(dir, 'handoff.json'), issues, add, comment, failRun, run: runs, get, send, writes, notices, calls, agents, factory, enable, advance }
 }
 
 // ───── 纯函数：交接包解析 ─────
@@ -222,6 +223,7 @@ test('T14b 端到端：三类等待任务开启总开关不发评论不通知；
   w.enable()
   const hf = w.factory()
   await hf.run()
+  assert.ok(w.calls.includes('/api/companies/C/heartbeat-runs?limit=40&summary=true'))
   assert.equal(w.writes.length, 1, '只有真卡住的任务发提醒')
   assert.equal(w.writes[0].p, '/api/issues/CMP-4/comments')
   assert.match(w.writes[0].body.body, /长停留/)

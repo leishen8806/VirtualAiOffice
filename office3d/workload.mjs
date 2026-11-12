@@ -100,8 +100,8 @@ export function buildWorkload({ now = Date.now(), days = 14, ledger = {}, db = {
 
 export function createWorkload({ dir, company, get, stats, dutyOn, notify, now = Date.now, workhoursFile = path.join(dir, '..', 'workhours', 'workhours.json') }) {
   const file = path.join(dir, 'workload.json'), boot = now()
-  let db, error = null, running = false, timer = null, delay = null
-  const empty = () => ({ enabled: false, thresholds: { ...DEFAULT_THRESHOLDS }, agents: {}, observations: {}, tasks: {}, reworks: {}, daily: {}, reports: {} })
+  let db, error = null, running = false, timer = null, delay = null, viewCache = null
+  const empty = () => ({ enabled: false, thresholds: { ...DEFAULT_THRESHOLDS }, agents: {}, observations: {}, tasks: {}, reworks: {}, daily: {}, reports: {}, commentRetryAt: {} })
   function load() {
     try {
       const raw = JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -133,12 +133,17 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     return { ...buildWorkload({ now: now(), days, ledger: { ...l, runs: { ...l.runs, ...db.timedRuns } }, db, schedule: schedule() }), error }
   }
   function view() {
-    try { const r = reportView(); return { enabled: db.enabled === true, effectiveDays: Math.max(0, ...r.roles.map(a => a.observedDays)), snapshotDays: Math.max(0, ...r.roles.map(a => a.snapshotDays)), suggestionCount: r.suggestions.length, lastReport: db.lastReport?.path || null, error } }
-    catch (e) { return { enabled: db.enabled === true, effectiveDays: 0, snapshotDays: 0, suggestionCount: 0, lastReport: null, error: e.message } }
+    if (viewCache && now() - viewCache.at < 60000) return { ...viewCache.value }
+    try {
+      const r = reportView()
+      const value = { enabled: db.enabled === true, effectiveDays: Math.max(0, ...r.roles.map(a => a.observedDays)), snapshotDays: Math.max(0, ...r.roles.map(a => a.snapshotDays)), suggestionCount: r.suggestions.length, lastReport: db.lastReport?.path || null, error }
+      viewCache = { at: now(), value }
+      return { ...value }
+    } catch (e) { return { enabled: db.enabled === true, effectiveDays: 0, snapshotDays: 0, suggestionCount: 0, lastReport: null, error: e.message } }
   }
   async function collect() {
     const s = schedule(), current = now(), day = dateKey(current), time = localParts(new Date(current), s.timezone)
-    const [aa, ii, rr] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues`), get(`/api/companies/${company}/heartbeat-runs?limit=1000`)])
+    const [aa, ii, rr] = await Promise.all([get(`/api/companies/${company}/agents`), get(`/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`), get(`/api/companies/${company}/heartbeat-runs?limit=40&summary=true`)])
     const agents = array(aa, 'agents'), issues = array(ii, 'issues'), runs = array(rr, 'runs')
     const ledger = stats()
     // 没人打开办公室时stats.ingest也可能没运行；直接保留GET得到的真实终态，不依赖页面轮询。
@@ -173,13 +178,23 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
       const events = todoEvents.filter(e => e.issueId === issue.id).map(e => e.at).filter(validDate).sort()
       db.tasks[issue.id] = { ...previous, agentId: issue.assigneeAgentId, todoAt: issue.todoAt || previous.todoAt || events[0] || null, firstRunAt: times[0] || null, updatedAt: issue.updatedAt }
     }
-    const pending = issues.filter(i => db.tasks[i.id]?.commentsAt !== i.updatedAt)
-    for (const issue of pending.slice(0, 20)) {
-      const comments = array(await get(`/api/issues/${issue.id}/comments`), 'comments')
-      for (const c of comments) if (/【第\s*\d+\s*轮退回】/.test(c.body || '') && validDate(c.createdAt)) db.reworks[`${issue.id}:${c.id}`] = { agentId: issue.assigneeAgentId, at: c.createdAt }
-      db.tasks[issue.id].commentsAt = issue.updatedAt
+    const pending = issues.filter(i => db.tasks[i.id]?.commentsAt !== i.updatedAt && (db.commentRetryAt[i.id] || 0) <= current).slice(0, 20)
+    let cursor = 0
+    const scan = async () => {
+      while (cursor < pending.length) {
+        const issue = pending[cursor++]
+        try {
+          const comments = array(await get(`/api/issues/${issue.id}/comments`), 'comments')
+          for (const c of comments) if (/【第\s*\d+\s*轮退回】/.test(c.body || '') && validDate(c.createdAt)) db.reworks[`${issue.id}:${c.id}`] = { agentId: issue.assigneeAgentId, at: c.createdAt }
+          db.tasks[issue.id].commentsAt = issue.updatedAt
+          delete db.commentRetryAt[issue.id]
+        } catch {
+          db.commentRetryAt[issue.id] = current + 30 * 60000
+        }
+      }
     }
-    db.commentsComplete = pending.length <= 20
+    await Promise.all([scan(), scan()])
+    db.commentsComplete = issues.every(i => db.tasks[i.id]?.commentsAt === i.updatedAt || (db.commentRetryAt[i.id] || 0) > current)
     db.lastCollect = new Date(current).toISOString()
     const enriched = { ...ledger, runs: { ...ledger.runs, ...db.timedRuns } }
     const daily = buildWorkload({ now: current, ledger: enriched, db, schedule: s }).daily
@@ -224,7 +239,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
       error = null
       return { ok: true }
     } catch (e) { error = '工作量统计未完成：' + redactText(e.message); return { error } }
-    finally { running = false }
+    finally { running = false; viewCache = null }
   }
   function start() { if (delay || timer) return; delay = setTimeout(() => { delay = null; tick(); timer = setInterval(() => tick(), 60000); timer.unref() }, 120000); delay.unref() }
   function stop() { clearTimeout(delay); clearInterval(timer); delay = timer = null }

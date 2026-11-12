@@ -7,3 +7,7 @@ niuma.config.json
 packages/*/dist/
 packages/*/dist-spec/
 *.tsbuildinfo
+
+# 任务卡、提示词、回执只放本机，不进仓库（董事会 2026-10-28）
+/office3d/codex-prompts/
+/dispatch/

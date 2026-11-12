@@ -1,3 +1,6 @@
+import { makeOfficePlan1Layout, makeOfficePlan1L2BLayout, officePlan1Phase } from './office-plan1-layout.js'
+import { createOfficeR1Layout } from './office-vis2/r1-site.js'
+
 // 空间坐标与门洞是渲染、碰撞和验证的共同来源；房间不开敞口。
 export const ENVELOPE = { x0: -44, x1: 22, z0: -13, z1: 13 }
 export const MAIN_FLOOR_X0 = -22 // 建筑接缝不随内部房间平移。
@@ -32,7 +35,7 @@ export const SEATS = {
   LedgerAuditor: ['drlife', 8.5, 5], ReactSenior: ['drlife', 12, 5], React1: ['drlife', 15.5, 5], Localizer: ['drlife', 19, 5],
   OpsLead: ['ops', -30.5, 4], OpsEngineer: ['ops', -25.5, 4], KnowledgeKeeper: ['kb', -30.5, -8],
 }
-export const workHome = ([, x, z]) => ({ x, z: z + 1, yaw: 0 })
+export const workHome = (seat) => facingHome(seat) || ({ x: seat[1], z: seat[2] + 1, yaw: 0 })
 export const BOSS = { desk: { x: 20, z: -8 }, chair: { x: 21, z: -8 }, stand: { x: 18.5, z: -8 }, via: [{ x: 16, z: -5.5 }, { x: 18.5, z: -5.5 }] }
 export const BOARD_TABLE = { x: 11, z: -8 }
 export const BOARD_DOOR = { x: OFFICE_ROOMS.find(r => r.id === 'board').doors[0].at, zOut: CROSS_Z, zIn: -5.5 }
@@ -470,12 +473,12 @@ const alignRect = (id, name, x0, x1, z0, z1, kind, walled, door) => ({
   walled,
 })
 const V3_ALIGN_REGIONS = [
-  alignRect('market', '市场部（展示）', -28, -20, -18, -12, 'display', true, { side: 'east', at: -15 }),
-  alignRect('board', '会议与决策', -18.5, -8.5, -18, -12, 'room', true, { side: 'east', at: -15 }),
+  alignRect('market', '市场部（展示）', -28, -20, -18, -12, 'display', true, { side: 'south', at: -25.5 }),
+  alignRect('board', '会议与决策', -20, -11, -18, -12, 'room', true, { side: 'south', at: -12.5 }),
   alignRect('kb', '知识', 12.5, 20.5, -18, -12, 'open', false),
   alignRect('service', '客服部（展示）', 24, 32, -18, -12, 'display', true, { side: 'west', at: -15 }),
-  alignRect('plan', '计划室 B', -28, -20, -11.5, -5.5, 'room', true, { side: 'south', at: -24 }),
-  alignRect('review', '评审室 A', -18.5, -8.5, -11.5, -5.5, 'room', true, { side: 'south', at: -13.5 }),
+  alignRect('plan', '计划室 B', -11, -6, -13, -8, 'room', true, { side: 'east', at: -10.5 }),
+  alignRect('review', '评审室 A', -11, -6, -18, -13, 'room', true, { side: 'east', at: -15.5 }),
   alignRect('west-open', '运营、质量与安全开放岛', -28, -8.5, -4.5, 5.5, 'open', false),
   alignRect('product', '产品', 12.5, 21.5, -10.5, -1.5, 'open', false),
   alignRect('eng', '工程', 23, 32, -10.5, -1.5, 'open', false),
@@ -504,15 +507,21 @@ const V3_ALIGN_DISPLAY_SEATS = [
   ['aftersales-1', 'aftersales', -26.5, 8], ['aftersales-2', 'aftersales', -24, 8], ['aftersales-3', 'aftersales', -21.5, 8],
   ['marketing-1', 'marketing', 25.5, 8], ['marketing-2', 'marketing', 28, 8], ['marketing-3', 'marketing', 30.5, 8],
 ].map(([id, region, x, z]) => ({ id, region, x, z, display: true }))
-const V3_ALIGN_MEETING_SEATS = {
-  A: [-16.5, -14.5, -12.5, -10.5].flatMap(x => [{ room: 'A', x, z: -9.75 }, { room: 'A', x, z: -7.25 }]),
-  B: [-26.5, -24.5, -22.5].flatMap(x => [{ room: 'B', x, z: -9.75 }, { room: 'B', x, z: -7.25 }]),
-}
+const V3_ALIGN_MEETING_SEATS = Object.fromEntries([['A', 'review', 8], ['B', 'plan', 6]].map(([id, regionId, count]) => {
+  const room = V3_ALIGN_REGIONS.find(region => region.id === regionId)
+  return [id, Array.from({ length: count }, (_, index) => {
+    const yaw = index * Math.PI * 2 / count
+    const x = Math.round(((room.x0 + room.x1) / 2 + Math.sin(yaw) * 1.2) * 10) / 10
+    const z = Math.round(((room.z0 + room.z1) / 2 + Math.cos(yaw) * 1.2) * 10) / 10
+    return { room: id, x, z, yaw: Math.atan2(x - (room.x0 + room.x1) / 2, z - (room.z0 + room.z1) / 2), meeting: true }
+  })]
+}))
+const V3_ALIGN_CENTER = { x: 2, z: -2 }
 const alignFocus = (regions) => Object.fromEntries([
   ...regions.map(region => [region.id, { label: region.name, t: [(region.x0 + region.x1) / 2, 0, (region.z0 + region.z1) / 2], r: Math.max(region.x1 - region.x0, region.z1 - region.z0) + 8 }]),
   ['ops', { label: '运营', t: [-24, 0, .5], r: 18 }],
   ['quality', { label: '质量与安全', t: [-14, 0, .5], r: 18 }],
-  ['meet', { label: '会议室', t: [-18.5, 0, -8.5], r: 22 }],
+  ['meet', { label: '会议室', t: [-8.5, 0, -13], r: 16 }],
   ['foyer', { label: '前厅接待区', t: [2, 0, 8], r: 24 }],
   ['plaza', { label: 'DR 广场', t: [2, 0, 21], r: 27 }],
 ])
@@ -521,15 +530,22 @@ const V3_ALIGN_LAYOUT = {
   ...cloneLayoutData(V3_LAYOUT),
   version: 3,
   variant: 'align',
+  doors: { ...cloneLayoutData(V3_LAYOUT.doors), south: { x0: -1, x1: 5, z: 12, width: 6, height: 3.5 } },
   regions: V3_ALIGN_REGIONS,
   rooms: V3_ALIGN_REGIONS.filter(region => region.walled),
   seats: V3_ALIGN_SEATS,
   displaySeats: V3_ALIGN_DISPLAY_SEATS,
   meetingSeats: { A: 8, B: 6 },
   meetingSeatPoints: V3_ALIGN_MEETING_SEATS,
+  boardTable: { x: -13.5, z: -15 },
+  boss: { ...cloneLayoutData(V3_LAYOUT.boss), desk: { x: -18, z: -15 }, stand: { x: -18, z: -13 } },
+  frontDesk: { ...cloneLayoutData(V3_LAYOUT.frontDesk), z0: 9.3, z1: 10.7, center: { x: 2, z: 10 } },
+  serviceBar: { ...cloneLayoutData(V3_LAYOUT.serviceBar), z0: 8.5, z1: 10.5, center: { x: -3.8, z: 9.5 } },
+  waitingArc: { ...cloneLayoutData(V3_LAYOUT.waitingArc), z0: 8, z1: 11, center: { x: 6.5, z: 9.5 } },
   deskGroups: { ops: ['OpsLead', 'OpsEngineer'], quality: ['QAAutomation', 'Reviewer1', 'Reviewer2', 'SecurityReviewer'] },
   corridors: {
     ...cloneLayoutData(V3_LAYOUT.corridors),
+    centralRing: { ...cloneLayoutData(V3_LAYOUT.corridors.centralRing), center: V3_ALIGN_CENTER },
     westNorthCross: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
     westMiddleCross: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
     westSouthCross: { x0: -19.5, x1: -9, z0: 5.8, z1: 7.3, width: 1.5 },
@@ -539,14 +555,16 @@ const V3_ALIGN_LAYOUT = {
   },
   passages: {
     ...cloneLayoutData(V3_LAYOUT.passages),
+    westLoop: { ...cloneLayoutData(V3_LAYOUT.passages.westLoop), center: V3_ALIGN_CENTER },
+    eastLoop: { ...cloneLayoutData(V3_LAYOUT.passages.eastLoop), center: V3_ALIGN_CENTER },
     northMeetingBuffer: { x0: -28, x1: -8.5, z0: -4.5, z1: -3, width: 1.5 },
     westOpenLink: { x0: -8.3, x1: -6.8, z0: -5.5, z1: 5.5, width: 1.5 },
   },
-  island: { ...cloneLayoutData(V3_LAYOUT.island), radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.8 },
-  ring: { ...cloneLayoutData(V3_LAYOUT.ring), inner: 6, outer: 10, width: 4 },
-  bar: { ...cloneLayoutData(V3_LAYOUT.bar), radius: 6 },
+  island: { ...cloneLayoutData(V3_LAYOUT.island), center: V3_ALIGN_CENTER, radius: 6, barOuter: 3.5, stoolRadius: 4.2, sofaOuter: 5.45 },
+  ring: { ...cloneLayoutData(V3_LAYOUT.ring), center: V3_ALIGN_CENTER, inner: 6, outer: 10, width: 4 },
+  bar: { ...cloneLayoutData(V3_LAYOUT.bar), center: V3_ALIGN_CENTER, radius: 6, seats: V3_BAR_SEATS.map(seat => ({ ...seat, z: Math.round((seat.z + 4) * 10) / 10 })) },
   publicPathNodes: [
-    { x: -19.25, z: -10.9 }, { x: -7.75, z: -10.9 },
+    { x: -17.5, z: -10.5 }, { x: -5, z: -10.5 },
     { x: -19.25, z: 7.75 }, { x: -10.2, z: 7.75 },
   ],
   meetingAccess: { northZ: -3.75, westSpineX: -7.55, eastSpineX: 22.25, westMiddleZ: .5, eastMiddleZ: 1, eastSouthZ: 4.25 },
@@ -569,15 +587,27 @@ export const LAYOUT_V1 = freezeDeep(cloneLayoutData(LAYOUT_V1_DATA))
 export const LAYOUT_V2 = freezeDeep(cloneLayoutData(V2_LAYOUT))
 export const LAYOUT_V3 = freezeDeep(cloneLayoutData(V3_LAYOUT))
 export const LAYOUT_V3_ALIGN = freezeDeep(cloneLayoutData(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_ALIGN_SAMPLE = freezeDeep(makeOfficePlan1Layout(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_ALIGN_L2B = freezeDeep(makeOfficePlan1L2BLayout(V3_ALIGN_LAYOUT))
+export const LAYOUT_V3_R1 = createOfficeR1Layout()
 export const regionFocusOf = (layout, id) => layout?.version >= 2 ? layout.regionFocus?.[id] || REGION_FOCUS[id] : REGION_FOCUS[id]
 export const resolveOfficeLayout = (search = '') => {
   const params = new URLSearchParams(String(search).replace(/^\?/, ''))
   const values = params.getAll('layout')
   if (values.length !== 1) return LAYOUT_V1
   if (values[0] === '2') return LAYOUT_V2
-  if (values[0] === '3') return params.getAll('align').length === 1 && params.get('align') === '1' ? LAYOUT_V3_ALIGN : LAYOUT_V3
+  if (values[0] === '3') {
+    if (params.getAll('align').length !== 1 || params.get('align') !== '1') return LAYOUT_V3
+    const sample = params.getAll('officeSample').length === 1 && params.get('officeSample') === '1'
+    if (!sample) return LAYOUT_V3_ALIGN
+    const r1 = params.getAll('r1')
+    if (r1.length === 1 && r1[0] === '1') return LAYOUT_V3_R1
+    const l2b = params.getAll('l2b')
+    return (l2b.length === 0 || l2b.length === 1 && l2b[0] === '1') ? LAYOUT_V3_ALIGN_L2B : LAYOUT_V3_ALIGN_SAMPLE
+  }
   return LAYOUT_V1
 }
+
 
 const CAMPUS_DATA = { x0: -174, x1: -72, z0: -26, z1: 42, width: 102, depth: 68, area: 6936, westRoadBuffer: 8 }
 const CAMPUS_BUILDING_DATA = { x0: -168, x1: -80, z0: -18, z1: 30, width: 88, depth: 48, area: 4224 }
@@ -623,6 +653,7 @@ export const CAMPUS_FOCUS = freezeDeep({ label: 'DR 仓配服务中心（示意�
 export const CAMPUS_MINI_BOUNDS = freezeDeep({ x0: -178, x1: 24, z0: -28, z1: 44 })
 import { barColliders, barLounges } from './office-bar-geometry.js'
 import { createV3PublicPath } from './office-v3-public-path.js'
+import { FACING_SEATS, facingHome, facingAccess } from './office-vis2/furniture-sample.js'
 
 const routePoint = (point) => ({ x: point.x, z: point.z })
 const roomCenter = (room) => ({ x: (room.x0 + room.x1) / 2, z: (room.z0 + room.z1) / 2 })
@@ -661,6 +692,8 @@ function createOfficeV3Navigation(layout) {
     return room?.walled === false ? undefined : room
   }
   const exit = (home) => {
+    const sampleExit = facingAccess(layout, home)
+    if (sampleExit) return [routePoint(home), sampleExit]
     const room = findRoom(home)
     if (!room || room.walled === false) return [routePoint(home)]
     const door = roomDoor(room), inside = doorInterior(room, door), outside = doorExterior(room, door)
@@ -693,6 +726,39 @@ function createOfficeV3Navigation(layout) {
   }
   const meetingInterior = (room, seat) => {
     const door = roomDoor(room), inside = doorInterior(room, door), center = roomCenter(room)
+    if (layout.plan1Phase === 'L2B') {
+      // The -1.4 m entry stays centered in the 0.28 m clearance band between the east chair and wall.
+      const entry = { x: room.x1 - .4, z: door.at }
+      // The 0.30 m aisle is the midpoint of the 0.60 m chair-back-to-north-wall gap.
+      const aisleZ = room.z1 - .3
+      if (seat.x > center.x + .2) return dedupeRoute([entry, routePoint(seat)])
+      if (seat.z > center.z + .2) return dedupeRoute([entry, { x: entry.x, z: seat.z }, routePoint(seat)])
+      if (seat.z < center.z - .2) return dedupeRoute([entry, { x: entry.x, z: seat.z }, routePoint(seat)])
+      return dedupeRoute([entry, { x: entry.x, z: aisleZ }, { x: seat.x, z: aisleZ }, routePoint(seat)])
+    }
+    if (['L1', 'L2'].includes(officePlan1Phase(layout))) {
+      const inset = officePlan1Phase(layout) === 'L2' ? .32 : .35
+      const rx = (room.x1 - room.x0) / 2 - inset, rz = (room.z1 - room.z0) / 2 - inset
+      const angle = point => Math.atan2((point.x - center.x) / rx, (point.z - center.z) / rz)
+      const start = angle(inside), end = angle(seat), turn = Math.atan2(Math.sin(end - start), Math.cos(end - start))
+      const steps = Math.max(1, Math.ceil(Math.abs(turn) / (Math.PI / 24)))
+      return dedupeRoute([inside, ...Array.from({ length: steps + 1 }, (_, index) => {
+        const a = start + turn * index / steps
+        return { x: center.x + Math.sin(a) * rx, z: center.z + Math.cos(a) * rz }
+      }), routePoint(seat)])
+    }
+    if (layout.variant === 'align' && rooms.find(r => r.id === 'review')?.z0 === layout.envelope.z0) {
+      // 北侧圆桌沿椅背外侧绕行；最后径向接近本人椅子，不沿旧长桌直穿其他席位。
+      const points = layout.meetingSeatPoints[seat.room]
+      const radius = Math.max(...points.map(p => Math.hypot(p.x - center.x, p.z - center.z))) + .64
+      const start = Math.atan2(inside.x - center.x, inside.z - center.z), end = Math.atan2(seat.x - center.x, seat.z - center.z)
+      const turn = Math.atan2(Math.sin(end - start), Math.cos(end - start)), steps = Math.max(1, Math.ceil(Math.abs(turn) / (Math.PI / 24)))
+      const arc = Array.from({ length: steps + 1 }, (_, index) => {
+        const angle = start + turn * index / steps
+        return { x: center.x + Math.sin(angle) * radius, z: center.z + Math.cos(angle) * radius }
+      })
+      return dedupeRoute([inside, ...arc, routePoint(seat)])
+    }
     const aisleZ = seat.z < center.z - .2 ? room.z0 + .65 : room.z1 - .65
     return dedupeRoute([inside, { x: inside.x, z: aisleZ }, { x: seat.x, z: aisleZ }, routePoint(seat)])
   }
@@ -724,25 +790,28 @@ function createOfficeV3Navigation(layout) {
     const departure = exit(home)
     return dedupeRoute([...departure, ...publicPath(departure.at(-1), boardOutside).slice(1), boardInside, { x: boardInside.x, z: stand.z }, routePoint(stand)])
   }
+  const serviceZ = Math.round((layout.serviceBar.z0 - .8) * 10) / 10
+  const waitingZ = Math.round((layout.waitingArc.z0 - .4) * 10) / 10
+  const deskZ = Math.round((layout.frontDesk.z1 + 1) * 10) / 10
   const consumerTargets = {
-    A1: { x: -3.2, z: 6.5 },
-    A2: { x: -5.2, z: 6.5 },
-    desk: { x: 2, z: 10.5 },
+    A1: { x: -3.2, z: serviceZ },
+    A2: { x: -5.2, z: serviceZ },
+    desk: { x: layout.frontDesk.center.x, z: deskZ },
     B0: { x: -8.5, z: 19 },
     B1: { x: 11.5, z: 18 },
     B2: { x: 11.5, z: 21 },
     B3: { x: 11.5, z: 24 },
-    waiting: { x: 6.5, z: 6.4 },
+    waiting: { x: 6.5, z: waitingZ },
   }
   const consumerQueues = {
-    A1: [-3.2, -4.2, -5.2, -6.2].map(x => ({ x, z: 6.5 })),
-    A2: [-5.2, -6.2, -7.2, -8.2].map(x => ({ x, z: 6.5 })),
-    desk: [10.5, 11.35, 12.2, 13.05].map(z => ({ x: 2, z })),
+    A1: [-3.2, -4.2, -5.2, -6.2].map(x => ({ x, z: serviceZ })),
+    A2: [-5.2, -6.2, -7.2, -8.2].map(x => ({ x, z: serviceZ })),
+    desk: Array.from({ length: 4 }, (_, index) => ({ x: layout.frontDesk.center.x, z: Math.round((deskZ + index * .85) * 100) / 100 })),
     B0: [19, 20, 21, 22].map(z => ({ x: -8.5, z })),
     B1: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 18 })),
     B2: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 21 })),
     B3: [11.5, 10.5, 9.5, 8.5].map(x => ({ x, z: 24 })),
-    waiting: [5.4, 6.2, 6.8, 7.6].map(x => ({ x, z: 6.4 })),
+    waiting: [5.4, 6.2, 6.8, 7.6].map(x => ({ x, z: waitingZ })),
   }
   const consumer = (home, targetId, stand = consumerTargets[targetId]) => {
     if (!consumerTargets[targetId] || !Number.isFinite(stand?.x) || !Number.isFinite(stand?.z)) throw new Error(`未知或无效 V3 访客目标: ${targetId}`)
@@ -760,6 +829,8 @@ function createOfficeV3Navigation(layout) {
   }
   return {
     roomAt: walledRoomAt, standAt: home => {
+      const sampleStand = facingAccess(layout, home)
+      if (sampleStand) return sampleStand
       const room = walledRoomAt(home)
       if (!room) return routePoint(home)
       return { x: home.x + (home.x > room.x1 - 1.6 ? -1 : 1), z: home.z }
@@ -772,8 +843,12 @@ function createOfficeV3Navigation(layout) {
   }
 }
 
-// 调用方持有选定版本；旧版导出和数据不参与重写。
+import { createR1Navigation } from './office-r1-navigation.js'
+
+function createOfficeR1Navigation(layout) { return createR1Navigation(layout) }
+
 export function createOfficeNavigation(layout = LAYOUT_V1) {
+  if (layout?.r1Phase === 'R1') return createOfficeR1Navigation(layout)
   if (layout.version === 3) return createOfficeV3Navigation(layout)
   if (layout.version !== 2) return LAYOUT_V1
   const rooms = layout.regions, center = layout.bar.center, corridors = layout.corridors

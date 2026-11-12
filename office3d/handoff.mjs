@@ -200,8 +200,8 @@ export function createHandoff({ dir, company, get, send, notify, dutyOn, now = D
 
   async function context() {
     const [issues, runs, agentList] = await Promise.all([
-      asList(await get(`/api/companies/${company}/issues`)),
-      asList(await get(`/api/companies/${company}/heartbeat-runs?limit=1000`)),
+      asList(await get(`/api/companies/${company}/issues?status=todo,in_progress,in_review,blocked`)),
+      asList(await get(`/api/companies/${company}/heartbeat-runs?limit=40&summary=true`)),
       typeof agents === 'function' ? asList(await agents()) : [],
     ])
     const runsByIssue = new Map()
@@ -243,7 +243,7 @@ export function createHandoff({ dir, company, get, send, notify, dutyOn, now = D
     if (!persist) return st
     db.tasks[id] = { ...st, fingerprint }
     save()
-    return db.tasks[id]
+    return { ...db.tasks[id], _comments: cs }
   }
 
   const ownerOk = (owner) => owner && !['paused', 'terminated', 'pending_approval'].includes(owner.status)
@@ -302,7 +302,7 @@ export function createHandoff({ dir, company, get, send, notify, dutyOn, now = D
         let st
         try { st = await statusOf(i, ctx.runsByIssue, ctx) } catch (e) { log(`[handoff] 读任务 ${i.identifier} 失败：${e.message}`); continue }
         const before = st.prevOwner // 上一轮扫描的负责人（换人转交要用它当「前任」），先在覆盖前记下
-        const cs = asList(await get(`/api/issues/${i.id}/comments`))
+        const cs = st._comments || asList(await get(`/api/issues/${i.id}/comments`))
         const det = detectTriggers({ issue: i, runs: ctx.runsByIssue.get(i.id) || [], comments: cs, prev: { owner: st.prevOwner, status: st.prevStatus }, now: now(), idleMs: db.idleMs })
         if (det.triggers.length === 0) {
           const snap = { ...st, prevOwner: i.assigneeAgentId, prevStatus: i.status }
