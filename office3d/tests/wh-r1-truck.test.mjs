@@ -71,7 +71,7 @@ test('TR-3 LOD hysteresis and complementary fade do not move vehicles, tyres, do
   env.night=0;v.onFrame(.1,{camera});assert.equal(v.root.getObjectByName('wh-r1-truck-lamps').material.emissiveIntensity,0)
   assert.deepEqual(snapshot(),before);assert.equal(v.routes,undefined);assert.equal(v.root.userData.trucks.rearDoors,'CLOSED')
   const lights=[];v.root.traverse(o=>{if(o.isLight)lights.push(o)});assert.equal(lights.length,0)
-  assert.equal(v.root.userData.motion,'NONE — static drawing objects only');v.dispose()
+  assert.equal(v.root.userData.motion,'LIVE3_ROUTE_POSE');v.dispose()
 })
 
 test('TR-5 added worst-case geometry remains within two-pass high and single-pass low budgets',()=>{

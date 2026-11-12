@@ -48,9 +48,9 @@ R6 的结论仍成立：原实现只把交通状态写入 `runtimeVehicles.root.
 
 ## 验证分列
 
-- 本地代码与测试：PASS（23/23；`node --check` 通过）。
+- 本地代码与测试：PASS（本地相关套件 23/23；`node --check` 通过；随后同步更新 `wh-r1-truck.test.mjs` 的 motion 断言）。
 - 真实服务浏览器取证：PASS（4396，12 张截图已保存并校验 SHA-256）。
 - main 性能对照：PASS（4397 独立工作树、同口径 30 秒采样）。
-- PR #168 CI 三项：NOT_RUN（本轮尚未推送）。
+- PR #168 CI 三项：FAIL/待重跑（perf-budget PASS；ubuntu/windows 的全仓单测分别命中既有 `state-last-good.test.mjs` 的 undefined status 失败；另有旧 `wh-r1-truck.test.mjs` motion 断言已在本轮补齐，需推送后重跑）。
 - 部署/合并：NOT_RUN（明确禁止）。
 - 服务和浏览器：已关闭；临时基线工作树与合成 company-id 文件已删除。
