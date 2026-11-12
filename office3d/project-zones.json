@@ -10,6 +10,5 @@
     "server": ["BackendSenior", "Backend1", "OpsEngineer"],
     "database": ["DBEngineer", "LedgerAuditor"],
     "test-review-coordination": ["QAAutomation", "Reviewer1", "Reviewer2", "SecurityReviewer"]
-  },
-  "wing": { "x0": 28, "x1": 46, "z0": -6, "z1": 6, "door": { "x": 27.2, "z": 0, "width": 3.2 }, "emptySeats": 2 }
+  }
 }

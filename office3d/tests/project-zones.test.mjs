@@ -25,6 +25,11 @@ test('RouteFit implementation has no wing geometry or doorway route', () => {
   assert.doesNotMatch(source, /routefit-wing-zone|buildRoutefitZone|routefitWingNavigation|wing\s*:/)
 })
 
+test('RouteFit zone data has no obsolete wing configuration', () => {
+  const data = JSON.parse(fs.readFileSync(new URL('../project-zones.json', import.meta.url), 'utf8'))
+  assert.equal(Object.hasOwn(data, 'wing'), false)
+})
+
 test('RouteFit summary route remains read-only', () => {
   const source = fs.readFileSync(new URL('../server.mjs', import.meta.url), 'utf8')
   assert.match(source, /url\.pathname === '\/zone\/routefit'/)
