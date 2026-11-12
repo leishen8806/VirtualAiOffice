@@ -29,6 +29,8 @@ test('3d town exposes real progress loader, retry/back buttons, and reduced-moti
   assert.match(html, /town3dLoaderProgress/)
   assert.match(html, /town3dRetry/)
   assert.match(html, /town3dBack2d/)
+  assert.match(html, /id="town3dLoader"[^>]*\shidden/)
+  assert.match(html, /town3dLoader'\)\.hidden = false/)
   assert.match(js, /下载城市数据/)
   assert.match(js, /场景就绪/)
   assert.match(js, /prefers-reduced-motion/)

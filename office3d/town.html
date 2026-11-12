@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/town.css">
 </head>
 <body>
-  <section id="town3dLoader" class="town3d-loader" aria-live="polite" aria-busy="true">
+  <section id="town3dLoader" class="town3d-loader" aria-live="polite" aria-busy="true" hidden>
     <div class="town3d-loader-card">
       <div class="town3d-loader-brand">DR LIFE+</div>
       <h2 id="town3dLoaderTitle">正在铺开金边街区…</h2>
@@ -81,6 +81,7 @@
   <script type="module">
     if (new URLSearchParams(location.search).get('mode') === '3d') {
       document.body.classList.add('mode-3d')
+      document.querySelector('#town3dLoader').hidden = false
       document.querySelector('#townMap').hidden = true
       document.querySelector('#town3dCanvas').hidden = false
       document.querySelector('#town3dStatus').hidden = false
