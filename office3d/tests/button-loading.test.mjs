@@ -69,6 +69,26 @@ test('BTN-LOADING shows one loading state and always restores it', { timeout: 90
     assert.equal((await card.locator('.go').textContent()).trim(), '验收')
   })
 
+  await t.test('detached cards keep the response and repeated loading still returns a response', async () => {
+    const detachedPage = await browser.newPage()
+    await detachedPage.goto(`http://127.0.0.1:${server.address().port}/`)
+    const card = detachedPage.locator('#waitList .card', { hasText: issue.title })
+    await card.click({ noWaitAfter: true })
+    await card.evaluate((element) => element.remove())
+    await detachedPage.locator('#mAccept').waitFor({ state: 'visible' })
+    assert.doesNotMatch(await detachedPage.locator('#modal').textContent(), /Cannot read properties of undefined/)
+    await detachedPage.close()
+
+    const repeatedPage = await browser.newPage()
+    await repeatedPage.goto(`http://127.0.0.1:${server.address().port}/`)
+    const repeatedCard = repeatedPage.locator('#waitList .card', { hasText: issue.title })
+    await repeatedCard.click({ noWaitAfter: true, force: true })
+    await repeatedCard.click({ noWaitAfter: true, force: true })
+    await repeatedPage.locator('#mAccept').waitFor({ state: 'visible' })
+    assert.doesNotMatch(await repeatedPage.locator('#modal').textContent(), /Cannot read properties of undefined/)
+    await repeatedPage.close()
+  })
+
   await t.test('confirmation waits until the real submit, then shows loading', async () => {
     const accept = page.locator('#mAccept')
     await accept.click()
