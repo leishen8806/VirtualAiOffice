@@ -131,7 +131,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     toast.h = setTimeout(() => { t.className = '' }, 3200)
   }
   async function withLoading(control, fn) {
-    if (!control || control.dataset.loading === '1') return control ? false : fn()
+    if (!control || control.dataset.loading === '1') return fn()
     const indicator = control.classList.contains('card') ? control.querySelector('.go') : control
     if (!indicator) return fn()
     const original = indicator.innerHTML
@@ -142,11 +142,12 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     indicator.innerHTML = '<span class="request-spinner" aria-hidden="true"></span><span>处理中…</span>'
     try { return await fn() }
     finally {
-      if (!control.isConnected) return
-      indicator.innerHTML = original
-      if ('disabled' in control) control.disabled = wasDisabled
-      control.removeAttribute('aria-busy')
-      delete control.dataset.loading
+      if (control.isConnected) {
+        indicator.innerHTML = original
+        if ('disabled' in control) control.disabled = wasDisabled
+        control.removeAttribute('aria-busy')
+        delete control.dataset.loading
+      }
     }
   }
   const request = (...args) => withLoading(requestControl, () => fetch(...args))
