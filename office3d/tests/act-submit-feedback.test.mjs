@@ -94,7 +94,7 @@ test('ACT-SUBMIT-FEEDBACK times out, restores submit, and explains the global bu
     const page = await browser.newPage()
     await page.addInitScript(() => {
       const nativeSetTimeout = window.setTimeout.bind(window)
-      window.setTimeout = (fn, ms, ...args) => nativeSetTimeout(fn, ms === 20_000 ? 100 : ms, ...args)
+      window.setTimeout = (fn, ms, ...args) => nativeSetTimeout(fn, ms === 20_000 ? 1_000 : ms, ...args)
     })
     await page.goto(url)
     await page.locator('#waitList .card', { hasText: '第一张问题' }).click()
