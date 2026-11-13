@@ -1,0 +1,926 @@
+{
+  "source": {
+    "base": "http://127.0.0.1:3100",
+    "companyId": "1a8d32a6-f9e9-4b9f-b39d-1765cc140326",
+    "health": {
+      "version": "2026.1106.0",
+      "commit": "d69631b01b9c658f80bf8bed389863dce82643e1",
+      "status": "ok"
+    },
+    "generatedAt": "2026-11-13T17:57:08.526Z",
+    "windowStart": "2026-11-06T17:57:08.526Z",
+    "notes": [
+      "仅使用GET接口；未连接5432。",
+      "岗位和issues接口存在返回上限；完成卡数按返回的近7天成功runs去重，属于接口可见下界。",
+      "未保存error、日志、context、stdout/stderr、env、token或连接串。"
+    ]
+  },
+  "agents": [
+    {
+      "id": "c0c2eff0-886b-4c7b-8f25-8b3a385a5f73",
+      "name": "Architect",
+      "displayName": "架构师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 25,
+      "evidenceCards": [
+        {
+          "id": "CMP-1648",
+          "title": "晨会投票 2026-11-13：Architect（2 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1652",
+          "title": "验收投票 202611130214：Architect（1 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1662",
+          "title": "晨会投票 2026-11-13：Architect（2 项）",
+          "project": "运营与知识库"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "acdd755a-def3-4438-ab6e-9764cbbae7bc",
+      "name": "Backend1",
+      "displayName": "后端工程师 #1",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 15,
+      "evidenceCards": [
+        {
+          "id": "CMP-1642",
+          "title": "增量返工｜PR #165 的 R1/R2/R4 + R5（恢复 3 条被删的值断言；须排在 #167 合入之后；Backend1，今天 23:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1658",
+          "title": "A档｜Backend1 的 11 条取包装版 backend1.json 并转 CONTRACT_READY（11-13 16:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1665",
+          "title": "收尾｜#169 合主线并重新生成产物（#168 已先合；Backend1，11-13 13:30）",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "核心服务组",
+      "recommendationReason": "后端、数据库和接口契约"
+    },
+    {
+      "id": "f22a0dc0-a335-4183-9ab8-c52c8f4546a7",
+      "name": "Backend2",
+      "displayName": "后端工程师 #2",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 17,
+      "evidenceCards": [
+        {
+          "id": "CMP-1631",
+          "title": "交付｜CMP-1574 以主线为基线重整并交付（撤受控导入 + 12 条转状态的掩码自证；Backend2，今天 20:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1673",
+          "title": "A档｜Backend2 甲类 9 条契约声明（ops 6 + driver 1 + recipient 2；分两批）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "ef784899-9627-408f-89db-024443ddd1d1",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "司机端流",
+      "recommendationReason": "司机端、车辆和调度交互"
+    },
+    {
+      "id": "8203b3e1-4c94-4672-bd43-ffb218f01414",
+      "name": "BackendSenior",
+      "displayName": "后端高级工程师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 21,
+      "evidenceCards": [
+        {
+          "id": "CMP-1657",
+          "title": "收尾｜#160 的 http.mjs 并集解决（#150 已先合；BackendSenior，11-13 14:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1675",
+          "title": "装配器｜recorded 注解合并进产物（裁定一 1-5；单独小 PR，不夹带）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1681",
+          "title": "A 档 recorded 5 条（payout-approvals）补两侧示例并过 ajv ｜ BackendSenior ｜ 11-13 22:00",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "核心服务组",
+      "recommendationReason": "后端、数据库和接口契约"
+    },
+    {
+      "id": "44293dbe-c4e6-47cb-9ae0-08f75ac5f20e",
+      "name": "DBEngineer",
+      "displayName": "数据库工程师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 10,
+      "evidenceCards": [
+        {
+          "id": "CMP-1569",
+          "title": "只读判定｜迁移编号空洞 065-075/077/079-087 的豁免口径（DBEngineer，决定 #146 今天能不能合）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1638",
+          "title": "DBEngineer：CMP-1636 候选提交 4c9072b 的本机数据库红绿证据",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "fc51c657-cda3-4b3e-85f0-cd05504111f5",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "核心服务组",
+      "recommendationReason": "后端、数据库和接口契约"
+    },
+    {
+      "id": "4b41d562-1aeb-4e49-a0a3-d9359a1e1540",
+      "name": "Frontend1",
+      "displayName": "前端工程师 #1",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 6,
+      "evidenceCards": [
+        {
+          "id": "CMP-1571",
+          "title": "管理后台：Frontend1 的页面接入路由",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1577",
+          "title": "澄清交付｜CMP-1495 登记的提交 diff 为空，五页重做无法证明（Frontend1，今天 18:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "d3d05a45-6a96-4452-a7f6-61794df575bf",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "管理后台流",
+      "recommendationReason": "前端客户端或管理界面实现"
+    },
+    {
+      "id": "31a00b8f-b1c1-48a1-a86a-3a73afa34bee",
+      "name": "Frontend2",
+      "displayName": "前端工程师 #2",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 19,
+      "evidenceCards": [
+        {
+          "id": "CMP-1618",
+          "title": "验收投票 202611120747：Frontend2（2 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1654",
+          "title": "验收投票 202611130214：Frontend2（1 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1663",
+          "title": "晨会投票 2026-11-13：Frontend2（2 项）",
+          "project": "运营与知识库"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "6be681ed-7bc3-4425-bc24-35beaef00ecb",
+      "name": "FrontendSenior",
+      "displayName": "前端高级工程师（含 3D）",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 5,
+      "evidenceCards": [
+        {
+          "id": "CMP-1318",
+          "title": "RF-UX-V1 R2｜司机端／共用｜共用组件与履约页面（FrontendSenior）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1488",
+          "title": "RF-UX-V1 R2｜修 PR #149 的 driver-app lint 失败（7 个 Cannot access refs during render）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1493",
+          "title": "RF-UX-V1 R2｜修 PR #149 的对话框焦点陷阱回归（lint 修复把共用控制器改成每次按键新建）",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "司机端流",
+      "recommendationReason": "司机端、车辆和调度交互"
+    },
+    {
+      "id": "b4a39bbf-7d3e-4fc3-86c0-b8ce5075239a",
+      "name": "Go1",
+      "displayName": "Go 工程师 #1",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 0,
+      "evidenceCards": [],
+      "recommendedGroup": "专项组",
+      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+    },
+    {
+      "id": "2fea8aa5-f42c-42b6-8200-56bb58bb151f",
+      "name": "Go2",
+      "displayName": "Go 工程师 #2",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 0,
+      "evidenceCards": [],
+      "recommendedGroup": "专项组",
+      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+    },
+    {
+      "id": "7c2d2ff9-ff7b-4a3e-9f84-694adfec3b04",
+      "name": "GoSenior",
+      "displayName": "Go 高级工程师",
+      "status": "暂停",
+      "rawStatus": "paused",
+      "rawLifecycleState": "paused",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 3,
+      "evidenceCards": [
+        {
+          "id": "beedfa34-add7-467b-a883-9d932db7a99c",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "CMP-1245",
+          "title": "#146 关键读池与角色护栏重放（cherry-pick 12 提交 + Draft PR，不合并）",
+          "project": "Dr.life+"
+        },
+        {
+          "id": "df5d23a8-d9fd-429b-991e-e90b8d2e1d68",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "专项组",
+      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+    },
+    {
+      "id": "8f7b30e4-fc5c-4b40-a1b7-3c726c41b8bf",
+      "name": "GoSenior2",
+      "displayName": "Go 高级工程师 #2",
+      "status": "暂停",
+      "rawStatus": "paused",
+      "rawLifecycleState": "paused",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 1,
+      "evidenceCards": [
+        {
+          "id": "5d380159-eef8-4695-be2f-45a4d403b8cb",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "专项组",
+      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+    },
+    {
+      "id": "4e3752cc-0b9a-43fb-9b0b-a08ed091de28",
+      "name": "KnowledgeKeeper",
+      "displayName": "知识库管理员",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "OpsLead",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 6,
+      "evidenceCards": [
+        {
+          "id": "7d4c072c-616d-4b00-93ad-c41664467e12",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "8a22f8b7-5be2-4005-834b-1c555c1f3157",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "fb32b785-671c-4e7e-abf9-cf0395c07a9e",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "转 RouteFit（建议暂停或转赋能组）",
+      "recommendationReason": "近7天活动仍以非 RouteFit 为主，需董事会决定转岗或暂停"
+    },
+    {
+      "id": "2e0fe3ea-df3a-480c-be0a-d50a00b6a62a",
+      "name": "Lead",
+      "displayName": "技术负责人",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": null,
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 31,
+      "evidenceCards": [
+        {
+          "id": "CMP-1655",
+          "title": "晨会投票 2026-11-13：Lead（2 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1659",
+          "title": "晨会投票 2026-11-13：Lead（2 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1660",
+          "title": "晨会投票 2026-11-13：Lead（2 项）",
+          "project": "运营与知识库"
+        }
+      ],
+      "recommendedGroup": "转 RouteFit（建议暂停或转赋能组）",
+      "recommendationReason": "近7天活动仍以非 RouteFit 为主，需董事会决定转岗或暂停"
+    },
+    {
+      "id": "c4b1259f-b6b8-4275-9c04-53811c7dabb3",
+      "name": "Lead2",
+      "displayName": "技术协调 #2（答疑分担）",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 4,
+      "evidenceCards": [
+        {
+          "id": "CMP-1358",
+          "title": "RF-UX-V1 R2｜每日进度、风险与在途冲突（Lead2）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1433",
+          "title": "管理后台接真实接口前落鉴权门与菜单按权限过滤（来源 CMP-1336 O-2）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1627",
+          "title": "收尾｜#160 以主线为基线（merge af060fe + 把 CMP-1622 记 NOT_RUN 的契约测试跑成真实数字；BackendSenior，今天 19:00）",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "RouteFit 总负责",
+      "recommendationReason": "跨流协调与排程"
+    },
+    {
+      "id": "3b4865f8-e1b0-4d33-b214-d92f76de612a",
+      "name": "LedgerAuditor",
+      "displayName": "账务审计员",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 0,
+      "evidenceCards": [],
+      "recommendedGroup": "赋能组",
+      "recommendationReason": "近7天卡片不足以证明其他专门归组，建议负责人复核"
+    },
+    {
+      "id": "b6f9c8a6-ee20-45cc-9af2-8dc99dac8fa3",
+      "name": "Localizer",
+      "displayName": "本地化工程师（中/英/高棉）",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 1,
+      "evidenceCards": [
+        {
+          "id": "8aa34d9e-bbe1-4daa-ba80-3414842f4cc5",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "客户端流（Mini App/H5/官网）",
+      "recommendationReason": "前端客户端或管理界面实现"
+    },
+    {
+      "id": "b160f35e-f716-4961-a7d3-fc40c4df3df0",
+      "name": "OpsEngineer",
+      "displayName": "运维工程师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "OpsLead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 0,
+      "evidenceCards": [],
+      "recommendedGroup": "平台组",
+      "recommendationReason": "Paperclip 平台、CI 和运行维护"
+    },
+    {
+      "id": "8380bf80-f090-4af1-9703-ebde9a61a3d3",
+      "name": "OpsLead",
+      "displayName": "运维负责人",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 12,
+      "evidenceCards": [
+        {
+          "id": "CMP-1596",
+          "title": "OpsLead：33 个操作的权限点落稿",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1629",
+          "title": "交付｜CMP-1589+1596 的权限定名小 PR（修 develop 上 4 条 CONTRACT_READY 的占位权限点；OpsLead，今天 19:30）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1679",
+          "title": "【阻塞修复】主线 CI service-integration 恒红：pg_dump/pg_restore 客户端与 postgres:16 服务端版本不一致",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "客户端流（Mini App/H5/官网）",
+      "recommendationReason": "前端客户端或管理界面实现"
+    },
+    {
+      "id": "c58b4ea4-0444-4494-b222-5520f418f03b",
+      "name": "PM",
+      "displayName": "产品经理",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 25,
+      "evidenceCards": [
+        {
+          "id": "CMP-1651",
+          "title": "验收投票 202611130214：PM（1 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-1661",
+          "title": "晨会投票 2026-11-13：PM（2 项）",
+          "project": "运营与知识库"
+        },
+        {
+          "id": "CMP-909",
+          "title": "常驻职责：Dr.life+ 计划与里程碑（项目集经理 PM）",
+          "project": "Dr.life+"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "7eb58c2d-611e-4856-bebc-63871baa3825",
+      "name": "QAAutomation",
+      "displayName": "测试自动化工程师",
+      "status": "卡住",
+      "rawStatus": "error",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 200000,
+      "currentCards": [],
+      "completedCards7d": 4,
+      "evidenceCards": [
+        {
+          "id": "CMP-1362",
+          "title": "QAAutomation 环境冒烟 140",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1375",
+          "title": "配置只读复核｜Node 24｜QAAutomation",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1546",
+          "title": "核查｜11-11 完成进度逐项核对",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "7e9488ba-25bf-4495-b97f-b30c7f3184cd",
+      "name": "React1",
+      "displayName": "React/TS 前端工程师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 20000,
+      "currentCards": [],
+      "completedCards7d": 4,
+      "evidenceCards": [
+        {
+          "id": "CMP-1317",
+          "title": "RF-UX-V1 R2｜司机端｜登录、接单、行程与我的（React1）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1380",
+          "title": "配置只读探针｜Node 24 局部方案｜React1",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1410",
+          "title": "配置只读探针｜Node 24 正式版｜React1",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "司机端流",
+      "recommendationReason": "司机端、车辆和调度交互"
+    },
+    {
+      "id": "ec104f96-4906-4213-a916-6fd2308791b9",
+      "name": "React2",
+      "displayName": "React/TS 前端工程师 #2",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 3,
+      "evidenceCards": [
+        {
+          "id": "0e0a1fa8-1249-465a-badb-8e65bad0671b",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "CMP-1319",
+          "title": "RF-UX-V1 R2｜客户端｜首页、寄件、订单与广告（React2）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1623",
+          "title": "阻塞修复｜.gitignore 两行锚定（PR #162 的 R1-1 从未修过；React2，今天 20:00）",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "客户端流（Mini App/H5/官网）",
+      "recommendationReason": "前端客户端或管理界面实现"
+    },
+    {
+      "id": "a8510706-9709-49a6-ba33-a1f4bdfb04f7",
+      "name": "ReactSenior",
+      "displayName": "React/TS 高级前端",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 7,
+      "evidenceCards": [
+        {
+          "id": "CMP-1490",
+          "title": "恢复 apps/admin 的 pinned dependencies（零依赖导致无法构建启动，来源 CMP-1486 R1-SEC-4）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1491",
+          "title": "给 apps/admin 补 CI job 与 lint/typecheck/build:web 脚本（来源 CMP-1486 R1-SEC-3）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "e2d8c826-5a40-4f79-9d16-7bb36555c223",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "管理后台流",
+      "recommendationReason": "前端客户端或管理界面实现"
+    },
+    {
+      "id": "d7ab2c75-a26e-4d22-9995-2cfb77035870",
+      "name": "Reviewer1",
+      "displayName": "代码审查员 #1",
+      "status": "卡住",
+      "rawStatus": "error",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 33,
+      "evidenceCards": [
+        {
+          "id": "e00f2bb2-ef99-4da2-9569-4025d4e3a98f",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "f1ab2586-0eae-4ce5-8f98-697c848b6b6f",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "fc51c657-cda3-4b3e-85f0-cd05504111f5",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "a1ccd681-a016-47f7-a018-8907d02bf332",
+      "name": "Reviewer2",
+      "displayName": "代码审查员 #2",
+      "status": "卡住",
+      "rawStatus": "error",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 28,
+      "evidenceCards": [
+        {
+          "id": "CMP-1670",
+          "title": "复核｜#169 的合主线+重新生成增量（锚 7b5a9ea；Reviewer2，11-13 15:30）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1671",
+          "title": "复核｜#173 的新增增量（2984c450：Windows 跳过 POSIX 权限检查；只看这一条）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "e8d775b8-f4a8-42a1-aeb1-9a30b8762393",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "ef4dc773-2860-48fc-9a70-f6d9d69ace23",
+      "name": "Reviewer3",
+      "displayName": "代码审查员 #3",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "gpt-5.6-terra",
+      "adapterType": "codex_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 31,
+      "evidenceCards": [
+        {
+          "id": "CMP-1680",
+          "title": "复核｜CMP-1679 主线 CI service-integration 恒红修复（只改 ci.yml）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1683",
+          "title": "CMP-1681 复核｜5 条 payout recorded 示例逐条过 ajv ｜ Reviewer3 ｜ 11-13 23:00",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1684",
+          "title": "CMP-1681 增量复核｜V-7 闭合（三条 code/messageKey/message）｜ Reviewer3 ｜ 11-13 23:30",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "b9e682e3-65fa-488d-b94d-a6fad952dd59",
+      "name": "SecurityReviewer",
+      "displayName": "安全审查员",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 28,
+      "evidenceCards": [
+        {
+          "id": "CMP-1639",
+          "title": "增量复核｜PR #162 的 233797c（.gitignore 两行锚定，CMP-1599 的 R1-1 修复已推；SecurityReviewer，今天 21:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1677",
+          "title": "复核｜CMP-1442 / PR #173 按 B-38 的四条掩码测试（增量，含契约三处越界核查）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "ff6a6e5e-0bf2-4390-86fe-346e13de173e",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "58587db8-d5e4-40da-b736-9d0d8d77cc49",
+      "name": "SecurityReviewer2",
+      "displayName": "安全审查员 #2",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead",
+      "model": "claude-opus-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 15,
+      "evidenceCards": [
+        {
+          "id": "CMP-1501",
+          "title": "增量安全复核｜CMP-1493｜对话框焦点陷阱回归（SecurityReviewer2）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1633",
+          "title": "复核｜PR #165 的 CMP-1626（同步主线 + backend1-module-contract 跑成真实数字 + 065–069 的 RLS；SecurityReviewer2，今天 21:00）",
+          "project": "Dr.RouteFit"
+        },
+        {
+          "id": "CMP-1668",
+          "title": "复核｜#165 的 R1/R2/R4 增量（锚 0f3d7fcb；只看 fa519267 之后那一段）",
+          "project": "Dr.RouteFit"
+        }
+      ],
+      "recommendedGroup": "独立验收线",
+      "recommendationReason": "审查、回归和安全验收"
+    },
+    {
+      "id": "45d4b1f7-32be-43bb-8a9a-1d913c0ee83f",
+      "name": "UIUX",
+      "displayName": "UI/UX 设计师",
+      "status": "在岗",
+      "rawStatus": "idle",
+      "rawLifecycleState": "ready",
+      "reportsTo": "Lead2",
+      "model": "claude-sonnet-5-5",
+      "adapterType": "claude_local",
+      "budgetMonthlyCents": 0,
+      "currentCards": [],
+      "completedCards7d": 3,
+      "evidenceCards": [
+        {
+          "id": "05f5feb0-494d-40b4-8d0a-b95bde4301ef",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "11e050f5-819e-4d3f-a5b2-10320cab99c9",
+          "title": "未知卡片",
+          "project": ""
+        },
+        {
+          "id": "316aa828-678f-4424-b599-e2a4d44a2128",
+          "title": "未知卡片",
+          "project": ""
+        }
+      ],
+      "recommendedGroup": "客户端流（Mini App/H5/官网）",
+      "recommendationReason": "前端客户端或管理界面实现"
+    }
+  ]
+}
