@@ -8,8 +8,8 @@ export function forkliftPath(layout) {
 export function truckPlan(layout) {
   const receiving = zone(layout, 'receiving'), shipping = zone(layout, 'shipping')
   const dock = (id, x, z, dx, dz) => ({ id, parked: point(x, z, 0), entry: point(x + dx, z + dz, 0) })
-  return [dock('demo-receive-1', receiving.x0 + 6, receiving.z0 - 3.8, 0, -2),
-    dock('demo-receive-2', receiving.x0 + 15, receiving.z0 - 3.8, 0, -2), dock('demo-ship-1', shipping.x1 - 6, shipping.z0 + 7, 3.8, 0)]
+  return [dock('demo-receive-1', receiving.x0 + 6, receiving.z0 - 3.8, -3, 0),
+    dock('demo-receive-2', receiving.x0 + 15, receiving.z0 - 3.8, -3, 0), dock('demo-ship-1', shipping.x1 - 6, shipping.z0 + 7, -3.8, 0)]
 }
 export function conveyorLoop(layout) {
   const picking = zone(layout, 'picking'), packing = zone(layout, 'packing')

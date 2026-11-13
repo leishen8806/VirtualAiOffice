@@ -22,13 +22,24 @@ export function routeForVehicle(row) {
   const fleet = row.displayVehicleType === 'semitrailer' ? WH_R1_LIVE3_ROUTES.inbound : WH_R1_LIVE3_ROUTES.outbound
   const index = fleet.findIndex(item => { const p = row.displayVehicleType === 'semitrailer' ? item.points.at(-1) : item.points[0]; return p.xM === row.xM && p.yM === row.yM })
   const source = fleet[index >= 0 ? index : 0]
-  return { ...source, points: source.points.map(worldPoint) }
+  return { ...source, lengthM: row.lengthM, points: source.points.map(worldPoint) }
 }
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z)
 export function poseOnRoute(route, progress, reverse = false) {
-  const lengths = route.slice(1).map((b, i) => distance(route[i], b)), total = lengths.reduce((sum, value) => sum + value, 0)
+  const points = Array.isArray(route) ? route : route.points, lengths = points.slice(1).map((b, i) => distance(points[i], b)), total = lengths.reduce((sum, value) => sum + value, 0)
   let left = Math.max(0, Math.min(1, progress)) * total
-  for (let i = 0; i < lengths.length; i++) { if (left <= lengths[i]) { const a = route[i], b = route[i + 1], ratio = lengths[i] ? left / lengths[i] : 0; return { x: a.x + (b.x - a.x) * ratio, z: a.z + (b.z - a.z) * ratio, yaw: Math.atan2(b.z - a.z, b.x - a.x) + (reverse ? Math.PI : 0) } } left -= lengths[i] }
-  const a = route.at(-2), b = route.at(-1)
-  return { x: b.x, z: b.z, yaw: Math.atan2(b.z - a.z, b.x - a.x) + (reverse ? Math.PI : 0) }
+  const makePose = (a, b, ratio) => {
+    const pathHeading = Math.atan2(b.z - a.z, b.x - a.x), heading = pathHeading + (reverse ? Math.PI : 0)
+    const yaw = route.vehicleType === 'delivery-train' || route.vehicleType === 'delivery-tricycle' ? Math.PI / 2 - heading : Math.PI - heading
+    const x = a.x + (b.x - a.x) * ratio, z = a.z + (b.z - a.z) * ratio, half = (route.lengthM || 0) / 2
+    const front = { x: x + Math.cos(heading) * half, z: z + Math.sin(heading) * half }, rear = { x: x - Math.cos(heading) * half, z: z - Math.sin(heading) * half }
+    return { x, z, yaw, heading, front, rear }
+  }
+  for (let i = 0; i < lengths.length; i++) { if (left <= lengths[i]) { const a = points[i], b = points[i + 1], ratio = lengths[i] ? left / lengths[i] : 0; return makePose(a, b, ratio) } left -= lengths[i] }
+  const a = points.at(-2), b = points.at(-1)
+  return makePose(a, b, 1)
+}
+export function routeProgressAtPoint(route, pointIndex) {
+  const points = route.points, lengths = points.slice(1).map((b, i) => distance(points[i], b)), total = lengths.reduce((sum, value) => sum + value, 0)
+  return lengths.slice(0, pointIndex).reduce((sum, value) => sum + value, 0) / total
 }

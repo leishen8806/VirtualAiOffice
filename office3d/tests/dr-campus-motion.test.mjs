@@ -18,6 +18,14 @@ test('forklift closed aisle avoids racks and office routes with physical clearan
     for (const rack of racks) assert.equal(p.x > rack.x0 - 1.5 && p.x < rack.x1 + 1.5 && p.z > rack.z0 - 1.5 && p.z < rack.z1 + 1.5, false)
   }
 })
+
+test('truck heading follows travel direction for arrival and departure', () => {
+  for (const dock of truckPlan(layout)) {
+    const arrival = Math.atan2(dock.parked.x - dock.entry.x, dock.parked.z - dock.entry.z)
+    const departure = Math.atan2(dock.entry.x - dock.parked.x, dock.entry.z - dock.parked.z)
+    assert.ok(Math.abs(Math.abs(departure - arrival) - Math.PI) < 1e-9)
+  }
+})
 test('conveyors are closed and contained in picking and packing display lanes', () => {
   for (const path of conveyorLoop(layout)) {
     assert.deepEqual(path[0], path.at(-1))
