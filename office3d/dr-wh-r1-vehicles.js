@@ -149,14 +149,18 @@ export function buildWhR1Vehicles({ THREE, root, collision, canvasTex, quality, 
   for (const [kind, rows] of Object.entries(batches)) if (rows.length) addBatch(kind, rows)
   for (const [kind, rows] of Object.entries(detailBatches)) if (rows.length) addBatch(kind, rows, true)
   const applyPose = (id, pose) => {
-    const base = basePoses.get(id), entries = motionRows.get(id); if (!base || !entries || !pose) return
+    const base = basePoses.get(id), entries = motionRows.get(id); if (!base || !pose) return
     const dy = pose.yaw - base.yaw, c = Math.cos(dy), s = Math.sin(dy)
-    for (const entry of entries) {
+    if (entries) for (const entry of entries) {
       const dx = entry.row.x - base.x, dz = entry.row.z - base.z
       setInstance(entry.mesh, { ...entry.row, x: pose.x + dx * c - dz * s, z: pose.z + dx * s + dz * c, yaw: entry.row.yaw + dy }, entry.index)
       entry.mesh.instanceMatrix.needsUpdate = true
     }
-    const proxy = proxies.find(item => item.userData.whR1Id === id); if (proxy) { proxy.position.x = pose.x; proxy.position.z = pose.z; proxy.rotation.y = pose.yaw }
+    const proxy = proxies.find(item => item.userData.whR1Id === id)
+    if (proxy) {
+      proxy.position.x = pose.x; proxy.position.z = pose.z; proxy.rotation.y = pose.yaw; proxy.updateMatrixWorld(true)
+      collision?.poseNavigationBody?.(proxy, base, pose.x - base.x, pose.z - base.z, dy)
+    }
   }
   const applyMotion = snapshot => {
     const active = new Map((snapshot?.active || []).map(row => [row.id, row.position]))

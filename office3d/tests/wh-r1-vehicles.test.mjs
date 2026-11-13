@@ -10,6 +10,7 @@ import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
 import { buildWhR1Live1 } from '../dr-wh-r1-live1.js'
+import { createLive3StageB } from '../wh-r1/live3-stage-b.js'
 const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
 const texture=()=>new THREE.Texture()
 function boxes(root){
@@ -90,6 +91,17 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  }
  value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
 })
+test('B10 moves the real semitrailer proxy matrix and collision body with its loaded model',async()=>{
+ const poses=new Map()
+ const root=new THREE.Group(),collision=createFurnitureCollision(),value=buildWhR1Vehicles({THREE,root,collision,renderer:{},loadSemitrailers:async()=>({setPose(id,pose){poses.set(id,pose)},update(){},dispose(){}})})
+ await value.ready
+ const row=WH_R1_VEHICLES.find(item=>item.id==='WH-01-VH-001'),base=whToWorld(row.xM,row.yM),proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id),before=proxy.matrixWorld.clone(),pose={x:base.x+3,z:base.z+2,yaw:Math.PI/2}
+ value.applyMotion({active:[{id:row.id,position:pose}]});root.updateMatrixWorld(true)
+ assert.notDeepEqual(Array.from(proxy.matrixWorld.elements),Array.from(before.elements),'real proxy matrix moves')
+ const x=pose.x+Math.cos(pose.yaw)*(row.lengthM/2-.01),z=pose.z-Math.sin(pose.yaw)*(row.lengthM/2-.01)
+ assert.deepEqual(poses.get(row.id),pose);assert.equal(collision.hit(x,z)?.group,proxy)
+ value.dispose()
+})
 test('B2 route pose moves a visible delivery model and its collision proxy',()=>{
  const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),row=WH_R1_OUTBOUND_FLEET[0],base=whToWorld(row.xM,row.yM),mesh=value.root.getObjectByName('wh-r1-vehicles-boxes'),before=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),before)
  value.applyMotion({active:[{id:row.id,position:{x:base.x+4,z:base.z+2,yaw:Math.PI/2}}]})
@@ -106,6 +118,22 @@ test('B2 scene runtime moves registered vehicles, reverses inbound trailers, and
  let inbound,inboundProxyYaw;for(let frame=0;frame<120;frame++){live.onFrame(.1);inbound??=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');if(inbound&&inboundProxyYaw===undefined)inboundProxyYaw=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id).rotation.y}
  assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
  near(inboundProxyYaw,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
+})
+test('B10 rotates every outbound delivery vehicle within sixty seconds',()=>{
+ const sim=createLive3StageB(),positions=new Map()
+ for(let frame=0;frame<600;frame++)for(const row of sim.advance(100).active.filter(item=>item.kind==='outbound')){
+  const seen=positions.get(row.id)||new Set();seen.add(`${row.position.x.toFixed(4)},${row.position.z.toFixed(4)}`);positions.set(row.id,seen)
+ }
+ assert.deepEqual([...positions.keys()].sort(),WH_R1_OUTBOUND_FLEET.map(row=>row.id).sort())
+ for(const [id,seen] of positions)assert.ok(seen.size>1,`${id} moves`)
+})
+test('B10 campus summary exposes read-only LIVE-3 motion evidence',()=>{
+ const prior=globalThis.location
+ try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'};const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}})
+  registry.buildAll({quality:{tier:'high'},canvasTex:texture});const motion=registry.summary().motion
+  assert.equal(motion?.nowMs>0,true);assert.ok(motion.active.every(row=>typeof row.id==='string'&&typeof row.phase==='string'&&row.elapsedSeconds>=0))
+  registry.dispose()
+ }finally{globalThis.location=prior}
 })
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
