@@ -43,6 +43,7 @@ import { buildWall, redactState, redactText } from './wall.mjs'
 import { computeToday } from './today.mjs'
 import { buildHealth } from './health.mjs'
 import { buildGovernance } from './governance.mjs'
+import { createGovernanceFileReader } from './governance-file-cache.mjs'
 import { createEventsLedger, parseReplayDate, computeGaps, countKinds, dutyConfig } from './events-ledger.mjs'
 import { buildCollab, selectWindowDays, ledgerDayFiles, SEAT_GROUPS } from './collab.mjs'
 import { summarizeContracts } from './contract-view.mjs'
@@ -183,7 +184,7 @@ async function get(p, { signal } = {}) {
 }
 const snapshots = createSnapshotGet({ get })
 const moduleGet = name => snapshots.forModule(name)
-function readGovernanceFile(name) { try { return JSON.parse(fs.readFileSync(path.join(HERE, name), 'utf8')) } catch { return {} } }
+const readGovernanceFile = createGovernanceFileReader({ dir: HERE })
 async function send(method, p, body) {
   const r = await fetch(PAPERCLIP + p, {
     method,
