@@ -67,10 +67,10 @@
 
 ## Go 岗位
 
-- Go1：建议保持暂停，待确认 RouteFit 是否需要 Go 专项；当前归组建议为 专项组。
-- Go2：建议保持暂停，待确认 RouteFit 是否需要 Go 专项；当前归组建议为 专项组。
-- GoSenior：建议保持暂停，待确认 RouteFit 是否需要 Go 专项；当前归组建议为 专项组。
-- GoSenior2：建议保持暂停，待确认 RouteFit 是否需要 Go 专项；当前归组建议为 专项组。
+- Go1：建议撤掉；只读核对 RouteFit 仓库未发现 go.mod 或 Go 服务引用，当前没有 RouteFit Go 技术栈证据。
+- Go2：建议撤掉；只读核对 RouteFit 仓库未发现 go.mod 或 Go 服务引用，当前没有 RouteFit Go 技术栈证据。
+- GoSenior：建议撤掉；只读核对 RouteFit 仓库未发现 go.mod 或 Go 服务引用，当前没有 RouteFit Go 技术栈证据。
+- GoSenior2：建议撤掉；只读核对 RouteFit 仓库未发现 go.mod 或 Go 服务引用，当前没有 RouteFit Go 技术栈证据。
 
 ## 新增后端岗位
 
