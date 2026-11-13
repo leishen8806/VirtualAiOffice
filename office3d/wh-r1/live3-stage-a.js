@@ -42,13 +42,16 @@ export function live3ConveyorPose(task, nowMs) {
   return { ...point, z: point.z - .16, action: weighing ? 'weigh' : scanning ? 'scan' : 'conveyor' }
 }
 
-export function live3Board(state) {
+export function live3Board(state, traffic = null) {
   return {
     opening: state.initialOnHand,
     inbound: state.counters.received,
     outbound: state.counters.shipped,
     inventory: state.onHand,
     exceptions: state.counters.exceptions,
+    vehicleInbound: traffic?.counters?.inbound || 0,
+    vehicleOutbound: traffic?.counters?.outbound || 0,
+    vehicleClearanceOk: traffic?.minClearanceOk ?? true,
     averageProcessingMs: state.averageProcessingMs,
     active: Object.fromEntries(LIVE2_STAGES.map(stage => [stage, state.stageStats[stage].active])),
   }

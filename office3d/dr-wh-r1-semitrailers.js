@@ -2,6 +2,7 @@ import * as THREE from './vendor/three/three.module.js'
 import { RoomEnvironment } from './vendor/three/jsm/environments/RoomEnvironment.js'
 
 export const SEMITRAILER_SIZE = Object.freeze({length:16.5,width:2.55,height:4,level:'UNKNOWN'})
+export const semitrailerModelYaw = bayYaw => bayYaw - Math.PI / 2
 export function validateTruckBays(bays) {
   const ids=new Set()
   for(const b of bays){
@@ -69,10 +70,11 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
   const view = new THREE.Frustum(), viewProjection = new THREE.Matrix4()
   const vehicleBounds = new THREE.Sphere(new THREE.Vector3(), Math.hypot(SEMITRAILER_SIZE.length / 2, SEMITRAILER_SIZE.width / 2, SEMITRAILER_SIZE.height / 2) + .45)
   const visibleBays = bays.map(() => true)
-  let lastNight=-1,lastTier,disposed=false
+  let lastNight=-1,lastTier,disposed=false,poseVersion=0,lastPoseVersion=-1
+  const setPose=(id,pose)=>{const bay=bays.find(item=>item.id===id);if(!bay||!pose)return false;bay.x=pose.x;bay.z=pose.z;bay.yaw=pose.yaw;poseVersion++;return true}
   function update(camera) {
     if(disposed)return
-    let changed=lastTier!==quality.tier;lastTier=quality.tier
+    let changed=lastTier!==quality.tier||lastPoseVersion!==poseVersion;lastTier=quality.tier;lastPoseVersion=poseVersion
     // Low quality shares the nearest fleet LOD: mixed medium/far would double its three-call budget.
     const low=quality.tier==='low',distances=bays.map(b=>camera.position.distanceTo(position.set(b.x,b.y+2,b.z))),nearest=low?Math.min(...distances):0
     const lowLod=truckLod(nearest,states.every(s=>s===2)?2:1,true)
@@ -92,7 +94,7 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
       const selected=bays.map((b,i)=>({b,i})).filter(({i})=>visibleBays[i]&&states[i]===lod)
       for(const mesh of batches[lod]){
         mesh.count=selected.length;mesh.visible=!!selected.length;mesh.userData.instanceToVehicleId=selected.map(({b})=>b.id)
-        selected.forEach(({b},j)=>{matrix.compose(position.set(b.x,b.y,b.z),quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,b.yaw),scale);mesh.setMatrixAt(j,matrix)
+        selected.forEach(({b},j)=>{matrix.compose(position.set(b.x,b.y,b.z),quaternion.setFromAxisAngle(THREE.Object3D.DEFAULT_UP,semitrailerModelYaw(b.yaw)),scale);mesh.setMatrixAt(j,matrix)
           if(mesh.geometry.attributes.fleetRow)mesh.geometry.attributes.fleetRow.setX(j,b.fleetNumber-1)
           if(mesh.geometry.attributes.vehicleSeed)mesh.geometry.attributes.vehicleSeed.setX(j,b.fleetNumber)
           // Deterministic per-vehicle finish variation; no shared global random state.
@@ -103,5 +105,5 @@ export async function loadWhR1Semitrailers({root,renderer,bays,quality={tier:'hi
     const night=Math.max(0,Math.min(1,env.night||0));if(night!==lastNight){lastNight=night;for(const list of batches)for(const m of list){if(m.material.userData.nightUniform)m.material.userData.nightUniform.value=night;if(m.material.envMap)m.material.envMapIntensity=.65*(1-night)+.14*night}}
   }
   root.add(group)
-  return {root:group,update,states,batches,dispose(){if(disposed)return;disposed=true;root.remove(group);const gs=new Set(),ts=new Set();for(const list of batches)for(const m of list){gs.add(m.geometry);for(const v of Object.values(m.material))if(v?.isTexture&&v!==reflection.texture)ts.add(v);m.material.dispose()}gs.forEach(g=>g.dispose());ts.forEach(t=>t.dispose());reflection.dispose()}}
+  return {root:group,update,setPose,states,batches,dispose(){if(disposed)return;disposed=true;root.remove(group);const gs=new Set(),ts=new Set();for(const list of batches)for(const m of list){gs.add(m.geometry);for(const v of Object.values(m.material))if(v?.isTexture&&v!==reflection.texture)ts.add(v);m.material.dispose()}gs.forEach(g=>g.dispose());ts.forEach(t=>t.dispose());reflection.dispose()}}
 }

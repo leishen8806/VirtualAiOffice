@@ -51,7 +51,7 @@ export const WH_R1_DEVIATIONS = Object.freeze([
   Object.freeze({ id: 'WH-R1-WORLD-ORIGIN', date: '2026-10-31', from: 'xM - 168', to: 'xM - 232', reason: '仓配整组西移 64 m，东边界保持 -72，与办公室绿带保持 32 m' }),
   Object.freeze({ id: 'WH-14-D-001', date: '2026-10-31', from: '外部车辆接口', to: '主仓与东侧附建区连接口', reason: '外部靠泊转移到 R5-SHIP-D-1…4' }),
   Object.freeze({ id: 'WH-R1-PARKING-BAYS', date: '2026-10-31', from: '9 辆 8 m 登记车位', to: '5 辆进货牵引半挂 + 4 辆出货配送车', reason: '董事会明确进货用大半挂，出货用园区小火车与三轮车；车尾对门且高差仍 UNKNOWN' }),
-  Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路' }),
+  Object.freeze({ id: 'WH-14-LOGISTICS-GATE', date: '2026-10-31', from: '原东侧 8 m 物流带', to: '新地块东边物流出入口标示', reason: '附建区与东侧空场取代原侧向物流带；不代表已验证道路。模拟路线见 wh-r1/live3-routes.js，非实测' }),
   Object.freeze({ id: 'WH-14-LOGISTICS-GATE-R3-CLEARANCE', date: '2026-11-07', from: 'WH-14-BED-001 / WH-14-PL-001* / WH-14-PL-002* 与 WH-14-GT-001 原坐标', to: '入口通道两侧：花池 [154.5,-2]、南侧盆栽 [154,-2]、北侧盆栽 [154,14]、道闸 [158.5,14.5]', reason: '董事会 2026-11-07：物流出入口改为货车通道，保留登记件并为双向 8 m 车道让行' }),
   Object.freeze({ id: 'WH-R1-RECEIVING-BAY-WIDEN-R4', date: '2026-11-08', from: '收货车位中心 9.5 / 15 / 20.5 / 26.0 m；门中心同值', to: '收货车位中心 8.975 / 14.825 / 20.675 / 26.525 m；对应门同步移动', reason: '董事会选择以中间对称将中心间距加宽至 5.85 m，消除四车同时倒车时的相邻车位刮擦风险' }),
 ])

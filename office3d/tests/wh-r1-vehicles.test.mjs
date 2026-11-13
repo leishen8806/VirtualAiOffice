@@ -9,6 +9,8 @@ import { buildWhR1Vehicles, WH_R1_VEHICLES, WH_R1_SWEEPS, WH_R1_LEVELS, WH_R1_DO
 import { WH_R1_ANNEX, WH_R1_PARKING_BAYS } from '../wh-r1-site-plan.js'
 import { createCampusRegistry } from '../dr-campus-registry.js'
 import { createFurnitureCollision } from '../furniture-collision.js'
+import { buildWhR1Live1 } from '../dr-wh-r1-live1.js'
+import { createLive3StageB } from '../wh-r1/live3-stage-b.js'
 const near=(a,b,m)=>assert.ok(Math.abs(a-b)<.00002,`${m}: ${a} != ${b}`)
 const texture=()=>new THREE.Texture()
 function boxes(root){
@@ -55,7 +57,7 @@ test('I5 seven round-ended sweeps preserve blocked and conditional values withou
  assert.deepEqual(WH_R1_SWEEPS.slice(2,4).map(r=>[r.status,r.min_clearance_mm]),[['CONDITIONAL_STATIC_CLEAR',350],['CONDITIONAL_STATIC_CLEAR',115]])
  const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),overlay=value.root.getObjectByName('wh-r1-vehicle-inspection-overlays'),pos=overlay.geometry.attributes.position
  for(const range of overlay.userData.ranges.filter(r=>/^(TR|FL)/.test(r.id))){const row=WH_R1_SWEEPS.find(r=>r.id===range.id),a=whToWorld(...row.points_m[0]),b=whToWorld(...row.points_m[1]),r=row.swept_radius_mm/1000,x=[],z=[];for(let i=range.start;i<range.start+range.count;i++){x.push(pos.getX(i));z.push(pos.getZ(i))}near(Math.max(...x)-Math.min(...x),2*r,row.id+' width');near(Math.max(...z)-Math.min(...z),Math.abs(a.z-b.z)+2*r,row.id+' round ends')}
- const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ const matrices=value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array));value.onFrame(.1,{camera:new THREE.PerspectiveCamera()});assert.deepEqual(value.root.children.filter(x=>x.isInstancedMesh).map(x=>Array.from(x.instanceMatrix.array)),matrices);assert.equal(value.routes,undefined);assert.equal(value.root.userData.motion,'LIVE3_ROUTE_POSE')
  const source=readFileSync(new URL('../dr-wh-r1-vehicles.js',import.meta.url),'utf8');assert.doesNotMatch(source,/CAMPUS_VEHICLE_ROUTES|B4_PLAN|pathPoint|requestAnimationFrame|setInterval/)
  value.dispose()
 })
@@ -80,7 +82,7 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  const receiving=WH_R1_PARKING_BAYS.filter(b=>b.id.startsWith('WH-01-'))
  for(let index=0;index<receiving.length;index++){
   const bay=receiving[index],actual=input.bays[index],world=whToWorld(bay.xM,bay.yM)
-  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,(bay.yawDeg-90)*Math.PI/180,bay.id+' model yaw')
+  assert.deepEqual([actual.id,actual.dockDoor,actual.x,actual.y,actual.z],[bay.id,bay.doorId,world.x,0,world.z]);near(actual.yaw,bay.yawDeg*Math.PI/180,bay.id+' model yaw')
  }
  for(const mesh of ['wh-r1-vehicles-boxes','wh-r1-vehicles-wheels']){
   const ids=value.root.getObjectByName(mesh).userData.instanceToRegisterId
@@ -89,10 +91,54 @@ test('B2 supplies five receiving bays to the semitrailer loader and batches the 
  }
  value.onFrame(.016,{camera:new THREE.PerspectiveCamera()});assert.equal(updates,1);value.dispose();assert.equal(disposed,true)
 })
+test('B10 moves the real semitrailer proxy matrix and collision body with its loaded model',async()=>{
+ const poses=new Map()
+ const root=new THREE.Group(),collision=createFurnitureCollision(),value=buildWhR1Vehicles({THREE,root,collision,renderer:{},loadSemitrailers:async()=>({setPose(id,pose){poses.set(id,pose)},update(){},dispose(){}})})
+ await value.ready
+ const row=WH_R1_VEHICLES.find(item=>item.id==='WH-01-VH-001'),base=whToWorld(row.xM,row.yM),proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id),before=proxy.matrixWorld.clone(),pose={x:base.x+3,z:base.z+2,yaw:Math.PI/2}
+ value.applyMotion({active:[{id:row.id,position:pose}]});root.updateMatrixWorld(true)
+ assert.notDeepEqual(Array.from(proxy.matrixWorld.elements),Array.from(before.elements),'real proxy matrix moves')
+ const x=pose.x+Math.cos(pose.yaw)*(row.lengthM/2-.01),z=pose.z-Math.sin(pose.yaw)*(row.lengthM/2-.01)
+ assert.deepEqual(poses.get(row.id),pose);assert.equal(collision.hit(x,z)?.group,proxy)
+ value.dispose()
+})
+test('B2 route pose moves a visible delivery model and its collision proxy',()=>{
+ const root=new THREE.Group(),value=buildWhR1Vehicles({THREE,root}),row=WH_R1_OUTBOUND_FLEET[0],base=whToWorld(row.xM,row.yM),mesh=value.root.getObjectByName('wh-r1-vehicles-boxes'),before=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),before)
+ value.applyMotion({active:[{id:row.id,position:{x:base.x+4,z:base.z+2,yaw:Math.PI/2}}]})
+ const after=new THREE.Matrix4();mesh.getMatrixAt(mesh.userData.instanceToRegisterId.indexOf(row.id),after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements))
+ const proxy=value.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id);assert.equal(proxy.position.x,base.x+4);assert.equal(proxy.position.z,base.z+2);assert.equal(proxy.rotation.y,Math.PI/2);value.dispose()
+})
+test('B2 scene runtime moves registered vehicles, reverses inbound trailers, and keeps parked bays separate',()=>{
+ const root=new THREE.Group(),live=buildWhR1Live1({THREE,root,quality:{tier:'high'}}),vehicles=buildWhR1Vehicles({THREE,root})
+ const parked=WH_R1_VEHICLES.filter(row=>row.id.startsWith('WH-01-')).map(row=>vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id))
+ for(const [index,proxy] of parked.entries())for(const other of parked.slice(index+1))assert.equal(new THREE.Box3().setFromObject(proxy).intersectsBox(new THREE.Box3().setFromObject(other)),false)
+ live.bindRuntime({vehicles});for(let frame=0;frame<30&&!live.traffic.snapshot().active.some(row=>row.kind==='outbound');frame++)live.onFrame(.1)
+ const delivery=live.traffic.snapshot().active.find(row=>row.kind==='outbound').id,mesh=vehicles.root.getObjectByName('wh-r1-vehicles-boxes'),index=mesh.userData.instanceToRegisterId.indexOf(delivery),before=new THREE.Matrix4(),after=new THREE.Matrix4();mesh.getMatrixAt(index,before)
+ live.onFrame(.1);mesh.getMatrixAt(index,after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements),'delivery model moves from the scene runtime')
+ let inbound,inboundProxyYaw;for(let frame=0;frame<120;frame++){live.onFrame(.1);inbound??=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');if(inbound&&inboundProxyYaw===undefined)inboundProxyYaw=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id).rotation.y}
+ assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
+ near(inboundProxyYaw,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
+})
+test('B10 rotates every outbound delivery vehicle within sixty seconds',()=>{
+ const sim=createLive3StageB(),positions=new Map()
+ for(let frame=0;frame<600;frame++)for(const row of sim.advance(100).active.filter(item=>item.kind==='outbound')){
+  const seen=positions.get(row.id)||new Set();seen.add(`${row.position.x.toFixed(4)},${row.position.z.toFixed(4)}`);positions.set(row.id,seen)
+ }
+ assert.deepEqual([...positions.keys()].sort(),WH_R1_OUTBOUND_FLEET.map(row=>row.id).sort())
+ for(const [id,seen] of positions)assert.ok(seen.size>1,`${id} moves`)
+})
+test('B10 campus summary exposes read-only LIVE-3 motion evidence',()=>{
+ const prior=globalThis.location
+ try{globalThis.location={search:'?place=drlife-warehouse&whr1=1'};const scene=new THREE.Scene(),registry=createCampusRegistry({THREE,scene,quality:{tier:'high'},layout:{}})
+  registry.buildAll({quality:{tier:'high'},canvasTex:texture});const motion=registry.summary().motion
+  assert.equal(motion?.nowMs>0,true);assert.ok(motion.active.every(row=>typeof row.id==='string'&&typeof row.phase==='string'&&row.elapsedSeconds>=0))
+  registry.dispose()
+ }finally{globalThis.location=prior}
+})
 test('FORKLIFT renders fourteen grounded counterbalance forklifts with readable IDs and stable near detail',()=>{
  const root=new THREE.Group(),quality={tier:'high'},value=buildWhR1Vehicles({THREE,root,quality,canvasTex:texture}),fleet=WH_R1_VEHICLES.filter(r=>r.category==='搬运设备占位')
  assert.equal(fleet.length,14);assert.deepEqual(value.root.userData.forklifts.ids,fleet.map(r=>r.id));assert.equal(value.root.userData.forklifts.type,'COUNTERBALANCE_FORKLIFT')
- assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'NONE — static drawing objects only')
+ assert.deepEqual(value.root.userData.forklifts.lod,{enter:28,exit:34});assert.equal(value.root.userData.forklifts.lights,'EMISSIVE_ONLY');assert.equal(value.root.userData.motion,'LIVE3_ROUTE_POSE')
  const core=['boxes','wheels','lamps'].map(name=>value.root.getObjectByName(`wh-r1-vehicles-${name}`)),parts=core.flatMap(mesh=>mesh.userData.parts)
  for(const part of ['counterweight','outer-mast','front-wheel','rear-wheel','fork','carriage','warning-beacon','blue-safety-spot'])assert.ok(parts.includes(part),part)
  const lamps=core[2];assert.ok(lamps.material.isMeshBasicMaterial);assert.equal(root.getObjectsByProperty('isLight',true).length,0)
