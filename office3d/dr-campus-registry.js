@@ -132,7 +132,14 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
     globalThis.document?.removeEventListener('visibilitychange', resetFrame)
     disposeMerged(); for (const value of built.values()) value.dispose?.(); built.clear(); root.removeFromParent()
   }
-  const summary = () => ({ modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged, motion: built.get('motion')?.summary?.() || null })
+  const summary = () => {
+    const traffic = built.get('wh-r1-live1')?.summary?.().traffic
+    const motion = traffic ? {
+      nowMs: traffic.nowMs,
+      active: traffic.active.map(({ id, status, startedAt }) => ({ id, phase: status, elapsedSeconds: Math.max(0, (traffic.nowMs - startedAt) / 1000) })),
+    } : built.get('motion')?.summary?.() || null
+    return { modules: [...built.keys()], skipped: [...skipped], quality: quality?.tier || null, merged, motion }
+  }
   const module = name => built.get(name) || null
   const inspectWhR1 = id => module('wh-r1-inspector')?.inspect?.(id) || null
   const enableWhR1Picking = ids => module('wh-r1-inspector')?.enablePicking?.(ids) || null

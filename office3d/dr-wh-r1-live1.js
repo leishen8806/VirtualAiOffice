@@ -6,6 +6,7 @@ import { buildLive3Stations, LIVE3_STATIONS, stationPoint } from './wh-r1/live3-
 import { SHUTTLE_MAX_LIFT, shuttleFrame } from './dr-campus-shuttle-logic.js'
 import { createLive3StageA, LIVE3_DEMO_WARMUP_MS, live3Board, live3ConveyorPose, live3DemonstrationSlot } from './wh-r1/live3-stage-a.js'
 import { bindLive3Staff, live3PalletBox } from './wh-r1/live3-staff-motion.js'
+import { createLive3StageB } from './wh-r1/live3-stage-b.js'
 
 const SLOT_CATEGORY = '托位载荷控制体'
 const BOX_COLORS = [0xb98a58, 0x6d9c91, 0xd69a50]
@@ -43,7 +44,7 @@ function combinedForkliftGeometry(THREE, rows) {
 
 export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const group = new THREE.Group(); group.name = 'wh-r1-live1'; group.userData.dynamic = true; group.userData.noMerge = true; group.position.y = WH_R1_FLOOR_Y; root.add(group)
-  const low = quality?.tier === 'low', slots = WH_R1_DATA.elements.filter(row => row.category === SLOT_CATEGORY), simulation = createLive3StageA({ slotIds: slots.map(row => row.id) })
+  const low = quality?.tier === 'low', slots = WH_R1_DATA.elements.filter(row => row.category === SLOT_CATEGORY), simulation = createLive3StageA({ slotIds: slots.map(row => row.id) }), traffic = createLive3StageB()
   const stations = buildLive3Stations({ THREE, group })
   const previousCargo = root.getObjectByName?.('wh-r1-workflow-cargo')
   if (previousCargo) previousCargo.visible = false
@@ -80,13 +81,14 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const updateBoard = state => {
     if (!boardTexture?.image || !boardTexture.image.getContext) return
     const second = Math.floor(state.nowMs / 1000); if (second === lastBoardSecond) return; lastBoardSecond = second
-    const ctx = boardTexture.image.getContext('2d'), model = live3Board(state)
+    const ctx = boardTexture.image.getContext('2d'), model = live3Board(state, traffic.snapshot())
     ctx.fillStyle = '#10252d'; ctx.fillRect(0, 0, 768, 360)
     ctx.fillStyle = '#d9f3e6'; ctx.font = 'bold 32px sans-serif'
     ctx.fillText('仓配运营看板 · 仿真', 20, 42)
     ctx.font = '22px sans-serif'
     ctx.fillText('今日入库 ' + model.inbound + '   今日出库 ' + model.outbound + '   在库 ' + model.inventory + '   异常待处理 ' + model.exceptions, 20, 85)
-    ctx.fillText('期初 ' + model.opening + '   平均工序 ' + (model.averageProcessingMs / 1000).toFixed(1) + ' 秒', 20, 118)
+    ctx.font = '20px sans-serif'; ctx.fillText('车辆入场 ' + model.vehicleInbound + '   车辆出场 ' + model.vehicleOutbound + '   净距 ' + (model.vehicleClearanceOk ? 'OK' : 'CHECK'), 20, 112)
+    ctx.fillText('期初 ' + model.opening + '   平均工序 ' + (model.averageProcessingMs / 1000).toFixed(1) + ' 秒', 20, 140)
     const labels = ['收货', '质检', '上架', '取货', '拣货', '输送', '打包', '集货']
     Object.values(model.active).forEach((count, i) => {
       const x = 25 + i * 93, height = 145 * count / Math.max(5, ...Object.values(model.active))
@@ -194,14 +196,19 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   }
   const update = (dt = 0) => {
     const state = currentState = simulation.snapshot()
+    traffic.advance(dt * 1000)
+    const trafficState = traffic.snapshot()
+    runtimeVehicles?.applyMotion?.(trafficState)
+    if (runtimeVehicles?.root?.userData) runtimeVehicles.root.userData.traffic = trafficState
     updateShuttles(state); updateCargo(state); updateActors(state)
     if (!state.paused) staffMotion?.update(state, dt, slotById, carried)
     if (!staffMotion) updateBeltCargo(state)
     updateBoard(state)
   }
   simulation.advance(LIVE3_DEMO_WARMUP_MS)
+  traffic.advance(LIVE3_DEMO_WARMUP_MS)
   update()
-  return { root: group, simulation, cargoMeshes, shuttle, statusBoard: board, qc, sink,
+  return { root: group, simulation, traffic, cargoMeshes, shuttle, statusBoard: board, qc, sink,
     bindRuntime({ staff: nextStaff, vehicles: nextVehicles } = {}) {
       runtimeStaff = nextStaff || null; runtimeVehicles = nextVehicles || null
       runtimeStaff?.requireRealistic?.()
@@ -209,7 +216,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
       if (staffMotion) runtimeStaff.afterSolve = () => updateBeltCargo(currentState)
       return { staff: Boolean(runtimeStaff), vehicles: Boolean(runtimeVehicles) }
     },
-    summary: () => { const state = simulation.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high' } },
+    summary: () => { const state = simulation.snapshot(), road = traffic.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high', traffic: road } },
     toggleBoard(value) { if (board) board.visible = value === undefined ? !board.visible : Boolean(value); return board?.visible ?? false },
     onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); update(dt) },
     dispose() { if (disposed) return; disposed = true; simulation.dispose(); stations.dispose(); beltCargo.geometry.dispose(); beltCargo.material.dispose(); beltCargo.dispose(); if (previousCargo) previousCargo.visible = true; cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklift.geometry.dispose(); forklift.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); weightLabel?.geometry.dispose(); weightLabel?.material.dispose(); weightTexture?.dispose?.(); group.removeFromParent() },
