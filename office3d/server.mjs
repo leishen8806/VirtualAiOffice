@@ -683,6 +683,7 @@ async function issuePolicy(id, updatedAt) {
 // 「等你处理」：待人工审核的任务、待回答的问题、回答没送达的提醒。
 async function buildWaiting(activity, issueList) {
   const out = []
+  const issueById = new Map(issueList.map((i) => [i.id, i]))
   for (const i of issueList) {
     // 资金类等任务设了 agent 审查链（代码 → 安全 → 账务）：链没走完之前不是董事会验收的时候，不放进「等你处理」
     if (i.status !== 'in_review') continue
@@ -701,10 +702,14 @@ async function buildWaiting(activity, issueList) {
     }
   }
   const week = Date.now() - 7 * 86400000
+  const latestQuestionIssueIds = new Set()
   for (const e of activity) {
     const d = e.details || {}
-    if (e.action === 'issue.thread_interaction_created' && d.interactionId && d.interactionStatus === 'pending' && !answered.has(d.interactionId) && Date.parse(e.createdAt) > week) {
-      const info = await issueInfo(e.entityId)
+    if (e.action === 'issue.thread_interaction_created' && d.interactionId) {
+      if (latestQuestionIssueIds.has(e.entityId)) continue
+      latestQuestionIssueIds.add(e.entityId)
+      if (d.interactionStatus !== 'pending' || answered.has(d.interactionId) || Date.parse(e.createdAt) <= week) continue
+      const info = issueById.get(e.entityId) || await issueInfo(e.entityId)
       const q = await interactionInfo(e.entityId, d.interactionId)
       if (q && q.status !== 'pending') continue
       out.push({ kind: 'question', id: info ? info.identifier : '问题', issueId: e.entityId, projectId: info ? info.projectId : null, interactionId: d.interactionId, title: info ? info.title : '', since: e.createdAt, agentId: e.agentId || null, ask: q ? q.ask : null, confirm: q ? q.confirm : null, verdicts: q ? q.verdicts : null })

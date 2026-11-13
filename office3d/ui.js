@@ -43,7 +43,7 @@ function md(src) {
 const KIND = {
   approval: { icon: '🛡️', label: '待你审批', go: '审批' },
   question: { icon: '❓', label: '待你回答', go: '回答' },
-  review: { icon: '✅', label: '待你验收', go: '验收' },
+  review: { icon: '◷', label: '待你验收', go: '验收' },
   undelivered: { icon: '📮', label: '回答没送到', go: '处理' },
   task: { icon: '🛠️', label: '', go: '查看' },
 }
@@ -86,6 +86,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let state = null
   let staleKey = ''
   let busy = false
+  const hiddenReviews = new Set()
   let batchBusy = false
   let lastPostError = ''
   const selectedReviewIds = new Set()
@@ -205,7 +206,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   wrap.addEventListener('click', (e) => { if (e.target === wrap) close() })
   addEventListener('keydown', (e) => { if (e.key === 'Escape') close() })
   const agentName = (id) => (state && state.names && state.names[id]) || (state && state.agents.find((a) => a.id === id) || {}).name || ''
-  async function done(msg) {
+  async function done(msg, issueId = null) {
+    if (issueId) hiddenReviews.add(String(issueId))
     toast(msg)
     close()
     await refresh()
@@ -383,16 +385,16 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const no = document.createElement('button'); no.className = 'btn'; no.textContent = '取消'
         actions.insertBefore(row, b); actions.appendChild(ok); actions.appendChild(no)
         no.focus() // 默认焦点在「取消」
-        ok.onclick = async () => { if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`) }
+        ok.onclick = async () => { if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`, issueId) }
         no.onclick = () => { row.remove(); ok.remove(); no.remove(); b.style.display = ''; delete b.dataset.verOk }
         b.style.display = 'none'
         return
       }
-      if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`)
+      if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`, issueId)
     })
     bind('mChanges', async () => {
       if (!val('mNote').trim()) { toast('要求修改时请写明要改什么', false); return }
-      if (await post({ type: 'review', issueId, decision: 'changes', note: val('mNote') })) done(`${d.identifier} 已退回修改`)
+      if (await post({ type: 'review', issueId, decision: 'changes', note: val('mNote') })) done(`${d.identifier} 已退回修改`, issueId)
     })
     bind('mCancel', async () => {
       const b = modal.querySelector('#mCancel')
@@ -468,7 +470,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
     open(`<h2>${esc(w.id)} ${esc(w.title)}</h2><div class="meta">${projTag(w.projectId)}${esc(agentName(w.agentId) || 'agent')} 在等你的回答 · 已等 ${ago(Date.now() - Date.parse(w.since))}</div>
       ${ask.title ? `<div class="sec">${esc(ask.title)}</div>` : ''}${qs}
       <div class="sec">附言（选填）</div><textarea id="mNote" placeholder="补充说明，会一起交给 agent"></textarea>
-      <div class="actions"><button class="btn" id="mView">看任务详情</button><button class="btn gold" id="mSubmit">提交回答</button></div>`)
+      <div class="actions"><button class="btn" id="mView">看任务详情</button><a class="btn" href="http://127.0.0.1:3100/issues/${encodeURIComponent(w.issueId)}" target="_blank" rel="noreferrer">去 Paperclip 里回答</a><button class="btn gold" id="mSubmit">提交回答</button></div>`)
     modal.querySelector('#mView').onclick = () => openIssue(w.issueId)
     // 单选题：选项和「自己写的回答」只能二选一（Paperclip 会以 422 拒收同时提交）——选了选项就清空文字框，开始写字就取消选项
     ask.questions.forEach((q, qi) => {
@@ -1366,6 +1368,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const wl = $('waitList')
       wl.innerHTML = ''
       const items = []
+      const waitingReviews = new Set((s.waiting || []).filter((w) => w.kind === 'review').map((w) => String(w.issueId)))
+      for (const issueId of hiddenReviews) if (!waitingReviews.has(issueId)) hiddenReviews.delete(issueId)
       const reviewItems = (s.waiting || []).filter((w) => w.kind === 'review')
       for (const id of [...selectedReviewIds]) if (!reviewItems.some((item) => String(item.issueId) === id)) selectedReviewIds.delete(id)
       if (reviewItems.length) wl.appendChild(batchControls(reviewItems))
@@ -1378,13 +1382,15 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const note = capped ? ' · 按流程应先由 Lead 与董事会决定' : ''
         return `<span class="rw-badge" style="display:inline-block;margin-top:4px;padding:1px 8px;border-radius:999px;font-size:10.5px;line-height:1.6;overflow-wrap:anywhere;${style}">返工 第 ${esc(t.rounds)} 轮 · 未关 R 项 ${esc(t.openItems)}${note}</span>`
       }
+      const questionPreview = (ask) => (ask?.questions || []).flatMap((q) => String(q.prompt || '').split(/\r?\n/)).map((line) => line.trim()).filter(Boolean).slice(0, 2).join(' / ') || '问题内容加载中'
       for (const a of s.approvals || []) items.push(card('approval', KIND.approval.label, a.title, `${agentName(a.agentId) || '系统'} · 已等 ${ago(now - Date.parse(a.at))}`, () => openApproval(a)))
       // T15：有「待验收」项且版本核对缓存超过 60 秒才重拉（服务端也缓存 60 秒），避免每次轮询都跑 git
       if (Date.now() - verCache.at > 60000 && (s.waiting || []).some((w) => w.kind === 'review')) loadVer()
       for (const w of s.waiting || []) {
+        if (w.kind === 'review' && hiddenReviews.has(String(w.issueId))) continue
         const who = agentName(w.agentId)
         const meta = `${w.id}${who ? ' · ' + who : ''} · 已等 ${ago(now - Date.parse(w.since))}`
-        if (w.kind === 'question') items.push(card('question', KIND.question.label, w.title, meta, () => openQuestion(w), w.projectId))
+        if (w.kind === 'question') items.push(card('question', KIND.question.label, `${w.id || '问题'} ${w.title || '待回答问题'}`, meta, () => openQuestion(w), w.projectId, `<div class="note" style="margin-top:4px">${esc(questionPreview(w.ask))}</div>`))
         else if (w.kind === 'review') {
           const result = batchResults.get(String(w.issueId))
           const resultBadge = result ? `<span class="batch-result">验收失败：${esc(result)}</span>` : ''
