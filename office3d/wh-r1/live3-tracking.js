@@ -20,7 +20,7 @@ const tracked = (item, nowMs) => {
   return Object.freeze({
     itemId: item.itemId, waybill: item.waybill, orderId: item.orderId, destination: item.destination,
     weightKg: item.weightKg, stage: item.stage, stationIndex: index, station: LIVE3_TRACKING_STATIONS[index],
-    progress: Math.round(((index + progress) / (LIVE3_TRACKING_STATIONS.length - 1)) * 100),
+    progress: Math.min(100, Math.round(((index + progress) / (LIVE3_TRACKING_STATIONS.length - 1)) * 100)),
     elapsedSeconds: Math.max(0, Math.round((nowMs - item.createdAt) / 1000)),
     position: item.position || null,
   })

@@ -11,6 +11,17 @@ test('LIVE3 tracks a simulated waybill across ten stations', () => {
   assert.equal(selected.progress, 83)
   assert.equal(selected.elapsedSeconds, 2)
   assert.equal(tracking.follow('CARGO-00001').waybill, 'DR00000001')
-  state = { nowMs: 4000, items: [{ ...state.items[0], stage: 'shipped', startedAt: 3000, completeAt: 4000 }] }
+  const stages = ['arrival', 'quality', 'putaway', 'retrieve', 'picking', 'conveyor', 'packing', 'staging', 'shipped']
+  let previous = 0
+  const stationIndexes = [0, 1, 2, 3, 4, 5, 7, 8, 9]
+  stages.forEach((stage, index) => {
+    state = { nowMs: 4000 + index, items: [{ ...state.items[0], stage, startedAt: 3000, completeAt: 4000 }] }
+    const row = tracking.summary().following
+    assert.equal(row.stationIndex, stationIndexes[index])
+    assert.equal(row.station.label, LIVE3_TRACKING_STATIONS[row.stationIndex].label)
+    assert.ok(row.progress >= previous && row.progress <= 100)
+    previous = row.progress
+  })
   assert.equal(tracking.summary().following.station.label, '出库')
+  assert.equal(tracking.summary().following.progress, 100)
 })
