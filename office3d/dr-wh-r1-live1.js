@@ -7,6 +7,7 @@ import { SHUTTLE_MAX_LIFT, shuttleFrame } from './dr-campus-shuttle-logic.js'
 import { createLive3StageA, LIVE3_DEMO_WARMUP_MS, live3Board, live3ConveyorPose, live3DemonstrationSlot } from './wh-r1/live3-stage-a.js'
 import { bindLive3Staff, live3PalletBox } from './wh-r1/live3-staff-motion.js'
 import { createLive3StageB } from './wh-r1/live3-stage-b.js'
+import { createLive3Tracking } from './wh-r1/live3-tracking.js'
 
 const SLOT_CATEGORY = '托位载荷控制体'
 const BOX_COLORS = [0xb98a58, 0x6d9c91, 0xd69a50]
@@ -67,6 +68,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const shuttleStates = Array.from({ length: shuttleCount }, () => ({ position: 0, target: 0, movingFrom: 0, movingAt: 0, lastAt: 0, carrying: false, occupied: [false], status: 'idle' }))
   const qcSource = whToWorld(39, 39), qc = { x: qcSource.x, y: WH_R1_FLOOR_Y + 1.05, z: qcSource.z }, sink = WH_R1_CONVEYOR_PATH[0] || qc, carried = [], forkCargo = []
   let board = null, boardTexture = null, disposed = false, lastBoardSecond = -1, runtimeStaff = null, runtimeVehicles = null, staffMotion = null, currentState = null
+  const tracking = createLive3Tracking(() => currentState)
   let weightLabel = null, weightTexture = null, lastWaybill = null
   if (canvasTex) {
     boardTexture = canvasTex(768, 360, () => {})
@@ -81,7 +83,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const updateBoard = state => {
     if (!boardTexture?.image || !boardTexture.image.getContext) return
     const second = Math.floor(state.nowMs / 1000); if (second === lastBoardSecond) return; lastBoardSecond = second
-    const ctx = boardTexture.image.getContext('2d'), model = live3Board(state, traffic.snapshot())
+    const ctx = boardTexture.image.getContext('2d'), model = live3Board(state, traffic.snapshot()), carousel = tracking.tick(state.nowMs)
     ctx.fillStyle = '#10252d'; ctx.fillRect(0, 0, 768, 360)
     ctx.fillStyle = '#d9f3e6'; ctx.font = 'bold 32px sans-serif'
     ctx.fillText('仓配运营看板 · 仿真', 20, 42)
@@ -89,6 +91,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
     ctx.fillText('今日入库 ' + model.inbound + '   今日出库 ' + model.outbound + '   在库 ' + model.inventory + '   异常待处理 ' + model.exceptions, 20, 85)
     ctx.font = '20px sans-serif'; ctx.fillText('车辆入场 ' + model.vehicleInbound + '   车辆出场 ' + model.vehicleOutbound + '   净距 ' + (model.vehicleClearanceOk ? 'OK' : 'CHECK'), 20, 112)
     ctx.fillText('期初 ' + model.opening + '   平均工序 ' + (model.averageProcessingMs / 1000).toFixed(1) + ' 秒', 20, 140)
+    if (carousel) ctx.fillText('大屏轮播 · ' + carousel.waybill + ' · ' + carousel.station.label + ' · ' + carousel.progress + '%', 20, 166)
     const labels = ['收货', '质检', '上架', '取货', '拣货', '输送', '打包', '集货']
     Object.values(model.active).forEach((count, i) => {
       const x = 25 + i * 93, height = 145 * count / Math.max(5, ...Object.values(model.active))
@@ -208,7 +211,8 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   simulation.advance(LIVE3_DEMO_WARMUP_MS)
   traffic.advance(LIVE3_DEMO_WARMUP_MS)
   update()
-  return { root: group, simulation, traffic, cargoMeshes, shuttle, statusBoard: board, qc, sink,
+  const pickCargo = id => tracking.select(id)
+  return { root: group, simulation, traffic, tracking, cargoMeshes, shuttle, statusBoard: board, qc, sink, pickCargo,
     bindRuntime({ staff: nextStaff, vehicles: nextVehicles } = {}) {
       runtimeStaff = nextStaff || null; runtimeVehicles = nextVehicles || null
       runtimeStaff?.requireRealistic?.()
@@ -216,7 +220,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
       if (staffMotion) runtimeStaff.afterSolve = () => updateBeltCargo(currentState)
       return { staff: Boolean(runtimeStaff), vehicles: Boolean(runtimeVehicles) }
     },
-    summary: () => { const state = simulation.snapshot(), road = traffic.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high', traffic: road } },
+    summary: () => { const state = simulation.snapshot(), road = traffic.snapshot(); return { slots: slots.length, occupied: state.slots.filter(slot => slot.status === 'occupied').length, utilization: state.slots.filter(slot => slot.status === 'occupied').length / slots.length, activeTasks: state.tasks.filter(task => task.status === 'moving').length, shuttles: shuttleCount, quality: low ? 'low' : 'high', traffic: road, tracking: tracking.summary() } },
     toggleBoard(value) { if (board) board.visible = value === undefined ? !board.visible : Boolean(value); return board?.visible ?? false },
     onFrame(dt) { if (disposed || !Number.isFinite(dt) || dt <= 0) return; simulation.advance(dt * 1000); update(dt) },
     dispose() { if (disposed) return; disposed = true; simulation.dispose(); stations.dispose(); beltCargo.geometry.dispose(); beltCargo.material.dispose(); beltCargo.dispose(); if (previousCargo) previousCargo.visible = true; cargoMeshes.forEach(mesh => { mesh.geometry.dispose(); mesh.material.dispose() }); shuttle.geometry.dispose(); shuttle.material.dispose(); forklift.geometry.dispose(); forklift.material.dispose(); board?.geometry.dispose(); board?.material.dispose(); boardTexture?.dispose?.(); weightLabel?.geometry.dispose(); weightLabel?.material.dispose(); weightTexture?.dispose?.(); group.removeFromParent() },

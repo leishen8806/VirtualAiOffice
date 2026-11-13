@@ -147,5 +147,8 @@ export function createCampusRegistry({ THREE, scene, quality, layout }) {
   const pickWhR1 = ray => module('wh-r1-staff')?.pickRay?.(ray) || module('wh-r1-inspector')?.pickRay?.(ray) || null
   const toggleWhR1Zones = value => module('wh-r1-zones')?.setOverlay?.(value)
   const whR1ZonesVisible = () => module('wh-r1-zones')?.overlayVisible?.() || false
-  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking, pickWhR1, toggleWhR1Zones, whR1ZonesVisible }
+  const whR1Cargo = id => module('wh-r1-live1')?.pickCargo?.(id) || null
+  const whR1Tracking = () => module('wh-r1-live1')?.tracking?.summary?.() || null
+  const whR1FollowCargo = id => module('wh-r1-live1')?.tracking?.follow?.(id) || null
+  return { root, register, buildAll, dispose, summary, onFrame, module, inspectWhR1, enableWhR1Picking, disableWhR1Picking, pickWhR1, whR1Cargo, whR1Tracking, whR1FollowCargo, toggleWhR1Zones, whR1ZonesVisible }
 }
