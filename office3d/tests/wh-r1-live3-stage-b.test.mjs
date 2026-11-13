@@ -49,3 +49,33 @@ test('stage B vehicle endpoints follow adjacent-frame motion except reverse-in',
     else if (key.endsWith(':approach') || key.endsWith(':depart')) assert.ok(frontDot > 0 && rearDot < 0, key)
   }
 })
+
+test('stage B derives phase, road position, and heading from one clock at coarse and fine frame rates', () => {
+  for (const frameMs of [1000, 250, 1000 / 60]) {
+    const sim = createLive3StageB(), previous = new Map(), seen = new Set()
+    for (let elapsed = 0; elapsed < 40_000; elapsed += frameMs) for (const row of sim.advance(frameMs).active) {
+      if (row.kind !== 'inbound') continue
+      seen.add(row.status)
+      const end = row.route.points.at(-1)
+      if (row.status === 'unloading') {
+        assert.equal(row.routeProgress, 1, `unloading is parked at ${frameMs}ms`)
+        assert.ok(Math.hypot(row.position.x - end.x, row.position.z - end.z) < 1e-9, `unloading bay position at ${frameMs}ms`)
+      }
+      if (row.status === 'reverse_in') assert.ok(row.routeProgress < 1 && row.routeProgress > 0, `reverse-in road segment at ${frameMs}ms`)
+      if (row.status === 'depart') assert.ok(row.routeProgress < 1, `depart has left the bay at ${frameMs}ms`)
+      const prior = previous.get(row.id)
+      if (prior?.startedAt === row.startedAt) {
+        const motion = { x: row.position.x - prior.x, z: row.position.z - prior.z }
+        if (Math.hypot(motion.x, motion.z) > 1e-9) {
+          const front = { x: row.position.front.x - row.position.x, z: row.position.front.z - row.position.z }
+          const rear = { x: row.position.rear.x - row.position.x, z: row.position.rear.z - row.position.z }
+          const frontDot = motion.x * front.x + motion.z * front.z, rearDot = motion.x * rear.x + motion.z * rear.z
+          if (row.status === 'reverse_in') assert.ok(rearDot > 0 && frontDot < 0, `reverse heading at ${frameMs}ms`)
+          if (row.status === 'depart') assert.ok(frontDot > 0 && rearDot < 0, `depart heading at ${frameMs}ms`)
+        }
+      }
+      previous.set(row.id, { ...row.position, startedAt: row.startedAt })
+    }
+    assert.deepEqual([...seen].sort(), ['approach', 'depart', 'reverse_in', 'unloading'], `two rounds at ${frameMs}ms`)
+  }
+})

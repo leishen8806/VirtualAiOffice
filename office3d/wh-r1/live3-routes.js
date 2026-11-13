@@ -39,3 +39,7 @@ export function poseOnRoute(route, progress, reverse = false) {
   const a = points.at(-2), b = points.at(-1)
   return makePose(a, b, 1)
 }
+export function routeProgressAtPoint(route, pointIndex) {
+  const points = route.points, lengths = points.slice(1).map((b, i) => distance(points[i], b)), total = lengths.reduce((sum, value) => sum + value, 0)
+  return lengths.slice(0, pointIndex).reduce((sum, value) => sum + value, 0) / total
+}

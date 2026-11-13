@@ -1,6 +1,6 @@
 import { whR1VehicleForSite } from '../wh-r1-site-plan.js'
 import { WH_R1_DATA } from './data.js'
-import { poseOnRoute, routeForVehicle } from './live3-routes.js'
+import { poseOnRoute, routeForVehicle, routeProgressAtPoint } from './live3-routes.js'
 
 const STEP_MS = 100, INBOUND_PERIOD_MS = 18_000, OUTBOUND_PERIOD_MS = 18_000, MIN_CLEARANCE_M = .5
 const vehicles = WH_R1_DATA.elements.map(whR1VehicleForSite).filter(row => row.displayVehicleType === 'semitrailer' || row.displayVehicleType?.startsWith('delivery-'))
@@ -11,8 +11,16 @@ export function createLive3StageB({ nowMs = 0 } = {}) {
   const active = new Map(), counters = { inbound: 0, outbound: 0 }
   const start = (kind) => { const row = fleetFor(kind)[counters[kind] % fleetFor(kind).length], route = routes.get(row.id); active.set(row.id, { id: row.id, kind, type: row.displayVehicleType, route, laneWidthM: route.laneWidthM, turningRadiusM: route.turningRadiusM, progress: 0, reverseAt: kind === 'inbound' ? .4 : -1, status: kind === 'inbound' ? 'approach' : 'loading', startedAt: time, durationMs: kind === 'inbound' ? 15_000 : 12_000 }); counters[kind]++ }
   const spawnClear = route => [...active.values()].every(row => { const p = poseOnRoute(row.route, row.progress, row.status === 'reverse_in'); return Math.hypot(p.x - route.points[0].x, p.z - route.points[0].z) >= 12 })
+  const poseFor = row => {
+    if (row.kind === 'outbound') return { progress: row.progress, reverse: false }
+    const backingProgress = routeProgressAtPoint(row.route, row.route.backingIndex)
+    if (row.status === 'reverse_in') return { progress: backingProgress + (1 - backingProgress) * ((row.progress - row.reverseAt) / (.55 - row.reverseAt)), reverse: true }
+    if (row.status === 'unloading') return { progress: 1, reverse: true }
+    if (row.status === 'depart') return { progress: 1 - ((row.progress - .72) / .28), reverse: true }
+    return { progress: backingProgress * (row.progress / row.reverseAt), reverse: false }
+  }
   const snapshot = () => {
-    const activeRows = [...active.values()].map(row => ({ ...row, position: poseOnRoute(row.route, row.progress, row.status === 'reverse_in') }))
+    const activeRows = [...active.values()].map(row => { const pose = poseFor(row); return { ...row, routeProgress: pose.progress, position: poseOnRoute(row.route, pose.progress, pose.reverse) } })
     let minClearance = Infinity
     for (let i = 0; i < activeRows.length; i++) for (let j = i + 1; j < activeRows.length; j++) minClearance = Math.min(minClearance, Math.hypot(activeRows[i].position.x - activeRows[j].position.x, activeRows[i].position.z - activeRows[j].position.z))
     if (!Number.isFinite(minClearance)) minClearance = 999
