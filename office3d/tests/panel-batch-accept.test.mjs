@@ -11,7 +11,7 @@ const artifacts = process.env.PANEL_BATCH_ARTIFACT_DIR || path.join(process.cwd(
 const waiting = [
   { kind: 'review', id: 'CMP-1', issueId: 'issue-1', title: '第一张待验收', projectId: 'project-a', agentId: 'agent-1', since: '2026-11-12T00:00:00.000Z' },
   { kind: 'review', id: 'CMP-2', issueId: 'issue-2', title: '第二张待验收', projectId: 'project-a', agentId: 'agent-1', since: '2026-11-12T00:00:00.000Z' },
-  { kind: 'question', id: 'CMP-Q', issueId: 'issue-q', title: '需要董事会回答', projectId: 'project-a', agentId: 'agent-1', since: '2026-11-12T00:00:00.000Z' },
+  { kind: 'question', id: 'CMP-Q', issueId: 'issue-q', title: '需要董事会回答', projectId: 'project-a', agentId: 'agent-1', since: '2026-11-12T00:00:00.000Z', ask: { questions: [{ id: 'q-1', prompt: '请选择上线方案\n并说明原因', options: [{ id: 'a', label: '方案 A' }], multi: false, text: false, allowOther: true }] } },
   { kind: 'review', id: 'CMP-3', issueId: 'issue-3', title: '另一项目待验收', projectId: 'project-b', agentId: 'agent-1', since: '2026-11-12T00:00:00.000Z' },
 ]
 const state = () => ({ actToken: 'test-token', lan: false, agents: [{ id: 'agent-1', name: '测试同事' }], names: { 'agent-1': '测试同事' }, approvals: [], waiting: waiting.slice(), assigned: [], rework: { tasks: [] }, stale: null, healthLevel: { level: 'ok', text: '健康' }, today: null, world: { duty: { on: true } }, projects: [{ id: 'project-a', name: '项目甲' }, { id: 'project-b', name: '项目乙' }] })
@@ -50,6 +50,14 @@ test('PANEL-BATCH-ACCEPT uses fake upstream data and continues after one failure
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
   await page.goto(`http://127.0.0.1:${server.address().port}/`)
   await page.waitForSelector('[data-review-select="issue-1"]', { timeout: 5000 })
+  const question = page.locator('.card.question')
+  await question.click()
+  await page.waitForSelector('#modalWrap.show')
+  assert.match(await page.locator('#modal').textContent(), /CMP-Q 需要董事会回答/)
+  assert.match(await page.locator('#modal').textContent(), /请选择上线方案/)
+  assert.match(await page.locator('#modal').textContent(), /方案 A/)
+  assert.match(await page.locator('#modal a').getAttribute('href'), /127\.0\.0\.1:3100\/issues\/issue-q/)
+  await page.locator('#modalWrap .close').click()
   assert.equal(await page.locator('[data-review-select]').count(), 3)
   assert.equal(await page.locator('[data-review-select="issue-q"]').count(), 0)
   await page.locator('[data-review-select="issue-1"]').check()
