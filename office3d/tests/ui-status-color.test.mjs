@@ -64,3 +64,14 @@ test('C-1 index.html 为七个状态定义颜色，阻塞红 / 进行中绿 / �
   // 不新增颜色体系：不引入新的 CSS 变量
   assert.doesNotMatch(html, /--status-[a-z]+:/)
 })
+
+test('第 362 条：待验收标记不是复选框或对勾，复选框保持可辨识且不小于 24px', () => {
+  const ui = fs.readFileSync(new URL('../ui.js', import.meta.url), 'utf8')
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+  assert.match(ui, /review:\s*\{ icon: '◷'/)
+  assert.doesNotMatch(ui, /review:\s*\{ icon: '[^']*✓/)
+  assert.match(html, /\.card \.ic \{[^}]*border-radius:50%/)
+  assert.match(html, /\.wait-select \{[^}]*gap:8px[^}]*margin-right:10px/)
+  assert.match(html, /\.wait-select input \{[^}]*width:24px[^}]*height:24px/)
+  assert.match(ui, /data-review-select="\$\{esc\(item\.issueId\)\}" aria-label=/)
+})

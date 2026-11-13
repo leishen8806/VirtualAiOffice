@@ -110,7 +110,7 @@
   .qsec { font-size:11px; color:var(--muted); letter-spacing:1px; margin:10px 4px 6px; }
   .card { display:flex; gap:10px; align-items:flex-start; padding:10px 10px; border-radius:12px; margin-bottom:8px; cursor:pointer; background:rgba(255,255,255,.04); border:1px solid var(--line); transition:transform .12s, background .12s; }
   .card:hover { transform:translateY(-1px); background:rgba(255,255,255,.08); }
-  .card .ic { flex:none; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; }
+  .card .ic { flex:none; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; }
   .card .t { flex:1; min-width:0; }
   .card .k { font-size:11px; font-weight:700; }
   .ptag { display:inline-block; margin-right:6px; padding:1px 7px; border-radius:6px; font-size:10.5px; font-weight:700; letter-spacing:.3px; color:hsl(var(--ph) 70% 78%); background:hsl(var(--ph) 45% 24% / .75); border:1px solid hsl(var(--ph) 50% 45% / .6); white-space:nowrap; vertical-align:1px; }
@@ -118,7 +118,7 @@
   .card .m { font-size:11px; color:var(--muted); margin-top:2px; }
   .card .go { flex:none; align-self:center; font-size:11px; padding:5px 10px; border-radius:999px; background:var(--gold); color:#1b1606; font-weight:700; }
   .card.approval .ic { background:rgba(255,176,32,.2); } .card.approval .k { color:#ffcf6b; }
-  .card.review .ic { background:rgba(53,208,127,.18); } .card.review .k { color:#8fe8b8; }
+  .card.review .ic { background:rgba(255,176,32,.18); color:#ffcf6b; } .card.review .k { color:#ffcf6b; }
   .card.question .ic { background:rgba(111,168,255,.2); } .card.question .k { color:#bcd6ff; }
   .card.undelivered .ic { background:rgba(255,93,93,.18); } .card.undelivered .k { color:#ffb4b4; }
   .card.task .ic { background:rgba(182,154,100,.18); } .card.task .k { color:var(--gold2); }
@@ -242,8 +242,8 @@
   .batch-tools-main { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .batch-tools-main b { margin-right:auto; font-size:12px; }
   .batch-tools .btn { padding:5px 8px; font-size:11px; }
-  .wait-select { float:left; display:inline-flex; gap:4px; align-items:center; margin-right:6px; color:var(--muted); font-size:11px; cursor:pointer; }
-  .wait-select input { margin:2px 0 0; width:16px; height:16px; accent-color:var(--gold); }
+  .wait-select { float:left; display:inline-flex; gap:8px; align-items:center; margin-right:10px; color:var(--muted); font-size:11px; cursor:pointer; }
+  .wait-select input { margin:0; width:24px; height:24px; accent-color:var(--gold); }
   .batch-result { display:block; margin-top:4px; color:#ffc2c2; font-size:11px; }
   .batch-confirm-list { margin:10px 0; padding-left:20px; max-height:240px; overflow:auto; }
   .opt { display:flex; gap:10px; align-items:flex-start; padding:9px 10px; border-radius:10px; border:1px solid var(--line); margin-bottom:6px; cursor:pointer; }

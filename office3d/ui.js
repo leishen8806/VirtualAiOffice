@@ -43,7 +43,7 @@ function md(src) {
 const KIND = {
   approval: { icon: '🛡️', label: '待你审批', go: '审批' },
   question: { icon: '❓', label: '待你回答', go: '回答' },
-  review: { icon: '✅', label: '待你验收', go: '验收' },
+  review: { icon: '◷', label: '待你验收', go: '验收' },
   undelivered: { icon: '📮', label: '回答没送到', go: '处理' },
   task: { icon: '🛠️', label: '', go: '查看' },
 }
