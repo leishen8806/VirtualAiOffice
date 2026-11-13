@@ -125,11 +125,22 @@ function updateClock() {
 }
 function setTheme(theme) { document.documentElement.dataset.theme = theme; $('#theme').textContent = theme === 'light' ? '深色' : '浅色'; $('#theme').setAttribute('aria-pressed', String(theme === 'light')) }
 
+function syncSitePanel(collapsed) {
+  const panel = $('.sitePanel'), heading = panel.querySelector('h2'), body = panel.querySelector('.sceneThumb')
+  let button = $('#sitePanelToggle')
+  if (!button) { button = el('button', '', 'sitePanelToggle'); button.id = 'sitePanelToggle'; button.type = 'button'; button.setAttribute('aria-controls', body.id = 'sitePanelBody'); heading.append(button) }
+  panel.classList.toggle('collapsed', collapsed); button.setAttribute('aria-expanded', String(!collapsed)); button.textContent = collapsed ? '展开' : '收起'
+  return button
+}
+
 // shortcut: 园区主体使用从《仪表盘6.0》整图裁剪的 W1/W2/W3 园区鸟瞰（dr-campus-hero.jpg）；需要自由机位时再接独立三维模型。
 const plate = new Image()
 plate.addEventListener('error', () => $('#campus').classList.add('imageFailed'))
 plate.src = '/assets/demo/dr-campus-hero.jpg'
 renderNav(); renderKpis()
+const sitePanelStored = localStorage.getItem('dr-console.sitePanel')
+const sitePanelToggle = syncSitePanel(sitePanelStored === null ? matchMedia('(max-width: 767px)').matches : sitePanelStored === 'collapsed')
+sitePanelToggle.addEventListener('click', () => { const collapsed = !$('.sitePanel').classList.contains('collapsed'); syncSitePanel(collapsed); localStorage.setItem('dr-console.sitePanel', collapsed ? 'collapsed' : 'expanded') })
 document.querySelectorAll('.warehouse').forEach(button => button.addEventListener('click', () => { activeView = button.dataset.zone; setZone(button.dataset.zone) }))
 $('#eventFilter').addEventListener('change', renderPanels)
 $('#theme').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'))

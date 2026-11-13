@@ -82,7 +82,8 @@ export function buildCampusMotion({ THREE, root, layout, quality, eventSource, n
           const target = truckEvent?.type === 'truck_depart' ? 0 : 1
           const progress = item.index === activeTruck && !low ? truckStart + (target - truckStart) * truckProgress : truckOffsets[item.index]
           truckOffsets[item.index] = progress
-          angle = item.index === 2 ? -Math.PI / 2 : 0
+          const from = target === 1 ? dock.entry : dock.parked, to = target === 1 ? dock.parked : dock.entry
+          angle = Math.atan2(to.x - from.x, to.z - from.z)
           x = dock.entry.x + (dock.parked.x - dock.entry.x) * progress + item.x * Math.cos(angle) + item.z * Math.sin(angle)
           z = dock.entry.z + (dock.parked.z - dock.entry.z) * progress - item.x * Math.sin(angle) + item.z * Math.cos(angle)
         } else if (item.kind === 'cargo') {
