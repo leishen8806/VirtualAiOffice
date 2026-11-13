@@ -330,8 +330,8 @@
       "evidenceCards": [
         {
           "id": "beedfa34-add7-467b-a883-9d932db7a99c",
-          "title": "未知卡片",
-          "project": ""
+          "title": "CMP-584 文件上传非阻塞安全加固（来源 CMP-647：下载审计、审计时序、字节配额、purpose 约束、local 适配器竞态）",
+          "project": "Dr.life+"
         },
         {
           "id": "CMP-1245",
@@ -340,12 +340,12 @@
         },
         {
           "id": "df5d23a8-d9fd-429b-991e-e90b8d2e1d68",
-          "title": "未知卡片",
-          "project": ""
+          "title": "审计动作登记补测试：file.download_url_issued 等 Action 加枚举对照测试（来源 CMP-1262 / N5）",
+          "project": "Dr.life+"
         }
       ],
-      "recommendedGroup": "专项组",
-      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+      "recommendedGroup": "非 RouteFit，去向等董事会定",
+      "recommendationReason": "近7天可见证据为 Dr.life+ 商城线，暂停；不按岗位名归组"
     },
     {
       "id": "8f7b30e4-fc5c-4b40-a1b7-3c726c41b8bf",
@@ -363,12 +363,12 @@
       "evidenceCards": [
         {
           "id": "5d380159-eef8-4695-be2f-45a4d403b8cb",
-          "title": "未知卡片",
-          "project": ""
+          "title": "#147-A P-02 钱包充值设计说明与 OpenAPI 契约（不写记账代码）",
+          "project": "Dr.life+"
         }
       ],
-      "recommendedGroup": "专项组",
-      "recommendationReason": "调度算法、计费与结算；当前 Go 运行栈需另行确认"
+      "recommendedGroup": "非 RouteFit，去向等董事会定",
+      "recommendationReason": "近7天可见证据为 Dr.life+ 商城线，暂停；不按岗位名归组"
     },
     {
       "id": "4e3752cc-0b9a-43fb-9b0b-a08ed091de28",
@@ -589,8 +589,8 @@
           "project": "Dr.life+"
         }
       ],
-      "recommendedGroup": "独立验收线",
-      "recommendationReason": "审查、回归和安全验收"
+      "recommendedGroup": "非 RouteFit，去向等董事会定",
+      "recommendationReason": "近7天可见证据含 Dr.life+ 与运营/知识库两条线，按比例交董事会定"
     },
     {
       "id": "7eb58c2d-611e-4856-bebc-63871baa3825",
@@ -740,22 +740,22 @@
       "evidenceCards": [
         {
           "id": "e00f2bb2-ef99-4da2-9569-4025d4e3a98f",
-          "title": "未知卡片",
-          "project": ""
+          "title": "代码复核：审计动作登记枚举测试",
+          "project": "Dr.life+"
         },
         {
           "id": "f1ab2586-0eae-4ce5-8f98-697c848b6b6f",
-          "title": "未知卡片",
-          "project": ""
+          "title": "复核｜CMP-1430｜司机端 demo 面板与手填 token 收到 dev 开关后（Reviewer1）",
+          "project": "Dr.RouteFit"
         },
         {
           "id": "fc51c657-cda3-4b3e-85f0-cd05504111f5",
-          "title": "未知卡片",
-          "project": ""
+          "title": "追补｜076 不可变守卫 BASE20-SEC1-02（088 起新迁移，不改 076）",
+          "project": "Dr.RouteFit"
         }
       ],
-      "recommendedGroup": "独立验收线",
-      "recommendationReason": "审查、回归和安全验收"
+      "recommendedGroup": "非 RouteFit，去向等董事会定",
+      "recommendationReason": "近7天可见证据含 Dr.life+ 与 Dr.RouteFit 两条线，约1/3对2/3，交董事会定"
     },
     {
       "id": "a1ccd681-a016-47f7-a018-8907d02bf332",
