@@ -59,7 +59,7 @@ export function buildWhR1Live1({ THREE, root, quality, canvasTex }) {
   const forkliftCount = low ? 2 : 3, registeredForklifts = WH_R1_VEHICLES.filter(row => row.category === '搬运设备占位'), forkliftRows = forkliftParts()
   const forkliftRoots = Array.from({ length: forkliftCount }, (_, i) => { const row = registeredForklifts[i]; const rootNode = new THREE.Group(); rootNode.name = `wh-r1-live2-forklift-root-${i + 1}`; rootNode.userData = { dynamic: true, live2Role: 'forklift', realModel: true, collisionRadius: .7, registeredId: row?.id || null }; group.add(rootNode); return rootNode })
   const forklift = new THREE.InstancedMesh(combinedForkliftGeometry(THREE, forkliftRows), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .74 }), forkliftCount)
-  forklift.name = 'wh-r1-live2-forklifts'; forklift.userData = { dynamic: true, live2Role: 'forklift', realModel: true, mergedParts: true, collisionRadius: .7, registeredIds: registeredForklifts.slice(0, forkliftCount).map(row => row.id), live2State: [] }; group.add(forklift)
+  forklift.name = 'wh-r1-live2-forklifts'; forklift.visible = false; forklift.userData = { dynamic: true, live2Role: 'forklift', realModel: true, mergedParts: true, duplicateSuppressed: true, collisionRadius: .7, registeredIds: registeredForklifts.slice(0, forkliftCount).map(row => row.id), live2State: [] }; group.add(forklift)
   const forkliftDummy = new THREE.Object3D()
   // Staff are supplied by the registered WH-R1 staff module.  Do not create a
   // visual fallback here: a primitive fallback hides missing registration and

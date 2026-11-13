@@ -110,14 +110,16 @@ test('B2 route pose moves a visible delivery model and its collision proxy',()=>
 })
 test('B2 scene runtime moves registered vehicles, reverses inbound trailers, and keeps parked bays separate',()=>{
  const root=new THREE.Group(),live=buildWhR1Live1({THREE,root,quality:{tier:'high'}}),vehicles=buildWhR1Vehicles({THREE,root})
- const parked=WH_R1_VEHICLES.filter(row=>row.id.startsWith('WH-01-')).map(row=>vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id))
- for(const [index,proxy] of parked.entries())for(const other of parked.slice(index+1))assert.equal(new THREE.Box3().setFromObject(proxy).intersectsBox(new THREE.Box3().setFromObject(other)),false)
+  const parked=WH_R1_VEHICLES.filter(row=>row.id.startsWith('WH-01-')).map(row=>vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+row.id))
+  for(const [index,proxy] of parked.entries())for(const other of parked.slice(index+1))assert.equal(new THREE.Box3().setFromObject(proxy).intersectsBox(new THREE.Box3().setFromObject(other)),false)
+  const forkliftIds=WH_R1_VEHICLES.filter(row=>row.category==='搬运设备占位').map(row=>row.id), forkliftBoxes=boxes(vehicles.root)
+  for(const [index,id] of forkliftIds.entries())for(const other of forkliftIds.slice(index+1))assert.equal(forkliftBoxes.get(id).intersectsBox(forkliftBoxes.get(other)),false,`${id} overlaps ${other}`)
  live.bindRuntime({vehicles});for(let frame=0;frame<30&&!live.traffic.snapshot().active.some(row=>row.kind==='outbound');frame++)live.onFrame(.1)
  const delivery=live.traffic.snapshot().active.find(row=>row.kind==='outbound').id,mesh=vehicles.root.getObjectByName('wh-r1-vehicles-boxes'),index=mesh.userData.instanceToRegisterId.indexOf(delivery),before=new THREE.Matrix4(),after=new THREE.Matrix4();mesh.getMatrixAt(index,before)
  live.onFrame(.1);mesh.getMatrixAt(index,after);assert.notDeepEqual(Array.from(after.elements),Array.from(before.elements),'delivery model moves from the scene runtime')
  let inbound,inboundProxyYaw;for(let frame=0;frame<120;frame++){live.onFrame(.1);inbound??=live.traffic.snapshot().active.find(row=>row.type==='semitrailer'&&row.status==='reverse_in');if(inbound&&inboundProxyYaw===undefined)inboundProxyYaw=vehicles.root.getObjectByName('wh-r1-vehicle-proxy-'+inbound.id).rotation.y}
  assert.ok(inbound,'inbound semitrailer reaches its reverse phase')
- near(inboundProxyYaw,inbound.position.yaw,'reversing trailer yaw');live.dispose();vehicles.dispose()
+  near(inboundProxyYaw,inbound.position.yaw,'reversing trailer yaw');assert.equal(live.root.getObjectByName('wh-r1-live2-forklifts').visible,false,'LIVE-2 duplicate forklift render is suppressed');live.dispose();vehicles.dispose()
 })
 test('B10 rotates every outbound delivery vehicle within sixty seconds',()=>{
  const sim=createLive3StageB(),positions=new Map()

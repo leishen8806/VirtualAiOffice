@@ -30,3 +30,22 @@ test('stage B rotates the whole registered fleet and exposes a reverse-in traile
   assert.deepEqual([...seen.outbound].sort(), ['WH-06-VH-001', 'WH-06-VH-002', 'WH-06-VH-003', 'WH-06-VH-004'])
   assert.equal(seen.reverse, true)
 })
+
+test('stage B vehicle endpoints follow adjacent-frame motion except reverse-in', () => {
+  const sim = createLive3StageB(), previous = new Map(), signs = new Map()
+  for (let i = 0; i < 900; i++) for (const row of sim.advance(100).active) {
+    const prior = previous.get(row.id), front = row.position.front, rear = row.position.rear
+    if (prior && prior.startedAt === row.startedAt) {
+      const motion = { x: row.position.x - prior.x, z: row.position.z - prior.z }
+      if (Math.hypot(motion.x, motion.z) < 1e-9) { previous.set(row.id, { ...row.position, startedAt: row.startedAt }); continue }
+      const frontDelta = { x: front.x - row.position.x, z: front.z - row.position.z }, rearDelta = { x: rear.x - row.position.x, z: rear.z - row.position.z }
+      const frontDot = motion.x * frontDelta.x + motion.z * frontDelta.z, rearDot = motion.x * rearDelta.x + motion.z * rearDelta.z
+      signs.set(row.id + ':' + row.status, [frontDot, rearDot])
+    }
+    previous.set(row.id, { ...row.position, startedAt: row.startedAt })
+  }
+  for (const [key, [frontDot, rearDot]] of signs) {
+    if (key.endsWith(':reverse_in')) assert.ok(rearDot > 0 && frontDot < 0, key)
+    else if (key.endsWith(':approach') || key.endsWith(':depart')) assert.ok(frontDot > 0 && rearDot < 0, key)
+  }
+})

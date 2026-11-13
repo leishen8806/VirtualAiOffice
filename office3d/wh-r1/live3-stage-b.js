@@ -9,7 +9,7 @@ const fleetFor = kind => vehicles.filter(row => kind === 'inbound' ? row.display
 export function createLive3StageB({ nowMs = 0 } = {}) {
   let time = Math.max(0, Number(nowMs) || 0), nextInbound = time, nextOutbound = time
   const active = new Map(), counters = { inbound: 0, outbound: 0 }
-  const start = (kind) => { const row = fleetFor(kind)[counters[kind] % fleetFor(kind).length], route = routes.get(row.id); active.set(row.id, { id: row.id, kind, type: row.displayVehicleType, route: route.points, laneWidthM: route.laneWidthM, turningRadiusM: route.turningRadiusM, progress: 0, reverseAt: kind === 'inbound' ? .4 : -1, status: kind === 'inbound' ? 'approach' : 'loading', startedAt: time, durationMs: kind === 'inbound' ? 15_000 : 12_000 }); counters[kind]++ }
+  const start = (kind) => { const row = fleetFor(kind)[counters[kind] % fleetFor(kind).length], route = routes.get(row.id); active.set(row.id, { id: row.id, kind, type: row.displayVehicleType, route, laneWidthM: route.laneWidthM, turningRadiusM: route.turningRadiusM, progress: 0, reverseAt: kind === 'inbound' ? .4 : -1, status: kind === 'inbound' ? 'approach' : 'loading', startedAt: time, durationMs: kind === 'inbound' ? 15_000 : 12_000 }); counters[kind]++ }
   const spawnClear = route => [...active.values()].every(row => { const p = poseOnRoute(row.route, row.progress, row.status === 'reverse_in'); return Math.hypot(p.x - route.points[0].x, p.z - route.points[0].z) >= 12 })
   const snapshot = () => {
     const activeRows = [...active.values()].map(row => ({ ...row, position: poseOnRoute(row.route, row.progress, row.status === 'reverse_in') }))
