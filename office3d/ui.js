@@ -86,6 +86,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   let state = null
   let staleKey = ''
   let busy = false
+  const hiddenReviews = new Set()
   let batchBusy = false
   let lastPostError = ''
   const selectedReviewIds = new Set()
@@ -205,7 +206,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
   wrap.addEventListener('click', (e) => { if (e.target === wrap) close() })
   addEventListener('keydown', (e) => { if (e.key === 'Escape') close() })
   const agentName = (id) => (state && state.names && state.names[id]) || (state && state.agents.find((a) => a.id === id) || {}).name || ''
-  async function done(msg) {
+  async function done(msg, issueId = null) {
+    if (issueId) hiddenReviews.add(String(issueId))
     toast(msg)
     close()
     await refresh()
@@ -383,16 +385,16 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
         const no = document.createElement('button'); no.className = 'btn'; no.textContent = '取消'
         actions.insertBefore(row, b); actions.appendChild(ok); actions.appendChild(no)
         no.focus() // 默认焦点在「取消」
-        ok.onclick = async () => { if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`) }
+        ok.onclick = async () => { if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`, issueId) }
         no.onclick = () => { row.remove(); ok.remove(); no.remove(); b.style.display = ''; delete b.dataset.verOk }
         b.style.display = 'none'
         return
       }
-      if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`)
+      if (await post({ type: 'review', issueId, decision: 'accept', note: val('mNote') })) done(`${d.identifier} 已验收通过`, issueId)
     })
     bind('mChanges', async () => {
       if (!val('mNote').trim()) { toast('要求修改时请写明要改什么', false); return }
-      if (await post({ type: 'review', issueId, decision: 'changes', note: val('mNote') })) done(`${d.identifier} 已退回修改`)
+      if (await post({ type: 'review', issueId, decision: 'changes', note: val('mNote') })) done(`${d.identifier} 已退回修改`, issueId)
     })
     bind('mCancel', async () => {
       const b = modal.querySelector('#mCancel')
@@ -1366,6 +1368,8 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       const wl = $('waitList')
       wl.innerHTML = ''
       const items = []
+      const waitingReviews = new Set((s.waiting || []).filter((w) => w.kind === 'review').map((w) => String(w.issueId)))
+      for (const issueId of hiddenReviews) if (!waitingReviews.has(issueId)) hiddenReviews.delete(issueId)
       const reviewItems = (s.waiting || []).filter((w) => w.kind === 'review')
       for (const id of [...selectedReviewIds]) if (!reviewItems.some((item) => String(item.issueId) === id)) selectedReviewIds.delete(id)
       if (reviewItems.length) wl.appendChild(batchControls(reviewItems))
@@ -1382,6 +1386,7 @@ export function createUI({ refresh, refreshFoyer, focusAgent, setGoal }) {
       // T15：有「待验收」项且版本核对缓存超过 60 秒才重拉（服务端也缓存 60 秒），避免每次轮询都跑 git
       if (Date.now() - verCache.at > 60000 && (s.waiting || []).some((w) => w.kind === 'review')) loadVer()
       for (const w of s.waiting || []) {
+        if (w.kind === 'review' && hiddenReviews.has(String(w.issueId))) continue
         const who = agentName(w.agentId)
         const meta = `${w.id}${who ? ' · ' + who : ''} · 已等 ${ago(now - Date.parse(w.since))}`
         if (w.kind === 'question') items.push(card('question', KIND.question.label, w.title, meta, () => openQuestion(w), w.projectId))

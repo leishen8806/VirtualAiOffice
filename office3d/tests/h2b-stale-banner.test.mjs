@@ -23,3 +23,11 @@ test('H2b hook stays client-only and fail-closed', () => {
   assert.doesNotMatch(app, /detailDispatch'\)\.disabled = .*latestState\?\.stale\?\.active/)
   assert.doesNotMatch([ui, app, html].join('\n'), /\/state\?stale|stale\/state/)
 })
+
+test('successful review actions hide stale rows until the next state drops them', () => {
+  const ui = fs.readFileSync(new URL('../ui.js', import.meta.url), 'utf8')
+  assert.match(ui, /const hiddenReviews = new Set\(\)/)
+  assert.match(ui, /hiddenReviews\.add\(String\(issueId\)\)/)
+  assert.match(ui, /if \(w\.kind === 'review' && hiddenReviews\.has\(String\(w\.issueId\)\)\) continue/)
+  assert.match(ui, /for \(const issueId of hiddenReviews\) if \(!waitingReviews\.has\(issueId\)\) hiddenReviews\.delete\(issueId\)/)
+})
