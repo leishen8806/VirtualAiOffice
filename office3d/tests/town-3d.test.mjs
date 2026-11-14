@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from '../town-3d-core.js'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier, waterContainsPoint } from '../town-3d-core.js'
 import { readFileSync, statSync } from 'node:fs'
 
 test('hidden town overlays cannot cover the 2d map', () => {
@@ -12,6 +12,12 @@ test('hidden town overlays cannot cover the 2d map', () => {
 test('town 3d projection uses the existing map origin and metre scale', () => {
   assert.deepEqual(geoToWorld(11.57, 104.905), { x: 0, z: -0 })
   assert.ok(geoToWorld(11.58, 104.905).z < 0)
+})
+
+test('water coverage excludes road segments but preserves water holes', () => {
+  const water = [{ rings: [[[0, 0], [10, 0], [10, 10], [0, 10]], [[3, 3], [3, 7], [7, 7], [7, 3]]] }]
+  assert.equal(waterContainsPoint([2, 2], water), true)
+  assert.equal(waterContainsPoint([5, 5], water), false)
 })
 
 test('building height prefers explicit height, then levels, then type fallback', () => {

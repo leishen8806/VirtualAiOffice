@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three/three.module.js'
 import { GLTFLoader } from './vendor/three/jsm/loaders/GLTFLoader.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier } from './town-3d-core.js'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier, waterContainsPoint } from './town-3d-core.js'
 import { setLoading, finishLoading } from './dr-loading.js'
 
 const canvas = document.querySelector('#town3dCanvas')
@@ -90,6 +90,7 @@ function mergedRoads(data) {
     const p0 = road.line[i - 1], p1 = road.line[i]
     const inside = p => Array.isArray(p) && p.length >= 2 && p[0] >= 104.9 && p[0] <= 104.985 && p[1] >= 11.52 && p[1] <= 11.59
     if (!inside(p0) || !inside(p1)) continue
+    if (waterContainsPoint([(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2], data.water)) continue
     const a = pointWorld(p0), b = pointWorld(p1)
     if (![a.x,a.z,b.x,b.z].every(Number.isFinite)) continue
     const tier = roadTier(road.type), group = groups.get(tier)

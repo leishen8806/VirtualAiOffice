@@ -23,6 +23,15 @@ export function polygonWorldPoint(THREE, [lon, lat]) {
   return new THREE.Vector2(point.x, -point.z)
 }
 
+const pointInRing = ([x, y], ring) => ring.reduce((inside, point, index) => {
+  const previous = ring[(index + ring.length - 1) % ring.length]
+  return ((point[1] > y) !== (previous[1] > y)) && x < (previous[0] - point[0]) * (y - point[1]) / (previous[1] - point[1]) + point[0] ? !inside : inside
+}, false)
+
+export function waterContainsPoint(point, waters) {
+  return waters.some(({ rings = [] }) => rings[0]?.length > 2 && pointInRing(point, rings[0]) && !rings.slice(1).some((ring) => pointInRing(point, ring)))
+}
+
 export function defaultBuildingHeight(tags = {}) {
   const levels = Number.parseFloat(tags['building:levels'])
   const parsedHeight = Number.parseFloat(String(tags.height ?? '').replace(/m$/i, ''))
