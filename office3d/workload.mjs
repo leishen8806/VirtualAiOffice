@@ -122,10 +122,11 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     // Historical/offline fixtures must remain readable; prune only after a current collection.
     if (db.lastCollect && now() - Date.parse(db.lastCollect) <= 2 * RETENTION_DAYS * DAY) {
       const cutoff = dateKey(now() - RETENTION_DAYS * DAY)
+      const old = value => { const ms = Date.parse(value); return Number.isFinite(ms) && dateKey(ms) < cutoff }
       for (const key of ['observations', 'daily']) for (const day of Object.keys(db[key] || {})) if (day < cutoff) delete db[key][day]
-      for (const [id, task] of Object.entries(db.tasks || {})) if (dateKey(Date.parse(task.updatedAt || task.firstRunAt || task.todoAt || 0)) < cutoff) delete db.tasks[id]
-      for (const [id, row] of Object.entries(db.reworks || {})) if (dateKey(Date.parse(row.at || 0)) < cutoff) delete db.reworks[id]
-      for (const [id, row] of Object.entries(db.timedRuns || {})) if (dateKey(Date.parse(row.finishedAt || row.startedAt || row.at || 0)) < cutoff) delete db.timedRuns[id]
+      for (const [id, task] of Object.entries(db.tasks || {})) if (old(task.updatedAt || task.firstRunAt || task.todoAt)) delete db.tasks[id]
+      for (const [id, row] of Object.entries(db.reworks || {})) if (old(row.at)) delete db.reworks[id]
+      for (const [id, row] of Object.entries(db.timedRuns || {})) if (old(row.finishedAt || row.startedAt || row.at)) delete db.timedRuns[id]
     }
     const temp = `${file}.${process.pid}.tmp`
     try { fs.writeFileSync(temp, JSON.stringify(db), { flag: 'w' }); fs.renameSync(temp, file) }
