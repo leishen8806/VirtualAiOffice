@@ -117,7 +117,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     if (!Array.isArray(s.days) || !s.days.length || s.timezone !== 'Asia/Phnom_Penh' || !/^\d\d:\d\d$/.test(s.start) || !/^\d\d:\d\d$/.test(s.end) || s.end <= s.start) throw new Error('作息配置不可用')
     return s
   }
-  function save() {
+  async function save() {
     requireEnabled()
     // Historical/offline fixtures must remain readable; prune only after a current collection.
     if (db.lastCollect && now() - Date.parse(db.lastCollect) <= 2 * RETENTION_DAYS * DAY) {
@@ -129,8 +129,8 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
       for (const [id, row] of Object.entries(db.timedRuns || {})) if (old(row.finishedAt || row.startedAt || row.at)) delete db.timedRuns[id]
     }
     const temp = `${file}.${process.pid}.tmp`
-    try { fs.writeFileSync(temp, JSON.stringify(db), { flag: 'w' }); fs.renameSync(temp, file) }
-    finally { if (fs.existsSync(temp)) fs.unlinkSync(temp) }
+    try { await fs.promises.writeFile(temp, JSON.stringify(db), { flag: 'w' }); await fs.promises.rename(temp, file) }
+    finally { if (fs.existsSync(temp)) await fs.promises.unlink(temp) }
   }
   function requireEnabled() {
     let enabled = false
@@ -209,7 +209,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     const enriched = { ...ledger, runs: { ...ledger.runs, ...db.timedRuns } }
     const daily = buildWorkload({ now: current, ledger: enriched, db, schedule: s }).daily
     for (const [day, values] of Object.entries(daily)) db.daily[day] = values
-    save()
+    await save()
   }
   function isoWeek(ms) {
     const d = new Date(dateKey(ms) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
@@ -229,10 +229,10 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     const record = { path: target, at: new Date(now()).toISOString(), count: r.suggestions.length, notificationAttempted: true }
     db.reports[week] = record; db.lastReport = record
     // 先持久化提醒尝试，发送结果不确定也不重发，避免董事会收到重复通知。
-    save()
+    await save()
     requireEnabled()
     try { await notify(`本周编制报告已生成\n${target}\n建议 ${record.count} 条`); record.notified = true } catch { record.notified = false }
-    save()
+    await save()
     return record
   }
   async function tick({ manual = false } = {}) {

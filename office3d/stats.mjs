@@ -59,7 +59,12 @@ export function createStats({ dir, get, company, staggerMs = 0 }) {
   }
   if (staggerMs) { const starter = setTimeout(seed, staggerMs); starter.unref?.() } else seed()
   setInterval(refreshDone, 2 * 60 * 1000)
-  setInterval(() => { if (dirty) { dirty = false; prune(); try { fs.writeFileSync(FILE, JSON.stringify(L)) } catch {} } }, 60 * 1000)
+  let writing = null
+  setInterval(() => {
+    if (!dirty || writing) return
+    dirty = false; prune()
+    writing = fs.promises.writeFile(FILE, JSON.stringify(L)).catch(() => {}).finally(() => { writing = null })
+  }, 60 * 1000)
 
   const within = (iso, from, to) => iso && iso >= from && iso < to
   function daily(dateStr = localDate(new Date().toISOString()), names = {}) {
