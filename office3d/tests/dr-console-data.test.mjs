@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildSnapshot, deriveKpis, eventsUpTo, inventoryAfterEvents, inventoryDisplay } from '../dr-console-data.js'
+import { buildOrderDemoSnapshot, buildSnapshot, deriveKpis, eventsUpTo, inventoryAfterEvents, inventoryDisplay } from '../dr-console-data.js'
 import { readDemoOrders } from '../dr-order-source.js'
 
 test('demo order source is a fixed synthetic 20-order contract', () => {
@@ -9,6 +9,11 @@ test('demo order source is a fixed synthetic 20-order contract', () => {
   assert.equal(new Set(orders.map((order) => order.orderNo)).size, 20)
   assert.ok(orders.every((order) => order.orderNo.startsWith('DEMO-ORD-') && order.customerRegion && order.itemCount > 0 && order.status && order.stageTimes && order.vehicleId && order.warehouseSlot))
   assert.ok(orders.every((order) => order.orderNo.startsWith('DEMO-') && !/\d{7,}/.test(order.customerRegion)))
+})
+
+test('order rows exist only in the running demo snapshot', () => {
+  assert.equal(buildSnapshot().waybills.filter((item) => item.id.startsWith('DEMO-ORD-')).length, 0)
+  assert.equal(buildOrderDemoSnapshot().waybills.filter((item) => item.id.startsWith('DEMO-ORD-')).length, 20)
 })
 
 test('DR console demo snapshot and derived KPI are deterministic', () => {

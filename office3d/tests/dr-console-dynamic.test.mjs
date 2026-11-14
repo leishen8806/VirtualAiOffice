@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
-import { buildSnapshot } from '../dr-console-data.js'
+import { buildOrderDemoSnapshot, buildSnapshot } from '../dr-console-data.js'
 import { demoSnapshotAt } from '../dr-console-demo.js'
 import {
   createDemoDisplay,
@@ -126,6 +126,16 @@ test('stop, hide and repeated initialization reset to one static display lifecyc
   assert.equal(again.isRunning(), false)
   again.dispose()
   assert.equal(h.listenerCount(), 0)
+})
+
+test('stopping the order demo restores the initial waybills', () => {
+  const h = demoHarness(), base = buildSnapshot(), demo = buildOrderDemoSnapshot(), snapshots = []
+  const display = createDemoDisplay({ root: h.root, baseSnapshot: base, demoSnapshot: demo, onSnapshot: value => snapshots.push(value), now: () => 0, documentRef: h.documentStub, requestFrame: h.requestFrame, cancelFrame: h.cancelFrame })
+  display.start(); h.tick(1800)
+  assert.equal(snapshots.at(-1).waybills.filter((item) => item.id.startsWith('DEMO-ORD-')).length, 20)
+  display.stop()
+  assert.deepEqual(snapshots.at(-1), base)
+  display.dispose()
 })
 
 test('page lifecycle survives five bfcache-style cycles without auto-starting or stacking', () => {
