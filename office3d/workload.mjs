@@ -12,6 +12,7 @@ import { localParts, onDuty } from '../workhours/schedule.mjs'
 
 const DAY = 86400000, HOUR = 3600000
 export const DEFAULT_THRESHOLDS = Object.freeze({ busyUtilization: .7, busyDayShare: .6, queueTodo: 3, queueDayShare: .5, waitMs: 4 * HOUR, successRate: .7, productiveDayShare: .2, lowUtilization: .05, failureRate: .3, blockedShare: .5, reworks: 3, unavailableDayShare: .5 })
+const RETENTION_DAYS = 30
 const array = (v, key) => Array.isArray(v) ? v : v?.[key] || []
 const dateKey = (ms) => new Date(Number(ms) + 7 * HOUR).toISOString().slice(0, 10)
 const at = (day, time) => Date.parse(`${day}T${time}:00+07:00`)
@@ -116,11 +117,20 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     if (!Array.isArray(s.days) || !s.days.length || s.timezone !== 'Asia/Phnom_Penh' || !/^\d\d:\d\d$/.test(s.start) || !/^\d\d:\d\d$/.test(s.end) || s.end <= s.start) throw new Error('作息配置不可用')
     return s
   }
-  function save() {
+  async function save() {
     requireEnabled()
+    // Historical/offline fixtures must remain readable; prune only after a current collection.
+    if (db.lastCollect && now() - Date.parse(db.lastCollect) <= 2 * RETENTION_DAYS * DAY) {
+      const cutoff = dateKey(now() - RETENTION_DAYS * DAY)
+      const old = value => { const ms = Date.parse(value); return Number.isFinite(ms) && dateKey(ms) < cutoff }
+      for (const key of ['observations', 'daily']) for (const day of Object.keys(db[key] || {})) if (day < cutoff) delete db[key][day]
+      for (const [id, task] of Object.entries(db.tasks || {})) if (old(task.updatedAt || task.firstRunAt || task.todoAt)) delete db.tasks[id]
+      for (const [id, row] of Object.entries(db.reworks || {})) if (old(row.at)) delete db.reworks[id]
+      for (const [id, row] of Object.entries(db.timedRuns || {})) if (old(row.finishedAt || row.startedAt || row.at)) delete db.timedRuns[id]
+    }
     const temp = `${file}.${process.pid}.tmp`
-    try { fs.writeFileSync(temp, JSON.stringify(db), { flag: 'w' }); fs.renameSync(temp, file) }
-    finally { if (fs.existsSync(temp)) fs.unlinkSync(temp) }
+    try { await fs.promises.writeFile(temp, JSON.stringify(db), { flag: 'w' }); await fs.promises.rename(temp, file) }
+    finally { if (fs.existsSync(temp)) await fs.promises.unlink(temp) }
   }
   function requireEnabled() {
     let enabled = false
@@ -199,7 +209,7 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     const enriched = { ...ledger, runs: { ...ledger.runs, ...db.timedRuns } }
     const daily = buildWorkload({ now: current, ledger: enriched, db, schedule: s }).daily
     for (const [day, values] of Object.entries(daily)) db.daily[day] = values
-    save()
+    await save()
   }
   function isoWeek(ms) {
     const d = new Date(dateKey(ms) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
@@ -219,10 +229,10 @@ export function createWorkload({ dir, company, get, stats, dutyOn, notify, now =
     const record = { path: target, at: new Date(now()).toISOString(), count: r.suggestions.length, notificationAttempted: true }
     db.reports[week] = record; db.lastReport = record
     // 先持久化提醒尝试，发送结果不确定也不重发，避免董事会收到重复通知。
-    save()
+    await save()
     requireEnabled()
     try { await notify(`本周编制报告已生成\n${target}\n建议 ${record.count} 条`); record.notified = true } catch { record.notified = false }
-    save()
+    await save()
     return record
   }
   async function tick({ manual = false } = {}) {
