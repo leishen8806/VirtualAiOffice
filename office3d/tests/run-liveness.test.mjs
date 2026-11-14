@@ -120,7 +120,7 @@ test('server wires non-blocking liveness and refuses only orphan-producing cance
   const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
   const source = fs.readFileSync(path.join(root, 'server.mjs'), 'utf8')
   assert.match(source, /import \{ readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel \} from '\.\/run-liveness\.mjs'/)
-  assert.match(source, /const processTables = await readProcessTables\(\{ wait: false \}\)/)
+  assert.match(source, /(?:const processTables = await readProcessTables\(\{ wait: false \}\)|const processTables = await run\.measure\('readProcessTables', \(\) => readProcessTables\(\{ wait: false \}\)\))/)
   assert.match(source, /busy: busy\.busy, busyName: busy\.busyName/)
   assert.match(source, /if \(shouldBlockCancel\(liveness\)\) \{[\s\S]*?status: 409/)
 })
