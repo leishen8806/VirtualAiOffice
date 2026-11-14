@@ -6,12 +6,21 @@ import path from 'node:path'
 import { createIssuePager } from './issue-pagination.mjs'
 
 const TZ = 'Asia/Phnom_Penh'
+const RETENTION_MS = 30 * 86400000
 const localDate = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
 
 export function createStats({ dir, get, company, staggerMs = 0 }) {
   const FILE = path.join(dir, 'stats.json')
   let L = { runs: {}, done: {}, comments: {}, decisions: {}, since: null }
   try { L = { ...L, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) } } catch {}
+  const prune = (at = Date.now()) => {
+    const cutoff = new Date(at - RETENTION_MS).toISOString()
+    for (const key of ['runs', 'done', 'comments', 'decisions', 'todoEvents']) {
+      if (!L[key] || typeof L[key] !== 'object') continue
+      for (const [id, row] of Object.entries(L[key])) if (!row?.at || row.at < cutoff) delete L[key][id]
+    }
+  }
+  prune()
   let dirty = false
   const issues = createIssuePager({ company, get, label: 'stats:done' })
   const note = (iso) => { if (iso && (!L.since || iso < L.since)) L.since = iso }
@@ -50,7 +59,7 @@ export function createStats({ dir, get, company, staggerMs = 0 }) {
   }
   if (staggerMs) { const starter = setTimeout(seed, staggerMs); starter.unref?.() } else seed()
   setInterval(refreshDone, 2 * 60 * 1000)
-  setInterval(() => { if (dirty) { dirty = false; try { fs.writeFileSync(FILE, JSON.stringify(L)) } catch {} } }, 60 * 1000)
+  setInterval(() => { if (dirty) { dirty = false; prune(); try { fs.writeFileSync(FILE, JSON.stringify(L)) } catch {} } }, 60 * 1000)
 
   const within = (iso, from, to) => iso && iso >= from && iso < to
   function daily(dateStr = localDate(new Date().toISOString()), names = {}) {

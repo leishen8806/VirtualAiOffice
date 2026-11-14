@@ -243,10 +243,13 @@ export function createBackgroundHealth({ get, company, buildHealth, schedule, no
       if (!old || old.status !== run.status || old.finishedAt !== run.finishedAt || old.updatedAt !== run.updatedAt) changed = true
       byId.set(id, run)
     }
-    if (!changed) return
     const cutoff = now() - 24 * 3600000
-    runs = [...byId.values()].filter(run => runAt(run) >= cutoff).sort((a, b) => runAt(b) - runAt(a))
-    persist()
+    const next = [...byId.values()].filter(run => runAt(run) >= cutoff).sort((a, b) => runAt(b) - runAt(a))
+    if (next.length !== runs.length || next.some((run, i) => {
+      const old = runs[i]
+      return !old || run.id !== old.id || run.status !== old.status || run.updatedAt !== old.updatedAt || run.finishedAt !== old.finishedAt
+    })) changed = true
+    if (changed) { runs = next; persist() }
   }
   function refresh() {
     if (flight || (attemptedAt !== null && now() - attemptedAt < 10 * 60 * 1000)) return flight
