@@ -1996,6 +1996,7 @@ function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', dest
   })
   if (first) b.classList.add('on')
   container.appendChild(b)
+  return b
 }
 if (DR_MODE) {
   const cameraGroup = dockGroup('仓配场景视角', 'views')

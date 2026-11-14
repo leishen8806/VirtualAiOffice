@@ -12,5 +12,5 @@ test('first person stays in bounds and slides along a blocker', () => {
 test('first person restores the prior camera state and uses human eye height', () => {
   const first = createFirstPerson({ bounds: { x0: 0, x1: 10, z0: 0, z1: 10 }, collision: collision() })
   const restore = { az: 1 }; first.enter({ x: 2, z: 2, restore })
-  assert.equal(FIRST_PERSON_EYE_HEIGHT, 1.6); assert.equal(first.exit(), restore)
+  assert.equal(FIRST_PERSON_EYE_HEIGHT, 1.6); assert.equal(first.state.active, true); assert.equal(first.exit(), restore); assert.equal(first.state.active, false)
 })
