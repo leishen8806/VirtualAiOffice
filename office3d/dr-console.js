@@ -1,9 +1,10 @@
-import { buildSnapshot, deriveKpis, inventoryDisplay } from './dr-console-data.js'
+import { buildOrderDemoSnapshot, buildSnapshot, deriveKpis, inventoryDisplay } from './dr-console-data.js'
 import { campusMapSvg } from './dr-console-map.js'
 import { createDemoPageLifecycle } from './dr-console-demo.js'
 import { renderKpiCards } from './dr-console-render.js'
 
 const baseSnapshot = buildSnapshot({ seed: 2808, timeSlice: 5 })
+const orderDemoSnapshot = buildOrderDemoSnapshot({ seed: 2808, timeSlice: 5 })
 let snapshot = baseSnapshot
 let zone = 'ALL'
 let taskFilter = '全部'
@@ -145,7 +146,7 @@ document.querySelectorAll('.warehouse').forEach(button => button.addEventListene
 $('#eventFilter').addEventListener('change', renderPanels)
 $('#theme').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'))
 let timer
-const demoDisplay = createDemoPageLifecycle({ root: document, baseSnapshot, onSnapshot: next => { snapshot = next; renderKpis(); renderPanels() } })
+const demoDisplay = createDemoPageLifecycle({ root: document, baseSnapshot, demoSnapshot: orderDemoSnapshot, onSnapshot: next => { snapshot = next; renderKpis(); renderPanels() } })
 function syncClock() {
   clearInterval(timer)
   document.body.classList.toggle('paused', document.hidden)

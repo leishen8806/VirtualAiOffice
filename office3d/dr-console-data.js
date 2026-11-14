@@ -1,4 +1,6 @@
 // DR 仓配中控台只使用这里的确定性演示快照；不读取任何现实业务数据。
+import { readDemoOrders } from './dr-order-source.js'
+
 const baseEvents = [
   { id: 'demo-e01', at: 1, zone: 'W1', kind: '托盘上架', pallets: 12 },
   { id: 'demo-e02', at: 2, zone: 'W2', kind: '分拣复核完成', pallets: 8 },
@@ -53,6 +55,16 @@ export function buildSnapshot({ seed = 2808, timeSlice = 0 } = {}) {
       { type: '设备', count: 1 }, { type: '库存', count: 2 }, { type: '运单', count: 1 },
     ],
     events: eventsUpTo({ timeSlice: slice }, slice),
+  }
+}
+
+export function buildOrderDemoSnapshot(options = {}) {
+  const { seed = 2808 } = options, orders = readDemoOrders(), snapshot = buildSnapshot(options)
+  return {
+    ...snapshot,
+    waybills: orders.map((order, index) => ({ id: order.orderNo, zone: order.warehouse, status: order.status, from: '金边', to: order.customerRegion, pallets: order.itemCount, progress: order.status === '已完成' ? 100 : 28 + ((seed + index * 13) % 60), eta: order.status === '已完成' ? '示意 已完成' : `示意 ${14 + (index % 5)}:40`, orderNo: order.orderNo, warehouseSlot: order.warehouseSlot })),
+    vehicles: [...new Map(orders.map((order) => [order.vehicleId, { id: order.vehicleId, inYard: order.status !== '已完成', zone: order.warehouse }])).values(), { id: 'DEMO-TRK-04', inYard: false, zone: '计划路线' }],
+    events: orders.filter((order) => order.eventKind).map((order) => ({ id: `demo-event-${order.orderNo}`, at: order.eventAt, zone: order.warehouse, kind: order.eventKind, pallets: order.itemCount, orderNo: order.orderNo, demo: true, detail: '演示事件 · 模拟' })),
   }
 }
 

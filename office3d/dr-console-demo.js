@@ -41,6 +41,7 @@ function drawFlow(canvas, elapsedMs, windowRef) {
 export function createDemoDisplay({
   root = document,
   baseSnapshot,
+  demoSnapshot = baseSnapshot,
   onSnapshot = () => {},
   now = () => performance.now(),
   documentRef = globalThis.document,
@@ -56,7 +57,7 @@ export function createDemoDisplay({
   const update = (stamp) => {
     if (!running) return
     const elapsed = Math.max(0, stamp - epoch); const tick = Math.floor(elapsed / DEMO_REFRESH_MS)
-    if (tick !== lastTick) { lastTick = tick; onSnapshot(demoSnapshotAt(baseSnapshot, elapsed)) }
+    if (tick !== lastTick) { lastTick = tick; onSnapshot(demoSnapshotAt(demoSnapshot, elapsed)) }
     drawFlow(canvas, elapsed, windowRef); raf = requestFrame(update)
   }
   const setState = () => { toggle.textContent = running ? '停止动态演示' : '启动动态演示'; toggle.setAttribute('aria-pressed', String(running)); status.textContent = running ? '动态演示 · 模拟' : '静态演示 · 默认关闭' }

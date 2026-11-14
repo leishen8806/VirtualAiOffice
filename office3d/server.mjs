@@ -59,6 +59,8 @@ import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
 import { createLastGoodState, loadStateComponents, createBackgroundHealth, createSnapshotGet } from './state-last-good.mjs'
 import { readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel } from './run-liveness.mjs'
 import { createStateTiming } from './state-timing.mjs'
+import { createOaStaffSync } from './oa-staff-sync.mjs'
+import { createOaStaffRoutes } from './oa-staff-routes.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
@@ -160,6 +162,9 @@ const PAPERCLIP = process.env.PAPERCLIP_API_URL || 'http://127.0.0.1:3100'
 const PORT = Number(process.env.OFFICE3D_PORT || 3200)
 const COMPANY_ID_FILE = process.env.OFFICE3D_COMPANY_ID_FILE || path.join(HERE, '..', 'company-id.txt')
 const COMPANY = fs.readFileSync(COMPANY_ID_FILE, 'utf8').trim()
+const OA_ENABLED = process.env.OA_ENABLED === 'true'
+const oaStaffSync = OA_ENABLED ? createOaStaffSync({ enabled: true, baseUrl: process.env.OA_BASE_URL, apiKeyFile: process.env.OA_API_KEY_FILE, timeoutMs: Number(process.env.OA_TIMEOUT_MS || 5000) }) : null
+const oaStaffRoutes = createOaStaffRoutes({ enabled: OA_ENABLED, sync: oaStaffSync, assignWorkstations: oaStaffSync?.assignWorkstations })
 const townMap = loadTownMap({ file: path.join(HERE, 'town-map.json'), log: console.log })
 const tenancy = createTenancy({ dir: HERE, now: Date.now, log: console.log, paperclipBaseUrl: PAPERCLIP })
 tenancy.warnIfPaperclipNotLoopback()
@@ -279,6 +284,7 @@ const commandLive = createCommandLiveWiring({
   },
 })
 const API_PATHS = new Set(['/state', '/kb', '/kb/doc', '/daily', '/backlog', '/issue', '/governance', '/town/econ/trial', '/contract-view', '/scheduler/suggest', '/town/home/session', '/town/home/layout', '/town/home/save', '/town/home/reset', '/health', '/blocked/preview', '/memory/preview', '/workload', '/wall/data', '/act', '/lan-login', '/replay', '/collab', '/rework', '/evidence-version', '/foyer', '/foyer/visitors', '/handoff', '/chat', '/chat/summary', '/town/map', '/platform/tenancy', '/zone/routefit'])
+for (const path of oaStaffRoutes.paths) API_PATHS.add(path)
 API_PATHS.add('/town/3d-data')
 API_PATHS.add('/command-view')
 API_PATHS.add('/command-view/scenarios')
@@ -909,13 +915,14 @@ const stateTiming = createStateTiming({
   enabled: process.env.OFFICE3D_STATE_TIMINGS === '1',
   file: process.env.OFFICE3D_STATE_TIMINGS_FILE || path.join(HERE, 'state-timings.log'),
 })
+const STATE_REFRESH_LOG = path.join(HERE, 'state-refresh.log')
 const lastGoodState = createLastGoodState({
   file: path.join(HERE, 'state-last-good.json'),
   persistMinMs: 60000,
   backgroundMs: 10000,
-  staleAfterMs: 60000,
-  logFile: path.join(HERE, 'state-refresh.log'),
+  staleAfterMs: 180000,
   onWrite: row => stateTiming.record(row.name, row),
+  logFile: STATE_REFRESH_LOG,
 })
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
@@ -1333,6 +1340,10 @@ const server = http
       if (authRoute) {
         const reply = await tenancy.auth.router.handle(req, url, { remoteAddress: addr, hostOk, originOk })
         if (reply) return res.writeHead(reply.status, reply.headers).end(reply.body)
+      }
+      if (oaStaffRoutes.paths.has(url.pathname)) {
+        const reply = await oaStaffRoutes.handle({ method: req.method, path: url.pathname, identity: !lanUser && !wallScope ? { id: 'board' } : null })
+        return json(reply.status, reply.body)
       }
       if (req.method !== 'GET' && !(req.method === 'HEAD' && url.pathname === '/town/map')) return json(405, { error: '不支持' })
       if (url.pathname === '/wall/data') return json(200, await wallData(lanUser || wallScope))
