@@ -58,6 +58,7 @@ import { townNavClientScript, townNavEnabled } from './town-nav.mjs'
 import { coarsenGeo, OFFICE_GEO } from './office-geo.mjs'
 import { createLastGoodState, loadStateComponents, createBackgroundHealth, createSnapshotGet } from './state-last-good.mjs'
 import { readProcessTable, readProcessTables, runAlive, runBusy, shouldBlockCancel } from './run-liveness.mjs'
+import { createStateTiming } from './state-timing.mjs'
 const PNH = { lat: OFFICE_GEO.lat, lon: OFFICE_GEO.lon, tz: OFFICE_GEO.tz } // 智序工场现实定位；天气、雷达和账本时区沿用此坐标。
 let weather = null
 let nowcast = null
@@ -904,12 +905,17 @@ async function refreshRoutefitSummary() {
 }
 let backlogCache = { at: 0, rows: [] }
 let backlogFlight = null
+const stateTiming = createStateTiming({
+  enabled: process.env.OFFICE3D_STATE_TIMINGS === '1',
+  file: process.env.OFFICE3D_STATE_TIMINGS_FILE || path.join(HERE, 'state-timings.log'),
+})
 const lastGoodState = createLastGoodState({
   file: path.join(HERE, 'state-last-good.json'),
   persistMinMs: 60000,
   backgroundMs: 10000,
   staleAfterMs: 60000,
   logFile: path.join(HERE, 'state-refresh.log'),
+  onWrite: row => stateTiming.record(row.name, row),
 })
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
@@ -1068,12 +1074,15 @@ async function healthReport() {
 
 // 聚合：一次请求拿到页面需要的全部数据，页面不直接访问 Paperclip。
 async function state() {
-  return lastGoodState.run(async () => {
-  const stateStarted = performance.now()
-  const timings = []
+  const timing = typeof stateTiming === 'undefined' ? {
+    enabled: false,
+    start: () => ({ measure: (_name, fn) => fn(), measureSync: (_name, fn) => fn(), record: () => {}, finish: () => {} }),
+  } : stateTiming
+  const run = timing.start()
+  try {
+  return await lastGoodState.run(async () => {
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
-    await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
-  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
+    await run.measure('loadStateComponents', () => loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: timing.enabled ? row => run.record(row.name, row) : null }))
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
@@ -1084,7 +1093,7 @@ async function state() {
   }
   const lastRun = new Map()
   const liveRun = new Map()
-  const processTables = await readProcessTables({ wait: false })
+  const processTables = await run.measure('readProcessTables', () => readProcessTables({ wait: false }))
   const details = await attachRunDetails(runs.filter(r => r.status === 'running'), moduleGet('state'))
   for (const r of runs) {
     if (!lastRun.has(r.agentId)) lastRun.set(r.agentId, { status: r.status, at: r.createdAt, error: r.errorCode || null })
@@ -1119,7 +1128,7 @@ async function state() {
     gossip: gossip.recent(),
     awards: stats.awards(),
     schedule: scheduleCache,
-    meetings: await buildMeetings(activity),
+    meetings: await run.measure('buildMeetings', () => buildMeetings(activity)),
     agents: agents
       .filter((a) => a.status !== 'terminated' && a.status !== 'pending_approval') // 招聘还没批准的不进办公室
       .map((a) => ({
@@ -1133,7 +1142,7 @@ async function state() {
         lastRun: lastRun.get(a.id) || null,
         liveRun: liveRun.get(a.id) || null,
       })),
-    waiting: await buildWaiting(activity, issueList),
+    waiting: await run.measure('buildWaiting', () => buildWaiting(activity, issueList)),
     assigned: issueList.filter((i) => i.assigneeAgentId).map((i) => ({ id: i.identifier, issueId: i.id, projectId: i.projectId || null, title: i.title, status: i.status, agentId: i.assigneeAgentId, at: i.updatedAt })),
     tasks: dash.tasks,
     costs: dash.costs,
@@ -1147,7 +1156,7 @@ async function state() {
     names: readNames(),
     projects: projectsCache,
     world: world(),
-    events: await buildEvents(activity, approvalsAll),
+    events: await run.measure('buildEvents', () => buildEvents(activity, approvalsAll)),
   }
   Object.defineProperty(out, '_schedulerSource', {
     value: {
@@ -1169,16 +1178,16 @@ async function state() {
     out.contractView = summarizeContracts(contractTasks, { now: Date.now() })
   }
   if (gaps.some(gap => gap.source === 'approvalsAll')) out.events = out.events.filter(event => !['submit_to_board', 'board_decision'].includes(event.kind))
-  try { ledger.ingest(out.events) } catch (e) { console.log('[ledger] 记账失败：' + String((e && e.message) || e)) } // 账本出错只记日志，不影响 /state
-  try { out.ledger = ledger.view() } catch { out.ledger = { enabled: true, date: null, count: 0, capped: false, since: null, firstAt: null, corrupt: 0 } }
+  try { run.measureSync('ledger.ingest', () => ledger.ingest(out.events)) } catch (e) { console.log('[ledger] 记账失败：' + String((e && e.message) || e)) } // 账本出错只记日志，不影响 /state
+  try { out.ledger = run.measureSync('ledger.view', () => ledger.view()) } catch { out.ledger = { enabled: true, date: null, count: 0, capped: false, since: null, firstAt: null, corrupt: 0 } }
   try {
-    const h = await healthReport()
+    const h = await run.measure('healthReport', () => healthReport())
     out.healthLevel = { level: h.level, text: h.text }
     if (h.stale) out.healthLevel.stale = h.stale
   } catch {
     out.healthLevel = { level: 'warn', text: '健康数据暂不可用' }
   }
-  out.today = computeToday({ now: out.at, doneLedger: daily.done, assigned: issueList.concat(backlog), waiting: out.waiting, runsToday: daily, projects: projectsCache, duty: out.world.duty })
+  out.today = run.measureSync('computeToday', () => computeToday({ now: out.at, doneLedger: daily.done, assigned: issueList.concat(backlog), waiting: out.waiting, runsToday: daily, projects: projectsCache, duty: out.world.duty }))
   if (gaps.length) {
     out.gaps = gaps
     const missing = name => gaps.some(gap => gap.source === name)
@@ -1197,6 +1206,7 @@ async function state() {
   commandLive.capture(out)
   return out
   })
+  } finally { run.finish() }
 }
 
 const server = http
@@ -1204,6 +1214,8 @@ const server = http
     try {
       const url = new URL(req.url, 'http://x')
       const json = (code, obj) => res.writeHead(code, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(JSON.stringify(obj))
+      const requestEnd = stateTiming.enabled ? stateTiming.request(url.pathname) : null
+      if (requestEnd) { res.once('finish', requestEnd); res.once('close', requestEnd) }
       const authRoute = tenancy.auth.router.match(req.method, url.pathname)
       if (!hostOk(req.headers.host)) return json(403, { error: '只允许本机地址或局域网 IP 访问' }) // 防 DNS 重绑定偷读令牌
       const addr = req.socket.remoteAddress || ''
@@ -1429,7 +1441,9 @@ const server = http
         if (lanUser && !LAN.write && st.memory) st.memory = redactState({ memory: st.memory }).memory
         const restricted = lanUser || wallScope
         const view = restricted ? { ...st, world: restrictedWorld(st.world) } : st
+        const serializeStarted = Date.now()
         const body = JSON.stringify(wallScope ? redactState(view) : view)
+        if (typeof stateTiming !== 'undefined') stateTiming.record('serialize', { ms: Date.now() - serializeStarted, bytes: body.length })
         if (typeof stateResponseCache !== 'undefined') stateResponseCache.set(cacheKey, { at: Date.now(), body })
         res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }).end(body)
         return
@@ -1588,6 +1602,7 @@ function shutdown() {
     try { service?.stop?.() } catch (error) { console.error('[shutdown] service stop failed', error) }
   }
   const closeState = Promise.resolve(lastGoodState.close()).catch((error) => console.error('[shutdown] state close failed', error))
+  stateTiming.close()
   try { server.closeAllConnections?.() } catch (error) { console.error('[shutdown] close connections failed', error) }
   const closed = new Promise(resolve => server.close(() => resolve()))
   Promise.race([Promise.all([closeState, closed]), new Promise(resolve => setTimeout(resolve, 4000))])
