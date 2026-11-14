@@ -162,7 +162,7 @@ const PORT = Number(process.env.OFFICE3D_PORT || 3200)
 const COMPANY_ID_FILE = process.env.OFFICE3D_COMPANY_ID_FILE || path.join(HERE, '..', 'company-id.txt')
 const COMPANY = fs.readFileSync(COMPANY_ID_FILE, 'utf8').trim()
 const OA_ENABLED = process.env.OA_ENABLED === 'true'
-const oaStaffSync = OA_ENABLED ? createOaStaffSync({ enabled: true, baseUrl: process.env.OA_BASE_URL, apiKeyFile: process.env.OA_API_KEY_FILE }) : null
+const oaStaffSync = OA_ENABLED ? createOaStaffSync({ enabled: true, baseUrl: process.env.OA_BASE_URL, apiKeyFile: process.env.OA_API_KEY_FILE, timeoutMs: Number(process.env.OA_TIMEOUT_MS || 5000) }) : null
 const oaStaffRoutes = createOaStaffRoutes({ enabled: OA_ENABLED, sync: oaStaffSync, assignWorkstations: oaStaffSync?.assignWorkstations })
 const townMap = loadTownMap({ file: path.join(HERE, 'town-map.json'), log: console.log })
 const tenancy = createTenancy({ dir: HERE, now: Date.now, log: console.log, paperclipBaseUrl: PAPERCLIP })

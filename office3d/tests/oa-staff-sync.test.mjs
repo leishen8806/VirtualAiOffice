@@ -73,11 +73,11 @@ test('disabled, disallowed and official tenant paths never leak credentials', as
   assert.equal(blocked.unavailable, true);
   assert.equal(calls, 0);
 
-  const official = createOaStaffSync({ enabled: true, baseUrl: 'https://api.workline.ink', apiKey: 'Bearer secret-not-output', fetchImpl: async () => new Response(JSON.stringify({ tenantId: 'wrong-tenant' }), { status: 200 }) });
+  const official = createOaStaffSync({ enabled: true, baseUrl: 'https://api.workline.ink', apiKey: 'Bearer test-token-not-real', fetchImpl: async () => new Response(JSON.stringify({ tenantId: 'wrong-tenant' }), { status: 200 }) });
   const wrongTenant = await official.syncAll();
   assert.equal(wrongTenant.unavailable, true);
   assert.match(wrongTenant.health.error, /租户不匹配/);
-  assert.doesNotMatch(JSON.stringify(wrongTenant), /secret-not-output/);
+  assert.doesNotMatch(JSON.stringify(wrongTenant), /test-token-not-real/);
 });
 
 test('successful data is cached for 60 seconds and retained on outage', async () => {
@@ -101,4 +101,29 @@ test('successful data is cached for 60 seconds and retained on outage', async ()
   const degraded = await sync.syncAll();
   assert.equal(degraded.unavailable, true);
   assert.equal(sync.snapshot().members.length, 20);
+});
+
+test('timeouts, OA errors and invalid JSON fall back to the last successful snapshot', async () => {
+  let mode = 'online';
+  let clock = Date.parse('2026-11-14T04:00:00Z');
+  const fetchImpl = async (input) => {
+    if (mode === 'hang') return new Promise(() => {});
+    if (mode === 'error') return new Response(JSON.stringify({ error: 'unavailable' }), { status: 500 });
+    if (mode === 'invalid-json') return new Response('{', { status: 200 });
+    const url = new URL(input);
+    const body = url.pathname.endsWith('/members') ? { items: members } : url.pathname.endsWith('/departments') ? { items: departments } : url.pathname.endsWith('/attendance/status') ? { items: attendance } : { status: 'ok' };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  const sync = createOaStaffSync({ enabled: true, baseUrl: base, fetchImpl, timeoutMs: 10, now: () => clock });
+  await sync.syncAll();
+  for (const failure of ['hang', 'error', 'invalid-json']) {
+    clock += 61_000;
+    mode = failure;
+    const result = await sync.syncAll();
+    assert.equal(result.unavailable, true);
+    assert.equal(result.fallback, true);
+    assert.equal(result.dataUpdatedAt, '2026-11-14T04:00:00.000Z');
+    assert.equal(result.members.body.items.length, 20);
+    assert.equal(sync.snapshot().members.length, 20);
+  }
 });

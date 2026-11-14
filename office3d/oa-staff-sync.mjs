@@ -29,6 +29,7 @@ export function createOaStaffSync({
   apiKey,
   apiKeyFile,
   fetchImpl = globalThis.fetch,
+  timeoutMs = 5000,
   now = () => Date.now(),
   boardActorId = 'board',
   adminIds = [],
@@ -41,6 +42,7 @@ export function createOaStaffSync({
   const localFake = normalizedBase === DEFAULT_BASE;
   const official = normalizedBase === OFFICIAL_BASE;
   const allowedBase = localFake || official;
+  const requestTimeoutMs = Number.isFinite(Number(timeoutMs)) && Number(timeoutMs) > 0 ? Number(timeoutMs) : 5000;
   let cache = { at: 0, updatedAfter: null, result: null };
   let lastSuccessAt = null;
   async function key() {
@@ -58,14 +60,26 @@ export function createOaStaffSync({
     const headers = { accept: 'application/json', ...(options.headers || {}) };
     const token = await key();
     if (token) headers.authorization = `Bearer ${token}`;
-    const response = await fetchImpl(`${baseUrl}${path}`, { ...options, headers });
-    const body = await response.json();
-    if (!response.ok) throw new Error(`OA ${response.status}: ${body?.error || response.statusText}`);
-    if (official) {
-      const tenantId = body?.tenantId || body?.tenant?.id || body?.meta?.tenantId;
-      if (tenantId !== TEST_TENANT) throw new Error('OA 租户不匹配');
+    const controller = new AbortController();
+    let timer;
+    try {
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error(`OA 请求超时（${requestTimeoutMs}ms）`));
+        }, requestTimeoutMs);
+      });
+      const response = await Promise.race([fetchImpl(`${baseUrl}${path}`, { ...options, headers, signal: controller.signal }), timeout]);
+      const body = await response.json();
+      if (!response.ok) throw new Error(`OA ${response.status}: ${body?.error || response.statusText}`);
+      if (official) {
+        const tenantId = body?.tenantId || body?.tenant?.id || body?.meta?.tenantId;
+        if (tenantId !== TEST_TENANT) throw new Error('OA 租户不匹配');
+      }
+      return { status: response.status, body };
+    } finally {
+      clearTimeout(timer);
     }
-    return { status: response.status, body };
   }
   async function safeGet(path) {
     try { return await request(path); } catch (error) { return { error: safeError(error) }; }
@@ -100,6 +114,8 @@ export function createOaStaffSync({
       result.unavailable = true;
       result.fallback = true;
       result.oaUnavailable = 'OA 暂不可用';
+      result.dataUpdatedAt = lastSuccessAt;
+      if (cache.result) return { ...cache.result, unavailable: true, fallback: true, oaUnavailable: 'OA 暂不可用', dataUpdatedAt: lastSuccessAt };
     }
     return result;
   }
