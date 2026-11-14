@@ -1,6 +1,6 @@
 // T20 小镇经济引擎测试：A–I 算例逐字断言、配置真实读取、100 组固定种子随机 half-up、第八节金库与经济循环阈值、静态自检。
 // 运行：node --test tests/town-engine.test.mjs
-// 口径：DR 币内部一律整数分、每明细行 half-up 到分再求和；金边时区；计薪天数封顶 30；工资总额（25 位满勤）≈14,505 DR/月。
+// 口径：DR 币内部一律整数分、每明细行 half-up 到分再求和；金边时区；计薪天数封顶 30；工资总额（30 位登记岗位满勤）≈18,227 DR/月。
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -51,7 +51,7 @@ function collectTownSources(dir) {
 // 真实配置文件（从磁盘加载，断言引擎确实读它）
 const cfg = JSON.parse(fs.readFileSync(path.join(TOWN, 'town-config.json'), 'utf8'))
 const ROSTER = Object.keys(cfg.roles).map((agent) => ({ agent, monthsOfService: 1 }))
-assert.equal(ROSTER.length, 25, '真实花名册应为 25 位同事')
+assert.equal(ROSTER.length, 30, '配置应包含 30 个登记岗位')
 
 // 整月满勤（含全部固定津贴）工资总额，分；用于第八节基线
 function fullPayrollCents() {
@@ -324,10 +324,10 @@ test('inflationReport：娱乐型外快占工资比例超过 8% 时 exceeded', (
 })
 
 // ───── 第八节：金库与经济循环底座 ─────
-test('工资总额：25 位满勤整月工资条合计 = 14,505 DR（断言区间 14,000–15,000）', () => {
+test('工资总额：30 个登记岗位满勤整月工资条合计 = 18,227 DR（断言区间 18,000–19,000）', () => {
   const P = fullPayrollCents()
-  assert.equal(P, 1450500)
-  assert.ok(P >= 1400000 && P <= 1500000, `工资总额 ${P} 应在 [1,400,000, 1,500,000]`)
+  assert.equal(P, 1822700)
+  assert.ok(P >= 1800000 && P <= 1900000, `工资总额 ${P} 应在 [1,800,000, 1,900,000]`)
   // 与逐人 buildPayslip（满勤、S=60 系数 1.0）之和一致
   let sum = 0
   for (const agent of ROSTER.map((r) => r.agent)) {

@@ -12,13 +12,13 @@
     "GB": { "label": "守门岗B", "monthly": 585, "gatekeeper": true, "integrityAllowance": 59 }
   },
   "roles": {
-    "Frontend1": "T1", "Backend1": "T1", "Go1": "T1", "Go2": "T1", "React1": "T1",
+    "Frontend1": "T1", "Backend1": "T1", "Go1": "T1", "Go2": "T1", "React1": "T1", "React2": "T1",
     "Backend2": "T1", "Frontend2": "T1", "UIUX": "T1", "QAAutomation": "T1", "Localizer": "T1",
     "OpsEngineer": "T2", "PM": "T2",
-    "FrontendSenior": "T3", "BackendSenior": "T3", "GoSenior": "T3", "ReactSenior": "T3",
+    "FrontendSenior": "T3", "BackendSenior": "T3", "GoSenior": "T3", "GoSenior2": "T3", "ReactSenior": "T3",
     "DBEngineer": "T3", "Architect": "T3",
-    "Lead": "T4", "OpsLead": "T4",
-    "Reviewer1": "GA", "Reviewer2": "GA", "SecurityReviewer": "GA", "LedgerAuditor": "GB", "KnowledgeKeeper": "GB"
+    "Lead": "T4", "Lead2": "T4", "OpsLead": "T4",
+    "Reviewer1": "GA", "Reviewer2": "GA", "Reviewer3": "GA", "SecurityReviewer": "GA", "SecurityReviewer2": "GA", "LedgerAuditor": "GB", "KnowledgeKeeper": "GB"
   },
   "allowances": {
     "fullAttendance": 10,
