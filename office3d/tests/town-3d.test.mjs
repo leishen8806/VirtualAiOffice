@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import * as THREE from '../vendor/three/three.module.js'
-import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier, waterContainsPoint } from '../town-3d-core.js'
+import { chunkPlan, defaultBuildingHeight, geoToWorld, groundPlan, landmarkProfile, polygonShape, polygonWorldPoint, qualitySample, roadTier, waterContainsPoint, waterContainsSegment } from '../town-3d-core.js'
 import { readFileSync, statSync } from 'node:fs'
 
 test('hidden town overlays cannot cover the 2d map', () => {
@@ -18,6 +18,9 @@ test('water coverage excludes road segments but preserves water holes', () => {
   const water = [{ rings: [[[0, 0], [10, 0], [10, 10], [0, 10]], [[3, 3], [3, 7], [7, 7], [7, 3]]] }]
   assert.equal(waterContainsPoint([2, 2], water), true)
   assert.equal(waterContainsPoint([5, 5], water), false)
+  assert.equal(waterContainsSegment([-2, 2], [12, 2], water), true)
+  assert.equal(waterContainsSegment([4, 5], [6, 5], water), false)
+  assert.equal(waterContainsSegment([-2, -2], [-1, -1], water), false)
 })
 
 test('building height prefers explicit height, then levels, then type fallback', () => {
@@ -101,6 +104,8 @@ test('town renderer uses ShapeGeometry for water and green areas without span sk
   const js = readFileSync(new URL('../town-3d.js', import.meta.url), 'utf8')
   assert.match(js, /new THREE\.ShapeGeometry\(shape\)/)
   assert.doesNotMatch(js, /maxSpan/)
+  assert.doesNotMatch(js, /water:.*transparent: true/)
+  assert.match(js, /water:.*polygonOffset: true/)
 })
 
 test('roads are classified and the ground covers every building', () => {

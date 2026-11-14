@@ -32,6 +32,17 @@ export function waterContainsPoint(point, waters) {
   return waters.some(({ rings = [] }) => rings[0]?.length > 2 && pointInRing(point, rings[0]) && !rings.slice(1).some((ring) => pointInRing(point, ring)))
 }
 
+const orientation = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+const onSegment = (a, b, point) => Math.abs(orientation(a, b, point)) < 1e-12 && point[0] >= Math.min(a[0], b[0]) && point[0] <= Math.max(a[0], b[0]) && point[1] >= Math.min(a[1], b[1]) && point[1] <= Math.max(a[1], b[1])
+const segmentsIntersect = (a, b, c, d) => {
+  const abC = orientation(a, b, c), abD = orientation(a, b, d), cdA = orientation(c, d, a), cdB = orientation(c, d, b)
+  return (abC * abD < 0 && cdA * cdB < 0) || onSegment(a, b, c) || onSegment(a, b, d) || onSegment(c, d, a) || onSegment(c, d, b)
+}
+
+export function waterContainsSegment(a, b, waters) {
+  return waterContainsPoint(a, waters) || waterContainsPoint(b, waters) || waters.some(({ rings = [] }) => rings[0]?.some((point, index, ring) => segmentsIntersect(a, b, point, ring[(index + 1) % ring.length])))
+}
+
 export function defaultBuildingHeight(tags = {}) {
   const levels = Number.parseFloat(tags['building:levels'])
   const parsedHeight = Number.parseFloat(String(tags.height ?? '').replace(/m$/i, ''))
