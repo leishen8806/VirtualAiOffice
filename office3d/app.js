@@ -29,6 +29,7 @@ import { normalizeCameraState, resolvePlaceMode } from './place-mode.js'
 import { officeDestinationsForLayout } from './office-destinations.js'
 import { isolateDrPlace, prepareDrPage } from './dr-place-view.js'
 import { chooseOfficeR1InspectorRect } from './office-r1-ui.js'
+import { createFirstPerson, FIRST_PERSON_EYE_HEIGHT } from './first-person.js'
 import { setLoading, finishLoading } from './dr-loading.js'
 const APP_STARTED = performance.now()
 
@@ -1702,6 +1703,23 @@ if (DR_MODE) addEventListener('pagehide', () => {
 })
 const clampTo = (v, [a, b]) => Math.min(b, Math.max(a, v))
 const camMode = { tour: false, follow: null } // 环绕巡航 / 跟随某个人
+const firstPerson = !DR_MODE ? createFirstPerson({ bounds: LAYOUT3_MODE ? LAYOUT_V3.envelope : ENVELOPE, collision: activeCollision }) : null
+let firstPersonPointer = null
+const firstPersonTouch = { forward: 0, right: 0 }
+const visitorMarker = new THREE.Group()
+const visitorRing = new THREE.Mesh(new THREE.RingGeometry(.34, .44, 24), new THREE.MeshBasicMaterial({ color: 0x42d3ff, side: THREE.DoubleSide }))
+visitorRing.rotation.x = -Math.PI / 2; visitorRing.position.y = .025; visitorMarker.add(visitorRing); visitorMarker.visible = false; scene.add(visitorMarker)
+function setFirstPersonTouchpad(active) {
+  let pad = document.getElementById('firstPersonTouchpad')
+  if (!active) { firstPersonTouch.forward = firstPersonTouch.right = 0; pad?.remove(); return }
+  if (pad) return
+  pad = document.createElement('div'); pad.id = 'firstPersonTouchpad'; pad.setAttribute('aria-label', '第一视角移动摇杆'); pad.style.cssText = 'position:fixed;left:16px;bottom:86px;width:92px;height:92px;border:2px solid #74d9ff;border-radius:50%;background:#10253699;touch-action:none;z-index:20'
+  const move = event => { const r = pad.getBoundingClientRect(), x = Math.max(-1, Math.min(1, (event.clientX - (r.left + r.width / 2)) / (r.width / 2))), y = Math.max(-1, Math.min(1, (event.clientY - (r.top + r.height / 2)) / (r.height / 2))); firstPersonTouch.right = x; firstPersonTouch.forward = -y }
+  pad.addEventListener('pointerdown', event => { pad.setPointerCapture(event.pointerId); move(event); event.preventDefault() })
+  pad.addEventListener('pointermove', event => { if (pad.hasPointerCapture(event.pointerId)) move(event) })
+  for (const type of ['pointerup', 'pointercancel']) pad.addEventListener(type, () => { firstPersonTouch.forward = firstPersonTouch.right = 0 })
+  document.body.appendChild(pad)
+}
 const inertia = { az: 0, el: 0 }
 // 方位角不再限制：预设机位走「最近的那一圈」，不会绕远路
 const nearestAz = (target, from) => target + Math.round((from - target) / 360) * 360
@@ -1773,6 +1791,13 @@ function navTick(dt) {
   }
 }
 function applyCamera(dt) {
+  if (firstPerson?.state.active) {
+    firstPerson.move({ forward: (moveKeys.has('w') ? 1 : 0) - (moveKeys.has('s') ? 1 : 0) + firstPersonTouch.forward, right: (moveKeys.has('d') ? 1 : 0) - (moveKeys.has('a') ? 1 : 0) + firstPersonTouch.right, fast: moveKeys.has('shift') }, dt)
+    const { x, z, yaw, pitch } = firstPerson.state
+    camera.position.set(x, FIRST_PERSON_EYE_HEIGHT, z)
+    camera.lookAt(x + Math.sin(yaw), FIRST_PERSON_EYE_HEIGHT + Math.sin(pitch), z + Math.cos(yaw))
+    return
+  }
   navTick(dt)
   // 松手后的惯性：慢慢减速停下
   if (!drag && (Math.abs(inertia.az) > 0.5 || Math.abs(inertia.el) > 0.5)) {
@@ -1815,6 +1840,7 @@ syncLook()
 document.addEventListener('click', (e) => { if (e.target && e.target.id === 'look') toggleLook(); if (e.target && e.target.id === 'edgeBtn') toggleEdge(); if (e.target && e.target.id === 'catPlay') toggleCatPlay() })
 setTimeout(() => syncEdge(), 0)
 dom.addEventListener('pointerdown', (e) => {
+  if (firstPerson?.state.active) { firstPersonPointer = { id: e.pointerId, x: e.clientX, y: e.clientY }; dom.setPointerCapture(e.pointerId); e.preventDefault(); return }
   dom.setPointerCapture(e.pointerId)
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY })
   if (!drag) drag = { moved: 0, pan: e.button === 2 || e.shiftKey, pinch: null, center: null, t: performance.now(), vAz: 0, vEl: 0 }
@@ -1822,6 +1848,7 @@ dom.addEventListener('pointerdown', (e) => {
   inertia.az = inertia.el = 0
 })
 dom.addEventListener('pointermove', (e) => {
+  if (firstPersonPointer?.id === e.pointerId) { firstPerson.turn(e.clientX - firstPersonPointer.x, e.clientY - firstPersonPointer.y); firstPersonPointer.x = e.clientX; firstPersonPointer.y = e.clientY; return }
   if (!ptrs.has(e.pointerId)) return
   const prev = ptrs.get(e.pointerId)
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY })
@@ -1855,6 +1882,7 @@ dom.addEventListener('pointermove', (e) => {
   }
 })
 dom.addEventListener('pointerup', (e) => {
+  if (firstPersonPointer?.id === e.pointerId) { firstPersonPointer = null; return }
   const was = drag
   ptrs.delete(e.pointerId)
   if (was && was.moved < 5 && ptrs.size === 0) pick(e.clientX, e.clientY, e.shiftKey)
@@ -1968,6 +1996,7 @@ function zoneBtn(label, fn, first, container = zonesEl, destinationId = '', dest
   })
   if (first) b.classList.add('on')
   container.appendChild(b)
+  return b
 }
 if (DR_MODE) {
   const cameraGroup = dockGroup('仓配场景视角', 'views')
@@ -2053,6 +2082,18 @@ if (DR_MODE) {
   }
 } else {
   const cameraGroup = dockGroup('视角预设', 'views')
+  const firstPersonButton = zoneBtn('🚶 进入第一视角', () => {
+    if (!firstPerson) return
+    if (firstPerson.state.active) {
+      const restore = firstPerson.exit(); visitorMarker.position.set(firstPerson.state.x, 0, firstPerson.state.z); visitorMarker.visible = true; setFirstPersonTouchpad(false); if (restore) { Object.assign(goal, { ...restore, t: new THREE.Vector3(...restore.t) }); Object.assign(cam, { ...restore, t: new THREE.Vector3(...restore.t) }) }
+      firstPersonButton.textContent = '🚶 进入第一视角'; firstPersonButton.setAttribute('aria-pressed', 'false')
+      return
+    }
+    const restore = { az: goal.az, el: goal.el, r: goal.r, t: goal.t.toArray() }
+    firstPerson.enter({ x: goal.t.x, z: goal.t.z, yaw: goal.az * D2R, restore })
+    visitorMarker.visible = false; setFirstPersonTouchpad(true); camMode.tour = false; camMode.follow = null; firstPersonButton.textContent = '↩ 退出第一视角'; firstPersonButton.setAttribute('aria-pressed', 'true')
+  }, false, cameraGroup)
+  firstPersonButton.setAttribute('aria-pressed', 'false')
   zoneBtn('🏢 全景', () => setGoal({ az: HOME.az, el: HOME.el, r: HOME.r, t: HOME.t }), true, cameraGroup)
   zoneBtn('🔄 环绕巡航', () => { setGoal({ el: 30, r: homeR(), t: VIEW_CENTER }); camMode.tour = true }, false, cameraGroup)
   zoneBtn('🔭 俯视', () => setGoal({ az: 0, el: 86, r: homeR(), t: VIEW_CENTER }), false, cameraGroup)
