@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { buildSnapshot, deriveKpis, eventsUpTo, inventoryAfterEvents, inventoryDisplay } from '../dr-console-data.js'
+import { readDemoOrders } from '../dr-order-source.js'
+
+test('demo order source is a fixed synthetic 20-order contract', () => {
+  const orders = readDemoOrders()
+  assert.equal(orders.length, 20)
+  assert.equal(new Set(orders.map((order) => order.orderNo)).size, 20)
+  assert.ok(orders.every((order) => order.orderNo.startsWith('DEMO-ORD-') && order.customerRegion && order.itemCount > 0 && order.status && order.stageTimes && order.vehicleId && order.warehouseSlot))
+  assert.ok(orders.every((order) => order.orderNo.startsWith('DEMO-') && !/\d{7,}/.test(order.customerRegion)))
+})
 
 test('DR console demo snapshot and derived KPI are deterministic', () => {
   const options = { seed: 2808, timeSlice: 5 }
