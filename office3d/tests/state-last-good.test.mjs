@@ -317,14 +317,33 @@ test('close flushes the latest pending snapshot without waiting for the write in
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, second.at)
 })
 
-test('first request after an idle pause waits for a fresh background snapshot', async t => {
+test('first request after an idle pause returns the last snapshot while refresh continues', async t => {
   let ms = start, builds = 0
-  const manager = createLastGoodState({ file: temp(t), now: () => ms, backgroundMs: 1000, timeoutMs: 100, log() {} })
+  const file = temp(t)
+  const manager = createLastGoodState({ file, now: () => ms, backgroundMs: 1000, timeoutMs: 100, log() {} })
   await manager.run(async () => { builds++; return fixture() })
   ms += 120000
-  const value = await manager.run(async () => { builds++; return { ...fixture(), at: new Date(ms).toISOString() } })
+  const value = await manager.run(async () => { builds++; await new Promise(resolve => setTimeout(resolve, 20)); return { ...fixture(), at: new Date(ms).toISOString() } })
   assert.equal(builds, 2)
+  assert.equal(value.stale.active, true)
+  await new Promise(resolve => setTimeout(resolve, 40))
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, new Date(ms).toISOString())
+})
+
+test('a slow background refresh still persists after the request has returned', async t => {
+  let builds = 0, ms = start
+  const file = temp(t)
+  const manager = createLastGoodState({ file, now: () => ms, backgroundMs: 1000, staleAfterMs: 180000, log() {} })
+  t.after(() => manager.close())
+  await manager.run(async () => ({ ...fixture(), at: '2026-11-14T01:00:00.000Z' }))
+  ms += 1000
+  const started = Date.now()
+  const value = await manager.run(async () => { builds++; await new Promise(resolve => setTimeout(resolve, 120)); return { ...fixture(), at: '2026-11-14T01:00:12.000Z' } })
+  assert.ok(Date.now() - started < 100, 'foreground must not wait for background rebuild')
   assert.equal(value.stale, undefined)
+  await new Promise(resolve => setTimeout(resolve, 160))
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).at, '2026-11-14T01:00:12.000Z')
+  assert.equal(builds, 1)
 })
 
 test('health persistence records status changes for an existing run id', async t => {

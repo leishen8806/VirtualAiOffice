@@ -904,12 +904,13 @@ async function refreshRoutefitSummary() {
 }
 let backlogCache = { at: 0, rows: [] }
 let backlogFlight = null
+const STATE_REFRESH_LOG = path.join(HERE, 'state-refresh.log')
 const lastGoodState = createLastGoodState({
   file: path.join(HERE, 'state-last-good.json'),
   persistMinMs: 60000,
   backgroundMs: 10000,
-  staleAfterMs: 60000,
-  logFile: path.join(HERE, 'state-refresh.log'),
+  staleAfterMs: 180000,
+  logFile: STATE_REFRESH_LOG,
 })
 const backgroundHealth = createBackgroundHealth({ get: moduleGet('health'), company: COMPANY, buildHealth, schedule: () => ({ days: (world().duty || {}).days }), file: path.join(HERE, 'health-runs.json') })
 async function refreshProjects() {
@@ -1073,7 +1074,10 @@ async function state() {
   const timings = []
   const { agents, dashboard: dash, issues, runs, approvals, activity, approvalsAll, backlog, gaps } =
     await loadStateComponents({ get: moduleGet('state'), company: COMPANY, backlog: () => backlogRows(true), timings: row => timings.push(row) })
-  if (process.env.OFFICE3D_STATE_TIMINGS === '1') console.log('[state-timings]', JSON.stringify({ totalMs: performance.now() - stateStarted, stages: timings }))
+  const totalMs = performance.now() - stateStarted
+  const timingLine = `[state-refresh] totalMs=${Math.round(totalMs)} components=${JSON.stringify(timings)}`
+  console.log(timingLine)
+  try { fs.appendFileSync(STATE_REFRESH_LOG, timingLine + '\n', { encoding: 'utf8' }) } catch {}
   const issueList = Array.isArray(issues) ? issues : issues.issues || []
   const byAgent = new Map()
   for (const i of issueList) {
