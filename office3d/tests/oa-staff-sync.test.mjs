@@ -61,3 +61,44 @@ test('attendance visibility and department workstation assignment', async () => 
   const assigned = assignWorkstations([{ id: 'a', departmentId: 'd1' }, { id: 'b', departmentId: 'd1' }], { d1: ['desk-1', 'desk-2'] });
   assert.deepEqual(assigned.map((x) => x.workstation), ['desk-1', 'desk-2']);
 });
+
+test('disabled, disallowed and official tenant paths never leak credentials', async () => {
+  let calls = 0;
+  const disabled = createOaStaffSync({ fetchImpl: async () => { calls++; throw new Error('must not call') } });
+  assert.deepEqual(await disabled.syncAll(), { enabled: false });
+  assert.equal(calls, 0);
+
+  const disallowed = createOaStaffSync({ enabled: true, baseUrl: 'https://evil.example', fetchImpl: async () => { calls++; throw new Error('must not call') } });
+  const blocked = await disallowed.syncAll();
+  assert.equal(blocked.unavailable, true);
+  assert.equal(calls, 0);
+
+  const official = createOaStaffSync({ enabled: true, baseUrl: 'https://api.workline.ink', apiKey: 'Bearer secret-not-output', fetchImpl: async () => new Response(JSON.stringify({ tenantId: 'wrong-tenant' }), { status: 200 }) });
+  const wrongTenant = await official.syncAll();
+  assert.equal(wrongTenant.unavailable, true);
+  assert.match(wrongTenant.health.error, /租户不匹配/);
+  assert.doesNotMatch(JSON.stringify(wrongTenant), /secret-not-output/);
+});
+
+test('successful data is cached for 60 seconds and retained on outage', async () => {
+  let calls = 0;
+  let clock = Date.parse('2026-11-14T04:00:00Z');
+  let online = true;
+  const fetchImpl = async (input) => {
+    calls++;
+    if (!online) throw new Error('offline');
+    const url = new URL(input);
+    const body = url.pathname.endsWith('/members') ? { items: members } : url.pathname.endsWith('/departments') ? { items: departments } : url.pathname.endsWith('/attendance/status') ? { items: attendance } : { status: 'ok' };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  const sync = createOaStaffSync({ enabled: true, baseUrl: base, fetchImpl, now: () => clock });
+  await sync.syncAll();
+  const firstCalls = calls;
+  await sync.syncAll();
+  assert.equal(calls, firstCalls);
+  clock += 61_000;
+  online = false;
+  const degraded = await sync.syncAll();
+  assert.equal(degraded.unavailable, true);
+  assert.equal(sync.snapshot().members.length, 20);
+});
