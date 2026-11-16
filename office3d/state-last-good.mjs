@@ -8,7 +8,7 @@ export function stripStateCredentials(value) {
   return Object.fromEntries(Object.keys(value).filter(key => !credential(key)).map(key => [key, stripStateCredentials(value[key])]))
 }
 
-export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null, persistMinMs = 0 }) {
+export function createLastGoodState({ file, now = Date.now, log = console.log, timeoutMs = 5000, backgroundMs = 0, staleAfterMs = 60000, logFile = null, persistMinMs = 0, onWrite = null }) {
   let saved = null, degraded = false, flight = null, flightStartedAt = 0, refreshAt = 0, failures = 0, backgroundTimer = null, writes = Promise.resolve(), pendingPersist = null, persistRunning = false, lastPersistAt = 0, lastRequestAt = 0, closing = false, interruptPersistWait = null
   try {
     const value = JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -30,9 +30,11 @@ export function createLastGoodState({ file, now = Date.now, log = console.log, t
         })
         const temp = file + '.tmp'
         try {
+          const started = Date.now()
           await fs.promises.writeFile(temp, JSON.stringify(next), { mode: 0o600 })
           await fs.promises.rename(temp, file)
           lastPersistAt = Date.now()
+          onWrite?.({ name: 'fileWrite.stateSnapshot', ms: Date.now() - started, count: 1 })
         } catch {
           await fs.promises.unlink(temp).catch(() => {})
           log('[state] 快照持久化失败，保留内存快照')
