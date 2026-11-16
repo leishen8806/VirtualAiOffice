@@ -23,3 +23,33 @@ test('first person uses the real office envelope and does not cross a layout reg
   assert.ok(first.state.x >= wall.x1 - .28)
   assert.ok(first.state.x >= LAYOUT_V3.envelope.x0 + .28 && first.state.x <= LAYOUT_V3.envelope.x1 - .28)
 })
+
+test('first person wall, doorway, boundary and diagonal slide use real layout coordinates', () => {
+  const room = LAYOUT_V3.regions.find((item) => item.id === 'review')
+  assert.ok(room)
+  const door = room.doors.find((item) => item.side === 'east')
+  assert.ok(door)
+  const wall = (x, z, radius = .28) => {
+    const insideDoor = Math.abs(z - door.at) <= door.width / 2 + radius
+    return x >= room.x1 - radius && x <= room.x1 + radius && !insideDoor
+  }
+  const walk = (first, input, steps = 20) => { for (let i = 0; i < steps; i++) first.move(input, .1) }
+  const first = createFirstPerson({ bounds: LAYOUT_V3.envelope, collision: { navigationHit: wall } })
+  first.enter({ x: room.x1 - .8, z: room.z0 + 1.1, yaw: Math.PI / 2 })
+  walk(first, { forward: 1 })
+  assert.ok(first.state.x <= room.x1 - .28, 'the wall stops the player before the east boundary')
+
+  first.enter({ x: room.x1 - .8, z: door.at, yaw: Math.PI / 2 })
+  walk(first, { forward: 1 })
+  assert.ok(first.state.x > room.x1, 'the doorway remains traversable')
+
+  first.enter({ x: 0, z: LAYOUT_V3.envelope.z1 - .8, yaw: 0 })
+  walk(first, { forward: 1 })
+  assert.ok(Math.abs(first.state.z - (LAYOUT_V3.envelope.z1 - .28)) < 1e-9, 'the site boundary clamps movement')
+
+  first.enter({ x: room.x1 - .8, z: room.z0 + 1.1, yaw: Math.PI / 2 })
+  const beforeZ = first.state.z
+  walk(first, { forward: 1, right: 1 })
+  assert.ok(first.state.x <= room.x1 - .28)
+  assert.notEqual(first.state.z, beforeZ, 'a diagonal move slides along the wall')
+})
